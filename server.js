@@ -173,22 +173,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 1c. Excel files download route for migration
-  if (pathname.startsWith('/excel/')) {
-    const filename = path.basename(pathname);
-    const excelPath = path.join(__dirname, filename);
-    if (fs.existsSync(excelPath)) {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', MIME_TYPES['.xlsx']);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      fs.createReadStream(excelPath).pipe(res);
-      return;
-    } else {
-      res.statusCode = 404;
-      res.end('Excel file not found');
-      return;
-    }
-  }
+
 
   // 2. REST API endpoints
   if (pathname.startsWith('/api/')) {

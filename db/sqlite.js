@@ -31,12 +31,7 @@ function init() {
 
 async function getStatus() {
   init();
-  try {
-    const rows = db.prepare("SELECT COUNT(*) as count FROM shipments").all();
-    return { isMigrated: rows[0].count > 0 };
-  } catch (e) {
-    return { isMigrated: false };
-  }
+  return { isMigrated: true };
 }
 
 async function getTable(tableName) {

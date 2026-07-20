@@ -229,18 +229,31 @@ const UI = (() => {
     ` : '';
 
     el.innerHTML = `
-      <div class="w-100">
+      <div class="w-100 d-flex flex-column gap-1">
+        <!-- Row 1: Top Bar Controls (Menu Toggle, User Login/Logout, Print & Actions) -->
         <div class="d-flex align-items-center justify-content-between gap-2">
-          <div class="d-flex align-items-center gap-2 min-w-0">
-            <button class="btn btn-sm btn-outline-secondary d-md-none px-2 py-1 flex-shrink-0" id="btnMenuToggle" title="Toggle Menu">☰</button>
-            <h1 class="topbar-title text-truncate m-0">${title}</h1>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary px-2 py-1 flex-shrink-0" id="btnMenuToggle" title="Toggle Menu">
+              ☰ <span class="d-none d-sm-inline ms-1 fw-semibold">Menu</span>
+            </button>
           </div>
           <div class="topbar-actions d-flex align-items-center gap-1 flex-wrap justify-content-end no-print flex-shrink-0">
             ${userBadge}
             ${actionsHtml || ''}
           </div>
         </div>
-        ${subtitle ? `<div class="topbar-subtitle text-muted mt-1 fs-8 ms-md-0 ms-1">${subtitle}</div>` : ''}
+
+        <!-- Row 2 (Shifted One Line Below): Page Title (h1) -->
+        ${title ? `
+          <div class="mt-2 pt-1 border-top">
+            <h1 class="topbar-title text-truncate m-0" style="font-size:1.25rem; font-weight:700; color:var(--st-blue-900);">${title}</h1>
+          </div>
+        ` : ''}
+
+        <!-- Row 3 (Shifted One Line Below Title): Subtitle -->
+        ${subtitle ? `
+          <div class="topbar-subtitle text-muted mt-0 fs-8">${subtitle}</div>
+        ` : ''}
       </div>
     `;
     const toggle = document.getElementById('btnMenuToggle');

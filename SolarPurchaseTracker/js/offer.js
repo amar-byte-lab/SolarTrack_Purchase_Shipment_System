@@ -25,7 +25,13 @@ window.onDbReady = function () {
   const offerContainer = document.getElementById('offerContainer');
 
   if (allProducts.length === 0) {
-    if (emptyState) emptyState.style.display = 'block';
+    if (emptyState) {
+      emptyState.innerHTML = `
+        <div class="fs-5 fw-bold text-secondary mb-2">Create Product set in the "Products" page.</div>
+        <a href="item-master.html" class="btn btn-sm btn-accent fw-semibold mt-2">📦 Go to Products Page</a>
+      `;
+      emptyState.style.display = 'block';
+    }
     if (offerContainer) offerContainer.style.display = 'none';
     return;
   }

@@ -27,8 +27,7 @@ const PRIMARY_KEYS = {
 };
 
 async function getStatus() {
-  const { count, error } = await supabase.from('shipments').select('*', { count: 'exact', head: true });
-  return { isMigrated: (count || 0) > 0 };
+  return { isMigrated: true };
 }
 
 async function getTable(tableName) {
@@ -39,7 +38,12 @@ async function getTable(tableName) {
 
 async function importTable(tableName, rows) {
   const pk = PRIMARY_KEYS[tableName] || 'id';
-  await supabase.from(tableName).delete().neq(pk, '___DUMMY_DELETE_ALL___');
+  const isInt = ['SlNo', 'BorrowerID', 'TxnID'].includes(pk);
+  if (isInt) {
+    await supabase.from(tableName).delete().neq(pk, -999999);
+  } else {
+    await supabase.from(tableName).delete().neq(pk, '___DUMMY_DELETE_ALL___');
+  }
   if (rows && rows.length > 0) {
     const { error } = await supabase.from(tableName).upsert(rows);
     if (error) throw error;
@@ -52,12 +56,16 @@ async function insertRow(tableName, row) {
 }
 
 async function updateRow(tableName, matchField, matchValue, newData) {
-  const { error } = await supabase.from(tableName).update(newData).eq(matchField, matchValue);
+  const isInt = ['SlNo', 'BorrowerID', 'TxnID'].includes(matchField);
+  const val = isInt ? Number(matchValue) : matchValue;
+  const { error } = await supabase.from(tableName).update(newData).eq(matchField, val);
   if (error) throw error;
 }
 
 async function deleteRow(tableName, matchField, matchValue) {
-  const { error } = await supabase.from(tableName).delete().eq(matchField, matchValue);
+  const isInt = ['SlNo', 'BorrowerID', 'TxnID'].includes(matchField);
+  const val = isInt ? Number(matchValue) : matchValue;
+  const { error } = await supabase.from(tableName).delete().eq(matchField, val);
   if (error) throw error;
 }
 

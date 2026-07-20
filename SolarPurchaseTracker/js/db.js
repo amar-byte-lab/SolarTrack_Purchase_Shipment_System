@@ -80,17 +80,11 @@ const DB = (() => {
 
   async function tryRestoreFolder() {
     try {
-      // 1. Check if Supabase has records
+      // 1. Check backend status
       const resp = await fetch('/api/status');
       if (!resp.ok) throw new Error('API server unreachable');
-      const status = await resp.json();
-      
-      // 2. Perform one-time migration if DB is empty
-      if (!status.isMigrated) {
-        await performMigration();
-      }
 
-      // 3. Load all tables concurrently in parallel for maximum speed
+      // 2. Load all tables concurrently from PostgreSQL / Database via REST API
       mode = 'sqlite';
       const tableKeys = Object.keys(FILE_MAP).filter(k => k !== 'borrowers' && k !== 'borrower_txns');
       cache.borrowers = [];
@@ -124,29 +118,6 @@ const DB = (() => {
         cache[key] = [];
       }
       return true;
-    }
-  }
-
-  async function performMigration() {
-    console.log('Seeding SQLite database from Excel sheets...');
-    for (const key of Object.keys(FILE_MAP)) {
-      const { file, sheet } = FILE_MAP[key];
-      try {
-        const resp = await fetch(`/excel/${file}`);
-        if (!resp.ok) continue;
-        const buf = await resp.arrayBuffer();
-        const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-        const ws = wb.Sheets[sheet];
-        const rows = ws ? XLSX.utils.sheet_to_json(ws, { defval: '' }) : [];
-        
-        await fetch(`/api/import`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ table: key, rows: rows })
-        });
-      } catch (e) {
-        console.error(`Migration error for ${key}:`, e);
-      }
     }
   }
 
