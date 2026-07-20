@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offer Generator — Solar Purchase Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  /* Base flex wrapper */
+  html, body, .app-shell {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+  .main-content {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .page-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 20px;
+    gap: 15px;
+    overflow-y: auto; /* Allow page-body to scroll on mobile */
+  }
+
+  /* Corporate Quotation styling */
+  .quote-container {
+    background-color: #ffffff;
+    border-radius: var(--st-card-radius);
+    box-shadow: var(--st-shadow);
+    padding: 25px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .table-quote {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+  .table-quote th {
+    background: var(--st-blue-900) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    padding: 10px 12px;
+    border: 1px solid var(--st-blue-900);
+  }
+  .table-quote td {
+    vertical-align: middle;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+  }
+  .table-quote td:first-child {
+    border-left: 1px solid #e2e8f0;
+  }
+  .table-quote tr:last-child td {
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  /* Compact input cells */
+  .table-quote input {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 0.82rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .table-quote input:focus {
+    border-color: var(--st-blue-600);
+    outline: 0;
+    box-shadow: 0 0 0 0.15rem rgba(36,112,160,0.15);
+  }
+  .table-quote input[type="number"] {
+    text-align: right;
+  }
+
+  /* Print Stylesheet Overrides */
+  @media print {
+    html, body, .app-shell, .main-content, .page-body {
+      height: auto !important;
+      overflow: visible !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    #sidebar, .topbar, .no-print, .btn, input[type="button"] {
+      display: none !important;
+    }
+    .quote-container {
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+    /* Hide input borders and shadow */
+    .form-control, textarea {
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      resize: none !important;
+    }
+    .table-quote input {
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      text-align: right;
+    }
+    .table-quote input.q-item-name {
+      text-align: left !important;
+    }
+    /* Set page margins */
+    @page {
+      margin: 1.5cm;
+    }
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .page-body {
+      padding: 10px;
+      overflow-y: auto !important;
+      height: auto !important;
+    }
+    html, body, .app-shell, .main-content {
+      height: auto !important;
+      overflow: auto !important;
+    }
+    .quote-container {
+      padding: 15px;
+    }
+    .table-quote {
+      font-size: 0.78rem;
+    }
+    .table-quote th, .table-quote td {
+      padding: 6px 8px;
+    }
+    .table-quote input {
+      padding: 2px 4px;
+      font-size: 0.78rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- Sidebar loaded dynamically -->
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <!-- Topbar loaded dynamically -->
+    <div class="topbar" id="topbar"></div>
+
+    <div class="page-body">
+      <!-- Empty State Card -->
+      <div id="emptyState" class="empty-state st-card no-print" style="display:none; text-align: center; padding: 40px 20px;">
+        <div class="fs-5 fw-bold text-secondary">Select Product set to generate offer</div>
+      </div>
+
+      <!-- Main Quotation Container -->
+      <div id="offerContainer" class="quote-container" style="display:none;">
+        
+        <!-- Corporate Quotation Header (Visible in print/PDF) -->
+        <div class="row g-3 mb-4 pb-3 border-bottom align-items-center">
+          <div class="col-md-6 col-12 text-md-start text-center d-flex align-items-center gap-3 justify-content-md-start justify-content-center flex-wrap">
+            <!-- Logo (Only visible if uploaded in settings) -->
+            <img id="qCompanyLogo" src="" alt="Logo" class="border rounded p-1 bg-white" style="max-height: 60px; max-width: 150px; display: none;">
+            <div>
+              <h2 class="text-primary fw-bold mb-0" id="qHeaderCompanyName" style="letter-spacing: 0.5px; font-size: 1.6rem;">QUOTATION</h2>
+              <div class="text-muted font-monospace fs-8" id="qHeaderSubtitle">SOLAR SALES & INSTALLATION SERVICES</div>
+            </div>
+          </div>
+          <div class="col-md-6 col-12 text-md-end text-center">
+            <h4 class="fw-bold mb-0 text-dark" id="qHeaderCompanyTitle">SolarTrack</h4>
+            <div class="text-muted fs-8 font-monospace" id="lblCompanyEmail">Email: -</div>
+            <div class="text-muted fs-8 font-monospace" id="lblCompanyPhone">Mob: -</div>
+            <div class="text-muted fs-8 font-monospace" id="lblCompanyGST">GSTIN: -</div>
+          </div>
+        </div>
+
+        <!-- Product Sets Selection Section (Collapsible checkbox list taking 40% height scrollable) -->
+        <div class="st-card p-3 mb-4 bg-light border-0 no-print" style="border: 1px dashed #ced4da !important;">
+          <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2">📦 Select Product Sets to include in Offer</h6>
+          <div id="productSetsSelectContainer" class="d-flex flex-column gap-2" style="max-height: 180px; overflow-y: auto; padding: 2px;">
+            <!-- Rendered dynamically by offer.js -->
+          </div>
+        </div>
+
+        <!-- Placeholder when no product set is checked -->
+        <div id="selectProductSetPlaceholder" class="st-card p-4 text-center my-3 bg-light border-0 no-print">
+          <span class="fs-5 fw-bold text-secondary">Select Product set to generate offer</span>
+        </div>
+
+        <!-- The actual offer worksheet contents (hidden if no products selected) -->
+        <div id="offerWorkspace" style="display: none;">
+
+        <!-- Collapsible Seller & Buyer Address Section -->
+        <div class="st-card p-0 mb-4 bg-light border-0 no-print">
+          <div class="d-flex justify-content-between align-items-center p-3" style="cursor: pointer;" onclick="toggleOfferSection('collapseAddresses', 'iconAddresses')">
+            <h6 class="fw-bold text-primary mb-0 fs-7">👥 Registered Seller & Client Details</h6>
+            <span id="iconAddresses" class="text-muted fs-8">▼</span>
+          </div>
+          <div id="collapseAddresses" style="display: none; padding: 0 15px 15px 15px;">
+            <div class="row g-3">
+              <!-- 1. Seller Details (From) -->
+              <div class="col-md-6 col-12">
+                <div class="p-3 bg-white border rounded h-100">
+                  <h6 class="fw-bold text-primary mb-2 fs-7 border-bottom pb-2 text-start">From (Seller Details)</h6>
+                  <div class="mb-2">
+                    <label class="form-label fs-8 text-secondary mb-1">Select Registered Office</label>
+                    <select class="form-select form-select-sm bg-white" id="qOfficeAddressSelect">
+                      <!-- Populated from Settings -->
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label fs-8 text-secondary mb-1">Office Address (Editable for this offer only)</label>
+                    <textarea class="form-control bg-white fw-semibold" id="qOfficeAddress" rows="3" placeholder="Registered office address"></textarea>
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-6 text-start">
+                      <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
+                      <input class="form-control form-control-sm bg-white font-monospace fw-semibold" id="qCompanyPhone" placeholder="Seller phone">
+                    </div>
+                    <div class="col-6 text-start">
+                      <label class="form-label fs-8 text-secondary mb-1">Company Email (Non-editable)</label>
+                      <input class="form-control form-control-sm bg-light font-monospace fw-semibold" id="qCompanyEmail" placeholder="Seller email" readonly>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Buyer Details (To) -->
+              <div class="col-md-6 col-12">
+                <div class="p-3 bg-white border rounded h-100">
+                  <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2 text-start">To (Client Details)</h6>
+                  <div class="mb-2 text-start">
+                    <label class="form-label fs-8 text-secondary mb-1">Customer Name</label>
+                    <input type="text" class="form-control form-control-sm bg-white fw-bold" id="qCustName" placeholder="Enter customer name">
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-6 text-start">
+                      <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
+                      <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold" id="qCustMobile" placeholder="Enter mobile number">
+                    </div>
+                    <div class="col-6 text-start">
+                      <label class="form-label fs-8 text-secondary mb-1">Quotation Date</label>
+                      <input type="date" class="form-control form-control-sm bg-white font-monospace fw-semibold" id="qDate">
+                    </div>
+                  </div>
+                  <div class="text-start mb-2">
+                    <label class="form-label fs-8 text-secondary mb-1">Customer Address</label>
+                    <textarea class="form-control bg-white fw-semibold" id="qCustAddress" rows="3" placeholder="Enter customer address"></textarea>
+                  </div>
+                  <div class="row g-2 text-start">
+                    <div class="col-4">
+                      <label class="form-label fs-9 text-secondary mb-1">Quote No.</label>
+                      <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold" id="qQuoteNo" placeholder="TRYYMMDD01">
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label fs-9 text-secondary mb-1">Delivery Date</label>
+                      <input type="text" class="form-control form-control-sm bg-white fw-semibold" id="qDeliveryDate" value="Within 1 wk. in advance">
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label fs-9 text-secondary mb-1">Payment Terms</label>
+                      <input type="text" class="form-control form-control-sm bg-white fw-semibold" id="qPaymentTerms" value="Advance Mode">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden Address Wrapper for Print ONLY (So they always print without showing the toggle bar/nested cards on the screen) -->
+        <div class="d-none d-print-block">
+          <div class="row g-3 mb-4">
+            <!-- Print Copy: Seller Details -->
+            <div class="col-6 text-start">
+              <h6 class="fw-bold text-primary border-bottom pb-1 mb-2 fs-7">From (Seller Details)</h6>
+              <div class="font-sans fs-8 text-dark lh-sm fw-semibold" id="lblPrintSellerAddress" style="white-space: pre-line;"></div>
+              <div class="font-monospace fs-8 text-secondary mt-2" id="lblPrintSellerContacts"></div>
+            </div>
+            <!-- Print Copy: Buyer Details -->
+            <div class="col-6 text-start">
+              <h6 class="fw-bold text-secondary border-bottom pb-1 mb-2 fs-7">To (Client Details)</h6>
+              <div class="font-sans fs-8 text-dark lh-sm fw-bold" id="lblPrintBuyerName"></div>
+              <div class="font-monospace fs-8 text-secondary mb-1" id="lblPrintBuyerMobile"></div>
+              <div class="font-sans fs-8 text-secondary lh-sm" id="lblPrintBuyerAddress" style="white-space: pre-line;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editable Quotation Grid -->
+        <div class="table-responsive border rounded bg-white mb-4">
+          <table class="table table-hover table-quote mb-0" id="quoteTable">
+            <thead>
+              <tr>
+                <th>Item Name & Description</th>
+                <th class="text-center" style="width: 80px;">Qty</th>
+                <th class="text-end" style="width: 140px;">Unit Price (₹)</th>
+                <th class="text-end" style="width: 160px;">Total Value (₹)</th>
+                <th class="no-print text-center" style="width: 50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="quoteTbody">
+              <!-- Rendered dynamically by offer.js -->
+            </tbody>
+            <tfoot>
+              <tr class="no-print">
+                <td colspan="5" class="p-2 bg-light">
+                  <button type="button" class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1" onclick="addQuoteRowDirect()">➕ Add Custom Item</button>
+                </td>
+              </tr>
+              <tr class="table-light fw-bold">
+                <td colspan="3" class="text-end pe-3 fs-7">Items Subtotal:</td>
+                <td class="text-end font-monospace fs-7" id="tblSubtotalVal">₹0.00</td>
+                <td class="no-print"></td>
+              </tr>
+              <tr class="table-primary fw-bold" style="font-size: 0.95rem;">
+                <td colspan="3" class="text-end pe-3 text-primary">Grand Total:</td>
+                <td class="text-end font-monospace text-primary fw-bold" id="tblGrandTotalVal">₹0.00</td>
+                <td class="no-print"></td>
+              </tr>
+              <tr class="table-success fw-bold" id="tblNetPayableRow" style="display: none; font-size: 0.95rem;">
+                <td colspan="3" class="text-end pe-3 text-success">Net Cost to Customer (After Subsidy):</td>
+                <td class="text-end font-monospace text-success fw-bold" id="tblNetPayableVal">₹0.00</td>
+                <td class="no-print"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Offer Totals & Bank / Payment Details -->
+        <div class="row g-3">
+          <!-- Left: Bank Details & UPI QR Code (Collapsible on screen, auto-expands on print) -->
+          <div class="col-md-6 col-12" id="paymentDetailsSection">
+            <!-- Screen Card: Collapsible -->
+            <div class="border rounded bg-white shadow-sm h-100 no-print">
+              <div class="d-flex justify-content-between align-items-center p-3" style="cursor: pointer;" onclick="toggleOfferSection('collapseBankUPI', 'iconBankUPI')">
+                <h6 class="fw-bold text-primary mb-0 fs-7">🏦 Company Bank & Payment Details</h6>
+                <span id="iconBankUPI" class="text-muted fs-8">▼</span>
+              </div>
+              <div id="collapseBankUPI" style="display: none; padding: 0 15px 15px 15px; border-top: 1px solid #f1f3f5;">
+                <div class="row g-2 align-items-center mt-1">
+                  <!-- Bank Info -->
+                  <div class="col-sm-8 col-12 border-end pe-2">
+                    <div class="font-monospace fs-8 text-secondary text-start lh-sm">
+                      <strong>A/c Holder:</strong> <span id="lblBankAcHolder">-</span><br>
+                      <strong>Bank Name:</strong> <span id="lblBankName">-</span><br>
+                      <strong>A/c No:</strong> <span id="lblBankAcNo">-</span><br>
+                      <strong>IFS Code:</strong> <span id="lblBankBranchIFS">-</span>
+                    </div>
+                  </div>
+                  <!-- UPI QR -->
+                  <div class="col-sm-4 col-12 text-center d-flex flex-column align-items-center justify-content-center">
+                    <div id="upiQrPrintBox" style="display: none;">
+                      <img id="imgOfferUPIQR" class="border p-1 bg-white" style="height: 90px; width: 90px;" alt="Scan to Pay">
+                      <span class="fs-9 text-muted d-block mt-1 font-monospace" style="font-size:0.65rem;">Scan to Pay</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Print Card: Always Expanded and borderless flat text -->
+            <div class="d-none d-print-block">
+              <h6 class="fw-bold text-primary border-bottom pb-1 mb-2 fs-7 text-start">🏦 Company Bank & Payment Details</h6>
+              <div class="row g-2 align-items-center">
+                <div class="col-8">
+                  <div class="font-monospace fs-8 text-secondary text-start lh-sm">
+                    <strong>A/c Holder:</strong> <span id="lblPrintBankAcHolder">-</span><br>
+                    <strong>Bank Name:</strong> <span id="lblPrintBankName">-</span><br>
+                    <strong>A/c No:</strong> <span id="lblPrintBankAcNo">-</span><br>
+                    <strong>IFS Code:</strong> <span id="lblPrintBankBranchIFS">-</span>
+                  </div>
+                </div>
+                <div class="col-4 text-center">
+                  <div id="upiQrPrintBoxPrint" style="display: none;">
+                    <img id="imgOfferUPIQRPrint" class="border p-1 bg-white" style="height: 80px; width: 80px;" alt="Scan to Pay">
+                    <span class="fs-9 text-muted d-block mt-1 font-monospace" style="font-size:0.55rem;">Scan to Pay</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Totals Card -->
+          <div class="col-md-6 col-12">
+            <div class="p-3 border rounded bg-white shadow-sm">
+              <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center">
+                <!-- Subtotal line (Always visible) -->
+                <div class="col-6 text-start text-muted">Offer Subtotal:</div>
+                <div class="col-6 fw-bold" id="lblOfferSubtotal">₹0.00</div>
+                
+                <!-- Dynamic Adjustments Container (populated by JS) -->
+                <div class="col-12 p-0">
+                  <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center m-0" id="totalsDynamicLines">
+                    <!-- Dynamic adjustment inputs will load here -->
+                  </div>
+                </div>
+
+                <div class="col-12"><hr class="my-1"></div>
+                
+                <!-- Grand Total -->
+                <div class="col-6 text-start text-primary fw-bold fs-6">Grand Total:</div>
+                <div class="col-6 text-primary fw-bold fs-6" id="lblOfferGrandTotal">₹0.00</div>
+
+                <!-- Subsidy Dropdown Selector (no-print) -->
+                <div class="col-12 mt-2 pt-2 border-top no-print text-start">
+                  <label class="form-label fs-8 text-secondary mb-1">Apply Government Subsidy</label>
+                  <select class="form-select form-select-sm" id="qSubsidySelect" style="font-size:0.75rem;">
+                    <!-- Populated dynamically by offer.js -->
+                  </select>
+                </div>
+
+                <!-- Subsidy Breakdown Lines (Visible on screen and print if selected) -->
+                <div class="col-12 p-0 text-end" id="subsidySummaryLines" style="display: none;">
+                  <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center m-0">
+                    <div class="col-6 text-start text-success">State Subsidy:</div>
+                    <div class="col-6 text-success" id="lblStateSubsidy">₹0.00</div>
+                    
+                    <div class="col-6 text-start text-success">Central Subsidy:</div>
+                    <div class="col-6 text-success" id="lblCentralSubsidy">₹0.00</div>
+
+                    <div class="col-6 text-start text-success fw-bold">Total Subsidy:</div>
+                    <div class="col-6 text-success fw-bold" id="lblTotalSubsidy">₹0.00</div>
+
+                    <div class="col-12"><hr class="my-1"></div>
+
+                    <div class="col-6 text-start text-success fw-bold fs-6">Net Payable (After Subsidy):</div>
+                    <div class="col-6 text-success fw-bold fs-6" id="lblNetPayable">₹0.00</div>
+                  </div>
+                </div>
+
+                <!-- Add Adjustment Buttons (no-print) -->
+                <div class="col-12 no-print mt-2 pt-2 border-top text-start">
+                  <span class="fs-8 fw-bold text-secondary d-block mb-1">Add adjustments/charges:</span>
+                  <div class="d-flex flex-wrap gap-1" id="adjButtons">
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_discount" onclick="addAdjustmentLine('discount')">+ Discount</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_cgst" onclick="addAdjustmentLine('cgst')">+ CGST (%)</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_sgst" onclick="addAdjustmentLine('sgst')">+ SGST (%)</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_transport" onclick="addAdjustmentLine('transport')">+ Transport</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_labour" onclick="addAdjustmentLine('labour')">+ Labour</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_other" onclick="addAdjustmentLine('other')">+ Other</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms & Conditions Block (Collapsible on screen, auto-expands on print) -->
+        <div class="mt-4 pt-2 border-top text-start" id="termsSection" style="display: none;">
+          <!-- Screen Header: Collapsible Toggle -->
+          <div class="d-flex justify-content-between align-items-center py-2 no-print" style="cursor: pointer;" onclick="toggleOfferSection('collapseTerms', 'iconTerms')">
+            <h6 class="fw-bold text-secondary fs-8 mb-0">📄 Terms & Conditions</h6>
+            <span id="iconTerms" class="text-muted fs-8">▼</span>
+          </div>
+          <!-- Collapsible Container (Screen only) -->
+          <div id="collapseTerms" class="no-print" style="display: none; padding-left: 10px; border-left: 2px solid #dee2e6; margin-top: 4px;">
+            <div class="text-muted fs-8" id="lblCompanyTerms">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+          <!-- Print Copy: Always visible, no border -->
+          <div class="d-none d-print-block">
+            <h6 class="fw-bold text-secondary fs-8 mb-2">Terms & Conditions:</h6>
+            <div class="text-muted fs-8 ps-2" id="lblCompanyTermsPrint">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms and Print Footer -->
+        <div class="mt-4 pt-3 border-top no-print">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted fs-8">* Price inclusive of all component items described in product packages.</span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary px-4 py-2 fw-semibold fs-7" onclick="window.history.back()">Back</button>
+              <button class="btn btn-success px-4 py-2 fw-semibold fs-7" id="btnPrintOffer">🖨 Print / PDF Offer</button>
+            </div>
+          </div>
+        </div>
+
+        </div> <!-- End of offerWorkspace -->
+
+        <!-- PRINT ONLY QUOTATION TEMPLATE (Matches Quotation_Formatted.docx layout) -->
+        <div id="printQuotationTemplate" class="d-none d-print-block text-dark" style="font-family: 'Times New Roman', Times, serif; line-height: 1.35; width: 100%; margin: 0 auto; color: #000; box-sizing: border-box;">
+          
+          <!-- Document Headers -->
+          <div class="text-center mb-3">
+            <h3 class="fw-bold mb-0 text-dark" style="font-size: 16pt; letter-spacing: 0.5px;">QUOTATION</h3>
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 10pt; text-transform: uppercase;" id="printHeadingTitle">FOR 3 KW PM SURYAGHAR YOJANA ON-GRID SYSTEM</h5>
+            <span style="font-size: 7.5pt; font-style: italic; color: #333;">(ORIGINAL FOR RECIPIENT)</span>
+          </div>
+
+          <!-- TABLE 1: Seller & Quote Metadata Row (2 Column Layout) -->
+          <table class="word-border-table w-100 mb-3" style="table-layout: fixed; border-collapse: collapse; border: 1px solid #000; width: 100%;">
+            <tbody>
+              <tr>
+                <!-- Left Column: Seller details -->
+                <td style="width: 60%; padding: 8px; border: 1px solid #000; vertical-align: top;">
+                  <div class="d-flex align-items-center gap-2 mb-2 justify-content-start">
+                    <img id="printSellerLogo" src="" alt="Logo" style="max-height: 45px; max-width: 110px; display: none;">
+                    <div class="fw-bold text-dark" style="font-size: 11pt; text-align: left;" id="printSellerName">SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+                  </div>
+                  <div style="font-size: 8pt; color: #111; text-align: left; line-height: 1.3;" id="printSellerAddress">
+                    At-Talamundali, Po-Kankadajodi, Ps-Maniabandha, Badamba,<br>Dist-Cuttack, PIN 754035, Odisha
+                  </div>
+                  <div style="font-size: 8pt; color: #111; text-align: left; margin-top: 4px; line-height: 1.3;" id="printSellerContacts">
+                    Email: shritrutiyadevsolar@gmail.com<br>
+                    Mobile: +91 8763443172 / +91 9937417524
+                  </div>
+                  <div class="fw-bold text-dark mt-1" style="font-size: 8pt; text-align: left;" id="printSellerGSTIN">
+                    GSTIN: 21BWBPM8649F1ZJ
+                  </div>
+                </td>
+                <!-- Right Column: Quotation Metadata -->
+                <td style="width: 40%; padding: 8px; border: 1px solid #000; vertical-align: top; font-size: 8.5pt;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tbody>
+                      <tr>
+                        <td style="border: none !important; padding: 2px 0; font-weight: bold; width: 45%; text-align: left;">Q No.</td>
+                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printQuoteNo">-</td>
+                      </tr>
+                      <tr>
+                        <td style="border: none !important; padding: 2px 0; font-weight: bold; text-align: left;">Dated</td>
+                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printQuoteDate">-</td>
+                      </tr>
+                      <tr>
+                        <td style="border: none !important; padding: 2px 0; font-weight: bold; text-align: left;">Delivery Date</td>
+                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printDeliveryDate">-</td>
+                      </tr>
+                      <tr>
+                        <td style="border: none !important; padding: 2px 0; font-weight: bold; text-align: left;">Payment Terms</td>
+                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printPaymentTerms">-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Buyer Information Block -->
+          <div class="mb-3 text-start" style="padding: 2px 0; line-height: 1.4; border-bottom: 1px dashed #000; padding-bottom: 6px;">
+            <div class="text-start"><strong style="font-size: 9pt;">Buyer:</strong> <span style="font-size: 9.5pt;" id="printBuyerName">-</span></div>
+            <div class="text-start"><strong style="font-size: 9pt;">Address:</strong> <span style="font-size: 9pt;" id="printBuyerAddress">-</span></div>
+          </div>
+
+          <!-- TABLE 2: Items Grid (Sl No, Description, Qty, Basic Price, CGST Rate, SGST Rate, Amount) -->
+          <table class="word-border-table w-100 text-dark mb-2" id="printItemsTable" style="border-collapse: collapse; width: 100%; border: 1px solid #000;">
+            <thead>
+              <tr style="background-color: #f2f2f2;">
+                <th style="width: 6%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Sl No</th>
+                <th style="width: 44%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Description of Goods</th>
+                <th style="width: 10%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Qty.</th>
+                <th style="width: 13%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Basic Price</th>
+                <th style="width: 9%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;" id="printCgstHeader">CGST Rate 5%</th>
+                <th style="width: 9%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;" id="printSgstHeader">SGST Rate 5%</th>
+                <th style="width: 14%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="printItemsTbody">
+              <!-- Injected dynamically by js/offer.js -->
+            </tbody>
+          </table>
+
+          <!-- Notes / Special terms (Under table) -->
+          <div class="text-start mb-2 ps-2" style="font-size: 7.5pt; color: #111; line-height: 1.35;" id="printSpecialNotesBox">
+            <div id="printSpecialCableNote">* If more than 20 mtr Solar DC Cable is required, extra charges @ Rs 60/meter to be paid by customer.</div>
+            <div>* For high-rise table structure, extra charges to be paid by customer.</div>
+            <div>* Civil materials to be arranged by customer at the installation site.</div>
+          </div>
+
+          <!-- Amount Chargeable in words -->
+          <div class="text-start fw-bold mb-3 ps-1" style="font-size: 8.5pt; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 4px 0;" id="printAmountInWords">
+            Amount Chargeable (in words): -
+          </div>
+
+          <!-- TABLE 3: Subsidy details & Bank Details / Declaration (2 Columns side-by-side) -->
+          <table class="word-border-table w-100" style="table-layout: fixed; width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 8px;">
+            <tbody>
+              <tr>
+                <!-- Left Cell: Subsidy Scheme (If applicable) -->
+                <td style="width: 48%; padding: 8px; border: 1px solid #000; vertical-align: top;" id="printSubsidyCell">
+                  <div class="fw-bold mb-2 text-start" style="font-size: 8.5pt;">Subsidy Scheme as per MNRE</div>
+                  <table class="word-border-table w-100 text-center" style="margin-bottom: 0; width: 100%; border-collapse: collapse; border: 1px solid #000;">
+                    <thead>
+                      <tr style="background-color: #f2f2f2;">
+                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">Per KW</th>
+                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">Central Subsidy</th>
+                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">State Subsidy</th>
+                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">Total Subsidy</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000;" id="printSubPerKW">-</td>
+                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000;" id="printSubCentral">-</td>
+                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000;" id="printSubState">-</td>
+                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000; font-weight: bold;" id="printSubTotal">-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  
+                  <!-- Small QR code displayed under the subsidy table on print -->
+                  <div class="text-center d-flex flex-column align-items-center justify-content-center mt-3" id="printUpiQrContainer" style="display: none;">
+                    <img id="printUpiQrImg" src="" style="height: 70px; width: 70px;" alt="Scan to Pay">
+                    <span style="font-size: 6pt; font-family: monospace; color: #444;" class="mt-1">Scan to Pay (UPI)</span>
+                  </div>
+                </td>
+                
+                <!-- Right Cell: Declaration & Bank details -->
+                <td style="width: 52%; padding: 8px; border: 1px solid #000; vertical-align: top; font-size: 7.5pt;">
+                  <div class="fw-bold mb-1 text-start" style="font-size: 8.5pt;">Declaration:</div>
+                  <ol style="margin-bottom: 8px; padding-left: 12px; line-height: 1.35; font-size: 7.2pt;" class="text-start text-secondary">
+                    <li>This quotation shows the actual price of goods described; all particulars are true and correct.</li>
+                    <li>Advance to be paid within 7 days of quotation date, else price may vary as per company revision.</li>
+                    <li>All disputes subject to Bhubaneswar jurisdiction only.</li>
+                    <li>Products once sold cannot be returned.</li>
+                  </ol>
+                  
+                  <div class="fw-bold mb-1 text-start" style="font-size: 8.5pt;">Company's Bank Details</div>
+                  <div class="font-monospace text-start text-secondary" style="line-height: 1.3; font-size: 7.2pt;">
+                    <strong>Bank Name:</strong> <span id="printBankName">-</span><br>
+                    <strong>A/C Holder:</strong> <span id="printBankAcHolder">-</span><br>
+                    <strong>A/C No.:</strong> <span id="printBankAcNo">-</span><br>
+                    <strong>Branch & IFSC:</strong> <span id="printBankBranchIFS">-</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Signature Block at bottom -->
+          <div class="mt-3" style="page-break-inside: avoid;">
+            <table style="width: 100%; border: none !important; border-collapse: collapse;">
+              <tbody>
+                <tr>
+                  <td style="border: none !important; width: 55%;"></td>
+                  <td style="border: none !important; width: 45%; text-align: right; padding-right: 10px; vertical-align: bottom;">
+                    <div style="font-size: 8.5pt; font-weight: bold; margin-bottom: 35px; text-align: right;">
+                      for <span id="printSignCompanyName">SHRI TRUTIYADEV SOLAR ENTERPRISES</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end align-items-end" style="position: relative; width: 100%;">
+                      <!-- Company Stamp Image (overlaid behind/beside signature line) -->
+                      <img id="printStampImage" src="" alt="Stamp" style="max-height: 55px; max-width: 95px; display: none; position: absolute; right: 40px; bottom: 5px; opacity: 0.75; z-index: 1; pointer-events: none;">
+                      <div style="font-size: 8.5pt; font-weight: bold; border-top: 1px solid #000; display: inline-block; padding-top: 2px; width: 100%; text-align: center; z-index: 2; position: relative;">
+                        /Authorized Signatory
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="text-center mt-3" style="font-size: 6.5pt; color: #555; font-style: italic;">
+            This is a Computer-Generated copy
+          </div>
+
+        </div>
+
+<style>
+@media print {
+  @page {
+    size: A4;
+    margin: 0; /* Setting page margin to 0 completely hides browser headers/footers (title, date, URL, page number) */
+  }
+  body {
+    background: none !important;
+    background-color: #fff !important;
+    color: #000 !important;
+    font-family: "Times New Roman", Times, serif !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .sidebar, .topbar, .no-print, #offerWorkspace, .toast-container, .modal-backdrop, .modal {
+    display: none !important;
+  }
+  
+  /* Give the content container A4 spacing margins (15mm) to keep it clear of the physical edges */
+  #printQuotationTemplate {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 15mm !important;
+    margin: 0 !important;
+  }
+  
+  /* Reset bootstrap spacings and boxes for clean print */
+  .container-fluid, .row, .col-12, .col-md-6 {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* Apply larger, readable text formatting specifically configured for A4 page sizing */
+  .word-border-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 12px !important;
+  }
+  .word-border-table th, .word-border-table td {
+    border: 1px solid #000 !important;
+    padding: 5px 8px !important;
+    font-size: 10pt !important; /* Made font size larger */
+    color: #000 !important;
+    vertical-align: top !important;
+    line-height: 1.35 !important;
+  }
+  .word-border-table th {
+    background-color: #f2f2f2 !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    font-size: 10.5pt !important; /* Larger headers */
+  }
+  .text-start { text-align: left !important; }
+  .text-center { text-align: center !important; }
+  .text-end { text-align: right !important; }
+}
+</style>
+
+        </div> <!-- End of offerWorkspace -->
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/offer.js"></script>
+</body>
+</html>

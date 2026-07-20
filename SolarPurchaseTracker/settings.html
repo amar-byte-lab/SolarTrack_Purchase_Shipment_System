@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Solar Purchase Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-body">
+
+      <div class="row g-3">
+        <!-- Column 1: Company Profile Settings & Image Uploads -->
+        <div class="col-lg-6">
+          <div class="st-card">
+            <div class="section-title mt-0 text-primary">Company Profile Settings</div>
+            <div class="mb-2"><label class="form-label">Company Name</label><input class="form-control" id="sCompanyName"></div>
+            <div class="mb-2"><label class="form-label">Company Email</label><input class="form-control" id="sCompanyEmail" type="email"></div>
+            <div class="mb-2"><label class="form-label">Company Phone</label><input class="form-control" id="sCompanyPhone"></div>
+            <div class="mb-2"><label class="form-label">Company GST Number</label><input class="form-control" id="sCompanyGST"></div>
+            <div class="mb-2"><label class="form-label">Default GST % (for items)</label><input type="number" min="0" max="100" class="form-control" id="sDefaultGST"></div>
+            
+            <div class="col-12"><hr class="my-3 opacity-25"></div>
+            <div class="section-title mt-0 fs-6 text-primary">Branding & Layout Uploads</div>
+            
+            <div class="mb-3">
+              <label class="form-label fs-8 text-secondary">Company Logo</label>
+              <input type="file" class="form-control form-control-sm" id="sLogoFile" accept="image/*">
+              <div class="d-flex align-items-center gap-2 mt-2">
+                <img id="imgLogoPreview" class="border rounded p-1 bg-white" style="max-height:80px; display:none;">
+                <button type="button" class="btn btn-xs btn-outline-danger px-2 py-1 fs-8" id="btnClearLogo" style="display:none;">Clear</button>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label fs-8 text-secondary">Company Stamp</label>
+              <input type="file" class="form-control form-control-sm" id="sStampFile" accept="image/*">
+              <div class="d-flex align-items-center gap-2 mt-2">
+                <img id="imgStampPreview" class="border rounded p-1 bg-white" style="max-height:80px; display:none;">
+                <button type="button" class="btn btn-xs btn-outline-danger px-2 py-1 fs-8" id="btnClearStamp" style="display:none;">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="st-card mt-3">
+            <div class="section-title mt-0 text-primary">Terms & Conditions</div>
+            <p class="text-muted small fs-8">Define standard quotation terms (one per line). These are automatically displayed at the bottom of customer offers.</p>
+            <textarea class="form-control" id="sTerms" rows="4" placeholder="e.g.&#10;1. Warranty as per manufacturer terms.&#10;2. 50% advance on login."></textarea>
+          </div>
+
+          <div class="st-card mt-3">
+            <div class="section-title mt-0 text-primary">Government Subsidy Settings</div>
+            <p class="text-muted small fs-8">Define standard solar capacities and their corresponding state & central subsidy amounts.</p>
+            
+            <div class="row g-2 mb-2 align-items-end">
+              <div class="col-4 text-start">
+                <label class="form-label fs-9 text-secondary mb-1">Capacity (KW)</label>
+                <input type="number" step="any" min="0" class="form-control form-control-sm" id="sSubsidyKW" placeholder="e.g. 3">
+              </div>
+              <div class="col-4 text-start">
+                <label class="form-label fs-9 text-secondary mb-1">State Sub. (₹)</label>
+                <input type="number" min="0" class="form-control form-control-sm" id="sSubsidyState" placeholder="e.g. 20000">
+              </div>
+              <div class="col-4 text-start">
+                <label class="form-label fs-9 text-secondary mb-1">Central Sub. (₹)</label>
+                <input type="number" min="0" class="form-control form-control-sm" id="sSubsidyCentral" placeholder="e.g. 78000">
+              </div>
+              <div class="col-12 mt-2">
+                <button type="button" class="btn btn-primary btn-sm w-100 fw-semibold" id="btnAddingSubsidy">Add Subsidy Configuration</button>
+              </div>
+            </div>
+            
+            <div id="sSubsidiesList" class="d-flex flex-column gap-2 mt-2" style="max-height: 180px; overflow-y: auto;">
+              <!-- Dynamic list of subsidies -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: Multiple Addresses manager & DB Config -->
+        <div class="col-lg-6">
+          <div class="st-card mb-3">
+            <div class="section-title mt-0 text-primary">Manage Office Addresses</div>
+            <p class="text-muted small fs-8">Define multiple business/office addresses. These are selectable on the Offer Generator page.</p>
+            
+            <div class="input-group mb-2">
+              <input class="form-control form-control-sm" id="sNewAddress" placeholder="Enter office address">
+              <button class="btn btn-primary btn-sm px-3" id="btnAddAddress">Add</button>
+            </div>
+            
+            <div id="sAddressesList" class="d-flex flex-column gap-2" style="max-height: 180px; overflow-y: auto;">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+
+          <!-- Company Bank Details Card -->
+          <div class="st-card mb-3">
+            <div class="section-title mt-0 text-primary">Company Bank Details</div>
+            <div class="mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">A/c Holder's Name</label>
+              <input class="form-control form-control-sm" id="sBankAcHolder" placeholder="e.g. URJJA ONE POWERTECH LLP">
+            </div>
+            <div class="mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Bank Name</label>
+              <input class="form-control form-control-sm" id="sBankName" placeholder="e.g. ICICI BANK LTD">
+            </div>
+            <div class="mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">A/c No.</label>
+              <input class="form-control form-control-sm font-monospace" id="sBankAcNo" placeholder="e.g. 634305015260">
+            </div>
+            <div class="mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Branch & IFS Code</label>
+              <input class="form-control form-control-sm font-monospace" id="sBankBranchIFS" placeholder="e.g. BHANGAGARH & ICIC0006343">
+            </div>
+          </div>
+
+          <!-- UPI QR Settings Card -->
+          <div class="st-card mb-3">
+            <div class="section-title mt-0 text-primary">UPI Payment & QR Settings</div>
+            <p class="text-muted small fs-8">Specify your UPI ID. This automatically generates a dynamic payment QR code on the Offer Quotation page.</p>
+            <div class="mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">UPI ID</label>
+              <input class="form-control form-control-sm font-monospace" id="sUPIId" placeholder="e.g. urjjaone@icici">
+            </div>
+            <div class="d-flex align-items-center gap-3 mt-2">
+              <div id="upiQrPreviewBox" style="display: none;">
+                <label class="form-label fs-8 text-secondary mb-1 d-block">Test QR Preview (₹1.00)</label>
+                <img id="imgUPIQRPreview" class="border rounded p-1 bg-white" style="height: 100px; width: 100px;">
+              </div>
+            </div>
+          </div>
+
+          <div class="st-card">
+            <div class="section-title mt-0">Database Connection</div>
+            <p class="mb-1"><b>Mode:</b> <span id="dbModeText">-</span></p>
+            <p class="text-muted small">Your data lives in five local Excel files: <code>Shipments.xlsx</code>, <code>Materials.xlsx</code>, <code>Vendors.xlsx</code>, <code>Items.xlsx</code>, <code>Settings.xlsx</code>.</p>
+            <div id="fsModeBox" class="d-none">
+              <div class="alert alert-success small mb-2">Connected directly to your local Database folder — every change is saved instantly.</div>
+              <button class="btn btn-outline-primary" id="btnSwitchFolder">Switch / Reconnect Folder</button>
+            </div>
+            <div id="uploadModeBox" class="d-none">
+              <div class="alert alert-warning small mb-2">Running in secure offline browser storage. You can connect a folder to save changes directly to Excel files, or download them manually.</div>
+              <button class="btn btn-primary mb-2 w-100" id="btnConnectFolderFromSettings">📁 Connect to Local Folder</button>
+              <button class="btn btn-outline-primary w-100" id="btnDownloadAll">⬇ Download Excel Database Files</button>
+            </div>
+            <div id="sqliteModeBox" class="d-none">
+              <div class="alert alert-success small mb-2">Connected directly to SQLite Server Database (<code>solartrack.db</code>) — every change is saved instantly.</div>
+              <button class="btn btn-outline-success w-100" id="btnDownloadAllSqlite">⬇ Export Database to Excel Files</button>
+            </div>
+          </div>
+
+          <div class="st-card mt-3">
+            <div class="section-title mt-0">Backup</div>
+            <p class="text-muted small">Export a full backup copy of all five workbooks at any time.</p>
+            <button class="btn btn-outline-secondary" id="btnBackupAll">⬇ Download Full Backup</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save button at the very bottom of settings page -->
+      <div class="mt-4 pt-3 border-top text-center no-print">
+        <button class="btn btn-primary btn-lg px-5 fw-bold shadow-sm" id="btnSaveSettings" style="min-width: 280px; letter-spacing: 0.5px;">
+          💾 Save Profile & Settings
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/xlsx.full.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/settings.js"></script>
+</body>
+</html>

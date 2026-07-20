@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installment & Commission Tracker — Solar Purchase Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  /* Spreadsheet style matching the user's Excel screenshot */
+  .table-installments {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 0.85rem;
+    border-top: 1px solid #dee2e6 !important;
+    border-left: 1px solid #dee2e6 !important;
+  }
+  .table-installments th {
+    background: #12314f !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+  .table-installments td {
+    border-top: none !important;
+    border-left: none !important;
+    border-right: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    vertical-align: middle;
+    padding: 6px 10px;
+  }
+  .table-installments td.highlight-yellow {
+    background-color: #ffff00 !important; /* Vibrant yellow background */
+  }
+  .table-installments tr.grand-total {
+    background-color: #c8e6c9 !important; /* Light green background */
+    font-weight: bold;
+    border-top: 2px solid #2e7d32 !important;
+    border-bottom: 2px double #2e7d32 !important;
+  }
+  .table-installments tr.grand-total td {
+    background-color: #c8e6c9 !important;
+    color: #1b5e20 !important;
+  }
+  .table-installments td input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 0.85rem;
+  }
+  .table-installments td input:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  .table-installments td input[type="number"] {
+    text-align: right;
+  }
+  .table-installments td input[type="date"] {
+    text-align: center;
+  }
+  .table-installments tr.deactive-row td {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    text-decoration: line-through;
+    opacity: 0.75;
+  }
+  
+  @media print {
+    .table-installments tr.deactive-row td {
+      background-color: #f8d7da !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body {
+      background: #ffffff;
+      color: #000000;
+    }
+    .app-shell {
+      display: block;
+    }
+    #sidebar, .topbar, .no-print, .btn, .modal {
+      display: none !important;
+    }
+    .main-content {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+    .page-body {
+      padding: 0;
+    }
+    .table-installments td.highlight-yellow {
+      background-color: #ffff00 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .table-installments tr.grand-total td {
+      background-color: #c8e6c9 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+  .table-installments th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: sticky !important;
+    top: 0;
+    z-index: 12 !important;
+    padding-right: 20px !important;
+  }
+  .table-installments th.sortable:hover {
+    background-color: #1a446c !important;
+  }
+  .table-installments th.sortable::after {
+    content: ' ↕';
+    font-size: 0.7em;
+    color: rgba(255,255,255,0.4);
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .table-installments th.sort-asc::after {
+    content: ' ▲';
+    color: #fff;
+  }
+  .table-installments th.sort-desc::after {
+    content: ' ▼';
+    color: #fff;
+  }
+  .table-installments tr.selected-row td {
+    background-color: #e3f2fd !important;
+    color: #0d47a1 !important;
+    border-color: #90caf9 !important;
+  }
+  
+  /* Fixed size scrollable table styling */
+  /* Viewport flex layout to prevent page scroll and lock elements */
+  html, body, .app-shell {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+  .main-content {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .page-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 15px;
+    gap: 10px;
+    overflow: hidden;
+  }
+  
+  /* Section 1: Filters card (fixed size) */
+  .st-card.mb-3 {
+    flex-shrink: 0;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Section 2: Main table (fills remaining vertical space and scrolls internally) */
+  .st-card-table-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-bottom: 0 !important;
+    overflow: hidden;
+  }
+  .table-responsive-main {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+  }
+  .table-installments thead th {
+    position: sticky;
+    top: 0;
+    z-index: 12 !important;
+    background: #12314f !important; /* Force opaque background */
+    color: #ffffff !important;
+    box-shadow: inset 0 -1px 0 #dee2e6; /* Fake border */
+  }
+  .table-installments tfoot tr.grand-total td {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    height: 37px;
+    padding: 6px 8px !important;
+    background-color: #c8e6c9 !important;
+    color: #1b5e20 !important;
+    font-weight: bold;
+    border-top: 2px solid #2e7d32 !important;
+    border-bottom: 2px double #2e7d32 !important;
+    box-shadow: inset 0 1px 0 #2e7d32;
+  }
+  .table-installments tfoot tr.add-row-sticky td {
+    position: sticky;
+    bottom: 37px;
+    z-index: 10;
+    height: 37px;
+    padding: 6px 8px !important;
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    font-weight: bold;
+    box-shadow: inset 0 1px 0 #a5d6a7, inset 0 -1px 0 #a5d6a7;
+  }
+  
+  /* Section 3: Summary cards (fixed height at the bottom) */
+  .row.g-3.mt-1 {
+    flex-shrink: 0;
+    margin-top: 0 !important;
+  }
+  
+  /* Sticky headers for summary tables */
+  #brandSummaryTable thead th,
+  #districtSummaryTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #f8f9fa;
+    box-shadow: inset 0 -1px 0 #dee2e6;
+  }
+
+  /* Note Icon and Feed Styles */
+  .btn-note {
+    transition: transform 0.1s ease;
+    opacity: 0.7;
+    text-decoration: none !important;
+  }
+  .btn-note:hover {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  .note-card {
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 10px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.2s;
+  }
+  .note-card:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .note-card-customer {
+    border-left: 4px solid var(--st-blue-700) !important;
+  }
+  .note-card-broker {
+    border-left: 4px solid var(--st-orange) !important;
+  }
+  .note-type-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .note-timestamp {
+    font-size: 0.7rem;
+    color: #8592a0;
+    font-weight: 500;
+  }
+  .note-text {
+    font-size: 0.82rem;
+    color: #253746;
+    margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="page-body">
+      <!-- Search & Filters -->
+      <div class="st-card mb-3 no-print py-2 px-3">
+        <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse" style="cursor:pointer;">
+          <span class="fw-bold text-primary-emphasis" style="font-size:0.85rem;"><span class="me-1">🔍</span>Search & Filters</span>
+          <span class="fs-7 text-muted" id="searchCollapseIndicator">▼ Show</span>
+        </div>
+        <div class="collapse" id="searchCollapse">
+          <div class="pt-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Search</label>
+                <input type="text" class="form-control" id="fSearch" placeholder="Name, Address, Mobile, Brand...">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-bold">District</label>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary w-100 dropdown-toggle text-start text-truncate" type="button" id="btnDistrictMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.85rem; padding: 6px 10px;">
+                    All Districts
+                  </button>
+                  <div class="dropdown-menu p-3" id="districtMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.85rem;">
+                    <!-- Checkboxes injected by js -->
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-bold">Committed Brand</label>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary w-100 dropdown-toggle text-start text-truncate" type="button" id="btnBrandMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.85rem; padding: 6px 10px;">
+                    All Brands
+                  </button>
+                  <div class="dropdown-menu p-3" id="brandMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.85rem;">
+                    <!-- Checkboxes injected by js -->
+                  </div>
+                </div>
+              </div>
+              <div class="col-md">
+                <label class="form-label fw-bold">From Date</label>
+                <input type="date" class="form-control" id="fLoginFrom">
+              </div>
+              <div class="col-md">
+                <label class="form-label fw-bold">To Date</label>
+                <input type="date" class="form-control" id="fLoginTo">
+              </div>
+              <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" id="btnClearFilters">Clear Filters</button>
+              </div>
+            </div>
+            <hr class="my-3 opacity-25">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-auto fw-bold text-primary-emphasis" style="font-size:0.85rem;"><span class="me-1">🎨</span>Column Color Customizer:</div>
+              <div class="col-md-3">
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle text-start text-truncate w-100" type="button" id="btnColColorMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.8rem; padding: 4px 10px;">
+                    Select Columns
+                  </button>
+                  <div class="dropdown-menu p-3" id="ccColumnMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.8rem;">
+                    <!-- Checkboxes injected by JS -->
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-2 d-flex align-items-center gap-2">
+                <input type="color" class="form-control form-control-sm form-control-color border" id="ccColorPicker" value="#ffff00" title="Choose color" style="width:40px; height:30px; padding:2px;">
+                <button class="btn btn-sm btn-outline-primary py-1" id="btnResetColors" style="font-size:0.75rem;">Reset All</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="st-card st-card-table-container">
+        <div class="table-responsive-main">
+          <table class="table table-hover table-installments mb-0" id="installmentsTable">
+            <thead>
+              <tr>
+                <th>Sl. No.</th>
+                <th class="sortable" data-sort="Name" id="thName">Customer</th>
+                <th class="sortable" data-sort="District" id="thDistrict">District & Address</th>
+                <th>Broker</th>
+                <th>Committed Price</th>
+                <th class="sortable" data-sort="LoginDate" id="thLoginDate">Login Date & Delay</th>
+                <th class="sortable" data-sort="InstallationDate" id="thInstallationDate">Inst. & Comm. Date</th>
+                <th class="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Injected by installments.js -->
+            </tbody>
+            <tfoot>
+              <!-- Grand Total injected by JS -->
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sales Summary Dashboard -->
+      <div class="row g-3 mt-1 no-print">
+        <div class="col-lg-6">
+          <div class="st-card">
+            <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#brandSummaryCollapse" aria-expanded="false" aria-controls="brandSummaryCollapse" style="cursor:pointer;">
+              <h6 class="mb-0 fw-bold text-primary-emphasis"><span class="me-2">🏷️</span>Brand-wise Sales Summary</h6>
+              <span class="fs-7 text-muted" id="brandSummaryCollapseIndicator">▼ Show</span>
+            </div>
+            <div class="collapse" id="brandSummaryCollapse">
+              <div class="pt-3 table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" id="brandSummaryTable" style="font-size:0.85rem;">
+                  <thead>
+                    <tr class="table-light">
+                      <th>Brand</th>
+                      <th class="text-center">Active Customers</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Brand summaries injected here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="st-card">
+            <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#districtSummaryCollapse" aria-expanded="false" aria-controls="districtSummaryCollapse" style="cursor:pointer;">
+              <h6 class="mb-0 fw-bold text-primary-emphasis"><span class="me-2">📍</span>District-wise Sales Summary</h6>
+              <span class="fs-7 text-muted" id="districtSummaryCollapseIndicator">▼ Show</span>
+            </div>
+            <div class="collapse" id="districtSummaryCollapse">
+              <div class="pt-3 table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" id="districtSummaryTable" style="font-size:0.85rem;">
+                  <thead>
+                    <tr class="table-light">
+                      <th>District</th>
+                      <th class="text-center">Active Customers</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- District summaries injected here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Transaction History & Editing Modal ════════════════════════════════ -->
+<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="txnModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header bg-primary text-white py-2" style="border-radius:14px 14px 0 0;">
+        <h6 class="modal-title fw-bold fs-7" id="txnModalLabel">Installment Transactions</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 bg-light">
+        <!-- History Feed (Chat Style) -->
+        <div class="fw-bold text-secondary fs-8 mb-2">Payment History</div>
+        <div id="txnHistoryFeed" class="d-flex flex-column gap-2 mb-3 overflow-y-auto" style="max-height: 200px; padding: 2px;">
+          <!-- Transactions will be loaded dynamically here -->
+        </div>
+
+        <!-- Add Payment Section -->
+        <div class="border rounded p-2 bg-white shadow-sm">
+          <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Payment</div>
+          <input type="hidden" id="txnSlNo">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1">Payment Date</label>
+              <input type="date" class="form-control form-control-sm" id="newTxnDate">
+            </div>
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1">Amount (₹) *</label>
+              <input type="number" step="0.01" class="form-control form-control-sm text-end" id="newTxnAmount" placeholder="0.00">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fs-8 text-secondary mb-1">Remark</label>
+            <input type="text" class="form-control form-control-sm" id="newTxnRemark" placeholder="e.g. 1st installment, Cash, Cheque No...">
+          </div>
+          <div class="text-end">
+            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8" id="btnAddTxn">Add Payment</button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+          <span class="fw-bold text-primary fs-7">Total Paid:</span>
+          <span class="fw-bold text-primary font-monospace fs-6" id="lblTxnTotal">₹0.00</span>
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top py-1">
+        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Commission History & Editing Modal ════════════════════════════════ -->
+<div class="modal fade" id="commissionModal" tabindex="-1" aria-labelledby="commModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header bg-success text-white py-2" style="border-radius:14px 14px 0 0;">
+        <h6 class="modal-title fw-bold fs-7" id="commModalLabel">Broker Commission Payments</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 bg-light">
+        <!-- History Feed (Chat Style) -->
+        <div class="fw-bold text-secondary fs-8 mb-2">Payment History</div>
+        <div id="commHistoryFeed" class="d-flex flex-column gap-2 mb-3 overflow-y-auto" style="max-height: 200px; padding: 2px;">
+          <!-- Transactions will be loaded dynamically here -->
+        </div>
+
+        <!-- Add Payment Section -->
+        <div class="border rounded p-2 bg-white shadow-sm">
+          <div class="fw-bold text-success fs-8 mb-2">➕ Add New Payment</div>
+          <input type="hidden" id="commTxnSlNo">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1">Payment Date</label>
+              <input type="date" class="form-control form-control-sm" id="newCommTxnDate">
+            </div>
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1">Amount (₹) *</label>
+              <input type="number" step="0.01" class="form-control form-control-sm text-end" id="newCommTxnAmount" placeholder="0.00">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fs-8 text-secondary mb-1">Remark</label>
+            <input type="text" class="form-control form-control-sm" id="newCommTxnRemark" placeholder="e.g. Part payment, Cash, Cheque No...">
+          </div>
+          <div class="text-end">
+            <button type="button" class="btn btn-sm btn-success py-1 px-3 fs-8" id="btnAddCommTxn">Add Payment</button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+          <span class="fw-bold text-success fs-7">Total Paid:</span>
+          <span class="fw-bold text-success font-monospace fs-6" id="lblCommTxnTotal">₹0.00</span>
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top py-1">
+        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Notes & Remarks Modal ════════════════════════════════ -->
+<div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+        <h6 class="modal-title fw-bold fs-7" id="notesModalLabel">Notes & Remarks</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
+        
+        <!-- Notes History Feed -->
+        <div>
+          <div class="fw-bold text-secondary fs-8 mb-2">Remarks History</div>
+          <div id="notesHistoryFeed" class="d-flex flex-column overflow-y-auto" style="max-height: 220px; padding: 2px;">
+            <!-- Notes injected dynamically by installments.js -->
+          </div>
+        </div>
+
+        <!-- Add Note Form -->
+        <div class="border rounded p-3 bg-white shadow-sm">
+          <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Note / Remark</div>
+          <input type="hidden" id="noteSlNo">
+          
+          <div class="mb-2">
+            <label class="form-label fs-8 text-secondary mb-1" for="newNoteType">Remark Type *</label>
+            <select id="newNoteType" class="form-select form-select-sm">
+              <option value="Customer">Customer Specific Remark</option>
+              <option value="Broker">Broker Specific Remark</option>
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label fs-8 text-secondary mb-1" for="newNoteText">Remark *</label>
+            <textarea class="form-control form-control-sm" id="newNoteText" rows="3" placeholder="Enter specific customer or broker remarks here..."></textarea>
+          </div>
+          
+          <div class="text-end">
+            <button type="button" class="btn btn-sm btn-accent py-1 px-4 fs-8 fw-semibold" id="btnAddNote">Save Note</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer bg-light border-top py-1">
+        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<datalist id="brandList"></datalist>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/xlsx.full.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/installments.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Solar Purchase Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="page-body">
+
+      <div class="row g-3 mb-3" id="kpiRow">
+        <!-- KPI cards injected by dashboard.js -->
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="st-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0 fw-bold text-primary-emphasis">Monthly Purchase</h6>
+            </div>
+            <canvas id="chartMonthly" height="230"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="st-card">
+            <h6 class="mb-2 fw-bold text-primary-emphasis">Vendor Wise Purchase</h6>
+            <canvas id="chartVendor" height="230"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-12">
+          <div class="st-card">
+            <h6 class="mb-2 fw-bold text-primary-emphasis">Material Wise Purchase</h6>
+            <canvas id="chartMaterial" height="110"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Recent Shipments</div>
+      <div class="st-card p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="recentTable">
+            <thead>
+              <tr>
+                <th>Shipment No.</th><th>Date</th><th>Vendor</th><th>Materials</th>
+                <th>Purchase</th><th>GST</th><th>Transport</th><th>Grand Total</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/xlsx.full.min.js"></script>
+<script src="assets/js/chart.umd.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

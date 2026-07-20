@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipments — Solar Purchase Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  /* Viewport flex layout to prevent page scroll and lock elements */
+  html, body, .app-shell {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+  .main-content {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .page-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 15px;
+    gap: 10px;
+    overflow: hidden;
+  }
+  
+  /* Section 1: Filters card */
+  .st-card.mb-3 {
+    flex-shrink: 0;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Section 2: Main table (fills remaining vertical space and scrolls internally) */
+  .st-card-table-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-bottom: 0 !important;
+    overflow: hidden;
+  }
+  .table-responsive-main {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+  }
+  
+  /* Spreadsheet style separate layout for sticky header */
+  .table-installments {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 0.85rem;
+    border-top: 1px solid #dee2e6 !important;
+    border-left: 1px solid #dee2e6 !important;
+  }
+  .table-installments th {
+    background: #12314f !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+  .table-installments td {
+    border-top: none !important;
+    border-left: none !important;
+    border-right: 1px solid #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    vertical-align: middle;
+    padding: 6px 10px;
+  }
+  .table-installments thead th {
+    position: sticky;
+    top: 0;
+    z-index: 12 !important;
+    background: #12314f !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 -1px 0 #dee2e6;
+  }
+  .table-installments tfoot tr.grand-total td {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    height: 37px;
+    padding: 6px 8px !important;
+    background-color: #c8e6c9 !important;
+    color: #1b5e20 !important;
+    font-weight: bold;
+    border-top: 2px solid #2e7d32 !important;
+    border-bottom: 2px double #2e7d32 !important;
+    box-shadow: inset 0 1px 0 #2e7d32;
+  }
+  .table-installments tfoot tr.add-row-sticky td {
+    position: sticky;
+    bottom: 37px;
+    z-index: 10;
+    height: 37px;
+    padding: 6px 8px !important;
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    font-weight: bold;
+    box-shadow: inset 0 1px 0 #a5d6a7, inset 0 -1px 0 #a5d6a7;
+  }
+  .btn-xs {
+    padding: 2px 5px !important;
+    font-size: 0.72rem !important;
+    border-radius: 4px !important;
+  }
+  .btn-xs {
+    padding: 2px 5px !important;
+    font-size: 0.72rem !important;
+    border-radius: 4px !important;
+  }
+  .fs-7 {
+    font-size: 0.75rem !important;
+  }
+
+  /* ── Sorting headers ────────────────────────────────────────────────── */
+  th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 20px !important;
+  }
+  th.sortable:hover {
+    background-color: #1a446c !important;
+  }
+  th.sortable::after {
+    content: ' ↕'; font-size: 0.7em; color: rgba(255,255,255,0.4);
+    position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  }
+  th.sort-asc::after { content: ' ▲'; color: #fff; }
+  th.sort-desc::after { content: ' ▼'; color: #fff; }
+
+  /* ── Mobile responsiveness and laptop zoom overrides ────────────────── */
+  @media (max-width: 768px) {
+    html, body, .app-shell, .main-content {
+      height: auto !important;
+      overflow: auto !important;
+    }
+    .page-body {
+      padding: 8px; gap: 8px;
+      overflow: visible !important;
+      height: auto !important;
+    }
+    .st-card-table-container {
+      height: 480px !important;
+      max-height: 65vh !important;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden !important;
+      padding: 0;
+    }
+    .table-responsive-main {
+      flex: 1;
+      overflow-x: auto !important;
+      overflow-y: auto !important;
+    }
+    .st-card { padding: 12px !important; }
+    .table-installments th, .table-installments td {
+      padding: 5px 8px; font-size: 0.78rem;
+    }
+  }
+
+  /* Note Icon and Feed Styles */
+  .btn-note {
+    transition: transform 0.1s ease;
+    opacity: 0.7;
+    text-decoration: none !important;
+  }
+  .btn-note:hover {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  .note-card {
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 10px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.2s;
+    border-left: 4px solid var(--st-blue-700) !important;
+  }
+  .note-card:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .note-timestamp {
+    font-size: 0.7rem;
+    color: #8592a0;
+    font-weight: 500;
+  }
+  .note-text {
+    font-size: 0.82rem;
+    color: #253746;
+    margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+</style>
+<style id="shipDynamicStyles"></style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="page-body">
+
+      <div class="st-card mb-3 py-2 px-3">
+        <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse" style="cursor:pointer;">
+          <span class="fw-bold text-primary-emphasis" style="font-size:0.82rem;"><span class="me-1">🔍</span>Search & Filters</span>
+          <span class="fs-7 text-muted" id="searchCollapseIndicator">▼ Show</span>
+        </div>
+        <div class="collapse" id="searchCollapse">
+          <div class="pt-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3 col-6">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" id="fSearch" placeholder="Vendor, Invoice, Vehicle...">
+              </div>
+              <div class="col-md-2 col-6">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-control" id="fFrom">
+              </div>
+              <div class="col-md-2 col-6">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-control" id="fTo">
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label">Vendor</label>
+                <select class="form-select" id="fVendor"><option value="">All Vendors</option></select>
+              </div>
+              <div class="col-md-2 col-12">
+                <button class="btn btn-outline-secondary w-100" id="btnClearFilters">Clear Filters</button>
+              </div>
+            </div>
+            <hr class="my-2 opacity-25">
+            <!-- Color customizer -->
+            <div class="row g-2 align-items-center">
+              <div class="col-md-auto fw-bold text-primary-emphasis" style="font-size:0.8rem;"><span class="me-1">🎨</span>Column Color Customizer:</div>
+              <div class="col-md-3 col-7">
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle text-start text-truncate w-100" type="button" id="btnColColorMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.78rem; padding: 4px 10px;">
+                    Select Columns
+                  </button>
+                  <div class="dropdown-menu p-3" id="ccColumnMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.78rem;">
+                    <!-- Checked dynamically in js -->
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-2 col-5 d-flex align-items-center gap-2">
+                <input type="color" class="form-control form-control-sm form-control-color border" id="ccColorPicker" value="#ffff00" title="Choose color" style="width:36px; height:28px; padding:2px;">
+                <button class="btn btn-sm btn-outline-primary py-1" id="btnResetColors" style="font-size:0.75rem;">Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-card st-card-table-container">
+        <div class="table-responsive-main">
+          <table class="table table-hover table-installments mb-0" id="shipTable">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="PurchaseDate">Date</th>
+                <th class="sortable" data-sort="ShipmentType">Type</th>
+                <th class="sortable" data-sort="VendorName">Vendor</th>
+                <th>Item Name (Qty)</th>
+                <th>Grand Total</th>
+                <th class="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <!-- Grand Total injected by JS -->
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ Documents Modal ════════════════════════════════════════════════════ -->
+<div class="modal fade" id="docsModal" tabindex="-1" aria-labelledby="docsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
+      <div class="modal-header bg-dark text-white py-2" style="border-radius:12px 12px 0 0;">
+        <h6 class="modal-title fs-7 fw-bold" id="docsModalLabel">Shipment Documents</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 bg-light">
+        <div id="docsListModalContainer" class="d-flex flex-column gap-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Payment Detail Modal ═══════════════════════════════════════════════ -->
+<div class="modal fade" id="paymentDetailModal" tabindex="-1" aria-labelledby="payModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header bg-primary text-white py-3" style="border-radius:14px 14px 0 0;" id="payModalHeader">
+        <h6 class="modal-title fw-bold" id="payModalLabel">Payment Details</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="payModalBodyContent"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Shipment Add/Edit Form Modal ══════════════════════════════════════ -->
+<div class="modal fade" id="shipmentFormModal" tabindex="-1" aria-labelledby="shipFormModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header bg-dark text-white py-3" style="border-radius:14px 14px 0 0;">
+        <h5 class="modal-title fw-bold fs-6" id="shipFormModalLabel">Shipment Record</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="cancelInline()"></button>
+      </div>
+      <div class="modal-body p-4 bg-light">
+        <div class="row g-3">
+          <!-- Purchase Date -->
+          <div class="col-md-4 col-6">
+            <label class="form-label fs-7 fw-bold text-secondary">Purchase Date</label>
+            <input type="date" class="form-control form-control-sm" id="editPurchaseDate">
+          </div>
+          <!-- Shipment Type -->
+          <div class="col-md-4 col-6">
+            <label class="form-label fs-7 fw-bold text-secondary">Shipment Type</label>
+            <select class="form-select form-select-sm" id="editShipmentType">
+              <option value="Buy">Buy</option>
+              <option value="Sell">Sell</option>
+            </select>
+          </div>
+          <!-- Vendor Name -->
+          <div class="col-md-4 col-12">
+            <label class="form-label fs-7 fw-bold text-secondary">Vendor Name</label>
+            <input type="text" class="form-control form-control-sm fw-semibold" id="editVendorName" list="vendorList" placeholder="Vendor Name">
+          </div>
+          
+          <div class="col-12"><hr class="my-1 opacity-25"></div>
+          <div class="col-12"><h6 class="fw-bold mb-0 text-primary fs-7">Logistics & Financials</h6></div>
+          
+          <div class="col-md-3 col-6">
+            <label class="form-label fs-7 mb-0">Vehicle Number</label>
+            <input type="text" class="form-control form-control-sm" id="editVehicleNumber">
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label fs-7 mb-0">Invoice Number</label>
+            <input type="text" class="form-control form-control-sm" id="editInvoiceNumber">
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="form-check mt-4">
+              <input class="form-check-input edit-calc-input" type="checkbox" id="editIncludeGST" checked>
+              <label class="form-check-label fs-7 fw-bold" for="editIncludeGST">Include GST</label>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label fs-7 mb-0">GST %</label>
+            <input type="number" min="0" max="100" class="form-control form-control-sm edit-calc-input" id="editGSTPercentage" value="18">
+          </div>
+          
+          <div class="col-md-3 col-6">
+            <label class="form-label fs-7 mb-0">Vendor Paid (₹)</label>
+            <input type="number" min="0" class="form-control form-control-sm edit-calc-input" id="editVendorPaid" value="0">
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label fs-7 mb-0">Transport Cost (₹)</label>
+            <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0">
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label fs-7 mb-0">Transport Paid (₹)</label>
+            <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportPaid" value="0">
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label fs-7 mb-0">Remarks</label>
+            <input type="text" class="form-control form-control-sm" id="editRemarks">
+          </div>
+
+          <div class="col-12"><hr class="my-1 opacity-25"></div>
+          <div class="col-12 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-primary fs-7">Materials List</h6>
+            <button type="button" class="btn btn-xs btn-accent py-1 px-3" onclick="addMaterialRowInline()">+ Add Item</button>
+          </div>
+          
+          <div class="col-12">
+            <div class="table-responsive border rounded bg-white" style="max-height: 200px;">
+              <table class="table table-sm align-middle table-bordered mb-0" id="editMaterialsTable">
+                <thead class="table-light fs-7">
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th style="width:70px;">Qty</th>
+                    <th style="width:70px;">Unit</th>
+                    <th style="width:90px;">Rate/Unit</th>
+                    <th style="width:110px;">Total Price</th>
+                    <th style="width:30px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="editMaterialsTbody" class="fs-7">
+                  <!-- Item rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="col-12 mt-2">
+            <div class="p-3 bg-white border rounded">
+              <div class="row g-2 text-end font-monospace fs-7 fw-semibold">
+                <div class="col-6 text-start text-muted">Materials Subtotal:</div>
+                <div class="col-6" id="lblMaterialsSubtotal">₹0.00</div>
+                <div class="col-6 text-start text-muted">GST Amount:</div>
+                <div class="col-6" id="lblGstAmount">₹0.00</div>
+                <div class="col-6 text-start text-muted">Transportation Cost:</div>
+                <div class="col-6" id="lblTransportCost">₹0.00</div>
+                <div class="col-12"><hr class="my-1"></div>
+                <div class="col-6 text-start text-primary fw-bold fs-6">Grand Total:</div>
+                <div class="col-6 text-primary fw-bold fs-6" id="lblGrandTotal">₹0.00</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mt-2">
+            <h6 class="fw-bold mb-1 text-primary fs-7">Attached Documents</h6>
+            <input type="file" class="form-control form-control-sm" id="editUploadedDocs" multiple>
+            <div id="editUploadedDocsList" class="d-flex flex-wrap gap-1 p-2 border rounded bg-white mt-1" style="min-height: 50px; max-height: 100px; overflow-y: auto;">
+              <!-- Documents list -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top py-2">
+        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal" onclick="cancelInline()">Cancel</button>
+        <button type="button" class="btn btn-sm btn-success px-4" id="btnSaveShipment">Save Shipment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Shipment Notes Modal ════════════════════════════════ -->
+<div class="modal fade" id="shipmentNotesModal" tabindex="-1" aria-labelledby="shipNotesModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+        <h6 class="modal-title fw-bold fs-7" id="shipNotesModalLabel">Shipment Notes</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
+        
+        <!-- Notes History Feed -->
+        <div>
+          <div class="fw-bold text-secondary fs-8 mb-2">Remarks History</div>
+          <div id="shipNotesHistoryFeed" class="d-flex flex-column overflow-y-auto" style="max-height: 220px; padding: 2px;">
+            <!-- Notes injected dynamically by shipment.js -->
+          </div>
+        </div>
+
+        <!-- Add Note Form -->
+        <div class="border rounded p-3 bg-white shadow-sm">
+          <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Note / Remark</div>
+          <input type="hidden" id="shipNoteNo">
+          
+          <div class="mb-3">
+            <label class="form-label fs-8 text-secondary mb-1" for="newShipNoteText">Remark *</label>
+            <textarea class="form-control form-control-sm" id="newShipNoteText" rows="3" placeholder="Enter specific shipment remarks here..."></textarea>
+          </div>
+          
+          <div class="text-end">
+            <button type="button" class="btn btn-sm btn-accent py-1 px-4 fs-8 fw-semibold" id="btnSaveShipNote">Save Note</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer bg-light border-top py-1">
+        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<datalist id="itemList"></datalist>
+<datalist id="vendorList"></datalist>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/xlsx.full.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/shipment.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports — Solar Purchase Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-body">
+
+      <div class="st-card mb-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">Report Type</label>
+            <select class="form-select" id="rType">
+              <option value="daily">Daily Purchase Report</option>
+              <option value="monthly">Monthly Purchase Report</option>
+              <option value="vendor">Vendor Purchase Report</option>
+              <option value="item">Item Purchase Report</option>
+              <option value="shipment">Shipment Report</option>
+              <option value="transport">Transportation Report</option>
+              <option value="gst">GST Report</option>
+              <option value="costperunit">Cost Per Unit Report</option>
+              <option value="inventory">Inventory Purchase Report</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">From Date</label>
+            <input type="date" class="form-control" id="rFrom">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">To Date</label>
+            <input type="date" class="form-control" id="rTo">
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-primary w-100" id="btnRun">Generate</button>
+          </div>
+          <div class="col-md-3 d-flex gap-2 justify-content-end">
+            <button class="btn btn-outline-secondary" id="btnPrint">🖨 Print</button>
+            <button class="btn btn-outline-secondary" id="btnExcel">⬇ Excel</button>
+            <button class="btn btn-outline-secondary" id="btnPDF">⬇ PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-card p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="reportTable">
+            <thead><tr id="reportHead"></tr></thead>
+            <tbody id="reportBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/xlsx.full.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/reports.js"></script>
+</body>
+</html>
