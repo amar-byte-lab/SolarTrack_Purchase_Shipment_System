@@ -8,11 +8,12 @@ window.onDbReady = function () {
   UI.renderSidebar('vendor-master.html');
   UI.renderTopbar('Vendor Master', 'Master list of all suppliers/vendors', `
     <button class="btn btn-outline-secondary" id="btnExport">⬇ Export Excel</button>
-    <button class="btn btn-primary" id="btnNew">+ New Vendor</button>
   `);
   vendorModal = new bootstrap.Modal(document.getElementById('vendorModal'));
 
-  document.getElementById('btnNew').addEventListener('click', () => openModal(null));
+  const addVendorRow = document.getElementById('btnAddVendorRow');
+  if (addVendorRow) addVendorRow.addEventListener('click', () => openModal(null));
+
   document.getElementById('btnSaveVendor').addEventListener('click', saveVendor);
   document.getElementById('btnExport').addEventListener('click', () => {
     Utils.exportRowsToExcel(DB.getAll('vendors'), DB.HEADERS.vendors, 'Vendors_export.xlsx');

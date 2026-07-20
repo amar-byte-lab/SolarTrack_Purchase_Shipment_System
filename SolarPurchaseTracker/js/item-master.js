@@ -43,6 +43,13 @@ window.onDbReady = function () {
   // Products save binding
   document.getElementById('btnSaveProduct').addEventListener('click', saveProduct);
 
+  // Sticky add row bindings
+  const addItemRow = document.getElementById('btnAddItemRow');
+  if (addItemRow) addItemRow.addEventListener('click', () => openModal(null));
+
+  const addProductRow = document.getElementById('btnAddProductRow');
+  if (addProductRow) addProductRow.addEventListener('click', () => openProductModal(null));
+
   // Render initial list
   render();
 };
@@ -52,26 +59,26 @@ function updateTopbarActions() {
   if (activeTab === 'items') {
     actionsHtml = `
       <button class="btn btn-outline-secondary" id="btnExport">⬇ Export Excel</button>
-      <button class="btn btn-primary" id="btnNew">+ New Item</button>
     `;
   } else {
     actionsHtml = `
       <button class="btn btn-success fw-semibold" id="btnGenerateOffer">📄 Generate Offer</button>
-      <button class="btn btn-primary" id="btnNewProduct">+ New Product Set</button>
     `;
   }
 
-  UI.renderTopbar('Item & Product Master', 'Manage master lists of items, packages, and composite product sets', actionsHtml);
+  UI.renderTopbar('Products', 'Manage master lists of items, packages, and composite product sets', actionsHtml);
 
   // Re-bind listeners for dynamic topbar buttons
   if (activeTab === 'items') {
-    document.getElementById('btnNew').addEventListener('click', () => openModal(null));
-    document.getElementById('btnExport').addEventListener('click', () => {
-      Utils.exportRowsToExcel(DB.getAll('items'), DB.HEADERS.items, 'Items_export.xlsx');
-    });
+    const btnExp = document.getElementById('btnExport');
+    if (btnExp) {
+      btnExp.addEventListener('click', () => {
+        Utils.exportRowsToExcel(DB.getAll('items'), DB.HEADERS.items, 'Items_export.xlsx');
+      });
+    }
   } else {
-    document.getElementById('btnNewProduct').addEventListener('click', () => openProductModal(null));
-    document.getElementById('btnGenerateOffer').addEventListener('click', generateOfferRedirect);
+    const btnGen = document.getElementById('btnGenerateOffer');
+    if (btnGen) btnGen.addEventListener('click', generateOfferRedirect);
   }
 }
 
@@ -183,61 +190,43 @@ window.deleteItem = async function (itemName) {
 function renderProducts() {
   const products = DB.getAll('products');
   const itemsMap = DB.getAll('product_items');
-  const container = document.getElementById('productsContainer');
-  
+  const tbody = document.getElementById('productsTbody');
+  if (!tbody) return;
+
   if (!products.length) {
-    container.innerHTML = `<div class="empty-state st-card">No product sets defined yet. Click "+ New Product Set" at the top to create one.</div>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No product sets defined yet. Click "+ Add a new product set..." below or at top to create one.</td></tr>`;
     return;
   }
 
-  container.innerHTML = products.map((p, index) => {
+  tbody.innerHTML = products.map(p => {
     const items = itemsMap.filter(i => i.ProductName === p.ProductName);
-    const collapseId = `collapseProduct_${index}`;
     const escapedName = JSON.stringify(p.ProductName);
-    
+    const itemsListText = items.map(it => `<span class="badge bg-light text-dark border me-1 my-0.5">${it.ItemName} (₹${Number(it.Price).toLocaleString('en-IN')})</span>`).join('') || '<span class="text-muted italic">No components</span>';
+
     return `
-      <div class="product-item shadow-sm" style="border-radius: 8px; overflow: hidden; margin-bottom: 8px;">
-        <!-- Header Row -->
-        <div class="product-header d-flex justify-content-between align-items-center gap-2" style="border-bottom: 1px solid #dee2e6;">
-          <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width: 0;" onclick="toggleProductAccordion('${collapseId}')">
-            <!-- Selection Checkbox -->
-            <input class="form-check-input product-chk no-print" type="checkbox" value="${p.ProductName}" onclick="event.stopPropagation();" style="width:1.1rem; height:1.1rem; cursor:pointer;">
-            <!-- Expand trigger and title -->
-            <span class="fw-bold text-dark text-truncate text-start" style="font-size:0.9rem;">${p.ProductName}</span>
-            <span class="text-muted fs-8" id="icon_${collapseId}">▼</span>
-          </div>
-          <!-- Action Buttons -->
-          <div class="no-print d-flex gap-1">
-            <button class="btn btn-sm btn-outline-secondary btn-action-sm" onclick='openProductModal(${escapedName})' title="Edit Product Set">✎</button>
-            <button class="btn btn-sm btn-outline-danger btn-action-sm" onclick='deleteProduct(${escapedName})' title="Delete Product Set">🗑</button>
-          </div>
-        </div>
-        
-        <!-- Collapsible Items Section -->
-        <div id="${collapseId}" class="collapse" style="display: none;">
-          <div class="product-items-table p-3">
-            <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.82rem;">
-              <thead class="table-light text-secondary">
-                <tr>
-                  <th>Item Name</th>
-                  <th class="text-end" style="width: 150px;">Default Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${items.map(it => `
-                  <tr>
-                    <td>${it.ItemName}</td>
-                    <td class="text-end fw-semibold font-monospace">₹${Number(it.Price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                `).join('')}
-                ${!items.length ? `<tr><td colspan="2" class="text-center text-muted">No items in this set.</td></tr>` : ''}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      <tr>
+        <td class="text-center no-print">
+          <input class="form-check-input product-chk" type="checkbox" value="${p.ProductName}" style="width:1.1rem; height:1.1rem; cursor:pointer;">
+        </td>
+        <td class="fw-bold text-dark">${p.ProductName}</td>
+        <td>
+          <div class="d-flex flex-wrap gap-1 align-items-center">${itemsListText}</div>
+        </td>
+        <td class="no-print">
+          <button class="btn btn-sm btn-outline-secondary" onclick='openProductModal(${escapedName})' title="Edit Product Set">✎</button>
+          <button class="btn btn-sm btn-outline-danger" onclick='deleteProduct(${escapedName})' title="Delete Product Set">🗑</button>
+        </td>
+      </tr>
     `;
   }).join('');
+
+  const chkSelectAll = document.getElementById('chkSelectAllProducts');
+  if (chkSelectAll) {
+    chkSelectAll.checked = false;
+    chkSelectAll.onclick = function() {
+      document.querySelectorAll('.product-chk').forEach(c => c.checked = chkSelectAll.checked);
+    };
+  }
 }
 
 window.toggleProductAccordion = function(collapseId) {

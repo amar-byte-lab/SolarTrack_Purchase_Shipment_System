@@ -18,13 +18,21 @@
       <div class="d-flex mb-3">
         <input type="text" class="form-control w-auto flex-grow-1" id="fSearch" placeholder="Search by vendor name, phone, GSTIN...">
       </div>
-      <div class="st-card p-0">
+      <div class="st-card p-0 overflow-hidden">
         <div class="table-responsive">
-          <table class="table table-hover mb-0" id="vendorsTable">
+          <table class="table table-installments table-hover mb-0" id="vendorsTable">
             <thead><tr>
-              <th>Vendor Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>Address</th><th class="no-print">Actions</th>
+              <th>Vendor Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>Address</th><th class="no-print" style="width: 90px;">Actions</th>
             </tr></thead>
             <tbody></tbody>
+            <tfoot class="no-print">
+              <tr class="add-row-sticky text-success" id="btnAddVendorRow" style="cursor: pointer;">
+                <td class="text-center fw-bold" style="font-size: 1.1rem; width: 45px;">+</td>
+                <td colspan="5" class="fw-semibold text-success">
+                  Add a new vendor record...
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>

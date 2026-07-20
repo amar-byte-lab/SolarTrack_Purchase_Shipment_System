@@ -8,8 +8,8 @@ const UI = (() => {
   const NAV_ITEMS = [
     { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
-    { href: 'installments.html',    icon: 'coin',       label: 'Installments' },
-    { href: 'item-master.html',     icon: 'box',        label: 'Item Master' },
+    { href: 'installments.html',    icon: 'coin',       label: 'Client Tracker' },
+    { href: 'item-master.html',     icon: 'box',        label: 'Products' },
     { href: 'offer.html',           icon: 'file',       label: 'Offer Generator' },
     { href: 'vendor-master.html',   icon: 'people',     label: 'Vendor Master' },
     { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
@@ -218,25 +218,29 @@ const UI = (() => {
 
     const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
     const userBadge = user ? `
-      <div class="d-flex align-items-center gap-2 me-2">
-        <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-success'} fs-8 py-2 px-3">
-          👤 ${user.username || user.userid} (${user.role === 'admin' ? 'Admin' : 'Normal User'})
+      <div class="d-flex align-items-center gap-1">
+        <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-success'} fs-8 py-1.5 px-2 text-nowrap">
+          👤 ${user.username || user.userid} <span class="d-none d-sm-inline">(${user.role === 'admin' ? 'Admin' : 'User'})</span>
         </span>
-        <button class="btn btn-sm btn-outline-danger font-monospace fs-8 px-2 py-1" onclick="Auth.logout()" title="Logout">
-          🚪 Logout
+        <button class="btn btn-sm btn-outline-danger font-monospace fs-8 px-2 py-1 text-nowrap" onclick="Auth.logout()" title="Logout">
+          🚪 <span class="d-none d-sm-inline">Logout</span>
         </button>
       </div>
     ` : '';
 
     el.innerHTML = `
-      <div>
-        <button class="btn btn-sm btn-outline-secondary d-md-none me-2" id="btnMenuToggle">☰</button>
-        <h1 class="d-inline-block">${title}</h1>
-        ${subtitle ? `<div class="subtitle">${subtitle}</div>` : ''}
-      </div>
-      <div class="d-flex gap-2 align-items-center no-print">
-        ${userBadge}
-        ${actionsHtml || ''}
+      <div class="w-100">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <button class="btn btn-sm btn-outline-secondary d-md-none px-2 py-1 flex-shrink-0" id="btnMenuToggle" title="Toggle Menu">☰</button>
+            <h1 class="topbar-title text-truncate m-0">${title}</h1>
+          </div>
+          <div class="topbar-actions d-flex align-items-center gap-1 flex-wrap justify-content-end no-print flex-shrink-0">
+            ${userBadge}
+            ${actionsHtml || ''}
+          </div>
+        </div>
+        ${subtitle ? `<div class="topbar-subtitle text-muted mt-1 fs-8 ms-md-0 ms-1">${subtitle}</div>` : ''}
       </div>
     `;
     const toggle = document.getElementById('btnMenuToggle');

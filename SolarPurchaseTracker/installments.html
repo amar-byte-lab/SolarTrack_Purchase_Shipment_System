@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Installment & Commission Tracker — Solar Purchase Tracker</title>
+<title>Client Tracker — Solar Purchase Tracker</title>
 <link rel="stylesheet" href="assets/css/bootstrap.min.css">
 <link rel="stylesheet" href="css/style.css">
 <script src="js/auth.js"></script>
@@ -586,6 +586,75 @@
       </div>
       <div class="modal-footer bg-light border-top py-1">
         <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Mobile-Friendly Customer Add/Edit Modal ════════════════════════════════ -->
+<div class="modal fade" id="customerModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header bg-dark text-white py-2" style="border-radius:14px 14px 0 0;">
+        <h5 class="modal-title fw-bold fs-6" id="customerModalTitle">Add New Customer Record</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3 bg-light">
+        <form id="customerForm">
+          <input type="hidden" id="cSlNo">
+          <div class="row g-2">
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Customer Name *</label>
+              <input type="text" class="form-control form-control-sm" id="cName" placeholder="Enter full name" required>
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Mobile / Phone Number</label>
+              <input type="text" class="form-control form-control-sm" id="cMobile" placeholder="Enter mobile number">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">District</label>
+              <select class="form-select form-select-sm" id="cDistrict">
+                <option value="">-- Select District --</option>
+              </select>
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Address / Location</label>
+              <input type="text" class="form-control form-control-sm" id="cAddress" placeholder="Enter Village/Po/Ps/Locality">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Brand / System</label>
+              <input type="text" class="form-control form-control-sm" id="cBrand" list="brandList" placeholder="Enter brand name">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Committed Price (₹)</label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm" id="cPrice" placeholder="0.00">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Login Date</label>
+              <input type="date" class="form-control form-control-sm" id="cLoginDate">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Installation Date</label>
+              <input type="date" class="form-control form-control-sm" id="cInstallationDate">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Broker / Agent Name</label>
+              <input type="text" class="form-control form-control-sm" id="cBrokerName" placeholder="Broker/Agent Name">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Broker Mobile</label>
+              <input type="text" class="form-control form-control-sm" id="cBrokerNumber" placeholder="Broker Phone">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Commission Amount (₹)</label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm" id="cCommission" placeholder="0.00">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer bg-light border-top py-2">
+        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-success px-4 fw-semibold" id="btnSaveCustomer">Save Customer</button>
       </div>
     </div>
   </div>

@@ -31,11 +31,14 @@ const COLORABLE_COLS = [
 
 window.onDbReady = function () {
   UI.renderSidebar('installments.html');
-  UI.renderTopbar('Installment & Commission Tracker', 'Manage installment payments, customer sales, and agent commissions', `
+  UI.renderTopbar('Client Tracker', 'Manage client installment payments, customer sales, and agent commissions', `
     <button class="btn btn-outline-secondary" id="btnPrintList">🖨 Print</button>
   `);
 
   document.getElementById('btnPrintList').addEventListener('click', () => window.print());
+
+  const btnSaveCust = document.getElementById('btnSaveCustomer');
+  if (btnSaveCust) btnSaveCust.addEventListener('click', saveCustomerModal);
 
   // Search & Filter listeners
   ['fSearch', 'fLoginFrom', 'fLoginTo'].forEach(id => {
@@ -875,7 +878,7 @@ function renderList() {
     // Add row is rendered inside tfoot sitting on top of grand total (using bottom: 37px offset)
     if (!isAddingNew) {
       tfootHTML += `
-        <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
+        <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
           <td colspan="7" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
@@ -1395,3 +1398,93 @@ window.deleteInstallmentNote = async function(remarkId) {
     UI.showLoading(false);
   }
 };
+
+window.openCustomerModal = function(slNo) {
+  const modalEl = document.getElementById('customerModal');
+  if (!modalEl) return;
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  document.getElementById('customerModalTitle').textContent = slNo ? 'Edit Customer Record' : 'Add New Customer Record';
+  document.getElementById('cSlNo').value = slNo || '';
+
+  const distSelect = document.getElementById('cDistrict');
+  if (distSelect) {
+    distSelect.innerHTML = '<option value="">-- Select District --</option>' + DISTRICTS.map(d => `<option value="${d}">${d}</option>`).join('');
+  }
+
+  if (slNo) {
+    const r = getInstallmentRows().find(x => Number(x.SlNo) === Number(slNo));
+    if (r) {
+      document.getElementById('cName').value = r.Name || '';
+      document.getElementById('cMobile').value = r.MobileNumber || '';
+      document.getElementById('cDistrict').value = r.District || '';
+      document.getElementById('cAddress').value = r.Address || '';
+      document.getElementById('cBrand').value = r.CommittedBrand || '';
+      document.getElementById('cPrice').value = r.CommittedPrice || '';
+      document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
+      document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
+      document.getElementById('cBrokerName').value = r.BrokerName || '';
+      document.getElementById('cBrokerNumber').value = r.BrokerNumber || '';
+      document.getElementById('cCommission').value = r.Commission || '';
+    }
+  } else {
+    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('cDistrict').value = '';
+    document.getElementById('cLoginDate').value = UI.todayISO();
+  }
+
+  modal.show();
+};
+
+async function saveCustomerModal() {
+  const slNoVal = document.getElementById('cSlNo').value;
+  const name = document.getElementById('cName').value.trim();
+
+  if (!name) {
+    UI.toast('Customer Name is required.', 'danger');
+    document.getElementById('cName').focus();
+    return;
+  }
+
+  const rowData = {
+    Name: name,
+    MobileNumber: document.getElementById('cMobile').value.trim(),
+    District: document.getElementById('cDistrict').value,
+    Address: document.getElementById('cAddress').value.trim(),
+    CommittedBrand: document.getElementById('cBrand').value.trim(),
+    CommittedPrice: Number(document.getElementById('cPrice').value) || 0,
+    LoginDate: document.getElementById('cLoginDate').value || null,
+    InstallationDate: document.getElementById('cInstallationDate').value || null,
+    BrokerName: document.getElementById('cBrokerName').value.trim(),
+    BrokerNumber: document.getElementById('cBrokerNumber').value.trim(),
+    Commission: Number(document.getElementById('cCommission').value) || 0
+  };
+
+  UI.showLoading(true);
+  try {
+    if (slNoVal) {
+      const slNo = Number(slNoVal);
+      await DB.update('installment_records', r => Number(r.SlNo) === slNo, rowData);
+      UI.toast('Customer record updated.', 'success');
+    } else {
+      const allRows = DB.getAll('installment_records');
+      const maxSl = allRows.reduce((max, r) => Math.max(max, Number(r.SlNo) || 0), 0);
+      rowData.SlNo = maxSl + 1;
+      rowData.Status = 'Active';
+      await DB.insert('installment_records', rowData);
+      UI.toast('New Customer record added.', 'success');
+    }
+
+    const modalEl = document.getElementById('customerModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+    renderList();
+  } catch (err) {
+    UI.toast('Error saving customer: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+}
