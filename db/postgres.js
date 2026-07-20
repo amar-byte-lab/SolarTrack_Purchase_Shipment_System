@@ -1,8 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const rawUrl = process.env.SUPABASE_URL || 'https://fqhsegrisdkclnocpqqb.supabase.co';
+const rawUrl = process.env.SUPABASE_URL || '';
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
-const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_secret_yPKm4cm1Ps0Yy8BXpLQOAA_mXoZNKPE';
+const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
+
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
