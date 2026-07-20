@@ -33,6 +33,34 @@ const UI = (() => {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" fill="currentColor" viewBox="0 0 16 16">${ICONS[name] || ''}</svg>`;
   }
 
+  function toggleMobileSidebar(open) {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    let backdrop = document.getElementById('sidebarBackdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'sidebarBackdrop';
+      backdrop.className = 'sidebar-backdrop';
+      document.body.appendChild(backdrop);
+      backdrop.addEventListener('click', () => toggleMobileSidebar(false));
+    }
+
+    const shouldOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+
+    if (shouldOpen) {
+      sidebar.classList.add('open');
+      backdrop.classList.add('show');
+    } else {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('show');
+    }
+  }
+
+  document.addEventListener('keyup', (e) => {
+    if (e.key === 'Escape') toggleMobileSidebar(false);
+  });
+
   function renderSidebar(activeHref) {
     const el = document.getElementById('sidebar');
     if (!el) return;
@@ -44,9 +72,12 @@ const UI = (() => {
       : NAV_ITEMS;
 
     el.innerHTML = `
-      <div class="brand">
-        <span class="brand-mark">${icon('grid', 22)}</span>
-        <span class="brand-text">Solar<b>Track</b></span>
+      <div class="brand d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <span class="brand-mark">${icon('grid', 22)}</span>
+          <span class="brand-text">Solar<b>Track</b></span>
+        </div>
+        <button class="btn text-white p-0 d-md-none border-0 fs-5" id="btnSidebarClose" title="Close Menu" style="line-height: 1; opacity: 0.9; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">✕</button>
       </div>
       <nav class="nav flex-column sidebar-nav">
         ${visibleNavItems.map(item => `
@@ -59,6 +90,23 @@ const UI = (() => {
       </div>
     `;
     refreshDbStatusBadge();
+
+    const closeBtn = document.getElementById('btnSidebarClose');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMobileSidebar(false);
+      });
+    }
+
+    const links = el.querySelectorAll('.sidebar-nav .nav-link');
+    links.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+          toggleMobileSidebar(false);
+        }
+      });
+    });
   }
 
   function refreshDbStatusBadge() {
@@ -192,7 +240,12 @@ const UI = (() => {
       </div>
     `;
     const toggle = document.getElementById('btnMenuToggle');
-    if (toggle) toggle.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+    if (toggle) {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMobileSidebar();
+      });
+    }
   }
 
   return { icon, renderSidebar, refreshDbStatusBadge, renderTopbar, toast, confirmDialog, showLoading, money, fmtDate, todayISO };
