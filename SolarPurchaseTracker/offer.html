@@ -175,8 +175,8 @@
       <!-- Main Quotation Container -->
       <div id="offerContainer" class="quote-container" style="display:none;">
         
-        <!-- Corporate Quotation Header (Visible in print/PDF) -->
-        <div class="row g-3 mb-4 pb-3 border-bottom align-items-center">
+        <!-- Corporate Quotation Header (Screen view only) -->
+        <div class="row g-3 mb-4 pb-3 border-bottom align-items-center no-print">
           <div class="col-md-6 col-12 text-md-start text-center d-flex align-items-center gap-3 justify-content-md-start justify-content-center flex-wrap">
             <!-- Logo (Only visible if uploaded in settings) -->
             <img id="qCompanyLogo" src="" alt="Logo" class="border rounded p-1 bg-white" style="max-height: 60px; max-width: 150px; display: none;">
@@ -269,7 +269,7 @@
                   <div class="row g-2 text-start">
                     <div class="col-4">
                       <label class="form-label fs-9 text-secondary mb-1">Quote No.</label>
-                      <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold" id="qQuoteNo" placeholder="TRYYMMDD01">
+                      <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold" id="qQuoteNo" placeholder="TR2607201357">
                     </div>
                     <div class="col-4">
                       <label class="form-label fs-9 text-secondary mb-1">Delivery Date</label>
@@ -342,54 +342,36 @@
 
         <!-- Offer Totals & Bank / Payment Details -->
         <div class="row g-3">
-          <!-- Left: Bank Details & UPI QR Code (Collapsible on screen, auto-expands on print) -->
+          <!-- Left: Bank Details -->
           <div class="col-md-6 col-12" id="paymentDetailsSection">
-            <!-- Screen Card: Collapsible -->
-            <div class="border rounded bg-white shadow-sm h-100 no-print">
-              <div class="d-flex justify-content-between align-items-center p-3" style="cursor: pointer;" onclick="toggleOfferSection('collapseBankUPI', 'iconBankUPI')">
-                <h6 class="fw-bold text-primary mb-0 fs-7">🏦 Company Bank & Payment Details</h6>
-                <span id="iconBankUPI" class="text-muted fs-8">▼</span>
-              </div>
-              <div id="collapseBankUPI" style="display: none; padding: 0 15px 15px 15px; border-top: 1px solid #f1f3f5;">
-                <div class="row g-2 align-items-center mt-1">
-                  <!-- Bank Info -->
-                  <div class="col-sm-8 col-12 border-end pe-2">
-                    <div class="font-monospace fs-8 text-secondary text-start lh-sm">
-                      <strong>A/c Holder:</strong> <span id="lblBankAcHolder">-</span><br>
-                      <strong>Bank Name:</strong> <span id="lblBankName">-</span><br>
-                      <strong>A/c No:</strong> <span id="lblBankAcNo">-</span><br>
-                      <strong>IFS Code:</strong> <span id="lblBankBranchIFS">-</span>
-                    </div>
-                  </div>
-                  <!-- UPI QR -->
-                  <div class="col-sm-4 col-12 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div id="upiQrPrintBox" style="display: none;">
-                      <img id="imgOfferUPIQR" class="border p-1 bg-white" style="height: 90px; width: 90px;" alt="Scan to Pay">
-                      <span class="fs-9 text-muted d-block mt-1 font-monospace" style="font-size:0.65rem;">Scan to Pay</span>
-                    </div>
-                  </div>
+            <!-- Screen Card -->
+            <div class="p-3 border rounded bg-white shadow-sm h-100 no-print">
+              <h6 class="fw-bold text-primary mb-3 fs-7 text-start border-bottom pb-2">🏦 Company Bank & Payment Details</h6>
+              <div class="font-monospace fs-7 text-secondary text-start lh-base">
+                <div class="row g-2">
+                  <div class="col-4 text-muted fw-semibold text-start">A/c Holder:</div>
+                  <div class="col-8 fw-bold text-dark text-start" id="lblBankAcHolder">-</div>
+                  
+                  <div class="col-4 text-muted fw-semibold text-start">Bank Name:</div>
+                  <div class="col-8 fw-bold text-dark text-start" id="lblBankName">-</div>
+                  
+                  <div class="col-4 text-muted fw-semibold text-start">A/c No:</div>
+                  <div class="col-8 fw-bold text-dark text-start" id="lblBankAcNo">-</div>
+                  
+                  <div class="col-4 text-muted fw-semibold text-start">IFS Code:</div>
+                  <div class="col-8 fw-bold text-dark text-start" id="lblBankBranchIFS">-</div>
                 </div>
               </div>
             </div>
 
-            <!-- Print Card: Always Expanded and borderless flat text -->
+            <!-- Print Card -->
             <div class="d-none d-print-block">
               <h6 class="fw-bold text-primary border-bottom pb-1 mb-2 fs-7 text-start">🏦 Company Bank & Payment Details</h6>
-              <div class="row g-2 align-items-center">
-                <div class="col-8">
-                  <div class="font-monospace fs-8 text-secondary text-start lh-sm">
-                    <strong>A/c Holder:</strong> <span id="lblPrintBankAcHolder">-</span><br>
-                    <strong>Bank Name:</strong> <span id="lblPrintBankName">-</span><br>
-                    <strong>A/c No:</strong> <span id="lblPrintBankAcNo">-</span><br>
-                    <strong>IFS Code:</strong> <span id="lblPrintBankBranchIFS">-</span>
-                  </div>
-                </div>
-                <div class="col-4 text-center">
-                  <div id="upiQrPrintBoxPrint" style="display: none;">
-                    <img id="imgOfferUPIQRPrint" class="border p-1 bg-white" style="height: 80px; width: 80px;" alt="Scan to Pay">
-                    <span class="fs-9 text-muted d-block mt-1 font-monospace" style="font-size:0.55rem;">Scan to Pay</span>
-                  </div>
-                </div>
+              <div class="font-monospace fs-8 text-secondary text-start lh-sm">
+                <strong>A/c Holder:</strong> <span id="lblPrintBankAcHolder">-</span><br>
+                <strong>Bank Name:</strong> <span id="lblPrintBankName">-</span><br>
+                <strong>A/c No:</strong> <span id="lblPrintBankAcNo">-</span><br>
+                <strong>IFS Code:</strong> <span id="lblPrintBankBranchIFS">-</span>
               </div>
             </div>
           </div>
@@ -483,7 +465,8 @@
             <span class="text-muted fs-8">* Price inclusive of all component items described in product packages.</span>
             <div class="d-flex gap-2">
               <button class="btn btn-outline-secondary px-4 py-2 fw-semibold fs-7" onclick="window.history.back()">Back</button>
-              <button class="btn btn-success px-4 py-2 fw-semibold fs-7" id="btnPrintOffer">🖨 Print / PDF Offer</button>
+              <button class="btn btn-primary px-4 py-2 fw-semibold fs-7" id="btnExportDocx" onclick="exportQuotationToDocx()">📄 Generate Word Document (.docx)</button>
+              <button class="btn btn-outline-success px-3 py-2 fw-semibold fs-7" id="btnPrintOffer">🖨 Print / PDF</button>
             </div>
           </div>
         </div>
@@ -491,13 +474,13 @@
         </div> <!-- End of offerWorkspace -->
 
         <!-- PRINT ONLY QUOTATION TEMPLATE (Matches Quotation_Formatted.docx layout) -->
-        <div id="printQuotationTemplate" class="d-none d-print-block text-dark" style="font-family: 'Times New Roman', Times, serif; line-height: 1.35; width: 100%; margin: 0 auto; color: #000; box-sizing: border-box;">
+        <div id="printQuotationTemplate" class="d-none d-print-block text-dark" style="font-family: 'Times New Roman', Times, serif; line-height: 1.4; width: 100%; margin: 0 auto; color: #000; box-sizing: border-box;">
           
           <!-- Document Headers -->
           <div class="text-center mb-3">
-            <h3 class="fw-bold mb-0 text-dark" style="font-size: 16pt; letter-spacing: 0.5px;">QUOTATION</h3>
-            <h5 class="fw-bold mb-0 text-dark" style="font-size: 10pt; text-transform: uppercase;" id="printHeadingTitle">FOR 3 KW PM SURYAGHAR YOJANA ON-GRID SYSTEM</h5>
-            <span style="font-size: 7.5pt; font-style: italic; color: #333;">(ORIGINAL FOR RECIPIENT)</span>
+            <h3 class="fw-bold mb-1 text-dark" style="font-size: 18pt; letter-spacing: 0.5px;">QUOTATION</h3>
+            <h5 class="fw-bold mb-1 text-dark" style="font-size: 12pt; text-transform: uppercase;" id="printHeadingTitle">FOR 3 KW PM SURYAGHAR YOJANA ON-GRID SYSTEM</h5>
+            <span style="font-size: 9pt; font-style: italic; color: #333;">(ORIGINAL FOR RECIPIENT)</span>
           </div>
 
           <!-- TABLE 1: Seller & Quote Metadata Row (2 Column Layout) -->
@@ -505,41 +488,41 @@
             <tbody>
               <tr>
                 <!-- Left Column: Seller details -->
-                <td style="width: 60%; padding: 8px; border: 1px solid #000; vertical-align: top;">
-                  <div class="d-flex align-items-center gap-2 mb-2 justify-content-start">
-                    <img id="printSellerLogo" src="" alt="Logo" style="max-height: 45px; max-width: 110px; display: none;">
-                    <div class="fw-bold text-dark" style="font-size: 11pt; text-align: left;" id="printSellerName">SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+                <td style="width: 58%; padding: 8px; border: 1px solid #000; vertical-align: top;">
+                  <div class="d-flex align-items-center gap-3 mb-2 justify-content-start">
+                    <img id="printSellerLogo" src="" alt="Logo" style="max-height: 70px; max-width: 220px; display: none; object-fit: contain; vertical-align: middle;">
+                    <div class="fw-bold text-dark" style="font-size: 13pt; text-align: left; line-height: 1.25;" id="printSellerName">SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
                   </div>
-                  <div style="font-size: 8pt; color: #111; text-align: left; line-height: 1.3;" id="printSellerAddress">
+                  <div style="font-size: 10pt; color: #111; text-align: left; line-height: 1.35;" id="printSellerAddress">
                     At-Talamundali, Po-Kankadajodi, Ps-Maniabandha, Badamba,<br>Dist-Cuttack, PIN 754035, Odisha
                   </div>
-                  <div style="font-size: 8pt; color: #111; text-align: left; margin-top: 4px; line-height: 1.3;" id="printSellerContacts">
+                  <div style="font-size: 10pt; color: #111; text-align: left; margin-top: 5px; line-height: 1.35;" id="printSellerContacts">
                     Email: shritrutiyadevsolar@gmail.com<br>
                     Mobile: +91 8763443172 / +91 9937417524
                   </div>
-                  <div class="fw-bold text-dark mt-1" style="font-size: 8pt; text-align: left;" id="printSellerGSTIN">
+                  <div class="fw-bold text-dark mt-2" style="font-size: 10pt; text-align: left;" id="printSellerGSTIN">
                     GSTIN: 21BWBPM8649F1ZJ
                   </div>
                 </td>
                 <!-- Right Column: Quotation Metadata -->
-                <td style="width: 40%; padding: 8px; border: 1px solid #000; vertical-align: top; font-size: 8.5pt;">
+                <td style="width: 42%; padding: 8px; border: 1px solid #000; vertical-align: top; font-size: 10pt;">
                   <table style="width: 100%; border-collapse: collapse;">
                     <tbody>
                       <tr>
-                        <td style="border: none !important; padding: 2px 0; font-weight: bold; width: 45%; text-align: left;">Q No.</td>
-                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printQuoteNo">-</td>
+                        <td style="border: none !important; padding: 3px 0; font-weight: bold; width: 45%; text-align: left;">Q No.</td>
+                        <td style="border: none !important; padding: 3px 0; text-align: left;" id="printQuoteNo">-</td>
                       </tr>
                       <tr>
-                        <td style="border: none !important; padding: 2px 0; font-weight: bold; text-align: left;">Dated</td>
-                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printQuoteDate">-</td>
+                        <td style="border: none !important; padding: 3px 0; font-weight: bold; text-align: left;">Dated</td>
+                        <td style="border: none !important; padding: 3px 0; text-align: left;" id="printQuoteDate">-</td>
                       </tr>
                       <tr>
-                        <td style="border: none !important; padding: 2px 0; font-weight: bold; text-align: left;">Delivery Date</td>
-                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printDeliveryDate">-</td>
+                        <td style="border: none !important; padding: 3px 0; font-weight: bold; text-align: left;">Delivery Date</td>
+                        <td style="border: none !important; padding: 3px 0; text-align: left;" id="printDeliveryDate">-</td>
                       </tr>
                       <tr>
-                        <td style="border: none !important; padding: 2px 0; font-weight: bold; text-align: left;">Payment Terms</td>
-                        <td style="border: none !important; padding: 2px 0; text-align: left;" id="printPaymentTerms">-</td>
+                        <td style="border: none !important; padding: 3px 0; font-weight: bold; text-align: left;">Payment Terms</td>
+                        <td style="border: none !important; padding: 3px 0; text-align: left;" id="printPaymentTerms">-</td>
                       </tr>
                     </tbody>
                   </table>
@@ -549,22 +532,23 @@
           </table>
 
           <!-- Buyer Information Block -->
-          <div class="mb-3 text-start" style="padding: 2px 0; line-height: 1.4; border-bottom: 1px dashed #000; padding-bottom: 6px;">
-            <div class="text-start"><strong style="font-size: 9pt;">Buyer:</strong> <span style="font-size: 9.5pt;" id="printBuyerName">-</span></div>
-            <div class="text-start"><strong style="font-size: 9pt;">Address:</strong> <span style="font-size: 9pt;" id="printBuyerAddress">-</span></div>
+          <div class="mb-3 text-start" style="padding: 4px 0; line-height: 1.4; border-bottom: 1px dashed #000; padding-bottom: 6px;">
+            <div class="text-start"><strong style="font-size: 10.5pt;">Buyer:</strong> <span style="font-size: 11.5pt; font-weight: bold;" id="printBuyerName">-</span></div>
+            <div class="text-start" id="printBuyerMobileWrapper" style="display: none;"><strong style="font-size: 10.5pt;">Mobile:</strong> <span style="font-size: 10.5pt; font-weight: bold;" id="printBuyerMobile">-</span></div>
+            <div class="text-start"><strong style="font-size: 10.5pt;">Address:</strong> <span style="font-size: 10.5pt;" id="printBuyerAddress">-</span></div>
           </div>
 
           <!-- TABLE 2: Items Grid (Sl No, Description, Qty, Basic Price, CGST Rate, SGST Rate, Amount) -->
           <table class="word-border-table w-100 text-dark mb-2" id="printItemsTable" style="border-collapse: collapse; width: 100%; border: 1px solid #000;">
             <thead>
               <tr style="background-color: #f2f2f2;">
-                <th style="width: 6%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Sl No</th>
-                <th style="width: 44%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Description of Goods</th>
-                <th style="width: 10%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Qty.</th>
-                <th style="width: 13%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Basic Price</th>
-                <th style="width: 9%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;" id="printCgstHeader">CGST Rate 5%</th>
-                <th style="width: 9%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;" id="printSgstHeader">SGST Rate 5%</th>
-                <th style="width: 14%; border: 1px solid #000; font-size: 8.5pt; font-weight: bold; padding: 4px; text-align: center;">Amount</th>
+                <th style="width: 6%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Sl No</th>
+                <th style="width: 44%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Description of Goods</th>
+                <th style="width: 10%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Qty.</th>
+                <th style="width: 13%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Basic Price</th>
+                <th style="width: 9%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;" id="printCgstHeader">CGST Rate 5%</th>
+                <th style="width: 9%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;" id="printSgstHeader">SGST Rate 5%</th>
+                <th style="width: 14%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Amount</th>
               </tr>
             </thead>
             <tbody id="printItemsTbody">
@@ -573,62 +557,56 @@
           </table>
 
           <!-- Notes / Special terms (Under table) -->
-          <div class="text-start mb-2 ps-2" style="font-size: 7.5pt; color: #111; line-height: 1.35;" id="printSpecialNotesBox">
+          <div class="text-start mb-2 ps-2" style="font-size: 9.5pt; color: #111; line-height: 1.4;" id="printSpecialNotesBox">
             <div id="printSpecialCableNote">* If more than 20 mtr Solar DC Cable is required, extra charges @ Rs 60/meter to be paid by customer.</div>
             <div>* For high-rise table structure, extra charges to be paid by customer.</div>
             <div>* Civil materials to be arranged by customer at the installation site.</div>
           </div>
 
           <!-- Amount Chargeable in words -->
-          <div class="text-start fw-bold mb-3 ps-1" style="font-size: 8.5pt; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 4px 0;" id="printAmountInWords">
+          <div class="text-start fw-bold mb-3 ps-1" style="font-size: 10.5pt; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0;" id="printAmountInWords">
             Amount Chargeable (in words): -
           </div>
 
           <!-- TABLE 3: Subsidy details & Bank Details / Declaration (2 Columns side-by-side) -->
-          <table class="word-border-table w-100" style="table-layout: fixed; width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 8px;">
+          <table class="word-border-table w-100" style="table-layout: fixed; width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
             <tbody>
               <tr>
                 <!-- Left Cell: Subsidy Scheme (If applicable) -->
                 <td style="width: 48%; padding: 8px; border: 1px solid #000; vertical-align: top;" id="printSubsidyCell">
-                  <div class="fw-bold mb-2 text-start" style="font-size: 8.5pt;">Subsidy Scheme as per MNRE</div>
+                  <div class="fw-bold mb-2 text-start" style="font-size: 10.5pt;">Subsidy Scheme as per MNRE</div>
                   <table class="word-border-table w-100 text-center" style="margin-bottom: 0; width: 100%; border-collapse: collapse; border: 1px solid #000;">
                     <thead>
                       <tr style="background-color: #f2f2f2;">
-                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">Per KW</th>
-                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">Central Subsidy</th>
-                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">State Subsidy</th>
-                        <th style="font-size: 7.5pt; padding: 2px; border: 1px solid #000; font-weight: bold; text-align: center;">Total Subsidy</th>
+                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Per KW</th>
+                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Central Subsidy</th>
+                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">State Subsidy</th>
+                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Total Subsidy</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000;" id="printSubPerKW">-</td>
-                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000;" id="printSubCentral">-</td>
-                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000;" id="printSubState">-</td>
-                        <td style="font-size: 7.5pt; padding: 4px; border: 1px solid #000; font-weight: bold;" id="printSubTotal">-</td>
+                        <td style="font-size: 9.5pt; padding: 5px; border: 1px solid #000;" id="printSubPerKW">-</td>
+                        <td style="font-size: 9.5pt; padding: 5px; border: 1px solid #000;" id="printSubCentral">-</td>
+                        <td style="font-size: 9.5pt; padding: 5px; border: 1px solid #000;" id="printSubState">-</td>
+                        <td style="font-size: 9.5pt; padding: 5px; border: 1px solid #000; font-weight: bold;" id="printSubTotal">-</td>
                       </tr>
                     </tbody>
                   </table>
-                  
-                  <!-- Small QR code displayed under the subsidy table on print -->
-                  <div class="text-center d-flex flex-column align-items-center justify-content-center mt-3" id="printUpiQrContainer" style="display: none;">
-                    <img id="printUpiQrImg" src="" style="height: 70px; width: 70px;" alt="Scan to Pay">
-                    <span style="font-size: 6pt; font-family: monospace; color: #444;" class="mt-1">Scan to Pay (UPI)</span>
-                  </div>
                 </td>
                 
                 <!-- Right Cell: Declaration & Bank details -->
-                <td style="width: 52%; padding: 8px; border: 1px solid #000; vertical-align: top; font-size: 7.5pt;">
-                  <div class="fw-bold mb-1 text-start" style="font-size: 8.5pt;">Declaration:</div>
-                  <ol style="margin-bottom: 8px; padding-left: 12px; line-height: 1.35; font-size: 7.2pt;" class="text-start text-secondary">
+                <td style="width: 52%; padding: 8px; border: 1px solid #000; vertical-align: top; font-size: 9.5pt;">
+                  <div class="fw-bold mb-1 text-start" style="font-size: 10.5pt;">Declaration:</div>
+                  <ol style="margin-bottom: 8px; padding-left: 14px; line-height: 1.4; font-size: 9.5pt;" class="text-start text-dark">
                     <li>This quotation shows the actual price of goods described; all particulars are true and correct.</li>
                     <li>Advance to be paid within 7 days of quotation date, else price may vary as per company revision.</li>
                     <li>All disputes subject to Bhubaneswar jurisdiction only.</li>
                     <li>Products once sold cannot be returned.</li>
                   </ol>
                   
-                  <div class="fw-bold mb-1 text-start" style="font-size: 8.5pt;">Company's Bank Details</div>
-                  <div class="font-monospace text-start text-secondary" style="line-height: 1.3; font-size: 7.2pt;">
+                  <div class="fw-bold mb-1 text-start" style="font-size: 10.5pt;">Company's Bank Details</div>
+                  <div class="font-monospace text-start text-dark" style="line-height: 1.4; font-size: 9.5pt;">
                     <strong>Bank Name:</strong> <span id="printBankName">-</span><br>
                     <strong>A/C Holder:</strong> <span id="printBankAcHolder">-</span><br>
                     <strong>A/C No.:</strong> <span id="printBankAcNo">-</span><br>
@@ -640,20 +618,20 @@
           </table>
 
           <!-- Signature Block at bottom -->
-          <div class="mt-3" style="page-break-inside: avoid;">
+          <div class="mt-4" style="page-break-inside: avoid;">
             <table style="width: 100%; border: none !important; border-collapse: collapse;">
               <tbody>
                 <tr>
-                  <td style="border: none !important; width: 55%;"></td>
-                  <td style="border: none !important; width: 45%; text-align: right; padding-right: 10px; vertical-align: bottom;">
-                    <div style="font-size: 8.5pt; font-weight: bold; margin-bottom: 35px; text-align: right;">
+                  <td style="border: none !important; width: 50%;"></td>
+                  <td style="border: none !important; width: 50%; text-align: right; padding-right: 10px; vertical-align: bottom;">
+                    <div style="font-size: 10.5pt; font-weight: bold; margin-bottom: 40px; text-align: right;">
                       for <span id="printSignCompanyName">SHRI TRUTIYADEV SOLAR ENTERPRISES</span>
                     </div>
                     
                     <div class="d-flex justify-content-end align-items-end" style="position: relative; width: 100%;">
                       <!-- Company Stamp Image (overlaid behind/beside signature line) -->
-                      <img id="printStampImage" src="" alt="Stamp" style="max-height: 55px; max-width: 95px; display: none; position: absolute; right: 40px; bottom: 5px; opacity: 0.75; z-index: 1; pointer-events: none;">
-                      <div style="font-size: 8.5pt; font-weight: bold; border-top: 1px solid #000; display: inline-block; padding-top: 2px; width: 100%; text-align: center; z-index: 2; position: relative;">
+                      <img id="printStampImage" src="" alt="Stamp" style="max-height: 60px; max-width: 100px; display: none; position: absolute; right: 40px; bottom: 5px; opacity: 0.75; z-index: 1; pointer-events: none;">
+                      <div style="font-size: 10.5pt; font-weight: bold; border-top: 1px solid #000; display: inline-block; padding-top: 4px; width: 100%; text-align: center; z-index: 2; position: relative;">
                         /Authorized Signatory
                       </div>
                     </div>
@@ -663,66 +641,99 @@
             </table>
           </div>
           
-          <div class="text-center mt-3" style="font-size: 6.5pt; color: #555; font-style: italic;">
-            This is a Computer-Generated copy
+          <div class="text-center mt-3 fw-bold text-dark" style="font-size: 11pt; color: #000 !important; font-style: italic; border-top: 1px solid #000; padding-top: 6px;">
+            This is a Computer-Generated Copy
           </div>
 
         </div>
 
 <style>
+/* Hide horizontal scrollbar on screen */
+html, body {
+  overflow-x: hidden !important;
+}
+
 @media print {
+  /* margin: 0 !important strips browser default headers (Offer Generator, Timestamp) and footers (localhost URL) */
   @page {
-    size: A4;
-    margin: 0; /* Setting page margin to 0 completely hides browser headers/footers (title, date, URL, page number) */
+    size: A4 portrait;
+    margin: 0 !important;
   }
-  body {
-    background: none !important;
-    background-color: #fff !important;
+  
+  html, body {
+    background: #fff !important;
     color: #000 !important;
     font-family: "Times New Roman", Times, serif !important;
     padding: 0 !important;
     margin: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+  
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+
   .sidebar, .topbar, .no-print, #offerWorkspace, .toast-container, .modal-backdrop, .modal {
     display: none !important;
   }
   
-  /* Give the content container A4 spacing margins (15mm) to keep it clear of the physical edges */
+  /* Official A4 Page Padding inside template box */
   #printQuotationTemplate {
     display: block !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    padding: 15mm !important;
+    padding: 12mm 14mm !important;
     margin: 0 !important;
+    overflow: visible !important;
   }
   
-  /* Reset bootstrap spacings and boxes for clean print */
   .container-fluid, .row, .col-12, .col-md-6 {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
   }
   
-  /* Apply larger, readable text formatting specifically configured for A4 page sizing */
+  /* Multi-page table auto adjustment */
   .word-border-table {
     width: 100% !important;
     border-collapse: collapse !important;
-    margin-bottom: 12px !important;
+    margin-bottom: 8px !important;
+    page-break-inside: auto !important;
+    table-layout: auto !important;
   }
+  
+  .word-border-table thead {
+    display: table-header-group !important;
+  }
+  
+  .word-border-table tbody {
+    display: table-row-group !important;
+  }
+  
+  .word-border-table tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+  
   .word-border-table th, .word-border-table td {
     border: 1px solid #000 !important;
-    padding: 5px 8px !important;
-    font-size: 10pt !important; /* Made font size larger */
+    padding: 5px 7px !important;
+    font-size: 10pt !important;
     color: #000 !important;
     vertical-align: top !important;
     line-height: 1.35 !important;
   }
+  
   .word-border-table th {
     background-color: #f2f2f2 !important;
     font-weight: bold !important;
     text-align: center !important;
-    font-size: 10.5pt !important; /* Larger headers */
+    font-size: 10.5pt !important;
   }
+  
   .text-start { text-align: left !important; }
   .text-center { text-align: center !important; }
   .text-end { text-align: right !important; }

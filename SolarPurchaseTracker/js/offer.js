@@ -5,8 +5,10 @@
 let companyUpiId = '';
 let offerSubsidiesList = [];
 
+const DEFAULT_SOLAR_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="85" viewBox="0 0 240 85"><rect width="240" height="85" fill="white" rx="6"/><g transform="translate(10, 10)"><circle cx="28" cy="24" r="14" fill="%23FF9F43"/><path d="M 12,36 L 44,36 L 50,58 L 6,58 Z" fill="%232470A0"/><line x1="28" y1="36" x2="28" y2="58" stroke="white" stroke-width="2"/><line x1="12" y1="46" x2="44" y2="46" stroke="white" stroke-width="2"/><text x="58" y="26" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="14" fill="%230F2027" letter-spacing="0.5">SHRI TRUTIYADEV</text><text x="58" y="44" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="12" fill="%23FF9F43" letter-spacing="0.5">SOLAR ENTERPRISES</text></g></svg>`;
+
 const activeAdjustments = {
-  discount: { active: true, label: 'Discount (₹)', type: 'subtraction', value: 0, sign: '-' },
+  discount: { active: false, label: 'Discount (₹)', type: 'subtraction', value: 0, sign: '-' },
   cgst: { active: false, label: 'CGST (%)', type: 'tax', value: 0, sign: '+' },
   sgst: { active: false, label: 'SGST (%)', type: 'tax', value: 0, sign: '+' },
   transport: { active: false, label: 'Transportation (₹)', type: 'addition', value: 0, sign: '+' },
@@ -34,9 +36,14 @@ window.onDbReady = function () {
   // Set default date
   document.getElementById('qDate').value = UI.todayISO();
 
-  // Set default Quote Number TRYYMMDD01
-  const todayCompact = UI.todayISO().replace(/-/g, '').slice(2);
-  document.getElementById('qQuoteNo').value = `TR${todayCompact}01`;
+  // Set default Quote Number TR{Year}{Month}{Day}{Hr}{Min} (e.g. TR2607201357)
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mi = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('qQuoteNo').value = `TR${yy}${mm}${dd}${hh}${mi}`;
 
   // Load and apply Company Profile Settings
   loadCompanyProfileSettings();
@@ -188,12 +195,8 @@ function syncPrintLabels() {
 
   const printLogo = document.getElementById('printSellerLogo');
   if (printLogo) {
-    if (logoBase64) {
-      printLogo.src = logoBase64;
-      printLogo.style.display = 'block';
-    } else {
-      printLogo.style.display = 'none';
-    }
+    printLogo.src = logoBase64 || DEFAULT_SOLAR_LOGO;
+    printLogo.style.display = 'inline-block';
   }
 
   // 3. Stamp Overlay Image
@@ -215,8 +218,28 @@ function syncPrintLabels() {
   document.getElementById('printPaymentTerms').textContent = document.getElementById('qPaymentTerms').value.trim() || '-';
 
   // 5. Buyer Details
-  document.getElementById('printBuyerName').textContent = document.getElementById('qCustName').value.trim() || '-';
-  document.getElementById('printBuyerAddress').innerHTML = (document.getElementById('qCustAddress').value || '-').replace(/\n/g, '<br>');
+  const buyerName = document.getElementById('qCustName')?.value.trim() || '-';
+  const buyerMobile = document.getElementById('qCustMobile')?.value.trim() || '';
+  const buyerAddr = document.getElementById('qCustAddress')?.value || '-';
+
+  document.getElementById('printBuyerName').textContent = buyerName;
+  document.getElementById('printBuyerAddress').innerHTML = buyerAddr.replace(/\n/g, '<br>');
+
+  const printBuyerMob = document.getElementById('printBuyerMobile');
+  const printBuyerMobWrap = document.getElementById('printBuyerMobileWrapper');
+  if (printBuyerMob) {
+    printBuyerMob.textContent = buyerMobile || '-';
+  }
+  if (printBuyerMobWrap) {
+    printBuyerMobWrap.style.display = buyerMobile ? 'block' : 'none';
+  }
+
+  const lblName = document.getElementById('lblPrintBuyerName');
+  const lblMob = document.getElementById('lblPrintBuyerMobile');
+  const lblAddr = document.getElementById('lblPrintBuyerAddress');
+  if (lblName) lblName.textContent = buyerName;
+  if (lblMob) lblMob.textContent = buyerMobile ? `Mob: ${buyerMobile}` : '';
+  if (lblAddr) lblAddr.innerHTML = buyerAddr.replace(/\n/g, '<br>');
 
   // 6. Bank details
   const holderVal = getSetting('BankAcHolder', 'URJJA ONE POWERTECH LLP');
@@ -275,19 +298,7 @@ function syncPrintLabels() {
     }
   }
 
-  // 9. QR Code image
-  const printQrBox = document.getElementById('printUpiQrContainer');
-  const printQrImg = document.getElementById('printUpiQrImg');
-  const imgOfferUPIQR = document.getElementById('imgOfferUPIQR'); // generated during recalculate
-
-  if (companyUpiId && imgOfferUPIQR && printQrImg && printQrBox) {
-    printQrImg.src = imgOfferUPIQR.src;
-    printQrBox.style.display = 'block';
-  } else {
-    if (printQrBox) printQrBox.style.display = 'none';
-  }
-
-  // 10. Generate Printable Items Table
+  // 9. Generate Printable Items Table
   generatePrintItemsGrid();
 }
 
@@ -444,12 +455,8 @@ function loadCompanyProfileSettings() {
   const logoBase64 = getSetting('CompanyLogo', '');
   const logoImg = document.getElementById('qCompanyLogo');
   if (logoImg) {
-    if (logoBase64) {
-      logoImg.src = logoBase64;
-      logoImg.style.display = 'block';
-    } else {
-      logoImg.style.display = 'none';
-    }
+    logoImg.src = logoBase64 || DEFAULT_SOLAR_LOGO;
+    logoImg.style.display = 'inline-block';
   }
 
   // 3. Populate Stamp Image
@@ -976,27 +983,218 @@ function recalculateOffer() {
     if (tblNetRow) tblNetRow.style.display = 'none';
   }
 
-  // Dynamic UPI QR Code Generation with Gross Grand Total (subsidies are displayed only as info)
-  const upiQrBox = document.getElementById('upiQrPrintBox');
-  const upiQrImg = document.getElementById('imgOfferUPIQR');
-  
-  const upiQrBoxPrint = document.getElementById('upiQrPrintBoxPrint');
-  const upiQrImgPrint = document.getElementById('imgOfferUPIQRPrint');
 
-  const qrTotal = grandTotal;
 
-  if (companyUpiId) {
-    const companyName = DB.getAll('settings').find(s => s.Key === 'CompanyName')?.Value || 'SolarTrack';
-    const upiUri = `upi://pay?pa=${companyUpiId}&pn=${encodeURIComponent(companyName)}&am=${qrTotal.toFixed(2)}&cu=INR`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiUri)}`;
-    
-    if (upiQrImg) upiQrImg.src = qrUrl;
-    if (upiQrBox) upiQrBox.style.display = 'block';
-
-    if (upiQrImgPrint) upiQrImgPrint.src = qrUrl;
-    if (upiQrBoxPrint) upiQrBoxPrint.style.display = 'block';
-  } else {
-    if (upiQrBox) upiQrBox.style.display = 'none';
-    if (upiQrBoxPrint) upiQrBoxPrint.style.display = 'none';
-  }
 }
+
+function getPngLogoDataUrl(src) {
+  return new Promise(resolve => {
+    if (!src || src === window.location.href) return resolve('');
+    if (src.startsWith('data:image/png') || src.startsWith('data:image/jpeg')) {
+      return resolve(src);
+    }
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width || 320;
+        canvas.height = img.naturalHeight || img.height || 130;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) {
+        resolve('');
+      }
+    };
+    img.onerror = () => resolve('');
+    img.src = src;
+  });
+}
+
+window.exportQuotationToDocx = async function() {
+  const custNameInput = document.getElementById('qCustName');
+  const custName = custNameInput ? custNameInput.value.trim() : '';
+
+  if (!custName) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Please enter the customer name before generating Word Document.', 'warning');
+    }
+    const collapseAddr = document.getElementById('collapseAddresses');
+    const iconAddr = document.getElementById('iconAddresses');
+    if (collapseAddr && collapseAddr.style.display === 'none') {
+      collapseAddr.style.display = 'block';
+      if (iconAddr) iconAddr.textContent = '▲';
+    }
+    if (custNameInput) custNameInput.focus();
+    return;
+  }
+
+  // 1. Synchronize print labels first
+  syncPrintLabels();
+
+  const templateEl = document.getElementById('printQuotationTemplate');
+  if (!templateEl) return;
+
+  const clone = templateEl.cloneNode(true);
+  clone.classList.remove('d-none', 'd-print-block');
+
+  // 2. Process Seller Logo: Convert SVG to PNG for Word compatibility
+  const cloneLogo = clone.querySelector('#printSellerLogo');
+  let validLogoPng = '';
+  if (cloneLogo) {
+    const settings = DB.getAll('settings');
+    const logoBase64 = (settings.find(s => s.Key === 'CompanyLogo') || {}).Value;
+    const rawLogoSrc = logoBase64 || DEFAULT_SOLAR_LOGO;
+    validLogoPng = await getPngLogoDataUrl(rawLogoSrc);
+  }
+
+  // 3. Replace flexbox header with Word-compatible table layout so Logo and Seller Name align side-by-side
+  const flexHeader = clone.querySelector('#printSellerName')?.closest('.d-flex');
+  const sellerNameText = clone.querySelector('#printSellerName')?.textContent || 'SHRI TRUTIYADEV SOLAR ENTERPRISES';
+  
+  if (flexHeader) {
+    if (validLogoPng) {
+      flexHeader.outerHTML = `
+        <table style="border:none !important; border-collapse:collapse !important; width:100% !important; margin:0 0 6pt 0 !important; padding:0 !important;">
+          <tr>
+            <td style="border:none !important; padding:0 10pt 0 0 !important; vertical-align:middle !important; width:95pt !important;">
+              <img src="${validLogoPng}" width="95" height="55" style="width:95pt; height:55pt; display:block;">
+            </td>
+            <td style="border:none !important; padding:0 !important; vertical-align:middle !important;">
+              <div style="font-size:12.5pt !important; font-weight:bold !important; color:#000000 !important; text-align:left !important;">${sellerNameText}</div>
+            </td>
+          </tr>
+        </table>
+      `;
+    } else {
+      flexHeader.outerHTML = `<div style="font-size:12.5pt !important; font-weight:bold !important; color:#000000 !important; text-align:left !important; margin-bottom:6pt !important;">${sellerNameText}</div>`;
+    }
+  }
+
+  // 4. Process Stamp Image: Convert to PNG if available, else remove empty img
+  const cloneStamp = clone.querySelector('#printStampImage');
+  if (cloneStamp) {
+    if (cloneStamp.src && cloneStamp.src.startsWith('data:image')) {
+      const pngStamp = await getPngLogoDataUrl(cloneStamp.src);
+      if (pngStamp) {
+        cloneStamp.src = pngStamp;
+      } else {
+        cloneStamp.remove();
+      }
+    } else {
+      cloneStamp.remove();
+    }
+  }
+
+  // 5. Remove any empty or hidden <img> tags to prevent Word invalid file reference errors
+  const allImgs = clone.querySelectorAll('img');
+  allImgs.forEach(img => {
+    if (!img.getAttribute('src') || img.getAttribute('src') === '' || img.style.display === 'none') {
+      img.remove();
+    }
+  });
+
+  // 6. Ensure Subsidy & Bank/Declaration table cell widths match display state
+  const subsidyCell = clone.querySelector('#printSubsidyCell');
+  if (subsidyCell && (subsidyCell.style.display === 'none' || getComputedStyle(subsidyCell).display === 'none')) {
+    const nextCell = subsidyCell.nextElementSibling;
+    subsidyCell.remove();
+    if (nextCell) {
+      nextCell.style.width = '100%';
+      nextCell.setAttribute('width', '100%');
+    }
+  }
+
+  const quoteNo = document.getElementById('qQuoteNo').value.trim() || 'TR01';
+  const cleanCustName = custName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+  const fileName = `Quotation_${quoteNo}_${cleanCustName}.doc`;
+
+  const wordHtml = `
+    <html xmlns:o="urn:schemas-microsoft-microsoft-com:office:office"
+          xmlns:w="urn:schemas-microsoft-microsoft-com:office:word"
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <title>Quotation ${quoteNo}</title>
+      <!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+          <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+      </xml>
+      <![endif]-->
+      <style>
+        @page Section1 {
+          size: 595.3pt 841.9pt;
+          margin: 36.0pt 36.0pt 36.0pt 36.0pt;
+          mso-header-margin: 36.0pt;
+          mso-footer-margin: 36.0pt;
+          mso-paper-source: 0;
+        }
+        div.Section1 {
+          page: Section1;
+        }
+        body {
+          font-family: 'Times New Roman', serif;
+          font-size: 11pt;
+          line-height: 1.4;
+          color: #000000;
+          background-color: #ffffff;
+        }
+        table {
+          border-collapse: collapse !important;
+          mso-table-lspace: 0pt;
+          mso-table-rspace: 0pt;
+          width: 100% !important;
+          margin-bottom: 12pt;
+        }
+        td, th {
+          border: 1.0pt solid #000000 !important;
+          padding: 6pt 8pt !important;
+          vertical-align: top !important;
+          font-size: 11pt !important;
+        }
+        th {
+          background-color: #F2F2F2 !important;
+          font-weight: bold !important;
+          text-align: center !important;
+          font-size: 11.5pt !important;
+        }
+        .text-center { text-align: center !important; }
+        .text-start { text-align: left !important; }
+        .text-end { text-align: right !important; }
+        .fw-bold { font-weight: bold !important; }
+        ol { margin-top: 2pt; margin-bottom: 6pt; padding-left: 16pt; }
+        li { margin-bottom: 2pt; }
+      </style>
+    </head>
+    <body>
+      <div class="Section1">
+        ${clone.innerHTML}
+      </div>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff' + wordHtml], {
+    type: 'application/msword'
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  if (typeof UI !== 'undefined' && UI.toast) {
+    UI.toast(`Quotation Word document (.doc) generated & downloaded successfully!`, 'success');
+  }
+};
