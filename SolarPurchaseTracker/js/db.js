@@ -80,45 +80,44 @@ const DB = (() => {
 
   async function tryRestoreFolder() {
     try {
-      // 1. Check if SQLite has records
+      // 1. Check if Supabase has records
       const resp = await fetch('/api/status');
       if (!resp.ok) throw new Error('API server unreachable');
       const status = await resp.json();
       
-      // 2. Perform one-time migration if SQLite is empty
+      // 2. Perform one-time migration if DB is empty
       if (!status.isMigrated) {
         await performMigration();
       }
 
-      // 3. Load all tables from SQLite
+      // 3. Load all tables concurrently in parallel for maximum speed
       mode = 'sqlite';
-      for (const key of Object.keys(FILE_MAP)) {
-        // borrowers and borrower_txns use dedicated APIs
-        if (key === 'borrowers' || key === 'borrower_txns') {
+      const tableKeys = Object.keys(FILE_MAP).filter(k => k !== 'borrowers' && k !== 'borrower_txns');
+      cache.borrowers = [];
+      cache.borrower_txns = [];
+
+      const fetchPromises = tableKeys.map(async key => {
+        try {
+          const r = await fetch(`/api/get?table=${key}`);
+          cache[key] = r.ok ? await r.json() : [];
+        } catch {
           cache[key] = [];
-          continue;
         }
-        const r = await fetch(`/api/get?table=${key}`);
-        if (r.ok) {
-          cache[key] = await r.json();
-        } else {
-          cache[key] = [];
+      });
+
+      const borrowerListPromise = (async () => {
+        try {
+          const rb = await fetch('/api/borrower-list');
+          cache.borrowers = rb.ok ? await rb.json() : [];
+        } catch {
+          cache.borrowers = [];
         }
-      }
-      // Load borrowers and borrower_txns via dedicated endpoints
-      try {
-        const rb = await fetch('/api/borrower-list');
-        cache.borrowers = rb.ok ? await rb.json() : [];
-        const rt = await fetch('/api/borrower-txns?borrowerID=ALL');
-        // Fetch all txns: we do it per-borrower on demand; cache empty for now
-        cache.borrower_txns = [];
-      } catch(e) {
-        cache.borrowers = [];
-        cache.borrower_txns = [];
-      }
+      })();
+
+      await Promise.all([...fetchPromises, borrowerListPromise]);
       return true;
     } catch (e) {
-      console.warn('SQLite server unavailable, falling back to offline browser cache:', e);
+      console.warn('Backend server unavailable, falling back to offline browser cache:', e);
       // Fallback to local browser cache
       mode = 'cache';
       for (const key of Object.keys(FILE_MAP)) {

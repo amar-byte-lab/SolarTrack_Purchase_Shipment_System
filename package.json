@@ -33,5 +33,9 @@
   "bugs": {
     "url": "https://github.com/Piyushsingh0001/SolarTrack-Purchase-Shipment-System/issues"
   },
-  "homepage": "https://github.com/Piyushsingh0001/SolarTrack-Purchase-Shipment-System#readme"
+  "homepage": "https://github.com/Piyushsingh0001/SolarTrack-Purchase-Shipment-System#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "dotenv": "^17.4.2"
+  }
 }

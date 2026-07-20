@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Local Database & Uploads
+*.db
+uploads/
+
+# OS & Logs
+.DS_Store
+*.log
