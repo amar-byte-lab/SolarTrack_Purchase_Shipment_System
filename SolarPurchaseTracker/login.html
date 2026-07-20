@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Solar Purchase & Shipment Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/auth.js"></script>
+<style>
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--st-blue-900, #0F2027), #203A43, var(--st-blue-700, #2C5364));
+    margin: 0;
+    padding: 20px;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  .login-card {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    padding: 35px 30px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 25px;
+  }
+  .brand-logo svg {
+    color: var(--st-orange, #FF9F43);
+  }
+  .brand-logo h3 {
+    font-weight: 800;
+    color: var(--st-blue-900, #0F2027);
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+  .form-control:focus {
+    border-color: var(--st-blue-600, #2470A0);
+    box-shadow: 0 0 0 0.2rem rgba(36, 112, 160, 0.2);
+  }
+  .btn-login {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    padding: 11px;
+    border-radius: 8px;
+    width: 100%;
+    transition: all 0.2s ease;
+  }
+  .btn-login:hover {
+    background: linear-gradient(135deg, #2a5298, #1e3c72);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <!-- Header / Brand -->
+  <div class="brand-logo">
+    <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" fill="currentColor" viewBox="0 0 16 16">
+      <path d="M1 2a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm8 0a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V2zM1 9a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V9zm8 0a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9z"/>
+    </svg>
+    <h3>Solar<span style="color:var(--st-orange, #FF9F43)">Track</span></h3>
+  </div>
+
+  <h5 class="fw-bold text-center text-dark mb-1">Sign In to Account</h5>
+  <p class="text-muted text-center fs-8 mb-4">Enter your User ID and Password to continue</p>
+
+  <!-- Error Alert -->
+  <div id="loginAlert" class="alert alert-danger py-2 px-3 fs-8 mb-3" style="display: none;" role="alert"></div>
+
+  <!-- Login Form -->
+  <form id="loginForm" autocomplete="off">
+    <div class="mb-3 text-start">
+      <label for="txtUserid" class="form-label fs-8 fw-semibold text-secondary">User ID / Username</label>
+      <input type="text" class="form-control form-control-lg fs-7" id="txtUserid" placeholder="Enter User ID" required autofocus>
+    </div>
+
+    <div class="mb-4 text-start">
+      <label for="txtPassword" class="form-label fs-8 fw-semibold text-secondary">Password</label>
+      <input type="password" class="form-control form-control-lg fs-7" id="txtPassword" placeholder="Enter Password" required>
+    </div>
+
+    <button type="submit" class="btn btn-login fs-7" id="btnLoginSubmit">
+      🔑 Sign In
+    </button>
+  </form>
+</div>
+
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const alertEl = document.getElementById('loginAlert');
+    const submitBtn = document.getElementById('btnLoginSubmit');
+
+    alertEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
+
+    const userid = document.getElementById('txtUserid').value;
+    const password = document.getElementById('txtPassword').value;
+
+    const res = await Auth.login(userid, password);
+
+    if (res.success) {
+      if (res.user.role === 'admin') {
+        window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'offer.html';
+      }
+    } else {
+      alertEl.textContent = res.error || 'Invalid User ID or Password';
+      alertEl.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '🔑 Sign In';
+    }
+  });
+</script>
+</body>
+</html>

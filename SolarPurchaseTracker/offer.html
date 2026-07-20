@@ -6,6 +6,7 @@
 <title>Offer Generator — Solar Purchase Tracker</title>
 <link rel="stylesheet" href="assets/css/bootstrap.min.css">
 <link rel="stylesheet" href="css/style.css">
+<script src="js/auth.js"></script>
 <style>
   /* Base flex wrapper */
   html, body, .app-shell {
@@ -335,11 +336,6 @@
                 <td class="text-end font-monospace text-primary fw-bold" id="tblGrandTotalVal">₹0.00</td>
                 <td class="no-print"></td>
               </tr>
-              <tr class="table-success fw-bold" id="tblNetPayableRow" style="display: none; font-size: 0.95rem;">
-                <td colspan="3" class="text-end pe-3 text-success">Net Cost to Customer (After Subsidy):</td>
-                <td class="text-end font-monospace text-success fw-bold" id="tblNetPayableVal">₹0.00</td>
-                <td class="no-print"></td>
-              </tr>
             </tfoot>
           </table>
         </div>
@@ -439,10 +435,6 @@
                     <div class="col-6 text-start text-success fw-bold">Total Subsidy:</div>
                     <div class="col-6 text-success fw-bold" id="lblTotalSubsidy">₹0.00</div>
 
-                    <div class="col-12"><hr class="my-1"></div>
-
-                    <div class="col-6 text-start text-success fw-bold fs-6">Net Payable (After Subsidy):</div>
-                    <div class="col-6 text-success fw-bold fs-6" id="lblNetPayable">₹0.00</div>
                   </div>
                 </div>
 

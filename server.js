@@ -323,6 +323,45 @@ const server = http.createServer(async (req, res) => {
   if (pathname.startsWith('/api/')) {
     res.setHeader('Content-Type', 'application/json');
     try {
+      if (pathname === '/api/login') {
+        const payload = await getRequestBody(req);
+        const inputId = (payload?.userid || payload?.username || '').trim().toLowerCase();
+        const inputPass = payload?.password || '';
+
+        const pkgPath = path.join(__dirname, 'package.json');
+        let pkg = {};
+        if (fs.existsSync(pkgPath)) {
+          try {
+            pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          } catch (e) {}
+        }
+
+        const users = pkg.auth?.users || [
+          { userid: 'admin', username: 'Admin', password: 'adminpassword', role: 'admin' },
+          { userid: 'user', username: 'Normal User', password: 'userpassword', role: 'user' }
+        ];
+
+        const foundUser = users.find(u =>
+          (u.userid.toLowerCase() === inputId || u.username.toLowerCase() === inputId) &&
+          u.password === inputPass
+        );
+
+        if (foundUser) {
+          res.end(JSON.stringify({
+            success: true,
+            user: {
+              userid: foundUser.userid,
+              username: foundUser.username,
+              role: foundUser.role
+            }
+          }));
+        } else {
+          res.statusCode = 401;
+          res.end(JSON.stringify({ success: false, error: 'Invalid User ID or Password' }));
+        }
+        return;
+      }
+
       if (pathname === '/api/status') {
         const stmt = db.prepare("SELECT COUNT(*) as count FROM shipments");
         const count = stmt.all()[0].count;

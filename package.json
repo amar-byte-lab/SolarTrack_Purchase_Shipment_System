@@ -7,6 +7,22 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
+  "auth": {
+    "users": [
+      {
+        "userid": "admin",
+        "username": "Admin",
+        "password": "adminpassword",
+        "role": "admin"
+      },
+      {
+        "userid": "user",
+        "username": "Normal User",
+        "password": "userpassword",
+        "role": "user"
+      }
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Piyushsingh0001/SolarTrack-Purchase-Shipment-System.git"

@@ -36,13 +36,20 @@ const UI = (() => {
   function renderSidebar(activeHref) {
     const el = document.getElementById('sidebar');
     if (!el) return;
+
+    const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const isNormalUser = user && user.role !== 'admin';
+    const visibleNavItems = isNormalUser 
+      ? NAV_ITEMS.filter(item => item.href === 'offer.html')
+      : NAV_ITEMS;
+
     el.innerHTML = `
       <div class="brand">
         <span class="brand-mark">${icon('grid', 22)}</span>
         <span class="brand-text">Solar<b>Track</b></span>
       </div>
       <nav class="nav flex-column sidebar-nav">
-        ${NAV_ITEMS.map(item => `
+        ${visibleNavItems.map(item => `
           <a class="nav-link ${item.href === activeHref ? 'active' : ''}" href="${item.href}">
             ${icon(item.icon)} <span>${item.label}</span>
           </a>`).join('')}
@@ -160,13 +167,29 @@ const UI = (() => {
   function renderTopbar(title, subtitle, actionsHtml) {
     const el = document.getElementById('topbar');
     if (!el) return;
+
+    const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const userBadge = user ? `
+      <div class="d-flex align-items-center gap-2 me-2">
+        <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-success'} fs-8 py-2 px-3">
+          👤 ${user.username || user.userid} (${user.role === 'admin' ? 'Admin' : 'Normal User'})
+        </span>
+        <button class="btn btn-sm btn-outline-danger font-monospace fs-8 px-2 py-1" onclick="Auth.logout()" title="Logout">
+          🚪 Logout
+        </button>
+      </div>
+    ` : '';
+
     el.innerHTML = `
       <div>
         <button class="btn btn-sm btn-outline-secondary d-md-none me-2" id="btnMenuToggle">☰</button>
         <h1 class="d-inline-block">${title}</h1>
         ${subtitle ? `<div class="subtitle">${subtitle}</div>` : ''}
       </div>
-      <div class="d-flex gap-2 no-print">${actionsHtml || ''}</div>
+      <div class="d-flex gap-2 align-items-center no-print">
+        ${userBadge}
+        ${actionsHtml || ''}
+      </div>
     `;
     const toggle = document.getElementById('btnMenuToggle');
     if (toggle) toggle.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
