@@ -194,14 +194,29 @@ function renderProducts() {
   if (!tbody) return;
 
   if (!products.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No product sets defined yet. Click "+ Add a new product set..." below or at top to create one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No product sets defined yet. Click "+ Add a new product set..." below or at top to create one.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = products.map(p => {
     const items = itemsMap.filter(i => i.ProductName === p.ProductName);
     const escapedName = JSON.stringify(p.ProductName);
-    const itemsListText = items.map(it => `<span class="badge bg-light text-dark border me-1 my-0.5">${it.ItemName} (₹${Number(it.Price).toLocaleString('en-IN')})</span>`).join('') || '<span class="text-muted italic">No components</span>';
+    const itemsListText = items.map(it => `<span class="badge bg-light text-dark border me-1 my-0.5">${it.ItemName} ${it.Price ? '(₹' + Number(it.Price).toLocaleString('en-IN') + ')' : ''}</span>`).join('') || '<span class="text-muted italic">No components</span>';
+
+    const costVal = Number(p.TotalCost) || 0;
+    const gstVal = Number(p.GSTPercent) || 0;
+    const incl = p.IncludeGST !== false;
+    
+    let costDisplay = '-';
+    if (costVal > 0) {
+      const gstTag = gstVal > 0 ? `<div class="fs-8 text-muted fw-normal">${incl ? 'Incl.' : '+'} ${gstVal}% GST</div>` : '';
+      costDisplay = `
+        <div class="d-flex flex-column">
+          <span class="font-monospace fw-bold text-success">₹${costVal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+          ${gstTag}
+        </div>
+      `;
+    }
 
     return `
       <tr>
@@ -209,6 +224,7 @@ function renderProducts() {
           <input class="form-check-input product-chk" type="checkbox" value="${p.ProductName}" style="width:1.1rem; height:1.1rem; cursor:pointer;">
         </td>
         <td class="fw-bold text-dark">${p.ProductName}</td>
+        <td>${costDisplay}</td>
         <td>
           <div class="d-flex flex-wrap gap-1 align-items-center">${itemsListText}</div>
         </td>
@@ -243,10 +259,79 @@ window.toggleProductAccordion = function(collapseId) {
   }
 };
 
+window.recalcProductTotalCost = function() {
+  const priceInputs = document.querySelectorAll('#pItemsTbody .p-item-price');
+  let sum = 0;
+  priceInputs.forEach(input => {
+    const val = parseFloat(input.value);
+    if (!isNaN(val) && val > 0) sum += val;
+  });
+
+  // Update hidden cost field
+  const costEl = document.getElementById('pTotalCost');
+  if (costEl) costEl.value = sum;
+
+  // GST controls
+  const inclEl = document.getElementById('pIncludeGST');
+  const gstPctEl = document.getElementById('pGSTPercent');
+  const incl = inclEl ? inclEl.checked : true;
+  const gstPct = gstPctEl ? (parseFloat(gstPctEl.value) || 0) : 0;
+
+  let baseForGST = 0;
+  let gstAmt = 0;
+  let grandTotal = 0;
+
+  if (incl) {
+    // GST is already included in the item prices; back-calculate base
+    baseForGST = sum / (1 + gstPct / 100);
+    gstAmt = sum - baseForGST;
+    grandTotal = sum;
+  } else {
+    // GST is added on top
+    baseForGST = sum;
+    gstAmt = sum * gstPct / 100;
+    grandTotal = sum + gstAmt;
+  }
+
+  const fmt = v => '₹' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  const dispTotal = document.getElementById('pDisplayTotalCost');
+  const dispGST   = document.getElementById('pDisplayGSTVal');
+  const dispGrand = document.getElementById('pDisplayGrandTotal');
+
+  if (dispTotal) dispTotal.textContent = fmt(sum);
+  if (dispGST)   dispGST.textContent   = fmt(gstAmt) + (gstPct > 0 ? ` (${gstPct}%)` : '');
+  if (dispGrand) dispGrand.textContent  = fmt(grandTotal);
+};
+
 window.openProductModal = function (productName) {
   document.getElementById('productModalTitle').textContent = productName ? 'Edit Product Set' : 'New Product Set';
   document.getElementById('pOrigName').value = productName || '';
   document.getElementById('pProductName').value = productName || '';
+
+  const costEl = document.getElementById('pTotalCost');
+  const gstEl = document.getElementById('pGSTPercent');
+  const inclEl = document.getElementById('pIncludeGST');
+
+  if (productName) {
+    const p = DB.getAll('products').find(x => x.ProductName === productName);
+    if (costEl) costEl.value = p && (p.TotalCost !== undefined && p.TotalCost !== '' && p.TotalCost !== null) ? p.TotalCost : '';
+    if (gstEl) gstEl.value = p && p.GSTPercent !== undefined ? p.GSTPercent : 18;
+    if (inclEl) inclEl.checked = p ? p.IncludeGST !== false : true;
+  } else {
+    if (costEl) costEl.value = '';
+    if (gstEl) gstEl.value = 18;
+    if (inclEl) inclEl.checked = true;
+  }
+
+  // Wire GST % and GST Included checkbox to live-recalc
+  if (gstEl) {
+    gstEl.oninput = recalcProductTotalCost;
+    gstEl.onchange = recalcProductTotalCost;
+  }
+  if (inclEl) {
+    inclEl.onchange = recalcProductTotalCost;
+  }
 
   const tbody = document.getElementById('pItemsTbody');
   tbody.innerHTML = '';
@@ -257,6 +342,9 @@ window.openProductModal = function (productName) {
   } else {
     addProductItemRow();
   }
+
+  // Always recalc after populating
+  recalcProductTotalCost();
   
   productModal.show();
 };
@@ -274,9 +362,23 @@ window.addProductItemRow = function (data) {
       <input type="number" step="any" min="0" class="form-control form-control-sm p-item-price border-0 p-0 text-end font-monospace" value="${data ? (data.Price || '') : ''}" placeholder="0.00">
     </td>
     <td class="text-center">
-      <span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="this.closest('tr').remove()">✕</span>
+      <span class="text-danger fw-bold btn-del-pitem" style="cursor:pointer; font-size:0.9rem;">✕</span>
     </td>
   `;
+
+  const priceInput = tr.querySelector('.p-item-price');
+  if (priceInput) {
+    priceInput.addEventListener('input', recalcProductTotalCost);
+  }
+
+  const btnDel = tr.querySelector('.btn-del-pitem');
+  if (btnDel) {
+    btnDel.addEventListener('click', () => {
+      tr.remove();
+      recalcProductTotalCost();
+    });
+  }
+
   tbody.appendChild(tr);
 };
 
@@ -305,8 +407,15 @@ async function saveProduct() {
 
   UI.showLoading(true);
   try {
+    const totalCostVal = document.getElementById('pTotalCost') ? Number(document.getElementById('pTotalCost').value) || 0 : 0;
+    const gstPercentVal = document.getElementById('pGSTPercent') ? Number(document.getElementById('pGSTPercent').value) || 0 : 0;
+    const includeGSTVal = document.getElementById('pIncludeGST') ? document.getElementById('pIncludeGST').checked : true;
+
     const productRow = {
       ProductName: productName,
+      TotalCost: totalCostVal,
+      GSTPercent: gstPercentVal,
+      IncludeGST: includeGSTVal,
       CreatedAt: new Date().toISOString()
     };
 

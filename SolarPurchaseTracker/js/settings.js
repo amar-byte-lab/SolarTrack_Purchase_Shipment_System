@@ -190,10 +190,10 @@ function loadSettingsForm() {
   renderSubsidiesList();
 
   // Load Bank Details (Prefill default values)
-  document.getElementById('sBankAcHolder').value = get('BankAcHolder', 'URJJA ONE POWERTECH LLP');
+  document.getElementById('sBankAcHolder').value = get('BankAcHolder', 'Company Name');
   document.getElementById('sBankName').value = get('BankName', 'ICICI BANK LTD');
-  document.getElementById('sBankAcNo').value = get('BankAcNo', '634305015260');
-  document.getElementById('sBankBranchIFS').value = get('BankBranchIFS', 'BHANGAGARH & ICIC0006343');
+  document.getElementById('sBankAcNo').value = get('BankAcNo', '123456789123');
+  document.getElementById('sBankBranchIFS').value = get('BankBranchIFS', 'Branch & IFS Code');
 
   // Load UPI
   const upiId = get('CompanyUPI', '');

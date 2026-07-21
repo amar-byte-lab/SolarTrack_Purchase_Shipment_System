@@ -33,8 +33,12 @@ window.onDbReady = function () {
     document.getElementById(id).addEventListener('input', Utils.debounce(renderList, 200));
     document.getElementById(id).addEventListener('change', renderList);
   });
+  const chkDel = document.getElementById('chkShowDeleted');
+  if (chkDel) chkDel.addEventListener('change', renderList);
+
   document.getElementById('btnClearFilters').addEventListener('click', () => {
     ['fSearch', 'fFrom', 'fTo', 'fVendor'].forEach(id => document.getElementById(id).value = '');
+    if (chkDel) chkDel.checked = false;
     renderList();
   });
 
@@ -133,8 +137,11 @@ function populateDatalists() {
     vendors.map(v => `<option value="${v.VendorName}">${v.VendorName}</option>`).join('');
 }
 
-function getEnrichedShipments() {
-  const shipments = DB.getAll('shipments');
+function getEnrichedShipments(includeDeleted = false) {
+  let shipments = DB.getAll('shipments');
+  if (!includeDeleted) {
+    shipments = shipments.filter(s => s.Status !== 'Deleted' && s.IsDeleted !== '1' && s.IsDeleted !== true);
+  }
   const materials = DB.getAll('materials');
   return shipments.map(s => {
     // Normalize null/undefined API fields to proper numbers
@@ -209,8 +216,10 @@ function renderList() {
   const from = document.getElementById('fFrom').value;
   const to = document.getElementById('fTo').value;
   const vendor = document.getElementById('fVendor').value;
+  const chkDel = document.getElementById('chkShowDeleted');
+  const showDeleted = chkDel ? chkDel.checked : false;
 
-  let rows = getEnrichedShipments();
+  let rows = getEnrichedShipments(showDeleted);
 
   if (search) {
     rows = rows.filter(r =>
@@ -249,9 +258,16 @@ function renderList() {
 
   const tbody = document.querySelector('#shipTable tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No shipments match your filters.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
     const tfoot = document.querySelector('#shipTable tfoot');
-    if (tfoot) tfoot.innerHTML = '';
+    if (tfoot) {
+      tfoot.innerHTML = `
+        <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
+          <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
+          <td colspan="5" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
+        </tr>
+      `;
+    }
     return;
   }
 
@@ -263,6 +279,7 @@ function renderList() {
 
   const html = [];
   rows.forEach(r => {
+    const isDeleted = r.Status === 'Deleted' || r.IsDeleted === '1' || r.IsDeleted === true;
     const shipmentType = r.ShipmentType || 'Buy';
     
     const vendorDue = r.purchaseTotal + r.gstAmount;
@@ -271,42 +288,39 @@ function renderList() {
     const transportPaid = Number(r.TransportPaid) || 0;
     const grandTotal = r.grandTotal;
 
-    sumVendorDue += vendorDue;
-    sumVendorPaid += vendorPaid;
-    sumTransportCost += transportCost;
-    sumTransportPaid += transportPaid;
-    sumGrandTotal += grandTotal;
+    if (!isDeleted) {
+      sumVendorDue += vendorDue;
+      sumVendorPaid += vendorPaid;
+      sumTransportCost += transportCost;
+      sumTransportPaid += transportPaid;
+      sumGrandTotal += grandTotal;
+    }
 
+    const isSell = shipmentType === 'Sell';
     const vendorRemaining = vendorDue - vendorPaid;
     let vendorBtnClass = 'btn-outline-success';
-    let vendorBtnText = 'Vendor Pay: Paid';
+    let vendorBtnText = isSell ? `Received: ${UI.money(vendorPaid)}` : `Paid: ${UI.money(vendorPaid)}`;
     if (vendorRemaining > 0) {
       vendorBtnClass = vendorPaid > 0 ? 'btn-outline-warning' : 'btn-outline-danger';
-      vendorBtnText = `Vendor Pay: ${UI.money(vendorRemaining)}`;
     } else if (vendorRemaining < 0) {
       vendorBtnClass = 'btn-outline-primary';
-      const absVal = Math.abs(vendorRemaining);
-      const fmtVal = '-₹' + absVal.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-      vendorBtnText = `Vendor Pay: ${fmtVal}`;
     }
 
     const transportRemaining = transportCost - transportPaid;
     let transportBtnClass = 'btn-outline-success';
-    let transportBtnText = 'Transport: Paid';
+    let transportBtnText = `Paid: ${UI.money(transportPaid)}`;
     if (transportRemaining > 0) {
       transportBtnClass = transportPaid > 0 ? 'btn-outline-warning' : 'btn-outline-danger';
-      transportBtnText = `Transport: ${UI.money(transportRemaining)}`;
     } else if (transportRemaining < 0) {
       transportBtnClass = 'btn-outline-primary';
-      const absVal = Math.abs(transportRemaining);
-      const fmtVal = '-₹' + absVal.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-      transportBtnText = `Transport: ${fmtVal}`;
     }
 
     // Normal display row
     const typeBadge = shipmentType === 'Buy'
       ? `<span class="badge bg-success-subtle text-success fs-7 border border-success-subtle">Buy</span>`
       : `<span class="badge bg-primary-subtle text-primary fs-7 border border-primary-subtle">Sell</span>`;
+
+    const statusBadge = isDeleted ? `<span class="badge bg-danger ms-1">Deleted</span>` : '';
 
     const docNames = r.Documents ? r.Documents.split(',').filter(Boolean) : [];
     const docsButton = docNames.length
@@ -322,10 +336,19 @@ function renderList() {
       </button>
     `;
 
+    const rowStyle = isDeleted ? `style="background-color: #f8d7da !important; opacity: 0.75;"` : '';
+
+    const actionButtons = isDeleted
+      ? `<button class="btn btn-xs btn-outline-success font-monospace" onclick="restoreShipment('${r.ShipmentNo}')" title="Restore Shipment">↺ Restore</button>`
+      : `
+        <button class="btn btn-sm btn-outline-secondary" onclick="editRow('${r.ShipmentNo}')" title="Edit">✎</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteShipment('${r.ShipmentNo}')" title="Soft Delete">🗑</button>
+      `;
+
     html.push(`
-      <tr>
+      <tr ${rowStyle}>
         <td class="col-date">${UI.fmtDate(r.PurchaseDate)}</td>
-        <td class="col-type text-center">${typeBadge}</td>
+        <td class="col-type text-center">${typeBadge}${statusBadge}</td>
         <td class="col-vendor">
           <div class="d-flex align-items-center flex-wrap gap-1">
             <span>${r.VendorName || '-'}</span>
@@ -350,8 +373,7 @@ function renderList() {
         </td>
         <td class="no-print text-center">
           <div class="d-flex gap-1 justify-content-center">
-            <button class="btn btn-sm btn-outline-secondary" onclick="editRow('${r.ShipmentNo}')" title="Edit">✎</button>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteShipment('${r.ShipmentNo}')" title="Delete">🗑</button>
+            ${actionButtons}
           </div>
         </td>
       </tr>
@@ -360,12 +382,12 @@ function renderList() {
 
   tbody.innerHTML = html.join('');
 
-  // Set tfoot Grand Total and Add Row (sticky footers)
+  // Set tfoot Grand Total and Sticky Add Row
   const tfoot = document.querySelector('#shipTable tfoot');
   if (tfoot) {
     let tfootHTML = '';
     
-    // 1. Sticky Add Row (always visible at the bottom!)
+    // 1. Sticky Add Row (always visible in table!)
     tfootHTML += `
       <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
         <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
@@ -375,28 +397,20 @@ function renderList() {
     
     const totalVendorRemaining = sumVendorDue - sumVendorPaid;
     let totalVendorBtnClass = 'btn-outline-success';
-    let totalVendorBtnText = 'Vendor Pay: Paid';
+    let totalVendorBtnText = `Vendor Paid: ${UI.money(sumVendorPaid)}`;
     if (totalVendorRemaining > 0) {
       totalVendorBtnClass = sumVendorPaid > 0 ? 'btn-outline-warning' : 'btn-outline-danger';
-      totalVendorBtnText = `Vendor Pay: ${UI.money(totalVendorRemaining)}`;
     } else if (totalVendorRemaining < 0) {
       totalVendorBtnClass = 'btn-outline-primary';
-      const absVal = Math.abs(totalVendorRemaining);
-      const fmtVal = '-₹' + absVal.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-      totalVendorBtnText = `Vendor Pay: ${fmtVal}`;
     }
 
     const totalTransportRemaining = sumTransportCost - sumTransportPaid;
     let totalTransportBtnClass = 'btn-outline-success';
-    let totalTransportBtnText = 'Transport: Paid';
+    let totalTransportBtnText = `Transport Paid: ${UI.money(sumTransportPaid)}`;
     if (totalTransportRemaining > 0) {
       totalTransportBtnClass = sumTransportPaid > 0 ? 'btn-outline-warning' : 'btn-outline-danger';
-      totalTransportBtnText = `Transport: ${UI.money(totalTransportRemaining)}`;
     } else if (totalTransportRemaining < 0) {
       totalTransportBtnClass = 'btn-outline-primary';
-      const absVal = Math.abs(totalTransportRemaining);
-      const fmtVal = '-₹' + absVal.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-      totalTransportBtnText = `Transport: ${fmtVal}`;
     }
 
     // 2. Grand Total Row
@@ -430,6 +444,20 @@ function renderList() {
       }
     }, 50);
   }
+}
+
+function updateStickyHeaderOffsets() {
+  setTimeout(() => {
+    const headerRow = document.querySelector('#shipTable thead tr:first-child');
+    const addRow = document.querySelector('#shipTable thead tr.add-row-top-sticky');
+    if (headerRow && addRow) {
+      const headerHeight = headerRow.offsetHeight || 37;
+      const tds = addRow.querySelectorAll('td, th');
+      tds.forEach(td => {
+        td.style.top = headerHeight + 'px';
+      });
+    }
+  }, 10);
 }
 
 function toDateInputValue(d) {
@@ -568,6 +596,15 @@ function setupModalListenersOnce() {
       recalcInlineForm();
     });
   }
+
+  // Toggle Shipment Type label update
+  const shipTypeSelect = document.getElementById('editShipmentType');
+  const lblPaid = document.getElementById('lblEditVendorPaid');
+  if (shipTypeSelect && lblPaid) {
+    shipTypeSelect.addEventListener('change', () => {
+      lblPaid.textContent = shipTypeSelect.value === 'Sell' ? 'Received (₹)' : 'Paid (₹)';
+    });
+  }
   
   // Save button bind click
   document.getElementById('btnSaveShipment').addEventListener('click', () => {
@@ -575,16 +612,28 @@ function setupModalListenersOnce() {
   });
 }
 
+function updateModalPaidLabel() {
+  const shipTypeSelect = document.getElementById('editShipmentType');
+  const lblPaid = document.getElementById('lblEditVendorPaid');
+  if (shipTypeSelect && lblPaid) {
+    lblPaid.textContent = shipTypeSelect.value === 'Sell' ? 'Received (₹)' : 'Paid (₹)';
+  }
+}
+
 window.addInlineRow = function() {
   isAddingNew = true;
   editingShipmentNo = Utils.nextShipmentNo(DB.getAll('shipments'));
   
+  const modalLabel = document.getElementById('shipFormModalLabel');
+  if (modalLabel) modalLabel.textContent = `➕ Add New Shipment (${editingShipmentNo})`;
+
   pendingFiles = [];
   currentDocs = [];
   
   // Set defaults in inputs
   document.getElementById('editPurchaseDate').value = UI.todayISO();
   document.getElementById('editShipmentType').value = 'Buy';
+  updateModalPaidLabel();
   document.getElementById('editVendorName').value = '';
   document.getElementById('editVehicleNumber').value = '';
   document.getElementById('editInvoiceNumber').value = '';
@@ -624,12 +673,16 @@ window.editRow = function(shipmentNo) {
   editingShipmentNo = shipmentNo;
   isAddingNew = false;
   
+  const modalLabel = document.getElementById('shipFormModalLabel');
+  if (modalLabel) modalLabel.textContent = `✏️ Edit Shipment (${shipmentNo})`;
+
   pendingFiles = [];
   currentDocs = s.Documents ? s.Documents.split(',').filter(Boolean) : [];
   
   // Set values in inputs
   document.getElementById('editPurchaseDate').value = toDateInputValue(s.PurchaseDate);
   document.getElementById('editShipmentType').value = s.ShipmentType || 'Buy';
+  updateModalPaidLabel();
   document.getElementById('editVendorName').value = s.VendorName || '';
   document.getElementById('editVehicleNumber').value = s.VehicleNumber || '';
   document.getElementById('editInvoiceNumber').value = s.InvoiceNumber || '';
@@ -800,14 +853,46 @@ async function autoAddItemIfMissing(m) {
 }
 
 window.deleteShipment = async function (shipmentNo) {
-  const ok = await UI.confirmDialog(`Delete shipment ${shipmentNo} and all its materials? This cannot be undone.`, 'Delete Shipment');
+  const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+  if (!s) return;
+
+  const ok = await UI.confirmDialog(`Soft delete shipment ${shipmentNo}? It will be hidden from active list but preserved in database.`, 'Delete Shipment', 'Soft Delete', 'btn-danger');
   if (!ok) return;
+
   UI.showLoading(true);
-  await DB.remove('shipments', s => s.ShipmentNo === shipmentNo);
-  await DB.remove('materials', m => m.ShipmentNo === shipmentNo);
-  UI.showLoading(false);
-  UI.toast(`Shipment ${shipmentNo} deleted.`, 'warning');
-  renderList();
+  try {
+    await DB.update('shipments', x => x.ShipmentNo === shipmentNo, {
+      ...s,
+      Status: 'Deleted',
+      DeletedAt: new Date().toISOString()
+    });
+    UI.toast(`Shipment ${shipmentNo} soft-deleted.`, 'warning');
+    renderList();
+  } catch (err) {
+    UI.toast('Error deleting shipment: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+window.restoreShipment = async function (shipmentNo) {
+  const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+  if (!s) return;
+
+  UI.showLoading(true);
+  try {
+    await DB.update('shipments', x => x.ShipmentNo === shipmentNo, {
+      ...s,
+      Status: 'Active',
+      DeletedAt: null
+    });
+    UI.toast(`Shipment ${shipmentNo} restored successfully.`, 'success');
+    renderList();
+  } catch (err) {
+    UI.toast('Error restoring shipment: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
 };
 
 window.previewDocRow = function(shipmentNo, docName) {
@@ -896,103 +981,473 @@ window.showDocsModal = function(shipmentNo) {
   modal.show();
 };
 
+let activePayShipmentNo = null;
+let activePayType = null; // 'vendor' or 'transport'
+let payModalListenersConfigured = false;
+
+function setupPayModalListenersOnce() {
+  if (payModalListenersConfigured) return;
+  payModalListenersConfigured = true;
+
+  const btnToggle = document.getElementById('btnTogglePayForm');
+  const drawer = document.getElementById('payFormDrawer');
+
+  if (btnToggle && drawer) {
+    btnToggle.addEventListener('click', () => {
+      const isOpen = drawer.classList.toggle('open');
+      btnToggle.classList.toggle('active', isOpen);
+      btnToggle.textContent = isOpen ? '✕' : '✚';
+      if (isOpen) {
+        document.getElementById('payInputAmount').focus();
+      }
+    });
+  }
+
+  const btnSave = document.getElementById('btnSavePaymentEntry');
+  if (btnSave) {
+    btnSave.addEventListener('click', () => savePaymentEntry());
+  }
+
+  const btnSettle = document.getElementById('btnFullSettlePay');
+  if (btnSettle) {
+    btnSettle.addEventListener('click', () => settleFullPayment());
+  }
+}
+
+function resetPayDrawer() {
+  const drawer = document.getElementById('payFormDrawer');
+  const btnToggle = document.getElementById('btnTogglePayForm');
+  if (drawer) drawer.classList.remove('open');
+  if (btnToggle) {
+    btnToggle.classList.remove('active');
+    btnToggle.textContent = '✚';
+  }
+  const dateEl = document.getElementById('payInputDate');
+  if (dateEl) dateEl.value = UI.todayISO();
+  const amtEl = document.getElementById('payInputAmount');
+  if (amtEl) amtEl.value = '';
+  const rmkEl = document.getElementById('payInputRemarks');
+  if (rmkEl) rmkEl.value = '';
+}
+
 window.showVendorPaymentDetails = function(shipmentNo) {
-  let title = 'Vendor Payment Details';
-  let bodyHTML = '';
-  
+  setupPayModalListenersOnce();
+  activePayShipmentNo = shipmentNo;
+  activePayType = 'vendor';
+  resetPayDrawer();
+
+  const titleEl = document.getElementById('payModalTitleText');
+  const subEl = document.getElementById('payModalSubText');
+  const balEl = document.getElementById('payModalBal');
+  const bodyEl = document.getElementById('payModalBodyContent');
+  const composeBar = document.getElementById('payComposeBar');
+  const drawerHeading = document.getElementById('payDrawerHeading');
+  const header = document.getElementById('payModalHeader');
+
+  if (header) header.style.background = 'linear-gradient(135deg, #12314f, #1e8a4c)';
+
   if (shipmentNo === 'TOTAL') {
-    title = 'Grand Total Vendor Payment Details';
-    // Calculate totals across all shipments
+    if (composeBar) composeBar.style.display = 'none';
+    if (titleEl) titleEl.textContent = 'Grand Total Vendor Payments';
+    if (subEl) subEl.textContent = 'All Vendors & Shipments Summary';
+
     const shipments = getEnrichedShipments();
     let sumVendorDue = 0;
     let sumVendorPaid = 0;
+    const unpaidShipments = [];
+
     shipments.forEach(s => {
-      sumVendorDue += (s.purchaseTotal + s.gstAmount);
-      sumVendorPaid += Number(s.VendorPaid) || 0;
+      const due = s.purchaseTotal + s.gstAmount;
+      const paid = Number(s.VendorPaid) || 0;
+      sumVendorDue += due;
+      sumVendorPaid += paid;
+      if (due - paid > 0.01) unpaidShipments.push({ ...s, due, paid, rem: due - paid });
     });
-    bodyHTML = `
-      <div class="d-flex flex-column gap-2" style="font-size:0.9rem;">
-        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><strong>Total Due (All Shipments):</strong> <span>${UI.money(sumVendorDue)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 text-danger fw-bold"><strong>Total Paid (All Shipments):</strong> <span>${UI.money(sumVendorPaid)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 fw-bold"><strong>Total Remaining Balance:</strong> <span>${UI.money(sumVendorDue - sumVendorPaid)}</span></div>
+
+    const netRem = sumVendorDue - sumVendorPaid;
+    if (balEl) {
+      if (netRem > 0) { balEl.textContent = '−' + UI.money(netRem) + ' due'; balEl.className = 'bw-modal-bal negative'; }
+      else if (netRem < 0) { balEl.textContent = '+' + UI.money(Math.abs(netRem)) + ' surplus'; balEl.className = 'bw-modal-bal positive'; }
+      else { balEl.textContent = '✓ Settled'; balEl.className = 'bw-modal-bal zero'; }
+    }
+
+    let unpaidHTML = '';
+    if (unpaidShipments.length > 0) {
+      unpaidHTML = `
+        <div class="mt-3">
+          <div class="fw-bold text-secondary fs-8 mb-2">Pending Vendor Payments (${unpaidShipments.length} Shipments)</div>
+          <div class="d-flex flex-column gap-2">
+            ${unpaidShipments.map(u => `
+              <div class="p-2 border rounded bg-white d-flex justify-content-between align-items-center shadow-sm">
+                <div>
+                  <div class="fw-bold text-dark fs-8">${u.VendorName || 'Shipment ' + u.ShipmentNo} <span class="text-muted fw-normal">(${u.ShipmentNo})</span></div>
+                  <div class="fs-8 text-muted">Due: ${UI.money(u.due)} | Paid: ${UI.money(u.paid)}</div>
+                </div>
+                <button class="btn btn-xs btn-outline-success font-monospace" onclick="showVendorPaymentDetails('${u.ShipmentNo}')">Pay: ${UI.money(u.rem)}</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    bodyEl.innerHTML = `
+      <div class="p-3 border rounded bg-white shadow-sm mb-2" style="font-size:0.88rem;">
+        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><span>Total Invoice Due (Materials + GST):</span> <span>${UI.money(sumVendorDue)}</span></div>
+        <div class="d-flex justify-content-between border-bottom py-2 text-success fw-bold"><span>Total Paid to Vendors:</span> <span>${UI.money(sumVendorPaid)}</span></div>
+        <div class="d-flex justify-content-between pt-2 fw-bold text-danger"><span>Net Outstanding Vendor Due:</span> <span>${UI.money(netRem)}</span></div>
       </div>
+      ${unpaidHTML}
     `;
   } else {
+    if (composeBar) composeBar.style.display = 'flex';
     const shipments = getEnrichedShipments();
     const r = shipments.find(s => s.ShipmentNo === shipmentNo);
     if (!r) return;
-    title = `Vendor Payment — ${r.VendorName || 'Shipment ' + shipmentNo}`;
+
     const vendorDue = r.purchaseTotal + r.gstAmount;
-    bodyHTML = `
-      <div class="d-flex flex-column gap-2" style="font-size:0.9rem;">
-        <div class="d-flex justify-content-between border-bottom pb-2"><strong>Invoice Number:</strong> <span>${r.InvoiceNumber || '—'}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2"><strong>Materials Cost:</strong> <span>${UI.money(r.purchaseTotal)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2"><strong>GST Percentage:</strong> <span>${r.GSTPercentage || 0}%</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2"><strong>GST Amount:</strong> <span>${UI.money(r.gstAmount)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><strong>Total Due (Materials + GST):</strong> <span>${UI.money(vendorDue)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 text-danger fw-bold"><strong>Paid Amount:</strong> <span>${UI.money(r.VendorPaid)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 fw-bold"><strong>Remaining Balance:</strong> <span>${UI.money(vendorDue - r.VendorPaid)}</span></div>
-        <div class="d-flex justify-content-between mt-2"><small class="text-muted">Purchase Date: ${UI.fmtDate(r.PurchaseDate)}</small></div>
+    const vendorPaid = Number(r.VendorPaid) || 0;
+    const remaining = vendorDue - vendorPaid;
+
+    const vendorName = r.VendorName || 'Vendor';
+
+    if (titleEl) titleEl.textContent = `Vendor Payment — ${vendorName}`;
+    if (subEl) subEl.textContent = `Vendor: ${vendorName} | Invoice #: ${r.InvoiceNumber || 'N/A'}`;
+    if (drawerHeading) drawerHeading.textContent = `➕ Add Vendor Payment (${r.ShipmentNo})`;
+
+    if (balEl) {
+      if (remaining > 0) { balEl.textContent = '−' + UI.money(remaining) + ' due'; balEl.className = 'bw-modal-bal negative'; }
+      else if (remaining < 0) { balEl.textContent = '+' + UI.money(Math.abs(remaining)) + ' surplus'; balEl.className = 'bw-modal-bal positive'; }
+      else { balEl.textContent = '✓ Settled'; balEl.className = 'bw-modal-bal zero'; }
+    }
+
+    // 1. Left Chat Bubble (Vendor Invoice Obligation)
+    const leftBubbleHTML = `
+      <div class="chat-row left">
+        <div class="chat-bubble credit">
+          <div class="bubble-label" style="color:#c0392b;">🏬 ${vendorName} Invoice Charge</div>
+          <div class="bubble-amount" style="color:#c0392b;">−${UI.money(vendorDue)}</div>
+          <div class="bubble-remarks">Materials: ${UI.money(r.purchaseTotal)} + GST ${r.GSTPercentage || 0}%: ${UI.money(r.gstAmount)} ${r.InvoiceNumber ? '(Inv: ' + r.InvoiceNumber + ')' : ''}</div>
+          <div class="bubble-meta">Purchase Date: ${UI.fmtDate(r.PurchaseDate)}</div>
+        </div>
       </div>
     `;
+
+    // 2. Right Chat Bubbles (Payments made to Vendor)
+    const remarks = DB.getAll('shipment_remarks').filter(t => t.ShipmentNo === shipmentNo && t.Remark.toLowerCase().includes('vendor'));
+    const rightBubblesHTML = remarks.map(m => {
+      let dateLabel = UI.fmtDate(m.CreatedAt);
+      let amountVal = 0;
+      const match = m.Remark.match(/₹([0-9,.]+)/);
+      if (match) amountVal = parseFloat(match[1].replace(/,/g, '')) || 0;
+
+      return `
+        <div class="chat-row right" data-remark-id="${m.RemarkID}">
+          <button class="txn-del" onclick="deletePaymentLog('${m.RemarkID}')" title="Delete Payment">×</button>
+          <div class="chat-bubble debit">
+            <div class="bubble-label" style="color:#1e8a4c;">💳 You Paid Vendor</div>
+            <div class="bubble-amount" style="color:#1e8a4c;">+${amountVal > 0 ? UI.money(amountVal) : ''}</div>
+            <div class="bubble-remarks">${m.Remark}</div>
+            <div class="bubble-meta">${dateLabel}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 3. Running Total Footer
+    const footerHTML = `
+      <div class="txn-running-footer">
+        <span style="font-size:.78rem; color:#46586b; font-weight:600;">Net Vendor Due Balance</span>
+        <strong style="font-size:.92rem; color:${remaining > 0 ? '#c0392b' : '#1e8a4c'};">
+          ${remaining > 0 ? '−' + UI.money(remaining) : '✓ Fully Settled'}
+        </strong>
+      </div>
+    `;
+
+    bodyEl.innerHTML = leftBubbleHTML + rightBubblesHTML + footerHTML;
+    setTimeout(() => {
+      const scrollArea = document.getElementById('payModalScrollArea');
+      if (scrollArea) scrollArea.scrollTop = 99999;
+    }, 50);
   }
-  
-  // Set content and color
-  document.getElementById('payModalLabel').textContent = title;
-  const header = document.getElementById('payModalHeader');
-  header.className = 'modal-header bg-success text-white py-3';
-  document.getElementById('payModalBodyContent').innerHTML = bodyHTML;
-  
-  const modal = new bootstrap.Modal(document.getElementById('paymentDetailModal'));
+
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('paymentDetailModal'));
   modal.show();
 };
 
 window.showTransportPaymentDetails = function(shipmentNo) {
-  let title = 'Transportation Details';
-  let bodyHTML = '';
-  
+  setupPayModalListenersOnce();
+  activePayShipmentNo = shipmentNo;
+  activePayType = 'transport';
+  resetPayDrawer();
+
+  const titleEl = document.getElementById('payModalTitleText');
+  const subEl = document.getElementById('payModalSubText');
+  const balEl = document.getElementById('payModalBal');
+  const bodyEl = document.getElementById('payModalBodyContent');
+  const composeBar = document.getElementById('payComposeBar');
+  const drawerHeading = document.getElementById('payDrawerHeading');
+  const header = document.getElementById('payModalHeader');
+
+  if (header) header.style.background = 'linear-gradient(135deg, #12314f, #0288d1)';
+
   if (shipmentNo === 'TOTAL') {
-    title = 'Grand Total Transportation Details';
+    if (composeBar) composeBar.style.display = 'none';
+    if (titleEl) titleEl.textContent = 'Grand Total Transport Payments';
+    if (subEl) subEl.textContent = 'All Vehicles & Freight Summary';
+
     const shipments = getEnrichedShipments();
     let sumTransportCost = 0;
     let sumTransportPaid = 0;
+    const unpaidShipments = [];
+
     shipments.forEach(s => {
-      sumTransportCost += s.transport;
-      sumTransportPaid += Number(s.TransportPaid) || 0;
+      const cost = s.transport;
+      const paid = Number(s.TransportPaid) || 0;
+      sumTransportCost += cost;
+      sumTransportPaid += paid;
+      if (cost - paid > 0.01) unpaidShipments.push({ ...s, cost, paid, rem: cost - paid });
     });
-    bodyHTML = `
-      <div class="d-flex flex-column gap-2" style="font-size:0.9rem;">
-        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><strong>Total Cost (All Shipments):</strong> <span>${UI.money(sumTransportCost)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 text-danger fw-bold"><strong>Total Paid (All Shipments):</strong> <span>${UI.money(sumTransportPaid)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 fw-bold"><strong>Total Remaining Balance:</strong> <span>${UI.money(sumTransportCost - sumTransportPaid)}</span></div>
+
+    const netRem = sumTransportCost - sumTransportPaid;
+    if (balEl) {
+      if (netRem > 0) { balEl.textContent = '−' + UI.money(netRem) + ' due'; balEl.className = 'bw-modal-bal negative'; }
+      else if (netRem < 0) { balEl.textContent = '+' + UI.money(Math.abs(netRem)) + ' surplus'; balEl.className = 'bw-modal-bal positive'; }
+      else { balEl.textContent = '✓ Settled'; balEl.className = 'bw-modal-bal zero'; }
+    }
+
+    let unpaidHTML = '';
+    if (unpaidShipments.length > 0) {
+      unpaidHTML = `
+        <div class="mt-3">
+          <div class="fw-bold text-secondary fs-8 mb-2">Pending Transport Payments (${unpaidShipments.length} Shipments)</div>
+          <div class="d-flex flex-column gap-2">
+            ${unpaidShipments.map(u => `
+              <div class="p-2 border rounded bg-white d-flex justify-content-between align-items-center shadow-sm">
+                <div>
+                  <div class="fw-bold text-dark fs-8">${u.VendorName || 'Shipment ' + u.ShipmentNo} <span class="text-muted fw-normal">(${u.VehicleNumber || u.ShipmentNo})</span></div>
+                  <div class="fs-8 text-muted">Cost: ${UI.money(u.cost)} | Paid: ${UI.money(u.paid)}</div>
+                </div>
+                <button class="btn btn-xs btn-outline-info font-monospace" onclick="showTransportPaymentDetails('${u.ShipmentNo}')">Pay: ${UI.money(u.rem)}</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    bodyEl.innerHTML = `
+      <div class="p-3 border rounded bg-white shadow-sm mb-2" style="font-size:0.88rem;">
+        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><span>Total Transport Cost (All Shipments):</span> <span>${UI.money(sumTransportCost)}</span></div>
+        <div class="d-flex justify-content-between border-bottom py-2 text-success fw-bold"><span>Total Paid for Transport:</span> <span>${UI.money(sumTransportPaid)}</span></div>
+        <div class="d-flex justify-content-between pt-2 fw-bold text-danger"><span>Net Outstanding Transport Due:</span> <span>${UI.money(netRem)}</span></div>
       </div>
+      ${unpaidHTML}
     `;
   } else {
+    if (composeBar) composeBar.style.display = 'flex';
     const shipments = getEnrichedShipments();
     const r = shipments.find(s => s.ShipmentNo === shipmentNo);
     if (!r) return;
-    title = `Transportation — ${r.VendorName || 'Shipment ' + shipmentNo}`;
-    bodyHTML = `
-      <div class="d-flex flex-column gap-2" style="font-size:0.9rem;">
-        <div class="d-flex justify-content-between border-bottom pb-2"><strong>Vehicle Number:</strong> <span>${r.VehicleNumber || '—'}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><strong>Transportation Cost:</strong> <span>${UI.money(r.transport)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 text-danger fw-bold"><strong>Paid Amount:</strong> <span>${UI.money(r.TransportPaid)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2 fw-bold"><strong>Remaining Balance:</strong> <span>${UI.money(r.transport - r.TransportPaid)}</span></div>
-        <div class="d-flex justify-content-between border-bottom pb-2"><strong>Remarks:</strong> <span class="text-wrap" style="max-width:250px;">${r.Remarks || '—'}</span></div>
-        <div class="d-flex justify-content-between mt-2"><small class="text-muted">Purchase Date: ${UI.fmtDate(r.PurchaseDate)}</small></div>
+
+    const transportCost = r.transport;
+    const transportPaid = Number(r.TransportPaid) || 0;
+    const remaining = transportCost - transportPaid;
+    const driverLabel = r.VehicleNumber ? `Vehicle (${r.VehicleNumber})` : 'Driver / Transporter';
+
+    if (titleEl) titleEl.textContent = `Transport Payment — ${driverLabel}`;
+    if (subEl) subEl.textContent = `Vehicle #: ${r.VehicleNumber || 'N/A'} | Shipment: ${r.ShipmentNo}`;
+    if (drawerHeading) drawerHeading.textContent = `➕ Add Transport Payment (${r.ShipmentNo})`;
+
+    if (balEl) {
+      if (remaining > 0) { balEl.textContent = '−' + UI.money(remaining) + ' due'; balEl.className = 'bw-modal-bal negative'; }
+      else if (remaining < 0) { balEl.textContent = '+' + UI.money(Math.abs(remaining)) + ' surplus'; balEl.className = 'bw-modal-bal positive'; }
+      else { balEl.textContent = '✓ Settled'; balEl.className = 'bw-modal-bal zero'; }
+    }
+
+    // 1. Left Chat Bubble (Driver / Vehicle Transport Charge)
+    const leftBubbleHTML = `
+      <div class="chat-row left">
+        <div class="chat-bubble credit">
+          <div class="bubble-label" style="color:#e65100;">🚚 ${driverLabel} Charge</div>
+          <div class="bubble-amount" style="color:#d84315;">−${UI.money(transportCost)}</div>
+          ${r.Remarks ? `<div class="bubble-remarks">${r.Remarks}</div>` : ''}
+          <div class="bubble-meta">Purchase Date: ${UI.fmtDate(r.PurchaseDate)}</div>
+        </div>
       </div>
     `;
+
+    // 2. Right Chat Bubbles (Payments made to Driver/Transporter)
+    const remarks = DB.getAll('shipment_remarks').filter(t => t.ShipmentNo === shipmentNo && t.Remark.toLowerCase().includes('transport'));
+    const rightBubblesHTML = remarks.map(m => {
+      let dateLabel = UI.fmtDate(m.CreatedAt);
+      let amountVal = 0;
+      const match = m.Remark.match(/₹([0-9,.]+)/);
+      if (match) amountVal = parseFloat(match[1].replace(/,/g, '')) || 0;
+
+      return `
+        <div class="chat-row right" data-remark-id="${m.RemarkID}">
+          <button class="txn-del" onclick="deletePaymentLog('${m.RemarkID}')" title="Delete Payment">×</button>
+          <div class="chat-bubble debit">
+            <div class="bubble-label" style="color:#1e8a4c;">💳 You Paid</div>
+            <div class="bubble-amount" style="color:#1e8a4c;">+${amountVal > 0 ? UI.money(amountVal) : ''}</div>
+            <div class="bubble-remarks">${m.Remark}</div>
+            <div class="bubble-meta">${dateLabel}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 3. Running Total Footer
+    const footerHTML = `
+      <div class="txn-running-footer">
+        <span style="font-size:.78rem; color:#46586b; font-weight:600;">Net Transport Balance Due</span>
+        <strong style="font-size:.92rem; color:${remaining > 0 ? '#c0392b' : '#1e8a4c'};">
+          ${remaining > 0 ? '−' + UI.money(remaining) : '✓ Fully Settled'}
+        </strong>
+      </div>
+    `;
+
+    bodyEl.innerHTML = leftBubbleHTML + rightBubblesHTML + footerHTML;
+    setTimeout(() => {
+      const scrollArea = document.getElementById('payModalScrollArea');
+      if (scrollArea) scrollArea.scrollTop = 99999;
+    }, 50);
   }
-  
-  // Set content and color
-  document.getElementById('payModalLabel').textContent = title;
-  const header = document.getElementById('payModalHeader');
-  header.className = 'modal-header bg-info text-white py-3';
-  document.getElementById('payModalBodyContent').innerHTML = bodyHTML;
-  
-  const modal = new bootstrap.Modal(document.getElementById('paymentDetailModal'));
+
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('paymentDetailModal'));
   modal.show();
 };
+
+window.deletePaymentLog = async function(remarkId) {
+  const remark = DB.getAll('shipment_remarks').find(m => m.RemarkID === remarkId);
+  if (!remark) return;
+
+  const shipmentNo = remark.ShipmentNo;
+  const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+  if (!s) return;
+
+  const ok = await UI.confirmDialog('Delete this payment entry? Remaining balance will adjust automatically.', 'Delete Payment', 'Delete', 'btn-danger');
+  if (!ok) return;
+
+  UI.showLoading(true);
+  try {
+    let amountVal = 0;
+    const match = remark.Remark.match(/₹([0-9,.]+)/);
+    if (match) amountVal = parseFloat(match[1].replace(/,/g, '')) || 0;
+
+    if (activePayType === 'vendor') {
+      const currentPaid = Number(s.VendorPaid) || 0;
+      const newPaid = Math.max(0, currentPaid - amountVal);
+      await DB.update('shipments', x => x.ShipmentNo === shipmentNo, { ...s, VendorPaid: newPaid });
+      await DB.remove('shipment_remarks', m => m.RemarkID === remarkId);
+      UI.toast('Vendor payment log removed', 'info');
+      showVendorPaymentDetails(shipmentNo);
+    } else if (activePayType === 'transport') {
+      const currentPaid = Number(s.TransportPaid) || 0;
+      const newPaid = Math.max(0, currentPaid - amountVal);
+      await DB.update('shipments', x => x.ShipmentNo === shipmentNo, { ...s, TransportPaid: newPaid });
+      await DB.remove('shipment_remarks', m => m.RemarkID === remarkId);
+      UI.toast('Transport payment log removed', 'info');
+      showTransportPaymentDetails(shipmentNo);
+    }
+
+    renderList();
+  } catch (e) {
+    UI.toast('Error deleting payment: ' + e.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+async function savePaymentEntry() {
+  if (!activePayShipmentNo || activePayShipmentNo === 'TOTAL') return;
+  const shipmentNo = activePayShipmentNo;
+  const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+  if (!s) return;
+
+  const dateVal = document.getElementById('payInputDate').value;
+  const amtRaw = document.getElementById('payInputAmount').value;
+  const remarks = document.getElementById('payInputRemarks').value.trim();
+
+  if (!dateVal) { UI.toast('Please select a payment date.', 'warning'); return; }
+  const amount = parseFloat(amtRaw);
+  if (isNaN(amount) || amount <= 0) { UI.toast('Please enter a valid payment amount > 0.', 'warning'); return; }
+
+  UI.showLoading(true);
+  try {
+    if (activePayType === 'vendor') {
+      const currentPaid = Number(s.VendorPaid) || 0;
+      const newPaid = currentPaid + amount;
+      await DB.update('shipments', x => x.ShipmentNo === shipmentNo, { ...s, VendorPaid: newPaid });
+
+      const noteText = `Vendor Payment: ${UI.money(amount)} on ${UI.fmtDate(dateVal)}${remarks ? ' (' + remarks + ')' : ''}`;
+      await DB.insert('shipment_remarks', {
+        RemarkID: Utils.uid('RMK'),
+        ShipmentNo: shipmentNo,
+        Remark: noteText,
+        CreatedAt: new Date().toISOString()
+      });
+
+      UI.toast(`✓ Vendor Payment of ${UI.money(amount)} saved!`, 'success');
+      showVendorPaymentDetails(shipmentNo);
+    } else if (activePayType === 'transport') {
+      const currentPaid = Number(s.TransportPaid) || 0;
+      const newPaid = currentPaid + amount;
+      await DB.update('shipments', x => x.ShipmentNo === shipmentNo, { ...s, TransportPaid: newPaid });
+
+      const noteText = `Transport Payment: ${UI.money(amount)} on ${UI.fmtDate(dateVal)}${remarks ? ' (' + remarks + ')' : ''}`;
+      await DB.insert('shipment_remarks', {
+        RemarkID: Utils.uid('RMK'),
+        ShipmentNo: shipmentNo,
+        Remark: noteText,
+        CreatedAt: new Date().toISOString()
+      });
+
+      UI.toast(`✓ Transport Payment of ${UI.money(amount)} saved!`, 'success');
+      showTransportPaymentDetails(shipmentNo);
+    }
+
+    renderList();
+  } catch (err) {
+    UI.toast('Error saving payment: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+}
+
+async function settleFullPayment() {
+  if (!activePayShipmentNo || activePayShipmentNo === 'TOTAL') return;
+  const s = getEnrichedShipments().find(x => x.ShipmentNo === activePayShipmentNo);
+  if (!s) return;
+
+  let remaining = 0;
+  if (activePayType === 'vendor') {
+    const due = s.purchaseTotal + s.gstAmount;
+    remaining = due - (Number(s.VendorPaid) || 0);
+  } else if (activePayType === 'transport') {
+    remaining = s.transport - (Number(s.TransportPaid) || 0);
+  }
+
+  if (remaining <= 0) {
+    UI.toast('Balance is already fully paid / settled.', 'info');
+    return;
+  }
+
+  document.getElementById('payInputAmount').value = remaining.toFixed(2);
+  if (!document.getElementById('payInputRemarks').value) {
+    document.getElementById('payInputRemarks').value = 'Full settlement payment';
+  }
+
+  const drawer = document.getElementById('payFormDrawer');
+  const btnToggle = document.getElementById('btnTogglePayForm');
+  if (drawer && !drawer.classList.contains('open')) {
+    drawer.classList.add('open');
+    if (btnToggle) { btnToggle.classList.add('active'); btnToggle.textContent = '✕'; }
+  }
+
+  await savePaymentEntry();
+}
 
 window.showShipmentNotes = function(shipmentNo) {
   const r = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);

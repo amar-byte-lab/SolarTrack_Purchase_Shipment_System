@@ -248,10 +248,10 @@ function syncPrintLabels() {
   if (lblAddr) lblAddr.innerHTML = buyerAddr.replace(/\n/g, '<br>');
 
   // 6. Bank details
-  const holderVal = getSetting('BankAcHolder', 'URJJA ONE POWERTECH LLP');
+  const holderVal = getSetting('BankAcHolder', 'Company Name');
   const bankVal = getSetting('BankName', 'ICICI BANK LTD');
-  const acNoVal = getSetting('BankAcNo', '634305015260');
-  const ifsVal = getSetting('BankBranchIFS', 'BHANGAGARH & ICIC0006343');
+  const acNoVal = getSetting('BankAcNo', '123456789123');
+  const ifsVal = getSetting('BankBranchIFS', 'Branch & IFS Code');
 
   document.getElementById('printBankName').textContent = bankVal;
   document.getElementById('printBankAcHolder').textContent = holderVal;
@@ -537,10 +537,10 @@ function loadCompanyProfileSettings() {
   const lblAcNo = document.getElementById('lblBankAcNo');
   const lblIFS = document.getElementById('lblBankBranchIFS');
 
-  const holderVal = getSetting('BankAcHolder', 'URJJA ONE POWERTECH LLP');
+  const holderVal = getSetting('BankAcHolder', 'Company Name');
   const bankVal = getSetting('BankName', 'ICICI BANK LTD');
-  const acNoVal = getSetting('BankAcNo', '634305015260');
-  const ifsVal = getSetting('BankBranchIFS', 'BHANGAGARH & ICIC0006343');
+  const acNoVal = getSetting('BankAcNo', '123456789123');
+  const ifsVal = getSetting('BankBranchIFS', 'Branch & IFS Code');
 
   if (lblHolder) lblHolder.textContent = holderVal;
   if (lblBank) lblBank.textContent = bankVal;
