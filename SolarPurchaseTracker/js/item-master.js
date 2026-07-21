@@ -282,15 +282,18 @@ window.recalcProductTotalCost = function() {
   let grandTotal = 0;
 
   if (incl) {
-    // GST is already included in the item prices; back-calculate base
-    baseForGST = sum / (1 + gstPct / 100);
-    gstAmt = sum - baseForGST;
-    grandTotal = sum;
-  } else {
+    
     // GST is added on top
     baseForGST = sum;
     gstAmt = sum * gstPct / 100;
     grandTotal = sum + gstAmt;
+    
+  } else {
+
+    // GST is already included in the item prices; back-calculate base
+    baseForGST = sum / (1 + gstPct / 100);
+    gstAmt = sum - baseForGST;
+    grandTotal = sum;
   }
 
   const fmt = v => '₹' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
