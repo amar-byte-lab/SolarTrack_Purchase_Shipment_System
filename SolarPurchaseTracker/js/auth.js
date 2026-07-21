@@ -18,12 +18,73 @@ const Auth = (() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
   }
 
-  function logout() {
-    localStorage.removeItem(STORAGE_KEY);
+  function clearAllCacheAndStorage() {
+    try {
+      localStorage.clear();
+    } catch (e) {
+      console.warn('LocalStorage clear error:', e);
+    }
+
+    try {
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn('SessionStorage clear error:', e);
+    }
+
+    try {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        if (name) {
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+        }
+      }
+    } catch (e) {
+      console.warn('Cookies clear error:', e);
+    }
+
+    try {
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => caches.delete(name));
+        });
+      }
+    } catch (e) {
+      console.warn('Cache Storage clear error:', e);
+    }
+
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(r => r.unregister());
+        });
+      }
+    } catch (e) {
+      console.warn('Service Worker unregister error:', e);
+    }
+
+    try {
+      if (typeof DB !== 'undefined' && DB.clearCache) {
+        DB.clearCache();
+      }
+    } catch (e) {
+      console.warn('DB clearCache error:', e);
+    }
+  }
+
+  async function logout() {
+    clearAllCacheAndStorage();
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {}
     window.location.href = 'login.html';
   }
 
   function fallbackLogin(userid, password) {
+    clearAllCacheAndStorage();
     const id = (userid || '').trim().toLowerCase();
     if (id === 'admin' && password === 'adminpassword') {
       const u = { userid: 'admin', username: 'Admin', role: 'admin' };
@@ -39,6 +100,7 @@ const Auth = (() => {
   }
 
   async function login(userid, password) {
+    clearAllCacheAndStorage();
     try {
       const res = await fetch('/api/login', {
         method: 'POST',

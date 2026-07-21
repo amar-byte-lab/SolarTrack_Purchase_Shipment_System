@@ -71,6 +71,19 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => item.href === 'offer.html')
       : NAV_ITEMS;
 
+    const userControlsMobile = user ? `
+      <div class="sidebar-user-controls d-md-none pt-3 mt-3 border-top px-1 d-flex flex-column gap-2">
+        <div class="user-badge-mobile">
+          <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-success'} fs-7 py-2 px-3 w-100 d-flex align-items-center justify-content-center gap-2 text-truncate">
+            👤 ${user.username || user.userid} (${user.role === 'admin' ? 'Admin' : 'User'})
+          </span>
+        </div>
+        <button class="btn btn-logout-mobile w-100 py-1.5 fs-7 d-flex align-items-center justify-content-center gap-2" onclick="Auth.logout()" title="Logout">
+          🚪 <span>Logout</span>
+        </button>
+      </div>
+    ` : '';
+
     el.innerHTML = `
       <div class="brand d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
@@ -84,6 +97,7 @@ const UI = (() => {
           <a class="nav-link ${item.href === activeHref ? 'active' : ''}" href="${item.href}">
             ${icon(item.icon)} <span>${item.label}</span>
           </a>`).join('')}
+        ${userControlsMobile}
       </nav>
       <div class="sidebar-footer">
         <div id="dbStatusBadge" class="db-status">● checking…</div>
@@ -218,7 +232,7 @@ const UI = (() => {
 
     const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
     const userBadge = user ? `
-      <div class="d-flex align-items-center gap-1">
+      <div class="d-none d-md-flex align-items-center gap-1">
         <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-success'} fs-8 py-1.5 px-2 text-nowrap">
           👤 ${user.username || user.userid} <span class="d-none d-sm-inline">(${user.role === 'admin' ? 'Admin' : 'User'})</span>
         </span>
@@ -233,7 +247,7 @@ const UI = (() => {
         <!-- Row 1: Top Bar Controls (Menu Toggle, User Login/Logout, Print & Actions) -->
         <div class="d-flex align-items-center justify-content-between gap-2">
           <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-secondary px-2 py-1 flex-shrink-0" id="btnMenuToggle" title="Toggle Menu">
+            <button class="btn btn-sm btn-outline-secondary px-2 py-1 flex-shrink-0 d-lg-none" id="btnMenuToggle" title="Toggle Menu">
               ☰ <span class="d-none d-sm-inline ms-1 fw-semibold">Menu</span>
             </button>
           </div>

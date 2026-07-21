@@ -235,3 +235,36 @@ body {
   .page-body { padding: 16px; }
   .topbar { padding: 12px 16px; }
 }
+
+/* Sidebar User Controls for Mobile */
+.sidebar-user-controls {
+  border-top-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.sidebar-user-controls .user-badge-mobile .badge {
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  border-radius: 6px;
+}
+
+.sidebar-user-controls .btn-logout-mobile {
+  background-color: #ffffff;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.sidebar-user-controls .btn-logout-mobile:hover {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+/* Hide Menu Toggle Button on Desktop View */
+@media (min-width: 901px) {
+  #btnMenuToggle {
+    display: none !important;
+  }
+}
+

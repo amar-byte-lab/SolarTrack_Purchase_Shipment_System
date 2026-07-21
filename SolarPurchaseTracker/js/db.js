@@ -260,6 +260,10 @@ const DB = (() => {
     }
   }
 
+  function clearCache() {
+    cache = {};
+  }
+
   return {
     supportsFileSystemAPI: () => false, // Bypassed for SQLite mode
     pickFolder: () => Promise.resolve(true), // Bypassed for SQLite mode
@@ -276,6 +280,7 @@ const DB = (() => {
     downloadAllWorkbooks,
     saveDocumentFile,
     downloadDocumentFile,
+    clearCache,
   };
 
 })();
