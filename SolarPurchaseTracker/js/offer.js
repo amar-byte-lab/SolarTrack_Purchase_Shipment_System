@@ -205,18 +205,6 @@ function syncPrintLabels() {
     printLogo.style.display = 'inline-block';
   }
 
-  // 3. Stamp Overlay Image
-  const stampBase64 = getSetting('CompanyStamp', '');
-  const printStamp = document.getElementById('printStampImage');
-  if (printStamp) {
-    if (stampBase64) {
-      printStamp.src = stampBase64;
-      printStamp.style.display = 'block';
-    } else {
-      printStamp.style.display = 'none';
-    }
-  }
-
   // 4. Quote Metadata Box
   document.getElementById('printQuoteNo').textContent = document.getElementById('qQuoteNo').value.trim() || '-';
   document.getElementById('printQuoteDate').textContent = formatQuoteDate(document.getElementById('qDate').value);

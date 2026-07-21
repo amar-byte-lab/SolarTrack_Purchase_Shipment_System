@@ -4,7 +4,8 @@
 
 let itemModal;
 let productModal;
-let activeTab = 'items'; // 'items' or 'products'
+let activeTab = 'products';
+let isSavingProduct = false;
 
 window.onDbReady = function () {
   UI.renderSidebar('item-master.html');
@@ -16,17 +17,7 @@ window.onDbReady = function () {
   // Setup top bar actions dynamically based on active tab
   updateTopbarActions();
 
-  // Tab switching event listeners
-  const itemsTabBtn = document.getElementById('items-tab');
   const productsTabBtn = document.getElementById('products-tab');
-
-  if (itemsTabBtn) {
-    itemsTabBtn.addEventListener('shown.bs.tab', () => {
-      activeTab = 'items';
-      updateTopbarActions();
-      render();
-    });
-  }
 
   if (productsTabBtn) {
     productsTabBtn.addEventListener('shown.bs.tab', () => {
@@ -36,26 +27,23 @@ window.onDbReady = function () {
     });
   }
 
-  // Items save & search bindings
+  // Item save binding remains for product auto-add cleanup workflows.
   document.getElementById('btnSaveItem').addEventListener('click', saveItem);
-  document.getElementById('fSearch').addEventListener('input', Utils.debounce(render, 200));
 
   // Products save binding
   document.getElementById('btnSaveProduct').addEventListener('click', saveProduct);
-
-  // Sticky add row bindings
-  const addItemRow = document.getElementById('btnAddItemRow');
-  if (addItemRow) addItemRow.addEventListener('click', () => openModal(null));
 
   const addProductRow = document.getElementById('btnAddProductRow');
   if (addProductRow) addProductRow.addEventListener('click', () => openProductModal(null));
 
   // Render initial list
-  render();
+  renderProducts();
 };
 
 function updateTopbarActions() {
-  let actionsHtml = '';
+  const actionsHtml = `
+    <button class="btn btn-success fw-semibold" id="btnGenerateOffer">Generate Offer</button>
+  `;
   if (activeTab === 'items') {
     actionsHtml = `
       <button class="btn btn-outline-secondary" id="btnExport">⬇ Export Excel</button>
@@ -386,6 +374,8 @@ window.addProductItemRow = function (data) {
 };
 
 async function saveProduct() {
+  if (isSavingProduct) return;
+
   const origName = document.getElementById('pOrigName').value;
   const productName = document.getElementById('pProductName').value.trim();
 
@@ -403,11 +393,24 @@ async function saveProduct() {
     return { ItemName: name, Price: price };
   }).filter(it => it.ItemName);
 
-  if (items.length === 0) {
+  // Keep one row per item name so accidental duplicate lines do not get saved twice.
+  const uniqueItems = [];
+  const seenNames = new Set();
+  for (const it of items) {
+    const key = it.ItemName.toLowerCase();
+    if (seenNames.has(key)) continue;
+    seenNames.add(key);
+    uniqueItems.push(it);
+  }
+
+  if (uniqueItems.length === 0) {
     UI.toast('Please add at least one item with a name.', 'danger');
     return;
   }
 
+  isSavingProduct = true;
+  const saveBtn = document.getElementById('btnSaveProduct');
+  if (saveBtn) saveBtn.disabled = true;
   UI.showLoading(true);
   try {
     const totalCostVal = document.getElementById('pTotalCost') ? Number(document.getElementById('pTotalCost').value) || 0 : 0;
@@ -432,7 +435,6 @@ async function saveProduct() {
           return;
         }
         await DB.remove('products', p => p.ProductName === origName);
-        await DB.remove('product_items', it => it.ProductName === origName);
       }
       await DB.update('products', p => p.ProductName === productName, productRow);
     } else {
@@ -445,21 +447,21 @@ async function saveProduct() {
       await DB.insert('products', productRow);
     }
 
-    // Replace items
-    if (origName) {
-      await DB.remove('product_items', it => it.ProductName === productName);
-    }
-    for (const it of items) {
-      const itRow = {
+    // Rebuild product_items table in one shot so edits do not leave stale rows behind.
+    const rebuiltProductItems = DB.getAll('product_items').filter(it => it.ProductName !== productName);
+    for (const it of uniqueItems) {
+      rebuiltProductItems.push({
         RowID: Utils.uid('PITM'),
         ProductName: productName,
         ItemName: it.ItemName,
         Price: it.Price
-      };
-      await DB.insert('product_items', itRow);
+      });
+    }
+    await DB.replaceAll('product_items', rebuiltProductItems);
 
-      // Auto add new items to the general Item Master if they don't exist
-      const generalItems = DB.getAll('items');
+    // Auto add new items to the general Item Master if they don't exist.
+    const generalItems = DB.getAll('items');
+    for (const it of uniqueItems) {
       if (!generalItems.some(x => x.ItemName === it.ItemName)) {
         await DB.insert('items', {
           ItemName: it.ItemName,
@@ -479,6 +481,8 @@ async function saveProduct() {
     UI.toast('Error saving product set: ' + err.message, 'danger');
   } finally {
     UI.showLoading(false);
+    if (saveBtn) saveBtn.disabled = false;
+    isSavingProduct = false;
   }
 }
 
@@ -489,7 +493,10 @@ window.deleteProduct = async function (productName) {
   UI.showLoading(true);
   try {
     await DB.remove('products', p => p.ProductName === productName);
-    await DB.remove('product_items', it => it.ProductName === productName);
+    await DB.replaceAll(
+      'product_items',
+      DB.getAll('product_items').filter(it => it.ProductName !== productName)
+    );
     UI.toast('Product Set deleted.', 'warning');
     renderProducts();
   } catch (err) {
