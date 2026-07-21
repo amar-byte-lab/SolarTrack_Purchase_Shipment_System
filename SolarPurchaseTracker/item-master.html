@@ -48,42 +48,17 @@
       <!-- Nav Pills -->
       <ul class="nav nav-pills mb-3 gap-2 border-bottom pb-2" id="itemMasterTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active px-4 py-2 fw-semibold" id="items-tab" data-bs-toggle="pill" data-bs-target="#items-pane" type="button" role="tab" style="font-size:0.85rem; border-radius:8px;">Items List</button>
+          <button class="nav-link active px-4 py-2 fw-semibold" id="products-tab" data-bs-toggle="pill" data-bs-target="#products-pane" type="button" role="tab" style="font-size:0.85rem; border-radius:8px;">Product Sets</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link px-4 py-2 fw-semibold" id="products-tab" data-bs-toggle="pill" data-bs-target="#products-pane" type="button" role="tab" style="font-size:0.85rem; border-radius:8px;">Product Sets</button>
+          <button class="nav-link px-4 py-2 fw-semibold" id="items-tab" data-bs-toggle="pill" data-bs-target="#items-pane" type="button" role="tab" style="font-size:0.85rem; border-radius:8px;">Items List</button>
         </li>
       </ul>
 
       <!-- Tab Panes -->
       <div class="tab-content" id="itemMasterTabContent">
-        <!-- Tab 1: Items List -->
-        <div class="tab-pane fade show active" id="items-pane" role="tabpanel" aria-labelledby="items-tab">
-          <div class="d-flex mb-3">
-            <input type="text" class="form-control w-auto flex-grow-1" id="fSearch" placeholder="Search by item name, category, HSN code...">
-          </div>
-          <div class="st-card p-0 overflow-hidden">
-            <div class="table-responsive">
-              <table class="table table-installments table-hover mb-0" id="itemsTable">
-                <thead><tr>
-                  <th>Item Name</th><th>Category</th><th>Unit</th><th>HSN Code</th><th>GST %</th><th>Status</th><th class="no-print" style="width: 90px;">Actions</th>
-                </tr></thead>
-                <tbody></tbody>
-                <tfoot class="no-print">
-                  <tr class="add-row-sticky text-success" id="btnAddItemRow" style="cursor: pointer;">
-                    <td class="text-center fw-bold" style="font-size: 1.1rem; width: 45px;">+</td>
-                    <td colspan="6" class="fw-semibold text-success">
-                      Add a new item record...
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 2: Product Sets -->
-        <div class="tab-pane fade" id="products-pane" role="tabpanel" aria-labelledby="products-tab">
+        <!-- Tab 1: Product Sets -->
+        <div class="tab-pane fade show active" id="products-pane" role="tabpanel" aria-labelledby="products-tab">
           <div class="st-card p-0 overflow-hidden">
             <div class="table-responsive">
               <table class="table table-installments table-hover mb-0" id="productsTable">
@@ -102,6 +77,31 @@
                     <td class="text-center fw-bold" style="font-size: 1.1rem; width: 45px;">+</td>
                     <td colspan="4" class="fw-semibold text-success">
                       Add a new product set...
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Items List -->
+        <div class="tab-pane fade" id="items-pane" role="tabpanel" aria-labelledby="items-tab">
+          <div class="d-flex mb-3">
+            <input type="text" class="form-control w-auto flex-grow-1" id="fSearch" placeholder="Search by item name, category, HSN code...">
+          </div>
+          <div class="st-card p-0 overflow-hidden">
+            <div class="table-responsive">
+              <table class="table table-installments table-hover mb-0" id="itemsTable">
+                <thead><tr>
+                  <th>Item Name</th><th>Category</th><th>Unit</th><th>HSN Code</th><th>GST %</th><th>Status</th><th class="no-print" style="width: 90px;">Actions</th>
+                </tr></thead>
+                <tbody></tbody>
+                <tfoot class="no-print">
+                  <tr class="add-row-sticky text-success" id="btnAddItemRow" style="cursor: pointer;">
+                    <td class="text-center fw-bold" style="font-size: 1.1rem; width: 45px;">+</td>
+                    <td colspan="6" class="fw-semibold text-success">
+                      Add a new item record...
                     </td>
                   </tr>
                 </tfoot>

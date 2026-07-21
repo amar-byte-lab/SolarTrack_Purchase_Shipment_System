@@ -17,9 +17,28 @@ window.onDbReady = function () {
   // Setup top bar actions dynamically based on active tab
   updateTopbarActions();
 
+  const itemsTabBtn = document.getElementById('items-tab');
   const productsTabBtn = document.getElementById('products-tab');
 
+  if (itemsTabBtn) {
+    itemsTabBtn.addEventListener('click', () => {
+      activeTab = 'items';
+      updateTopbarActions();
+      render();
+    });
+    itemsTabBtn.addEventListener('shown.bs.tab', () => {
+      activeTab = 'items';
+      updateTopbarActions();
+      render();
+    });
+  }
+
   if (productsTabBtn) {
+    productsTabBtn.addEventListener('click', () => {
+      activeTab = 'products';
+      updateTopbarActions();
+      renderProducts();
+    });
     productsTabBtn.addEventListener('shown.bs.tab', () => {
       activeTab = 'products';
       updateTopbarActions();
@@ -38,19 +57,18 @@ window.onDbReady = function () {
 
   // Render initial list
   renderProducts();
+  render();
 };
 
 function updateTopbarActions() {
-  const actionsHtml = `
-    <button class="btn btn-success fw-semibold" id="btnGenerateOffer">Generate Offer</button>
-  `;
+  let actionsHtml = '';
   if (activeTab === 'items') {
     actionsHtml = `
-      <button class="btn btn-outline-secondary" id="btnExport">⬇ Export Excel</button>
+      <button class="btn btn-outline-secondary" id="btnExport">Export Excel</button>
     `;
   } else {
     actionsHtml = `
-      <button class="btn btn-success fw-semibold" id="btnGenerateOffer">📄 Generate Offer</button>
+      <button class="btn btn-success fw-semibold" id="btnGenerateOffer">Generate Offer</button>
     `;
   }
 
@@ -69,7 +87,6 @@ function updateTopbarActions() {
     if (btnGen) btnGen.addEventListener('click', generateOfferRedirect);
   }
 }
-
 /* ── Tab 1: Item Master Controllers ──────────────────────────────────── */
 
 function render() {
@@ -516,3 +533,5 @@ function generateOfferRedirect() {
   const params = encodeURIComponent(checked.join(','));
   window.location.href = `offer.html?products=${params}`;
 }
+
+
