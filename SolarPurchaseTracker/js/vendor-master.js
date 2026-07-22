@@ -42,8 +42,11 @@ function render() {
       <td>${v.GSTIN || '-'}</td>
       <td>${v.Address || '-'}</td>
       <td class="no-print">
-        <button class="btn btn-sm btn-outline-secondary" onclick='openModal(${JSON.stringify(v.VendorName)})'>✎</button>
-        <button class="btn btn-sm btn-outline-danger" onclick='deleteVendor(${JSON.stringify(v.VendorName)})'>🗑</button>
+        <div class="d-flex gap-1 align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" onclick='openModal(${JSON.stringify(v.VendorName)})' title="Edit">✎</button>
+          <button class="btn btn-sm btn-outline-danger" onclick='deleteVendor(${JSON.stringify(v.VendorName)})' title="Delete">🗑</button>
+          <button class="btn btn-sm btn-outline-primary py-0.5 px-2" onclick='makePartner(${JSON.stringify(v)})' style="font-size: 0.7rem;" title="Make as Partner user">👤 Partner</button>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -109,4 +112,60 @@ window.deleteVendor = async function (vendorName) {
   UI.showLoading(false);
   UI.toast('Vendor deleted.', 'warning');
   render();
+};
+
+window.makePartner = async function (v) {
+  const userid = v.VendorName.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  if (!userid) {
+    UI.toast('Invalid vendor name for creating a user account.', 'danger');
+    return;
+  }
+
+  UI.showLoading(true);
+  try {
+    const res = await fetch('/api/auth-config');
+    if (!res.ok) throw new Error('Failed to fetch auth configuration.');
+    const data = await res.json();
+    const users = data.users || [];
+    const roles = data.roles || ['admin', 'superadmin', 'partner', 'user'];
+
+    const existingUser = users.find(u => u.userid === userid);
+    if (existingUser) {
+      UI.showLoading(false);
+      UI.toast(`User "${userid}" already exists as role: ${existingUser.role}.`, 'info');
+      return;
+    }
+
+    UI.showLoading(false);
+    const password = prompt(`Enter password for Partner user "${v.VendorName}" (UserID: ${userid}):`, 'partner123');
+    if (password === null) return;
+    if (!password.trim()) {
+      UI.toast('Password is required.', 'danger');
+      return;
+    }
+
+    if (!roles.includes('partner')) roles.push('partner');
+    if (!roles.includes('superadmin')) roles.push('superadmin');
+
+    users.push({
+      userid: userid,
+      username: v.VendorName,
+      password: password.trim(),
+      role: 'partner'
+    });
+
+    UI.showLoading(true);
+    const saveRes = await fetch('/api/auth-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ users, roles })
+    });
+    if (!saveRes.ok) throw new Error('Failed to save updated auth configuration.');
+
+    UI.toast(`Partner user "${v.VendorName}" created successfully!`, 'success');
+  } catch (err) {
+    UI.toast('Error creating partner user: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
 };

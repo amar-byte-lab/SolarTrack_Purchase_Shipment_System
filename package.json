@@ -26,10 +26,18 @@
         "username": "amar",
         "password": "amar",
         "role": "user"
+      },
+      {
+        "userid": "sripatisrichandan",
+        "username": "Sripati Srichandan",
+        "password": "sripatisrichandan",
+        "role": "partner"
       }
     ],
     "roles": [
       "admin",
+      "superadmin",
+      "partner",
       "user"
     ]
   },

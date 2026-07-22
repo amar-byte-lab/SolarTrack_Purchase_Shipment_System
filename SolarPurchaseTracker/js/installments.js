@@ -772,7 +772,7 @@ function renderList() {
               <div class="dropdown">
                 <input type="text" class="form-control form-control-sm" id="editBrokerName" value="${r.BrokerName || ''}" placeholder="Partner Name" autocomplete="off">
               </div>
-              <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${r.BrokerNumber || ''}" placeholder="Partner Phone">
+              <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${(r.BrokerNumber || '').split('|creator:')[0]}" placeholder="Partner Phone">
               <input type="number" step="0.01" class="form-control form-control-sm" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
             </div>
           </td>
@@ -830,7 +830,7 @@ function renderList() {
           <td class="col-Partner text-end">
             <div class="d-flex flex-column align-items-start" style="font-size: 0.8rem; gap: 1px;">
               <span class="fw-semibold text-dark">${r.BrokerName || '—'}</span>
-              <span class="text-muted" style="font-size: 0.72rem;">${r.BrokerNumber || ''}</span>
+              <span class="text-muted" style="font-size: 0.72rem;">${(r.BrokerNumber || '').split('|creator:')[0]}</span>
               <button class="btn btn-xs btn-outline-secondary mt-1 no-print font-monospace" onclick="showCommissionHistory(${r.SlNo})" style="font-size:0.68rem; padding:2px 6px; border-color: #ccc; white-space: nowrap;">
                 Commission ${getCommDiffBadge(comm, commPaid)}
               </button>
@@ -935,21 +935,36 @@ function bindEditRowListeners() {
     });
   }
 
+  const currentUser = Auth.getUser();
+  const isPartner = (currentUser && currentUser.role === 'partner');
   const editBrokerNameInput = document.getElementById('editBrokerName');
   if (editBrokerNameInput) {
-    const vendors = DB.getAll('vendors');
-    Utils.initSearchableDropdown('editBrokerName', vendors.map(v => v.VendorName), (selectedBrokerName) => {
-      const found = vendors.find(v => v.VendorName === selectedBrokerName);
-      if (found && found.Phone) {
-        const editBrokerPhoneInput = document.getElementById('editBrokerNumber');
-        if (editBrokerPhoneInput) {
-          editBrokerPhoneInput.value = found.Phone;
-          // Dispatch change event to trigger any validation/listeners
-          editBrokerPhoneInput.dispatchEvent(new Event('input', { bubbles: true }));
-          editBrokerPhoneInput.dispatchEvent(new Event('change', { bubbles: true }));
+    if (isPartner) {
+      editBrokerNameInput.value = currentUser.username;
+      editBrokerNameInput.disabled = true;
+      const phoneInput = document.getElementById('editBrokerNumber');
+      if (phoneInput && !phoneInput.value) {
+        const vendors = DB.getAll('vendors');
+        const foundVendor = vendors.find(v => v.VendorName === currentUser.username);
+        if (foundVendor && foundVendor.Phone) {
+          phoneInput.value = foundVendor.Phone;
         }
       }
-    });
+    } else {
+      const vendors = DB.getAll('vendors');
+      Utils.initSearchableDropdown('editBrokerName', vendors.map(v => v.VendorName), (selectedBrokerName) => {
+        const found = vendors.find(v => v.VendorName === selectedBrokerName);
+        if (found && found.Phone) {
+          const editBrokerPhoneInput = document.getElementById('editBrokerNumber');
+          if (editBrokerPhoneInput) {
+            editBrokerPhoneInput.value = found.Phone;
+            // Dispatch change event to trigger any validation/listeners
+            editBrokerPhoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+            editBrokerPhoneInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      });
+    }
   }
 }
 
@@ -1075,6 +1090,15 @@ window.saveInline = async function (slNo) {
   const tInst = existing ? (Number(existing.ThirdInstallment) || 0) : 0;
   const total = fInst + sInst + tInst;
 
+  const currentUser = Auth.getUser();
+  let creatorSuffix = '';
+  if (existing && (existing.BrokerNumber || '').includes('|creator:')) {
+    creatorSuffix = '|creator:' + existing.BrokerNumber.split('|creator:')[1];
+  }
+  if (!creatorSuffix && currentUser) {
+    creatorSuffix = '|creator:' + currentUser.userid;
+  }
+
   const row = {
     SlNo: Number(slNo),
     Name: name,
@@ -1093,7 +1117,7 @@ window.saveInline = async function (slNo) {
     Commission: Number(document.getElementById('editCommission').value) || 0,
     CommissionPaid: existing ? (Number(existing.CommissionPaid) || 0) : 0,
     BrokerName: document.getElementById('editBrokerName').value.trim(),
-    BrokerNumber: document.getElementById('editBrokerNumber').value.trim(),
+    BrokerNumber: document.getElementById('editBrokerNumber').value.trim() + creatorSuffix,
     CommissioningDate: document.getElementById('editCommissioningDate').value
   };
 
@@ -1443,7 +1467,7 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
       document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
       document.getElementById('cBrokerName').value = r.BrokerName || '';
-      document.getElementById('cBrokerNumber').value = r.BrokerNumber || '';
+      document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|creator:')[0];
       document.getElementById('cCommission').value = r.Commission || '';
     }
   } else {
@@ -1470,6 +1494,23 @@ window.openCustomerModal = function(slNo) {
     brokerInput.updateOptionsList(vendors.map(v => v.VendorName));
   }
 
+  const currentUser = Auth.getUser();
+  if (currentUser && currentUser.role === 'partner') {
+    if (brokerInput && !slNo) {
+      brokerInput.value = currentUser.username;
+    }
+    if (!slNo) {
+      const foundVendor = vendors.find(v => v.VendorName === currentUser.username);
+      if (foundVendor && foundVendor.Phone) {
+        const phoneInput = document.getElementById('cBrokerNumber');
+        if (phoneInput) phoneInput.value = foundVendor.Phone;
+      }
+    }
+  }
+  if (brokerInput) {
+    brokerInput.disabled = false;
+  }
+
   modal.show();
 };
 
@@ -1483,6 +1524,19 @@ async function saveCustomerModal() {
     return;
   }
 
+  const currentUser = Auth.getUser();
+  let creatorSuffix = '';
+  if (slNoVal) {
+    const slNo = Number(slNoVal);
+    const existing = DB.getAll('installments').find(x => Number(x.SlNo) === slNo);
+    if (existing && (existing.BrokerNumber || '').includes('|creator:')) {
+      creatorSuffix = '|creator:' + existing.BrokerNumber.split('|creator:')[1];
+    }
+  }
+  if (!creatorSuffix && currentUser) {
+    creatorSuffix = '|creator:' + currentUser.userid;
+  }
+
   const rowData = {
     Name: name,
     MobileNumber: document.getElementById('cMobile').value.trim(),
@@ -1493,7 +1547,7 @@ async function saveCustomerModal() {
     LoginDate: document.getElementById('cLoginDate').value || null,
     InstallationDate: document.getElementById('cInstallationDate').value || null,
     BrokerName: document.getElementById('cBrokerName').value.trim(),
-    BrokerNumber: document.getElementById('cBrokerNumber').value.trim(),
+    BrokerNumber: document.getElementById('cBrokerNumber').value.trim() + creatorSuffix,
     Commission: Number(document.getElementById('cCommission').value) || 0
   };
 

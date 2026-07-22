@@ -128,7 +128,38 @@ const DB = (() => {
   }
 
   function getAll(key) {
-    return cache[key] ? [...cache[key]] : [];
+    let rows = cache[key] ? [...cache[key]] : [];
+    if (typeof Auth !== 'undefined') {
+      const currentUser = Auth.getUser();
+      if (currentUser && currentUser.role === 'partner') {
+        const partnerNames = [
+          currentUser.username.toLowerCase().trim(),
+          currentUser.userid.toLowerCase().trim()
+        ].concat(
+          (currentUser.username && currentUser.username.includes(','))
+            ? currentUser.username.split(',').map(s => s.toLowerCase().trim())
+            : []
+        );
+
+        if (key === 'installments') {
+          rows = rows.filter(r => {
+            const broker = (r.BrokerName || '').toLowerCase().trim();
+            return partnerNames.includes(broker);
+          });
+        } else if (['installment_txns', 'commission_txns', 'installment_remarks'].includes(key)) {
+          const allowedSlNos = new Set(
+            (cache['installments'] || [])
+              .filter(r => {
+                const broker = (r.BrokerName || '').toLowerCase().trim();
+                return partnerNames.includes(broker);
+              })
+              .map(r => Number(r.SlNo))
+          );
+          rows = rows.filter(r => allowedSlNos.has(Number(r.SlNo)));
+        }
+      }
+    }
+    return rows;
   }
 
   async function insert(key, row) {
