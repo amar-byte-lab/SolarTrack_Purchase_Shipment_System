@@ -101,7 +101,9 @@ const DB = (() => {
 
       const borrowerListPromise = (async () => {
         try {
-          const rb = await fetch('/api/borrower-list');
+          const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+          const userId = currentUser ? currentUser.userid : '';
+          const rb = await fetch(`/api/borrower-list?userId=${userId}`);
           cache.borrowers = rb.ok ? await rb.json() : [];
         } catch {
           cache.borrowers = [];

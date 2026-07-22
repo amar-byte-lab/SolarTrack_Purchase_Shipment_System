@@ -20,7 +20,17 @@
         "username": "Normal User",
         "password": "userpassword",
         "role": "user"
+      },
+      {
+        "userid": "amar",
+        "username": "amar",
+        "password": "amar",
+        "role": "user"
       }
+    ],
+    "roles": [
+      "admin",
+      "user"
     ]
   },
   "repository": {

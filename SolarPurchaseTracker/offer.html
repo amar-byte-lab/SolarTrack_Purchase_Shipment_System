@@ -478,14 +478,14 @@
         <div id="printQuotationTemplate" class="d-none d-print-block text-dark" style="font-family: 'Times New Roman', Times, serif; line-height: 1.4; width: 100%; margin: 0 auto; color: #000; box-sizing: border-box;">
           
           <!-- Document Headers -->
-          <div class="text-center mb-3">
+          <div id="printDocumentHeader" class="text-center mb-3" data-print-block="header">
             <h3 class="fw-bold mb-1 text-dark" style="font-size: 18pt; letter-spacing: 0.5px;">QUOTATION</h3>
             <h5 class="fw-bold mb-1 text-dark" style="font-size: 12pt; text-transform: uppercase;" id="printHeadingTitle">FOR 3 KW PM SURYAGHAR YOJANA ON-GRID SYSTEM</h5>
             <span style="font-size: 9pt; font-style: italic; color: #333;">(ORIGINAL FOR RECIPIENT)</span>
           </div>
 
           <!-- TABLE 1: Seller & Quote Metadata Row (2 Column Layout) -->
-          <table class="word-border-table w-100 mb-3" style="table-layout: fixed; border-collapse: collapse; border: 1px solid #000; width: 100%;">
+          <table id="printSellerQuoteBlock" class="word-border-table w-100 mb-3" data-print-block="section" style="table-layout: fixed; border-collapse: collapse; border: 1px solid #000; width: 100%;">
             <tbody>
               <tr>
                 <!-- Left Column: Seller details -->
@@ -533,14 +533,14 @@
           </table>
 
           <!-- Buyer Information Block -->
-          <div class="mb-3 text-start" style="padding: 4px 0; line-height: 1.4; border-bottom: 1px dashed #000; padding-bottom: 6px;">
+          <div id="printBuyerBlock" class="mb-3 text-start" data-print-block="section" style="padding: 4px 0; line-height: 1.4; border-bottom: 1px dashed #000; padding-bottom: 6px;">
             <div class="text-start"><strong style="font-size: 10.5pt;">Buyer:</strong> <span style="font-size: 11.5pt; font-weight: bold;" id="printBuyerName">-</span></div>
             <div class="text-start" id="printBuyerMobileWrapper" style="display: none;"><strong style="font-size: 10.5pt;">Mobile:</strong> <span style="font-size: 10.5pt; font-weight: bold;" id="printBuyerMobile">-</span></div>
             <div class="text-start"><strong style="font-size: 10.5pt;">Address:</strong> <span style="font-size: 10.5pt;" id="printBuyerAddress">-</span></div>
           </div>
 
           <!-- TABLE 2: Items Grid (Sl No, Description, Qty, Basic Price, CGST Rate, SGST Rate, Amount) -->
-          <table class="word-border-table w-100 text-dark mb-2" id="printItemsTable" style="border-collapse: collapse; width: 100%; border: 1px solid #000;">
+          <table id="printItemsTable" class="word-border-table w-100 text-dark mb-2" data-print-block="table" style="border-collapse: collapse; width: 100%; border: 1px solid #000;">
             <thead>
               <tr style="background-color: #f2f2f2;">
                 <th style="width: 6%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Sl No</th>
@@ -558,19 +558,27 @@
           </table>
 
           <!-- Notes / Special terms (Under table) -->
-          <div class="text-start mb-2 ps-2" style="font-size: 9.5pt; color: #111; line-height: 1.4;" id="printSpecialNotesBox">
+          <div id="printSpecialNotesBox" class="text-start mb-2 ps-2" data-print-block="notes" style="font-size: 9.5pt; color: #111; line-height: 1.4;">
             <div id="printSpecialCableNote">* If more than 20 mtr Solar DC Cable is required, extra charges @ Rs 60/meter to be paid by customer.</div>
             <div>* For high-rise table structure, extra charges to be paid by customer.</div>
             <div>* Civil materials to be arranged by customer at the installation site.</div>
           </div>
 
           <!-- Amount Chargeable in words -->
-          <div class="text-start fw-bold mb-3 ps-1" style="font-size: 10.5pt; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0;" id="printAmountInWords">
+          <div id="printAmountInWords" class="text-start fw-bold mb-3 ps-1" data-print-block="section" style="font-size: 10.5pt; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 0;">
             Amount Chargeable (in words): -
           </div>
 
+          <!-- TABLE 2B: Terms & Conditions -->
+          <div id="printTermsBlock" class="mb-3" data-print-block="group" style="border: 1px solid #000; padding: 8px;">
+            <div class="fw-bold mb-2 text-start" style="font-size: 10.5pt;">Terms &amp; Conditions</div>
+            <div class="text-start text-dark" style="font-size: 9.5pt; line-height: 1.4;" id="lblCompanyTermsPrint">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
           <!-- TABLE 3: Subsidy details & Bank Details / Declaration (2 Columns side-by-side) -->
-          <table class="word-border-table w-100" style="table-layout: fixed; width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
+          <table id="printSubsidyBankBlock" class="word-border-table w-100" data-print-block="group" style="table-layout: fixed; width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 10px;">
             <tbody>
               <tr>
                 <!-- Left Cell: Subsidy Scheme (If applicable) -->
@@ -580,9 +588,9 @@
                     <thead>
                       <tr style="background-color: #f2f2f2;">
                         <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Per KW</th>
-                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Central Subsidy</th>
-                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">State Subsidy</th>
-                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Total Subsidy</th>
+                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Central Subsidy in Rs</th>
+                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">State Subsidy in Rs</th>
+                        <th style="font-size: 9.5pt; padding: 3px; border: 1px solid #000; font-weight: bold; text-align: center;">Total Subsidy in Rs</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -619,7 +627,7 @@
           </table>
 
           <!-- Signature Block at bottom -->
-          <div class="mt-4" style="page-break-inside: avoid;">
+          <div id="printSignatureBlock" class="mt-4" data-print-block="section" style="page-break-inside: avoid;">
             <table style="width: 100%; border: none !important; border-collapse: collapse;">
               <tbody>
                 <tr>
@@ -640,11 +648,13 @@
             </table>
           </div>
           
-          <div class="text-center mt-3 fw-bold text-dark" style="font-size: 11pt; color: #000 !important; font-style: italic; border-top: 1px solid #000; padding-top: 6px;">
+          <div id="printGeneratedCopyBlock" class="text-center mt-3 fw-bold text-dark" data-print-block="footer" style="font-size: 11pt; color: #000 !important; font-style: italic; border-top: 1px solid #000; padding-top: 6px;">
             This is a Computer-Generated Copy
           </div>
 
         </div>
+
+        <div id="printPaginationRoot" class="d-none d-print-block"></div>
 
 <style>
 /* Hide horizontal scrollbar on screen */
@@ -681,12 +691,63 @@ html, body {
   
   /* Official A4 Page Padding inside template box */
   #printQuotationTemplate {
+    display: none !important;
+  }
+
+  #printPaginationRoot {
     display: block !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    padding: 12mm 14mm !important;
+    padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
+  }
+
+  .print-page-shell {
+    width: 100%;
+    box-sizing: border-box;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .print-page-shell:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .print-page {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12mm 14mm;
+    margin: 0;
+    min-height: 273mm;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    color: #000;
+    font-family: "Times New Roman", Times, serif !important;
+  }
+
+  .print-page-header,
+  .print-page-footer {
+    flex: 0 0 auto;
+  }
+
+  .print-page-content {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .print-block {
+    box-sizing: border-box;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-block + .print-block {
+    margin-top: 0;
   }
   
   .container-fluid, .row, .col-12, .col-md-6 {
@@ -715,6 +776,12 @@ html, body {
   .word-border-table tr {
     page-break-inside: avoid !important;
     page-break-after: auto !important;
+  }
+
+  .word-border-table thead tr,
+  .word-border-table tbody tr,
+  .word-border-table tfoot tr {
+    break-inside: avoid !important;
   }
   
   .word-border-table th, .word-border-table td {

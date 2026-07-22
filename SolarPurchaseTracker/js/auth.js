@@ -96,6 +96,11 @@ const Auth = (() => {
       setUser(u);
       return { success: true, user: u };
     }
+    if (id === 'amar' && password === 'amar') {
+      const u = { userid: 'amar', username: 'amar', role: 'user' };
+      setUser(u);
+      return { success: true, user: u };
+    }
     return { success: false, error: 'Invalid User ID or Password' };
   }
 
@@ -157,8 +162,8 @@ const Auth = (() => {
       return;
     }
 
-    // 4. Normal user restricted access: ONLY allowed to access offer.html
-    if (currentUser.role !== 'admin' && page !== 'offer.html') {
+    // 4. Normal user restricted access: ONLY allowed to access offer.html & borrower.html
+    if (currentUser.role !== 'admin' && page !== 'offer.html' && page !== 'borrower.html') {
       window.location.href = 'offer.html';
       return;
     }

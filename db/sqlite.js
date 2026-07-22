@@ -23,8 +23,15 @@ function init() {
   db.exec(`CREATE TABLE IF NOT EXISTS product_items ("RowID" TEXT PRIMARY KEY, "ProductName" TEXT, "ItemName" TEXT, "Price" REAL)`);
   db.exec(`CREATE TABLE IF NOT EXISTS shipments ("ShipmentNo" TEXT PRIMARY KEY, "PurchaseDate" TEXT, "VendorName" TEXT, "ShipmentType" TEXT, "VehicleNumber" TEXT, "InvoiceNumber" TEXT, "TransportationCost" REAL, "GSTPercentage" REAL, "VendorPaid" REAL, "TransportPaid" REAL, "Documents" TEXT, "Remarks" TEXT, "CreatedAt" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS materials ("RowID" TEXT PRIMARY KEY, "ShipmentNo" TEXT, "ItemName" TEXT, "Category" TEXT, "Quantity" REAL, "Unit" TEXT, "PurchaseRate" REAL, "TotalPurchaseValue" REAL)`);
-  db.exec(`CREATE TABLE IF NOT EXISTS borrowers ("BorrowerID" INTEGER PRIMARY KEY AUTOINCREMENT, "Name" TEXT NOT NULL, "Mobile" TEXT, "Address" TEXT, "Status" TEXT DEFAULT 'Active', "CreatedAt" TEXT)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS borrowers ("BorrowerID" INTEGER PRIMARY KEY AUTOINCREMENT, "Name" TEXT NOT NULL, "Mobile" TEXT, "Address" TEXT, "Status" TEXT DEFAULT 'Active', "CreatedAt" TEXT, "CreatedBy" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS borrower_txns ("TxnID" INTEGER PRIMARY KEY AUTOINCREMENT, "BorrowerID" INTEGER NOT NULL, "TxnDate" TEXT NOT NULL, "Amount" REAL NOT NULL, "Type" TEXT NOT NULL, "Remarks" TEXT, "CreatedAt" TEXT)`);
+
+  // Migrate existing database to add CreatedBy column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE borrowers ADD COLUMN "CreatedBy" TEXT`);
+  } catch (e) {
+    // Ignore error if column already exists
+  }
 
   console.log(`[SQLite Driver] Database initialized at: ${DB_PATH}`);
 }
@@ -84,8 +91,15 @@ async function replaceTable(tableName, rows) {
   return importTable(tableName, rows);
 }
 
-async function getBorrowerList() {
+async function getBorrowerList(userId) {
   init();
+  if (userId) {
+    if (userId === 'admin') {
+      return db.prepare('SELECT * FROM borrowers WHERE "CreatedBy" = ? OR "CreatedBy" IS NULL OR "CreatedBy" = \'\' ORDER BY BorrowerID ASC').all(userId);
+    } else {
+      return db.prepare('SELECT * FROM borrowers WHERE "CreatedBy" = ? ORDER BY BorrowerID ASC').all(userId);
+    }
+  }
   return db.prepare('SELECT * FROM borrowers ORDER BY BorrowerID ASC').all();
 }
 
@@ -96,8 +110,8 @@ async function getBorrowerTxns(borrowerID) {
 
 async function addBorrower(body) {
   init();
-  const stmt = db.prepare('INSERT INTO borrowers (Name,Mobile,Address,Status,CreatedAt) VALUES (?,?,?,?,?)');
-  const info = stmt.run(body.Name, body.Mobile||'', body.Address||'', 'Active', new Date().toISOString());
+  const stmt = db.prepare('INSERT INTO borrowers (Name,Mobile,Address,Status,CreatedAt,CreatedBy) VALUES (?,?,?,?,?,?)');
+  const info = stmt.run(body.Name, body.Mobile||'', body.Address||'', 'Active', new Date().toISOString(), body.CreatedBy || null);
   return { BorrowerID: Number(info.lastInsertRowid) };
 }
 
@@ -124,6 +138,19 @@ async function deleteBorrowerTxn(txnID) {
   db.prepare('DELETE FROM borrower_txns WHERE TxnID=?').run(txnID);
 }
 
+async function deleteBorrower(borrowerID) {
+  init();
+  db.exec('BEGIN TRANSACTION');
+  try {
+    db.prepare('DELETE FROM borrower_txns WHERE BorrowerID = ?').run(borrowerID);
+    db.prepare('DELETE FROM borrowers WHERE BorrowerID = ?').run(borrowerID);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
 module.exports = {
   driverName: 'SQLite',
   init,
@@ -141,4 +168,5 @@ module.exports = {
   closeBorrower,
   addBorrowerTxn,
   deleteBorrowerTxn,
+  deleteBorrower,
 };

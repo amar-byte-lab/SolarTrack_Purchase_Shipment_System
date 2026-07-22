@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS borrowers (
   "Mobile" TEXT,
   "Address" TEXT,
   "Status" TEXT DEFAULT 'Active',
-  "CreatedAt" TEXT
+  "CreatedAt" TEXT,
+  "CreatedBy" TEXT
 );
 
 CREATE TABLE IF NOT EXISTS borrower_txns (

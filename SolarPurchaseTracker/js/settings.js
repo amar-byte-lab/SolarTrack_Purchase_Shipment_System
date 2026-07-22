@@ -15,6 +15,12 @@ let editingSubsidyKW = '';
 let editingSubsidyState = '';
 let editingSubsidyCentral = '';
 
+// User & Role Management variables
+let _userModal = null;
+let _rolesModal = null;
+let _usersList = [];
+let _rolesList = [];
+
 window.onDbReady = function () {
   UI.renderSidebar('settings.html');
   UI.renderTopbar('Settings', 'Company preferences and database connection', '');
@@ -89,6 +95,20 @@ window.onDbReady = function () {
     });
     UI.toast('Backup files downloaded.', 'success');
   });
+
+  // User & Role Management setup
+  _userModal = new bootstrap.Modal(document.getElementById('userModal'), { keyboard: true });
+  _rolesModal = new bootstrap.Modal(document.getElementById('rolesModal'), { keyboard: true });
+
+  document.getElementById('btnAddNewUser').addEventListener('click', openAddUserModal);
+  document.getElementById('btnManageRolesModal').addEventListener('click', () => _rolesModal.show());
+  document.getElementById('btnSaveUserModal').addEventListener('click', saveUserFromModal);
+  document.getElementById('btnAddRole').addEventListener('click', addNewRole);
+
+  // Bind role list modal shown event to render the roles list
+  document.getElementById('rolesModal').addEventListener('shown.bs.modal', renderRolesList);
+
+  loadAuthSettings();
 };
 
 function handleFileSelect(e, type) {
@@ -469,6 +489,235 @@ async function saveSettingsForm() {
     UI.toast('Profile and settings saved successfully.', 'success');
   } catch (err) {
     UI.toast('Error saving settings: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+}
+
+/* ── User & Role Management Helpers ──────────────────────────────────── */
+
+async function loadAuthSettings() {
+  try {
+    const res = await fetch('/api/auth-config');
+    if (!res.ok) throw new Error('Failed to load user and role configurations.');
+    const data = await res.json();
+    _usersList = data.users || [];
+    _rolesList = data.roles || ['admin', 'user'];
+    
+    renderUsersList();
+    populateRoleSelect();
+  } catch (e) {
+    UI.toast(e.message, 'danger');
+  }
+}
+
+function renderUsersList() {
+  const tbody = document.getElementById('usersTbody');
+  if (!tbody) return;
+  
+  if (_usersList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No users found.</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = _usersList.map(u => {
+    const isCurrentAdmin = (u.userid === 'admin');
+    return `
+      <tr>
+        <td class="font-monospace">${u.userid}</td>
+        <td>${u.username}</td>
+        <td class="font-monospace">${u.password}</td>
+        <td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-success'}">${u.role}</span></td>
+        <td class="text-center">
+          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5" onclick="openEditUserModal('${u.userid}')">✏️ Edit</button>
+          ${isCurrentAdmin ? '' : `<button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 ms-1" onclick="deleteUser('${u.userid}')">🗑️ Delete</button>`}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderRolesList() {
+  const container = document.getElementById('rolesListGroup');
+  if (!container) return;
+  
+  container.innerHTML = _rolesList.map(r => {
+    const isDefault = (r === 'admin' || r === 'user');
+    return `
+      <div class="list-group-item d-flex align-items-center justify-content-between p-2">
+        <span class="font-monospace fw-semibold">${r}</span>
+        ${isDefault ? '<span class="badge bg-secondary">System Default</span>' : `
+          <button type="button" class="btn btn-xs btn-outline-danger border-0 p-1" onclick="deleteRole('${r}')" title="Delete Role">🗑️</button>
+        `}
+      </div>
+    `;
+  }).join('');
+}
+
+function populateRoleSelect() {
+  const select = document.getElementById('userModalRole');
+  if (!select) return;
+  select.innerHTML = _rolesList.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+function openAddUserModal() {
+  document.getElementById('userForm').reset();
+  document.getElementById('userModalTitle').textContent = 'Add New User';
+  document.getElementById('userModalMode').value = 'add';
+  document.getElementById('userModalOrigId').value = '';
+  document.getElementById('userModalId').disabled = false;
+  populateRoleSelect();
+  _userModal.show();
+}
+
+window.openEditUserModal = function(userid) {
+  const user = _usersList.find(u => u.userid === userid);
+  if (!user) return;
+  
+  document.getElementById('userModalTitle').textContent = 'Edit User';
+  document.getElementById('userModalMode').value = 'edit';
+  document.getElementById('userModalOrigId').value = userid;
+  
+  const idInput = document.getElementById('userModalId');
+  idInput.value = user.userid;
+  // Let's allow editing userid, but if it is 'admin', disable it
+  idInput.disabled = (userid === 'admin');
+  
+  document.getElementById('userModalName').value = user.username;
+  document.getElementById('userModalPassword').value = user.password;
+  
+  populateRoleSelect();
+  document.getElementById('userModalRole').value = user.role;
+  
+  _userModal.show();
+};
+
+window.deleteUser = async function(userid) {
+  if (userid === 'admin') {
+    UI.toast('Cannot delete default admin user.', 'warning');
+    return;
+  }
+  
+  const confirmed = await UI.confirmDialog(
+    `Are you sure you want to delete user "${userid}"?`,
+    'Confirm Deletion',
+    'Delete',
+    'btn-danger'
+  );
+  if (!confirmed) return;
+  
+  _usersList = _usersList.filter(u => u.userid !== userid);
+  await saveAuthSettings();
+};
+
+async function saveUserFromModal() {
+  const mode = document.getElementById('userModalMode').value;
+  const origId = document.getElementById('userModalOrigId').value;
+  const id = document.getElementById('userModalId').value.trim().toLowerCase();
+  const name = document.getElementById('userModalName').value.trim();
+  const password = document.getElementById('userModalPassword').value;
+  const role = document.getElementById('userModalRole').value;
+  
+  if (!id || !name || !password || !role) {
+    UI.toast('Please fill all user fields.', 'warning');
+    return;
+  }
+  
+  // Validation for alphanumeric
+  if (!/^[a-z0-9_-]+$/.test(id)) {
+    UI.toast('User ID must be lowercase alphanumeric, underscore, or hyphen only.', 'warning');
+    return;
+  }
+  
+  if (mode === 'add') {
+    if (_usersList.some(u => u.userid === id)) {
+      UI.toast(`User ID "${id}" is already in use.`, 'warning');
+      return;
+    }
+    _usersList.push({ userid: id, username: name, password, role });
+  } else {
+    // Edit mode
+    const userIndex = _usersList.findIndex(u => u.userid === origId);
+    if (userIndex === -1) {
+      UI.toast('User not found.', 'danger');
+      return;
+    }
+    if (origId !== id && _usersList.some(u => u.userid === id)) {
+      UI.toast(`User ID "${id}" is already in use.`, 'warning');
+      return;
+    }
+    _usersList[userIndex] = { userid: id, username: name, password, role };
+  }
+  
+  await saveAuthSettings();
+  _userModal.hide();
+}
+
+async function addNewRole() {
+  const input = document.getElementById('newRoleInput');
+  const roleName = input.value.trim().toLowerCase();
+  
+  if (!roleName) return;
+  
+  if (!/^[a-z0-9_-]+$/.test(roleName)) {
+    UI.toast('Role name must be lowercase alphanumeric, underscore, or hyphen only.', 'warning');
+    return;
+  }
+  
+  if (_rolesList.includes(roleName)) {
+    UI.toast(`Role "${roleName}" already exists.`, 'warning');
+    return;
+  }
+  
+  _rolesList.push(roleName);
+  input.value = '';
+  
+  await saveAuthSettings();
+  renderRolesList();
+  populateRoleSelect();
+}
+
+window.deleteRole = async function(roleName) {
+  if (roleName === 'admin' || roleName === 'user') {
+    UI.toast('Cannot delete default system roles.', 'warning');
+    return;
+  }
+  
+  // Check if any user is currently assigned this role
+  const isUsed = _usersList.some(u => u.role === roleName);
+  if (isUsed) {
+    UI.toast(`Cannot delete role "${roleName}". It is assigned to one or more users.`, 'warning');
+    return;
+  }
+  
+  const confirmed = await UI.confirmDialog(
+    `Are you sure you want to delete the role "${roleName}"?`,
+    'Confirm Deletion',
+    'Delete',
+    'btn-danger'
+  );
+  if (!confirmed) return;
+  
+  _rolesList = _rolesList.filter(r => r !== roleName);
+  await saveAuthSettings();
+  renderRolesList();
+  populateRoleSelect();
+};
+
+async function saveAuthSettings() {
+  UI.showLoading(true);
+  try {
+    const res = await fetch('/api/auth-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ users: _usersList, roles: _rolesList })
+    });
+    if (!res.ok) throw new Error('Failed to save authentication configuration.');
+    
+    UI.toast('User configurations saved.', 'success');
+    renderUsersList();
+  } catch (e) {
+    UI.toast(e.message, 'danger');
   } finally {
     UI.showLoading(false);
   }

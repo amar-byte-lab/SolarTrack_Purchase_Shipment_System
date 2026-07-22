@@ -91,7 +91,8 @@ window.onDbReady = function () {
       return;
     }
     syncPrintLabels();
-    window.print();
+    renderPaginatedPrintView();
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   });
 };
 
@@ -273,12 +274,12 @@ function syncPrintLabels() {
     const selectedIndex = Number(subSelect.value);
     const sub = offerSubsidiesList[selectedIndex];
     if (sub) {
-      document.getElementById('printSubPerKW').textContent = `For ${sub.kw} KW`;
+      document.getElementById('printSubPerKW').textContent = `${sub.kw} KW`;
       document.getElementById('printSubCentral').textContent = Number(sub.central).toLocaleString('en-IN');
       document.getElementById('printSubState').textContent = Number(sub.state).toLocaleString('en-IN');
       
       const totalSub = (sub.central || 0) + (sub.state || 0);
-      document.getElementById('printSubTotal').textContent = `Rs ${totalSub.toLocaleString('en-IN')}`;
+      document.getElementById('printSubTotal').textContent = `${totalSub.toLocaleString('en-IN')}`;
       
       if (printSubsidyCell) {
         printSubsidyCell.style.display = 'table-cell';
@@ -426,6 +427,210 @@ function generatePrintItemsGrid() {
   // Update Amount in Words
   document.getElementById('printAmountInWords').textContent = `Amount Chargeable (in words): ${convertNumberToWords(grandTotal)}`;
 }
+
+function createPrintPageShell() {
+  const shell = document.createElement('div');
+  shell.className = 'print-page-shell';
+
+  const page = document.createElement('div');
+  page.className = 'print-page';
+
+  const header = document.createElement('div');
+  header.className = 'print-page-header';
+  header.innerHTML = `
+    <div class="text-center mb-3">
+      <h3 class="fw-bold mb-1 text-dark" style="font-size: 18pt; letter-spacing: 0.5px;">QUOTATION</h3>
+      <h5 class="fw-bold mb-1 text-dark" style="font-size: 12pt; text-transform: uppercase;" id="printHeadingTitle">FOR 3 KW PM SURYAGHAR YOJANA ON-GRID SYSTEM</h5>
+      <span style="font-size: 9pt; font-style: italic; color: #333;">(ORIGINAL FOR RECIPIENT)</span>
+    </div>
+  `;
+
+  const content = document.createElement('div');
+  content.className = 'print-page-content';
+
+  const footer = document.createElement('div');
+  footer.className = 'print-page-footer text-center mt-3 fw-bold text-dark';
+  footer.style.cssText = 'font-size: 11pt; color: #000 !important; font-style: italic; border-top: 1px solid #000; padding-top: 6px;';
+  footer.textContent = 'This is a Computer-Generated Copy';
+
+  page.appendChild(header);
+  page.appendChild(content);
+  page.appendChild(footer);
+  shell.appendChild(page);
+  return { shell, page, content };
+}
+
+function renderPaginatedPrintView() {
+  const root = document.getElementById('printPaginationRoot');
+  const template = document.getElementById('printQuotationTemplate');
+  if (!root || !template) return;
+
+  root.innerHTML = '';
+
+  const measureHost = document.createElement('div');
+  measureHost.style.cssText = [
+    'position: fixed',
+    'left: -10000px',
+    'top: 0',
+    'width: 180mm',
+    'visibility: hidden',
+    'pointer-events: none',
+    'z-index: -1',
+    'box-sizing: border-box'
+  ].join(';');
+  document.body.appendChild(measureHost);
+
+  const pageContentHeight = 273 * 3.7795275591;
+  const gapAllowance = 8;
+  const usableHeight = pageContentHeight - gapAllowance;
+
+  const templateBlocks = {
+    sellerQuote: template.querySelector('#printSellerQuoteBlock'),
+    buyer: template.querySelector('#printBuyerBlock'),
+    items: template.querySelector('#printItemsTable'),
+    notes: template.querySelector('#printSpecialNotesBox'),
+    amount: template.querySelector('#printAmountInWords'),
+    terms: template.querySelector('#printTermsBlock'),
+    subsidyBank: template.querySelector('#printSubsidyBankBlock'),
+    signature: template.querySelector('#printSignatureBlock')
+  };
+
+  const makeMeasuredClone = (node) => {
+    const clone = node.cloneNode(true);
+    clone.style.display = 'block';
+    clone.style.breakInside = 'avoid';
+    clone.style.pageBreakInside = 'avoid';
+    clone.style.boxSizing = 'border-box';
+    clone.classList.add('print-block');
+    return clone;
+  };
+
+  const measureHeight = (node) => {
+    measureHost.innerHTML = '';
+    const probe = makeMeasuredClone(node);
+    measureHost.appendChild(probe);
+    return probe.getBoundingClientRect().height;
+  };
+
+  const finalizePage = (pageData) => {
+    if (!pageData || !pageData.content.children.length) return;
+    root.appendChild(pageData.shell);
+  };
+
+  const pages = [];
+  let currentPage = createPrintPageShell();
+  pages.push(currentPage);
+  measureHost.appendChild(currentPage.shell);
+  let remaining = usableHeight;
+
+  const addSection = (node) => {
+    if (!node) return;
+    const block = makeMeasuredClone(node);
+    const height = measureHeight(node);
+    if (height > remaining && currentPage.content.children.length) {
+      finalizePage(currentPage);
+      currentPage = createPrintPageShell();
+      pages.push(currentPage);
+      measureHost.appendChild(currentPage.shell);
+      remaining = usableHeight;
+    }
+    currentPage.content.appendChild(block);
+    remaining -= height;
+  };
+
+  addSection(templateBlocks.sellerQuote);
+  addSection(templateBlocks.buyer);
+
+  // Items table is split only between rows, never inside a row.
+  const itemsTable = templateBlocks.items;
+  if (itemsTable) {
+    const sourceHeader = itemsTable.querySelector('thead')?.cloneNode(true);
+    const sourceRows = Array.from(itemsTable.querySelectorAll('tbody tr'));
+    const tableBase = document.createElement('table');
+    tableBase.className = itemsTable.className;
+    tableBase.id = itemsTable.id;
+    tableBase.style.cssText = itemsTable.style.cssText;
+    tableBase.setAttribute('data-print-block', 'table');
+
+    const startTableOnPage = () => {
+      const table = tableBase.cloneNode(false);
+      if (sourceHeader) table.appendChild(sourceHeader.cloneNode(true));
+      const tbody = document.createElement('tbody');
+      table.appendChild(tbody);
+      currentPage.content.appendChild(table);
+      const headerHeight = table.getBoundingClientRect().height;
+      remaining -= headerHeight;
+      return { table, tbody };
+    };
+
+    let tablePage = null;
+    const ensureTablePage = () => {
+      if (!tablePage) {
+        if (measureHeight(itemsTable) > remaining && currentPage.content.children.length) {
+          finalizePage(currentPage);
+          currentPage = createPrintPageShell();
+          pages.push(currentPage);
+          measureHost.appendChild(currentPage.shell);
+          remaining = usableHeight;
+        }
+        tablePage = startTableOnPage();
+      }
+    };
+
+    sourceRows.forEach(row => {
+      const rowClone = row.cloneNode(true);
+      measureHost.innerHTML = '';
+      const probeTable = tableBase.cloneNode(false);
+      if (sourceHeader) probeTable.appendChild(sourceHeader.cloneNode(true));
+      const probeBody = document.createElement('tbody');
+      probeTable.appendChild(probeBody);
+      probeBody.appendChild(rowClone.cloneNode(true));
+      measureHost.appendChild(probeTable);
+      const probeHeader = probeTable.querySelector('thead');
+      const rowHeight = probeTable.getBoundingClientRect().height - (probeHeader ? probeHeader.getBoundingClientRect().height : 0);
+
+      ensureTablePage();
+      if (tablePage.tbody.children.length > 0 && rowHeight > remaining) {
+        finalizePage(currentPage);
+        currentPage = createPrintPageShell();
+        pages.push(currentPage);
+        measureHost.appendChild(currentPage.shell);
+        remaining = usableHeight;
+        tablePage = startTableOnPage();
+      }
+
+      tablePage.tbody.appendChild(rowClone);
+      remaining -= rowHeight;
+    });
+  }
+
+  addSection(templateBlocks.notes);
+  addSection(templateBlocks.amount);
+  addSection(templateBlocks.terms);
+  addSection(templateBlocks.subsidyBank);
+  addSection(templateBlocks.signature);
+
+  finalizePage(currentPage);
+  measureHost.remove();
+
+  root.innerHTML = '';
+  pages.forEach(pageData => {
+    const shell = pageData.shell;
+    shell.querySelectorAll('#printHeadingTitle').forEach(el => {
+      el.textContent = document.getElementById('printHeadingTitle')?.textContent || el.textContent;
+    });
+    root.appendChild(shell);
+  });
+}
+
+window.addEventListener('beforeprint', () => {
+  renderPaginatedPrintView();
+});
+
+window.addEventListener('afterprint', () => {
+  const root = document.getElementById('printPaginationRoot');
+  if (root) root.innerHTML = '';
+});
 
 function loadCompanyProfileSettings() {
   const settings = DB.getAll('settings');

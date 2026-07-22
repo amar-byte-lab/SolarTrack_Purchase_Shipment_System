@@ -68,7 +68,7 @@ const UI = (() => {
     const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
     const isNormalUser = user && user.role !== 'admin';
     const visibleNavItems = isNormalUser 
-      ? NAV_ITEMS.filter(item => item.href === 'offer.html')
+      ? NAV_ITEMS.filter(item => item.href === 'offer.html' || item.href === 'borrower.html')
       : NAV_ITEMS;
 
     const userControlsMobile = user ? `

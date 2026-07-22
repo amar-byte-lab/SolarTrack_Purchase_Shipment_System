@@ -202,6 +202,50 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      if (pathname === '/api/auth-config') {
+        if (req.method === 'GET') {
+          const users = getAuthUsers();
+          let roles = ['admin', 'user'];
+          try {
+            const pkgPath = path.join(__dirname, 'package.json');
+            if (fs.existsSync(pkgPath)) {
+              const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+              if (pkg.auth?.roles) roles = pkg.auth.roles;
+            }
+          } catch (e) {
+            console.error('Error loading roles from package.json:', e.message);
+          }
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ users, roles })), 'no-cache, no-store');
+        } else if (req.method === 'POST') {
+          try {
+            const payload = await getRequestBody(req);
+            if (!payload || !payload.users || !payload.roles) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: 'Invalid payload' }));
+              return;
+            }
+            const pkgPath = path.join(__dirname, 'package.json');
+            if (fs.existsSync(pkgPath)) {
+              const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+              pkg.auth = {
+                users: payload.users,
+                roles: payload.roles
+              };
+              fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), 'utf8');
+              cachedPkgUsers = payload.users;
+              sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
+            } else {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: 'package.json not found' }));
+            }
+          } catch (e) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        }
+        return;
+      }
+
       if (pathname === '/api/logout') {
         res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage"');
         res.setHeader('Set-Cookie', 'session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax');
@@ -283,10 +327,11 @@ const server = http.createServer(async (req, res) => {
 
       // ── Borrower API ────────────────────────────────────────────────────
       if (pathname === '/api/borrower-list') {
-        const data = await db.getBorrowerList();
+        const userId = parsedUrl.searchParams.get('userId') || '';
+        const data = await db.getBorrowerList(userId);
         const dbDuration = (performance.now() - dbStartTime).toFixed(2);
         sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify(data)), 'no-cache, no-store');
-        console.log(`[API] GET /api/borrower-list | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
+        console.log(`[API] GET /api/borrower-list?userId=${userId} | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
         return;
       }
 
@@ -341,6 +386,15 @@ const server = http.createServer(async (req, res) => {
         const dbDuration = (performance.now() - dbStartTime).toFixed(2);
         sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
         console.log(`[API] POST /api/borrower-txn-delete | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
+        return;
+      }
+
+      if (pathname === '/api/borrower-delete') {
+        const body = await getRequestBody(req);
+        await db.deleteBorrower(body.BorrowerID);
+        const dbDuration = (performance.now() - dbStartTime).toFixed(2);
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
+        console.log(`[API] POST /api/borrower-delete | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
         return;
       }
       // ── End Borrower API ────────────────────────────────────────────────

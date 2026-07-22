@@ -73,8 +73,16 @@ async function replaceTable(tableName, rows) {
   return importTable(tableName, rows);
 }
 
-async function getBorrowerList() {
-  const { data, error } = await supabase.from('borrowers').select('*').order('BorrowerID', { ascending: true });
+async function getBorrowerList(userId) {
+  let query = supabase.from('borrowers').select('*');
+  if (userId) {
+    if (userId === 'admin') {
+      query = query.or(`CreatedBy.eq.${userId},CreatedBy.is.null`);
+    } else {
+      query = query.eq('CreatedBy', userId);
+    }
+  }
+  const { data, error } = await query.order('BorrowerID', { ascending: true });
   if (error) throw error;
   return data || [];
 }
@@ -98,6 +106,7 @@ async function addBorrower(body) {
       Mobile: body.Mobile || '',
       Address: body.Address || '',
       Status: 'Active',
+      CreatedBy: body.CreatedBy || null,
       CreatedAt: new Date().toISOString()
     }])
     .select();
@@ -149,6 +158,21 @@ async function deleteBorrowerTxn(txnID) {
   if (error) throw error;
 }
 
+async function deleteBorrower(borrowerID) {
+  const bid = Number(borrowerID);
+  const { error: txnErr } = await supabase
+    .from('borrower_txns')
+    .delete()
+    .eq('BorrowerID', bid);
+  if (txnErr) throw txnErr;
+
+  const { error: bErr } = await supabase
+    .from('borrowers')
+    .delete()
+    .eq('BorrowerID', bid);
+  if (bErr) throw bErr;
+}
+
 module.exports = {
   driverName: 'PostgreSQL (Supabase)',
   getStatus,
@@ -165,4 +189,5 @@ module.exports = {
   closeBorrower,
   addBorrowerTxn,
   deleteBorrowerTxn,
+  deleteBorrower,
 };

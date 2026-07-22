@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnSaveTxn').addEventListener('click', saveTxn);
   document.getElementById('btnResetTxns').addEventListener('click', resetAllTxns);
   document.getElementById('btnModalDeact').addEventListener('click', toggleBorrowerStatus);
+  document.getElementById('btnModalRemove').addEventListener('click', removeActiveBorrower);
   document.getElementById('btnPrintTxn').addEventListener('click', printActiveBorrowerTxns);
 
   // Toggle form drawer (WhatsApp-style slide up)
@@ -169,7 +170,9 @@ function netBalance(bid) {
 async function loadBorrowers() {
   UI.showLoading(true);
   try {
-    const r = await fetch('/api/borrower-list');
+    const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const userId = currentUser ? currentUser.userid : '';
+    const r = await fetch(`/api/borrower-list?userId=${userId}`);
     _borrowers = r.ok ? await r.json() : [];
     await Promise.all(_borrowers.map(b => loadTxnsFor(b.BorrowerID)));
     renderKPIs();
@@ -296,7 +299,8 @@ function renderGrid() {
       <td style="text-align:center;white-space:nowrap;">
         ${isActive
           ? `<button class="btn-deact" onclick="confirmDeactivate(${b.BorrowerID})">Deactivate</button>`
-          : `<button class="btn-reactivate" onclick="reactivateBorrower(${b.BorrowerID})">Reactivate</button>`
+          : `<button class="btn-reactivate" onclick="reactivateBorrower(${b.BorrowerID})">Reactivate</button>
+             <button class="btn-deact ms-1" style="background:#c0392b; border-color:#c0392b; color:#fff;" onclick="removeBorrower(${b.BorrowerID})">Remove</button>`
         }
       </td>
     </tr>`;
@@ -363,14 +367,16 @@ async function saveBorrower() {
     return;
   }
   try {
+    const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const userId = currentUser ? currentUser.userid : '';
     const resp = await fetch('/api/borrower-add', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Name: name, Mobile: mobile, Address: address })
+      body: JSON.stringify({ Name: name, Mobile: mobile, Address: address, CreatedBy: userId })
     });
     const data = await resp.json();
     if (!data.BorrowerID) throw new Error('No BorrowerID');
 
-    _borrowers.push({ BorrowerID: data.BorrowerID, Name: name, Mobile: mobile, Address: address, Status: 'Active', CreatedAt: new Date().toISOString() });
+    _borrowers.push({ BorrowerID: data.BorrowerID, Name: name, Mobile: mobile, Address: address, Status: 'Active', CreatedBy: userId, CreatedAt: new Date().toISOString() });
     _txnCache[data.BorrowerID] = [];
     isAddingNew = false;
     renderKPIs(); renderGrid();
@@ -393,6 +399,12 @@ window.openTxnModal = async function(bid) {
   // Update deactivate button text
   const deactBtn = document.getElementById('btnModalDeact');
   deactBtn.textContent = isActive ? '🔒 Deactivate' : '🔓 Reactivate';
+
+  // Show/hide remove button
+  const removeBtn = document.getElementById('btnModalRemove');
+  if (removeBtn) {
+    removeBtn.style.display = isActive ? 'none' : 'inline-block';
+  }
 
   // Disable form fields for closed borrowers
   ['txnInputDate', 'txnInputAmount', 'txnInputRemarks', 'typCredit', 'typDebit'].forEach(id => {
@@ -851,6 +863,57 @@ function printActiveBorrowerTxns() {
   document.title = originalTitle;
 }
 
+async function removeActiveBorrower() {
+  if (!_activeBid) return;
+  const ok = await removeBorrower(_activeBid);
+  if (ok) {
+    _txnModal.hide();
+  }
+}
+
+window.removeBorrower = async function(bid) {
+  const borrower = _borrowers.find(b => b.BorrowerID === bid);
+  if (!borrower) return false;
+
+  const { net } = netBalance(bid);
+  const msg = Math.abs(net) > 0.01
+    ? `⚠️ WARNING: "${borrower.Name}" has an outstanding balance of ${money(Math.abs(net))}.\n\nThis will HARD delete the borrower and ALL their transactions permanently from the database. This action CANNOT be undone.\n\nType the borrower name "${borrower.Name}" to confirm:`
+    : `This will HARD delete "${borrower.Name}" and all their transaction history permanently. This action CANNOT be undone.\n\nAre you sure you want to proceed?`;
+
+  if (Math.abs(net) > 0.01) {
+    const input = prompt(msg);
+    if (input !== borrower.Name) {
+      if (input !== null) UI.toast('Confirmation failed. Name did not match.', 'warning');
+      return false;
+    }
+  } else {
+    const ok = await UI.confirmDialog(msg, 'HARD Delete Borrower', 'Delete permanently', 'btn-danger');
+    if (!ok) return false;
+  }
+
+  UI.showLoading(true);
+  try {
+    const resp = await fetch('/api/borrower-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ BorrowerID: bid })
+    });
+    if (!resp.ok) throw new Error('Failed to delete borrower');
+
+    _borrowers = _borrowers.filter(b => b.BorrowerID !== bid);
+    delete _txnCache[bid];
+
+    renderGrid(); renderKPIs();
+    UI.toast(`🗑️ "${borrower.Name}" deleted permanently`, 'danger');
+    return true;
+  } catch (e) {
+    UI.toast('Error: ' + e.message, 'danger');
+    return false;
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
 // ── Global expose ──────────────────────────────────────────────────────
 window.openTxnModal       = window.openTxnModal;
 window.deleteTxn          = window.deleteTxn;
@@ -860,3 +923,4 @@ window.handleAddRowKey    = handleAddRowKey;
 window.saveBorrower       = saveBorrower;
 window.addInlineBorrowerRow = addInlineBorrowerRow;
 window.cancelInlineBorrower = cancelInlineBorrower;
+window.removeBorrower     = window.removeBorrower;
