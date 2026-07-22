@@ -704,7 +704,7 @@ function renderList() {
     const tfoot = document.querySelector('#installmentsTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
-        <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
+        <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
           <td colspan="7" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
@@ -1467,14 +1467,20 @@ async function saveCustomerModal() {
   try {
     if (slNoVal) {
       const slNo = Number(slNoVal);
-      await DB.update('installment_records', r => Number(r.SlNo) === slNo, rowData);
+      await DB.update('installments', r => Number(r.SlNo) === slNo, rowData);
       UI.toast('Customer record updated.', 'success');
     } else {
-      const allRows = DB.getAll('installment_records');
+      const allRows = DB.getAll('installments');
       const maxSl = allRows.reduce((max, r) => Math.max(max, Number(r.SlNo) || 0), 0);
       rowData.SlNo = maxSl + 1;
       rowData.Status = 'Active';
-      await DB.insert('installment_records', rowData);
+      rowData.FirstInstallment = 0;
+      rowData.SecondInstallment = 0;
+      rowData.ThirdInstallment = 0;
+      rowData.Total = 0;
+      rowData.CommissionPaid = 0;
+      rowData.CommissioningDate = '';
+      await DB.insert('installments', rowData);
       UI.toast('New Customer record added.', 'success');
     }
 
