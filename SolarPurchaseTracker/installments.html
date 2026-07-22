@@ -262,7 +262,7 @@
   .note-card-customer {
     border-left: 4px solid var(--st-blue-700) !important;
   }
-  .note-card-broker {
+  .note-card-Partner {
     border-left: 4px solid var(--st-orange) !important;
   }
   .note-type-badge {
@@ -372,7 +372,7 @@
                 <th>Sl. No.</th>
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
                 <th class="sortable" data-sort="District" id="thDistrict">District & Address</th>
-                <th>Broker</th>
+                <th>Partner</th>
                 <th>Committed Price</th>
                 <th class="sortable" data-sort="LoginDate" id="thLoginDate">Login Date & Delay</th>
                 <th class="sortable" data-sort="InstallationDate" id="thInstallationDate">Inst. & Comm. Date</th>
@@ -497,7 +497,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
       <div class="modal-header bg-success text-white py-2" style="border-radius:14px 14px 0 0;">
-        <h6 class="modal-title fw-bold fs-7" id="commModalLabel">Broker Commission Payments</h6>
+        <h6 class="modal-title fw-bold fs-7" id="commModalLabel">Partner Commission Payments</h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 bg-light">
@@ -569,13 +569,13 @@
             <label class="form-label fs-8 text-secondary mb-1" for="newNoteType">Remark Type *</label>
             <select id="newNoteType" class="form-select form-select-sm">
               <option value="Customer">Customer Specific Remark</option>
-              <option value="Broker">Broker Specific Remark</option>
+              <option value="Partner">Partner Specific Remark</option>
             </select>
           </div>
           
           <div class="mb-3">
             <label class="form-label fs-8 text-secondary mb-1" for="newNoteText">Remark *</label>
-            <textarea class="form-control form-control-sm" id="newNoteText" rows="3" placeholder="Enter specific customer or broker remarks here..."></textarea>
+            <textarea class="form-control form-control-sm" id="newNoteText" rows="3" placeholder="Enter specific customer or Partner remarks here..."></textarea>
           </div>
           
           <div class="text-end">
@@ -638,14 +638,14 @@
               <input type="date" class="form-control form-control-sm" id="cInstallationDate">
             </div>
             <div class="col-md-6 col-12 mb-2">
-              <label class="form-label fs-8 text-secondary mb-1">Broker / Agent Name</label>
+              <label class="form-label fs-8 text-secondary mb-1">Partner / Agent Name</label>
               <div class="dropdown">
-                <input type="text" class="form-control form-control-sm" id="cBrokerName" placeholder="Broker/Agent Name" autocomplete="off">
+                <input type="text" class="form-control form-control-sm" id="cBrokerName" placeholder="Partner/Agent Name" autocomplete="off">
               </div>
             </div>
             <div class="col-md-6 col-12 mb-2">
-              <label class="form-label fs-8 text-secondary mb-1">Broker Mobile</label>
-              <input type="text" class="form-control form-control-sm" id="cBrokerNumber" placeholder="Broker Phone">
+              <label class="form-label fs-8 text-secondary mb-1">Partner Mobile</label>
+              <input type="text" class="form-control form-control-sm" id="cBrokerNumber" placeholder="Partner Phone">
             </div>
             <div class="col-md-6 col-12 mb-2">
               <label class="form-label fs-8 text-secondary mb-1">Commission Amount (₹)</label>

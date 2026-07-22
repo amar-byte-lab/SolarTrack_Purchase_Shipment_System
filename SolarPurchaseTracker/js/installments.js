@@ -21,7 +21,7 @@ const DISTRICTS = [
 ];
 
 const COLORABLE_COLS = [
-  { key: 'col-broker', label: 'Broker Details', default: '#ffffff' },
+  { key: 'col-Partner', label: 'Partner Details', default: '#ffffff' },
   { key: 'col-price', label: 'Committed Price', default: '#ffffff' },
   { key: 'col-login', label: 'Login Date', default: '#ffff00' },
   { key: 'col-delay', label: 'Delay from Today', default: '#ffff00' },
@@ -767,12 +767,12 @@ function renderList() {
               <input type="text" class="form-control form-control-sm" id="editAddress" value="${r.Address || ''}" placeholder="Address">
             </div>
           </td>
-          <td class="col-broker">
+          <td class="col-Partner">
             <div class="d-flex flex-column gap-1">
               <div class="dropdown">
-                <input type="text" class="form-control form-control-sm" id="editBrokerName" value="${r.BrokerName || ''}" placeholder="Broker Name" autocomplete="off">
+                <input type="text" class="form-control form-control-sm" id="editBrokerName" value="${r.BrokerName || ''}" placeholder="Partner Name" autocomplete="off">
               </div>
-              <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${r.BrokerNumber || ''}" placeholder="Broker Phone">
+              <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${r.BrokerNumber || ''}" placeholder="Partner Phone">
               <input type="number" step="0.01" class="form-control form-control-sm" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
             </div>
           </td>
@@ -827,7 +827,7 @@ function renderList() {
               <span class="text-muted" style="font-size: 0.72rem;">${r.Address || ''}</span>
             </div>
           </td>
-          <td class="col-broker text-end">
+          <td class="col-Partner text-end">
             <div class="d-flex flex-column align-items-start" style="font-size: 0.8rem; gap: 1px;">
               <span class="fw-semibold text-dark">${r.BrokerName || '—'}</span>
               <span class="text-muted" style="font-size: 0.72rem;">${r.BrokerNumber || ''}</span>
@@ -1305,8 +1305,8 @@ window.showCommissionHistory = function(slNo) {
   document.getElementById('newCommTxnAmount').value = '';
   document.getElementById('newCommTxnRemark').value = '';
 
-  // Set the title to include broker name
-  const brokerName = r.BrokerName || r.Name || 'Broker';
+  // Set the title to include Partner name
+  const brokerName = r.BrokerName || r.Name || 'Partner';
   document.getElementById('commModalLabel').textContent = `Commission Payments — ${brokerName}`;
 
   // Fetch and display transaction history
@@ -1366,7 +1366,7 @@ window.showInstallmentNotes = function(slNo) {
   } else {
     feed.innerHTML = remarks.map(t => {
       const typeBadgeClass = t.Type === 'Customer' ? 'bg-primary-subtle text-primary-emphasis' : 'bg-warning-subtle text-warning-emphasis';
-      const cardTypeClass = t.Type === 'Customer' ? 'note-card-customer' : 'note-card-broker';
+      const cardTypeClass = t.Type === 'Customer' ? 'note-card-customer' : 'note-card-Partner';
       
       let formattedDate = '';
       try {
