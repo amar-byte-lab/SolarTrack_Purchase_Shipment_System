@@ -769,7 +769,9 @@ function renderList() {
           </td>
           <td class="col-broker">
             <div class="d-flex flex-column gap-1">
-              <input type="text" class="form-control form-control-sm" id="editBrokerName" value="${r.BrokerName || ''}" placeholder="Broker Name">
+              <div class="dropdown">
+                <input type="text" class="form-control form-control-sm" id="editBrokerName" value="${r.BrokerName || ''}" placeholder="Broker Name" autocomplete="off">
+              </div>
               <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${r.BrokerNumber || ''}" placeholder="Broker Phone">
               <input type="number" step="0.01" class="form-control form-control-sm" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
             </div>
@@ -930,6 +932,23 @@ function bindEditRowListeners() {
   if (dateInput) {
     dateInput.addEventListener('change', () => {
       document.getElementById('editDelay').textContent = calculateDelay(dateInput.value);
+    });
+  }
+
+  const editBrokerNameInput = document.getElementById('editBrokerName');
+  if (editBrokerNameInput) {
+    const vendors = DB.getAll('vendors');
+    Utils.initSearchableDropdown('editBrokerName', vendors.map(v => v.VendorName), (selectedBrokerName) => {
+      const found = vendors.find(v => v.VendorName === selectedBrokerName);
+      if (found && found.Phone) {
+        const editBrokerPhoneInput = document.getElementById('editBrokerNumber');
+        if (editBrokerPhoneInput) {
+          editBrokerPhoneInput.value = found.Phone;
+          // Dispatch change event to trigger any validation/listeners
+          editBrokerPhoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+          editBrokerPhoneInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
     });
   }
 }
@@ -1434,6 +1453,21 @@ window.openCustomerModal = function(slNo) {
     });
     document.getElementById('cDistrict').value = '';
     document.getElementById('cLoginDate').value = UI.todayISO();
+  }
+
+  const vendors = DB.getAll('vendors');
+  Utils.initSearchableDropdown('cBrokerName', vendors.map(v => v.VendorName), (selectedBrokerName) => {
+    const found = vendors.find(v => v.VendorName === selectedBrokerName);
+    if (found && found.Phone) {
+      const cBrokerNumberInput = document.getElementById('cBrokerNumber');
+      if (cBrokerNumberInput) {
+        cBrokerNumberInput.value = found.Phone;
+      }
+    }
+  });
+  const brokerInput = document.getElementById('cBrokerName');
+  if (brokerInput && brokerInput.updateOptionsList) {
+    brokerInput.updateOptionsList(vendors.map(v => v.VendorName));
   }
 
   modal.show();

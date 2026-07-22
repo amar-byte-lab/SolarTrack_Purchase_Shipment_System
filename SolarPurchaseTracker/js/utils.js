@@ -70,5 +70,82 @@ const Utils = (() => {
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }
 
-  return { uid, nextShipmentNo, getQueryParam, debounce, exportRowsToExcel, exportTableToPDF, csvEscape };
+  function initSearchableDropdown(inputId, optionsList, onSelectCallback) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    let menuId = inputId + 'DropdownMenu';
+    let menu = document.getElementById(menuId);
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = menuId;
+      menu.className = 'dropdown-menu w-100 shadow';
+      menu.style.maxHeight = '250px';
+      menu.style.overflowY = 'auto';
+      menu.style.position = 'absolute';
+      input.after(menu);
+    }
+
+    let currentOptions = optionsList;
+
+    function renderOptions(filterText = '') {
+      const filtered = currentOptions.filter(opt => 
+        String(opt).toLowerCase().includes(filterText.toLowerCase())
+      );
+
+      if (filtered.length === 0) {
+        menu.innerHTML = `<div class="dropdown-item text-muted" style="cursor: default; font-size: 0.82rem;">No matches found</div>`;
+      } else {
+        menu.innerHTML = filtered.map(opt => 
+          `<button type="button" class="dropdown-item text-start text-truncate py-1 px-3" data-value="${opt}" style="font-size: 0.82rem; border: none; background: none; width: 100%;">${opt}</button>`
+        ).join('');
+      }
+    }
+
+    const showMenu = () => {
+      renderOptions(input.value);
+      menu.classList.add('show');
+    };
+
+    const hideMenu = () => {
+      menu.classList.remove('show');
+    };
+
+    input.addEventListener('focus', showMenu);
+    input.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showMenu();
+    });
+
+    input.addEventListener('input', () => {
+      renderOptions(input.value);
+      menu.classList.add('show');
+    });
+
+    menu.addEventListener('mousedown', (e) => {
+      const item = e.target.closest('.dropdown-item');
+      if (item && item.hasAttribute('data-value')) {
+        const val = item.getAttribute('data-value');
+        input.value = val;
+        hideMenu();
+        if (onSelectCallback) {
+          onSelectCallback(val);
+        }
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !menu.contains(e.target)) {
+        hideMenu();
+      }
+    });
+
+    input.updateOptionsList = function(newOptions) {
+      currentOptions = newOptions;
+    };
+  }
+
+  return { uid, nextShipmentNo, getQueryParam, debounce, exportRowsToExcel, exportTableToPDF, csvEscape, initSearchableDropdown };
 })();

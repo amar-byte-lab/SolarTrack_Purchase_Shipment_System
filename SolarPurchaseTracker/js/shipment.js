@@ -129,12 +129,22 @@ function populateDatalists() {
   const vendors = DB.getAll('vendors');
   const items = DB.getAll('items');
 
-  document.getElementById('vendorList').innerHTML = vendors.map(v => `<option value="${v.VendorName}">`).join('');
-  document.getElementById('itemList').innerHTML = items.map(i => `<option value="${i.ItemName}">`).join('');
+  const vendorListEl = document.getElementById('vendorList');
+  if (vendorListEl) {
+    vendorListEl.innerHTML = vendors.map(v => `<option value="${v.VendorName}">`).join('');
+  }
+  const itemListEl = document.getElementById('itemList');
+  if (itemListEl) {
+    itemListEl.innerHTML = items.map(i => `<option value="${i.ItemName}">`).join('');
+  }
 
   const vendorFilter = document.getElementById('fVendor');
-  vendorFilter.innerHTML = '<option value="">All Vendors</option>' +
-    vendors.map(v => `<option value="${v.VendorName}">${v.VendorName}</option>`).join('');
+  if (vendorFilter) {
+    vendorFilter.innerHTML = '<option value="">All Vendors</option>' +
+      vendors.map(v => `<option value="${v.VendorName}">${v.VendorName}</option>`).join('');
+  }
+
+  Utils.initSearchableDropdown('editVendorName', vendors.map(v => v.VendorName));
 }
 
 function getEnrichedShipments(includeDeleted = false) {
