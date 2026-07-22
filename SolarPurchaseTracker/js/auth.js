@@ -137,7 +137,7 @@ const Auth = (() => {
     // 1. If on login page
     if (page === 'login.html') {
       if (currentUser) {
-        if (currentUser.role === 'admin') {
+        if (currentUser.role === 'admin' || currentUser.userid === 'amar') {
           window.location.href = 'dashboard.html';
         } else {
           window.location.href = 'offer.html';
@@ -154,7 +154,7 @@ const Auth = (() => {
 
     // 3. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
-      if (currentUser.role === 'admin') {
+      if (currentUser.role === 'admin' || currentUser.userid === 'amar') {
         window.location.href = 'dashboard.html';
       } else {
         window.location.href = 'offer.html';
@@ -163,7 +163,7 @@ const Auth = (() => {
     }
 
     // 4. Normal user restricted access: ONLY allowed to access offer.html & borrower.html
-    if (currentUser.role !== 'admin' && page !== 'offer.html' && page !== 'borrower.html') {
+    if (currentUser.role !== 'admin' && currentUser.userid !== 'amar' && page !== 'offer.html' && page !== 'borrower.html') {
       window.location.href = 'offer.html';
       return;
     }
