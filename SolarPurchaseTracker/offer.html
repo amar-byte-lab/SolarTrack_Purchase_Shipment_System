@@ -467,7 +467,6 @@
             <div class="d-flex gap-2">
               <button class="btn btn-outline-secondary px-4 py-2 fw-semibold fs-7" onclick="window.history.back()">Back</button>
               <button class="btn btn-primary px-4 py-2 fw-semibold fs-7" id="btnExportDocx" onclick="exportQuotationToDocx()">📄 Generate Word Document (.docx)</button>
-              <button class="btn btn-outline-success px-3 py-2 fw-semibold fs-7" id="btnPrintOffer">🖨 Print / PDF</button>
             </div>
           </div>
         </div>
@@ -814,6 +813,7 @@ html, body {
 </div>
 
 <script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script src="js/db.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/validation.js"></script>

@@ -1231,169 +1231,780 @@ window.exportQuotationToDocx = async function() {
     return;
   }
 
+  if (!window.docx) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Word Document generation library (docx.js) is not loaded yet. Please check your internet connection or try again.', 'error');
+    }
+    return;
+  }
+
   // 1. Synchronize print labels first
   syncPrintLabels();
 
-  const templateEl = document.getElementById('printQuotationTemplate');
-  if (!templateEl) return;
+  // Helper to convert base64 image data URLs to Uint8Array for docx.js
+  function base64ToArrayBuffer(base64WithHeader) {
+    let base64 = base64WithHeader;
+    const commaIdx = base64.indexOf(',');
+    if (commaIdx !== -1) {
+      base64 = base64.substring(commaIdx + 1);
+    }
+    const binaryString = window.atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  }
 
-  const clone = templateEl.cloneNode(true);
-  clone.classList.remove('d-none', 'd-print-block');
+  // Extract classes from global docx namespace
+  const {
+    Document,
+    Packer,
+    Paragraph,
+    TextRun,
+    Table,
+    TableRow,
+    TableCell,
+    WidthType,
+    BorderStyle,
+    AlignmentType,
+    ImageRun,
+    VerticalAlign
+  } = window.docx;
 
-  // 2. Process Seller Logo: Convert SVG to PNG for Word compatibility
-  const cloneLogo = clone.querySelector('#printSellerLogo');
+  // Process Seller Logo: Convert SVG/other formats to PNG base64
   let validLogoPng = '';
-  if (cloneLogo) {
-    const settings = DB.getAll('settings');
-    const logoBase64 = (settings.find(s => s.Key === 'CompanyLogo') || {}).Value;
-    const rawLogoSrc = logoBase64 || DEFAULT_SOLAR_LOGO;
+  const settings = DB.getAll('settings');
+  const logoBase64 = (settings.find(s => s.Key === 'CompanyLogo') || {}).Value;
+  const rawLogoSrc = logoBase64 || DEFAULT_SOLAR_LOGO;
+  try {
     validLogoPng = await getPngLogoDataUrl(rawLogoSrc);
+  } catch (err) {
+    console.error("Error generating PNG logo url:", err);
   }
 
-  // 3. Replace flexbox header with Word-compatible table layout so Logo and Seller Name align side-by-side
-  const flexHeader = clone.querySelector('#printSellerName')?.closest('.d-flex');
-  const sellerNameText = clone.querySelector('#printSellerName')?.textContent || 'SHRI TRUTIYADEV SOLAR ENTERPRISES';
-  
-  if (flexHeader) {
-    if (validLogoPng) {
-      flexHeader.outerHTML = `
-        <table style="border:none !important; border-collapse:collapse !important; width:100% !important; margin:0 0 6pt 0 !important; padding:0 !important;">
-          <tr>
-            <td style="border:none !important; padding:0 10pt 0 0 !important; vertical-align:middle !important; width:95pt !important;">
-              <img src="${validLogoPng}" width="95" height="55" style="width:95pt; height:55pt; display:block;">
-            </td>
-            <td style="border:none !important; padding:0 !important; vertical-align:middle !important;">
-              <div style="font-size:12.5pt !important; font-weight:bold !important; color:#000000 !important; text-align:left !important;">${sellerNameText}</div>
-            </td>
-          </tr>
-        </table>
-      `;
-    } else {
-      flexHeader.outerHTML = `<div style="font-size:12.5pt !important; font-weight:bold !important; color:#000000 !important; text-align:left !important; margin-bottom:6pt !important;">${sellerNameText}</div>`;
+  // Define total table printable width in DXA (1 twip = 1/20 pt. Total ~ 10400 DXA for A4 print area)
+  const TOTAL_TABLE_WIDTH = 10400;
+
+  // --- 1. SELLER & QUOTATION METADATA TABLE ---
+  const sellerParagraphs = [];
+  if (validLogoPng) {
+    try {
+      const logoBuffer = base64ToArrayBuffer(validLogoPng);
+      sellerParagraphs.push(new Paragraph({
+        children: [
+          new ImageRun({
+            data: logoBuffer,
+            transformation: {
+              width: 130,
+              height: 50
+            }
+          })
+        ],
+        spacing: { after: 120 }
+      }));
+    } catch (err) {
+      console.error("Error decoding logo for Word document:", err);
     }
   }
 
-  // 4. Process Stamp Image: Convert to PNG if available, else remove empty img
-  const cloneStamp = clone.querySelector('#printStampImage');
-  if (cloneStamp) {
-    if (cloneStamp.src && cloneStamp.src.startsWith('data:image')) {
-      const pngStamp = await getPngLogoDataUrl(cloneStamp.src);
-      if (pngStamp) {
-        cloneStamp.src = pngStamp;
-      } else {
-        cloneStamp.remove();
+  sellerParagraphs.push(new Paragraph({
+    children: [new TextRun({ text: document.getElementById('printSellerName').textContent || 'SHRI TRUTIYADEV SOLAR ENTERPRISES', bold: true, size: 24, font: "Times New Roman" })],
+    spacing: { after: 80 }
+  }));
+
+  // Add Seller Address
+  const sellerAddrText = document.getElementById('qOfficeAddress').value || '';
+  sellerAddrText.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    sellerParagraphs.push(new Paragraph({
+      children: [new TextRun({ text: line, size: 20, font: "Times New Roman" })],
+      spacing: { after: 30 }
+    }));
+  });
+
+  // Add Seller Contacts
+  const sellerContactsText = document.getElementById('printSellerContacts').innerText || '';
+  sellerContactsText.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    sellerParagraphs.push(new Paragraph({
+      children: [new TextRun({ text: line, size: 20, font: "Times New Roman" })],
+      spacing: { after: 30 }
+    }));
+  });
+
+  // GSTIN
+  const gstinText = document.getElementById('printSellerGSTIN').textContent || '';
+  if (gstinText.trim()) {
+    sellerParagraphs.push(new Paragraph({
+      children: [new TextRun({ text: gstinText.trim(), bold: true, size: 20, font: "Times New Roman" })],
+      spacing: { before: 80 }
+    }));
+  }
+
+  // Nested Quotation Metadata Table (Right Column)
+  const metaRows = [
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: "Quotation No.", bold: true, size: 20, font: "Times New Roman" })] })],
+          width: { size: 1965, type: WidthType.DXA }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printQuoteNo').textContent || '-', size: 20, font: "Times New Roman" })] })],
+          width: { size: 2403, type: WidthType.DXA }
+        })
+      ]
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: "Dated", bold: true, size: 20, font: "Times New Roman" })] })],
+          width: { size: 1965, type: WidthType.DXA }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printQuoteDate').textContent || '-', size: 20, font: "Times New Roman" })] })],
+          width: { size: 2403, type: WidthType.DXA }
+        })
+      ]
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: "Validity", bold: true, size: 20, font: "Times New Roman" })] })],
+          width: { size: 1965, type: WidthType.DXA }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: "10 Days", size: 20, font: "Times New Roman" })] })],
+          width: { size: 2403, type: WidthType.DXA }
+        })
+      ]
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: "Delivery Date", bold: true, size: 20, font: "Times New Roman" })] })],
+          width: { size: 1965, type: WidthType.DXA }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printDeliveryDate').textContent || '-', size: 20, font: "Times New Roman" })] })],
+          width: { size: 2403, type: WidthType.DXA }
+        })
+      ]
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: "Payment Terms", bold: true, size: 20, font: "Times New Roman" })] })],
+          width: { size: 1965, type: WidthType.DXA }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printPaymentTerms').textContent || '-', size: 20, font: "Times New Roman" })] })],
+          width: { size: 2403, type: WidthType.DXA }
+        })
+      ]
+    })
+  ];
+
+  const metaTable = new Table({
+    width: { size: 4368, type: WidthType.DXA },
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.NONE }
+    },
+    rows: metaRows,
+    margins: { top: 60, bottom: 60, left: 0, right: 0 }
+  });
+
+  const mainSellerQuoteTable = new Table({
+    width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            children: sellerParagraphs,
+            width: { size: 6032, type: WidthType.DXA }
+          }),
+          new TableCell({
+            children: [metaTable],
+            width: { size: 4368, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.TOP
+          })
+        ]
+      })
+    ],
+    margins: { top: 120, bottom: 120, left: 160, right: 160 }
+  });
+
+
+  // --- 2. BUYER INFORMATION BLOCK ---
+  const buyerParagraphs = [];
+  const buyerNameVal = document.getElementById('printBuyerName').textContent || '-';
+  buyerParagraphs.push(new Paragraph({
+    children: [
+      new TextRun({ text: "Buyer: ", bold: true, size: 21, font: "Times New Roman" }),
+      new TextRun({ text: buyerNameVal, bold: true, size: 23, font: "Times New Roman" })
+    ],
+    spacing: { before: 180, after: 40 }
+  }));
+
+  const buyerMobileVal = document.getElementById('printBuyerMobile').textContent || '';
+  const isBuyerMobileVisible = document.getElementById('printBuyerMobileWrapper')?.style.display !== 'none';
+  if (buyerMobileVal && isBuyerMobileVisible) {
+    buyerParagraphs.push(new Paragraph({
+      children: [
+        new TextRun({ text: "Mobile: ", bold: true, size: 21, font: "Times New Roman" }),
+        new TextRun({ text: buyerMobileVal, bold: true, size: 21, font: "Times New Roman" })
+      ],
+      spacing: { after: 40 }
+    }));
+  }
+
+  const buyerAddrVal = document.getElementById('qCustAddress').value || '-';
+  const buyerAddrLines = buyerAddrVal.split('\n').map(l => l.trim()).filter(Boolean);
+  buyerParagraphs.push(new Paragraph({
+    children: [
+      new TextRun({ text: "Address: ", bold: true, size: 21, font: "Times New Roman" }),
+      new TextRun({ text: buyerAddrLines.join(', '), size: 21, font: "Times New Roman" })
+    ],
+    spacing: { after: 180 }
+  }));
+
+
+  // --- 3. DYNAMIC ITEMS TABLE GENERATION ---
+  const quoteRows = document.querySelectorAll('.quote-item-row');
+  let subtotal = 0;
+  quoteRows.forEach(row => {
+    const qty = Number(row.querySelector('.q-qty').value) || 0;
+    const price = Number(row.querySelector('.q-price').value) || 0;
+    subtotal += (qty * price);
+  });
+
+  let discountVal = 0;
+  let taxableValue = subtotal;
+  if (activeAdjustments.discount.active) {
+    discountVal = activeAdjustments.discount.value || 0;
+    taxableValue = Math.max(0, subtotal - discountVal);
+  }
+
+  const cgstActive = activeAdjustments.cgst.active;
+  const cgstRate = cgstActive ? activeAdjustments.cgst.value : 0;
+  const sgstActive = activeAdjustments.sgst.active;
+  const sgstRate = sgstActive ? activeAdjustments.sgst.value : 0;
+
+  let cgstAmount = 0;
+  if (cgstActive) cgstAmount = (taxableValue * cgstRate) / 100;
+  let sgstAmount = 0;
+  if (sgstActive) sgstAmount = (taxableValue * sgstRate) / 100;
+
+  let otherCharges = 0;
+  if (activeAdjustments.transport.active) otherCharges += activeAdjustments.transport.value || 0;
+  if (activeAdjustments.labour.active) otherCharges += activeAdjustments.labour.value || 0;
+  if (activeAdjustments.other.active) otherCharges += activeAdjustments.other.value || 0;
+
+  const grandTotal = Math.max(0, taxableValue + cgstAmount + sgstAmount + otherCharges);
+
+  let printRows = [];
+  quoteRows.forEach(row => {
+    const itemName = row.querySelector('.q-item-name').value.trim();
+    const qty = Number(row.querySelector('.q-qty').value) || 1;
+    const price = Number(row.querySelector('.q-price').value) || 0;
+    printRows.push({ type: 'item', desc: itemName, qty: `${qty} SET`, price: price });
+  });
+
+  if (activeAdjustments.discount.active && discountVal > 0) {
+    printRows.push({ type: 'adj', desc: 'Less: Discount', qty: '-', price: -discountVal });
+  }
+  if (activeAdjustments.transport.active && activeAdjustments.transport.value > 0) {
+    printRows.push({ type: 'adj', desc: 'Add: Transportation Charges', qty: '-', price: activeAdjustments.transport.value });
+  }
+  if (activeAdjustments.labour.active && activeAdjustments.labour.value > 0) {
+    printRows.push({ type: 'adj', desc: 'Add: Labour Charges', qty: '-', price: activeAdjustments.labour.value });
+  }
+  if (activeAdjustments.other.active && activeAdjustments.other.value > 0) {
+    printRows.push({ type: 'adj', desc: 'Add: Other Charges', qty: '-', price: activeAdjustments.other.value });
+  }
+  if (cgstActive && cgstAmount > 0) {
+    printRows.push({ type: 'adj', desc: `Add: CGST (${cgstRate}%)`, qty: '-', price: cgstAmount });
+  }
+  if (sgstActive && sgstAmount > 0) {
+    printRows.push({ type: 'adj', desc: `Add: SGST (${sgstRate}%)`, qty: '-', price: sgstAmount });
+  }
+
+  // Header Row (5 Columns)
+  const headerRow = new TableRow({
+    children: [
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: "Sl No", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 624, type: WidthType.DXA },
+        shading: { fill: "F2F2F2" },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: "Description of Goods", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 5616, type: WidthType.DXA },
+        shading: { fill: "F2F2F2" },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: "Qty.", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 1040, type: WidthType.DXA },
+        shading: { fill: "F2F2F2" },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: "Unit Price (₹)", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 1560, type: WidthType.DXA },
+        shading: { fill: "F2F2F2" },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: "Total Value (₹)", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 1560, type: WidthType.DXA },
+        shading: { fill: "F2F2F2" },
+        verticalAlign: VerticalAlign.CENTER
+      })
+    ]
+  });
+
+  const docTableRows = [headerRow];
+
+  printRows.forEach((r, idx) => {
+    const slNo = r.type === 'item' ? (idx + 1).toString() : '';
+    
+    let unitPriceText = '-';
+    let totalValueText = '';
+    
+    if (r.type === 'item') {
+      unitPriceText = `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+      const numericQty = Number(r.qty.replace(/[^0-9]/g, '')) || 1;
+      totalValueText = `₹${(numericQty * r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+    } else {
+      totalValueText = r.price < 0 ? `-₹${Math.abs(r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}` : `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+    }
+    
+    const cells = [
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: slNo, size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 624, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: r.desc, size: 20, font: "Times New Roman", italic: r.type === 'adj', bold: r.type === 'adj' })], alignment: AlignmentType.LEFT })],
+        width: { size: 5616, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: r.qty, size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 1040, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: unitPriceText, size: 20, font: "Times New Roman" })], alignment: AlignmentType.RIGHT })],
+        width: { size: 1560, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: totalValueText, size: 20, font: "Times New Roman", bold: r.type === 'adj' })], alignment: AlignmentType.RIGHT })],
+        width: { size: 1560, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER
+      })
+    ];
+    
+    docTableRows.push(new TableRow({ children: cells }));
+  });
+
+  // Grand Total Row
+  const totalRowCells = [
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "", size: 20, font: "Times New Roman" })] })],
+      width: { size: 624, type: WidthType.DXA },
+      shading: { fill: "FAFAFA" }
+    }),
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "Grand Total", bold: true, size: 20, font: "Times New Roman" })], alignment: AlignmentType.LEFT })],
+      width: { size: 5616, type: WidthType.DXA },
+      shading: { fill: "FAFAFA" }
+    }),
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "", size: 20, font: "Times New Roman" })] })],
+      width: { size: 1040, type: WidthType.DXA },
+      shading: { fill: "FAFAFA" }
+    }),
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "", size: 20, font: "Times New Roman" })] })],
+      width: { size: 1560, type: WidthType.DXA },
+      shading: { fill: "FAFAFA" }
+    }),
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: `₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, bold: true, size: 20, font: "Times New Roman" })], alignment: AlignmentType.RIGHT })],
+      width: { size: 1560, type: WidthType.DXA },
+      shading: { fill: "FAFAFA" }
+    })
+  ];
+
+  docTableRows.push(new TableRow({ children: totalRowCells }));
+
+  const itemsTable = new Table({
+    width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
+    },
+    rows: docTableRows,
+    margins: { top: 80, bottom: 80, left: 100, right: 100 }
+  });
+
+
+  // --- 4. SPECIAL NOTES BOX ---
+  const notesParagraphs = [];
+  const specialNotesBox = document.getElementById('printSpecialNotesBox');
+  if (specialNotesBox) {
+    const noteDivs = specialNotesBox.querySelectorAll('div');
+    noteDivs.forEach(div => {
+      const txt = div.textContent.trim();
+      if (txt) {
+        notesParagraphs.push(new Paragraph({
+          children: [new TextRun({ text: txt, size: 19, font: "Times New Roman", color: "111111" })],
+          spacing: { after: 30 }
+        }));
       }
-    } else {
-      cloneStamp.remove();
-    }
+    });
   }
 
-  // 5. Remove any empty or hidden <img> tags to prevent Word invalid file reference errors
-  const allImgs = clone.querySelectorAll('img');
-  allImgs.forEach(img => {
-    if (!img.getAttribute('src') || img.getAttribute('src') === '' || img.style.display === 'none') {
-      img.remove();
+
+  // --- 5. AMOUNT IN WORDS ---
+  const amtInWordsText = document.getElementById('printAmountInWords').textContent || '';
+  const amountParagraph = new Paragraph({
+    children: [new TextRun({ text: amtInWordsText.trim(), bold: true, size: 21, font: "Times New Roman" })],
+    spacing: { before: 120, after: 120 },
+    border: {
+      top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
     }
   });
 
-  // 6. Ensure Subsidy & Bank/Declaration table cell widths match display state
-  const subsidyCell = clone.querySelector('#printSubsidyCell');
-  if (subsidyCell && (subsidyCell.style.display === 'none' || getComputedStyle(subsidyCell).display === 'none')) {
-    const nextCell = subsidyCell.nextElementSibling;
-    subsidyCell.remove();
-    if (nextCell) {
-      nextCell.style.width = '100%';
-      nextCell.setAttribute('width', '100%');
-    }
+
+  // --- 6. SUBSIDY DETAILS & COMPANY BANK DETAILS TABLE ---
+  const printSubsidyCell = document.getElementById('printSubsidyCell');
+  const isSubsidyVisible = printSubsidyCell && printSubsidyCell.style.display !== 'none';
+
+  let bottomBlockTable;
+
+  // Reusable Bank & Declaration list
+  const declBankParagraphs = [
+    new Paragraph({
+      children: [new TextRun({ text: "Declaration:", bold: true, size: 21, font: "Times New Roman" })],
+      spacing: { after: 60 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "1. This quotation shows the actual price of goods described; all particulars are true and correct.", size: 18, font: "Times New Roman" })],
+      spacing: { after: 20 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "2. Advance to be paid within 7 days of quotation date, else price may vary as per company revision.", size: 18, font: "Times New Roman" })],
+      spacing: { after: 20 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "3. All disputes subject to Bhubaneswar jurisdiction only.", size: 18, font: "Times New Roman" })],
+      spacing: { after: 20 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "4. Products once sold cannot be returned.", size: 18, font: "Times New Roman" })],
+      spacing: { after: 80 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: "Company's Bank Details", bold: true, size: 21, font: "Times New Roman" })],
+      spacing: { after: 60 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Bank Name: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankName').textContent || '-', size: 19, font: "Times New Roman" })
+      ],
+      spacing: { after: 20 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "A/C Holder: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankAcHolder').textContent || '-', size: 19, font: "Times New Roman" })
+      ],
+      spacing: { after: 20 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "A/C No.: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankAcNo').textContent || '-', size: 19, font: "Times New Roman" })
+      ],
+      spacing: { after: 20 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Branch & IFSC: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankBranchIFS').textContent || '-', size: 19, font: "Times New Roman" })
+      ],
+      spacing: { after: 20 }
+    })
+  ];
+
+  if (isSubsidyVisible) {
+    const subsidyRows = [
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: "Per KW", bold: true, size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            shading: { fill: "f2f2f2" },
+            verticalAlign: VerticalAlign.CENTER
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: "Central Subsidy", bold: true, size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            shading: { fill: "f2f2f2" },
+            verticalAlign: VerticalAlign.CENTER
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: "State Subsidy", bold: true, size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            shading: { fill: "f2f2f2" },
+            verticalAlign: VerticalAlign.CENTER
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: "Total Subsidy", bold: true, size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            shading: { fill: "f2f2f2" },
+            verticalAlign: VerticalAlign.CENTER
+          })
+        ]
+      }),
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printSubPerKW').textContent || '-', size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.CENTER
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printSubCentral').textContent || '-', size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.CENTER
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printSubState').textContent || '-', size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.CENTER
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('printSubTotal').textContent || '-', bold: true, size: 18, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+            width: { size: 1248, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.CENTER
+          })
+        ]
+      })
+    ];
+
+    const innerSubsidyTable = new Table({
+      width: { size: 4992, type: WidthType.DXA },
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        insideVertical: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
+      },
+      rows: subsidyRows,
+      margins: { top: 60, bottom: 60, left: 60, right: 60 }
+    });
+
+    const subsidyCellParagraphs = [
+      new Paragraph({
+        children: [new TextRun({ text: "Subsidy Scheme as per MNRE", bold: true, size: 21, font: "Times New Roman" })],
+        spacing: { after: 100 }
+      }),
+      innerSubsidyTable
+    ];
+
+    bottomBlockTable = new Table({
+      width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        insideVertical: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
+      },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: subsidyCellParagraphs,
+              width: { size: 4992, type: WidthType.DXA }
+            }),
+            new TableCell({
+              children: declBankParagraphs,
+              width: { size: 5408, type: WidthType.DXA }
+            })
+          ]
+        })
+      ],
+      margins: { top: 120, bottom: 120, left: 160, right: 160 }
+    });
+  } else {
+    bottomBlockTable = new Table({
+      width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+        right: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
+      },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: declBankParagraphs,
+              width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA }
+            })
+          ]
+        })
+      ],
+      margins: { top: 120, bottom: 120, left: 160, right: 160 }
+    });
   }
 
+
+  // --- 7. SIGNATURE BLOCK ---
+  const signCompName = document.getElementById('printSignCompanyName').textContent || 'SHRI TRUTIYADEV SOLAR ENTERPRISES';
+  const sigParagraphs = [
+    new Paragraph({
+      children: [new TextRun({ text: `for ${signCompName.toUpperCase()}`, bold: true, size: 21, font: "Times New Roman" })],
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 240, after: 120 }
+    }),
+    new Paragraph({ children: [], spacing: { before: 480 } }), // space for signature
+    new Paragraph({
+      children: [new TextRun({ text: "/Authorized Signatory", bold: true, size: 21, font: "Times New Roman" })],
+      alignment: AlignmentType.RIGHT,
+      spacing: { after: 120 }
+    })
+  ];
+
+
+  // --- 8. COMPUTER-GENERATED COPY FOOTER ---
+  const footerParagraph = new Paragraph({
+    children: [new TextRun({ text: "This is a Computer-Generated Copy", italic: true, size: 21, font: "Times New Roman" })],
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 240 },
+    border: {
+      top: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
+    }
+  });
+
+
+  // --- 9. CONSTRUCT COMPLETE DOCUMENT ---
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: 720,
+            bottom: 720,
+            left: 720,
+            right: 720
+          }
+        }
+      },
+      children: [
+        // Title block
+        new Paragraph({
+          children: [new TextRun({ text: "QUOTATION", bold: true, size: 36, font: "Times New Roman" })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 80 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: document.getElementById('printHeadingTitle').textContent || '', bold: true, size: 24, font: "Times New Roman" })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: "(ORIGINAL FOR RECIPIENT)", italic: true, size: 19, font: "Times New Roman" })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 240 }
+        }),
+
+        // Main Metadata & Company Details Table
+        mainSellerQuoteTable,
+
+        // Spacer
+        new Paragraph({ children: [], spacing: { before: 120 } }),
+
+        // Buyer Information
+        ...buyerParagraphs,
+
+        // Items Grid Table
+        itemsTable,
+
+        // Spacer & Special Notes
+        ...notesParagraphs,
+
+        // Amount in Words line
+        amountParagraph,
+
+        // Spacer
+        new Paragraph({ children: [], spacing: { before: 120 } }),
+
+        // Subsidy / Bank & Declaration Table
+        bottomBlockTable,
+
+        // Sign Box
+        ...sigParagraphs,
+
+        // Computer-Generated Footer
+        footerParagraph
+      ]
+    }]
+  });
+
+  // Save the modern A4 .docx file
   const quoteNo = document.getElementById('qQuoteNo').value.trim() || 'TR01';
   const cleanCustName = custName.replace(/[^a-zA-Z0-9_\-]/g, '_');
-  const fileName = `Quotation_${quoteNo}_${cleanCustName}.doc`;
+  const fileName = `Quotation_${quoteNo}_${cleanCustName}.docx`;
 
-  const wordHtml = `
-    <html xmlns:o="urn:schemas-microsoft-microsoft-com:office:office"
-          xmlns:w="urn:schemas-microsoft-microsoft-com:office:word"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="utf-8">
-      <title>Quotation ${quoteNo}</title>
-      <!--[if gte mso 9]>
-      <xml>
-        <w:WordDocument>
-          <w:View>Print</w:View>
-          <w:Zoom>100</w:Zoom>
-          <w:DoNotOptimizeForBrowser/>
-        </w:WordDocument>
-      </xml>
-      <![endif]-->
-      <style>
-        @page Section1 {
-          size: 595.3pt 841.9pt;
-          margin: 36.0pt 36.0pt 36.0pt 36.0pt;
-          mso-header-margin: 36.0pt;
-          mso-footer-margin: 36.0pt;
-          mso-paper-source: 0;
-        }
-        div.Section1 {
-          page: Section1;
-        }
-        body {
-          font-family: 'Times New Roman', serif;
-          font-size: 11pt;
-          line-height: 1.4;
-          color: #000000;
-          background-color: #ffffff;
-        }
-        table {
-          border-collapse: collapse !important;
-          mso-table-lspace: 0pt;
-          mso-table-rspace: 0pt;
-          width: 100% !important;
-          margin-bottom: 12pt;
-        }
-        td, th {
-          border: 1.0pt solid #000000 !important;
-          padding: 6pt 8pt !important;
-          vertical-align: top !important;
-          font-size: 11pt !important;
-        }
-        th {
-          background-color: #F2F2F2 !important;
-          font-weight: bold !important;
-          text-align: center !important;
-          font-size: 11.5pt !important;
-        }
-        .text-center { text-align: center !important; }
-        .text-start { text-align: left !important; }
-        .text-end { text-align: right !important; }
-        .fw-bold { font-weight: bold !important; }
-        ol { margin-top: 2pt; margin-bottom: 6pt; padding-left: 16pt; }
-        li { margin-bottom: 2pt; }
-      </style>
-    </head>
-    <body>
-      <div class="Section1">
-        ${clone.innerHTML}
-      </div>
-    </body>
-    </html>
-  `;
-
-  const blob = new Blob(['\ufeff' + wordHtml], {
-    type: 'application/msword'
+  Packer.toBlob(doc).then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast(`Quotation Word document (.docx) generated & downloaded successfully!`, 'success');
+    }
+  }).catch(err => {
+    console.error("docx packing error:", err);
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Failed to package Word Document. Please check console logs.', 'error');
+    }
   });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-  if (typeof UI !== 'undefined' && UI.toast) {
-    UI.toast(`Quotation Word document (.doc) generated & downloaded successfully!`, 'success');
-  }
 };
+
