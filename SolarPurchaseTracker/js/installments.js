@@ -860,7 +860,8 @@ function renderList() {
               <!-- Customer Price -->
               <div class="d-flex flex-column align-items-end" style="border-bottom: 1px dashed #eee; padding-bottom: 3px; width: 100%;">
                 <span class="text-muted" style="font-size: 0.65rem; text-transform: uppercase;">Customer Price</span>
-                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${fmtPriceField(price, total)}</span>
+                // <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${fmtPriceField(price, total)}</span>
+                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${price}</span>
                 <button class="btn btn-xs btn-outline-secondary mt-0.5 no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Customer')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
                   Cust Txn ${getTxnDiffBadge(price, total)}
                 </button>
@@ -868,7 +869,8 @@ function renderList() {
               <!-- Vendor Price -->
               <div class="d-flex flex-column align-items-end" style="width: 100%;">
                 <span class="text-muted" style="font-size: 0.65rem; text-transform: uppercase;">Vendor Price</span>
-                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${fmtPriceField(vPrice, vPaid)}</span>
+                // <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${fmtPriceField(vPrice, vPaid)}</span>
+                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${vPrice}</span>
                 <button class="btn btn-xs btn-outline-secondary mt-0.5 no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
                   Vend Txn ${getTxnDiffBadge(vPrice, vPaid)}
                 </button>
