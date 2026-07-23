@@ -131,7 +131,7 @@ const DB = (() => {
     let rows = cache[key] ? [...cache[key]] : [];
     if (typeof Auth !== 'undefined') {
       const currentUser = Auth.getUser();
-      if (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associate')) {
+      if (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associates')) {
         const partnerNames = [
           currentUser.username.toLowerCase().trim(),
           currentUser.userid.toLowerCase().trim()

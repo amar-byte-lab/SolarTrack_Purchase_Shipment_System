@@ -69,7 +69,7 @@ const UI = (() => {
     const visibleNavItems = user 
       ? NAV_ITEMS.filter(item => {
           if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
-          if (user.role === 'partner' || user.role === 'associate') {
+          if (user.role === 'partner' || user.role === 'associates') {
             return ['installments.html', 'offer.html', 'borrower.html'].includes(item.href);
           }
           return ['offer.html', 'borrower.html'].includes(item.href);
