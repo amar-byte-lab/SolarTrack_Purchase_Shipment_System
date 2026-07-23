@@ -139,7 +139,7 @@ const Auth = (() => {
       if (currentUser) {
         if (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') {
           window.location.href = 'dashboard.html';
-        } else if (currentUser.role === 'partner') {
+        } else if (currentUser.role === 'partner' || currentUser.role === 'associate') {
           window.location.href = 'installments.html';
         } else {
           window.location.href = 'offer.html';
@@ -158,7 +158,7 @@ const Auth = (() => {
     if (page === 'index.html') {
       if (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') {
         window.location.href = 'dashboard.html';
-      } else if (currentUser.role === 'partner') {
+      } else if (currentUser.role === 'partner' || currentUser.role === 'associate') {
         window.location.href = 'installments.html';
       } else {
         window.location.href = 'offer.html';
@@ -170,7 +170,7 @@ const Auth = (() => {
     const isPowerUser = (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
     
     if (!isPowerUser) {
-      if (currentUser.role === 'partner') {
+      if (currentUser.role === 'partner' || currentUser.role === 'associate') {
         const allowed = ['installments.html', 'offer.html', 'borrower.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'installments.html';

@@ -24,6 +24,9 @@ const PRIMARY_KEYS = {
   shipment_remarks:    'RemarkID',
   products:            'ProductName',
   product_items:       'RowID',
+  users:               'userid',
+  roles:               'role',
+  notifications:       'id',
 };
 
 async function getStatus() {

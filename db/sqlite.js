@@ -25,12 +25,42 @@ function init() {
   db.exec(`CREATE TABLE IF NOT EXISTS materials ("RowID" TEXT PRIMARY KEY, "ShipmentNo" TEXT, "ItemName" TEXT, "Category" TEXT, "Quantity" REAL, "Unit" TEXT, "PurchaseRate" REAL, "TotalPurchaseValue" REAL)`);
   db.exec(`CREATE TABLE IF NOT EXISTS borrowers ("BorrowerID" INTEGER PRIMARY KEY AUTOINCREMENT, "Name" TEXT NOT NULL, "Mobile" TEXT, "Address" TEXT, "Status" TEXT DEFAULT 'Active', "CreatedAt" TEXT, "CreatedBy" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS borrower_txns ("TxnID" INTEGER PRIMARY KEY AUTOINCREMENT, "BorrowerID" INTEGER NOT NULL, "TxnDate" TEXT NOT NULL, "Amount" REAL NOT NULL, "Type" TEXT NOT NULL, "Remarks" TEXT, "CreatedAt" TEXT)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS roles ("role" TEXT PRIMARY KEY)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS users ("userid" TEXT PRIMARY KEY, "username" TEXT, "email" TEXT UNIQUE, "password" TEXT, "role" TEXT, "status" TEXT, "reset_token" TEXT, "reset_expires" TEXT, "created_at" TEXT)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS notifications ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "type" TEXT, "user_id" TEXT, "message" TEXT, "status" TEXT DEFAULT 'unread', "created_at" TEXT)`);
 
   // Migrate existing database to add CreatedBy column if it doesn't exist
   try {
     db.exec(`ALTER TABLE borrowers ADD COLUMN "CreatedBy" TEXT`);
   } catch (e) {
     // Ignore error if column already exists
+  }
+
+  // Pre-populate roles table if empty
+  try {
+    const rolesCount = db.prepare('SELECT COUNT(*) as count FROM roles').get().count;
+    if (rolesCount === 0) {
+      db.prepare('INSERT INTO roles (role) VALUES (?)').run('admin');
+      db.prepare('INSERT INTO roles (role) VALUES (?)').run('superadmin');
+      db.prepare('INSERT INTO roles (role) VALUES (?)').run('partner');
+      db.prepare('INSERT INTO roles (role) VALUES (?)').run('user');
+    }
+  } catch (e) {
+    console.error('[SQLite Init] Error populating roles:', e.message);
+  }
+
+  // Pre-populate users table if empty
+  try {
+    const usersCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+    if (usersCount === 0) {
+      const stmt = db.prepare('INSERT INTO users (userid, username, email, password, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+      stmt.run('admin', 'Admin', 'admin@example.com', 'adminpassword', 'admin', 'Approved', new Date().toISOString());
+      stmt.run('user', 'Normal User', 'user@example.com', 'userpassword', 'user', 'Approved', new Date().toISOString());
+      stmt.run('amar', 'Amar', 'amar@example.com', 'amar', 'user', 'Approved', new Date().toISOString());
+      stmt.run('sripatisrichandan', 'Sripati Srichandan', 'sripati@example.com', 'sripatisrichandan', 'partner', 'Approved', new Date().toISOString());
+    }
+  } catch (e) {
+    console.error('[SQLite Init] Error populating initial users:', e.message);
   }
 
   console.log(`[SQLite Driver] Database initialized at: ${DB_PATH}`);

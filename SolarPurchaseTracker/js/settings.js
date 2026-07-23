@@ -516,26 +516,84 @@ function renderUsersList() {
   if (!tbody) return;
   
   if (_usersList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No users found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No users found.</td></tr>`;
     return;
   }
   
   tbody.innerHTML = _usersList.map(u => {
     const isCurrentAdmin = (u.userid === 'admin');
+    const emailStr = u.email || '';
+    const statusVal = u.status || 'Approved';
+    
+    let statusBadge = '';
+    if (statusVal === 'Approved') {
+      statusBadge = `<span class="badge bg-success">Approved</span>`;
+    } else if (statusVal === 'Pending') {
+      statusBadge = `<span class="badge bg-warning text-dark">Pending</span>`;
+    } else {
+      statusBadge = `<span class="badge bg-danger">Rejected</span>`;
+    }
+
+    const quickActions = (statusVal === 'Pending') ? `
+      <button type="button" class="btn btn-xs btn-success text-white px-2 py-0.5" onclick="quickResolveUser('${u.userid}', 'approve')" title="Approve User">Approve</button>
+      <button type="button" class="btn btn-xs btn-danger text-white px-2 py-0.5 ms-1" onclick="quickResolveUser('${u.userid}', 'reject')" title="Reject User">Reject</button>
+    ` : '';
+    
     return `
       <tr>
         <td class="font-monospace">${u.userid}</td>
         <td>${u.username}</td>
+        <td>${emailStr}</td>
         <td class="font-monospace">${u.password}</td>
         <td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-success'}">${u.role}</span></td>
+        <td>${statusBadge}</td>
         <td class="text-center">
-          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5" onclick="openEditUserModal('${u.userid}')">✏️ Edit</button>
+          ${quickActions}
+          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5 ${statusVal === 'Pending' ? 'ms-1' : ''}" onclick="openEditUserModal('${u.userid}')">✏️ Edit</button>
           ${isCurrentAdmin ? '' : `<button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 ms-1" onclick="deleteUser('${u.userid}')">🗑️ Delete</button>`}
         </td>
       </tr>
     `;
   }).join('');
 }
+
+window.quickResolveUser = async function(userid, action) {
+  const confirmed = await UI.confirmDialog(
+    `Are you sure you want to ${action} user "${userid}"?`,
+    'Confirm Action',
+    action === 'approve' ? 'Approve' : 'Reject',
+    action === 'approve' ? 'btn-success' : 'btn-danger'
+  );
+  if (!confirmed) return;
+
+  UI.showLoading(true);
+  try {
+    const resNotif = await fetch('/api/notifications');
+    if (resNotif.ok) {
+      const notifData = await resNotif.json();
+      const notif = (notifData.notifications || []).find(n => n.user_id.toLowerCase() === userid.toLowerCase() && n.status === 'unread');
+      if (notif) {
+        await fetch('/api/notifications/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: notif.id, action })
+        });
+      } else {
+        const u = _usersList.find(user => user.userid.toLowerCase() === userid.toLowerCase());
+        if (u) {
+          u.status = action === 'approve' ? 'Approved' : 'Rejected';
+          await saveAuthSettings();
+        }
+      }
+    }
+    UI.toast(`User "${userid}" has been ${action}d.`, 'success');
+    loadAuthSettings();
+  } catch (e) {
+    UI.toast(e.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
 
 function renderRolesList() {
   const container = document.getElementById('rolesListGroup');
@@ -566,6 +624,7 @@ function openAddUserModal() {
   document.getElementById('userModalMode').value = 'add';
   document.getElementById('userModalOrigId').value = '';
   document.getElementById('userModalId').disabled = false;
+  document.getElementById('userModalStatus').value = 'Approved';
   populateRoleSelect();
   _userModal.show();
 }
@@ -580,14 +639,15 @@ window.openEditUserModal = function(userid) {
   
   const idInput = document.getElementById('userModalId');
   idInput.value = user.userid;
-  // Let's allow editing userid, but if it is 'admin', disable it
   idInput.disabled = (userid === 'admin');
   
   document.getElementById('userModalName').value = user.username;
+  document.getElementById('userModalEmail').value = user.email || '';
   document.getElementById('userModalPassword').value = user.password;
   
   populateRoleSelect();
   document.getElementById('userModalRole').value = user.role;
+  document.getElementById('userModalStatus').value = user.status || 'Approved';
   
   _userModal.show();
 };
@@ -615,15 +675,16 @@ async function saveUserFromModal() {
   const origId = document.getElementById('userModalOrigId').value;
   const id = document.getElementById('userModalId').value.trim().toLowerCase();
   const name = document.getElementById('userModalName').value.trim();
+  const email = document.getElementById('userModalEmail').value.trim().toLowerCase();
   const password = document.getElementById('userModalPassword').value;
   const role = document.getElementById('userModalRole').value;
+  const status = document.getElementById('userModalStatus').value || 'Approved';
   
-  if (!id || !name || !password || !role) {
+  if (!id || !name || !email || !password || !role) {
     UI.toast('Please fill all user fields.', 'warning');
     return;
   }
   
-  // Validation for alphanumeric
   if (!/^[a-z0-9_-]+$/.test(id)) {
     UI.toast('User ID must be lowercase alphanumeric, underscore, or hyphen only.', 'warning');
     return;
@@ -634,9 +695,12 @@ async function saveUserFromModal() {
       UI.toast(`User ID "${id}" is already in use.`, 'warning');
       return;
     }
-    _usersList.push({ userid: id, username: name, password, role });
+    if (_usersList.some(u => u.email && u.email.toLowerCase() === email)) {
+      UI.toast(`Email "${email}" is already in use.`, 'warning');
+      return;
+    }
+    _usersList.push({ userid: id, username: name, email, password, role, status });
   } else {
-    // Edit mode
     const userIndex = _usersList.findIndex(u => u.userid === origId);
     if (userIndex === -1) {
       UI.toast('User not found.', 'danger');
@@ -646,7 +710,11 @@ async function saveUserFromModal() {
       UI.toast(`User ID "${id}" is already in use.`, 'warning');
       return;
     }
-    _usersList[userIndex] = { userid: id, username: name, password, role };
+    if (_usersList.some(u => u.userid !== origId && u.email && u.email.toLowerCase() === email)) {
+      UI.toast(`Email "${email}" is already in use.`, 'warning');
+      return;
+    }
+    _usersList[userIndex] = { userid: id, username: name, email, password, role, status };
   }
   
   await saveAuthSettings();

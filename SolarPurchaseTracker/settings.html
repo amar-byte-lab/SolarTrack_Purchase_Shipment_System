@@ -187,9 +187,11 @@
                   <tr>
                     <th>User ID</th>
                     <th>Username</th>
+                    <th>Email</th>
                     <th>Password</th>
                     <th>Role</th>
-                    <th class="text-center" style="width: 150px;">Actions</th>
+                    <th>Status</th>
+                    <th class="text-center" style="width: 180px;">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="usersTbody">
@@ -233,6 +235,10 @@
             <input type="text" class="form-control" id="userModalName" required placeholder="e.g. Amar Mohanty">
           </div>
           <div class="mb-3">
+            <label for="userModalEmail" class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="userModalEmail" required placeholder="e.g. amar@example.com">
+          </div>
+          <div class="mb-3">
             <label for="userModalPassword" class="form-label">Password</label>
             <input type="text" class="form-control" id="userModalPassword" required placeholder="e.g. amar">
           </div>
@@ -240,6 +246,14 @@
             <label for="userModalRole" class="form-label">Role</label>
             <select class="form-select" id="userModalRole" required>
               <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="userModalStatus" class="form-label">Status</label>
+            <select class="form-select" id="userModalStatus" required>
+              <option value="Approved">Approved</option>
+              <option value="Pending">Pending</option>
+              <option value="Rejected">Rejected</option>
             </select>
           </div>
         </form>

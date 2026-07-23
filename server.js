@@ -12,26 +12,39 @@ const PUBLIC_DIR = path.join(__dirname, 'SolarPurchaseTracker');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// Cache package.json in memory to avoid blocking I/O on login
-let cachedPkgUsers = null;
-function getAuthUsers() {
-  if (cachedPkgUsers) return cachedPkgUsers;
-  try {
-    const pkgPath = path.join(__dirname, 'package.json');
-    if (fs.existsSync(pkgPath)) {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      if (pkg.auth?.users) cachedPkgUsers = pkg.auth.users;
-    }
-  } catch (e) {
-    console.error('Error loading package.json auth:', e.message);
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+// Setup SMTP transporter for password reset emails
+const smtpTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || '',
+  port: parseInt(process.env.SMTP_PORT || '587', 10),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
   }
-  if (!cachedPkgUsers) {
-    cachedPkgUsers = [
-      { userid: 'admin', username: 'Admin', password: 'adminpassword', role: 'admin' },
-      { userid: 'user', username: 'Normal User', password: 'userpassword', role: 'user' }
-    ];
+});
+
+async function sendResetEmail(toEmail, username, resetLink) {
+  const mailOptions = {
+    from: process.env.SMTP_FROM || '"SolarTrack" <no-reply@example.com>',
+    to: toEmail,
+    subject: 'SolarTrack Password Reset Request',
+    text: `Hi ${username},\n\nYou requested a password reset for your SolarTrack account.\n\nPlease click the link below to reset your password. This link is valid for 1 hour:\n\n${resetLink}\n\nIf you did not request this, please ignore this email.`,
+    html: `<p>Hi ${username},</p><p>You requested a password reset for your SolarTrack account.</p><p>Please click the link below to reset your password. This link is valid for 1 hour:</p><p><a href="${resetLink}">${resetLink}</a></p><p>If you did not request this, please ignore this email.</p>`
+  };
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.log('\n======================================================');
+    console.log('📬 [EMAIL FALLBACK] Password reset email log:');
+    console.log(`User: ${username} (${toEmail})`);
+    console.log(`Reset Link: ${resetLink}`);
+    console.log('======================================================\n');
+    return;
   }
-  return cachedPkgUsers;
+
+  await smtpTransporter.sendMail(mailOptions);
 }
 
 const MIME_TYPES = {
@@ -184,38 +197,41 @@ const server = http.createServer(async (req, res) => {
         const inputId = (payload?.userid || payload?.username || '').trim().toLowerCase();
         const inputPass = payload?.password || '';
 
-        const users = getAuthUsers();
+        const users = await db.getTable('users');
         const foundUser = users.find(u =>
-          (u.userid.toLowerCase() === inputId || u.username.toLowerCase() === inputId) &&
+          (u.userid.toLowerCase() === inputId || (u.email && u.email.toLowerCase() === inputId) || (u.username && u.username.toLowerCase() === inputId)) &&
           u.password === inputPass
         );
 
         if (foundUser) {
-          const body = JSON.stringify({
-            success: true,
-            user: { userid: foundUser.userid, username: foundUser.username, role: foundUser.role }
-          });
-          sendResponse(req, res, 200, 'application/json', Buffer.from(body), 'no-cache, no-store');
+          if (foundUser.status === 'Pending') {
+            sendResponse(req, res, 403, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'Your account is pending Admin approval.' })), 'no-cache, no-store');
+          } else if (foundUser.status === 'Rejected') {
+            sendResponse(req, res, 403, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'Your account registration was rejected by Admin.' })), 'no-cache, no-store');
+          } else {
+            const body = JSON.stringify({
+              success: true,
+              user: { userid: foundUser.userid, username: foundUser.username, role: foundUser.role, email: foundUser.email }
+            });
+            sendResponse(req, res, 200, 'application/json', Buffer.from(body), 'no-cache, no-store');
+          }
         } else {
-          sendResponse(req, res, 401, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'Invalid User ID or Password' })), 'no-cache, no-store');
+          sendResponse(req, res, 401, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'Invalid User ID/Email or Password' })), 'no-cache, no-store');
         }
         return;
       }
 
       if (pathname === '/api/auth-config') {
         if (req.method === 'GET') {
-          const users = getAuthUsers();
-          let roles = ['admin', 'user'];
           try {
-            const pkgPath = path.join(__dirname, 'package.json');
-            if (fs.existsSync(pkgPath)) {
-              const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-              if (pkg.auth?.roles) roles = pkg.auth.roles;
-            }
+            const users = await db.getTable('users');
+            const rolesList = await db.getTable('roles');
+            const roles = rolesList.map(r => r.role);
+            sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ users, roles })), 'no-cache, no-store');
           } catch (e) {
-            console.error('Error loading roles from package.json:', e.message);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: e.message }));
           }
-          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ users, roles })), 'no-cache, no-store');
         } else if (req.method === 'POST') {
           try {
             const payload = await getRequestBody(req);
@@ -224,24 +240,272 @@ const server = http.createServer(async (req, res) => {
               res.end(JSON.stringify({ error: 'Invalid payload' }));
               return;
             }
-            const pkgPath = path.join(__dirname, 'package.json');
-            if (fs.existsSync(pkgPath)) {
-              const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-              pkg.auth = {
-                users: payload.users,
-                roles: payload.roles
-              };
-              fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), 'utf8');
-              cachedPkgUsers = payload.users;
-              sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
-            } else {
-              res.statusCode = 500;
-              res.end(JSON.stringify({ error: 'package.json not found' }));
+
+            // 1. Sync Roles
+            const currentRolesList = await db.getTable('roles');
+            const currentRoles = currentRolesList.map(r => r.role);
+
+            for (const r of payload.roles) {
+              if (!currentRoles.includes(r)) {
+                await db.insertRow('roles', { role: r });
+              }
             }
+            for (const r of currentRoles) {
+              if (!payload.roles.includes(r) && r !== 'admin' && r !== 'user') {
+                await db.deleteRow('roles', 'role', r);
+              }
+            }
+
+            // 2. Sync Users
+            const currentUsers = await db.getTable('users');
+            const newUserids = payload.users.map(u => u.userid.toLowerCase());
+
+            // Delete users removed from the list (protecting 'admin')
+            for (const cu of currentUsers) {
+              if (!newUserids.includes(cu.userid.toLowerCase()) && cu.userid !== 'admin') {
+                await db.deleteRow('users', 'userid', cu.userid);
+              }
+            }
+
+            // Insert or Update users
+            for (const u of payload.users) {
+              const userid = u.userid.toLowerCase();
+              const existing = currentUsers.find(cu => cu.userid.toLowerCase() === userid);
+              
+              const userData = {
+                userid: userid,
+                username: u.username,
+                email: u.email || (existing ? existing.email : `${userid}@example.com`),
+                password: u.password,
+                role: u.role,
+                status: u.status || (existing ? existing.status : 'Approved'),
+                created_at: existing ? existing.created_at : new Date().toISOString()
+              };
+
+              await db.insertRow('users', userData);
+            }
+
+            sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
           } catch (e) {
             res.statusCode = 500;
             res.end(JSON.stringify({ error: e.message }));
           }
+        }
+        return;
+      }
+
+      if (pathname === '/api/register') {
+        try {
+          const payload = await getRequestBody(req);
+          const userid = (payload?.userid || '').trim().toLowerCase();
+          const username = (payload?.username || '').trim();
+          const email = (payload?.email || '').trim().toLowerCase();
+          const password = payload?.password || '';
+          const role = payload?.role || 'user';
+
+          if (!userid || !username || !email || !password) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Please provide userid, username, email, and password.' }));
+            return;
+          }
+
+          if (!/^[a-z0-9_-]+$/.test(userid)) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'User ID must be lowercase alphanumeric, underscore, or hyphen only.' }));
+            return;
+          }
+
+          const users = await db.getTable('users');
+          if (users.some(u => u.userid.toLowerCase() === userid)) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: `User ID "${userid}" is already in use.` }));
+            return;
+          }
+          if (users.some(u => u.email && u.email.toLowerCase() === email)) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: `Email "${email}" is already in use.` }));
+            return;
+          }
+
+          // Register as pending
+          const newUser = {
+            userid,
+            username,
+            email,
+            password,
+            role,
+            status: 'Pending',
+            created_at: new Date().toISOString()
+          };
+          await db.insertRow('users', newUser);
+
+          // Create notification for admin
+          const newNotification = {
+            type: 'new_user_registration',
+            user_id: userid,
+            message: `New user registration request: ${username} (${userid}, role: ${role})`,
+            status: 'unread',
+            created_at: new Date().toISOString()
+          };
+          await db.insertRow('notifications', newNotification);
+
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, message: 'Registration submitted. Please wait for admin approval.' })), 'no-cache, no-store');
+        } catch (e) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      if (pathname === '/api/forgot-password') {
+        try {
+          const payload = await getRequestBody(req);
+          const email = (payload?.email || '').trim().toLowerCase();
+          
+          if (!email) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Please provide an email address.' }));
+            return;
+          }
+
+          const users = await db.getTable('users');
+          const user = users.find(u => u.email && u.email.toLowerCase() === email);
+
+          if (user) {
+            const token = crypto.randomBytes(20).toString('hex');
+            const expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
+            user.reset_token = token;
+            user.reset_expires = expires;
+            await db.insertRow('users', user);
+
+            const resetLink = `http://${req.headers.host}/reset-password.html?token=${token}`;
+            await sendResetEmail(user.email, user.username, resetLink);
+          }
+
+          // Return generic success to prevent email enumeration
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, message: 'If the email exists in our system, a password reset link has been sent.' })), 'no-cache, no-store');
+        } catch (e) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      if (pathname === '/api/reset-password') {
+        try {
+          const payload = await getRequestBody(req);
+          const token = payload?.token || '';
+          const newPassword = payload?.password || '';
+
+          if (!token || !newPassword) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Missing token or new password.' }));
+            return;
+          }
+
+          const users = await db.getTable('users');
+          const user = users.find(u => u.reset_token === token);
+
+          if (!user) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Password reset token is invalid.' }));
+            return;
+          }
+
+          const expiryDate = new Date(user.reset_expires);
+          if (expiryDate < new Date()) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Password reset token has expired.' }));
+            return;
+          }
+
+          user.password = newPassword;
+          user.reset_token = null;
+          user.reset_expires = null;
+          await db.insertRow('users', user);
+
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, message: 'Password has been reset successfully.' })), 'no-cache, no-store');
+        } catch (e) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      if (pathname === '/api/notifications') {
+        try {
+          const allNotifications = await db.getTable('notifications');
+          // Sort unread notifications first, then descending by created_at
+          const sorted = allNotifications.sort((a, b) => {
+            if (a.status === 'unread' && b.status !== 'unread') return -1;
+            if (a.status !== 'unread' && b.status === 'unread') return 1;
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, notifications: sorted })), 'no-cache, no-store');
+        } catch (e) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      if (pathname === '/api/notifications/resolve') {
+        try {
+          const payload = await getRequestBody(req);
+          const id = payload?.id;
+          const action = payload?.action; // 'approve' or 'reject'
+
+          if (!id || !action) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Missing notification ID or action.' }));
+            return;
+          }
+
+          const notifications = await db.getTable('notifications');
+          // Match by id (number or string representation)
+          const notif = notifications.find(n => String(n.id) === String(id));
+
+          if (!notif) {
+            res.statusCode = 404;
+            res.end(JSON.stringify({ error: 'Notification not found.' }));
+            return;
+          }
+
+          const targetUserid = notif.user_id;
+          const users = await db.getTable('users');
+          const user = users.find(u => u.userid.toLowerCase() === targetUserid.toLowerCase());
+
+          if (user) {
+            if (action === 'approve') {
+              user.status = 'Approved';
+              await db.insertRow('users', user);
+            } else if (action === 'reject') {
+              user.status = 'Rejected';
+              await db.insertRow('users', user);
+            }
+          }
+
+          // Mark notification as resolved/read
+          notif.status = 'resolved';
+          await db.insertRow('notifications', notif);
+
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
+        } catch (e) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      if (pathname === '/api/roles') {
+        try {
+          const rolesList = await db.getTable('roles');
+          const roles = rolesList.map(r => r.role);
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, roles })), 'no-cache, no-store');
+        } catch (e) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
         }
         return;
       }

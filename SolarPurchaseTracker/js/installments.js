@@ -936,7 +936,7 @@ function bindEditRowListeners() {
   }
 
   const currentUser = Auth.getUser();
-  const isPartner = (currentUser && currentUser.role === 'partner');
+  const isPartner = (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associate'));
   const editBrokerNameInput = document.getElementById('editBrokerName');
   if (editBrokerNameInput) {
     if (isPartner) {
@@ -1495,7 +1495,7 @@ window.openCustomerModal = function(slNo) {
   }
 
   const currentUser = Auth.getUser();
-  if (currentUser && currentUser.role === 'partner') {
+  if (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associate')) {
     if (brokerInput && !slNo) {
       brokerInput.value = currentUser.username;
     }

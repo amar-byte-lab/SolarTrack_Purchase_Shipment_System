@@ -76,38 +76,168 @@
     <h3>Solar<span style="color:var(--st-orange, #FF9F43)">Track</span></h3>
   </div>
 
-  <h5 class="fw-bold text-center text-dark mb-1">Sign In to Account</h5>
-  <p class="text-muted text-center fs-8 mb-4">Enter your User ID and Password to continue</p>
+  <!-- View 1: Login Form -->
+  <div id="loginView">
+    <h5 class="fw-bold text-center text-dark mb-1">Sign In to Account</h5>
+    <p class="text-muted text-center fs-8 mb-4">Enter your User ID and Password to continue</p>
 
-  <!-- Error Alert -->
-  <div id="loginAlert" class="alert alert-danger py-2 px-3 fs-8 mb-3" style="display: none;" role="alert"></div>
+    <!-- Error Alert -->
+    <div id="loginAlert" class="alert alert-danger py-2 px-3 fs-8 mb-3" style="display: none;" role="alert"></div>
+    <div id="loginSuccess" class="alert alert-success py-2 px-3 fs-8 mb-3" style="display: none;" role="alert"></div>
 
-  <!-- Login Form -->
-  <form id="loginForm" autocomplete="off">
-    <div class="mb-3 text-start">
-      <label for="txtUserid" class="form-label fs-8 fw-semibold text-secondary">User ID / Username</label>
-      <input type="text" class="form-control form-control-lg fs-7" id="txtUserid" placeholder="Enter User ID" required autofocus>
-    </div>
+    <form id="loginForm" autocomplete="off">
+      <div class="mb-3 text-start">
+        <label for="txtUserid" class="form-label fs-8 fw-semibold text-secondary">User ID / Username / Email</label>
+        <input type="text" class="form-control form-control-lg fs-7" id="txtUserid" placeholder="Enter User ID or Email" required autofocus>
+      </div>
 
-    <div class="mb-4 text-start">
-      <label for="txtPassword" class="form-label fs-8 fw-semibold text-secondary">Password</label>
-      <input type="password" class="form-control form-control-lg fs-7" id="txtPassword" placeholder="Enter Password" required>
-    </div>
+      <div class="mb-3 text-start">
+        <div class="d-flex justify-content-between align-items-center">
+          <label for="txtPassword" class="form-label fs-8 fw-semibold text-secondary mb-1">Password</label>
+          <a href="#" class="fs-8 text-decoration-none" onclick="switchToForgot(event)">Forgot Password?</a>
+        </div>
+        <input type="password" class="form-control form-control-lg fs-7" id="txtPassword" placeholder="Enter Password" required>
+      </div>
 
-    <button type="submit" class="btn btn-login fs-7" id="btnLoginSubmit">
-      🔑 Sign In
-    </button>
-  </form>
+      <button type="submit" class="btn btn-login fs-7 mb-3" id="btnLoginSubmit">
+        🔑 Sign In
+      </button>
+
+      <div class="text-center">
+        <span class="text-muted fs-8">Don't have an account? </span>
+        <a href="#" class="fs-8 text-decoration-none fw-semibold" onclick="switchToRegister(event)">Sign Up</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- View 2: Register Form -->
+  <div id="registerView" style="display: none;">
+    <h5 class="fw-bold text-center text-dark mb-1">Create an Account</h5>
+    <p class="text-muted text-center fs-8 mb-4">Fill details to register a new user</p>
+
+    <div id="registerAlert" class="alert alert-danger py-2 px-3 fs-8 mb-3" style="display: none;" role="alert"></div>
+
+    <form id="registerForm" autocomplete="off">
+      <div class="mb-2 text-start">
+        <label for="txtRegUserid" class="form-label fs-8 fw-semibold text-secondary mb-1">User ID</label>
+        <input type="text" class="form-control form-control-sm fs-7" id="txtRegUserid" placeholder="e.g. johndoe" required>
+      </div>
+
+      <div class="mb-2 text-start">
+        <label for="txtRegName" class="form-label fs-8 fw-semibold text-secondary mb-1">Full Name</label>
+        <input type="text" class="form-control form-control-sm fs-7" id="txtRegName" placeholder="e.g. John Doe" required>
+      </div>
+
+      <div class="mb-2 text-start">
+        <label for="txtRegEmail" class="form-label fs-8 fw-semibold text-secondary mb-1">Email Address</label>
+        <input type="email" class="form-control form-control-sm fs-7" id="txtRegEmail" placeholder="e.g. john@example.com" required>
+      </div>
+
+      <div class="mb-2 text-start">
+        <label for="txtRegPassword" class="form-label fs-8 fw-semibold text-secondary mb-1">Password</label>
+        <input type="password" class="form-control form-control-sm fs-7" id="txtRegPassword" placeholder="Enter Password" required>
+      </div>
+
+      <div class="mb-3 text-start">
+        <label for="selectRegRole" class="form-label fs-8 fw-semibold text-secondary mb-1">Request Role</label>
+        <select class="form-select form-select-sm fs-7" id="selectRegRole" required>
+          <!-- Roles populated dynamically -->
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-login fs-7 mb-3" id="btnRegisterSubmit">
+        📝 Register Account
+      </button>
+
+      <div class="text-center">
+        <a href="#" class="fs-8 text-decoration-none fw-semibold" onclick="switchToLogin(event)">Back to Sign In</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- View 3: Forgot Password Form -->
+  <div id="forgotView" style="display: none;">
+    <h5 class="fw-bold text-center text-dark mb-1">Forgot Password</h5>
+    <p class="text-muted text-center fs-8 mb-4">Enter your registered email address to receive reset instructions</p>
+
+    <div id="forgotAlert" class="alert alert-danger py-2 px-3 fs-8 mb-3" style="display: none;" role="alert"></div>
+
+    <form id="forgotForm" autocomplete="off">
+      <div class="mb-4 text-start">
+        <label for="txtForgotEmail" class="form-label fs-8 fw-semibold text-secondary mb-1">Registered Email</label>
+        <input type="email" class="form-control form-control-lg fs-7" id="txtForgotEmail" placeholder="Enter your email" required autofocus>
+      </div>
+
+      <button type="submit" class="btn btn-login fs-7 mb-3" id="btnForgotSubmit">
+        ✉️ Send Reset Link
+      </button>
+
+      <div class="text-center">
+        <a href="#" class="fs-8 text-decoration-none fw-semibold" onclick="switchToLogin(event)">Back to Sign In</a>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script src="assets/js/bootstrap.bundle.min.js"></script>
 <script>
+  function hideAllAlerts() {
+    document.getElementById('loginAlert').style.display = 'none';
+    document.getElementById('loginSuccess').style.display = 'none';
+    document.getElementById('registerAlert').style.display = 'none';
+    document.getElementById('forgotAlert').style.display = 'none';
+  }
+
+  function switchToLogin(e) {
+    if (e) e.preventDefault();
+    hideAllAlerts();
+    document.getElementById('loginView').style.display = 'block';
+    document.getElementById('registerView').style.display = 'none';
+    document.getElementById('forgotView').style.display = 'none';
+  }
+
+  async function switchToRegister(e) {
+    if (e) e.preventDefault();
+    hideAllAlerts();
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('registerView').style.display = 'block';
+    document.getElementById('forgotView').style.display = 'none';
+
+    // Fetch roles list dynamically
+    try {
+      const select = document.getElementById('selectRegRole');
+      select.innerHTML = '<option value="">Loading roles...</option>';
+      const res = await fetch('/api/roles');
+      if (res.ok) {
+        const data = await res.json();
+        const roles = data.roles || ['user', 'partner'];
+        // Filter roles to exclude admin and superadmin to prevent self-escalation, but let's list them or allow partner/user
+        select.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+      } else {
+        select.innerHTML = '<option value="user">user</option><option value="partner">partner</option>';
+      }
+    } catch (err) {
+      document.getElementById('selectRegRole').innerHTML = '<option value="user">user</option><option value="partner">partner</option>';
+    }
+  }
+
+  function switchToForgot(e) {
+    if (e) e.preventDefault();
+    hideAllAlerts();
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('registerView').style.display = 'none';
+    document.getElementById('forgotView').style.display = 'block';
+  }
+
+  // 1. Sign In Submit
   document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const alertEl = document.getElementById('loginAlert');
+    const successEl = document.getElementById('loginSuccess');
     const submitBtn = document.getElementById('btnLoginSubmit');
 
     alertEl.style.display = 'none';
+    successEl.style.display = 'none';
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
 
@@ -117,8 +247,10 @@
     const res = await Auth.login(userid, password);
 
     if (res.success) {
-      if (res.user.role === 'admin') {
+      if (res.user.role === 'admin' || res.user.role === 'superadmin' || res.user.userid === 'amar') {
         window.location.href = 'dashboard.html';
+      } else if (res.user.role === 'partner') {
+        window.location.href = 'installments.html';
       } else {
         window.location.href = 'offer.html';
       }
@@ -127,6 +259,84 @@
       alertEl.style.display = 'block';
       submitBtn.disabled = false;
       submitBtn.innerHTML = '🔑 Sign In';
+    }
+  });
+
+  // 2. Register Submit
+  document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const alertEl = document.getElementById('registerAlert');
+    const successEl = document.getElementById('loginSuccess');
+    const submitBtn = document.getElementById('btnRegisterSubmit');
+
+    alertEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registering...';
+
+    const userid = document.getElementById('txtRegUserid').value.trim().toLowerCase();
+    const username = document.getElementById('txtRegName').value.trim();
+    const email = document.getElementById('txtRegEmail').value.trim().toLowerCase();
+    const password = document.getElementById('txtRegPassword').value;
+    const role = document.getElementById('selectRegRole').value;
+
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userid, username, email, password, role })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        successEl.textContent = data.message || 'Registration request sent successfully!';
+        successEl.style.display = 'block';
+        switchToLogin();
+      } else {
+        alertEl.textContent = data.error || 'Registration failed.';
+        alertEl.style.display = 'block';
+      }
+    } catch (err) {
+      alertEl.textContent = 'Server connection error.';
+      alertEl.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '📝 Register Account';
+    }
+  });
+
+  // 3. Forgot Password Submit
+  document.getElementById('forgotForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const alertEl = document.getElementById('forgotAlert');
+    const successEl = document.getElementById('loginSuccess');
+    const submitBtn = document.getElementById('btnForgotSubmit');
+
+    alertEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+    const email = document.getElementById('txtForgotEmail').value.trim().toLowerCase();
+
+    try {
+      const res = await fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        successEl.textContent = data.message || 'If registered, a password reset link has been sent!';
+        successEl.style.display = 'block';
+        switchToLogin();
+      } else {
+        alertEl.textContent = data.error || 'Request failed.';
+        alertEl.style.display = 'block';
+      }
+    } catch (err) {
+      alertEl.textContent = 'Server connection error.';
+      alertEl.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '✉️ Send Reset Link';
     }
   });
 </script>
