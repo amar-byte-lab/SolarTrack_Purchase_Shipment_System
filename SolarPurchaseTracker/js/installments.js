@@ -245,6 +245,7 @@ window.onDbReady = function () {
       document.getElementById('newTxnDate').value = UI.todayISO();
 
       UI.toast('Payment added successfully.', 'success');
+      renderList();
       showTransactionHistory(slNo, txnType);
     } catch (err) {
       UI.toast('Error adding payment: ' + err.message, 'danger');
@@ -289,6 +290,7 @@ window.onDbReady = function () {
       document.getElementById('newCommTxnDate').value = UI.todayISO();
 
       UI.toast('Commission payment added successfully.', 'success');
+      renderList();
       showCommissionHistory(slNo);
     } catch (err) {
       UI.toast('Error adding commission payment: ' + err.message, 'danger');
@@ -1272,6 +1274,7 @@ window.deleteInstallmentTxn = async function(txnId) {
     await DB.remove('installment_txns', t => t.TxnID === txnId);
     await syncInstallmentTotal(slNo, txnType);
     UI.toast('Payment deleted successfully.', 'success');
+    renderList();
     showTransactionHistory(slNo, txnType);
   } catch (err) {
     UI.toast('Error deleting payment: ' + err.message, 'danger');
@@ -1364,6 +1367,7 @@ window.deleteCommissionTxn = async function(txnId) {
     await DB.remove('commission_txns', t => t.TxnID === txnId);
     await syncCommissionTotal(slNo);
     UI.toast('Commission payment deleted successfully.', 'success');
+    renderList();
     showCommissionHistory(slNo);
   } catch (err) {
     UI.toast('Error deleting commission payment: ' + err.message, 'danger');

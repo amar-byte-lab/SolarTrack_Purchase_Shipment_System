@@ -41,7 +41,7 @@ async function getTable(tableName) {
 
 async function importTable(tableName, rows) {
   const pk = PRIMARY_KEYS[tableName] || 'id';
-  const isInt = ['SlNo', 'BorrowerID', 'TxnID'].includes(pk);
+  const isInt = ['SlNo', 'BorrowerID', 'id'].includes(pk);
   if (isInt) {
     await supabase.from(tableName).delete().neq(pk, -999999);
   } else {
@@ -59,14 +59,14 @@ async function insertRow(tableName, row) {
 }
 
 async function updateRow(tableName, matchField, matchValue, newData) {
-  const isInt = ['SlNo', 'BorrowerID', 'TxnID'].includes(matchField);
+  const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
   const val = isInt ? Number(matchValue) : matchValue;
   const { error } = await supabase.from(tableName).update(newData).eq(matchField, val);
   if (error) throw error;
 }
 
 async function deleteRow(tableName, matchField, matchValue) {
-  const isInt = ['SlNo', 'BorrowerID', 'TxnID'].includes(matchField);
+  const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
   const val = isInt ? Number(matchValue) : matchValue;
   const { error } = await supabase.from(tableName).delete().eq(matchField, val);
   if (error) throw error;
