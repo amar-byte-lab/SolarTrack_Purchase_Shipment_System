@@ -183,7 +183,7 @@ function syncPrintLabels() {
 
   // 1. Heading Title based on checked product sets
   const checkedProds = Array.from(document.querySelectorAll('.offer-product-chk:checked')).map(chk => chk.value);
-  const titleText = checkedProds.length > 0 ? `FOR ${checkedProds.join(' & ')} SYSTEM` : `FOR SOLAR POWER SYSTEM`;
+  const titleText = checkedProds.length > 0 ? `FOR ${checkedProds.join(' & ')}` : `FOR SOLAR POWER SYSTEM`;
   document.getElementById('printHeadingTitle').textContent = titleText;
 
   // 2. Seller Details
