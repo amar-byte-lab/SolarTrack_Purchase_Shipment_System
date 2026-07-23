@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS installments (
   "ThirdInstallment" NUMERIC,
   "Total" NUMERIC,
   "CommittedPrice" NUMERIC,
+  "VendorPrice" NUMERIC,
+  "VendorPaid" NUMERIC,
   "LoginDate" TEXT,
   "InstallationDate" TEXT,
   "Commission" NUMERIC,
@@ -52,7 +54,8 @@ CREATE TABLE IF NOT EXISTS installment_txns (
   "SlNo" BIGINT,
   "TxnDate" TEXT,
   "Amount" NUMERIC,
-  "Remark" TEXT
+  "Remark" TEXT,
+  "TxnType" TEXT DEFAULT 'Customer'
 );
 
 CREATE TABLE IF NOT EXISTS commission_txns (

@@ -28,7 +28,7 @@ window.onDbReady = async function () {
     if (res.ok) {
       const data = await res.json();
       authUsers = data.users || [];
-      authRoles = data.roles || ['admin', 'superadmin', 'partner', 'associate', 'user'];
+      authRoles = data.roles || ['admin', 'superadmin', 'partner', 'associates', 'user'];
     }
   } catch (err) {
     console.error('Failed to load auth config:', err);

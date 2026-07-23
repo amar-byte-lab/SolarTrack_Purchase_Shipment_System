@@ -22,7 +22,7 @@ const DISTRICTS = [
 
 const COLORABLE_COLS = [
   { key: 'col-Partner', label: 'Partner Details', default: '#ffffff' },
-  { key: 'col-price', label: 'Committed Price', default: '#ffffff' },
+  { key: 'col-price', label: 'Customer & Vendor Price', default: '#ffffff' },
   { key: 'col-login', label: 'Login Date', default: '#ffff00' },
   { key: 'col-delay', label: 'Delay from Today', default: '#ffff00' },
   { key: 'col-install', label: 'Installation Date', default: '#ffff00' },
@@ -210,6 +210,7 @@ window.onDbReady = function () {
   // Add Transaction button listener
   document.getElementById('btnAddTxn').addEventListener('click', async () => {
     const slNo = Number(document.getElementById('txnSlNo').value);
+    const txnType = document.getElementById('txnType').value || 'Customer';
     const date = document.getElementById('newTxnDate').value;
     const amt = Number(document.getElementById('newTxnAmount').value) || 0;
     const remark = document.getElementById('newTxnRemark').value.trim();
@@ -230,12 +231,13 @@ window.onDbReady = function () {
         SlNo: slNo,
         TxnDate: date,
         Amount: amt,
-        Remark: remark
+        Remark: remark,
+        TxnType: txnType
       };
       await DB.insert('installment_txns', txn);
       
-      // Update customer installment Total
-      await syncInstallmentTotal(slNo);
+      // Update customer installment Total or Vendor Paid
+      await syncInstallmentTotal(slNo, txnType);
       
       // Reset inputs
       document.getElementById('newTxnAmount').value = '';
@@ -243,7 +245,7 @@ window.onDbReady = function () {
       document.getElementById('newTxnDate').value = UI.todayISO();
 
       UI.toast('Payment added successfully.', 'success');
-      showTransactionHistory(slNo);
+      showTransactionHistory(slNo, txnType);
     } catch (err) {
       UI.toast('Error adding payment: ' + err.message, 'danger');
     } finally {
@@ -722,6 +724,8 @@ function renderList() {
   // Compute Grand Totals
   let sumTotal = 0;
   let sumPrice = 0;
+  let sumVendorPrice = 0;
+  let sumVendorPaid = 0;
   let sumComm = 0;
   let sumCommPaid = 0;
 
@@ -729,10 +733,16 @@ function renderList() {
     const isEditing = (Number(r.SlNo) === Number(editingSlNo));
     const isDeactive = (r.Status === 'Deactive');
     
-    // We sum all transactions from local cache where SlNo matches r.SlNo
-    const txns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(r.SlNo));
+    // We sum all transactions from local cache where SlNo matches r.SlNo and type is Customer
+    const txns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(r.SlNo) && (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === ''));
     const total = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
     const price = Number(r.CommittedPrice) || 0;
+
+    // Vendor calculations
+    const vPrice = Number(r.VendorPrice) || 0;
+    const vTxns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(r.SlNo) && t.TxnType === 'Vendor');
+    const vPaid = vTxns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
+
     const comm = Number(r.Commission) || 0;
     const commPaid = Number(r.CommissionPaid) || 0;
 
@@ -740,6 +750,8 @@ function renderList() {
     if (!isDeactive && (!isAddingNew || Number(r.SlNo) !== Number(editingSlNo))) {
       sumTotal += total;
       sumPrice += price;
+      sumVendorPrice += vPrice;
+      sumVendorPaid += vPaid;
       sumComm += comm;
       sumCommPaid += commPaid;
     }
@@ -776,7 +788,12 @@ function renderList() {
               <input type="number" step="0.01" class="form-control form-control-sm" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
             </div>
           </td>
-          <td class="col-price"><input type="number" step="0.01" class="form-control form-control-sm" id="editCommittedPrice" value="${price || ''}" placeholder="Price"></td>
+          <td class="col-price">
+            <div class="d-flex flex-column gap-1">
+              <input type="number" step="0.01" class="form-control form-control-sm" id="editCommittedPrice" value="${r.CommittedPrice || ''}" placeholder="Cust Price">
+              <input type="number" step="0.01" class="form-control form-control-sm" id="editVendorPrice" value="${r.VendorPrice || ''}" placeholder="Vend Price">
+            </div>
+          </td>
           <td class="col-login">
             <div class="d-flex flex-column gap-1">
               <input type="date" class="form-control form-control-sm" id="editLoginDate" value="${r.LoginDate ? new Date(r.LoginDate).toISOString().split('T')[0] : ''}">
@@ -837,11 +854,23 @@ function renderList() {
             </div>
           </td>
           <td class="col-price text-end">
-            <div class="d-flex flex-column align-items-end" style="gap:2px;">
-              <span class="fw-semibold text-dark font-monospace">${fmtPriceField(price, total)}</span>
-              <button class="btn btn-xs btn-outline-secondary mt-1 no-print font-monospace" onclick="showTransactionHistory(${r.SlNo})" style="font-size:0.68rem; padding:2px 6px; border-color: #ccc; white-space: nowrap;">
-                Transaction ${getTxnDiffBadge(price, total)}
-              </button>
+            <div class="d-flex flex-column align-items-end" style="gap:5px;">
+              <!-- Customer Price -->
+              <div class="d-flex flex-column align-items-end" style="border-bottom: 1px dashed #eee; padding-bottom: 3px; width: 100%;">
+                <span class="text-muted" style="font-size: 0.65rem; text-transform: uppercase;">Customer Price</span>
+                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${fmtPriceField(price, total)}</span>
+                <button class="btn btn-xs btn-outline-secondary mt-0.5 no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Customer')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
+                  Cust Txn ${getTxnDiffBadge(price, total)}
+                </button>
+              </div>
+              <!-- Vendor Price -->
+              <div class="d-flex flex-column align-items-end" style="width: 100%;">
+                <span class="text-muted" style="font-size: 0.65rem; text-transform: uppercase;">Vendor Price</span>
+                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${fmtPriceField(vPrice, vPaid)}</span>
+                <button class="btn btn-xs btn-outline-secondary mt-0.5 no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
+                  Vend Txn ${getTxnDiffBadge(vPrice, vPaid)}
+                </button>
+              </div>
             </div>
           </td>
           <td class="col-login text-center">
@@ -895,7 +924,10 @@ function renderList() {
           ${fmtGrandTotal(sumComm)} <span class="text-danger fs-7">(-${fmtGrandTotal(sumCommPaid)})</span>
         </td>
         <td class="text-end fw-bold font-monospace" style="font-size:0.8rem;">
-          ${fmtGrandTotal(sumPrice)} <span class="text-danger fs-7">(-${fmtGrandTotal(sumTotal)})</span>
+          <div class="d-flex flex-column align-items-end" style="gap:2px; font-size:0.75rem;">
+            <div>C: ${fmtGrandTotal(sumPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumTotal)})</span></div>
+            <div>V: ${fmtGrandTotal(sumVendorPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
+          </div>
         </td>
         <td></td>
         <td></td>
@@ -1112,6 +1144,8 @@ window.saveInline = async function (slNo) {
     ThirdInstallment: tInst,
     Total: total,
     CommittedPrice: Number(document.getElementById('editCommittedPrice').value) || 0,
+    VendorPrice: Number(document.getElementById('editVendorPrice').value) || 0,
+    VendorPaid: existing ? (Number(existing.VendorPaid) || 0) : 0,
     LoginDate: document.getElementById('editLoginDate').value,
     InstallationDate: document.getElementById('editInstallationDate').value,
     Commission: Number(document.getElementById('editCommission').value) || 0,
@@ -1202,15 +1236,24 @@ function nextSlNo() {
   return max + 1;
 }
 
-async function syncInstallmentTotal(slNo) {
-  const txns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(slNo));
+async function syncInstallmentTotal(slNo, txnType = 'Customer') {
+  const txns = DB.getAll('installment_txns').filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === txnType || (txnType === 'Customer' && (!t.TxnType || t.TxnType === '')))
+  );
   const sum = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
   
   const existing = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (existing) {
+    const updateData = {};
+    if (txnType === 'Customer') {
+      updateData.Total = sum;
+    } else {
+      updateData.VendorPaid = sum;
+    }
     await DB.update('installments', r => Number(r.SlNo) === Number(slNo), {
       ...existing,
-      Total: sum
+      ...updateData
     });
   }
 }
@@ -1219,6 +1262,7 @@ window.deleteInstallmentTxn = async function(txnId) {
   const txn = DB.getAll('installment_txns').find(t => t.TxnID === txnId);
   if (!txn) return;
   const slNo = txn.SlNo;
+  const txnType = txn.TxnType || 'Customer';
 
   const ok = await UI.confirmDialog(`Delete this payment of ₹${Number(txn.Amount).toLocaleString('en-IN')}?`, 'Delete Payment', 'Delete', 'btn-danger');
   if (!ok) return;
@@ -1226,9 +1270,9 @@ window.deleteInstallmentTxn = async function(txnId) {
   UI.showLoading(true);
   try {
     await DB.remove('installment_txns', t => t.TxnID === txnId);
-    await syncInstallmentTotal(slNo);
+    await syncInstallmentTotal(slNo, txnType);
     UI.toast('Payment deleted successfully.', 'success');
-    showTransactionHistory(slNo);
+    showTransactionHistory(slNo, txnType);
   } catch (err) {
     UI.toast('Error deleting payment: ' + err.message, 'danger');
   } finally {
@@ -1236,20 +1280,24 @@ window.deleteInstallmentTxn = async function(txnId) {
   }
 };
 
-window.showTransactionHistory = function(slNo) {
+window.showTransactionHistory = function(slNo, txnType = 'Customer') {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
 
   document.getElementById('txnSlNo').value = slNo;
+  document.getElementById('txnType').value = txnType;
   document.getElementById('newTxnDate').value = UI.todayISO();
   document.getElementById('newTxnAmount').value = '';
   document.getElementById('newTxnRemark').value = '';
 
   // Set the title to include customer name
-  document.getElementById('txnModalLabel').textContent = `Installments — ${r.Name}`;
+  document.getElementById('txnModalLabel').textContent = `${txnType} Payments — ${r.Name}`;
 
   // Fetch and display transaction history
-  const txns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(slNo));
+  const txns = DB.getAll('installment_txns').filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === txnType || (txnType === 'Customer' && (!t.TxnType || t.TxnType === '')))
+  );
   // Sort transactions by date (oldest first for chat feed feel)
   txns.sort((a, b) => new Date(a.TxnDate) - new Date(b.TxnDate));
 
@@ -1281,7 +1329,11 @@ window.showTransactionHistory = function(slNo) {
 
 function updateTxnModalTotal() {
   const slNo = Number(document.getElementById('txnSlNo').value);
-  const txns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(slNo));
+  const txnType = document.getElementById('txnType').value || 'Customer';
+  const txns = DB.getAll('installment_txns').filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === txnType || (txnType === 'Customer' && (!t.TxnType || t.TxnType === '')))
+  );
   const total = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
   document.getElementById('lblTxnTotal').textContent = '₹' + Math.round(total).toLocaleString('en-IN');
 }
@@ -1464,6 +1516,7 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cAddress').value = r.Address || '';
       document.getElementById('cBrand').value = r.CommittedBrand || '';
       document.getElementById('cPrice').value = r.CommittedPrice || '';
+      document.getElementById('cVendorPrice').value = r.VendorPrice || '';
       document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
       document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
       document.getElementById('cBrokerName').value = r.BrokerName || '';
@@ -1471,7 +1524,7 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cCommission').value = r.Commission || '';
     }
   } else {
-    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission'].forEach(id => {
+    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -1544,6 +1597,7 @@ async function saveCustomerModal() {
     Address: document.getElementById('cAddress').value.trim(),
     CommittedBrand: document.getElementById('cBrand').value.trim(),
     CommittedPrice: Number(document.getElementById('cPrice').value) || 0,
+    VendorPrice: Number(document.getElementById('cVendorPrice').value) || 0,
     LoginDate: document.getElementById('cLoginDate').value || null,
     InstallationDate: document.getElementById('cInstallationDate').value || null,
     BrokerName: document.getElementById('cBrokerName').value.trim(),
@@ -1566,6 +1620,7 @@ async function saveCustomerModal() {
       rowData.SecondInstallment = 0;
       rowData.ThirdInstallment = 0;
       rowData.Total = 0;
+      rowData.VendorPaid = 0;
       rowData.CommissionPaid = 0;
       rowData.CommissioningDate = '';
       await DB.insert('installments', rowData);

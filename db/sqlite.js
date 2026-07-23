@@ -14,8 +14,8 @@ function init() {
   db.exec(`CREATE TABLE IF NOT EXISTS settings ("Key" TEXT PRIMARY KEY, "Value" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS vendors ("VendorName" TEXT PRIMARY KEY, "Address" TEXT, "Phone" TEXT, "GSTIN" TEXT, "Email" TEXT, "Remarks" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS items ("ItemName" TEXT PRIMARY KEY, "Category" TEXT, "Unit" TEXT, "HSNCode" TEXT, "GSTPercent" TEXT, "Status" TEXT)`);
-  db.exec(`CREATE TABLE IF NOT EXISTS installments ("SlNo" INTEGER PRIMARY KEY, "Name" TEXT, "Status" TEXT, "District" TEXT, "Address" TEXT, "MobileNumber" TEXT, "CommittedBrand" TEXT, "FirstInstallment" REAL, "SecondInstallment" REAL, "ThirdInstallment" REAL, "Total" REAL, "CommittedPrice" REAL, "LoginDate" TEXT, "InstallationDate" TEXT, "Commission" REAL, "CommissionPaid" REAL, "BrokerName" TEXT, "BrokerNumber" TEXT, "CommissioningDate" TEXT)`);
-  db.exec(`CREATE TABLE IF NOT EXISTS installment_txns ("TxnID" TEXT PRIMARY KEY, "SlNo" INTEGER, "TxnDate" TEXT, "Amount" REAL, "Remark" TEXT)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS installments ("SlNo" INTEGER PRIMARY KEY, "Name" TEXT, "Status" TEXT, "District" TEXT, "Address" TEXT, "MobileNumber" TEXT, "CommittedBrand" TEXT, "FirstInstallment" REAL, "SecondInstallment" REAL, "ThirdInstallment" REAL, "Total" REAL, "CommittedPrice" REAL, "VendorPrice" REAL, "VendorPaid" REAL, "LoginDate" TEXT, "InstallationDate" TEXT, "Commission" REAL, "CommissionPaid" REAL, "BrokerName" TEXT, "BrokerNumber" TEXT, "CommissioningDate" TEXT)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS installment_txns ("TxnID" TEXT PRIMARY KEY, "SlNo" INTEGER, "TxnDate" TEXT, "Amount" REAL, "Remark" TEXT, "TxnType" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS commission_txns ("TxnID" TEXT PRIMARY KEY, "SlNo" INTEGER, "TxnDate" TEXT, "Amount" REAL, "Remark" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS installment_remarks ("RemarkID" TEXT PRIMARY KEY, "SlNo" INTEGER, "Type" TEXT, "Remark" TEXT, "CreatedAt" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS shipment_remarks ("RemarkID" TEXT PRIMARY KEY, "ShipmentNo" TEXT, "Remark" TEXT, "CreatedAt" TEXT)`);
@@ -35,6 +35,20 @@ function init() {
   } catch (e) {
     // Ignore error if column already exists
   }
+
+  // Migrate installments table to add VendorPrice and VendorPaid columns
+  try {
+    db.exec(`ALTER TABLE installments ADD COLUMN "VendorPrice" REAL`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE installments ADD COLUMN "VendorPaid" REAL`);
+  } catch (e) {}
+
+  // Migrate installment_txns table to add TxnType column
+  try {
+    db.exec(`ALTER TABLE installment_txns ADD COLUMN "TxnType" TEXT`);
+    db.exec(`UPDATE installment_txns SET "TxnType" = 'Customer' WHERE "TxnType" IS NULL OR "TxnType" = ''`);
+  } catch (e) {}
 
   // Pre-populate roles table if empty
   try {

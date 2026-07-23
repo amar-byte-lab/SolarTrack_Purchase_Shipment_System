@@ -373,7 +373,7 @@
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
                 <th class="sortable" data-sort="District" id="thDistrict">District & Address</th>
                 <th>Partner</th>
-                <th>Committed Price</th>
+                <th>Customer & Vendor Price</th>
                 <th class="sortable" data-sort="LoginDate" id="thLoginDate">Login Date & Delay</th>
                 <th class="sortable" data-sort="InstallationDate" id="thInstallationDate">Inst. & Comm. Date</th>
                 <th class="no-print">Actions</th>
@@ -461,6 +461,7 @@
         <div class="border rounded p-2 bg-white shadow-sm">
           <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Payment</div>
           <input type="hidden" id="txnSlNo">
+          <input type="hidden" id="txnType">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fs-8 text-secondary mb-1">Payment Date</label>
@@ -626,8 +627,12 @@
               <input type="text" class="form-control form-control-sm" id="cBrand" list="brandList" placeholder="Enter brand name">
             </div>
             <div class="col-md-6 col-12 mb-2">
-              <label class="form-label fs-8 text-secondary mb-1">Committed Price (₹)</label>
+              <label class="form-label fs-8 text-secondary mb-1">Customer Price (₹)</label>
               <input type="number" step="any" min="0" class="form-control form-control-sm" id="cPrice" placeholder="0.00">
+            </div>
+            <div class="col-md-6 col-12 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Vendor Price (₹)</label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm" id="cVendorPrice" placeholder="0.00">
             </div>
             <div class="col-md-6 col-12 mb-2">
               <label class="form-label fs-8 text-secondary mb-1">Login Date</label>
