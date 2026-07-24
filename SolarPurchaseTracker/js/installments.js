@@ -730,11 +730,24 @@ function renderList() {
   let sumVendorPaid = 0;
   let sumComm = 0;
   let sumCommPaid = 0;
+  let sumPartnerPrice = 0;
 
   tbody.innerHTML = rows.map((r) => {
     const isEditing = (Number(r.SlNo) === Number(editingSlNo));
     const isDeactive = (r.Status === 'Deactive');
     
+    // Parse expenses metadata
+    let expenses = null;
+    if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+      try {
+        const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+        expenses = JSON.parse(jsonStr);
+      } catch (e) {
+        console.error("Error parsing expenses metadata:", e);
+      }
+    }
+    const partnerPrice = (expenses && expenses.partner) || 0;
+
     // We sum all transactions from local cache where SlNo matches r.SlNo and type is Customer
     const txns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(r.SlNo) && (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === ''));
     const total = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
@@ -756,20 +769,12 @@ function renderList() {
       sumVendorPaid += vPaid;
       sumComm += comm;
       sumCommPaid += commPaid;
+      sumPartnerPrice += partnerPrice;
     }
 
     const delayStr = calculateDelay(r.LoginDate);
 
-    // Parse expenses metadata
-    let expenses = null;
-    if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
-      try {
-        const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
-        expenses = JSON.parse(jsonStr);
-      } catch (e) {
-        console.error("Error parsing expenses metadata:", e);
-      }
-    }
+
 
     if (isEditing) {
       // Render input fields for inline editing
@@ -803,20 +808,25 @@ function renderList() {
                 <input type="number" step="0.01" class="form-control" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
               </div>
               <div class="input-group input-group-sm">
-                <span class="input-group-text" style="font-size:0.7rem;">Vend Price</span>
-                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editMaterialCost" value="${(expenses && expenses.material) || r.VendorPrice || ''}" placeholder="Vend Price">
+                <span class="input-group-text" style="font-size:0.7rem;">Partner Price</span>
+                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editPartnerPrice" value="${(expenses && expenses.partner) || 0}" placeholder="Partner Price">
               </div>
             </div>
           </td>
           <td class="col-price">
             <div class="d-flex flex-column gap-1">
               <div class="input-group input-group-sm">
+                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Material</span>
+                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editMaterialCost" value="${(expenses && expenses.material) || 0}" placeholder="Material Price">
+              </div>
+              <div class="input-group input-group-sm">
                 <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Install</span>
                 <input type="number" step="0.01" class="form-control expense-calc-inline" id="editInstallationCost" value="${(expenses && expenses.install) || 0}" placeholder="Installation">
               </div>
               <div class="input-group input-group-sm">
-                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">GST</span>
-                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editGSTCost" value="${(expenses && expenses.gst) || 0}" placeholder="GST">
+                <span class="input-group-text text-secondary" style="font-size:0.55rem; width: 60px; line-height: 1.1;" title="GST calculated on Customer Price">GST (%)</span>
+                <input type="number" step="any" class="form-control" id="editGSTPercentage" value="${(expenses && expenses.gst_pct) || 18}" placeholder="GST %">
+                <span class="input-group-text bg-light fw-bold" id="lblEditGSTAmount" style="font-size:0.65rem; width: 60px;">₹0.00</span>
               </div>
               <div class="input-group input-group-sm">
                 <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Other</span>
@@ -910,10 +920,10 @@ function renderList() {
 
               <!-- Vendor Price & Vend Txn functionality -->
               <div class="d-flex align-items-center gap-2 mt-1 pt-1 border-top w-100" style="font-size: 0.75rem;">
-                <span class="text-muted">Vend Price:</span>
-                <span class="fw-semibold text-dark font-monospace">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                <span class="text-muted">Partner Price:</span>
+                <span class="fw-semibold text-dark font-monospace">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Vend Txn ${getTxnDiffBadge(vPrice, vPaid)}
+                  Part Txn ${getTxnDiffBadge(partnerPrice, vPaid)}
                 </button>
               </div>
             </div>
@@ -922,9 +932,10 @@ function renderList() {
             <div class="d-flex justify-content-between align-items-center w-100 px-1">
               <span class="fw-semibold text-dark" title="Total Expense">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
               ${(() => {
-                const profit = price - vPrice - comm;
+                const partnerPrice = (expenses && expenses.partner) || 0;
+                const profit = partnerPrice - comm - vPrice;
                 const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
-                return `<span class="${profitColorClass}" title="Total Profit (Customer Price - Total Expense - Commission)">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>`;
+                return `<span class="${profitColorClass}" title="Total Profit (Partner Price - Commission - Total Expense)">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>`;
               })()}
             </div>
           </td>
@@ -985,14 +996,14 @@ function renderList() {
         <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
           <div class="d-flex flex-column align-items-start">
             <div>Comm: ${fmtGrandTotal(sumComm)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumCommPaid)})</span></div>
-            <div>Vend: ${fmtGrandTotal(sumVendorPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
+            <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
           </div>
         </td>
         <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
           <div class="d-flex justify-content-between align-items-center w-100 px-1">
             <span>${fmtGrandTotal(sumVendorPrice)}</span>
             ${(() => {
-              const totalProfit = sumPrice - sumVendorPrice - sumComm;
+              const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
               const profitColorClass = totalProfit >= 0 ? 'text-success' : 'text-danger';
               return `<span class="${profitColorClass}">${fmtGrandTotal(totalProfit)}</span>`;
             })()}
@@ -1068,19 +1079,43 @@ function bindEditRowListeners() {
     }
   }
 
+  const updateInlineCalculations = () => {
+    const custPriceVal = Number(document.getElementById('editCommittedPrice').value) || 0;
+    const gstPct = Number(document.getElementById('editGSTPercentage').value) || 0;
+    const gstVal = custPriceVal * (gstPct / 100);
+
+    const gstLabel = document.getElementById('lblEditGSTAmount');
+    if (gstLabel) {
+      gstLabel.textContent = '₹' + gstVal.toFixed(2);
+    }
+
+    const mat = Number(document.getElementById('editMaterialCost').value) || 0;
+    const inst = Number(document.getElementById('editInstallationCost').value) || 0;
+    const oth = Number(document.getElementById('editOtherCost').value) || 0;
+
+    const totalField = document.getElementById('editVendorPrice');
+    if (totalField) {
+      totalField.value = (mat + inst + gstVal + oth).toFixed(2);
+    }
+  };
+
+  const editCommittedPriceField = document.getElementById('editCommittedPrice');
+  if (editCommittedPriceField) {
+    editCommittedPriceField.addEventListener('input', updateInlineCalculations);
+  }
+
+  const editGSTPercentageField = document.getElementById('editGSTPercentage');
+  if (editGSTPercentageField) {
+    editGSTPercentageField.addEventListener('input', updateInlineCalculations);
+  }
+
   const calcInputs = document.querySelectorAll('.expense-calc-inline');
   calcInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      const mat = Number(document.getElementById('editMaterialCost').value) || 0;
-      const inst = Number(document.getElementById('editInstallationCost').value) || 0;
-      const gst = Number(document.getElementById('editGSTCost').value) || 0;
-      const oth = Number(document.getElementById('editOtherCost').value) || 0;
-      const totalField = document.getElementById('editVendorPrice');
-      if (totalField) {
-        totalField.value = (mat + inst + gst + oth).toFixed(2);
-      }
-    });
+    input.addEventListener('input', updateInlineCalculations);
   });
+
+  // Run initial calculation once
+  updateInlineCalculations();
 }
 
 function renderSalesSummary(filteredRows) {
@@ -1214,10 +1249,16 @@ window.saveInline = async function (slNo) {
     creatorSuffix = '|creator:' + currentUser.userid;
   }
 
+  const custPriceVal = Number(document.getElementById('editCommittedPrice').value) || 0;
+  const gstPctVal = Number(document.getElementById('editGSTPercentage').value) || 0;
+  const calculatedGSTAmount = custPriceVal * (gstPctVal / 100);
+
   const expenses = {
     material: Number(document.getElementById('editMaterialCost').value) || 0,
+    partner: Number(document.getElementById('editPartnerPrice').value) || 0,
     install: Number(document.getElementById('editInstallationCost').value) || 0,
-    gst: Number(document.getElementById('editGSTCost').value) || 0,
+    gst_pct: gstPctVal,
+    gst: calculatedGSTAmount,
     other: Number(document.getElementById('editOtherCost').value) || 0
   };
   const calculatedVendorPrice = expenses.material + expenses.install + expenses.gst + expenses.other;
@@ -1714,13 +1755,14 @@ window.openCustomerModal = function(slNo) {
           expenses = JSON.parse(r.BrokerNumber.split('|expenses:')[1].split('|')[0]);
         } catch(e) { console.error(e); }
       }
-      document.getElementById('cMaterialCost').value = (expenses && expenses.material) || r.VendorPrice || '';
+      document.getElementById('cMaterialCost').value = (expenses && expenses.material) || 0;
+      document.getElementById('cPartnerPrice').value = (expenses && expenses.partner) || 0;
       document.getElementById('cInstallationCost').value = (expenses && expenses.install) || 0;
-      document.getElementById('cGSTCost').value = (expenses && expenses.gst) || 0;
+      document.getElementById('cGSTPercentage').value = (expenses && expenses.gst_pct) || 18;
       document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
     }
   } else {
-    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cInstallationCost', 'cGSTCost', 'cOtherCost'].forEach(id => {
+    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -1760,16 +1802,60 @@ window.openCustomerModal = function(slNo) {
     brokerInput.disabled = false;
   }
 
+  const updateModalCalculations = () => {
+    const custPriceVal = Number(document.getElementById('cPrice').value) || 0;
+    const gstPct = Number(document.getElementById('cGSTPercentage').value) || 0;
+    const gstVal = custPriceVal * (gstPct / 100);
+
+    const gstLabel = document.getElementById('lblGSTAmount');
+    if (gstLabel) {
+      gstLabel.textContent = '₹' + gstVal.toFixed(2);
+    }
+
+    const mat = Number(document.getElementById('cMaterialCost').value) || 0;
+    const inst = Number(document.getElementById('cInstallationCost').value) || 0;
+    const oth = Number(document.getElementById('cOtherCost').value) || 0;
+
+    const totalExpense = mat + inst + gstVal + oth;
+
+    const totalField = document.getElementById('cVendorPrice');
+    if (totalField) {
+      totalField.value = totalExpense.toFixed(2);
+    }
+
+    // Profit calculation: Partner Price - Commission - Total Expense
+    const partnerPrice = Number(document.getElementById('cPartnerPrice').value) || 0;
+    const comm = Number(document.getElementById('cCommission').value) || 0;
+    const profitVal = partnerPrice - comm - totalExpense;
+
+    const profitField = document.getElementById('cProfit');
+    if (profitField) {
+      profitField.value = profitVal.toFixed(2);
+      if (profitVal >= 0) {
+        profitField.style.color = '#198754';
+      } else {
+        profitField.style.color = '#dc3545';
+      }
+    }
+  };
+
+  const cPriceInput = document.getElementById('cPrice');
+  if (cPriceInput) {
+    cPriceInput.addEventListener('input', updateModalCalculations);
+  }
+
+  const cCommissionInput = document.getElementById('cCommission');
+  if (cCommissionInput) {
+    cCommissionInput.addEventListener('input', updateModalCalculations);
+  }
+
   const calcInputs = document.querySelectorAll('.expense-calc-modal');
   calcInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      const mat = Number(document.getElementById('cMaterialCost').value) || 0;
-      const inst = Number(document.getElementById('cInstallationCost').value) || 0;
-      const gst = Number(document.getElementById('cGSTCost').value) || 0;
-      const oth = Number(document.getElementById('cOtherCost').value) || 0;
-      document.getElementById('cVendorPrice').value = (mat + inst + gst + oth).toFixed(2);
-    });
+    input.addEventListener('input', updateModalCalculations);
   });
+
+  // Run initial calculation once
+  updateModalCalculations();
 
   modal.show();
 };
@@ -1797,10 +1883,16 @@ async function saveCustomerModal() {
     creatorSuffix = '|creator:' + currentUser.userid;
   }
 
+  const custPriceVal = Number(document.getElementById('cPrice').value) || 0;
+  const gstPctVal = Number(document.getElementById('cGSTPercentage').value) || 0;
+  const calculatedGSTAmount = custPriceVal * (gstPctVal / 100);
+
   const expenses = {
     material: Number(document.getElementById('cMaterialCost').value) || 0,
+    partner: Number(document.getElementById('cPartnerPrice').value) || 0,
     install: Number(document.getElementById('cInstallationCost').value) || 0,
-    gst: Number(document.getElementById('cGSTCost').value) || 0,
+    gst_pct: gstPctVal,
+    gst: calculatedGSTAmount,
     other: Number(document.getElementById('cOtherCost').value) || 0
   };
   const calculatedVendorPrice = expenses.material + expenses.install + expenses.gst + expenses.other;
