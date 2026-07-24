@@ -197,7 +197,7 @@ function syncPrintLabels() {
   document.getElementById('printSellerName').textContent = companyName;
   document.getElementById('printSignCompanyName').textContent = companyName.toUpperCase();
   document.getElementById('printSellerAddress').innerHTML = sellerAddr.replace(/\n/g, '<br>');
-  document.getElementById('printSellerContacts').innerHTML = `Email: ${sellerEmail || '-'}<br>Mobile: ${sellerPhone || '-'}`;
+  document.getElementById('printSellerContacts').innerHTML = `Email: ${sellerEmail || '-'}, Mobile: ${sellerPhone || '-'}`;
   document.getElementById('printSellerGSTIN').textContent = gstNum ? `GSTIN: ${gstNum}` : '';
 
   const printLogo = document.getElementById('printSellerLogo');
