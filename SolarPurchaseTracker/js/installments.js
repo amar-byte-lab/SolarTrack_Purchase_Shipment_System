@@ -22,7 +22,7 @@ const DISTRICTS = [
 
 const COLORABLE_COLS = [
   { key: 'col-Partner', label: 'Partner Details', default: '#ffffff' },
-  { key: 'col-price', label: 'Customer & Vendor Price', default: '#ffffff' },
+  { key: 'col-price', label: 'Total expense', default: '#ffffff' },
   { key: 'col-login', label: 'Login Date', default: '#ffff00' },
   { key: 'col-delay', label: 'Delay from Today', default: '#ffff00' },
   { key: 'col-install', label: 'Installation Date', default: '#ffff00' },
@@ -760,6 +760,17 @@ function renderList() {
 
     const delayStr = calculateDelay(r.LoginDate);
 
+    // Parse expenses metadata
+    let expenses = null;
+    if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+      try {
+        const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+        expenses = JSON.parse(jsonStr);
+      } catch (e) {
+        console.error("Error parsing expenses metadata:", e);
+      }
+    }
+
     if (isEditing) {
       // Render input fields for inline editing
       return `
@@ -770,15 +781,15 @@ function renderList() {
               <input type="text" class="form-control form-control-sm" id="editName" value="${r.Name || ''}" placeholder="Name *" required>
               <input type="text" class="form-control form-control-sm" id="editMobileNumber" value="${r.MobileNumber || ''}" placeholder="Mobile">
               <input type="text" class="form-control form-control-sm" id="editCommittedBrand" value="${r.CommittedBrand || ''}" placeholder="Brand">
-            </div>
-          </td>
-          <td>
-            <div class="d-flex flex-column gap-1">
               <select class="form-select form-select-sm" id="editDistrict">
-                <option value="">-- Select --</option>
+                <option value="">-- Select District --</option>
                 ${DISTRICTS.map(d => `<option value="${d}" ${r.District === d ? 'selected' : ''}>${d}</option>`).join('')}
               </select>
               <input type="text" class="form-control form-control-sm" id="editAddress" value="${r.Address || ''}" placeholder="Address">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text" style="font-size:0.7rem;">Cust Price</span>
+                <input type="number" step="0.01" class="form-control" id="editCommittedPrice" value="${r.CommittedPrice || ''}" placeholder="Cust Price">
+              </div>
             </div>
           </td>
           <td class="col-Partner">
@@ -786,14 +797,35 @@ function renderList() {
               <div class="dropdown">
                 <input type="text" class="form-control form-control-sm" id="editBrokerName" value="${r.BrokerName || ''}" placeholder="Partner Name" autocomplete="off">
               </div>
-              <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${(r.BrokerNumber || '').split('|creator:')[0]}" placeholder="Partner Phone">
-              <input type="number" step="0.01" class="form-control form-control-sm" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
+              <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${(r.BrokerNumber || '').split('|')[0]}" placeholder="Partner Phone">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text" style="font-size:0.7rem;">Comm</span>
+                <input type="number" step="0.01" class="form-control" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
+              </div>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text" style="font-size:0.7rem;">Vend Price</span>
+                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editMaterialCost" value="${(expenses && expenses.material) || r.VendorPrice || ''}" placeholder="Vend Price">
+              </div>
             </div>
           </td>
           <td class="col-price">
             <div class="d-flex flex-column gap-1">
-              <input type="number" step="0.01" class="form-control form-control-sm" id="editCommittedPrice" value="${r.CommittedPrice || ''}" placeholder="Cust Price">
-              <input type="number" step="0.01" class="form-control form-control-sm" id="editVendorPrice" value="${r.VendorPrice || ''}" placeholder="Vend Price">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Install</span>
+                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editInstallationCost" value="${(expenses && expenses.install) || 0}" placeholder="Installation">
+              </div>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">GST</span>
+                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editGSTCost" value="${(expenses && expenses.gst) || 0}" placeholder="GST">
+              </div>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Other</span>
+                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editOtherCost" value="${(expenses && expenses.other) || 0}" placeholder="Other">
+              </div>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light fw-bold" style="font-size:0.65rem; width: 60px;">Total</span>
+                <input type="number" step="0.01" class="form-control bg-light fw-bold" id="editVendorPrice" value="${r.VendorPrice || ''}" placeholder="Total Expense" readonly>
+              </div>
             </div>
           </td>
           <td class="col-login">
@@ -823,56 +855,77 @@ function renderList() {
           <td class="text-center fw-semibold">${r.SlNo}</td>
           <td>
             <div class="d-flex flex-column align-items-start" style="font-size: 0.85rem; gap: 2px;">
-              <span class="fw-semibold text-dark">${r.Name || ''}</span>
-              <span class="text-muted" style="font-size: 0.75rem;">${r.MobileNumber || ''}</span>
+              <div class="d-flex align-items-center gap-2">
+                <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
+                  ${r.Name || ''} (${r.District || '—'})
+                </a>
+                ${(() => {
+                  const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(r.SlNo));
+                  const customerRemarksCount = remarks.filter(n => n.Type === 'Customer' || !n.Type).length;
+                  return `
+                    <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative" onclick="showInstallmentNotes(${r.SlNo}, 'Customer')" title="Customer Notes/Remarks (${customerRemarksCount} added)" style="font-size: 0.95rem; line-height: 1;">
+                      📝
+                      ${customerRemarksCount > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.55rem; padding: 2px 4px; border: 1px solid #fff;">${customerRemarksCount}</span>` : ''}
+                    </button>
+                  `;
+                })()}
+              </div>
+              
+              <!-- Customer Price & Cust Txn functionality -->
+              <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top w-100" style="font-size: 0.8rem;">
+                <span class="text-muted">Cust Price:</span>
+                <span class="fw-semibold text-dark font-monospace">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Customer')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
+                  Cust Txn ${getTxnDiffBadge(price, total)}
+                </button>
+              </div>
+            </div>
+          </td>
+          <td class="col-Partner">
+            <div class="d-flex flex-column align-items-start" style="font-size: 0.8rem; gap: 1px;">
               ${(() => {
                 const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(r.SlNo));
-                const remarksCount = remarks.length;
+                const partnerRemarksCount = remarks.filter(n => n.Type === 'Partner').length;
                 return `
-                  <div class="d-flex align-items-center gap-2 mt-1">
-                    ${r.CommittedBrand ? `<span class="badge bg-primary-subtle text-primary-emphasis fw-medium font-sans" style="font-size: 0.65rem; padding: 2px 4px; border-radius: 4px;">${r.CommittedBrand}</span>` : ''}
-                    <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative" onclick="showInstallmentNotes(${r.SlNo})" title="Notes/Remarks (${remarksCount} added)" style="font-size: 0.95rem; line-height: 1;">
+                  <div class="d-flex align-items-center gap-2">
+                    <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
+                      ${r.BrokerName || '—'}
+                    </a>
+                    <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative" onclick="showInstallmentNotes(${r.SlNo}, 'Partner')" title="Partner Notes/Remarks (${partnerRemarksCount} added)" style="font-size: 0.95rem; line-height: 1;">
                       📝
-                      ${remarksCount > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.55rem; padding: 2px 4px; border: 1px solid #fff;">${remarksCount}</span>` : ''}
+                      ${partnerRemarksCount > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.55rem; padding: 2px 4px; border: 1px solid #fff;">${partnerRemarksCount}</span>` : ''}
                     </button>
                   </div>
                 `;
               })()}
-            </div>
-          </td>
-          <td>
-            <div class="d-flex flex-column" style="font-size: 0.82rem; gap: 1px;">
-              <span class="fw-semibold text-dark">${r.District || '—'}</span>
-              <span class="text-muted" style="font-size: 0.72rem;">${r.Address || ''}</span>
-            </div>
-          </td>
-          <td class="col-Partner text-end">
-            <div class="d-flex flex-column align-items-start" style="font-size: 0.8rem; gap: 1px;">
-              <span class="fw-semibold text-dark">${r.BrokerName || '—'}</span>
-              <span class="text-muted" style="font-size: 0.72rem;">${(r.BrokerNumber || '').split('|creator:')[0]}</span>
-              <button class="btn btn-xs btn-outline-secondary mt-1 no-print font-monospace" onclick="showCommissionHistory(${r.SlNo})" style="font-size:0.68rem; padding:2px 6px; border-color: #ccc; white-space: nowrap;">
-                Commission ${getCommDiffBadge(comm, commPaid)}
-              </button>
-            </div>
-          </td>
-          <td class="col-price text-end">
-            <div class="d-flex flex-column align-items-end" style="gap:5px;">
-              <!-- Customer Price -->
-              <div class="d-flex flex-column align-items-end" style="border-bottom: 1px dashed #eee; padding-bottom: 3px; width: 100%;">
-                <span class="text-muted" style="font-size: 0.65rem; text-transform: uppercase;">Customer Price</span>
-                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${price}</span>
-                <button class="btn btn-xs btn-outline-secondary mt-0.5 no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Customer')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Cust Txn ${getTxnDiffBadge(price, total)}
+              
+              <!-- Commission Info -->
+              <div class="d-flex align-items-center gap-2 mt-1" style="font-size: 0.75rem;">
+                <span class="text-muted">Comm:</span>
+                <span class="fw-semibold text-dark font-monospace">₹${comm.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showCommissionHistory(${r.SlNo})" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
+                  Comm Paid ${getCommDiffBadge(comm, commPaid)}
                 </button>
               </div>
-              <!-- Vendor Price -->
-              <div class="d-flex flex-column align-items-end" style="width: 100%;">
-                <span class="text-muted" style="font-size: 0.65rem; text-transform: uppercase;">Vendor Price</span>
-                <span class="fw-semibold text-dark font-monospace" style="font-size: 0.8rem;">${vPrice}</span>
-                <button class="btn btn-xs btn-outline-secondary mt-0.5 no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
+
+              <!-- Vendor Price & Vend Txn functionality -->
+              <div class="d-flex align-items-center gap-2 mt-1 pt-1 border-top w-100" style="font-size: 0.75rem;">
+                <span class="text-muted">Vend Price:</span>
+                <span class="fw-semibold text-dark font-monospace">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
                   Vend Txn ${getTxnDiffBadge(vPrice, vPaid)}
                 </button>
               </div>
+            </div>
+          </td>
+          <td class="col-price font-monospace fs-8 align-middle">
+            <div class="d-flex justify-content-between align-items-center w-100 px-1">
+              <span class="fw-semibold text-dark" title="Total Expense">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+              ${(() => {
+                const profit = price - vPrice - comm;
+                const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+                return `<span class="${profitColorClass}" title="Total Profit (Customer Price - Total Expense - Commission)">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>`;
+              })()}
             </div>
           </td>
           <td class="col-login text-center">
@@ -913,22 +966,36 @@ function renderList() {
       tfootHTML += `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="7" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="6" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
       `;
     }
     
     tfootHTML += `
       <tr class="grand-total" style="height:37px;">
-        <td class="text-center">${isAddingNew ? activeCount - 1 : activeCount}</td>
-        <td colspan="2">GRAND TOTAL</td>
-        <td class="text-end fw-bold font-monospace" style="font-size:0.8rem;">
-          ${fmtGrandTotal(sumComm)} <span class="text-danger fs-7">(-${fmtGrandTotal(sumCommPaid)})</span>
+        <td class="text-center align-middle">${isAddingNew ? activeCount - 1 : activeCount}</td>
+        <td>
+          <div class="d-flex flex-column align-items-start">
+            <span class="fw-semibold text-secondary">GRAND TOTAL</span>
+            <div class="fw-bold font-monospace text-dark mt-1" style="font-size:0.72rem;">
+              C: ${fmtGrandTotal(sumPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumTotal)})</span>
+            </div>
+          </div>
         </td>
-        <td class="text-end fw-bold font-monospace" style="font-size:0.8rem;">
-          <div class="d-flex flex-column align-items-end" style="gap:2px; font-size:0.75rem;">
-            <div>C: ${fmtGrandTotal(sumPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumTotal)})</span></div>
-            <div>V: ${fmtGrandTotal(sumVendorPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
+        <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
+          <div class="d-flex flex-column align-items-start">
+            <div>Comm: ${fmtGrandTotal(sumComm)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumCommPaid)})</span></div>
+            <div>Vend: ${fmtGrandTotal(sumVendorPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
+          </div>
+        </td>
+        <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
+          <div class="d-flex justify-content-between align-items-center w-100 px-1">
+            <span>${fmtGrandTotal(sumVendorPrice)}</span>
+            ${(() => {
+              const totalProfit = sumPrice - sumVendorPrice - sumComm;
+              const profitColorClass = totalProfit >= 0 ? 'text-success' : 'text-danger';
+              return `<span class="${profitColorClass}">${fmtGrandTotal(totalProfit)}</span>`;
+            })()}
           </div>
         </td>
         <td></td>
@@ -1000,6 +1067,20 @@ function bindEditRowListeners() {
       });
     }
   }
+
+  const calcInputs = document.querySelectorAll('.expense-calc-inline');
+  calcInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      const mat = Number(document.getElementById('editMaterialCost').value) || 0;
+      const inst = Number(document.getElementById('editInstallationCost').value) || 0;
+      const gst = Number(document.getElementById('editGSTCost').value) || 0;
+      const oth = Number(document.getElementById('editOtherCost').value) || 0;
+      const totalField = document.getElementById('editVendorPrice');
+      if (totalField) {
+        totalField.value = (mat + inst + gst + oth).toFixed(2);
+      }
+    });
+  });
 }
 
 function renderSalesSummary(filteredRows) {
@@ -1133,6 +1214,15 @@ window.saveInline = async function (slNo) {
     creatorSuffix = '|creator:' + currentUser.userid;
   }
 
+  const expenses = {
+    material: Number(document.getElementById('editMaterialCost').value) || 0,
+    install: Number(document.getElementById('editInstallationCost').value) || 0,
+    gst: Number(document.getElementById('editGSTCost').value) || 0,
+    other: Number(document.getElementById('editOtherCost').value) || 0
+  };
+  const calculatedVendorPrice = expenses.material + expenses.install + expenses.gst + expenses.other;
+  const phoneClean = document.getElementById('editBrokerNumber').value.trim().split('|')[0];
+
   const row = {
     SlNo: Number(slNo),
     Name: name,
@@ -1146,14 +1236,14 @@ window.saveInline = async function (slNo) {
     ThirdInstallment: tInst,
     Total: total,
     CommittedPrice: Number(document.getElementById('editCommittedPrice').value) || 0,
-    VendorPrice: Number(document.getElementById('editVendorPrice').value) || 0,
+    VendorPrice: calculatedVendorPrice,
     VendorPaid: existing ? (Number(existing.VendorPaid) || 0) : 0,
     LoginDate: document.getElementById('editLoginDate').value,
     InstallationDate: document.getElementById('editInstallationDate').value,
     Commission: Number(document.getElementById('editCommission').value) || 0,
     CommissionPaid: existing ? (Number(existing.CommissionPaid) || 0) : 0,
     BrokerName: document.getElementById('editBrokerName').value.trim(),
-    BrokerNumber: document.getElementById('editBrokerNumber').value.trim() + creatorSuffix,
+    BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
     CommissioningDate: document.getElementById('editCommissioningDate').value
   };
 
@@ -1427,17 +1517,106 @@ function updateCommModalTotal() {
   document.getElementById('lblCommTxnTotal').textContent = '₹' + Math.round(total).toLocaleString('en-IN');
 }
 
-window.showInstallmentNotes = function(slNo) {
+window.showCustomerDetailsPopup = function(slNo) {
+  const r = getInstallmentRows().find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) return;
+
+  document.getElementById('customerDetailsModalTitle').textContent = `${r.Name} (${r.District || 'No District'})`;
+  document.getElementById('detMobile').textContent = r.MobileNumber || '—';
+  document.getElementById('detBrand').textContent = r.CommittedBrand || '—';
+  document.getElementById('detAddress').textContent = r.Address || '—';
+
+  // Load remarks (Customer specific only!)
+  const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(slNo) && (n.Type === 'Customer' || !n.Type));
+  const remarksContainer = document.getElementById('detNotesList');
+  if (remarksContainer) {
+    if (remarks.length === 0) {
+      remarksContainer.innerHTML = '<div class="text-muted text-center py-2 fs-7 bg-light rounded">No remarks added yet.</div>';
+    } else {
+      remarksContainer.innerHTML = remarks.map(t => {
+        const dateObj = new Date(t.CreatedAt || Date.now());
+        const formattedDate = dateObj.toLocaleDateString('en-IN', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+        return `
+          <div class="p-2 bg-light border-start border-primary border-3 rounded fs-7">
+            <div class="d-flex justify-content-between text-muted fs-8 mb-1">
+              <span>Customer Remark</span>
+              <span>${formattedDate}</span>
+            </div>
+            <div class="text-dark">${t.Remark}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('customerDetailsModal'));
+  modal.show();
+};
+
+window.showPartnerDetailsPopup = function(slNo) {
+  const r = getInstallmentRows().find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) return;
+
+  document.getElementById('partnerDetailsModalTitle').textContent = r.BrokerName || 'Partner Details';
+  document.getElementById('detPartnerPhone').textContent = (r.BrokerNumber || '').split('|')[0] || '—';
+
+  // Load Partner remarks
+  const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(slNo) && n.Type === 'Partner');
+  const remarksContainer = document.getElementById('detPartnerNotesList');
+  if (remarksContainer) {
+    if (remarks.length === 0) {
+      remarksContainer.innerHTML = '<div class="text-muted text-center py-2 fs-7 bg-light rounded">No partner remarks added yet.</div>';
+    } else {
+      remarksContainer.innerHTML = remarks.map(t => {
+        const dateObj = new Date(t.CreatedAt || Date.now());
+        const formattedDate = dateObj.toLocaleDateString('en-IN', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+        return `
+          <div class="p-2 bg-light border-start border-warning border-3 rounded fs-7">
+            <div class="d-flex justify-content-between text-muted fs-8 mb-1">
+              <span>Partner Remark</span>
+              <span>${formattedDate}</span>
+            </div>
+            <div class="text-dark">${t.Remark}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('partnerDetailsModal'));
+  modal.show();
+};
+
+window.showInstallmentNotes = function(slNo, filterType = 'Customer') {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
 
   document.getElementById('noteSlNo').value = slNo;
   document.getElementById('newNoteText').value = '';
-  document.getElementById('newNoteType').value = 'Customer';
+  document.getElementById('newNoteType').value = filterType;
 
-  document.getElementById('notesModalLabel').textContent = `Notes & Remarks — ${r.Name}`;
+  // Toggle type selector visibility (hide in simple notes view)
+  const typeWrapper = document.getElementById('divNoteTypeWrapper');
+  if (typeWrapper) {
+    typeWrapper.style.display = 'none';
+  }
 
-  const remarks = DB.getAll('installment_remarks').filter(t => Number(t.SlNo) === Number(slNo));
+  document.getElementById('notesModalLabel').textContent = 
+    filterType === 'Customer' 
+      ? `Customer Notes — ${r.Name}` 
+      : `Partner Notes — ${r.BrokerName || '—'}`;
+
+  // Filter based on filterType
+  const remarks = DB.getAll('installment_remarks').filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (filterType === 'Customer' ? (t.Type === 'Customer' || !t.Type) : t.Type === 'Partner')
+  );
   remarks.sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
 
   const feed = document.getElementById('notesHistoryFeed');
@@ -1445,8 +1624,9 @@ window.showInstallmentNotes = function(slNo) {
     feed.innerHTML = `<div class="text-center text-muted py-3 fs-8">No remarks recorded yet.</div>`;
   } else {
     feed.innerHTML = remarks.map(t => {
-      const typeBadgeClass = t.Type === 'Customer' ? 'bg-primary-subtle text-primary-emphasis' : 'bg-warning-subtle text-warning-emphasis';
-      const cardTypeClass = t.Type === 'Customer' ? 'note-card-customer' : 'note-card-Partner';
+      const typeBadgeClass = t.Type === 'Customer' || !t.Type ? 'bg-primary-subtle text-primary-emphasis' : 'bg-warning-subtle text-warning-emphasis';
+      const cardTypeClass = t.Type === 'Customer' || !t.Type ? 'note-card-customer' : 'note-card-Partner';
+      const displayType = t.Type || 'Customer';
       
       let formattedDate = '';
       try {
@@ -1462,7 +1642,7 @@ window.showInstallmentNotes = function(slNo) {
         <div class="note-card ${cardTypeClass} d-flex justify-content-between align-items-start gap-2">
           <div class="d-flex flex-column gap-1 w-100">
             <div class="d-flex align-items-center gap-2 justify-content-between">
-              <span class="note-type-badge ${typeBadgeClass}">${t.Type} Specific</span>
+              <span class="note-type-badge ${typeBadgeClass}">${displayType} Specific</span>
               <span class="note-timestamp">${formattedDate}</span>
             </div>
             <div class="note-text">${t.Remark}</div>
@@ -1481,6 +1661,7 @@ window.deleteInstallmentNote = async function(remarkId) {
   const remark = DB.getAll('installment_remarks').find(t => t.RemarkID === remarkId);
   if (!remark) return;
   const slNo = remark.SlNo;
+  const type = remark.Type || 'Customer';
 
   const ok = await UI.confirmDialog(`Are you sure you want to delete this remark?`, 'Delete Note', 'Delete', 'btn-danger');
   if (!ok) return;
@@ -1489,7 +1670,7 @@ window.deleteInstallmentNote = async function(remarkId) {
   try {
     await DB.remove('installment_remarks', t => t.RemarkID === remarkId);
     UI.toast('Note deleted successfully.', 'success');
-    showInstallmentNotes(slNo);
+    showInstallmentNotes(slNo, type);
     renderList();
   } catch (err) {
     UI.toast('Error deleting note: ' + err.message, 'danger');
@@ -1524,11 +1705,22 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
       document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
       document.getElementById('cBrokerName').value = r.BrokerName || '';
-      document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|creator:')[0];
+      document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|')[0];
       document.getElementById('cCommission').value = r.Commission || '';
+
+      let expenses = null;
+      if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+        try {
+          expenses = JSON.parse(r.BrokerNumber.split('|expenses:')[1].split('|')[0]);
+        } catch(e) { console.error(e); }
+      }
+      document.getElementById('cMaterialCost').value = (expenses && expenses.material) || r.VendorPrice || '';
+      document.getElementById('cInstallationCost').value = (expenses && expenses.install) || 0;
+      document.getElementById('cGSTCost').value = (expenses && expenses.gst) || 0;
+      document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
     }
   } else {
-    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission'].forEach(id => {
+    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cInstallationCost', 'cGSTCost', 'cOtherCost'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -1568,6 +1760,17 @@ window.openCustomerModal = function(slNo) {
     brokerInput.disabled = false;
   }
 
+  const calcInputs = document.querySelectorAll('.expense-calc-modal');
+  calcInputs.forEach(input => {
+    input.addEventListener('input', () => {
+      const mat = Number(document.getElementById('cMaterialCost').value) || 0;
+      const inst = Number(document.getElementById('cInstallationCost').value) || 0;
+      const gst = Number(document.getElementById('cGSTCost').value) || 0;
+      const oth = Number(document.getElementById('cOtherCost').value) || 0;
+      document.getElementById('cVendorPrice').value = (mat + inst + gst + oth).toFixed(2);
+    });
+  });
+
   modal.show();
 };
 
@@ -1594,6 +1797,15 @@ async function saveCustomerModal() {
     creatorSuffix = '|creator:' + currentUser.userid;
   }
 
+  const expenses = {
+    material: Number(document.getElementById('cMaterialCost').value) || 0,
+    install: Number(document.getElementById('cInstallationCost').value) || 0,
+    gst: Number(document.getElementById('cGSTCost').value) || 0,
+    other: Number(document.getElementById('cOtherCost').value) || 0
+  };
+  const calculatedVendorPrice = expenses.material + expenses.install + expenses.gst + expenses.other;
+  const phoneClean = document.getElementById('cBrokerNumber').value.trim().split('|')[0];
+
   const rowData = {
     Name: name,
     MobileNumber: document.getElementById('cMobile').value.trim(),
@@ -1601,11 +1813,11 @@ async function saveCustomerModal() {
     Address: document.getElementById('cAddress').value.trim(),
     CommittedBrand: document.getElementById('cBrand').value.trim(),
     CommittedPrice: Number(document.getElementById('cPrice').value) || 0,
-    VendorPrice: Number(document.getElementById('cVendorPrice').value) || 0,
+    VendorPrice: calculatedVendorPrice,
     LoginDate: document.getElementById('cLoginDate').value || null,
     InstallationDate: document.getElementById('cInstallationDate').value || null,
     BrokerName: document.getElementById('cBrokerName').value.trim(),
-    BrokerNumber: document.getElementById('cBrokerNumber').value.trim() + creatorSuffix,
+    BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
     Commission: Number(document.getElementById('cCommission').value) || 0
   };
 

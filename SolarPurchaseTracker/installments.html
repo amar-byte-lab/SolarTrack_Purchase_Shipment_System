@@ -369,11 +369,10 @@
           <table class="table table-hover table-installments mb-0" id="installmentsTable">
             <thead>
               <tr>
-                <th>Sl. No.</th>
+                <th class="text-center" style="width: 50px;">Sl.</th>
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
-                <th class="sortable" data-sort="District" id="thDistrict">District & Address</th>
                 <th>Partner</th>
-                <th>Customer & Vendor Price</th>
+                <th>Total expense</th>
                 <th class="sortable" data-sort="LoginDate" id="thLoginDate">Login Date & Delay</th>
                 <th class="sortable" data-sort="InstallationDate" id="thInstallationDate">Inst. & Comm. Date</th>
                 <th class="no-print">Actions</th>
@@ -543,6 +542,80 @@
   </div>
 </div>
 
+  <!-- Customer Details Modal -->
+  <div class="modal fade" id="customerDetailsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+        <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+          <h6 class="modal-title fw-bold fs-7" id="customerDetailsModalTitle">Customer Details</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
+          <div class="card border-0 shadow-sm rounded-3 p-3">
+            <div class="d-flex flex-column gap-2" style="font-size: 0.82rem;">
+              <div>
+                <span class="text-secondary d-block fs-8 mb-0.5">Mobile Number</span>
+                <span class="fw-semibold text-dark fs-7" id="detMobile">—</span>
+              </div>
+              <hr class="my-1 opacity-10">
+              <div>
+                <span class="text-secondary d-block fs-8 mb-0.5">Committed Brand</span>
+                <span class="fw-semibold text-dark fs-7" id="detBrand">—</span>
+              </div>
+              <hr class="my-1 opacity-10">
+              <div>
+                <span class="text-secondary d-block fs-8 mb-0.5">Full Address</span>
+                <span class="fw-semibold text-dark fs-7" id="detAddress">—</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <span class="text-secondary d-block fs-8 mb-2 fw-semibold">Notes / Remarks</span>
+            <div id="detNotesList" class="d-flex flex-column gap-2" style="max-height: 250px; overflow-y: auto;">
+              <!-- Dynamic Notes -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light border-top py-1">
+          <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Partner Details Modal -->
+  <div class="modal fade" id="partnerDetailsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+        <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+          <h6 class="modal-title fw-bold fs-7" id="partnerDetailsModalTitle">Partner Details</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
+          <div class="card border-0 shadow-sm rounded-3 p-3">
+            <div class="d-flex flex-column gap-2" style="font-size: 0.82rem;">
+              <div>
+                <span class="text-secondary d-block fs-8 mb-0.5">Phone Number</span>
+                <span class="fw-semibold text-dark fs-7" id="detPartnerPhone">—</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <span class="text-secondary d-block fs-8 mb-2 fw-semibold">Partner Specific Notes</span>
+            <div id="detPartnerNotesList" class="d-flex flex-column gap-2" style="max-height: 250px; overflow-y: auto;">
+              <!-- Dynamic Partner Notes -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light border-top py-1">
+          <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <!-- ══ Notes & Remarks Modal ════════════════════════════════ -->
 <div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
@@ -566,7 +639,7 @@
           <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Note / Remark</div>
           <input type="hidden" id="noteSlNo">
           
-          <div class="mb-2">
+          <div class="mb-2" id="divNoteTypeWrapper" style="display: none;">
             <label class="form-label fs-8 text-secondary mb-1" for="newNoteType">Remark Type *</label>
             <select id="newNoteType" class="form-select form-select-sm">
               <option value="Customer">Customer Specific Remark</option>
@@ -631,8 +704,24 @@
               <input type="number" step="any" min="0" class="form-control form-control-sm" id="cPrice" placeholder="0.00">
             </div>
             <div class="col-md-6 col-12 mb-2">
-              <label class="form-label fs-8 text-secondary mb-1">Vendor Price (₹)</label>
-              <input type="number" step="any" min="0" class="form-control form-control-sm" id="cVendorPrice" placeholder="0.00">
+              <label class="form-label fs-8 text-secondary mb-1">Total Expense (₹) <span class="text-muted">(Auto-calculated)</span></label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm bg-light fw-bold text-dark" id="cVendorPrice" placeholder="0.00" readonly>
+            </div>
+            <div class="col-md-3 col-6 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Material Cost (₹)</label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cMaterialCost" placeholder="0.00">
+            </div>
+            <div class="col-md-3 col-6 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Installation Cost (₹)</label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cInstallationCost" placeholder="0.00">
+            </div>
+            <div class="col-md-3 col-6 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">GST Cost (₹)</label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cGSTCost" placeholder="0.00">
+            </div>
+            <div class="col-md-3 col-6 mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Other Cost (₹)</label>
+              <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cOtherCost" placeholder="0.00">
             </div>
             <div class="col-md-6 col-12 mb-2">
               <label class="form-label fs-8 text-secondary mb-1">Login Date</label>
