@@ -221,7 +221,7 @@ function loadSettingsForm() {
   updateUPIQRPreview(upiId);
 
   // Load Terms (Prefill defaults)
-  const defaultTerms = '1. Warranty as per manufacturer terms.\n2. 50% advance on login.';
+  const defaultTerms = `1. This quotation shows the actual price of goods described; all particulars are true and correct.\n2. Advance to be paid within 7 days of quotation date, else price may vary as per company revision.\n3. All disputes subject to Bhubaneswar jurisdiction only.\n4. Products once sold cannot be returned.`;
   document.getElementById('sTerms').value = get('CompanyTerms', defaultTerms);
 }
 

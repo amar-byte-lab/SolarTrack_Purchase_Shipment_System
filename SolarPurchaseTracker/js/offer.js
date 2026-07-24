@@ -282,14 +282,12 @@ function syncPrintLabels() {
       document.getElementById('printSubTotal').textContent = `${totalSub.toLocaleString('en-IN')}`;
       
       if (printSubsidyCell) {
-        printSubsidyCell.style.display = 'table-cell';
-        printSubsidyCell.style.width = '48%';
+        printSubsidyCell.style.display = 'block';
       }
     }
   } else {
     if (printSubsidyCell) {
       printSubsidyCell.style.display = 'none';
-      printSubsidyCell.style.width = '0%';
     }
   }
 
@@ -755,7 +753,7 @@ function loadCompanyProfileSettings() {
   companyUpiId = getSetting('CompanyUPI', '');
 
   // 8. Populate Terms and Conditions Section
-  const defaultTerms = '1. Warranty as per manufacturer terms.\n2. 50% advance on login.';
+  const defaultTerms = `1. This quotation shows the actual price of goods described; all particulars are true and correct.\n2. Advance to be paid within 7 days of quotation date, else price may vary as per company revision.\n3. All disputes subject to Bhubaneswar jurisdiction only.\n4. Products once sold cannot be returned.`;
   const termsText = getSetting('CompanyTerms', defaultTerms);
   const termsSection = document.getElementById('termsSection');
   const termsLbl = document.getElementById('lblCompanyTerms');
@@ -1276,7 +1274,8 @@ window.exportQuotationToDocx = async function() {
   // Process Seller Logo: Convert SVG/other formats to PNG base64
   let validLogoPng = '';
   const settings = DB.getAll('settings');
-  const logoBase64 = (settings.find(s => s.Key === 'CompanyLogo') || {}).Value;
+  const getSetting = (key, def = '') => (settings.find(s => s.Key === key) || {}).Value ?? def;
+  const logoBase64 = getSetting('CompanyLogo', '');
   const rawLogoSrc = logoBase64 || DEFAULT_SOLAR_LOGO;
   try {
     validLogoPng = await getPngLogoDataUrl(rawLogoSrc);
@@ -1706,63 +1705,16 @@ window.exportQuotationToDocx = async function() {
 
   let bottomBlockTable;
 
-  // Reusable Bank & Declaration list
-  const declBankParagraphs = [
-    new Paragraph({
-      children: [new TextRun({ text: "Declaration:", bold: true, size: 21, font: "Times New Roman" })],
-      spacing: { after: 60 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: "1. This quotation shows the actual price of goods described; all particulars are true and correct.", size: 18, font: "Times New Roman" })],
-      spacing: { after: 20 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: "2. Advance to be paid within 7 days of quotation date, else price may vary as per company revision.", size: 18, font: "Times New Roman" })],
-      spacing: { after: 20 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: "3. All disputes subject to Bhubaneswar jurisdiction only.", size: 18, font: "Times New Roman" })],
-      spacing: { after: 20 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: "4. Products once sold cannot be returned.", size: 18, font: "Times New Roman" })],
-      spacing: { after: 80 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: "Company's Bank Details", bold: true, size: 21, font: "Times New Roman" })],
-      spacing: { after: 60 }
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Bank Name: ", bold: true, size: 19, font: "Times New Roman" }),
-        new TextRun({ text: document.getElementById('printBankName').textContent || '-', size: 19, font: "Times New Roman" })
-      ],
-      spacing: { after: 20 }
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "A/C Holder: ", bold: true, size: 19, font: "Times New Roman" }),
-        new TextRun({ text: document.getElementById('printBankAcHolder').textContent || '-', size: 19, font: "Times New Roman" })
-      ],
-      spacing: { after: 20 }
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "A/C No.: ", bold: true, size: 19, font: "Times New Roman" }),
-        new TextRun({ text: document.getElementById('printBankAcNo').textContent || '-', size: 19, font: "Times New Roman" })
-      ],
-      spacing: { after: 20 }
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Branch & IFSC: ", bold: true, size: 19, font: "Times New Roman" }),
-        new TextRun({ text: document.getElementById('printBankBranchIFS').textContent || '-', size: 19, font: "Times New Roman" })
-      ],
-      spacing: { after: 20 }
-    })
-  ];
-
+  // Left Column Paragraphs: Subsidy + Bank details
+  const leftColParagraphs = [];
   if (isSubsidyVisible) {
+    leftColParagraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: "Subsidy Scheme as per MNRE", bold: true, size: 21, font: "Times New Roman" })],
+        spacing: { after: 40 }
+      })
+    );
+
     const subsidyRows = [
       new TableRow({
         children: [
@@ -1832,62 +1784,117 @@ window.exportQuotationToDocx = async function() {
       margins: { top: 60, bottom: 60, left: 60, right: 60 }
     });
 
-    const subsidyCellParagraphs = [
-      new Paragraph({
-        children: [new TextRun({ text: "Subsidy Scheme as per MNRE", bold: true, size: 21, font: "Times New Roman" })],
-        spacing: { after: 100 }
-      }),
-      innerSubsidyTable
-    ];
+    leftColParagraphs.push(innerSubsidyTable);
+    leftColParagraphs.push(new Paragraph({ children: [], spacing: { before: 120 } })); // Spacer
+  }
 
-    bottomBlockTable = new Table({
-      width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        insideVertical: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
-      },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              children: subsidyCellParagraphs,
-              width: { size: 4992, type: WidthType.DXA }
-            }),
-            new TableCell({
-              children: declBankParagraphs,
-              width: { size: 5408, type: WidthType.DXA }
-            })
-          ]
-        })
+  // Add Bank Details to Left Column
+  leftColParagraphs.push(
+    new Paragraph({
+      children: [new TextRun({ text: "Company's Bank Details", bold: true, size: 21, font: "Times New Roman" })],
+      spacing: { after: 30 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Bank Name: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankName').textContent || '-', size: 19, font: "Times New Roman" })
       ],
-      margins: { top: 120, bottom: 120, left: 160, right: 160 }
+      spacing: { after: 10 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "A/C Holder: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankAcHolder').textContent || '-', size: 19, font: "Times New Roman" })
+      ],
+      spacing: { after: 10 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "A/C No.: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankAcNo').textContent || '-', size: 19, font: "Times New Roman" })
+      ],
+      spacing: { after: 10 }
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Branch & IFSC: ", bold: true, size: 19, font: "Times New Roman" }),
+        new TextRun({ text: document.getElementById('printBankBranchIFS').textContent || '-', size: 19, font: "Times New Roman" })
+      ],
+      spacing: { after: 0 }
+    })
+  );
+
+  // Right Column: Declaration / Terms & Conditions
+  const rightColParagraphs = [
+    new Paragraph({
+      children: [new TextRun({ text: "Declaration:", bold: true, size: 21, font: "Times New Roman" })],
+      spacing: { after: 40 }
+    })
+  ];
+
+  // Fetch dynamic terms
+  const termsTextDocx = getSetting('CompanyTerms', '');
+  if (termsTextDocx) {
+    const lines = termsTextDocx.split('\n').map(l => l.trim()).filter(Boolean);
+    lines.forEach(line => {
+      let content = line;
+      const hasPoint = /^(?:\d+\.|\*|\-|\u2022)/.test(line);
+      if (!hasPoint) {
+        content = `• ${line}`;
+      }
+      rightColParagraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: content, size: 18, font: "Times New Roman" })],
+          spacing: { after: 10 }
+        })
+      );
     });
   } else {
-    bottomBlockTable = new Table({
-      width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
-        right: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
-      },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              children: declBankParagraphs,
-              width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA }
-            })
-          ]
+    // Default fallback to the 4 declaration points
+    const defaultDeclPoints = [
+      "1. This quotation shows the actual price of goods described; all particulars are true and correct.",
+      "2. Advance to be paid within 7 days of quotation date, else price may vary as per company revision.",
+      "3. All disputes subject to Bhubaneswar jurisdiction only.",
+      "4. Products once sold cannot be returned."
+    ];
+    defaultDeclPoints.forEach(pt => {
+      rightColParagraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: pt, size: 18, font: "Times New Roman" })],
+          spacing: { after: 10 }
         })
-      ],
-      margins: { top: 120, bottom: 120, left: 160, right: 160 }
+      );
     });
   }
+
+  bottomBlockTable = new Table({
+    width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 8, color: "000000" }
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            children: leftColParagraphs,
+            width: { size: 5200, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.TOP
+          }),
+          new TableCell({
+            children: rightColParagraphs,
+            width: { size: 5200, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.TOP
+          })
+        ]
+      })
+    ],
+    margins: { top: 100, bottom: 100, left: 120, right: 120 }
+  });
 
 
   // --- 7. SIGNATURE BLOCK ---
