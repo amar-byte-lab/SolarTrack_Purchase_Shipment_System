@@ -28,6 +28,19 @@ const COLORABLE_COLS = [
 ];
 
 window.onDbReady = function () {
+  const currentUser = Auth.getUser();
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  if (!isAdmin) {
+    const style = document.createElement('style');
+    style.id = 'adminOnlyStyles';
+    style.innerHTML = `
+      .col-price, .admin-only-column {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   UI.renderSidebar('installments.html');
   UI.renderTopbar('Client Tracker', 'Manage client installment payments, customer sales, and agent commissions', `
     <button class="btn btn-outline-secondary" id="btnPrintList">🖨 Print</button>
@@ -481,7 +494,10 @@ function populateDatalists() {
 function populateColorColCheckboxes() {
   const menu = document.getElementById('ccColumnMultiselectMenu');
   if (!menu) return;
-  menu.innerHTML = COLORABLE_COLS.map(c => `
+  const currentUser = Auth.getUser();
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  const cols = COLORABLE_COLS.filter(c => isAdmin || c.key !== 'col-price');
+  menu.innerHTML = cols.map(c => `
     <div class="form-check mb-1">
       <input class="form-check-input color-col-chk" type="checkbox" value="${c.key}" id="col_chk_${c.key}" ${selectedColorCols.includes(c.key) ? 'checked' : ''}>
       <label class="form-check-label w-100" for="col_chk_${c.key}">${c.label}</label>
@@ -503,12 +519,15 @@ function populateColorColCheckboxes() {
 function updateColorColDropdownButton() {
   const btn = document.getElementById('btnColColorMultiselect');
   if (!btn) return;
+  const currentUser = Auth.getUser();
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  const cols = COLORABLE_COLS.filter(c => isAdmin || c.key !== 'col-price');
   if (selectedColorCols.length === 0) {
     btn.textContent = 'Select Columns';
   } else if (selectedColorCols.length === 1) {
     const col = COLORABLE_COLS.find(c => c.key === selectedColorCols[0]);
     btn.textContent = col ? col.label : '1 Column';
-  } else if (selectedColorCols.length === COLORABLE_COLS.length) {
+  } else if (selectedColorCols.length === cols.length) {
     btn.textContent = 'All Columns';
   } else {
     btn.textContent = `${selectedColorCols.length} Columns`;
@@ -766,7 +785,7 @@ function renderList() {
   const tbody = document.querySelector('#installmentsTable tbody');
   
   const currentUser = Auth.getUser();
-  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
 
   if (!rows.length && !isAddingNew) {
     tbody.innerHTML = `<tr><td colspan="${isAdmin ? '6' : '5'}" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
