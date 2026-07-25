@@ -37,6 +37,12 @@ window.onDbReady = function () {
       .col-price, .admin-only-column {
         display: none !important;
       }
+      .modal-left-column {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        border-right: none !important;
+      }
     `;
     document.head.appendChild(style);
   }

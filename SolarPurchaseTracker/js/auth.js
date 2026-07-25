@@ -78,7 +78,7 @@ const Auth = (() => {
   async function logout() {
     clearAllCacheAndStorage();
     try {
-      await fetch('/api/logout', { method: 'POST' });
+      fetch('/api/logout', { method: 'POST', keepalive: true }).catch(() => {});
     } catch (e) {}
     window.location.href = 'login.html';
   }

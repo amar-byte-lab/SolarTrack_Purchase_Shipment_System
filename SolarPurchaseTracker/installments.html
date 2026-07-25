@@ -399,7 +399,7 @@
                 <th class="text-center" style="width: 50px;">Sl.</th>
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
                 <th>Partner</th>
-                <th>Total expense</th>
+                <th class="col-price admin-only-column">Total expense</th>
                 <th id="thTimestamp" class="sortable position-relative" data-sort="LoginDate" style="min-width: 195px;">
                   <div class="d-flex align-items-center justify-content-between">
                     <span class="fw-bold">Timestamp</span>
@@ -718,7 +718,7 @@
           <input type="hidden" id="cSlNo">
           <div class="row g-3">
             <!-- Left Column: General & Contact Info -->
-            <div class="col-md-6 col-12 border-end-md">
+            <div class="col-md-6 col-12 border-end-md modal-left-column">
               <div class="row g-2">
                 <div class="col-12 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Customer Name *</label>
@@ -768,7 +768,7 @@
             </div>
 
             <!-- Right Column: Pricing & Expense Info -->
-            <div class="col-md-6 col-12">
+            <div class="col-md-6 col-12 admin-only-column">
               <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius: 10px;">
                 <div class="fw-bold text-primary fs-7 mb-3 pb-1 border-bottom">💰 Pricing & Expenses</div>
                 <div class="row g-2">
