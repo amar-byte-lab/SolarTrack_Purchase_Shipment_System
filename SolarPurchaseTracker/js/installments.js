@@ -1006,13 +1006,21 @@ function renderList() {
             </div>
           </td>
           <td class="col-price font-monospace fs-8 align-middle">
-            <div class="d-flex justify-content-between align-items-center w-100 px-1">
-              <span class="fw-semibold text-dark" title="Total Expense">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+            <div class="d-flex flex-column align-items-start px-1" style="gap: 2px;">
+              <div>
+                <span class="text-secondary fw-normal">Exp.:</span> 
+                <span class="fw-semibold text-dark">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+              </div>
               ${(() => {
                 const partnerPrice = (expenses && expenses.partner) || 0;
                 const profit = partnerPrice - comm - vPrice;
                 const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
-                return `<span class="${profitColorClass}" title="Total Profit (Partner Price - Commission - Total Expense)">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>`;
+                return `
+                  <div>
+                    <span class="text-secondary fw-normal">Profit:</span> 
+                    <span class="${profitColorClass}">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                  </div>
+                `;
               })()}
             </div>
           </td>
@@ -1083,13 +1091,21 @@ function renderList() {
             <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
           </div>
         </td>
-        <td class="text-end fw-bold font-monospace align-middle admin-only-column" style="font-size:0.72rem;">
-          <div class="d-flex justify-content-between align-items-center w-100 px-1">
-            <span>${fmtGrandTotal(sumVendorPrice)}</span>
+        <td class="text-start fw-bold font-monospace align-middle admin-only-column" style="font-size:0.72rem;">
+          <div class="d-flex flex-column align-items-start px-1" style="gap: 2px;">
+            <div>
+              <span class="text-secondary fw-normal">Exp.:</span> 
+              <span class="text-dark">${fmtGrandTotal(sumVendorPrice)}</span>
+            </div>
             ${(() => {
               const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
               const profitColorClass = totalProfit >= 0 ? 'text-success' : 'text-danger';
-              return `<span class="${profitColorClass}">${fmtGrandTotal(totalProfit)}</span>`;
+              return `
+                <div>
+                  <span class="text-secondary fw-normal">Profit:</span> 
+                  <span class="${profitColorClass}">${fmtGrandTotal(totalProfit)}</span>
+                </div>
+              `;
             })()}
           </div>
         </td>
