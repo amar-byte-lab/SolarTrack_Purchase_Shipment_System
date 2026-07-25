@@ -958,12 +958,12 @@ function renderList() {
                 })()}
               </div>
               
-              <!-- Customer Price & Cust Txn functionality -->
+              <!-- Customer Price & Pending Txn functionality -->
               <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top w-100" style="font-size: 0.8rem;">
                 <span class="text-muted">Cust Price:</span>
                 <span class="fw-semibold text-dark font-monospace">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Customer')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Cust Txn ${getTxnDiffBadge(price, total)}
+                  Pending Txn ${getTxnDiffBadge(price, total)}
                 </button>
               </div>
             </div>
@@ -991,7 +991,7 @@ function renderList() {
                 <span class="text-muted">Comm:</span>
                 <span class="fw-semibold text-dark font-monospace">₹${comm.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showCommissionHistory(${r.SlNo})" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Comm Paid ${getCommDiffBadge(comm, commPaid)}
+                  Comm Pending ${getCommDiffBadge(comm, commPaid)}
                 </button>
               </div>
 
@@ -1000,7 +1000,7 @@ function renderList() {
                 <span class="text-muted">Partner Price:</span>
                 <span class="fw-semibold text-dark font-monospace">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Part Txn ${getTxnDiffBadge(partnerPrice, vPaid)}
+                  Partner Pending ${getTxnDiffBadge(partnerPrice, vPaid)}
                 </button>
               </div>
             </div>
@@ -1079,16 +1079,16 @@ function renderList() {
         <td class="text-center align-middle">${isAddingNew ? activeCount - 1 : activeCount}</td>
         <td>
           <div class="d-flex flex-column align-items-start">
-            <span class="fw-semibold text-secondary">GRAND TOTAL</span>
+            <span class="fw-semibold text-secondary">GRAND TOTAL <span style="font-size:0.72rem; font-weight:normal;" class="text-muted">(Pending: ${fmtGrandTotal(sumPrice - sumTotal)})</span></span>
             <div class="fw-bold font-monospace text-dark mt-1" style="font-size:0.72rem;">
-              C: ${fmtGrandTotal(sumPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumTotal)})</span>
+              c.price: ${fmtGrandTotal(sumPrice)} <span class="text-muted fw-normal">(Paid: ${fmtGrandTotal(sumTotal)})</span>
             </div>
           </div>
         </td>
         <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
           <div class="d-flex flex-column align-items-start">
-            <div>Comm: ${fmtGrandTotal(sumComm)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumCommPaid)})</span></div>
-            <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
+            <div>Comm: ${fmtGrandTotal(sumComm)} <span class="text-muted fw-normal" style="font-size:0.68rem;">(Pending: ${fmtGrandTotal(sumComm - sumCommPaid)})</span></div>
+            <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-muted fw-normal" style="font-size:0.68rem;">(Pending: ${fmtGrandTotal(sumPartnerPrice - sumVendorPaid)})</span></div>
           </div>
         </td>
         <td class="text-start fw-bold font-monospace align-middle admin-only-column" style="font-size:0.72rem;">
