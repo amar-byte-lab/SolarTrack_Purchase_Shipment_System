@@ -341,6 +341,7 @@ window.onDbReady = function () {
   populateColorColCheckboxes();
   updateSortHeadersUI();
   renderList();
+  initResizableColumns();
 };
 
 function applyCustomStyles() {
@@ -877,28 +878,30 @@ function renderList() {
               </div>
             </div>
           </td>
-          <td class="col-price">
-            <div class="d-flex flex-column gap-1">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Material</span>
-                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editMaterialCost" value="${(expenses && expenses.material) || 0}" placeholder="Material Price">
-              </div>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Install</span>
-                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editInstallationCost" value="${(expenses && expenses.install) || 0}" placeholder="Installation">
-              </div>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text text-secondary" style="font-size:0.55rem; width: 60px; line-height: 1.1;" title="GST calculated on Customer Price">GST (%)</span>
-                <input type="number" step="any" class="form-control" id="editGSTPercentage" value="${(expenses && expenses.gst_pct) || 18}" placeholder="GST %">
-                <span class="input-group-text bg-light fw-bold" id="lblEditGSTAmount" style="font-size:0.65rem; width: 60px;">₹0.00</span>
-              </div>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Other</span>
-                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editOtherCost" value="${(expenses && expenses.other) || 0}" placeholder="Other">
-              </div>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light fw-bold" style="font-size:0.65rem; width: 60px;">Total</span>
-                <input type="number" step="0.01" class="form-control bg-light fw-bold" id="editVendorPrice" value="${r.VendorPrice || ''}" placeholder="Total Expense" readonly>
+          <td class="col-price admin-only-column">
+            <div style="resize: horizontal; overflow: auto; min-width: 145px; max-width: 400px; padding: 2px;">
+              <div class="d-flex flex-column gap-1">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Material</span>
+                  <input type="number" step="0.01" class="form-control expense-calc-inline" id="editMaterialCost" value="${(expenses && expenses.material) || 0}" placeholder="Material Price">
+                </div>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Install</span>
+                  <input type="number" step="0.01" class="form-control expense-calc-inline" id="editInstallationCost" value="${(expenses && expenses.install) || 0}" placeholder="Installation">
+                </div>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text text-secondary" style="font-size:0.55rem; width: 60px; line-height: 1.1;" title="GST calculated on Customer Price">GST (%)</span>
+                  <input type="number" step="any" class="form-control" id="editGSTPercentage" value="${(expenses && expenses.gst_pct) || 18}" placeholder="GST %">
+                  <span class="input-group-text bg-light fw-bold" id="lblEditGSTAmount" style="font-size:0.65rem; width: 60px;">₹0.00</span>
+                </div>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Other</span>
+                  <input type="number" step="0.01" class="form-control expense-calc-inline" id="editOtherCost" value="${(expenses && expenses.other) || 0}" placeholder="Other">
+                </div>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light fw-bold" style="font-size:0.65rem; width: 60px;">Total</span>
+                  <input type="number" step="0.01" class="form-control bg-light fw-bold" id="editVendorPrice" value="${r.VendorPrice || ''}" placeholder="Total Expense" readonly>
+                </div>
               </div>
             </div>
           </td>
@@ -2062,4 +2065,42 @@ async function saveCustomerModal() {
   } finally {
     UI.showLoading(false);
   }
+}
+
+function initResizableColumns() {
+  const table = document.getElementById('installmentsTable');
+  if (!table) return;
+  const cols = table.querySelectorAll('thead th');
+  cols.forEach(col => {
+    if (col.querySelector('.col-resizer')) return;
+
+    const resizer = document.createElement('div');
+    resizer.classList.add('col-resizer');
+    col.appendChild(resizer);
+
+    let startX = 0;
+    let startWidth = 0;
+
+    const onMouseMove = (e) => {
+      const w = startWidth + (e.clientX - startX);
+      col.style.width = w + 'px';
+      col.style.minWidth = w + 'px';
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      resizer.classList.remove('resizing');
+    };
+
+    resizer.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startX = e.clientX;
+      startWidth = col.offsetWidth;
+      resizer.classList.add('resizing');
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  });
 }
