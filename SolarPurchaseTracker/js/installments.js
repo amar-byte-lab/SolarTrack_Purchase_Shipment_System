@@ -1243,7 +1243,7 @@ window.saveInline = async function (slNo) {
   const currentUser = Auth.getUser();
   let creatorSuffix = '';
   if (existing && (existing.BrokerNumber || '').includes('|creator:')) {
-    creatorSuffix = '|creator:' + existing.BrokerNumber.split('|creator:')[1];
+    creatorSuffix = '|creator:' + existing.BrokerNumber.split('|creator:')[1].split('|')[0];
   }
   if (!creatorSuffix && currentUser) {
     creatorSuffix = '|creator:' + currentUser.userid;
@@ -1876,7 +1876,7 @@ async function saveCustomerModal() {
     const slNo = Number(slNoVal);
     const existing = DB.getAll('installments').find(x => Number(x.SlNo) === slNo);
     if (existing && (existing.BrokerNumber || '').includes('|creator:')) {
-      creatorSuffix = '|creator:' + existing.BrokerNumber.split('|creator:')[1];
+      creatorSuffix = '|creator:' + existing.BrokerNumber.split('|creator:')[1].split('|')[0];
     }
   }
   if (!creatorSuffix && currentUser) {
