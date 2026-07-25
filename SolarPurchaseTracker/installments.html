@@ -330,6 +330,14 @@
                 </div>
               </div>
               <div class="col-md">
+                <label class="form-label fw-bold">Filter Date Type</label>
+                <select class="form-select" id="fDateType">
+                  <option value="LoginDate" selected>Login Date</option>
+                  <option value="InstallationDate">Installation Date</option>
+                  <option value="CommissioningDate">Commissioning Date</option>
+                </select>
+              </div>
+              <div class="col-md">
                 <label class="form-label fw-bold">From Date</label>
                 <input type="date" class="form-control" id="fLoginFrom">
               </div>
@@ -373,8 +381,21 @@
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
                 <th>Partner</th>
                 <th>Total expense</th>
-                <th class="sortable" data-sort="LoginDate" id="thLoginDate">Login Date & Delay</th>
-                <th class="sortable" data-sort="InstallationDate" id="thInstallationDate">Inst. & Comm. Date</th>
+                <th id="thTimestamp" class="sortable position-relative" data-sort="LoginDate" style="min-width: 195px;">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <span class="fw-bold">Timestamp</span>
+                    <div class="dropdown no-print">
+                      <button class="btn btn-xs btn-outline-secondary dropdown-toggle py-0 px-1 border-0" type="button" id="btnSortTimestamp" data-bs-toggle="dropdown" onclick="event.stopPropagation();" style="font-size: 0.72rem; line-height: 1;">
+                        Sort: Login Date
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="btnSortTimestamp" style="font-size: 0.8rem; min-width: 150px;" onclick="event.stopPropagation();">
+                        <li><a class="dropdown-item active" href="#" data-col="LoginDate" onclick="changeTimestampSort('LoginDate', 'Login Date', event)">Login Date</a></li>
+                        <li><a class="dropdown-item" href="#" data-col="InstallationDate" onclick="changeTimestampSort('InstallationDate', 'Inst. Date', event)">Inst. Date</a></li>
+                        <li><a class="dropdown-item" href="#" data-col="CommissioningDate" onclick="changeTimestampSort('CommissioningDate', 'Comm. Date', event)">Comm. Date</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </th>
                 <th class="no-print">Actions</th>
               </tr>
             </thead>

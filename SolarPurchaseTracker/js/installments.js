@@ -23,9 +23,7 @@ const DISTRICTS = [
 const COLORABLE_COLS = [
   { key: 'col-Partner', label: 'Partner Details', default: '#ffffff' },
   { key: 'col-price', label: 'Total expense', default: '#ffffff' },
-  { key: 'col-login', label: 'Login Date', default: '#ffff00' },
-  { key: 'col-delay', label: 'Delay from Today', default: '#ffff00' },
-  { key: 'col-install', label: 'Installation Date', default: '#ffff00' },
+  { key: 'col-timestamp', label: 'Timestamp', default: '#ffffff' },
   { key: 'col-comm', label: 'Commission', default: '#ffff00' }
 ];
 
@@ -41,9 +39,12 @@ window.onDbReady = function () {
   if (btnSaveCust) btnSaveCust.addEventListener('click', saveCustomerModal);
 
   // Search & Filter listeners
-  ['fSearch', 'fLoginFrom', 'fLoginTo'].forEach(id => {
-    document.getElementById(id).addEventListener('input', Utils.debounce(renderList, 200));
-    document.getElementById(id).addEventListener('change', renderList);
+  ['fSearch', 'fLoginFrom', 'fLoginTo', 'fDateType'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', Utils.debounce(renderList, 200));
+      el.addEventListener('change', renderList);
+    }
   });
 
   // Table header sorting listeners
@@ -63,6 +64,8 @@ window.onDbReady = function () {
 
   document.getElementById('btnClearFilters').addEventListener('click', () => {
     ['fSearch', 'fLoginFrom', 'fLoginTo'].forEach(id => document.getElementById(id).value = '');
+    const dateTypeSel = document.getElementById('fDateType');
+    if (dateTypeSel) dateTypeSel.value = 'LoginDate';
     selectedDistricts = [];
     selectedBrands = [];
     document.querySelectorAll('.district-chk').forEach(c => c.checked = false);
@@ -382,6 +385,36 @@ function updateSortHeadersUI() {
   });
 }
 
+window.changeTimestampSort = function (col, label, event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  const th = document.getElementById('thTimestamp');
+  if (th) {
+    th.setAttribute('data-sort', col);
+  }
+  const btn = document.getElementById('btnSortTimestamp');
+  if (btn) {
+    btn.textContent = 'Sort: ' + label;
+  }
+  
+  // Highlight active dropdown item
+  document.querySelectorAll('#thTimestamp .dropdown-item').forEach(item => {
+    if (item.getAttribute('data-col') === col) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+
+  sortCol = col;
+  sortDir = 'asc';
+  updateSortHeadersUI();
+  renderList();
+};
+
 function populateDatalists() {
   // 1. District multiselect menu
   const districtMenu = document.getElementById('districtMultiselectMenu');
@@ -556,6 +589,30 @@ function calculateDelay(loginDateStr) {
   return diffDays + ' days';
 }
 
+function calculateInstDelay(loginDateStr, instDateStr) {
+  if (!loginDateStr || !instDateStr) return '';
+  const d1 = new Date(loginDateStr);
+  const d2 = new Date(instDateStr);
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return '';
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+  const diffTime = d2.getTime() - d1.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays + ' days';
+}
+
+function calculateCommDelay(commDateStr, instDateStr) {
+  if (!commDateStr || !instDateStr) return '';
+  const d1 = new Date(commDateStr);
+  const d2 = new Date(instDateStr);
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return '';
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+  const diffTime = d1.getTime() - d2.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays + ' days';
+}
+
 function getRawDelayDays(dateStr) {
   if (!dateStr) return -999999;
   const d = new Date(dateStr);
@@ -614,6 +671,7 @@ function renderList() {
   const search = (document.getElementById('fSearch').value || '').toLowerCase();
   const loginFrom = document.getElementById('fLoginFrom').value;
   const loginTo = document.getElementById('fLoginTo').value;
+  const dateType = document.getElementById('fDateType') ? document.getElementById('fDateType').value : 'LoginDate';
 
   let rows = getInstallmentRows();
 
@@ -624,7 +682,10 @@ function renderList() {
       String(r.District || '').toLowerCase().includes(search) ||
       String(r.Address || '').toLowerCase().includes(search) ||
       String(r.MobileNumber || '').toLowerCase().includes(search) ||
-      String(r.CommittedBrand || '').toLowerCase().includes(search)
+      String(r.CommittedBrand || '').toLowerCase().includes(search) ||
+      String(r.LoginDate || '').toLowerCase().includes(search) ||
+      String(r.InstallationDate || '').toLowerCase().includes(search) ||
+      String(r.CommissioningDate || '').toLowerCase().includes(search)
     );
   }
   // Apply multiselect District Filter
@@ -646,10 +707,10 @@ function renderList() {
 
   // Apply Date Range filters
   if (loginFrom) {
-    rows = rows.filter(r => r.LoginDate && r.LoginDate >= loginFrom);
+    rows = rows.filter(r => r[dateType] && r[dateType] >= loginFrom);
   }
   if (loginTo) {
-    rows = rows.filter(r => r.LoginDate && r.LoginDate <= loginTo);
+    rows = rows.filter(r => r[dateType] && r[dateType] <= loginTo);
   }
 
   // Apply sort
@@ -660,7 +721,7 @@ function renderList() {
     if (sortCol === 'Delay') {
       aVal = getRawDelayDays(a.LoginDate);
       bVal = getRawDelayDays(b.LoginDate);
-    } else if (sortCol === 'LoginDate' || sortCol === 'InstallationDate') {
+    } else if (sortCol === 'LoginDate' || sortCol === 'InstallationDate' || sortCol === 'CommissioningDate') {
       aVal = aVal ? new Date(aVal).getTime() : 0;
       bVal = bVal ? new Date(bVal).getTime() : 0;
     } else if (typeof aVal === 'string') {
@@ -703,19 +764,22 @@ function renderList() {
 
   const tbody = document.querySelector('#installmentsTable tbody');
   
+  const currentUser = Auth.getUser();
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '6' : '5'}" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
     const tfoot = document.querySelector('#installmentsTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="7" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="${isAdmin ? '5' : '4'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
         <tr class="grand-total" style="height:37px;">
           <td class="text-center">0</td>
           <td colspan="2">GRAND TOTAL</td>
-          <td colspan="5"></td>
+          <td colspan="${isAdmin ? '3' : '2'}"></td>
         </tr>
       `;
     }
@@ -838,16 +902,29 @@ function renderList() {
               </div>
             </div>
           </td>
-          <td class="col-login">
-            <div class="d-flex flex-column gap-1">
-              <input type="date" class="form-control form-control-sm" id="editLoginDate" value="${r.LoginDate ? new Date(r.LoginDate).toISOString().split('T')[0] : ''}">
-              <div class="text-center fw-medium text-muted" id="editDelay" style="font-size:0.72rem;">${delayStr}</div>
-            </div>
-          </td>
-          <td class="col-install">
-            <div class="d-flex flex-column gap-1">
-              <input type="date" class="form-control form-control-sm" id="editInstallationDate" value="${r.InstallationDate ? new Date(r.InstallationDate).toISOString().split('T')[0] : ''}" placeholder="Install Date">
-              <input type="date" class="form-control form-control-sm" id="editCommissioningDate" value="${r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().split('T')[0] : ''}" placeholder="Commission Date">
+          <td class="col-timestamp">
+            <div class="d-flex flex-column gap-2" style="min-width: 190px;">
+              <div class="d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-0.5">
+                  <span class="fs-8 text-secondary">Login Date</span>
+                  <span class="text-muted font-monospace fs-8" id="editLoginDelay" style="white-space: nowrap;">(${calculateDelay(r.LoginDate) || '—'})</span>
+                </div>
+                <input type="date" class="form-control form-control-sm" id="editLoginDate" value="${r.LoginDate ? new Date(r.LoginDate).toISOString().split('T')[0] : ''}">
+              </div>
+              <div class="d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-0.5">
+                  <span class="fs-8 text-secondary">Inst. Date</span>
+                  <span class="text-muted font-monospace fs-8" id="editInstDelay" style="white-space: nowrap;">(${calculateInstDelay(r.LoginDate, r.InstallationDate) || '—'})</span>
+                </div>
+                <input type="date" class="form-control form-control-sm" id="editInstallationDate" value="${r.InstallationDate ? new Date(r.InstallationDate).toISOString().split('T')[0] : ''}">
+              </div>
+              <div class="d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-0.5">
+                  <span class="fs-8 text-secondary">Comm. Date</span>
+                  <span class="text-muted font-monospace fs-8" id="editCommDelay" style="white-space: nowrap;">(${calculateCommDelay(r.CommissioningDate, r.InstallationDate) || '—'})</span>
+                </div>
+                <input type="date" class="form-control form-control-sm" id="editCommissioningDate" value="${r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().split('T')[0] : ''}">
+              </div>
             </div>
           </td>
           <td class="no-print text-center align-middle">
@@ -939,16 +1016,23 @@ function renderList() {
               })()}
             </div>
           </td>
-          <td class="col-login text-center">
-            <div class="d-flex flex-column align-items-center" style="font-size: 0.82rem; gap: 1px;">
-              <span>${fmtDateExcel(r.LoginDate)}</span>
-              <span class="text-muted fw-semibold" style="font-size: 0.72rem;">${delayStr}</span>
-            </div>
-          </td>
-          <td class="col-install text-center">
-            <div class="d-flex flex-column align-items-center" style="font-size: 0.82rem; gap: 1px;">
-              <span class="fw-semibold text-dark" title="Installation Date">${fmtDateExcel(r.InstallationDate) || '—'}</span>
-              <span class="text-muted" style="font-size: 0.72rem;" title="Commissioning Date">${fmtDateExcel(r.CommissioningDate) || '—'}</span>
+          <td class="col-timestamp text-center align-middle">
+            <div class="d-flex flex-column" style="font-size: 0.8rem; gap: 4px; min-width: 175px;">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-secondary" style="font-size: 0.72rem; font-weight: 500;">Login:</span>
+                <span class="fw-semibold text-dark font-monospace">${fmtDateExcel(r.LoginDate) || '—'}</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">(${calculateDelay(r.LoginDate) || '—'})</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-secondary" style="font-size: 0.72rem; font-weight: 500;">Inst:</span>
+                <span class="fw-semibold text-dark font-monospace">${fmtDateExcel(r.InstallationDate) || '—'}</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">(${calculateInstDelay(r.LoginDate, r.InstallationDate) || '—'})</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-secondary" style="font-size: 0.72rem; font-weight: 500;">Comm:</span>
+                <span class="fw-semibold text-dark font-monospace">${fmtDateExcel(r.CommissioningDate) || '—'}</span>
+                <span class="text-muted font-monospace" style="font-size: 0.7rem;">(${calculateCommDelay(r.CommissioningDate, r.InstallationDate) || '—'})</span>
+              </div>
             </div>
           </td>
           <td class="no-print text-center">
@@ -977,7 +1061,7 @@ function renderList() {
       tfootHTML += `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="6" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="${isAdmin ? '5' : '4'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
       `;
     }
@@ -999,7 +1083,7 @@ function renderList() {
             <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-danger fs-8">(-${fmtGrandTotal(sumVendorPaid)})</span></div>
           </div>
         </td>
-        <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
+        <td class="text-end fw-bold font-monospace align-middle admin-only-column" style="font-size:0.72rem;">
           <div class="d-flex justify-content-between align-items-center w-100 px-1">
             <span>${fmtGrandTotal(sumVendorPrice)}</span>
             ${(() => {
@@ -1009,7 +1093,6 @@ function renderList() {
             })()}
           </div>
         </td>
-        <td></td>
         <td></td>
         <td class="no-print"></td>
       </tr>
@@ -1040,12 +1123,31 @@ function renderList() {
 function bindEditRowListeners() {
   if (editingSlNo === null) return;
 
-  const dateInput = document.getElementById('editLoginDate');
-  if (dateInput) {
-    dateInput.addEventListener('change', () => {
-      document.getElementById('editDelay').textContent = calculateDelay(dateInput.value);
-    });
-  }
+  const editLoginInput = document.getElementById('editLoginDate');
+  const editInstInput = document.getElementById('editInstallationDate');
+  const editCommInput = document.getElementById('editCommissioningDate');
+
+  const updateDelayLabels = () => {
+    const loginVal = editLoginInput ? editLoginInput.value : '';
+    const instVal = editInstInput ? editInstInput.value : '';
+    const commVal = editCommInput ? editCommInput.value : '';
+    
+    const loginDelayEl = document.getElementById('editLoginDelay');
+    if (loginDelayEl) loginDelayEl.textContent = `(${calculateDelay(loginVal) || '—'})`;
+
+    const instDelayEl = document.getElementById('editInstDelay');
+    if (instDelayEl) instDelayEl.textContent = `(${calculateInstDelay(loginVal, instVal) || '—'})`;
+
+    const commDelayEl = document.getElementById('editCommDelay');
+    if (commDelayEl) commDelayEl.textContent = `(${calculateCommDelay(commVal, instVal) || '—'})`;
+  };
+
+  [editLoginInput, editInstInput, editCommInput].forEach(inp => {
+    if (inp) {
+      inp.addEventListener('change', updateDelayLabels);
+      inp.addEventListener('input', updateDelayLabels);
+    }
+  });
 
   const currentUser = Auth.getUser();
   const isPartner = (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associates'));
