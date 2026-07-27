@@ -293,8 +293,8 @@ function renderGrid() {
           : `<span style="font-size:.68rem;color:#6b7885;margin-left:6px;">[Closed]</span>${outBadge}`
         }
       </td>
-      <td class="bw-col-mobile" style="color:#46586b;">${esc(b.Mobile || '—')}</td>
-      <td class="bw-col-address" style="color:#46586b;max-width:200px;overflow:hidden;text-overflow:ellipsis;"
+      <td class="bw-col-mobile" style="display:none;color:#46586b;">${esc(b.Mobile || '—')}</td>
+      <td class="bw-col-address" style="display:none;color:#46586b;max-width:200px;overflow:hidden;text-overflow:ellipsis;"
           title="${esc(b.Address || '')}">${esc(b.Address || '—')}</td>
       <td style="text-align:center;white-space:nowrap;">
         ${isActive
