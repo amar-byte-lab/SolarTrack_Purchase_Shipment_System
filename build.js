@@ -6,7 +6,7 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 const SRC_DIR = path.join(__dirname, 'SolarPurchaseTracker');
 const DIST_DIR = path.join(__dirname, 'dist');
 
-// Helper to copy directory recursively
+// Helper to copy directory recursively (excluding source map files)
 function copyDirSync(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
   const entries = fs.readdirSync(src, { withFileTypes: true });
@@ -14,6 +14,11 @@ function copyDirSync(src, dest) {
   for (const entry of entries) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
+
+    if (entry.name.endsWith('.map')) {
+      console.log(`🚫 Excluding source map file from build: ${entry.name}`);
+      continue;
+    }
 
     if (entry.isDirectory()) {
       copyDirSync(srcPath, destPath);
@@ -51,17 +56,18 @@ async function build() {
     try {
       const code = fs.readFileSync(filePath, 'utf8');
 
-      // 1. Minify using Terser
+      // 1. Minify using Terser (with sourceMap: false)
       const minified = await minify(code, {
         mangle: true,
         compress: true,
+        sourceMap: false,
       });
 
       if (minified.error) {
         throw minified.error;
       }
 
-      // 2. Obfuscate using javascript-obfuscator
+      // 2. Obfuscate using javascript-obfuscator (with sourceMap: false)
       const obfuscationResult = JavaScriptObfuscator.obfuscate(minified.code, {
         compact: true,
         controlFlowFlattening: false, // Keep false to prevent significant performance overhead
@@ -76,7 +82,8 @@ async function build() {
         splitStrings: false,
         stringArray: true,
         stringArrayThreshold: 0.75,
-        unicodeEscapeSequence: false
+        unicodeEscapeSequence: false,
+        sourceMap: false // Explicitly disable source maps
       });
 
       const finalCode = obfuscationResult.getObfuscatedCode();
