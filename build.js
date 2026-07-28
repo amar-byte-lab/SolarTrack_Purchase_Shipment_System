@@ -67,26 +67,31 @@ async function build() {
         throw minified.error;
       }
 
-      // 2. Obfuscate using javascript-obfuscator (with sourceMap: false)
-      const obfuscationResult = JavaScriptObfuscator.obfuscate(minified.code, {
-        compact: true,
-        controlFlowFlattening: false, // Keep false to prevent significant performance overhead
-        deadCodeInjection: false,
-        debugProtection: false,
-        disableConsoleOutput: false,
-        identifierNamesGenerator: 'hexadecimal',
-        numbersToExpressions: false,
-        renameGlobals: false,
-        selfDefending: false,
-        simplify: true,
-        splitStrings: false,
-        stringArray: true,
-        stringArrayThreshold: 0.75,
-        unicodeEscapeSequence: false,
-        sourceMap: false // Explicitly disable source maps
-      });
+      // 2. Obfuscate using javascript-obfuscator
+      let finalCode = minified.code;
+      try {
+        const obfuscationResult = JavaScriptObfuscator.obfuscate(minified.code, {
+          compact: true,
+          controlFlowFlattening: false, // Keep false to prevent significant performance overhead
+          deadCodeInjection: false,
+          debugProtection: false,
+          disableConsoleOutput: false,
+          identifierNamesGenerator: 'hexadecimal',
+          numbersToExpressions: false,
+          renameGlobals: false,
+          selfDefending: false,
+          simplify: true,
+          splitStrings: false,
+          stringArray: true,
+          stringArrayThreshold: 0.75,
+          unicodeEscapeSequence: false,
+          sourceMap: false // Explicitly disable source maps
+        });
 
-      const finalCode = obfuscationResult.getObfuscatedCode();
+        finalCode = obfuscationResult.getObfuscatedCode();
+      } catch (obfuscateErr) {
+        console.warn(`⚠️ Obfuscation failed for js/${file} (falling back to Terser minification only): ${obfuscateErr.message}`);
+      }
 
       // 3. Write back to file
       fs.writeFileSync(filePath, finalCode, 'utf8');

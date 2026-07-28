@@ -25,7 +25,7 @@
     "nodemailer": "^9.0.3"
   },
   "devDependencies": {
-    "javascript-obfuscator": "^5.5.0",
+    "javascript-obfuscator": "^0.14.3",
     "terser": "^5.49.0"
   }
 }

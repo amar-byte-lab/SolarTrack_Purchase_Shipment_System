@@ -12,3 +12,6 @@ uploads/
 # OS & Logs
 .DS_Store
 *.log
+
+# Production build files
+dist/

@@ -8,9 +8,11 @@ const { exec } = require('child_process');
 const db = require('./db');
 
 const PORT = process.env.PORT || 3000;
-const PUBLIC_DIR = process.env.NODE_ENV === 'production'
-  ? path.join(__dirname, 'dist')
-  : path.join(__dirname, 'SolarPurchaseTracker');
+const distPath = path.join(__dirname, 'dist');
+const devPath = path.join(__dirname, 'SolarPurchaseTracker');
+const PUBLIC_DIR = (process.env.NODE_ENV === 'production' && fs.existsSync(distPath))
+  ? distPath
+  : devPath;
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
