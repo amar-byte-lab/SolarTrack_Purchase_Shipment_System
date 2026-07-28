@@ -312,6 +312,25 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
+  
+  /* Table resizer handles */
+  #editMaterialsTable th {
+    position: relative;
+  }
+  .resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 6px;
+    background: transparent;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 10;
+  }
+  .resizer:hover, .resizer.resizing {
+    background: var(--st-blue-500, #3498db);
+  }
 </style>
 <style id="shipDynamicStyles"></style>
 </head>
@@ -566,8 +585,9 @@
                     <th style="width:70px;">Unit</th>
                     <th style="width:90px;">Rate/Unit</th>
                     <th style="width:70px;">GST %</th>
-                    <th style="width:110px;">Rate/Unit with GST</th>
+                    <th style="width:110px;">Rate/Unit+GST</th>
                     <th style="width:110px;">Total Price</th>
+                    <th style="width:110px;">MSP</th>
                     <th style="width:30px;"></th>
                   </tr>
                 </thead>

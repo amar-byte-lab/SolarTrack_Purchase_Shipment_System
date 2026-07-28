@@ -118,7 +118,8 @@ CREATE TABLE IF NOT EXISTS materials (
   "Unit" TEXT,
   "PurchaseRate" NUMERIC,
   "TotalPurchaseValue" NUMERIC,
-  "GSTPercentage" NUMERIC
+  "GSTPercentage" NUMERIC,
+  "MinSellingPrice" NUMERIC
 );
 
 CREATE TABLE IF NOT EXISTS borrowers (

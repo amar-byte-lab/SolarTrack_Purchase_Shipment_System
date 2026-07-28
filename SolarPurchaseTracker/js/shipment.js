@@ -366,11 +366,32 @@ function renderList() {
             ${notesButton}
           </div>
         </td>
-        <td class="col-qty" style="font-size:0.82rem; white-space:normal; min-width:180px;">
+        <td class="col-qty" style="font-size:0.82rem; white-space:normal; min-width:280px;">
           ${r.lines.map(l => {
             const unitSuffix = l.Unit ? ' ' + l.Unit.trim() : '';
-            return `<strong>${l.ItemName}</strong> (${l.Quantity}${unitSuffix})`;
-          }).join(', ') || '<span class="text-muted">—</span>'}
+
+            let mspHTML = '';
+              const mspVal = (l.MinSellingPrice !== undefined && l.MinSellingPrice !== null) ? UI.money(l.MinSellingPrice) : null;
+              if (mspVal) {
+                mspHTML = `
+                  <div class="mt-1">
+                    <span style="font-size:0.7rem; font-weight:600; color: #198754; background: #e8f5e9; padding: 2px 6px; border-radius: 4px; display: inline-block;">
+                      Min Selling: ${mspVal}
+                    </span>
+                  </div>
+                `;
+              } else {
+                mspHTML = `
+                  <div class="mt-1">
+                    <span style="font-size:0.7rem; color: #8592a0; border: 1px dashed #dee2e6; padding: 1px 5px; border-radius: 4px; display: inline-block;">
+                      Min Selling: —
+                    </span>
+                  </div>
+                `;
+              }
+
+            return `<div class="mb-2"><strong>${l.ItemName}</strong> (${l.Quantity}${unitSuffix})${mspHTML}</div>`;
+          }).join('') || '<span class="text-muted">—</span>'}
         </td>
         <td class="col-total text-end fw-bold font-monospace">
           <div class="d-flex flex-column align-items-end" style="gap:2px;">
@@ -485,7 +506,8 @@ function createMaterialRow(data, defaultGstPercent = 18) {
   const rate = data ? (Number(data.PurchaseRate)        || 0) : 0;
   const gst  = data ? (data.GSTPercentage !== undefined && data.GSTPercentage !== null ? Number(data.GSTPercentage) : defaultGstPercent) : defaultGstPercent;
   const rateWithGst = rate * (1 + gst / 100);
-  const tot  = data ? (Number(data.TotalPurchaseValue)  || (qty * rate)) : 0;
+  const tot  = data ? (Number(data.TotalPurchaseValue)  || (qty * rate * (1 + gst / 100))) : 0;
+  const msp  = data ? (data.MinSellingPrice !== undefined && data.MinSellingPrice !== null ? Number(data.MinSellingPrice) : '') : '';
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
@@ -497,6 +519,7 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     <td><input type="number" class="form-control form-control-sm mat-gst border-0 p-0 text-end" min="0" max="100" step="any" value="${gst}"></td>
     <td><input type="number" class="form-control form-control-sm mat-rate-with-gst border-0 p-0 text-end" min="0" step="any" value="${rateWithGst ? (Math.round(rateWithGst * 100) / 100) : ''}"></td>
     <td><input type="number" class="form-control form-control-sm mat-total border-0 p-0 text-end fw-semibold" min="0" step="any" value="${tot  || ''}" placeholder="Total"></td>
+    <td><input type="number" class="form-control form-control-sm mat-msp border-0 p-0 text-end" min="0" step="any" value="${msp}" placeholder="Optional"></td>
     <td class="text-center"><span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeMaterialRowInline(this)">✕</span></td>
   `;
   
@@ -633,6 +656,8 @@ function readMaterialsFromInlineForm() {
     const rate  = Number(row.querySelector('.mat-rate').value)  || 0;
     const gst   = Number(row.querySelector('.mat-gst').value)   || 0;
     const total = Number(row.querySelector('.mat-total').value) || 0;
+    const mspRaw = row.querySelector('.mat-msp').value.trim();
+    const msp   = mspRaw === '' ? null : Number(mspRaw);
     return {
       ItemName:          row.querySelector('.mat-name').value.trim(),
       Category:          row.querySelector('.mat-category').value.trim(),
@@ -640,15 +665,59 @@ function readMaterialsFromInlineForm() {
       Unit:              row.querySelector('.mat-unit').value.trim(),
       PurchaseRate:      rate,
       GSTPercentage:     gst,
-      TotalPurchaseValue: total || (qty * rate),
+      TotalPurchaseValue: total,
+      MinSellingPrice:   msp
     };
   }).filter(m => m.ItemName);
+}
+
+function makeTableResizable(table) {
+  if (!table) return;
+  const cols = table.querySelectorAll('thead th');
+  cols.forEach(col => {
+    if (col.querySelector('.resizer')) return;
+
+    const resizer = document.createElement('div');
+    resizer.className = 'resizer';
+    col.appendChild(resizer);
+
+    let x = 0;
+    let w = 0;
+
+    const mouseMoveHandler = function (e) {
+      const dx = e.clientX - x;
+      const newWidth = Math.max(30, w + dx);
+      col.style.width = `${newWidth}px`;
+      col.style.minWidth = `${newWidth}px`;
+      col.style.maxWidth = `${newWidth}px`;
+    };
+
+    const mouseUpHandler = function () {
+      document.removeEventListener('mousemove', mouseMoveHandler);
+      document.removeEventListener('mouseup', mouseUpHandler);
+      resizer.classList.remove('resizing');
+    };
+
+    resizer.addEventListener('mousedown', function (e) {
+      x = e.clientX;
+      const styles = window.getComputedStyle(col);
+      w = parseInt(styles.width, 10);
+
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+      resizer.classList.add('resizing');
+      e.preventDefault();
+    });
+  });
 }
 
 let modalListenersConfigured = false;
 function setupModalListenersOnce() {
   if (modalListenersConfigured) return;
   modalListenersConfigured = true;
+  
+  // Make materials table columns resizable
+  makeTableResizable(document.getElementById('editMaterialsTable'));
   
   // File input listener
   const fileInput = document.getElementById('editUploadedDocs');
@@ -865,17 +934,20 @@ window.saveInline = async function(shipmentNo) {
 
     // Replace all material rows for this shipment
     const allMaterials = DB.getAll('materials').filter(m => m.ShipmentNo !== shipmentNo);
-    const newRows = materials.map(m => ({
-      RowID: Utils.uid('MAT'),
-      ShipmentNo: shipmentNo,
-      ItemName: m.ItemName,
-      Category: m.Category,
-      Quantity: m.Quantity,
-      Unit: m.Unit,
-      PurchaseRate: m.PurchaseRate,
-      TotalPurchaseValue: m.TotalPurchaseValue || Calc.round2(m.Quantity * m.PurchaseRate * (1 + (m.GSTPercentage || 0) / 100)),
-      GSTPercentage: m.GSTPercentage,
-    }));
+    const newRows = materials.map(m => {
+      return {
+        RowID: Utils.uid('MAT'),
+        ShipmentNo: shipmentNo,
+        ItemName: m.ItemName,
+        Category: m.Category,
+        Quantity: m.Quantity,
+        Unit: m.Unit,
+        PurchaseRate: m.PurchaseRate,
+        TotalPurchaseValue: m.TotalPurchaseValue || Calc.round2(m.Quantity * m.PurchaseRate * (1 + (m.GSTPercentage || 0) / 100)),
+        GSTPercentage: m.GSTPercentage,
+        MinSellingPrice: m.MinSellingPrice,
+      };
+    });
     await DB.replaceAll('materials', [...allMaterials, ...newRows]);
 
     // Auto-add any new vendor/items to their masters
