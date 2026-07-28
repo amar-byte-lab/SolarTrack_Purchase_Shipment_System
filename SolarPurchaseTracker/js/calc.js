@@ -30,25 +30,46 @@ const Calc = (() => {
    * @returns {Object} full breakdown
    */
   function computeShipment(materials, transportationCost, gstPercent) {
-    const withValue = materials.map(m => ({
-      ...m,
-      Quantity: Number(m.Quantity) || 0,
-      PurchaseRate: Number(m.PurchaseRate) || 0,
-      // Use user-entered TotalPurchaseValue if provided, else compute from Qty × Rate
-      PurchaseValue: (Number(m.TotalPurchaseValue) > 0)
+    const withValue = materials.map(m => {
+      const qty = Number(m.Quantity) || 0;
+      const rate = Number(m.PurchaseRate) || 0;
+
+      // Fallback to global/passed GST % if individual material has no GSTPercentage
+      const itemGstPct = (m.GSTPercentage !== undefined && m.GSTPercentage !== null)
+        ? Number(m.GSTPercentage)
+        : (Number(gstPercent) || 0);
+
+      // m.TotalPurchaseValue in DB / form is inclusive of GST.
+      // If it is not present or 0, calculate it as Qty * Rate * (1 + GST% / 100)
+      const totalInclusive = (Number(m.TotalPurchaseValue) > 0)
         ? round2(Number(m.TotalPurchaseValue))
-        : round2((Number(m.Quantity) || 0) * (Number(m.PurchaseRate) || 0)),
-    }));
+        : round2(qty * rate * (1 + itemGstPct / 100));
+
+      // Calculate base purchase value without GST
+      const purchaseValue = round2(totalInclusive / (1 + itemGstPct / 100));
+      const itemGstAmount = round2(totalInclusive - purchaseValue);
+
+      return {
+        ...m,
+        Quantity: qty,
+        PurchaseRate: rate,
+        GSTPercentage: itemGstPct,
+        PurchaseValue: purchaseValue,
+        TotalPurchaseValue: totalInclusive,
+        ItemGstAmount: itemGstAmount
+      };
+    });
 
     const purchaseTotal = round2(withValue.reduce((s, m) => s + m.PurchaseValue, 0));
-    const gstAmount = round2(purchaseTotal * (Number(gstPercent) || 0) / 100);
+    const gstAmount = round2(withValue.reduce((s, m) => s + m.ItemGstAmount, 0));
     const transport = Number(transportationCost) || 0;
     const grandTotal = round2(purchaseTotal + gstAmount + transport);
 
     const lines = withValue.map(m => {
       const shareRatio = purchaseTotal > 0 ? (m.PurchaseValue / purchaseTotal) : 0;
       const transportShare = round2(shareRatio * transport);
-      const gstShare = round2(shareRatio * gstAmount);
+      // Individual GST amount is exactly the item's GST amount
+      const gstShare = m.ItemGstAmount;
       const finalCost = round2(m.PurchaseValue + transportShare + gstShare);
       const costPerUnit = m.Quantity > 0 ? round2(finalCost / m.Quantity) : 0;
       return {
@@ -60,10 +81,13 @@ const Calc = (() => {
       };
     });
 
+    const effectiveGstPercent = purchaseTotal > 0 ? round2((gstAmount / purchaseTotal) * 100) : 0;
+
     return {
       lines,
       purchaseTotal,
       gstAmount,
+      GSTPercentage: effectiveGstPercent,
       transport,
       grandTotal,
       totalQuantity: withValue.reduce((s, m) => s + m.Quantity, 0),

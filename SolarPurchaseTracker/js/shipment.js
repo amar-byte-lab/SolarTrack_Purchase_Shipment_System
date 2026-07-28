@@ -292,7 +292,7 @@ function renderList() {
     const isDeleted = r.Status === 'Deleted' || r.IsDeleted === '1' || r.IsDeleted === true;
     const shipmentType = r.ShipmentType || 'Buy';
     
-    const vendorDue = r.purchaseTotal + r.gstAmount;
+    const vendorDue = r.purchaseTotal;
     const vendorPaid = Number(r.VendorPaid) || 0;
     const transportCost = r.transport;
     const transportPaid = Number(r.TransportPaid) || 0;
@@ -477,12 +477,14 @@ function toDateInputValue(d) {
   return dt.toISOString().slice(0, 10);
 }
 
-function createMaterialRow(data) {
+function createMaterialRow(data, defaultGstPercent = 18) {
   const tbody = document.getElementById('editMaterialsTbody');
   if (!tbody) return;
   
   const qty  = data ? (Number(data.Quantity)           || 0) : 0;
   const rate = data ? (Number(data.PurchaseRate)        || 0) : 0;
+  const gst  = data ? (data.GSTPercentage !== undefined && data.GSTPercentage !== null ? Number(data.GSTPercentage) : defaultGstPercent) : defaultGstPercent;
+  const rateWithGst = rate * (1 + gst / 100);
   const tot  = data ? (Number(data.TotalPurchaseValue)  || (qty * rate)) : 0;
 
   const tr = document.createElement('tr');
@@ -492,6 +494,8 @@ function createMaterialRow(data) {
     <td><input type="number" class="form-control form-control-sm mat-qty  border-0 p-0 text-end" min="0" step="any" value="${qty  || ''}"></td>
     <td><input type="text"   class="form-control form-control-sm mat-unit border-0 p-0 text-center" value="${data ? (data.Unit || '') : ''}" placeholder="Unit"></td>
     <td><input type="number" class="form-control form-control-sm mat-rate border-0 p-0 text-end" min="0" step="any" value="${rate || ''}"></td>
+    <td><input type="number" class="form-control form-control-sm mat-gst border-0 p-0 text-end" min="0" max="100" step="any" value="${gst}"></td>
+    <td><input type="number" class="form-control form-control-sm mat-rate-with-gst border-0 p-0 text-end" min="0" step="any" value="${rateWithGst ? (Math.round(rateWithGst * 100) / 100) : ''}"></td>
     <td><input type="number" class="form-control form-control-sm mat-total border-0 p-0 text-end fw-semibold" min="0" step="any" value="${tot  || ''}" placeholder="Total"></td>
     <td class="text-center"><span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeMaterialRowInline(this)">✕</span></td>
   `;
@@ -500,26 +504,96 @@ function createMaterialRow(data) {
   
   const qtyEl   = tr.querySelector('.mat-qty');
   const rateEl  = tr.querySelector('.mat-rate');
+  const gstEl   = tr.querySelector('.mat-gst');
+  const rateWithGstEl = tr.querySelector('.mat-rate-with-gst');
   const totalEl = tr.querySelector('.mat-total');
+  const nameEl  = tr.querySelector('.mat-name');
+  const catEl   = tr.querySelector('.mat-category');
+  const unitEl  = tr.querySelector('.mat-unit');
 
-  // Rate or Qty changed → recompute Total
-  function syncTotal() {
-    const q = Number(qtyEl.value)  || 0;
+  function round2(n) {
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+  }
+
+  function onQtyOrRateInput() {
+    const q = Number(qtyEl.value) || 0;
     const r = Number(rateEl.value) || 0;
-    if (q > 0 || r > 0) totalEl.value = q && r ? (Math.round(q * r * 100) / 100) || '' : '';
-    recalcInlineForm();
-  }
-  // Total changed → back-calculate Rate
-  function syncRate() {
-    const q = Number(qtyEl.value)   || 0;
-    const t = Number(totalEl.value) || 0;
-    if (q > 0 && t > 0) rateEl.value = Math.round(t / q * 100) / 100;
+    const g = Number(gstEl.value) || 0;
+
+    const rg = r * (1 + g / 100);
+    rateWithGstEl.value = r > 0 ? round2(rg) : '';
+    totalEl.value = (q > 0 && r > 0) ? round2(q * rg) : '';
+
     recalcInlineForm();
   }
 
-  qtyEl.addEventListener('input',   syncTotal);
-  rateEl.addEventListener('input',  syncTotal);
-  totalEl.addEventListener('input', syncRate);
+  function onGstInput() {
+    const q = Number(qtyEl.value) || 0;
+    const g = Number(gstEl.value) || 0;
+
+    const rg = Number(rateWithGstEl.value) || 0;
+    if (rg > 0) {
+      const r = rg / (1 + g / 100);
+      rateEl.value = round2(r);
+    } else {
+      const r = Number(rateEl.value) || 0;
+      if (r > 0) {
+        const computedRg = r * (1 + g / 100);
+        rateWithGstEl.value = round2(computedRg);
+        totalEl.value = q > 0 ? round2(q * computedRg) : '';
+      }
+    }
+
+    recalcInlineForm();
+  }
+
+  function onRateWithGstInput() {
+    const rg = Number(rateWithGstEl.value) || 0;
+    const g = Number(gstEl.value) || 0;
+    const q = Number(qtyEl.value) || 0;
+
+    const r = rg / (1 + g / 100);
+    rateEl.value = rg > 0 ? round2(r) : '';
+    totalEl.value = (q > 0 && rg > 0) ? round2(q * rg) : '';
+
+    recalcInlineForm();
+  }
+
+  function onTotalInput() {
+    const q = Number(qtyEl.value) || 0;
+    const t = Number(totalEl.value) || 0;
+    const g = Number(gstEl.value) || 0;
+
+    if (q > 0 && t > 0) {
+      const rg = t / q;
+      rateWithGstEl.value = round2(rg);
+      const r = rg / (1 + g / 100);
+      rateEl.value = round2(r);
+    }
+
+    recalcInlineForm();
+  }
+
+  qtyEl.addEventListener('input', onQtyOrRateInput);
+  rateEl.addEventListener('input', onQtyOrRateInput);
+  gstEl.addEventListener('input', onGstInput);
+  rateWithGstEl.addEventListener('input', onRateWithGstInput);
+  totalEl.addEventListener('input', onTotalInput);
+
+  nameEl.addEventListener('input', () => {
+    const val = nameEl.value.trim();
+    if (!val) return;
+    const items = DB.getAll('items');
+    const matched = items.find(i => i.ItemName.toLowerCase() === val.toLowerCase());
+    if (matched) {
+      if (matched.Category) catEl.value = matched.Category;
+      if (matched.Unit) unitEl.value = matched.Unit;
+      if (matched.GSTPercent !== undefined && matched.GSTPercent !== null && matched.GSTPercent !== '') {
+        gstEl.value = matched.GSTPercent;
+      }
+      onGstInput();
+    }
+  });
 
   recalcInlineForm();
 }
@@ -531,17 +605,14 @@ window.removeMaterialRowInline = function(btn) {
 };
 
 window.addMaterialRowInline = function() {
-  createMaterialRow();
+  createMaterialRow(null, 18);
 };
 
 function recalcInlineForm() {
   const materials = readMaterialsFromInlineForm();
   const transportCost = Number(document.getElementById('editTransportationCost').value) || 0;
   
-  const includeGST = document.getElementById('editIncludeGST') && document.getElementById('editIncludeGST').checked;
-  const gstPct = includeGST ? (Number(document.getElementById('editGSTPercentage').value) || 0) : 0;
-  
-  const result = Calc.computeShipment(materials, transportCost, gstPct);
+  const result = Calc.computeShipment(materials, transportCost, 0);
   
   // Set modal summary labels
   const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
@@ -560,6 +631,7 @@ function readMaterialsFromInlineForm() {
   return Array.from(rows).map(row => {
     const qty   = Number(row.querySelector('.mat-qty').value)   || 0;
     const rate  = Number(row.querySelector('.mat-rate').value)  || 0;
+    const gst   = Number(row.querySelector('.mat-gst').value)   || 0;
     const total = Number(row.querySelector('.mat-total').value) || 0;
     return {
       ItemName:          row.querySelector('.mat-name').value.trim(),
@@ -567,6 +639,7 @@ function readMaterialsFromInlineForm() {
       Quantity:          qty,
       Unit:              row.querySelector('.mat-unit').value.trim(),
       PurchaseRate:      rate,
+      GSTPercentage:     gst,
       TotalPurchaseValue: total || (qty * rate),
     };
   }).filter(m => m.ItemName);
@@ -596,16 +669,6 @@ function setupModalListenersOnce() {
       recalcInlineForm();
     }
   });
-
-  // Toggle GST listener
-  const includeGST = document.getElementById('editIncludeGST');
-  const gstInput = document.getElementById('editGSTPercentage');
-  if (includeGST && gstInput) {
-    includeGST.addEventListener('change', () => {
-      gstInput.disabled = !includeGST.checked;
-      recalcInlineForm();
-    });
-  }
 
   // Toggle Shipment Type label update
   const shipTypeSelect = document.getElementById('editShipmentType');
@@ -648,14 +711,6 @@ window.addInlineRow = function() {
   document.getElementById('editVehicleNumber').value = '';
   document.getElementById('editInvoiceNumber').value = '';
   
-  const includeGST = document.getElementById('editIncludeGST');
-  const gstInput = document.getElementById('editGSTPercentage');
-  if (includeGST && gstInput) {
-    includeGST.checked = true;
-    gstInput.value = 18;
-    gstInput.disabled = false;
-  }
-  
   document.getElementById('editVendorPaid').value = 0;
   document.getElementById('editTransportationCost').value = 0;
   document.getElementById('editTransportPaid').value = 0;
@@ -667,7 +722,7 @@ window.addInlineRow = function() {
   const matTbody = document.getElementById('editMaterialsTbody');
   if (matTbody) {
     matTbody.innerHTML = '';
-    createMaterialRow();
+    createMaterialRow(null, 18);
   }
   
   recalcInlineForm();
@@ -697,14 +752,6 @@ window.editRow = function(shipmentNo) {
   document.getElementById('editVehicleNumber').value = s.VehicleNumber || '';
   document.getElementById('editInvoiceNumber').value = s.InvoiceNumber || '';
   
-  const includeGST = document.getElementById('editIncludeGST');
-  const gstInput = document.getElementById('editGSTPercentage');
-  if (includeGST && gstInput) {
-    includeGST.checked = s.GSTPercentage > 0;
-    gstInput.value = s.GSTPercentage || 18;
-    gstInput.disabled = !includeGST.checked;
-  }
-  
   document.getElementById('editVendorPaid').value = s.VendorPaid || 0;
   document.getElementById('editTransportationCost').value = s.TransportationCost || 0;
   document.getElementById('editTransportPaid').value = s.TransportPaid || 0;
@@ -718,9 +765,9 @@ window.editRow = function(shipmentNo) {
   if (matTbody) {
     matTbody.innerHTML = '';
     if (editMats.length) {
-      editMats.forEach(m => createMaterialRow(m));
+      editMats.forEach(m => createMaterialRow(m, s.GSTPercentage || 18));
     } else {
-      createMaterialRow();
+      createMaterialRow(null, s.GSTPercentage || 18);
     }
   }
   
@@ -750,10 +797,6 @@ window.saveInline = async function(shipmentNo) {
   const shipmentType = document.getElementById('editShipmentType').value;
   
   const transportationCost = document.getElementById('editTransportationCost').value;
-  
-  const includeGST = document.getElementById('editIncludeGST') && document.getElementById('editIncludeGST').checked;
-  const gstPercentage = includeGST ? (Number(document.getElementById('editGSTPercentage').value) || 0) : 0;
-  
   const vendorPaid = document.getElementById('editVendorPaid').value;
   const transportPaid = document.getElementById('editTransportPaid').value;
   
@@ -767,9 +810,6 @@ window.saveInline = async function(shipmentNo) {
     [Validate.required, purchaseDate, 'Purchase Date'],
     [Validate.required, vendorName, 'Vendor Name'],
   ];
-  if (includeGST) {
-    rules.push([Validate.percent, gstPercentage, 'GST %']);
-  }
 
   const errors = Validate.run(rules);
   if (!materials.length) errors.push('Add at least one item with a name.');
@@ -777,12 +817,18 @@ window.saveInline = async function(shipmentNo) {
     if (!(Number(m.Quantity) > 0)) errors.push(`Item #${i + 1}: Quantity must be greater than 0.`);
     const hasPrice = (Number(m.TotalPurchaseValue) > 0) || (Number(m.PurchaseRate) >= 0);
     if (!hasPrice) errors.push(`Item #${i + 1}: Enter a Rate or Total Price.`);
+    if (m.GSTPercentage < 0 || m.GSTPercentage > 100) errors.push(`Item #${i + 1}: GST % must be between 0 and 100.`);
   });
 
   if (errors.length) {
     UI.toast(errors[0], 'danger');
     return;
   }
+
+  // Compute effective/average GST percentage for the shipment record
+  const subtotal = materials.reduce((sum, m) => sum + (Number(m.Quantity) * Number(m.PurchaseRate)), 0);
+  const gstTotal = materials.reduce((sum, m) => sum + ((Number(m.Quantity) * Number(m.PurchaseRate)) * (Number(m.GSTPercentage) || 0) / 100), 0);
+  const effectiveGstPct = subtotal > 0 ? Calc.round2((gstTotal / subtotal) * 100) : 0;
 
   UI.showLoading(true);
   try {
@@ -803,7 +849,7 @@ window.saveInline = async function(shipmentNo) {
       VehicleNumber: vehicleNumber,
       InvoiceNumber: invoiceNumber,
       TransportationCost: Number(transportationCost),
-      GSTPercentage: Number(gstPercentage),
+      GSTPercentage: Number(effectiveGstPct),
       VendorPaid: Number(vendorPaid),
       TransportPaid: Number(transportPaid),
       Documents: docNames,
@@ -827,8 +873,8 @@ window.saveInline = async function(shipmentNo) {
       Quantity: m.Quantity,
       Unit: m.Unit,
       PurchaseRate: m.PurchaseRate,
-      // Store user-entered total; fallback to Qty × Rate
-      TotalPurchaseValue: m.TotalPurchaseValue || Calc.round2(m.Quantity * m.PurchaseRate),
+      TotalPurchaseValue: m.TotalPurchaseValue || Calc.round2(m.Quantity * m.PurchaseRate * (1 + (m.GSTPercentage || 0) / 100)),
+      GSTPercentage: m.GSTPercentage,
     }));
     await DB.replaceAll('materials', [...allMaterials, ...newRows]);
 
@@ -1067,7 +1113,7 @@ window.showVendorPaymentDetails = function(shipmentNo) {
     const unpaidShipments = [];
 
     shipments.forEach(s => {
-      const due = s.purchaseTotal + s.gstAmount;
+      const due = s.purchaseTotal;
       const paid = Number(s.VendorPaid) || 0;
       sumVendorDue += due;
       sumVendorPaid += paid;
@@ -1103,7 +1149,7 @@ window.showVendorPaymentDetails = function(shipmentNo) {
 
     bodyEl.innerHTML = `
       <div class="p-3 border rounded bg-white shadow-sm mb-2" style="font-size:0.88rem;">
-        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><span>Total Invoice Due (Materials + GST):</span> <span>${UI.money(sumVendorDue)}</span></div>
+        <div class="d-flex justify-content-between border-bottom pb-2 text-primary fw-bold"><span>Total Invoice Due (incl. GST):</span> <span>${UI.money(sumVendorDue)}</span></div>
         <div class="d-flex justify-content-between border-bottom py-2 text-success fw-bold"><span>Total Paid to Vendors:</span> <span>${UI.money(sumVendorPaid)}</span></div>
         <div class="d-flex justify-content-between pt-2 fw-bold text-danger"><span>Net Outstanding Vendor Due:</span> <span>${UI.money(netRem)}</span></div>
       </div>
@@ -1115,7 +1161,7 @@ window.showVendorPaymentDetails = function(shipmentNo) {
     const r = shipments.find(s => s.ShipmentNo === shipmentNo);
     if (!r) return;
 
-    const vendorDue = r.purchaseTotal + r.gstAmount;
+    const vendorDue = r.purchaseTotal;
     const vendorPaid = Number(r.VendorPaid) || 0;
     const remaining = vendorDue - vendorPaid;
 
@@ -1137,7 +1183,7 @@ window.showVendorPaymentDetails = function(shipmentNo) {
         <div class="chat-bubble credit">
           <div class="bubble-label" style="color:#c0392b;">🏬 ${vendorName} Invoice Charge</div>
           <div class="bubble-amount" style="color:#c0392b;">−${UI.money(vendorDue)}</div>
-          <div class="bubble-remarks">Materials: ${UI.money(r.purchaseTotal)} + GST ${r.GSTPercentage || 0}%: ${UI.money(r.gstAmount)} ${r.InvoiceNumber ? '(Inv: ' + r.InvoiceNumber + ')' : ''}</div>
+          <div class="bubble-remarks">Materials (incl. GST): ${UI.money(r.purchaseTotal)} (GST component: ${UI.money(r.gstAmount)}) ${r.InvoiceNumber ? '(Inv: ' + r.InvoiceNumber + ')' : ''}</div>
           <div class="bubble-meta">Purchase Date: ${UI.fmtDate(r.PurchaseDate)}</div>
         </div>
       </div>
@@ -1433,7 +1479,7 @@ async function settleFullPayment() {
 
   let remaining = 0;
   if (activePayType === 'vendor') {
-    const due = s.purchaseTotal + s.gstAmount;
+    const due = s.purchaseTotal;
     remaining = due - (Number(s.VendorPaid) || 0);
   } else if (activePayType === 'transport') {
     remaining = s.transport - (Number(s.TransportPaid) || 0);

@@ -531,32 +531,22 @@
             <label class="form-label fs-7 mb-0">Invoice Number</label>
             <input type="text" class="form-control form-control-sm" id="editInvoiceNumber">
           </div>
-          <div class="col-md-3 col-6">
-            <div class="form-check mt-4">
-              <input class="form-check-input edit-calc-input" type="checkbox" id="editIncludeGST" checked>
-              <label class="form-check-label fs-7 fw-bold" for="editIncludeGST">Include GST</label>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <label class="form-label fs-7 mb-0">GST %</label>
-            <input type="number" min="0" max="100" class="form-control form-control-sm edit-calc-input" id="editGSTPercentage" value="18">
+          <div class="col-md-6 col-12">
+            <label class="form-label fs-7 mb-0">Remarks</label>
+            <input type="text" class="form-control form-control-sm" id="editRemarks">
           </div>
           
-          <div class="col-md-3 col-6">
+          <div class="col-md-4 col-4">
             <label class="form-label fs-7 mb-0" id="lblEditVendorPaid">Paid (₹)</label>
             <input type="number" min="0" class="form-control form-control-sm edit-calc-input" id="editVendorPaid" value="0" placeholder="0">
           </div>
-          <div class="col-md-3 col-6">
+          <div class="col-md-4 col-4">
             <label class="form-label fs-7 mb-0">Transport Cost (₹)</label>
             <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0">
           </div>
-          <div class="col-md-3 col-6">
+          <div class="col-md-4 col-4">
             <label class="form-label fs-7 mb-0">Transport Paid (₹)</label>
             <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportPaid" value="0">
-          </div>
-          <div class="col-md-3 col-6">
-            <label class="form-label fs-7 mb-0">Remarks</label>
-            <input type="text" class="form-control form-control-sm" id="editRemarks">
           </div>
 
           <div class="col-12"><hr class="my-1 opacity-25"></div>
@@ -575,6 +565,8 @@
                     <th style="width:70px;">Qty</th>
                     <th style="width:70px;">Unit</th>
                     <th style="width:90px;">Rate/Unit</th>
+                    <th style="width:70px;">GST %</th>
+                    <th style="width:110px;">Rate/Unit with GST</th>
                     <th style="width:110px;">Total Price</th>
                     <th style="width:30px;"></th>
                   </tr>

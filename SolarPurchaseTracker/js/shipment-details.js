@@ -48,6 +48,7 @@ window.onDbReady = function () {
         <table class="table table-hover mb-0">
           <thead><tr>
             <th>Item</th><th>Category</th><th>Qty</th><th>Unit</th><th>Rate</th>
+            <th>GST %</th><th>Rate with GST</th>
             <th>Purchase Value</th><th>Transport Share</th><th>GST Share</th><th>Final Cost</th><th>Cost/Unit</th>
           </tr></thead>
           <tbody>
@@ -58,6 +59,8 @@ window.onDbReady = function () {
                 <td>${l.Quantity}</td>
                 <td>${l.Unit || '-'}</td>
                 <td>${UI.money(l.PurchaseRate)}</td>
+                <td>${l.GSTPercentage !== undefined ? l.GSTPercentage + '%' : '-'}</td>
+                <td>${UI.money(l.PurchaseRate * (1 + (l.GSTPercentage || 0) / 100))}</td>
                 <td>${UI.money(l.PurchaseValue)}</td>
                 <td>${UI.money(l.TransportShare)}</td>
                 <td>${UI.money(l.GSTShare)}</td>
@@ -68,7 +71,7 @@ window.onDbReady = function () {
           </tbody>
           <tfoot>
             <tr class="fw-bold" style="background:var(--st-blue-100)">
-              <td colspan="5" class="text-end">Totals</td>
+              <td colspan="7" class="text-end">Totals</td>
               <td>${UI.money(result.purchaseTotal)}</td>
               <td>${UI.money(result.transport)}</td>
               <td>${UI.money(result.gstAmount)}</td>
@@ -92,14 +95,16 @@ window.onDbReady = function () {
   document.getElementById('btnExportExcel').addEventListener('click', () => {
     const rows = result.lines.map(l => ({
       Item: l.ItemName, Category: l.Category, Qty: l.Quantity, Unit: l.Unit, Rate: l.PurchaseRate,
+      'GST %': l.GSTPercentage !== undefined ? l.GSTPercentage + '%' : '-',
+      'Rate with GST': Calc.round2(l.PurchaseRate * (1 + (l.GSTPercentage || 0) / 100)),
       PurchaseValue: l.PurchaseValue, TransportShare: l.TransportShare, GSTShare: l.GSTShare,
       FinalCost: l.FinalCost, CostPerUnit: l.CostPerUnit,
     }));
     Utils.exportRowsToExcel(rows, Object.keys(rows[0] || {}), `${s.ShipmentNo}_breakdown.xlsx`);
   });
   document.getElementById('btnExportPDF').addEventListener('click', () => {
-    const cols = ['Item', 'Category', 'Qty', 'Unit', 'Rate', 'Purchase Value', 'Transport Share', 'GST Share', 'Final Cost', 'Cost/Unit'];
-    const rows = result.lines.map(l => [l.ItemName, l.Category, l.Quantity, l.Unit, UI.money(l.PurchaseRate), UI.money(l.PurchaseValue), UI.money(l.TransportShare), UI.money(l.GSTShare), UI.money(l.FinalCost), UI.money(l.CostPerUnit)]);
+    const cols = ['Item', 'Category', 'Qty', 'Unit', 'Rate', 'GST %', 'Rate with GST', 'Purchase Value', 'Transport Share', 'GST Share', 'Final Cost', 'Cost/Unit'];
+    const rows = result.lines.map(l => [l.ItemName, l.Category, l.Quantity, l.Unit, UI.money(l.PurchaseRate), l.GSTPercentage !== undefined ? l.GSTPercentage + '%' : '-', UI.money(l.PurchaseRate * (1 + (l.GSTPercentage || 0) / 100)), UI.money(l.PurchaseValue), UI.money(l.TransportShare), UI.money(l.GSTShare), UI.money(l.FinalCost), UI.money(l.CostPerUnit)]);
     Utils.exportTableToPDF(`Shipment ${s.ShipmentNo} — Cost Breakdown`, cols, rows);
   });
 };

@@ -22,7 +22,7 @@ function init() {
   db.exec(`CREATE TABLE IF NOT EXISTS products ("ProductName" TEXT PRIMARY KEY, "CreatedAt" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS product_items ("RowID" TEXT PRIMARY KEY, "ProductName" TEXT, "ItemName" TEXT, "Price" REAL)`);
   db.exec(`CREATE TABLE IF NOT EXISTS shipments ("ShipmentNo" TEXT PRIMARY KEY, "PurchaseDate" TEXT, "VendorName" TEXT, "ShipmentType" TEXT, "VehicleNumber" TEXT, "InvoiceNumber" TEXT, "TransportationCost" REAL, "GSTPercentage" REAL, "VendorPaid" REAL, "TransportPaid" REAL, "Documents" TEXT, "Remarks" TEXT, "CreatedAt" TEXT)`);
-  db.exec(`CREATE TABLE IF NOT EXISTS materials ("RowID" TEXT PRIMARY KEY, "ShipmentNo" TEXT, "ItemName" TEXT, "Category" TEXT, "Quantity" REAL, "Unit" TEXT, "PurchaseRate" REAL, "TotalPurchaseValue" REAL)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS materials ("RowID" TEXT PRIMARY KEY, "ShipmentNo" TEXT, "ItemName" TEXT, "Category" TEXT, "Quantity" REAL, "Unit" TEXT, "PurchaseRate" REAL, "TotalPurchaseValue" REAL, "GSTPercentage" REAL)`);
   db.exec(`CREATE TABLE IF NOT EXISTS borrowers ("BorrowerID" INTEGER PRIMARY KEY AUTOINCREMENT, "Name" TEXT NOT NULL, "Mobile" TEXT, "Address" TEXT, "Status" TEXT DEFAULT 'Active', "CreatedAt" TEXT, "CreatedBy" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS borrower_txns ("TxnID" INTEGER PRIMARY KEY AUTOINCREMENT, "BorrowerID" INTEGER NOT NULL, "TxnDate" TEXT NOT NULL, "Amount" REAL NOT NULL, "Type" TEXT NOT NULL, "Remarks" TEXT, "CreatedAt" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS roles ("role" TEXT PRIMARY KEY)`);
@@ -48,6 +48,11 @@ function init() {
   try {
     db.exec(`ALTER TABLE installment_txns ADD COLUMN "TxnType" TEXT`);
     db.exec(`UPDATE installment_txns SET "TxnType" = 'Customer' WHERE "TxnType" IS NULL OR "TxnType" = ''`);
+  } catch (e) {}
+
+  // Migrate materials table to add GSTPercentage column
+  try {
+    db.exec(`ALTER TABLE materials ADD COLUMN "GSTPercentage" REAL`);
   } catch (e) {}
 
   // Pre-populate roles table if empty

@@ -117,7 +117,8 @@ CREATE TABLE IF NOT EXISTS materials (
   "Quantity" NUMERIC,
   "Unit" TEXT,
   "PurchaseRate" NUMERIC,
-  "TotalPurchaseValue" NUMERIC
+  "TotalPurchaseValue" NUMERIC,
+  "GSTPercentage" NUMERIC
 );
 
 CREATE TABLE IF NOT EXISTS borrowers (
