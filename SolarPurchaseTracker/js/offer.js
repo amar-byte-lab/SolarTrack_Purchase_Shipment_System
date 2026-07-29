@@ -49,7 +49,7 @@ window.onDbReady = function () {
   const dd = String(now.getDate()).padStart(2, '0');
   const hh = String(now.getHours()).padStart(2, '0');
   const mi = String(now.getMinutes()).padStart(2, '0');
-  document.getElementById('qQuoteNo').value = `TR${yy}${mm}${dd}${hh}${mi}`;
+  document.getElementById('qQuoteNo').value = `TR${yy}/${dd}${mm}${hh}${mi}`;
 
   // Load and apply Company Profile Settings
   loadCompanyProfileSettings();
@@ -1268,7 +1268,12 @@ window.exportQuotationToDocx = async function() {
     BorderStyle,
     AlignmentType,
     ImageRun,
-    VerticalAlign
+    VerticalAlign,
+    HorizontalPositionRelativeFrom,
+    HorizontalPositionAlign,
+    VerticalPositionRelativeFrom,
+    VerticalPositionAlign,
+    TextWrappingType
   } = window.docx;
 
   // Process Seller Logo: Convert SVG/other formats to PNG base64
@@ -1281,6 +1286,17 @@ window.exportQuotationToDocx = async function() {
     validLogoPng = await getPngLogoDataUrl(rawLogoSrc);
   } catch (err) {
     console.error("Error generating PNG logo url:", err);
+  }
+
+  // Process Company Stamp: Convert to PNG base64
+  let validStampPng = '';
+  const stampBase64 = getSetting('CompanyStamp', '');
+  if (stampBase64) {
+    try {
+      validStampPng = await getPngLogoDataUrl(stampBase64);
+    } catch (err) {
+      console.error("Error generating PNG stamp url:", err);
+    }
   }
 
   // Define total table printable width in DXA (1 twip = 1/20 pt. Total ~ 10400 DXA for A4 print area)
@@ -1450,25 +1466,22 @@ window.exportQuotationToDocx = async function() {
   // --- 2. BUYER INFORMATION BLOCK ---
   const buyerParagraphs = [];
   const buyerNameVal = document.getElementById('printBuyerName').textContent || '-';
-  buyerParagraphs.push(new Paragraph({
-    children: [
-      new TextRun({ text: "Buyer: ", bold: true, size: 21, font: "Times New Roman" }),
-      new TextRun({ text: buyerNameVal, bold: true, size: 23, font: "Times New Roman" })
-    ],
-    spacing: { before: 180, after: 40 }
-  }));
-
   const buyerMobileVal = document.getElementById('printBuyerMobile').textContent || '';
   const isBuyerMobileVisible = document.getElementById('printBuyerMobileWrapper')?.style.display !== 'none';
+
+  const buyerChildren = [
+    new TextRun({ text: "Buyer: ", bold: true, size: 21, font: "Times New Roman" }),
+    new TextRun({ text: buyerNameVal, bold: true, size: 23, font: "Times New Roman" })
+  ];
+
   if (buyerMobileVal && isBuyerMobileVisible) {
-    buyerParagraphs.push(new Paragraph({
-      children: [
-        new TextRun({ text: "Mobile: ", bold: true, size: 21, font: "Times New Roman" }),
-        new TextRun({ text: buyerMobileVal, bold: true, size: 21, font: "Times New Roman" })
-      ],
-      spacing: { after: 40 }
-    }));
+    buyerChildren.push(new TextRun({ text: ` (Ph No.: ${buyerMobileVal})`, bold: true, size: 21, font: "Times New Roman" }));
   }
+
+  buyerParagraphs.push(new Paragraph({
+    children: buyerChildren,
+    spacing: { before: 180, after: 40 }
+  }));
 
   const buyerAddrVal = document.getElementById('qCustAddress').value || '-';
   const buyerAddrLines = buyerAddrVal.split('\n').map(l => l.trim()).filter(Boolean);
@@ -1541,7 +1554,7 @@ window.exportQuotationToDocx = async function() {
     printRows.push({ type: 'adj', desc: `Add: SGST (${sgstRate}%)`, qty: '-', price: sgstAmount });
   }
 
-  // Header Row (5 Columns)
+  // Header Row (4 Columns)
   const headerRow = new TableRow({
     children: [
       new TableCell({
@@ -1552,19 +1565,13 @@ window.exportQuotationToDocx = async function() {
       }),
       new TableCell({
         children: [new Paragraph({ children: [new TextRun({ text: "Description of Goods", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
-        width: { size: 5616, type: WidthType.DXA },
+        width: { size: 7176, type: WidthType.DXA },
         shading: { fill: "F2F2F2" },
         verticalAlign: VerticalAlign.CENTER
       }),
       new TableCell({
         children: [new Paragraph({ children: [new TextRun({ text: "Qty.", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
         width: { size: 1040, type: WidthType.DXA },
-        shading: { fill: "F2F2F2" },
-        verticalAlign: VerticalAlign.CENTER
-      }),
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: "Unit Price (₹)", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
-        width: { size: 1560, type: WidthType.DXA },
         shading: { fill: "F2F2F2" },
         verticalAlign: VerticalAlign.CENTER
       }),
@@ -1582,11 +1589,9 @@ window.exportQuotationToDocx = async function() {
   printRows.forEach((r, idx) => {
     const slNo = r.type === 'item' ? (idx + 1).toString() : '';
     
-    let unitPriceText = '-';
     let totalValueText = '';
     
     if (r.type === 'item') {
-      unitPriceText = `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
       const numericQty = Number(r.qty.replace(/[^0-9]/g, '')) || 1;
       totalValueText = `₹${(numericQty * r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}`;
     } else {
@@ -1601,17 +1606,12 @@ window.exportQuotationToDocx = async function() {
       }),
       new TableCell({
         children: [new Paragraph({ children: [new TextRun({ text: r.desc, size: 20, font: "Times New Roman", italic: r.type === 'adj', bold: r.type === 'adj' })], alignment: AlignmentType.LEFT })],
-        width: { size: 5616, type: WidthType.DXA },
+        width: { size: 7176, type: WidthType.DXA },
         verticalAlign: VerticalAlign.CENTER
       }),
       new TableCell({
         children: [new Paragraph({ children: [new TextRun({ text: r.qty, size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
         width: { size: 1040, type: WidthType.DXA },
-        verticalAlign: VerticalAlign.CENTER
-      }),
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: unitPriceText, size: 20, font: "Times New Roman" })], alignment: AlignmentType.RIGHT })],
-        width: { size: 1560, type: WidthType.DXA },
         verticalAlign: VerticalAlign.CENTER
       }),
       new TableCell({
@@ -1633,17 +1633,12 @@ window.exportQuotationToDocx = async function() {
     }),
     new TableCell({
       children: [new Paragraph({ children: [new TextRun({ text: "Grand Total", bold: true, size: 20, font: "Times New Roman" })], alignment: AlignmentType.LEFT })],
-      width: { size: 5616, type: WidthType.DXA },
+      width: { size: 7176, type: WidthType.DXA },
       shading: { fill: "FAFAFA" }
     }),
     new TableCell({
       children: [new Paragraph({ children: [new TextRun({ text: "", size: 20, font: "Times New Roman" })] })],
       width: { size: 1040, type: WidthType.DXA },
-      shading: { fill: "FAFAFA" }
-    }),
-    new TableCell({
-      children: [new Paragraph({ children: [new TextRun({ text: "", size: 20, font: "Times New Roman" })] })],
-      width: { size: 1560, type: WidthType.DXA },
       shading: { fill: "FAFAFA" }
     }),
     new TableCell({
@@ -1899,13 +1894,49 @@ window.exportQuotationToDocx = async function() {
 
   // --- 7. SIGNATURE BLOCK ---
   const signCompName = document.getElementById('printSignCompanyName').textContent || 'SHRI TRUTIYADEV SOLAR ENTERPRISES';
+  
+  let stampImageRun = null;
+  if (validStampPng) {
+    try {
+      const stampBuffer = base64ToArrayBuffer(validStampPng);
+      stampImageRun = new ImageRun({
+        data: stampBuffer,
+        transformation: {
+          width: 120,
+          height: 120
+        },
+        floating: {
+          horizontalPosition: {
+            relative: HorizontalPositionRelativeFrom ? HorizontalPositionRelativeFrom.MARGIN : "margin",
+            align: HorizontalPositionAlign ? HorizontalPositionAlign.RIGHT : "right"
+          },
+          verticalPosition: {
+            relative: VerticalPositionRelativeFrom ? VerticalPositionRelativeFrom.PARAGRAPH : "paragraph",
+            offset: 0
+          },
+          behindDocument: true,
+          allowOverlap: true,
+          lockAnchor: true,
+          wrap: {
+            type: TextWrappingType ? TextWrappingType.NONE : "none"
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Error creating stamp ImageRun:", err);
+    }
+  }
+
   const sigParagraphs = [
     new Paragraph({
       children: [new TextRun({ text: `for ${signCompName.toUpperCase()}`, bold: true, size: 21, font: "Times New Roman" })],
       alignment: AlignmentType.RIGHT,
       spacing: { before: 240, after: 120 }
     }),
-    new Paragraph({ children: [], spacing: { before: 480 } }), // space for signature
+    new Paragraph({
+      children: stampImageRun ? [stampImageRun] : [],
+      spacing: { before: 480 }
+    }),
     new Paragraph({
       children: [new TextRun({ text: "/Authorized Signatory", bold: true, size: 21, font: "Times New Roman" })],
       alignment: AlignmentType.RIGHT,
@@ -1959,9 +1990,6 @@ window.exportQuotationToDocx = async function() {
         // Main Metadata & Company Details Table
         mainSellerQuoteTable,
 
-        // Spacer
-        new Paragraph({ children: [], spacing: { before: 120 } }),
-
         // Buyer Information
         ...buyerParagraphs,
 
@@ -1973,9 +2001,6 @@ window.exportQuotationToDocx = async function() {
 
         // Amount in Words line
         amountParagraph,
-
-        // Spacer
-        new Paragraph({ children: [], spacing: { before: 120 } }),
 
         // Subsidy / Bank & Declaration Table
         bottomBlockTable,

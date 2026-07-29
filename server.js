@@ -710,6 +710,7 @@ server.listen(PORT, () => {
   console.log(`Listening on Port: ${PORT}`);
   console.log(`Server Startup Duration: ${startupDuration} ms`);
   console.log(`Active Database Driver: ${db.driverName} (DB_TYPE: ${db.dbType})`);
+  console.log(`Serving Static Files From: ${PUBLIC_DIR}`);
   console.log("======================================================");
 
   // Open browser only on local Windows machine
