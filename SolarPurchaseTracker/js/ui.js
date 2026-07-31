@@ -13,7 +13,6 @@ const UI = (() => {
     { href: 'offer.html',           icon: 'file',       label: 'Offer Generator' },
     { href: 'vendor-master.html',   icon: 'people',     label: 'Vendor Master' },
     { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
-    { href: 'reports.html',         icon: 'bar-chart',  label: 'Reports' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
 
