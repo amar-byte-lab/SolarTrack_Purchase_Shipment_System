@@ -10,6 +10,7 @@ let sortDir = 'asc';  // default sort direction
 
 let selectedDistricts = []; // Array of currently selected districts for filtering
 let selectedBrands = [];    // Array of currently selected brands for filtering
+let selectedPartners = [];  // Array of currently selected partners for filtering
 let selectedColorCols = []; // Array of column keys currently checked in custom coloring menu
 
 const DISTRICTS = [
@@ -50,12 +51,12 @@ window.onDbReady = function () {
   const buttonsHtml = isAdmin ? `
     <button class="btn btn-outline-secondary" id="btnPrintList">🖨 Print</button>
     <button class="btn btn-primary ms-2" id="btnImportCustomer">📥 Import Customer</button>
-    <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat">📁 Download format</button>
+    <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat" style="display: none;">📁 Download format</button>
     <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
   ` : '';
 
   UI.renderSidebar('installments.html');
-  UI.renderTopbar('Client Tracker', 'Manage client installment payments, customer sales, and agent commissions', buttonsHtml);
+  UI.renderTopbar('Customer', 'Manage client installment payments, customer sales, and agent commissions', buttonsHtml);
 
   const btnPrint = document.getElementById('btnPrintList');
   if (btnPrint) {
@@ -154,10 +155,13 @@ window.onDbReady = function () {
     if (dateTypeSel) dateTypeSel.value = 'LoginDate';
     selectedDistricts = [];
     selectedBrands = [];
+    selectedPartners = [];
     document.querySelectorAll('.district-chk').forEach(c => c.checked = false);
     document.querySelectorAll('.brand-chk').forEach(c => c.checked = false);
+    document.querySelectorAll('.partner-chk').forEach(c => c.checked = false);
     updateDistrictDropdownButton();
     updateBrandDropdownButton();
+    updatePartnerDropdownButton();
     renderList();
   });
 
@@ -562,6 +566,38 @@ function populateDatalists() {
     });
   }
   updateBrandDropdownButton();
+
+  // 3. Partner multiselect menu (dynamically computed from database)
+  const partnerMenu = document.getElementById('partnerMultiselectMenu');
+  if (partnerMenu) {
+    const allRows = DB.getAll('installments');
+    const rawPartners = allRows.map(r => r.BrokerName ? r.BrokerName.trim() : '').filter(Boolean);
+    const uniquePartners = [...new Set(rawPartners)].sort();
+
+    partnerMenu.innerHTML = [
+      `<div class="form-check mb-1">
+         <input class="form-check-input partner-chk" type="checkbox" value="(No Partner)" id="chk_nopartner" ${selectedPartners.includes('(No Partner)') ? 'checked' : ''}>
+         <label class="form-check-label w-100" for="chk_nopartner">(No Partner)</label>
+       </div>`
+    ].concat(
+      uniquePartners.map(p => `
+        <div class="form-check mb-1">
+          <input class="form-check-input partner-chk" type="checkbox" value="${p}" id="chk_partner_${p.replace(/\s+/g, '_')}" ${selectedPartners.includes(p) ? 'checked' : ''}>
+          <label class="form-check-label w-100" for="chk_partner_${p.replace(/\s+/g, '_')}">${p}</label>
+        </div>
+      `)
+    ).join('');
+
+    // Checkbox change listener
+    document.querySelectorAll('.partner-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        selectedPartners = Array.from(document.querySelectorAll('.partner-chk:checked')).map(c => c.value);
+        updatePartnerDropdownButton();
+        renderList();
+      });
+    });
+  }
+  updatePartnerDropdownButton();
 }
 
 function populateColorColCheckboxes() {
@@ -637,6 +673,44 @@ function updateDistrictDropdownButton() {
   }
 }
 
+function updateDistrictStats() {
+  const container = document.getElementById('districtStatsContainer');
+  if (!container) return;
+
+  const allRows = DB.getAll('installments') || [];
+  const activeRows = allRows.filter(r => r.Status !== 'Deactive');
+  const counts = {};
+
+  activeRows.forEach(r => {
+    const dist = r.District ? r.District.trim() : '';
+    const key = dist || 'No District';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  const sortedDistricts = Object.keys(counts)
+    .filter(k => counts[k] >= 1)
+    .sort((a, b) => {
+      if (a === 'No District') return 1;
+      if (b === 'No District') return -1;
+      return a.localeCompare(b);
+    });
+
+  const badgeStyles = [
+    'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
+    'bg-success-subtle text-success-emphasis border border-success-subtle',
+    'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+    'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+    'bg-info-subtle text-info-emphasis border border-info-subtle',
+    'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
+  ];
+
+  container.innerHTML = sortedDistricts.map((dist, index) => {
+    const count = counts[dist];
+    const style = badgeStyles[index % badgeStyles.length];
+    return `<span class="badge rounded-pill ${style} px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500;">${dist}: ${count}</span>`;
+  }).join('');
+}
+
 function updateBrandDropdownButton() {
   const btn = document.getElementById('btnBrandMultiselect');
   if (!btn) return;
@@ -646,6 +720,18 @@ function updateBrandDropdownButton() {
     btn.textContent = selectedBrands[0];
   } else {
     btn.textContent = `${selectedBrands.length} Brands`;
+  }
+}
+
+function updatePartnerDropdownButton() {
+  const btn = document.getElementById('btnPartnerMultiselect');
+  if (!btn) return;
+  if (selectedPartners.length === 0) {
+    btn.textContent = 'All Partners';
+  } else if (selectedPartners.length === 1) {
+    btn.textContent = selectedPartners[0];
+  } else {
+    btn.textContent = `${selectedPartners.length} Partners`;
   }
 }
 
@@ -761,6 +847,7 @@ function getCommDiffBadge(comm, commPaid) {
 }
 
 function renderList() {
+  updateDistrictStats();
   const search = (document.getElementById('fSearch').value || '').toLowerCase();
   const loginFrom = document.getElementById('fLoginFrom').value;
   const loginTo = document.getElementById('fLoginTo').value;
@@ -795,6 +882,15 @@ function renderList() {
       const brandVal = r.CommittedBrand ? r.CommittedBrand.trim() : '(No Brand)';
       const brandName = brandVal === '' ? '(No Brand)' : brandVal;
       return selectedBrands.includes(brandName);
+    });
+  }
+
+  // Apply multiselect Partner Filter
+  if (selectedPartners.length > 0) {
+    rows = rows.filter(r => {
+      const partnerVal = r.BrokerName ? r.BrokerName.trim() : '(No Partner)';
+      const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
+      return selectedPartners.includes(partnerName);
     });
   }
 

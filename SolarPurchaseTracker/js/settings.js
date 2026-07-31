@@ -38,28 +38,43 @@ window.onDbReady = function () {
 
   // Connect & backup buttons mapping
   const mode = DB.getMode();
-  document.getElementById('dbModeText').textContent = 
-    mode === 'fs' ? 'Live local folder (auto-save)' : 
-    (mode === 'sqlite' ? 'SQLite Server Database (solartrack.db)' : 'Offline Browser Storage (Local Cache)');
+  const dbModeText = document.getElementById('dbModeText');
+  if (dbModeText) {
+    dbModeText.textContent = 
+      mode === 'fs' ? 'Live local folder (auto-save)' : 
+      (mode === 'sqlite' ? 'SQLite Server Database (solartrack.db)' : 'Offline Browser Storage (Local Cache)');
+  }
 
   if (mode === 'fs') {
-    document.getElementById('fsModeBox').classList.remove('d-none');
-    document.getElementById('btnSwitchFolder').addEventListener('click', async () => {
-      try { await DB.pickFolder(); UI.toast('Database folder switched.', 'success'); loadSettingsForm(); }
-      catch (e) { if (e.name !== 'AbortError') UI.toast(e.message, 'danger'); }
-    });
+    const fsModeBox = document.getElementById('fsModeBox');
+    if (fsModeBox) fsModeBox.classList.remove('d-none');
+    const btnSwitchFolder = document.getElementById('btnSwitchFolder');
+    if (btnSwitchFolder) {
+      btnSwitchFolder.addEventListener('click', async () => {
+        try { await DB.pickFolder(); UI.toast('Database folder switched.', 'success'); loadSettingsForm(); }
+        catch (e) { if (e.name !== 'AbortError') UI.toast(e.message, 'danger'); }
+      });
+    }
   } else if (mode === 'sqlite') {
-    document.getElementById('sqliteModeBox').classList.remove('d-none');
-    document.getElementById('btnDownloadAllSqlite').addEventListener('click', () => {
-      DB.downloadAllWorkbooks();
-      UI.toast('SQLite tables exported to Excel.', 'success');
-    });
+    const sqliteModeBox = document.getElementById('sqliteModeBox');
+    if (sqliteModeBox) sqliteModeBox.classList.remove('d-none');
+    const btnDownloadAllSqlite = document.getElementById('btnDownloadAllSqlite');
+    if (btnDownloadAllSqlite) {
+      btnDownloadAllSqlite.addEventListener('click', () => {
+        DB.downloadAllWorkbooks();
+        UI.toast('SQLite tables exported to Excel.', 'success');
+      });
+    }
   } else {
-    document.getElementById('uploadModeBox').classList.remove('d-none');
-    document.getElementById('btnDownloadAll').addEventListener('click', () => {
-      DB.downloadAllWorkbooks();
-      UI.toast('Excel database files downloaded.', 'success');
-    });
+    const uploadModeBox = document.getElementById('uploadModeBox');
+    if (uploadModeBox) uploadModeBox.classList.remove('d-none');
+    const btnDownloadAll = document.getElementById('btnDownloadAll');
+    if (btnDownloadAll) {
+      btnDownloadAll.addEventListener('click', () => {
+        DB.downloadAllWorkbooks();
+        UI.toast('Excel database files downloaded.', 'success');
+      });
+    }
 
     const connectBtn = document.getElementById('btnConnectFolderFromSettings');
     if (connectBtn) {
@@ -78,13 +93,16 @@ window.onDbReady = function () {
     }
   }
 
-  document.getElementById('btnBackupAll').addEventListener('click', () => {
-    ['shipments', 'materials', 'vendors', 'items', 'settings', 'installments'].forEach(key => {
-      const rows = DB.getAll(key);
-      Utils.exportRowsToExcel(rows, DB.HEADERS[key], `Backup_${key}_${UI.todayISO()}.xlsx`);
+  const btnBackupAll = document.getElementById('btnBackupAll');
+  if (btnBackupAll) {
+    btnBackupAll.addEventListener('click', () => {
+      ['shipments', 'materials', 'vendors', 'items', 'settings', 'installments'].forEach(key => {
+        const rows = DB.getAll(key);
+        Utils.exportRowsToExcel(rows, DB.HEADERS[key], `Backup_${key}_${UI.todayISO()}.xlsx`);
+      });
+      UI.toast('Backup files downloaded.', 'success');
     });
-    UI.toast('Backup files downloaded.', 'success');
-  });
+  }
 
   const btnExportInserts = document.getElementById('btnExportInserts');
   if (btnExportInserts) {

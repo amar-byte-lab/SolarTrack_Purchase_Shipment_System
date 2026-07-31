@@ -116,30 +116,8 @@
               </div>
             </div>
           </div>
-
-          <div class="st-card">
-            <div class="section-title mt-0">Database Connection</div>
-            <p class="mb-1"><b>Mode:</b> <span id="dbModeText">-</span></p>
-            <p class="text-muted small">Your data lives in five local Excel files: <code>Shipments.xlsx</code>, <code>Materials.xlsx</code>, <code>Vendors.xlsx</code>, <code>Items.xlsx</code>, <code>Settings.xlsx</code>.</p>
-            <div id="fsModeBox" class="d-none">
-              <div class="alert alert-success small mb-2">Connected directly to your local Database folder — every change is saved instantly.</div>
-              <button class="btn btn-outline-primary" id="btnSwitchFolder">Switch / Reconnect Folder</button>
-            </div>
-            <div id="uploadModeBox" class="d-none">
-              <div class="alert alert-warning small mb-2">Running in secure offline browser storage. You can connect a folder to save changes directly to Excel files, or download them manually.</div>
-              <button class="btn btn-primary mb-2 w-100" id="btnConnectFolderFromSettings">📁 Connect to Local Folder</button>
-              <button class="btn btn-outline-primary w-100" id="btnDownloadAll">⬇ Download Excel Database Files</button>
-            </div>
-            <div id="sqliteModeBox" class="d-none">
-              <div class="alert alert-success small mb-2">Connected directly to SQLite Server Database (<code>solartrack.db</code>) — every change is saved instantly.</div>
-              <button class="btn btn-outline-success w-100" id="btnDownloadAllSqlite">⬇ Export Database to Excel Files</button>
-            </div>
-          </div>
-
           <div class="st-card mt-3">
             <div class="section-title mt-0">Backup</div>
-            <p class="text-muted small">Export a full backup copy of all five workbooks at any time.</p>
-            <button class="btn btn-outline-secondary" id="btnBackupAll">⬇ Download Full Backup</button>
             <button class="btn btn-outline-primary ms-2" id="btnExportInserts">🔌 Download SQL Inserts</button>
           </div>
         </div>
@@ -280,6 +258,6 @@
 <script src="js/utils.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/connect.js"></script>
-<script src="js/settings.js"></script>
+<script src="js/settings.js?v=1.0.1"></script>
 </body>
 </html>
