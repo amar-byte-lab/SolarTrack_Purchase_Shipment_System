@@ -104,9 +104,6 @@ const UI = (() => {
           </a>`).join('')}
         ${userControlsMobile}
       </nav>
-      <div class="sidebar-footer">
-        <div id="dbStatusBadge" class="db-status">● checking…</div>
-      </div>
     `;
     refreshDbStatusBadge();
 
