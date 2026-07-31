@@ -30,11 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   UI.renderTopbar(
     'Borrower Ledger',
     'Personal credit & debit tracker',
-    `<button class="btn btn-sm btn-accent" id="btnScrollToAdd">
-       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-         <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
-       </svg>Add Borrower
-     </button>`
+    ''
   );
 
   _txnModal = new bootstrap.Modal(document.getElementById('txnModal'), { keyboard: true });
@@ -72,10 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('txnInputDate').value = todayISO();
 
-  // ── Add Txn button topbar shortcut ─────────────────────────────────────
-  document.getElementById('btnScrollToAdd').addEventListener('click', () => {
-    addInlineBorrowerRow();
-  });
+
 
   // ── Row selection (like installments: click / Ctrl+click) ──────────────
   document.getElementById('bwTable').addEventListener('click', e => {
@@ -248,16 +241,8 @@ function renderGrid() {
                  autocomplete="off" maxlength="100"
                  onkeydown="handleAddRowKey(event,'addName')">
         </td>
-        <td class="bw-col-mobile">
-          <input type="text" id="addMobile" placeholder="Mobile"
-                 autocomplete="off" maxlength="20"
-                 onkeydown="handleAddRowKey(event,'addMobile')">
-        </td>
-        <td class="bw-col-address">
-          <input type="text" id="addAddress" placeholder="Address (optional)"
-                 autocomplete="off" maxlength="200"
-                 onkeydown="handleAddRowKey(event,'addAddress')">
-        </td>
+        <td class="bw-col-mobile" style="display:none;"></td>
+        <td class="bw-col-address" style="display:none;"></td>
         <td class="no-print text-center" style="vertical-align:middle;">
           <div class="d-flex gap-1 justify-content-center">
             <button class="btn btn-sm btn-success py-0 px-2" onclick="saveBorrower()" title="Save">💾</button>
@@ -345,9 +330,7 @@ function handleAddRowKey(e, field) {
   if (e.key === 'Escape') { cancelInlineBorrower(); return; }
   if (e.key === 'Enter') {
     e.preventDefault();
-    if (field === 'addName')   { document.getElementById('addMobile').focus(); }
-    else if (field === 'addMobile') { document.getElementById('addAddress').focus(); }
-    else { saveBorrower(); }
+    saveBorrower();
   }
 }
 

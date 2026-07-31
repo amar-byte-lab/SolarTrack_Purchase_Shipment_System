@@ -378,7 +378,6 @@
                   <tr>
                     <th>Item Name & Description</th>
                     <th class="text-center" style="width: 80px;">Qty</th>
-                    <th class="text-end" style="width: 140px;">Unit Price (₹)</th>
                     <th class="text-end" style="width: 160px;">Total Value (₹)</th>
                     <th class="no-print text-center" style="width: 50px;"></th>
                   </tr>
@@ -388,18 +387,18 @@
                 </tbody>
                 <tfoot>
                   <tr class="no-print">
-                    <td colspan="5" class="p-2 bg-light">
+                    <td colspan="4" class="p-2 bg-light">
                       <button type="button" class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1"
                         onclick="addQuoteRowDirect()">➕ Add Custom Item</button>
                     </td>
                   </tr>
                   <tr class="table-light fw-bold">
-                    <td colspan="3" class="text-end pe-3 fs-7">Items Subtotal:</td>
+                    <td colspan="2" class="text-end pe-3 fs-7">Items Subtotal:</td>
                     <td class="text-end font-monospace fs-7" id="tblSubtotalVal">₹0.00</td>
                     <td class="no-print"></td>
                   </tr>
                   <tr class="table-primary fw-bold" style="font-size: 0.95rem;">
-                    <td colspan="3" class="text-end pe-3 text-primary">Grand Total:</td>
+                    <td colspan="2" class="text-end pe-3 text-primary">Grand Total:</td>
                     <td class="text-end font-monospace text-primary fw-bold" id="tblGrandTotalVal">₹0.00</td>
                     <td class="no-print"></td>
                   </tr>
@@ -474,6 +473,15 @@
                       <label class="form-label fs-8 text-secondary mb-1">Apply Government Subsidy</label>
                       <select class="form-select form-select-sm" id="qSubsidySelect" style="font-size:0.75rem;">
                         <!-- Populated dynamically by offer.js -->
+                      </select>
+                    </div>
+
+                    <!-- Total Value Column Configuration (no-print) -->
+                    <div class="col-12 mt-2 pt-2 border-top no-print text-start">
+                      <label class="form-label fs-8 text-secondary mb-1">Total Value (₹) Column Mode</label>
+                      <select class="form-select form-select-sm" id="qTotalValueMode" style="font-size:0.75rem;">
+                        <option value="merged" selected>Merge all rows into a single value (Default)</option>
+                        <option value="each">Provide a value for each row</option>
                       </select>
                     </div>
 
@@ -685,21 +693,13 @@
               style="border-collapse: collapse; width: 100%; border: 1px solid #000;">
               <thead>
                 <tr style="background-color: #f2f2f2;">
-                  <th
-                    style="width: 6%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">
-                    Sl No</th>
-                  <th
-                    style="width: 64%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">
-                    Description of Goods</th>
-                  <th
-                    style="width: 10%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">
-                    Qty.</th>
-                  <th
-                    style="width: 10%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">
-                    Unit Price (₹)</th>
-                  <th
-                    style="width: 10%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">
-                    Total Value (₹)</th>
+                  <th style="width: 6%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Sl No</th>
+                  <th style="width: 44%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Description of Goods</th>
+                  <th style="width: 10%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Qty.</th>
+                  <th style="width: 13%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Total Value (₹)</th>
+                  <th style="width: 9%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;" id="printCgstHeader">CGST Rate</th>
+                  <th style="width: 9%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;" id="printSgstHeader">SGST Rate</th>
+                  <th style="width: 9%; border: 1px solid #000; font-size: 10.5pt; font-weight: bold; padding: 5px; text-align: center;">Grand Total</th>
                 </tr>
               </thead>
               <tbody id="printItemsTbody">

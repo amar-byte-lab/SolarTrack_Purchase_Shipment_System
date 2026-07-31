@@ -54,6 +54,15 @@ window.onDbReady = function () {
   // Load and apply Company Profile Settings
   loadCompanyProfileSettings();
 
+  // Setup Total Value Column Mode change listener
+  const modeSelect = document.getElementById('qTotalValueMode');
+  if (modeSelect) {
+    modeSelect.addEventListener('change', () => {
+      rebuildQuoteGridFromDOM();
+      recalculateOffer();
+    });
+  }
+
   // Extract products from URL
   const rawParam = Utils.getQueryParam('products');
   const preCheckedProducts = rawParam ? decodeURIComponent(rawParam).split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -300,13 +309,20 @@ function generatePrintItemsGrid() {
   const tbody = document.getElementById('printItemsTbody');
   if (!tbody) return;
 
+  const modeSelect = document.getElementById('qTotalValueMode');
+  const totalValueMode = modeSelect ? modeSelect.value : 'merged';
+
   // Recalculate totals
   let subtotal = 0;
-  rows.forEach(row => {
-    const qty = Number(row.querySelector('.q-qty').value) || 0;
-    const price = Number(row.querySelector('.q-price').value) || 0;
-    subtotal += (qty * price);
-  });
+  if (totalValueMode === 'merged') {
+    const mergedInput = document.querySelector('#mergedQuoteTotalCell .q-price');
+    subtotal = mergedInput ? (Number(mergedInput.value) || 0) : 0;
+  } else {
+    rows.forEach(row => {
+      const priceInput = row.querySelector('.q-price');
+      subtotal += priceInput ? (Number(priceInput.value) || 0) : 0;
+    });
+  }
 
   let discountVal = 0;
   let taxableValue = subtotal;
@@ -347,7 +363,7 @@ function generatePrintItemsGrid() {
   rows.forEach(row => {
     const itemName = row.querySelector('.q-item-name').value.trim();
     const qty = Number(row.querySelector('.q-qty').value) || 1;
-    const price = Number(row.querySelector('.q-price').value) || 0;
+    const price = Number(row.getAttribute('data-price')) || 0;
     printRows.push({ type: 'item', desc: itemName, qty: `${qty} SET`, price: price });
   });
 
@@ -369,14 +385,26 @@ function generatePrintItemsGrid() {
   const totalMergeRows = printRows.length;
   let html = [];
 
+  // Calculate sum of basic prices column for the total row
+  let sumBasicPrices = subtotal;
+  if (activeAdjustments.discount.active) sumBasicPrices -= discountVal;
+  if (activeAdjustments.transport.active) sumBasicPrices += activeAdjustments.transport.value || 0;
+  if (activeAdjustments.labour.active) sumBasicPrices += activeAdjustments.labour.value || 0;
+  if (activeAdjustments.other.active) sumBasicPrices += activeAdjustments.other.value || 0;
+
   printRows.forEach((r, idx) => {
     let slNo = r.type === 'item' ? (idx + 1).toString() : '';
     let priceText = r.price < 0 ? `-₹${Math.abs(r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}` : `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
     
-    // Rowspan columns (CGST, SGST, Amount) - only output on the first row of merge
+    // Rowspan columns (Total Value, CGST, SGST, Amount) - only output on the first row of merge
     let rowspanHtml = '';
     if (idx === 0) {
+      const totalValText = `₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       rowspanHtml = `
+        ${totalValueMode === 'merged' ? `
+        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold; font-family: monospace;">
+          ${totalValText}
+        </td>` : ''}
         <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold;">
           ${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
         </td>
@@ -389,23 +417,23 @@ function generatePrintItemsGrid() {
       `;
     }
 
+    let itemValueHtml = '';
+    if (totalValueMode === 'each') {
+      itemValueHtml = `
+        <td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace;">${priceText}</td>
+      `;
+    }
+
     html.push(`
       <tr>
         <td style="border: 1px solid #000; text-align: center; padding: 4px;">${slNo}</td>
         <td style="border: 1px solid #000; text-align: left; padding: 4px; ${r.type === 'adj' ? 'font-style: italic; font-weight: 500;' : ''}">${r.desc}</td>
         <td style="border: 1px solid #000; text-align: center; padding: 4px;">${r.qty}</td>
-        <td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace;">${priceText}</td>
+        ${itemValueHtml}
         ${rowspanHtml}
       </tr>
     `);
   });
-
-  // Calculate sum of basic prices column for the total row
-  let sumBasicPrices = subtotal;
-  if (activeAdjustments.discount.active) sumBasicPrices -= discountVal;
-  if (activeAdjustments.transport.active) sumBasicPrices += activeAdjustments.transport.value || 0;
-  if (activeAdjustments.labour.active) sumBasicPrices += activeAdjustments.labour.value || 0;
-  if (activeAdjustments.other.active) sumBasicPrices += activeAdjustments.other.value || 0;
 
   // Add Total row
   html.push(`
@@ -413,7 +441,7 @@ function generatePrintItemsGrid() {
       <td style="border: 1px solid #000; padding: 4px;"></td>
       <td style="border: 1px solid #000; text-align: left; padding: 4px;">Grand Total</td>
       <td style="border: 1px solid #000; padding: 4px;"></td>
-      <td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace;">₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+      ${totalValueMode === 'each' ? `<td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace;">₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>` : ''}
       <td style="border: 1px solid #000; text-align: center; padding: 4px; font-family: monospace;">${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
       <td style="border: 1px solid #000; text-align: center; padding: 4px; font-family: monospace;">${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
       <td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace; font-size: 9.5pt;">₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
@@ -880,6 +908,134 @@ function updateWorkspaceVisibility() {
   }
 }
 
+function addQuoteItem(itemName = '', qty = 1, price = 0, productName = '') {
+  const tbody = document.getElementById('quoteTbody');
+  if (!tbody) return;
+
+  const tr = document.createElement('tr');
+  tr.className = 'quote-item-row';
+  tr.setAttribute('data-product', productName);
+  tr.innerHTML = `
+    <td><input type="text" class="q-item-name" value="${itemName}"></td>
+    <td><input type="number" class="q-qty" value="${qty}"></td>
+    <td><input type="number" class="q-price" value="${price}"></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function rebuildQuoteGridFromDOM() {
+  const tbody = document.getElementById('quoteTbody');
+  if (!tbody) return;
+
+  const modeSelect = document.getElementById('qTotalValueMode');
+  const totalValueMode = modeSelect ? modeSelect.value : 'merged';
+
+  // Read current row data
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const data = [];
+  let currentGroup = null;
+  let oldSubtotal = 0;
+
+  const hasMerged = !!document.getElementById('mergedQuoteTotalCell');
+
+  rows.forEach(row => {
+    if (row.classList.contains('quote-header-row')) {
+      currentGroup = row.getAttribute('data-product');
+      data.push({ type: 'header', productName: currentGroup });
+    } else if (row.classList.contains('quote-item-row')) {
+      const itemName = row.querySelector('.q-item-name').value;
+      const qty = Number(row.querySelector('.q-qty').value) || 0;
+      let price = 0;
+      const priceInput = row.querySelector('.q-price');
+      if (priceInput) {
+        price = Number(priceInput.value) || 0;
+        if (!hasMerged) {
+          oldSubtotal += price;
+        } else {
+          oldSubtotal = price;
+        }
+      } else {
+        price = Number(row.getAttribute('data-price')) || 0;
+      }
+      data.push({ type: 'item', productName: row.getAttribute('data-product'), itemName, qty, price });
+    }
+  });
+
+  // Clear tbody
+  tbody.innerHTML = '';
+
+  // Calculate merge count
+  const itemRowsCount = data.filter(d => d.type === 'item').length;
+
+  // Rebuild HTML
+  let itemIndex = 0;
+  data.forEach(d => {
+    if (d.type === 'header') {
+      const headerTr = document.createElement('tr');
+      headerTr.className = 'quote-header-row table-secondary align-middle';
+      headerTr.setAttribute('data-product', d.productName);
+      headerTr.innerHTML = `
+        <td colspan="3" class="py-2 text-start fw-bold text-dark bg-secondary-subtle">
+          📦 Product Set: ${d.productName}
+        </td>
+        <td class="no-print text-center bg-secondary-subtle py-2">
+          <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2 fw-bold" onclick="removeProductSetFromHeader('${d.productName}')" title="Remove entire product set">✕</button>
+        </td>
+      `;
+      tbody.appendChild(headerTr);
+    } else if (d.type === 'item') {
+      const tr = document.createElement('tr');
+      tr.className = 'quote-item-row';
+      tr.setAttribute('data-product', d.productName || '');
+      tr.setAttribute('data-price', d.price);
+
+      let totalValueHtml = '';
+      if (totalValueMode === 'merged') {
+        if (itemIndex === 0) {
+          totalValueHtml = `
+            <td rowspan="${itemRowsCount}" class="align-middle text-end" id="mergedQuoteTotalCell">
+              <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${oldSubtotal}" placeholder="Total Value">
+            </td>
+          `;
+        }
+      } else {
+        totalValueHtml = `
+          <td>
+            <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${d.price}" placeholder="0.00">
+          </td>
+        `;
+      }
+
+      tr.innerHTML = `
+        <td>
+          <input type="text" class="form-control form-control-sm q-item-name fw-semibold border-0 p-0 text-start" value="${d.itemName}">
+        </td>
+        <td>
+          <input type="number" min="0" class="form-control form-control-sm q-qty text-center" value="${d.qty}" style="width: 70px;">
+        </td>
+        ${totalValueHtml}
+        <td class="no-print text-center align-middle">
+          <span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeQuoteRow(this)">✕</span>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+
+      // Listeners
+      tr.querySelector('.q-qty').addEventListener('input', recalculateOffer);
+      const priceInput = tr.querySelector('.q-price');
+      if (priceInput) {
+        priceInput.addEventListener('input', (e) => {
+          tr.setAttribute('data-price', e.target.value);
+          recalculateOffer();
+        });
+      }
+
+      itemIndex++;
+    }
+  });
+}
+
 function addProductSetRowsToGrid(productName) {
   const tbody = document.getElementById('quoteTbody');
   if (!tbody) return;
@@ -887,12 +1043,12 @@ function addProductSetRowsToGrid(productName) {
   const items = DB.getAll('product_items').filter(it => it.ProductName === productName);
   if (items.length === 0) return;
 
-  // 1. Add Group Header Row (Visible in print as well to show product packaging)
+  // Add Group Header Row
   const headerTr = document.createElement('tr');
   headerTr.className = 'quote-header-row table-secondary align-middle';
   headerTr.setAttribute('data-product', productName);
   headerTr.innerHTML = `
-    <td colspan="4" class="py-2 text-start fw-bold text-dark bg-secondary-subtle">
+    <td colspan="3" class="py-2 text-start fw-bold text-dark bg-secondary-subtle">
       📦 Product Set: ${productName}
     </td>
     <td class="no-print text-center bg-secondary-subtle py-2">
@@ -901,37 +1057,12 @@ function addProductSetRowsToGrid(productName) {
   `;
   tbody.appendChild(headerTr);
 
-  // 2. Add Component Item Rows
+  // Add component items
   items.forEach(it => {
-    const tr = document.createElement('tr');
-    tr.className = 'quote-item-row';
-    tr.setAttribute('data-product', productName);
-
-    tr.innerHTML = `
-      <td>
-        <input type="text" class="form-control form-control-sm q-item-name fw-semibold border-0 p-0 text-start" value="${it.ItemName}">
-      </td>
-      <td>
-        <input type="number" min="0" class="form-control form-control-sm q-qty text-center" value="1" style="width: 70px;">
-      </td>
-      <td>
-        <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${it.Price || 0}">
-      </td>
-      <td class="text-end fw-bold font-monospace align-middle q-total-val" style="font-size: 0.85rem;">
-        ₹0.00
-      </td>
-      <td class="no-print text-center align-middle">
-        <span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeQuoteRow(this)">✕</span>
-      </td>
-    `;
-
-    tbody.appendChild(tr);
-
-    // Setup input change event listeners
-    tr.querySelector('.q-qty').addEventListener('input', recalculateOffer);
-    tr.querySelector('.q-price').addEventListener('input', recalculateOffer);
+    addQuoteItem(it.ItemName, 1, it.Price || 0, productName);
   });
 
+  rebuildQuoteGridFromDOM();
   recalculateOffer();
   updateWorkspaceVisibility();
 }
@@ -939,6 +1070,7 @@ function addProductSetRowsToGrid(productName) {
 function removeProductSetRowsFromGrid(productName) {
   const rows = document.querySelectorAll(`[data-product="${productName}"]`);
   rows.forEach(row => row.remove());
+  rebuildQuoteGridFromDOM();
   recalculateOffer();
   updateWorkspaceVisibility();
 }
@@ -954,45 +1086,22 @@ window.removeProductSetFromHeader = function(productName) {
 };
 
 window.addQuoteRowDirect = function() {
-  const tbody = document.getElementById('quoteTbody');
-  if (!tbody) return;
-
-  const tr = document.createElement('tr');
-  tr.className = 'quote-item-row';
-  tr.setAttribute('data-product', ''); // blank for manual entries
-
-  tr.innerHTML = `
-    <td>
-      <input type="text" class="form-control form-control-sm q-item-name fw-semibold border-0 p-0 text-start" placeholder="Custom Item Description *">
-    </td>
-    <td>
-      <input type="number" min="0" class="form-control form-control-sm q-qty text-center" value="1" style="width: 70px;">
-    </td>
-    <td>
-      <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" placeholder="0.00">
-    </td>
-    <td class="text-end fw-bold font-monospace align-middle q-total-val" style="font-size: 0.85rem;">
-      ₹0.00
-    </td>
-    <td class="no-print text-center align-middle">
-      <span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeQuoteRow(this)">✕</span>
-    </td>
-  `;
-
-  tbody.appendChild(tr);
-
-  // Setup change listeners
-  tr.querySelector('.q-qty').addEventListener('input', recalculateOffer);
-  tr.querySelector('.q-price').addEventListener('input', recalculateOffer);
-  tr.querySelector('.q-item-name').focus();
-
+  addQuoteItem('', 1, 0, '');
+  rebuildQuoteGridFromDOM();
   recalculateOffer();
   updateWorkspaceVisibility();
+  
+  // Focus the last added item
+  const inputs = document.querySelectorAll('#quoteTbody .q-item-name');
+  if (inputs.length) {
+    inputs[inputs.length - 1].focus();
+  }
 };
 
 window.removeQuoteRow = function (btn) {
   const tr = btn.closest('tr');
   if (tr) tr.remove();
+  rebuildQuoteGridFromDOM();
   recalculateOffer();
   updateWorkspaceVisibility();
 };
@@ -1073,20 +1182,24 @@ window.updateAdjValue = function(key, val) {
 
 function recalculateOffer() {
   const rows = document.querySelectorAll('.quote-item-row');
+  const modeSelect = document.getElementById('qTotalValueMode');
+  const totalValueMode = modeSelect ? modeSelect.value : 'merged';
   let subtotal = 0;
 
-  rows.forEach(row => {
-    const qty = Number(row.querySelector('.q-qty').value) || 0;
-    const price = Number(row.querySelector('.q-price').value) || 0;
-    const itemTotal = qty * price;
-    
-    subtotal += itemTotal;
-
-    row.querySelector('.q-total-val').textContent = '₹' + itemTotal.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+  if (totalValueMode === 'merged') {
+    const mergedInput = document.querySelector('#mergedQuoteTotalCell .q-price');
+    subtotal = mergedInput ? (Number(mergedInput.value) || 0) : 0;
+    rows.forEach(row => {
+      row.setAttribute('data-price', subtotal);
     });
-  });
+  } else {
+    rows.forEach(row => {
+      const priceInput = row.querySelector('.q-price');
+      const val = priceInput ? (Number(priceInput.value) || 0) : 0;
+      subtotal += val;
+      row.setAttribute('data-price', val);
+    });
+  }
 
   // Calculate dynamic adjustments sequentially
   let runningTotal = subtotal;
@@ -1496,12 +1609,18 @@ window.exportQuotationToDocx = async function() {
 
   // --- 3. DYNAMIC ITEMS TABLE GENERATION ---
   const quoteRows = document.querySelectorAll('.quote-item-row');
+  const totalValueMode = document.getElementById('qTotalValueMode')?.value || 'merged';
+
   let subtotal = 0;
-  quoteRows.forEach(row => {
-    const qty = Number(row.querySelector('.q-qty').value) || 0;
-    const price = Number(row.querySelector('.q-price').value) || 0;
-    subtotal += (qty * price);
-  });
+  if (totalValueMode === 'merged') {
+    const mergedInput = document.querySelector('#mergedQuoteTotalCell .q-price');
+    subtotal = mergedInput ? (Number(mergedInput.value) || 0) : 0;
+  } else {
+    quoteRows.forEach(row => {
+      const priceInput = row.querySelector('.q-price');
+      subtotal += priceInput ? (Number(priceInput.value) || 0) : 0;
+    });
+  }
 
   let discountVal = 0;
   let taxableValue = subtotal;
@@ -1531,7 +1650,7 @@ window.exportQuotationToDocx = async function() {
   quoteRows.forEach(row => {
     const itemName = row.querySelector('.q-item-name').value.trim();
     const qty = Number(row.querySelector('.q-qty').value) || 1;
-    const price = Number(row.querySelector('.q-price').value) || 0;
+    const price = Number(row.getAttribute('data-price')) || 0;
     printRows.push({ type: 'item', desc: itemName, qty: `${qty} SET`, price: price });
   });
 
@@ -1585,17 +1704,50 @@ window.exportQuotationToDocx = async function() {
   });
 
   const docTableRows = [headerRow];
+  let itemIndex = 0;
 
   printRows.forEach((r, idx) => {
     const slNo = r.type === 'item' ? (idx + 1).toString() : '';
     
     let totalValueText = '';
-    
     if (r.type === 'item') {
-      const numericQty = Number(r.qty.replace(/[^0-9]/g, '')) || 1;
-      totalValueText = `₹${(numericQty * r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+      totalValueText = `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
     } else {
       totalValueText = r.price < 0 ? `-₹${Math.abs(r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}` : `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+    }
+
+    let totalCell = null;
+    if (totalValueMode === 'merged') {
+      if (r.type === 'item') {
+        if (itemIndex === 0) {
+          totalCell = new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: `₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, size: 20, font: "Times New Roman", bold: true })], alignment: AlignmentType.RIGHT })],
+            width: { size: 1560, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.CENTER,
+            verticalMerge: "restart"
+          });
+        } else {
+          totalCell = new TableCell({
+            children: [],
+            width: { size: 1560, type: WidthType.DXA },
+            verticalAlign: VerticalAlign.CENTER,
+            verticalMerge: "continue"
+          });
+        }
+        itemIndex++;
+      } else {
+        totalCell = new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: totalValueText, size: 20, font: "Times New Roman", bold: true })], alignment: AlignmentType.RIGHT })],
+          width: { size: 1560, type: WidthType.DXA },
+          verticalAlign: VerticalAlign.CENTER
+        });
+      }
+    } else {
+      totalCell = new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: totalValueText, size: 20, font: "Times New Roman", bold: r.type === 'adj' })], alignment: AlignmentType.RIGHT })],
+        width: { size: 1560, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER
+      });
     }
     
     const cells = [
@@ -1614,11 +1766,7 @@ window.exportQuotationToDocx = async function() {
         width: { size: 1040, type: WidthType.DXA },
         verticalAlign: VerticalAlign.CENTER
       }),
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: totalValueText, size: 20, font: "Times New Roman", bold: r.type === 'adj' })], alignment: AlignmentType.RIGHT })],
-        width: { size: 1560, type: WidthType.DXA },
-        verticalAlign: VerticalAlign.CENTER
-      })
+      totalCell
     ];
     
     docTableRows.push(new TableRow({ children: cells }));
