@@ -268,13 +268,13 @@ function renderList() {
 
   const tbody = document.querySelector('#shipTable tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
     const tfoot = document.querySelector('#shipTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="5" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
+          <td colspan="4" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
         </tr>
       `;
     }
@@ -358,10 +358,11 @@ function renderList() {
     html.push(`
       <tr ${rowStyle}>
         <td class="col-date">${UI.fmtDate(r.PurchaseDate)}</td>
-        <td class="col-type text-center">${typeBadge}${statusBadge}</td>
         <td class="col-vendor">
           <div class="d-flex align-items-center flex-wrap gap-1">
-            <span>${r.VendorName || '-'}</span>
+            <span class="fw-semibold text-dark" style="font-size:0.88rem; margin-right:4px;">${r.VendorName || '-'}</span>
+            ${typeBadge}
+            ${statusBadge}
             ${docsButton}
             ${notesButton}
           </div>
@@ -422,7 +423,7 @@ function renderList() {
     tfootHTML += `
       <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
         <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-        <td colspan="5" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
+        <td colspan="4" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
       </tr>
     `;
     
@@ -447,7 +448,7 @@ function renderList() {
     // 2. Grand Total Row
     tfootHTML += `
       <tr class="grand-total" style="height:37px;">
-        <td colspan="4">GRAND TOTAL</td>
+        <td colspan="3">GRAND TOTAL</td>
         <td class="text-end fw-bold font-monospace">
           <div class="d-flex flex-column align-items-end" style="gap:2px;">
             <span>${UI.money(sumGrandTotal)}</span>

@@ -8,7 +8,7 @@ const UI = (() => {
   const NAV_ITEMS = [
     { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
-    { href: 'installments.html',    icon: 'coin',       label: 'Client Tracker' },
+    { href: 'installments.html',    icon: 'coin',       label: 'Customer' },
     { href: 'item-master.html',     icon: 'box',        label: 'Products' },
     { href: 'offer.html',           icon: 'file',       label: 'Offer Generator' },
     { href: 'vendor-master.html',   icon: 'people',     label: 'Vendor Master' },

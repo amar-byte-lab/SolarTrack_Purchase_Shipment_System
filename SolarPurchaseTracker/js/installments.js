@@ -1514,16 +1514,7 @@ window.addInlineRow = function () {
 };
 
 window.editRow = function (slNo) {
-  if (editingSlNo !== null) {
-    UI.toast('Please save or cancel your current edit first.', 'warning');
-    return;
-  }
-  editingSlNo = slNo;
-  isAddingNew = false;
-  renderList();
-  
-  const nameInput = document.getElementById('editName');
-  if (nameInput) nameInput.focus();
+  openCustomerModal(slNo);
 };
 
 window.cancelInline = function () {
@@ -2093,11 +2084,12 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cMaterialCost').value = (expenses && expenses.material) || 0;
       document.getElementById('cPartnerPrice').value = (expenses && expenses.partner) || 0;
       document.getElementById('cInstallationCost').value = (expenses && expenses.install) || 0;
+      document.getElementById('cTransportCost').value = (expenses && expenses.transport) || 0;
       document.getElementById('cGSTPercentage').value = (expenses && expenses.gst_pct) || 18;
       document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
     }
   } else {
-    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
+    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -2149,9 +2141,10 @@ window.openCustomerModal = function(slNo) {
 
     const mat = Number(document.getElementById('cMaterialCost').value) || 0;
     const inst = Number(document.getElementById('cInstallationCost').value) || 0;
+    const trans = Number(document.getElementById('cTransportCost').value) || 0;
     const oth = Number(document.getElementById('cOtherCost').value) || 0;
 
-    const totalExpense = mat + inst + gstVal + oth;
+    const totalExpense = mat + inst + trans + gstVal + oth;
 
     const totalField = document.getElementById('cVendorPrice');
     if (totalField) {
@@ -2226,11 +2219,12 @@ async function saveCustomerModal() {
     material: Number(document.getElementById('cMaterialCost').value) || 0,
     partner: Number(document.getElementById('cPartnerPrice').value) || 0,
     install: Number(document.getElementById('cInstallationCost').value) || 0,
+    transport: Number(document.getElementById('cTransportCost').value) || 0,
     gst_pct: gstPctVal,
     gst: calculatedGSTAmount,
     other: Number(document.getElementById('cOtherCost').value) || 0
   };
-  const calculatedVendorPrice = expenses.material + expenses.install + expenses.gst + expenses.other;
+  const calculatedVendorPrice = expenses.material + expenses.install + expenses.transport + expenses.gst + expenses.other;
   const phoneClean = document.getElementById('cBrokerNumber').value.trim().split('|')[0];
 
   const rowData = {
