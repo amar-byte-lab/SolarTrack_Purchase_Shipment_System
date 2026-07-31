@@ -50,9 +50,71 @@ window.onDbReady = function () {
   UI.renderSidebar('installments.html');
   UI.renderTopbar('Client Tracker', 'Manage client installment payments, customer sales, and agent commissions', `
     <button class="btn btn-outline-secondary" id="btnPrintList">🖨 Print</button>
+    <button class="btn btn-primary ms-2" id="btnImportCustomer">📥 Import Customer</button>
+    <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat">📁 Download format</button>
+    <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
   `);
 
   document.getElementById('btnPrintList').addEventListener('click', () => window.print());
+
+  // Excel Import element event listeners
+  const btnImport = document.getElementById('btnImportCustomer');
+  if (btnImport) {
+    btnImport.addEventListener('click', () => {
+      document.getElementById('excelFileInput').click();
+    });
+  }
+
+  const fileInput = document.getElementById('excelFileInput');
+  if (fileInput) {
+    fileInput.addEventListener('change', handleExcelImport);
+  }
+
+  const btnDownloadFormat = document.getElementById('btnDownloadFormat');
+  if (btnDownloadFormat) {
+    btnDownloadFormat.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = 'assets/sampleFiles/My_Applications_List.xlsx';
+      a.download = 'My_Applications_List.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+  }
+
+  const btnTxt = document.getElementById('btnDownloadTxt');
+  if (btnTxt) {
+    btnTxt.addEventListener('click', downloadTxtReport);
+  }
+
+  const btnSaveImport = document.getElementById('btnSaveImportedCustomers');
+  if (btnSaveImport) {
+    btnSaveImport.addEventListener('click', saveImportedCustomers);
+  }
+
+  const chkAll = document.getElementById('chkSelectAllImport');
+  if (chkAll) {
+    chkAll.addEventListener('change', (e) => {
+      const isChecked = e.target.checked;
+      document.querySelectorAll('.chk-import-row').forEach(chk => {
+        chk.checked = isChecked;
+      });
+    });
+  }
+
+  const previewTable = document.getElementById('importPreviewTable');
+  if (previewTable) {
+    previewTable.addEventListener('change', (e) => {
+      if (e.target.classList.contains('chk-import-row')) {
+        const chkAllHeader = document.getElementById('chkSelectAllImport');
+        if (chkAllHeader) {
+          const allChks = document.querySelectorAll('.chk-import-row');
+          const allChecked = Array.from(allChks).every(c => c.checked);
+          chkAllHeader.checked = allChecked;
+        }
+      }
+    });
+  }
 
   const btnSaveCust = document.getElementById('btnSaveCustomer');
   if (btnSaveCust) btnSaveCust.addEventListener('click', saveCustomerModal);
@@ -2128,4 +2190,259 @@ function initResizableColumns() {
       document.addEventListener('mouseup', onMouseUp);
     });
   });
+}
+
+/* ══ Excel Import, Preview, verification, TXT Export, and Database Saving Helpers ══ */
+let parsedCustomers = [];
+
+async function handleExcelImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  UI.showLoading(true);
+
+  const reader = new FileReader();
+  reader.onload = async function(evt) {
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      if (!jsonData || jsonData.length === 0) {
+        UI.toast('The uploaded Excel file contains no data.', 'danger');
+        return;
+      }
+
+      // Map columns case-insensitively
+      const sampleRow = jsonData[0];
+      const keys = Object.keys(sampleRow);
+
+      const nameKey = keys.find(k => {
+        const lk = k.toLowerCase().trim();
+        return lk === 'consumer name' || lk === 'name' || lk === 'customer name' || lk === 'consumername';
+      });
+
+      const mobileKey = keys.find(k => {
+        const lk = k.toLowerCase().trim();
+        return lk === 'mobile no.' || lk === 'mobile no' || lk === 'mobile' || lk === 'mobile number' || lk === 'phone' || lk === 'phonenumber' || lk === 'mobileno';
+      });
+
+      if (!nameKey) {
+        UI.toast('Invalid format! Could not find "Consumer Name" or "Name" column.', 'danger');
+        return;
+      }
+
+      // Get existing grid records to check duplicates
+      const existingRecords = DB.getAll('installments');
+      const seenNamesInExcel = new Set();
+      parsedCustomers = [];
+
+      jsonData.forEach((row) => {
+        const rawName = String(row[nameKey] || '').trim();
+        if (!rawName) return; // skip empty name rows
+
+        const rawMobile = mobileKey ? String(row[mobileKey] || '').trim() : '';
+        const cleanNameVal = cleanName(rawName);
+
+        let status = 'New Name';
+        let isDuplicate = false;
+
+        // 1. Check if already in database/grid
+        const existsInGrid = existingRecords.some(r => cleanName(r.Name) === cleanNameVal);
+        if (existsInGrid) {
+          status = 'Duplicate (Already in Grid)';
+          isDuplicate = true;
+        } 
+        // 2. Check if duplicate within the Excel itself
+        else if (seenNamesInExcel.has(cleanNameVal)) {
+          status = 'Duplicate (In Excel)';
+          isDuplicate = true;
+        } else {
+          seenNamesInExcel.add(cleanNameVal);
+        }
+
+        parsedCustomers.push({
+          Name: rawName,
+          MobileNumber: rawMobile,
+          Status: status,
+          IsDuplicate: isDuplicate
+        });
+      });
+
+      if (parsedCustomers.length === 0) {
+        UI.toast('No customer names found in the Excel file.', 'warning');
+        return;
+      }
+
+      renderImportPreviewModal();
+
+    } catch (err) {
+      console.error(err);
+      UI.toast('Error reading Excel file: ' + err.message, 'danger');
+    } finally {
+      UI.showLoading(false);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
+  reader.onerror = function() {
+    UI.toast('Error reading file as array buffer.', 'danger');
+    UI.showLoading(false);
+    e.target.value = '';
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+function cleanName(n) {
+  return n ? n.toLowerCase().replace(/\s+/g, ' ').trim() : '';
+}
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+}
+
+function renderImportPreviewModal() {
+  const tbody = document.querySelector('#importPreviewTable tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  parsedCustomers.forEach((c, index) => {
+    const tr = document.createElement('tr');
+
+    // Status Badge
+    let badgeClass = 'bg-success';
+    if (c.Status === 'Duplicate (Already in Grid)') {
+      badgeClass = 'bg-danger';
+    } else if (c.Status === 'Duplicate (In Excel)') {
+      badgeClass = 'bg-warning text-dark';
+    }
+
+    // Checked status: new names are checked, duplicates are unchecked
+    const isChecked = !c.IsDuplicate;
+    const checkedAttr = isChecked ? 'checked' : '';
+
+    tr.innerHTML = `
+      <td class="text-center">
+        <input type="checkbox" class="chk-import-row" data-index="${index}" ${checkedAttr}>
+      </td>
+      <td class="text-center">${index + 1}</td>
+      <td class="fw-semibold">${escapeHtml(c.Name)}</td>
+      <td>${escapeHtml(c.MobileNumber || '—')}</td>
+      <td>
+        <span class="badge ${badgeClass}">${c.Status}</span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Reset select all checkbox
+  const chkAll = document.getElementById('chkSelectAllImport');
+  if (chkAll) {
+    chkAll.checked = parsedCustomers.every(c => !c.IsDuplicate);
+  }
+
+  const modalEl = document.getElementById('importPreviewModal');
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+function downloadTxtReport() {
+  let txt = 'IMPORT CUSTOMER PREVIEW REPORT\n';
+  txt += `Generated on: ${new Date().toLocaleString()}\n`;
+  txt += '==================================================\n\n';
+  txt += 'Sl. | Consumer Name | Mobile Number | Status\n';
+  txt += '--------------------------------------------------\n';
+
+  parsedCustomers.forEach((c, idx) => {
+    const name = c.Name;
+    const mobile = c.MobileNumber || 'N/A';
+    const status = c.Status;
+    txt += `${idx + 1}. | ${name} | ${mobile} | ${status}\n`;
+  });
+
+  txt += '\n==================================================\n';
+  txt += `Total Records: ${parsedCustomers.length}\n`;
+  txt += `New Names: ${parsedCustomers.filter(c => c.Status === 'New Name').length}\n`;
+  txt += `Duplicates in Grid: ${parsedCustomers.filter(c => c.Status === 'Duplicate (Already in Grid)').length}\n`;
+  txt += `Duplicates in Excel: ${parsedCustomers.filter(c => c.Status === 'Duplicate (In Excel)').length}\n`;
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Import_Customer_Preview_${UI.todayISO()}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function saveImportedCustomers() {
+  const checkboxes = document.querySelectorAll('.chk-import-row:checked');
+  if (checkboxes.length === 0) {
+    UI.toast('Please check at least one customer to save.', 'warning');
+    return;
+  }
+
+  UI.showLoading(true);
+  try {
+    const allRows = DB.getAll('installments');
+    let currentMaxSl = allRows.reduce((max, r) => Math.max(max, Number(r.SlNo) || 0), 0);
+
+    const promises = [];
+    checkboxes.forEach(chk => {
+      const idx = Number(chk.getAttribute('data-index'));
+      const customer = parsedCustomers[idx];
+      if (customer) {
+        currentMaxSl++;
+        const rowData = {
+          SlNo: currentMaxSl,
+          Name: customer.Name,
+          MobileNumber: customer.MobileNumber,
+          Status: 'Active',
+          District: '',
+          Address: '',
+          CommittedBrand: '',
+          FirstInstallment: 0,
+          SecondInstallment: 0,
+          ThirdInstallment: 0,
+          Total: 0,
+          CommittedPrice: 0,
+          VendorPrice: 0,
+          VendorPaid: 0,
+          LoginDate: UI.todayISO(),
+          InstallationDate: null,
+          BrokerName: '',
+          BrokerNumber: '',
+          Commission: 0,
+          CommissionPaid: 0,
+          CommissioningDate: ''
+        };
+        promises.push(DB.insert('installments', rowData));
+      }
+    });
+
+    await Promise.all(promises);
+
+    // Close modal
+    const modalEl = document.getElementById('importPreviewModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    UI.toast(`Successfully saved ${checkboxes.length} customer(s) to the database.`, 'success');
+    renderList();
+  } catch (err) {
+    console.error(err);
+    UI.toast('Error saving imported customers: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
 }
