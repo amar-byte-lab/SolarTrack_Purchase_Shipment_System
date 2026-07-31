@@ -47,15 +47,20 @@ window.onDbReady = function () {
     document.head.appendChild(style);
   }
 
-  UI.renderSidebar('installments.html');
-  UI.renderTopbar('Client Tracker', 'Manage client installment payments, customer sales, and agent commissions', `
+  const buttonsHtml = isAdmin ? `
     <button class="btn btn-outline-secondary" id="btnPrintList">🖨 Print</button>
     <button class="btn btn-primary ms-2" id="btnImportCustomer">📥 Import Customer</button>
     <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat">📁 Download format</button>
     <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
-  `);
+  ` : '';
 
-  document.getElementById('btnPrintList').addEventListener('click', () => window.print());
+  UI.renderSidebar('installments.html');
+  UI.renderTopbar('Client Tracker', 'Manage client installment payments, customer sales, and agent commissions', buttonsHtml);
+
+  const btnPrint = document.getElementById('btnPrintList');
+  if (btnPrint) {
+    btnPrint.addEventListener('click', () => window.print());
+  }
 
   // Excel Import element event listeners
   const btnImport = document.getElementById('btnImportCustomer');
@@ -1133,7 +1138,7 @@ function renderList() {
               </div>
             </div>
           </td>
-          <td class="no-print text-center">
+          <td class="no-print text-center admin-only-column">
             <div class="d-flex gap-1 justify-content-center">
               ${isDeactive ? `
                 <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="restoreRow(${r.SlNo})" title="Restore">↻</button>
@@ -1160,7 +1165,7 @@ function renderList() {
       tfootHTML += `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="${isAdmin ? '5' : '4'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="${isAdmin ? '5' : '3'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
       `;
     }
@@ -1201,7 +1206,7 @@ function renderList() {
           </div>
         </td>
         <td></td>
-        <td class="no-print"></td>
+        <td class="no-print admin-only-column"></td>
       </tr>
     `;
     tfoot.innerHTML = tfootHTML;
