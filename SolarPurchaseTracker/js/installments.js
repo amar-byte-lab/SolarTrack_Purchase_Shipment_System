@@ -1137,6 +1137,7 @@ function renderList() {
             <div class="d-flex gap-1 justify-content-center">
               ${isDeactive ? `
                 <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="restoreRow(${r.SlNo})" title="Restore">↻</button>
+                <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">❌</button>
               ` : `
                 <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editRow(${r.SlNo})" title="Edit">✎</button>
                 <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteRow(${r.SlNo})" title="Deactivate">🗑</button>
@@ -1560,6 +1561,31 @@ window.restoreRow = async function (slNo) {
     UI.toast('Customer reactivated successfully.', 'success');
   } catch (err) {
     UI.toast('Error reactivating: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+  populateDatalists();
+  renderList();
+};
+
+window.hardDeleteRow = async function (slNo) {
+  if (editingSlNo !== null) {
+    UI.toast('Please save or cancel your current edit first.', 'warning');
+    return;
+  }
+  
+  const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+  const desc = r ? `${r.Name}${r.Address || r.District ? ' (' + [r.Address, r.District].filter(Boolean).join(', ') + ')' : ''}` : `Sl No. ${slNo}`;
+
+  const ok = await UI.confirmDialog(`Are you sure you want to PERMANENTLY delete customer ${desc}? This action cannot be undone.`, 'Confirm Permanent Delete', 'Delete Permanently', 'btn-danger');
+  if (!ok) return;
+
+  UI.showLoading(true);
+  try {
+    await DB.remove('installments', x => Number(x.SlNo) === Number(slNo));
+    UI.toast('Customer permanently deleted.', 'success');
+  } catch (err) {
+    UI.toast('Error permanently deleting customer: ' + err.message, 'danger');
   } finally {
     UI.showLoading(false);
   }
