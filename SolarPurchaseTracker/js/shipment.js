@@ -9,6 +9,7 @@ let currentDocs = [];
 
 let sortCol = 'PurchaseDate';
 let sortDir = 'desc';
+let activeTab = 'Buy';
 
 let selectedColorCols = [];
 const COLORABLE_COLS = [
@@ -27,6 +28,24 @@ window.onDbReady = function () {
   `);
 
   document.getElementById('btnPrintList').addEventListener('click', () => window.print());
+
+  // Tabs for Buy / Sell
+  const tabBuy = document.getElementById('tabBuy');
+  const tabSell = document.getElementById('tabSell');
+  if (tabBuy && tabSell) {
+    tabBuy.addEventListener('click', () => {
+      activeTab = 'Buy';
+      tabBuy.classList.add('active');
+      tabSell.classList.remove('active');
+      renderList();
+    });
+    tabSell.addEventListener('click', () => {
+      activeTab = 'Sell';
+      tabSell.classList.add('active');
+      tabBuy.classList.remove('active');
+      renderList();
+    });
+  }
 
   // Filters
   ['fSearch', 'fFrom', 'fTo', 'fVendor'].forEach(id => {
@@ -230,6 +249,9 @@ function renderList() {
   const showDeleted = chkDel ? chkDel.checked : false;
 
   let rows = getEnrichedShipments(showDeleted);
+
+  // Filter by active tab type (Buy / Sell)
+  rows = rows.filter(r => (r.ShipmentType || 'Buy') === activeTab);
 
   if (search) {
     rows = rows.filter(r =>
@@ -503,6 +525,10 @@ function createMaterialRow(data, defaultGstPercent = 18) {
   const tbody = document.getElementById('editMaterialsTbody');
   if (!tbody) return;
   
+  function round2(n) {
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+  }
+  
   const qty  = data ? (Number(data.Quantity)           || 0) : 0;
   const rate = data ? (Number(data.PurchaseRate)        || 0) : 0;
   const gst  = data ? (data.GSTPercentage !== undefined && data.GSTPercentage !== null ? Number(data.GSTPercentage) : defaultGstPercent) : defaultGstPercent;
@@ -512,15 +538,15 @@ function createMaterialRow(data, defaultGstPercent = 18) {
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input type="text"   class="form-control form-control-sm mat-name border-0 p-0 text-center" list="itemList" value="${data ? (data.ItemName  || '') : ''}" placeholder="Item Name"></td>
-    <td><input type="text"   class="form-control form-control-sm mat-category border-0 p-0 text-center" value="${data ? (data.Category || '') : ''}" placeholder="Category"></td>
-    <td><input type="number" class="form-control form-control-sm mat-qty  border-0 p-0 text-end" min="0" step="any" value="${qty  || ''}"></td>
-    <td><input type="text"   class="form-control form-control-sm mat-unit border-0 p-0 text-center" value="${data ? (data.Unit || '') : ''}" placeholder="Unit"></td>
-    <td><input type="number" class="form-control form-control-sm mat-rate border-0 p-0 text-end" min="0" step="any" value="${rate || ''}"></td>
-    <td><input type="number" class="form-control form-control-sm mat-gst border-0 p-0 text-end" min="0" max="100" step="any" value="${gst}"></td>
-    <td><input type="number" class="form-control form-control-sm mat-rate-with-gst border-0 p-0 text-end" min="0" step="any" value="${rateWithGst ? (Math.round(rateWithGst * 100) / 100) : ''}"></td>
-    <td><input type="number" class="form-control form-control-sm mat-total border-0 p-0 text-end fw-semibold" min="0" step="any" value="${tot  || ''}" placeholder="Total"></td>
-    <td><input type="number" class="form-control form-control-sm mat-msp border-0 p-0 text-end" min="0" step="any" value="${msp}" placeholder="Optional"></td>
+    <td><input type="text"   class="form-control form-control-sm mat-name border-0 p-0 text-center" value="${data ? (data.ItemName  || '') : ''}" placeholder="Item Name" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-qty  border-0 p-0 text-end" min="0" step="any" value="${qty  || ''}" autocomplete="off"></td>
+    <td><input type="text"   class="form-control form-control-sm mat-unit border-0 p-0 text-center" value="${data ? (data.Unit || '') : ''}" placeholder="Unit" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-rate border-0 p-0 text-end" min="0" step="any" value="${rate || ''}" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-total-without-gst border-0 p-0 text-end fw-semibold" min="0" step="any" value="${(qty && rate) ? round2(qty * rate) : ''}" placeholder="Total Price" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-gst border-0 p-0 text-end" min="0" max="100" step="any" value="${gst}" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-rate-with-gst border-0 p-0 text-end" min="0" step="any" value="${rateWithGst ? round2(rateWithGst) : ''}" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-total border-0 p-0 text-end fw-semibold" min="0" step="any" value="${tot ? round2(tot) : ''}" placeholder="Total" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-msp border-0 p-0 text-end" min="0" step="any" value="${msp}" placeholder="Optional" autocomplete="off"></td>
     <td class="text-center"><span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeMaterialRowInline(this)">✕</span></td>
   `;
   
@@ -532,42 +558,93 @@ function createMaterialRow(data, defaultGstPercent = 18) {
   const rateWithGstEl = tr.querySelector('.mat-rate-with-gst');
   const totalEl = tr.querySelector('.mat-total');
   const nameEl  = tr.querySelector('.mat-name');
-  const catEl   = tr.querySelector('.mat-category');
+  const totalWithoutGstEl = tr.querySelector('.mat-total-without-gst');
   const unitEl  = tr.querySelector('.mat-unit');
 
-  function round2(n) {
-    return Math.round((n + Number.EPSILON) * 100) / 100;
-  }
-
-  function onQtyOrRateInput() {
+  function onQtyInput() {
     const q = Number(qtyEl.value) || 0;
     const r = Number(rateEl.value) || 0;
     const g = Number(gstEl.value) || 0;
+    const rg = Number(rateWithGstEl.value) || 0;
+    const twg = Number(totalWithoutGstEl.value) || 0;
+    const t = Number(totalEl.value) || 0;
 
-    const rg = r * (1 + g / 100);
-    rateWithGstEl.value = r > 0 ? round2(rg) : '';
-    totalEl.value = (q > 0 && r > 0) ? round2(q * rg) : '';
+    if (q > 0) {
+      if (r > 0) {
+        totalWithoutGstEl.value = round2(q * r);
+        const computedRg = r * (1 + g / 100);
+        rateWithGstEl.value = round2(computedRg);
+        totalEl.value = round2(q * computedRg);
+      } else if (twg > 0) {
+        const computedR = twg / q;
+        rateEl.value = round2(computedR);
+        const computedRg = computedR * (1 + g / 100);
+        rateWithGstEl.value = round2(computedRg);
+        totalEl.value = round2(q * computedRg);
+      } else if (t > 0) {
+        const computedRg = t / q;
+        rateWithGstEl.value = round2(computedRg);
+        const computedR = computedRg / (1 + g / 100);
+        rateEl.value = round2(computedR);
+        totalWithoutGstEl.value = round2(q * computedR);
+      } else if (rg > 0) {
+        totalEl.value = round2(q * rg);
+        const computedR = rg / (1 + g / 100);
+        rateEl.value = round2(computedR);
+        totalWithoutGstEl.value = round2(q * computedR);
+      }
+    }
+    recalcInlineForm();
+  }
 
+  function onRateInput() {
+    const q = Number(qtyEl.value) || 0;
+    const r = Number(rateEl.value) || 0;
+    const g = Number(gstEl.value) || 0;
+    const twg = Number(totalWithoutGstEl.value) || 0;
+    const t = Number(totalEl.value) || 0;
+
+    if (r > 0) {
+      const rg = r * (1 + g / 100);
+      rateWithGstEl.value = round2(rg);
+      if (q > 0) {
+        totalWithoutGstEl.value = round2(q * r);
+        totalEl.value = round2(q * rg);
+      } else if (twg > 0) {
+        const computedQ = twg / r;
+        qtyEl.value = round2(computedQ);
+        totalEl.value = round2(computedQ * rg);
+      } else if (t > 0) {
+        const computedQ = t / rg;
+        qtyEl.value = round2(computedQ);
+        totalWithoutGstEl.value = round2(computedQ * r);
+      }
+    }
     recalcInlineForm();
   }
 
   function onGstInput() {
     const q = Number(qtyEl.value) || 0;
     const g = Number(gstEl.value) || 0;
-
+    const r = Number(rateEl.value) || 0;
     const rg = Number(rateWithGstEl.value) || 0;
-    if (rg > 0) {
-      const r = rg / (1 + g / 100);
-      rateEl.value = round2(r);
-    } else {
-      const r = Number(rateEl.value) || 0;
-      if (r > 0) {
-        const computedRg = r * (1 + g / 100);
-        rateWithGstEl.value = round2(computedRg);
-        totalEl.value = q > 0 ? round2(q * computedRg) : '';
+    const twg = Number(totalWithoutGstEl.value) || 0;
+
+    if (r > 0) {
+      const computedRg = r * (1 + g / 100);
+      rateWithGstEl.value = round2(computedRg);
+      if (q > 0) {
+        totalEl.value = round2(q * computedRg);
+      } else if (twg > 0) {
+        totalEl.value = round2(twg * (1 + g / 100));
+      }
+    } else if (rg > 0) {
+      const computedR = rg / (1 + g / 100);
+      rateEl.value = round2(computedR);
+      if (q > 0) {
+        totalWithoutGstEl.value = round2(q * computedR);
       }
     }
-
     recalcInlineForm();
   }
 
@@ -575,11 +652,25 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     const rg = Number(rateWithGstEl.value) || 0;
     const g = Number(gstEl.value) || 0;
     const q = Number(qtyEl.value) || 0;
+    const twg = Number(totalWithoutGstEl.value) || 0;
+    const t = Number(totalEl.value) || 0;
 
-    const r = rg / (1 + g / 100);
-    rateEl.value = rg > 0 ? round2(r) : '';
-    totalEl.value = (q > 0 && rg > 0) ? round2(q * rg) : '';
-
+    if (rg > 0) {
+      const r = rg / (1 + g / 100);
+      rateEl.value = round2(r);
+      if (q > 0) {
+        totalWithoutGstEl.value = round2(q * r);
+        totalEl.value = round2(q * rg);
+      } else if (twg > 0) {
+        const computedQ = twg / r;
+        qtyEl.value = round2(computedQ);
+        totalEl.value = round2(computedQ * rg);
+      } else if (t > 0) {
+        const computedQ = t / rg;
+        qtyEl.value = round2(computedQ);
+        totalWithoutGstEl.value = round2(computedQ * r);
+      }
+    }
     recalcInlineForm();
   }
 
@@ -587,22 +678,62 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     const q = Number(qtyEl.value) || 0;
     const t = Number(totalEl.value) || 0;
     const g = Number(gstEl.value) || 0;
+    const rg = Number(rateWithGstEl.value) || 0;
+    const r = Number(rateEl.value) || 0;
 
-    if (q > 0 && t > 0) {
-      const rg = t / q;
-      rateWithGstEl.value = round2(rg);
-      const r = rg / (1 + g / 100);
-      rateEl.value = round2(r);
+    if (t > 0) {
+      const twg = t / (1 + g / 100);
+      totalWithoutGstEl.value = round2(twg);
+
+      if (q > 0) {
+        const computedRg = t / q;
+        rateWithGstEl.value = round2(computedRg);
+        const computedR = computedRg / (1 + g / 100);
+        rateEl.value = round2(computedR);
+      } else if (rg > 0) {
+        const computedQ = t / rg;
+        qtyEl.value = round2(computedQ);
+        const computedR = rg / (1 + g / 100);
+        rateEl.value = round2(computedR);
+      } else if (r > 0) {
+        const computedQ = twg / r;
+        qtyEl.value = round2(computedQ);
+        const computedRg = r * (1 + g / 100);
+        rateWithGstEl.value = round2(computedRg);
+      }
     }
-
     recalcInlineForm();
   }
 
-  qtyEl.addEventListener('input', onQtyOrRateInput);
-  rateEl.addEventListener('input', onQtyOrRateInput);
+  function onTotalWithoutGstInput() {
+    const q = Number(qtyEl.value) || 0;
+    const twg = Number(totalWithoutGstEl.value) || 0;
+    const g = Number(gstEl.value) || 0;
+    const r = Number(rateEl.value) || 0;
+
+    if (twg > 0) {
+      const computedT = twg * (1 + g / 100);
+      totalEl.value = round2(computedT);
+
+      if (q > 0) {
+        const computedR = twg / q;
+        rateEl.value = round2(computedR);
+        rateWithGstEl.value = round2(computedR * (1 + g / 100));
+      } else if (r > 0) {
+        const computedQ = twg / r;
+        qtyEl.value = round2(computedQ);
+        rateWithGstEl.value = round2(r * (1 + g / 100));
+      }
+    }
+    recalcInlineForm();
+  }
+
+  qtyEl.addEventListener('input', onQtyInput);
+  rateEl.addEventListener('input', onRateInput);
   gstEl.addEventListener('input', onGstInput);
   rateWithGstEl.addEventListener('input', onRateWithGstInput);
   totalEl.addEventListener('input', onTotalInput);
+  totalWithoutGstEl.addEventListener('input', onTotalWithoutGstInput);
 
   nameEl.addEventListener('input', () => {
     const val = nameEl.value.trim();
@@ -610,7 +741,6 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     const items = DB.getAll('items');
     const matched = items.find(i => i.ItemName.toLowerCase() === val.toLowerCase());
     if (matched) {
-      if (matched.Category) catEl.value = matched.Category;
       if (matched.Unit) unitEl.value = matched.Unit;
       if (matched.GSTPercent !== undefined && matched.GSTPercent !== null && matched.GSTPercent !== '') {
         gstEl.value = matched.GSTPercent;
@@ -652,7 +782,12 @@ function recalcInlineForm() {
 
 function readMaterialsFromInlineForm() {
   const rows = document.querySelectorAll('#editMaterialsTbody tr');
+  const items = DB.getAll('items');
   return Array.from(rows).map(row => {
+    const itemName = row.querySelector('.mat-name').value.trim();
+    const matched = items.find(i => i.ItemName.toLowerCase() === itemName.toLowerCase());
+    const category = matched ? (matched.Category || '') : '';
+    
     const qty   = Number(row.querySelector('.mat-qty').value)   || 0;
     const rate  = Number(row.querySelector('.mat-rate').value)  || 0;
     const gst   = Number(row.querySelector('.mat-gst').value)   || 0;
@@ -660,8 +795,8 @@ function readMaterialsFromInlineForm() {
     const mspRaw = row.querySelector('.mat-msp').value.trim();
     const msp   = mspRaw === '' ? null : Number(mspRaw);
     return {
-      ItemName:          row.querySelector('.mat-name').value.trim(),
-      Category:          row.querySelector('.mat-category').value.trim(),
+      ItemName:          itemName,
+      Category:          category,
       Quantity:          qty,
       Unit:              row.querySelector('.mat-unit').value.trim(),
       PurchaseRate:      rate,

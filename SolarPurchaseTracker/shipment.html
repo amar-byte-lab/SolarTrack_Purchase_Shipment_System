@@ -401,6 +401,16 @@
         </div>
       </div>
 
+      <!-- Tabs for Buy / Sell -->
+      <ul class="nav nav-pills mb-2" id="shipmentTypeTabs">
+        <li class="nav-item">
+          <button class="nav-link active fw-bold py-1 px-3" data-type="Buy" id="tabBuy" style="font-size: 0.85rem;">📥 Buy Shipments</button>
+        </li>
+        <li class="nav-item ms-2">
+          <button class="nav-link fw-bold py-1 px-3" data-type="Sell" id="tabSell" style="font-size: 0.85rem;">📤 Sell Shipments</button>
+        </li>
+      </ul>
+
       <div class="st-card st-card-table-container">
         <div class="table-responsive-main">
           <table class="table table-hover table-installments mb-0" id="shipTable">
@@ -509,7 +519,7 @@
 
 <!-- ══ Shipment Add/Edit Form Modal ══════════════════════════════════════ -->
 <div class="modal fade" id="shipmentFormModal" tabindex="-1" aria-labelledby="shipFormModalLabel" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
       <div class="modal-header bg-dark text-white py-3" style="border-radius:14px 14px 0 0;">
         <h5 class="modal-title fw-bold fs-6" id="shipFormModalLabel">Shipment Record</h5>
@@ -520,7 +530,7 @@
           <!-- Purchase Date -->
           <div class="col-md-4 col-6">
             <label class="form-label fs-7 fw-bold text-secondary">Purchase Date</label>
-            <input type="date" class="form-control form-control-sm" id="editPurchaseDate">
+            <input type="date" class="form-control form-control-sm" id="editPurchaseDate" autocomplete="off">
           </div>
           <!-- Shipment Type -->
           <div class="col-md-4 col-6">
@@ -543,30 +553,30 @@
           
           <div class="col-md-3 col-6">
             <label class="form-label fs-7 mb-0">Vehicle Number</label>
-            <input type="text" class="form-control form-control-sm" id="editVehicleNumber">
+            <input type="text" class="form-control form-control-sm" id="editVehicleNumber" autocomplete="off">
           </div>
           <div class="col-md-3 col-6">
             <label class="form-label fs-7 mb-0">Invoice Number</label>
-            <input type="text" class="form-control form-control-sm" id="editInvoiceNumber">
+            <input type="text" class="form-control form-control-sm" id="editInvoiceNumber" autocomplete="off">
           </div>
           <div class="col-md-6 col-12">
             <label class="form-label fs-7 mb-0">Remarks</label>
-            <input type="text" class="form-control form-control-sm" id="editRemarks">
+            <input type="text" class="form-control form-control-sm" id="editRemarks" autocomplete="off">
           </div>
           
           <div class="col-md-4 col-4">
             <label class="form-label fs-7 mb-0" id="lblEditVendorPaid">Paid (₹)</label>
-            <input type="number" min="0" class="form-control form-control-sm edit-calc-input" id="editVendorPaid" value="0" placeholder="0">
+            <input type="number" min="0" class="form-control form-control-sm edit-calc-input" id="editVendorPaid" value="0" placeholder="0" autocomplete="off">
           </div>
           <div class="col-md-4 col-4">
             <label class="form-label fs-7 mb-0">Transport Cost (₹)</label>
-            <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0">
+            <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0" autocomplete="off">
           </div>
           <div class="col-md-4 col-4">
             <label class="form-label fs-7 mb-0">Transport Paid (₹)</label>
-            <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportPaid" value="0">
+            <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportPaid" value="0" autocomplete="off">
           </div>
-
+ 
           <div class="col-12"><hr class="my-1 opacity-25"></div>
           <div class="col-12 d-flex justify-content-between align-items-center">
             <h6 class="fw-bold mb-0 text-primary fs-7">Materials List</h6>
@@ -575,17 +585,17 @@
           
           <div class="col-12">
             <div class="table-responsive border rounded bg-white" style="max-height: 200px;">
-              <table class="table table-sm align-middle table-bordered mb-0" id="editMaterialsTable">
+              <table class="table table-sm align-middle table-bordered mb-0" id="editMaterialsTable" style="min-width: 1050px;">
                 <thead class="table-light fs-7">
                   <tr>
                     <th>Item Name</th>
-                    <th>Category</th>
                     <th style="width:70px;">Qty</th>
                     <th style="width:70px;">Unit</th>
                     <th style="width:90px;">Rate/Unit</th>
+                    <th style="width:110px;">Total Price</th>
                     <th style="width:70px;">GST %</th>
                     <th style="width:110px;">Rate/Unit+GST</th>
-                    <th style="width:110px;">Total Price</th>
+                    <th style="width:110px;">Total Price+GST</th>
                     <th style="width:110px;">MSP</th>
                     <th style="width:30px;"></th>
                   </tr>
