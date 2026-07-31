@@ -2266,6 +2266,8 @@ async function handleExcelImport(e) {
         parsedCustomers.push({
           Name: rawName,
           MobileNumber: rawMobile,
+          District: '',
+          BrokerName: '',
           Status: status,
           IsDuplicate: isDuplicate
         });
@@ -2337,10 +2339,55 @@ function renderImportPreviewModal() {
       <td class="fw-semibold">${escapeHtml(c.Name)}</td>
       <td>${escapeHtml(c.MobileNumber || '—')}</td>
       <td>
+        <div class="position-relative">
+          <input type="text" class="form-control form-control-sm import-district-input" id="importDistrict_${index}" placeholder="Select District" autocomplete="off" style="font-size: 0.8rem; min-width: 130px;" value="${escapeHtml(c.District || '')}">
+        </div>
+      </td>
+      <td>
+        <div class="position-relative">
+          <input type="text" class="form-control form-control-sm import-broker-input" id="importBroker_${index}" placeholder="Select Partner" autocomplete="off" style="font-size: 0.8rem; min-width: 150px;" value="${escapeHtml(c.BrokerName || '')}">
+        </div>
+      </td>
+      <td>
         <span class="badge ${badgeClass}">${c.Status}</span>
       </td>
     `;
     tbody.appendChild(tr);
+  });
+
+  // Post-render initialization of searchable dropdowns for each row
+  parsedCustomers.forEach((c, index) => {
+    // 1. Initialize District searchable dropdown
+    Utils.initSearchableDropdown(`importDistrict_${index}`, DISTRICTS, (val) => {
+      parsedCustomers[index].District = val;
+    });
+
+    const distInput = document.getElementById(`importDistrict_${index}`);
+    if (distInput) {
+      distInput.addEventListener('input', (e) => {
+        parsedCustomers[index].District = e.target.value.trim();
+      });
+      distInput.addEventListener('change', (e) => {
+        parsedCustomers[index].District = e.target.value.trim();
+      });
+    }
+
+    // 2. Initialize Broker searchable dropdown
+    const vendors = DB.getAll('vendors') || [];
+    const vendorNames = vendors.map(v => v.VendorName).sort((a, b) => a.localeCompare(b));
+    Utils.initSearchableDropdown(`importBroker_${index}`, vendorNames, (val) => {
+      parsedCustomers[index].BrokerName = val;
+    });
+
+    const brokerInput = document.getElementById(`importBroker_${index}`);
+    if (brokerInput) {
+      brokerInput.addEventListener('input', (e) => {
+        parsedCustomers[index].BrokerName = e.target.value.trim();
+      });
+      brokerInput.addEventListener('change', (e) => {
+        parsedCustomers[index].BrokerName = e.target.value.trim();
+      });
+    }
   });
 
   // Reset select all checkbox
@@ -2357,18 +2404,20 @@ function renderImportPreviewModal() {
 function downloadTxtReport() {
   let txt = 'IMPORT CUSTOMER PREVIEW REPORT\n';
   txt += `Generated on: ${new Date().toLocaleString()}\n`;
-  txt += '==================================================\n\n';
-  txt += 'Sl. | Consumer Name | Mobile Number | Status\n';
-  txt += '--------------------------------------------------\n';
+  txt += '======================================================================\n\n';
+  txt += 'Sl. | Consumer Name | Mobile Number | District | Broker / Partner Name | Status\n';
+  txt += '----------------------------------------------------------------------\n';
 
   parsedCustomers.forEach((c, idx) => {
     const name = c.Name;
     const mobile = c.MobileNumber || 'N/A';
+    const district = c.District || 'N/A';
+    const broker = c.BrokerName || 'N/A';
     const status = c.Status;
-    txt += `${idx + 1}. | ${name} | ${mobile} | ${status}\n`;
+    txt += `${idx + 1}. | ${name} | ${mobile} | ${district} | ${broker} | ${status}\n`;
   });
 
-  txt += '\n==================================================\n';
+  txt += '\n======================================================================\n';
   txt += `Total Records: ${parsedCustomers.length}\n`;
   txt += `New Names: ${parsedCustomers.filter(c => c.Status === 'New Name').length}\n`;
   txt += `Duplicates in Grid: ${parsedCustomers.filter(c => c.Status === 'Duplicate (Already in Grid)').length}\n`;
@@ -2397,18 +2446,41 @@ async function saveImportedCustomers() {
     const allRows = DB.getAll('installments');
     let currentMaxSl = allRows.reduce((max, r) => Math.max(max, Number(r.SlNo) || 0), 0);
 
+    const currentUser = Auth.getUser();
+    let creatorSuffix = '';
+    if (currentUser) {
+      creatorSuffix = '|creator:' + currentUser.userid;
+    }
+
+    const defaultExpenses = {
+      material: 0,
+      partner: 0,
+      install: 0,
+      gst_pct: 0,
+      gst: 0,
+      other: 0
+    };
+
+    const vendors = DB.getAll('vendors') || [];
     const promises = [];
+
     checkboxes.forEach(chk => {
       const idx = Number(chk.getAttribute('data-index'));
       const customer = parsedCustomers[idx];
       if (customer) {
         currentMaxSl++;
+
+        // Find selected broker's phone number
+        const foundVendor = vendors.find(v => v.VendorName === customer.BrokerName);
+        const vendorPhone = foundVendor ? (foundVendor.Phone || '').trim() : '';
+        const brokerNumberVal = vendorPhone + creatorSuffix + '|expenses:' + JSON.stringify(defaultExpenses);
+
         const rowData = {
           SlNo: currentMaxSl,
           Name: customer.Name,
           MobileNumber: customer.MobileNumber,
           Status: 'Active',
-          District: '',
+          District: customer.District || '',
           Address: '',
           CommittedBrand: '',
           FirstInstallment: 0,
@@ -2420,8 +2492,8 @@ async function saveImportedCustomers() {
           VendorPaid: 0,
           LoginDate: UI.todayISO(),
           InstallationDate: null,
-          BrokerName: '',
-          BrokerNumber: '',
+          BrokerName: customer.BrokerName || '',
+          BrokerNumber: brokerNumberVal,
           Commission: 0,
           CommissionPaid: 0,
           CommissioningDate: ''
