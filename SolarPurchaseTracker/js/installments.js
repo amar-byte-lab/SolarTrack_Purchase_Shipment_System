@@ -679,6 +679,7 @@ function updateDistrictStats() {
 
   const allRows = DB.getAll('installments') || [];
   const activeRows = allRows.filter(r => r.Status !== 'Deactive');
+  const totalCount = activeRows.length;
   const counts = {};
 
   activeRows.forEach(r => {
@@ -704,11 +705,15 @@ function updateDistrictStats() {
     'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
   ];
 
-  container.innerHTML = sortedDistricts.map((dist, index) => {
+  const totalBadge = `<span class="badge rounded-pill bg-success text-white px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: bold; background-color: var(--st-success, #2ec4b6) !important;">Total: ${totalCount}</span>`;
+
+  const districtBadges = sortedDistricts.map((dist, index) => {
     const count = counts[dist];
     const style = badgeStyles[index % badgeStyles.length];
     return `<span class="badge rounded-pill ${style} px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500;">${dist}: ${count}</span>`;
   }).join('');
+
+  container.innerHTML = totalBadge + ' ' + districtBadges;
 }
 
 function updateBrandDropdownButton() {
