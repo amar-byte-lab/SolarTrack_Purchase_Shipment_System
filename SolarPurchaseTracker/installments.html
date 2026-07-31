@@ -857,8 +857,29 @@
             </tbody>
           </table>
         </div>
+        
+        <!-- Missing in Excel Section -->
+        <h6 class="fw-bold mt-3 mb-2 text-danger-emphasis"><span class="me-1">⚠️</span>Grid Records Missing in Excel File</h6>
+        <div class="table-responsive bg-white rounded shadow-sm border mb-2" style="min-height: 100px; max-height: 220px; overflow-y: auto;">
+          <table class="table table-sm table-hover align-middle mb-0" id="missingPreviewTable" style="font-size:0.85rem;">
+            <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+              <tr>
+                <th class="text-center" style="width: 50px;">Sl.</th>
+                <th>Consumer Name</th>
+                <th>Mobile Number</th>
+                <th>District</th>
+                <th>Broker / Partner Name</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Injected dynamically by JS -->
+            </tbody>
+          </table>
+        </div>
+
         <div class="fs-8 text-secondary mt-1">
-          * Checked customers will be saved to the database. Duplicates are unchecked by default.
+          * Checked customers will be saved to the database. Duplicates and missing records are unchecked/excluded by default.
         </div>
       </div>
       <div class="modal-footer bg-light border-top py-2">

@@ -2220,6 +2220,7 @@ function initResizableColumns() {
 
 /* ══ Excel Import, Preview, verification, TXT Export, and Database Saving Helpers ══ */
 let parsedCustomers = [];
+let parsedMissingCustomers = [];
 
 async function handleExcelImport(e) {
   const file = e.target.files[0];
@@ -2260,10 +2261,13 @@ async function handleExcelImport(e) {
         return;
       }
 
-      // Get existing grid records to check duplicates
+      // Get existing grid records to check duplicates and calculate missing rows
       const existingRecords = DB.getAll('installments');
       const seenNamesInExcel = new Set();
       parsedCustomers = [];
+      parsedMissingCustomers = [];
+
+      const excelNamesSet = new Set();
 
       jsonData.forEach((row) => {
         const rawName = String(row[nameKey] || '').trim();
@@ -2271,6 +2275,8 @@ async function handleExcelImport(e) {
 
         const rawMobile = mobileKey ? String(row[mobileKey] || '').trim() : '';
         const cleanNameVal = cleanName(rawName);
+
+        excelNamesSet.add(cleanNameVal);
 
         let status = 'New Name';
         let isDuplicate = false;
@@ -2297,6 +2303,20 @@ async function handleExcelImport(e) {
           Status: status,
           IsDuplicate: isDuplicate
         });
+      });
+
+      // Find grid records missing in the Excel file
+      existingRecords.forEach(r => {
+        const cleanGridName = cleanName(r.Name);
+        if (!excelNamesSet.has(cleanGridName)) {
+          parsedMissingCustomers.push({
+            Name: r.Name,
+            MobileNumber: r.MobileNumber || '',
+            District: r.District || '',
+            BrokerName: r.BrokerName || '',
+            Status: 'Missing in Excel'
+          });
+        }
       });
 
       if (parsedCustomers.length === 0) {
@@ -2338,6 +2358,7 @@ function escapeHtml(str) {
 }
 
 function renderImportPreviewModal() {
+  // 1. Render import candidates
   const tbody = document.querySelector('#importPreviewTable tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -2381,9 +2402,9 @@ function renderImportPreviewModal() {
     tbody.appendChild(tr);
   });
 
-  // Post-render initialization of searchable dropdowns for each row
+  // Post-render initialization of searchable dropdowns for each import candidate row
   parsedCustomers.forEach((c, index) => {
-    // 1. Initialize District searchable dropdown
+    // District
     Utils.initSearchableDropdown(`importDistrict_${index}`, DISTRICTS, (val) => {
       parsedCustomers[index].District = val;
     });
@@ -2398,7 +2419,7 @@ function renderImportPreviewModal() {
       });
     }
 
-    // 2. Initialize Broker searchable dropdown
+    // Broker / Partner Name
     const vendors = DB.getAll('vendors') || [];
     const vendorNames = vendors.map(v => v.VendorName).sort((a, b) => a.localeCompare(b));
     Utils.initSearchableDropdown(`importBroker_${index}`, vendorNames, (val) => {
@@ -2416,6 +2437,38 @@ function renderImportPreviewModal() {
     }
   });
 
+  // 2. Render missing database records
+  const tbodyMissing = document.querySelector('#missingPreviewTable tbody');
+  if (tbodyMissing) {
+    tbodyMissing.innerHTML = '';
+    if (parsedMissingCustomers.length === 0) {
+      tbodyMissing.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center text-muted py-3">
+            No grid records are missing from the uploaded Excel file. All database entries matched.
+          </td>
+        </tr>
+      `;
+    } else {
+      parsedMissingCustomers.forEach((c, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'align-middle';
+
+        tr.innerHTML = `
+          <td class="text-center" style="background-color: #fff3cd !important; color: #664d03 !important;">${index + 1}</td>
+          <td class="fw-semibold" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.Name)}</td>
+          <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.MobileNumber || '—')}</td>
+          <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.District || '—')}</td>
+          <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.BrokerName || '—')}</td>
+          <td style="background-color: #fff3cd !important; color: #664d03 !important;">
+            <span class="badge bg-warning text-dark">${c.Status}</span>
+          </td>
+        `;
+        tbodyMissing.appendChild(tr);
+      });
+    }
+  }
+
   // Reset select all checkbox
   const chkAll = document.getElementById('chkSelectAllImport');
   if (chkAll) {
@@ -2431,6 +2484,8 @@ function downloadTxtReport() {
   let txt = 'IMPORT CUSTOMER PREVIEW REPORT\n';
   txt += `Generated on: ${new Date().toLocaleString()}\n`;
   txt += '======================================================================\n\n';
+  txt += 'SECTION 1: EXCEL RECORDS TO IMPORT\n';
+  txt += '----------------------------------------------------------------------\n';
   txt += 'Sl. | Consumer Name | Mobile Number | District | Broker / Partner Name | Status\n';
   txt += '----------------------------------------------------------------------\n';
 
@@ -2444,10 +2499,31 @@ function downloadTxtReport() {
   });
 
   txt += '\n======================================================================\n';
-  txt += `Total Records: ${parsedCustomers.length}\n`;
-  txt += `New Names: ${parsedCustomers.filter(c => c.Status === 'New Name').length}\n`;
-  txt += `Duplicates in Grid: ${parsedCustomers.filter(c => c.Status === 'Duplicate (Already in Grid)').length}\n`;
-  txt += `Duplicates in Excel: ${parsedCustomers.filter(c => c.Status === 'Duplicate (In Excel)').length}\n`;
+  txt += 'SECTION 2: GRID RECORDS MISSING IN EXCEL FILE\n';
+  txt += '----------------------------------------------------------------------\n';
+  txt += 'Sl. | Consumer Name | Mobile Number | District | Broker / Partner Name | Status\n';
+  txt += '----------------------------------------------------------------------\n';
+
+  if (parsedMissingCustomers.length === 0) {
+    txt += '(No grid records are missing from the uploaded Excel file)\n';
+  } else {
+    parsedMissingCustomers.forEach((c, idx) => {
+      const name = c.Name;
+      const mobile = c.MobileNumber || 'N/A';
+      const district = c.District || 'N/A';
+      const broker = c.BrokerName || 'N/A';
+      const status = c.Status;
+      txt += `${idx + 1}. | ${name} | ${mobile} | ${district} | ${broker} | ${status}\n`;
+    });
+  }
+
+  txt += '\n======================================================================\n';
+  txt += `Summary Metrics:\n`;
+  txt += `- Total Excel Records: ${parsedCustomers.length}\n`;
+  txt += `  * New Names: ${parsedCustomers.filter(c => c.Status === 'New Name').length}\n`;
+  txt += `  * Duplicates in Grid: ${parsedCustomers.filter(c => c.Status === 'Duplicate (Already in Grid)').length}\n`;
+  txt += `  * Duplicates in Excel: ${parsedCustomers.filter(c => c.Status === 'Duplicate (In Excel)').length}\n`;
+  txt += `- Total Missing Grid Records: ${parsedMissingCustomers.length}\n`;
 
   const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
