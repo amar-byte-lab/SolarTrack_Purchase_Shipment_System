@@ -192,7 +192,7 @@ function syncPrintLabels() {
   const sellerAddr = document.getElementById('qOfficeAddress').value;
   const sellerPhone = document.getElementById('qCompanyPhone').value;
   const sellerEmail = document.getElementById('qCompanyEmail').value;
-  const logoBase64 = getSetting('CompanyLogo', '');
+  const logoBase64 = 'assets/sampleFiles/CompanyLogo.jpeg';
 
   document.getElementById('printSellerName').textContent = companyName;
   document.getElementById('printSignCompanyName').textContent = companyName.toUpperCase();
@@ -649,15 +649,15 @@ function loadCompanyProfileSettings() {
   }
 
   // 2. Populate Logo Image
-  const logoBase64 = getSetting('CompanyLogo', '');
+  const logoBase64 = 'assets/sampleFiles/CompanyLogo.jpeg';
   const logoImg = document.getElementById('qCompanyLogo');
   if (logoImg) {
-    logoImg.src = logoBase64 || DEFAULT_SOLAR_LOGO;
+    logoImg.src = logoBase64;
     logoImg.style.display = 'inline-block';
   }
 
   // 3. Populate Stamp Image
-  const stampBase64 = getSetting('CompanyStamp', '');
+  const stampBase64 = 'assets/sampleFiles/CompanyStamp.jpeg';
   const stampImg = document.getElementById('qCompanyStamp');
   if (stampImg) {
     if (stampBase64) {
@@ -1280,8 +1280,8 @@ window.exportQuotationToDocx = async function() {
   let validLogoPng = '';
   const settings = DB.getAll('settings');
   const getSetting = (key, def = '') => (settings.find(s => s.Key === key) || {}).Value ?? def;
-  const logoBase64 = getSetting('CompanyLogo', '');
-  const rawLogoSrc = logoBase64 || DEFAULT_SOLAR_LOGO;
+  const logoBase64 = 'assets/sampleFiles/CompanyLogo.jpeg';
+  const rawLogoSrc = logoBase64;
   try {
     validLogoPng = await getPngLogoDataUrl(rawLogoSrc);
   } catch (err) {
@@ -1290,7 +1290,7 @@ window.exportQuotationToDocx = async function() {
 
   // Process Company Stamp: Convert to PNG base64
   let validStampPng = '';
-  const stampBase64 = getSetting('CompanyStamp', '');
+  const stampBase64 = 'assets/sampleFiles/CompanyStamp.jpeg';
   if (stampBase64) {
     try {
       validStampPng = await getPngLogoDataUrl(stampBase64);

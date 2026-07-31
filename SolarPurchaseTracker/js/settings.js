@@ -2,8 +2,6 @@
    settings.js — Company Settings & Profiles
    ========================================================================= */
 
-let base64Logo = '';
-let base64Stamp = '';
 let officeAddresses = [];
 let editingAddressIndex = -1;
 let editingAddressValue = '';
@@ -32,14 +30,6 @@ window.onDbReady = function () {
   document.getElementById('btnSaveSettings').addEventListener('click', saveSettingsForm);
   document.getElementById('btnAddAddress').addEventListener('click', addAddress);
   document.getElementById('btnAddingSubsidy').addEventListener('click', addSubsidy);
-
-  // File Picker Binds
-  document.getElementById('sLogoFile').addEventListener('change', (e) => handleFileSelect(e, 'logo'));
-  document.getElementById('sStampFile').addEventListener('change', (e) => handleFileSelect(e, 'stamp'));
-
-  // Clear Binds
-  document.getElementById('btnClearLogo').addEventListener('click', () => clearImage('logo'));
-  document.getElementById('btnClearStamp').addEventListener('click', () => clearImage('stamp'));
 
   // UPI Input dynamic binding
   document.getElementById('sUPIId').addEventListener('input', (e) => {
@@ -96,6 +86,69 @@ window.onDbReady = function () {
     UI.toast('Backup files downloaded.', 'success');
   });
 
+  const btnExportInserts = document.getElementById('btnExportInserts');
+  if (btnExportInserts) {
+    btnExportInserts.addEventListener('click', async () => {
+      try {
+        UI.showLoading(true);
+        const tables = [
+          'settings', 'vendors', 'items', 'installments', 'installment_txns', 
+          'commission_txns', 'installment_remarks', 'shipment_remarks', 'products', 
+          'product_items', 'shipments', 'materials', 'borrowers', 'borrower_txns', 
+          'roles', 'users', 'notifications'
+        ];
+        
+        let sqlDump = '-- SolarTrack Database Dump (PostgreSQL inserts)\n';
+        sqlDump += `-- Generated on ${new Date().toISOString()}\n\n`;
+        
+        for (const table of tables) {
+          try {
+            const resp = await fetch(`/api/get?table=${table}`);
+            if (!resp.ok) continue;
+            const rows = await resp.json();
+            if (rows && rows.length > 0) {
+              sqlDump += `-- Table: ${table}\n`;
+              const columns = Object.keys(rows[0]);
+              for (const row of rows) {
+                const vals = columns.map(col => {
+                  const val = row[col];
+                  if (val === null || val === undefined) {
+                    return 'NULL';
+                  } else if (typeof val === 'number' || typeof val === 'boolean') {
+                    return val;
+                  } else {
+                    const escaped = String(val).replace(/'/g, "''");
+                    return `'${escaped}'`;
+                  }
+                });
+                sqlDump += `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${vals.join(', ')});\n`;
+              }
+              sqlDump += '\n';
+            }
+          } catch (e) {
+            sqlDump += `-- Failed to export table ${table}: ${e.message}\n\n`;
+          }
+        }
+        
+        const blob = new Blob([sqlDump], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `SolarTrack_Postgres_Inserts_${UI.todayISO()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        
+        UI.toast('SQL inserts downloaded successfully.', 'success');
+      } catch (err) {
+        UI.toast('Error exporting SQL: ' + err.message, 'danger');
+      } finally {
+        UI.showLoading(false);
+      }
+    });
+  }
+
   // User & Role Management setup
   _userModal = new bootstrap.Modal(document.getElementById('userModal'), { keyboard: true });
   _rolesModal = new bootstrap.Modal(document.getElementById('rolesModal'), { keyboard: true });
@@ -111,48 +164,7 @@ window.onDbReady = function () {
   loadAuthSettings();
 };
 
-function handleFileSelect(e, type) {
-  const file = e.target.files[0];
-  if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = function (evt) {
-    const base64 = evt.target.result;
-    if (type === 'logo') {
-      base64Logo = base64;
-      showPreview('logo', base64);
-    } else {
-      base64Stamp = base64;
-      showPreview('stamp', base64);
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-function showPreview(type, base64) {
-  const img = document.getElementById(type === 'logo' ? 'imgLogoPreview' : 'imgStampPreview');
-  const btn = document.getElementById(type === 'logo' ? 'btnClearLogo' : 'btnClearStamp');
-  if (img && btn) {
-    img.src = base64;
-    img.style.display = 'block';
-    btn.style.display = 'inline-block';
-  }
-}
-
-function clearImage(type) {
-  const input = document.getElementById(type === 'logo' ? 'sLogoFile' : 'sStampFile');
-  const img = document.getElementById(type === 'logo' ? 'imgLogoPreview' : 'imgStampPreview');
-  const btn = document.getElementById(type === 'logo' ? 'btnClearLogo' : 'btnClearStamp');
-  if (input) input.value = '';
-  if (img) { img.src = ''; img.style.display = 'none'; }
-  if (btn) btn.style.display = 'none';
-
-  if (type === 'logo') {
-    base64Logo = '';
-  } else {
-    base64Stamp = '';
-  }
-}
 
 function updateUPIQRPreview(upiId) {
   const box = document.getElementById('upiQrPreviewBox');
@@ -178,20 +190,7 @@ function loadSettingsForm() {
   document.getElementById('sCompanyGST').value = get('CompanyGST', '');
   document.getElementById('sDefaultGST').value = get('DefaultGST', 18);
 
-  // Load images
-  base64Logo = get('CompanyLogo', '');
-  if (base64Logo) {
-    showPreview('logo', base64Logo);
-  } else {
-    clearImage('logo');
-  }
 
-  base64Stamp = get('CompanyStamp', '');
-  if (base64Stamp) {
-    showPreview('stamp', base64Stamp);
-  } else {
-    clearImage('stamp');
-  }
 
   // Load addresses
   try {
@@ -466,9 +465,7 @@ async function saveSettingsForm() {
     await upsert('CompanyGST', companyGST);
     await upsert('DefaultGST', defaultGST);
 
-    // Save image base64
-    await upsert('CompanyLogo', base64Logo);
-    await upsert('CompanyStamp', base64Stamp);
+
 
     // Save addresses serialized as JSON
     await upsert('CompanyAddresses', JSON.stringify(officeAddresses));
@@ -549,8 +546,8 @@ function renderUsersList() {
         <td>${statusBadge}</td>
         <td class="text-center">
           ${quickActions}
-          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5 ${statusVal === 'Pending' ? 'ms-1' : ''}" onclick="openEditUserModal('${u.userid}')">✏️ Edit</button>
-          ${isCurrentAdmin ? '' : `<button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 ms-1" onclick="deleteUser('${u.userid}')">🗑️ Delete</button>`}
+          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5 ${statusVal === 'Pending' ? 'ms-1' : ''}" onclick="openEditUserModal('${u.userid}')">✏️</button>
+          ${isCurrentAdmin ? '' : `<button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 ms-1" onclick="deleteUser('${u.userid}')">🗑️</button>`}
         </td>
       </tr>
     `;

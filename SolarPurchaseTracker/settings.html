@@ -27,26 +27,7 @@
             <div class="mb-2"><label class="form-label">Company GST Number</label><input class="form-control" id="sCompanyGST"></div>
             <div class="mb-2"><label class="form-label">Default GST % (for items)</label><input type="number" min="0" max="100" class="form-control" id="sDefaultGST"></div>
             
-            <div class="col-12"><hr class="my-3 opacity-25"></div>
-            <div class="section-title mt-0 fs-6 text-primary">Branding & Layout Uploads</div>
-            
-            <div class="mb-3">
-              <label class="form-label fs-8 text-secondary">Company Logo</label>
-              <input type="file" class="form-control form-control-sm" id="sLogoFile" accept="image/*">
-              <div class="d-flex align-items-center gap-2 mt-2">
-                <img id="imgLogoPreview" class="border rounded p-1 bg-white" style="max-height:80px; display:none;">
-                <button type="button" class="btn btn-xs btn-outline-danger px-2 py-1 fs-8" id="btnClearLogo" style="display:none;">Clear</button>
-              </div>
-            </div>
-            
-            <div class="mb-3">
-              <label class="form-label fs-8 text-secondary">Company Stamp</label>
-              <input type="file" class="form-control form-control-sm" id="sStampFile" accept="image/*">
-              <div class="d-flex align-items-center gap-2 mt-2">
-                <img id="imgStampPreview" class="border rounded p-1 bg-white" style="max-height:80px; display:none;">
-                <button type="button" class="btn btn-xs btn-outline-danger px-2 py-1 fs-8" id="btnClearStamp" style="display:none;">Clear</button>
-              </div>
-            </div>
+
           </div>
 
           <div class="st-card mt-3">
@@ -159,6 +140,7 @@
             <div class="section-title mt-0">Backup</div>
             <p class="text-muted small">Export a full backup copy of all five workbooks at any time.</p>
             <button class="btn btn-outline-secondary" id="btnBackupAll">⬇ Download Full Backup</button>
+            <button class="btn btn-outline-primary ms-2" id="btnExportInserts">🔌 Download SQL Inserts</button>
           </div>
         </div>
       </div>
