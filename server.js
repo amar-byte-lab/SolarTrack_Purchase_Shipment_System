@@ -215,7 +215,7 @@ const server = http.createServer(async (req, res) => {
           } else {
             const body = JSON.stringify({
               success: true,
-              user: { userid: foundUser.userid, username: foundUser.username, role: foundUser.role, email: foundUser.email }
+              user: { userid: foundUser.userid, username: foundUser.username, role: foundUser.role, email: foundUser.email, mobile: foundUser.mobile }
             });
             sendResponse(req, res, 200, 'application/json', Buffer.from(body), 'no-cache, no-store');
           }
@@ -280,6 +280,7 @@ const server = http.createServer(async (req, res) => {
                 userid: userid,
                 username: u.username,
                 email: u.email || (existing ? existing.email : `${userid}@example.com`),
+                mobile: u.mobile || (existing ? existing.mobile : ''),
                 password: u.password,
                 role: u.role,
                 status: u.status || (existing ? existing.status : 'Approved'),
@@ -336,6 +337,7 @@ const server = http.createServer(async (req, res) => {
             userid,
             username,
             email,
+            mobile: payload?.mobile || '',
             password,
             role,
             status: 'Pending',

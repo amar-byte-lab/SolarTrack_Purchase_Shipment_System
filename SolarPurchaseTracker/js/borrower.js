@@ -874,8 +874,14 @@ async function shareActiveBorrowerWhatsapp() {
   message += `Please check the attached PDF statement for details.\n\n`;
   message += `Thank you!`;
 
-  // Pre-populate WhatsApp share modal
-  document.getElementById('waFromMobile').value = localStorage.getItem('whatsapp_from_mobile') || '';
+  // Pre-populate WhatsApp share modal with logged in user's number
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  let defaultFromMobile = ''; // Default for Amar/Admin
+  if (currentUser && currentUser.mobile) {
+    defaultFromMobile = currentUser.mobile;
+  }
+  
+  document.getElementById('waFromMobile').value = localStorage.getItem('whatsapp_from_mobile') || defaultFromMobile;
   document.getElementById('waToMobile').value = borrower.Mobile || '';
   document.getElementById('waMessageText').value = message;
 
@@ -967,31 +973,31 @@ async function sendWhatsappConfirmed() {
     }
 
     function drawTableHeader(yVal) {
-      doc.setFillColor(248, 250, 252);
+      doc.setFillColor(18, 49, 79); // Highlighted dark background
       doc.rect(15, yVal, 180, 14, 'F');
-      doc.setDrawColor(226, 232, 240);
+      doc.setDrawColor(18, 49, 79);
       doc.line(15, yVal, 195, yVal);
       doc.line(15, yVal + 14, 195, yVal + 14);
 
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(8.5);
-      doc.setTextColor(71, 85, 105);
+      doc.setTextColor(255, 255, 255); // White text
       doc.text('Date', 20, yVal + 5.5);
       doc.text('Notes', 50, yVal + 5.5);
 
-      doc.setTextColor(30, 138, 76); // Green for Payments
+      doc.setTextColor(190, 255, 210); // Light pastel green for Payment
       doc.text(`Payment(${debitCount})`, 145, yVal + 5.5, { align: 'right' });
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(8);
-      doc.text(`₹${debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 145, yVal + 10.5, { align: 'right' });
+      doc.text(`Rs. ${debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 145, yVal + 10.5, { align: 'right' });
 
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(8.5);
-      doc.setTextColor(192, 57, 43); // Red for Credits
+      doc.setTextColor(255, 210, 210); // Light pastel red for Credit
       doc.text(`Credit(${creditCount})`, 190, yVal + 5.5, { align: 'right' });
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(8);
-      doc.text(`₹${creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 190, yVal + 10.5, { align: 'right' });
+      doc.text(`Rs. ${creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 190, yVal + 10.5, { align: 'right' });
     }
 
     // Draw first page header elements
@@ -1001,7 +1007,7 @@ async function sendWhatsappConfirmed() {
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(30, 138, 76); // Green
-    doc.text('₹' + Math.abs(net).toLocaleString('en-IN'), 105, 46, { align: 'center' });
+    doc.text('Rs. ' + Math.abs(net).toLocaleString('en-IN'), 105, 46, { align: 'center' });
 
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8.5);
@@ -1013,7 +1019,7 @@ async function sendWhatsappConfirmed() {
     drawTableHeader(y);
     y += 14;
 
-    txns.forEach(t => {
+    txns.forEach((t, index) => {
       // Check page overflow
       if (y > 270) {
         doc.addPage();
@@ -1025,16 +1031,24 @@ async function sendWhatsappConfirmed() {
 
       const dateStr = fmtDate(t.TxnDate);
       const isCredit = t.Type === 'Credit';
-      const amountStr = `₹${Number(t.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      const amountStr = `Rs. ${Number(t.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+      // Notes wrapping
+      const notesWidth = 70;
+      const splitNotes = doc.splitTextToSize(t.Remarks || '—', notesWidth);
+      const rowHeight = Math.max(8, splitNotes.length * 4.5 + 4);
+
+      // Alternating row background shading
+      if (index % 2 === 0) {
+        doc.setFillColor(245, 247, 250); // light gray-blue tint shading
+        doc.rect(15, y, 180, rowHeight, 'F');
+      }
 
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(8.5);
       doc.setTextColor(51, 65, 85);
       doc.text(dateStr, 20, y + 5);
 
-      // Notes wrapping
-      const notesWidth = 70;
-      const splitNotes = doc.splitTextToSize(t.Remarks || '—', notesWidth);
       doc.text(splitNotes, 50, y + 5);
 
       if (isCredit) {
@@ -1047,12 +1061,11 @@ async function sendWhatsappConfirmed() {
         doc.text(amountStr, 145, y + 5, { align: 'right' });
       }
 
-      const rowHeight = Math.max(8, splitNotes.length * 4.5 + 4);
       y += rowHeight;
 
       // separator line
-      doc.setDrawColor(241, 245, 249);
-      doc.setLineWidth(0.2);
+      doc.setDrawColor(226, 232, 240); // slightly darker line for better row separation
+      doc.setLineWidth(0.25);
       doc.line(15, y, 195, y);
     });
 
@@ -1074,8 +1087,8 @@ async function sendWhatsappConfirmed() {
     doc.setFontSize(10);
     doc.setTextColor(30, 41, 59);
     
-    // In sample: Current Balance: ₹8,72,491 (Total Balance Advance)
-    const finalBalText = `Current Balance: ₹${Math.abs(net).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${net >= 0 ? 'Total Balance Outstanding' : 'Total Balance Advance'})`;
+    // In sample: Current Balance: Rs. 8,72,491 (Total Balance Advance)
+    const finalBalText = `Current Balance: Rs. ${Math.abs(net).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${net >= 0 ? 'Outstanding' : 'Advance'})`;
     doc.text(finalBalText, 190, y, { align: 'right' });
     
     doc.setFont('Helvetica', 'normal');

@@ -559,6 +559,7 @@ function renderUsersList() {
         <td class="font-monospace">${u.userid}</td>
         <td>${u.username}</td>
         <td>${emailStr}</td>
+        <td>${u.mobile || ''}</td>
         <td class="font-monospace">${u.password}</td>
         <td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-success'}">${u.role}</span></td>
         <td>${statusBadge}</td>
@@ -639,6 +640,7 @@ function openAddUserModal() {
   document.getElementById('userModalMode').value = 'add';
   document.getElementById('userModalOrigId').value = '';
   document.getElementById('userModalId').disabled = false;
+  document.getElementById('userModalMobile').value = '';
   document.getElementById('userModalStatus').value = 'Approved';
   populateRoleSelect();
   _userModal.show();
@@ -658,6 +660,7 @@ window.openEditUserModal = function(userid) {
   
   document.getElementById('userModalName').value = user.username;
   document.getElementById('userModalEmail').value = user.email || '';
+  document.getElementById('userModalMobile').value = user.mobile || '';
   document.getElementById('userModalPassword').value = user.password;
   
   populateRoleSelect();
@@ -691,6 +694,7 @@ async function saveUserFromModal() {
   const id = document.getElementById('userModalId').value.trim().toLowerCase();
   const name = document.getElementById('userModalName').value.trim();
   const email = document.getElementById('userModalEmail').value.trim().toLowerCase();
+  const mobile = document.getElementById('userModalMobile').value.trim();
   const password = document.getElementById('userModalPassword').value;
   const role = document.getElementById('userModalRole').value;
   const status = document.getElementById('userModalStatus').value || 'Approved';
@@ -714,7 +718,7 @@ async function saveUserFromModal() {
       UI.toast(`Email "${email}" is already in use.`, 'warning');
       return;
     }
-    _usersList.push({ userid: id, username: name, email, password, role, status });
+    _usersList.push({ userid: id, username: name, email, mobile, password, role, status });
   } else {
     const userIndex = _usersList.findIndex(u => u.userid === origId);
     if (userIndex === -1) {
@@ -729,7 +733,7 @@ async function saveUserFromModal() {
       UI.toast(`Email "${email}" is already in use.`, 'warning');
       return;
     }
-    _usersList[userIndex] = { userid: id, username: name, email, password, role, status };
+    _usersList[userIndex] = { userid: id, username: name, email, mobile, password, role, status };
   }
   
   await saveAuthSettings();

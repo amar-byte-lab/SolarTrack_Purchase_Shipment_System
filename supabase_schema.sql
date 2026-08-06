@@ -168,6 +168,7 @@ CREATE TABLE IF NOT EXISTS users (
   "userid" TEXT PRIMARY KEY,
   "username" TEXT,
   "email" TEXT UNIQUE,
+  "mobile" TEXT,
   "password" TEXT,
   "role" TEXT REFERENCES roles("role"),
   "status" TEXT,

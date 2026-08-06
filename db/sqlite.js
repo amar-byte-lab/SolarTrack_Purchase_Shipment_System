@@ -26,12 +26,19 @@ function init() {
   db.exec(`CREATE TABLE IF NOT EXISTS borrowers ("BorrowerID" INTEGER PRIMARY KEY AUTOINCREMENT, "Name" TEXT NOT NULL, "Mobile" TEXT, "Address" TEXT, "Status" TEXT DEFAULT 'Active', "CreatedAt" TEXT, "CreatedBy" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS borrower_txns ("TxnID" INTEGER PRIMARY KEY AUTOINCREMENT, "BorrowerID" INTEGER NOT NULL, "TxnDate" TEXT NOT NULL, "Amount" REAL NOT NULL, "Type" TEXT NOT NULL, "Remarks" TEXT, "CreatedAt" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS roles ("role" TEXT PRIMARY KEY)`);
-  db.exec(`CREATE TABLE IF NOT EXISTS users ("userid" TEXT PRIMARY KEY, "username" TEXT, "email" TEXT UNIQUE, "password" TEXT, "role" TEXT, "status" TEXT, "reset_token" TEXT, "reset_expires" TEXT, "created_at" TEXT)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS users ("userid" TEXT PRIMARY KEY, "username" TEXT, "email" TEXT UNIQUE, "mobile" TEXT, "password" TEXT, "role" TEXT, "status" TEXT, "reset_token" TEXT, "reset_expires" TEXT, "created_at" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS notifications ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "type" TEXT, "user_id" TEXT, "message" TEXT, "status" TEXT DEFAULT 'unread', "created_at" TEXT)`);
 
   // Migrate existing database to add CreatedBy column if it doesn't exist
   try {
     db.exec(`ALTER TABLE borrowers ADD COLUMN "CreatedBy" TEXT`);
+  } catch (e) {
+    // Ignore error if column already exists
+  }
+
+  // Migrate users table to add mobile column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN "mobile" TEXT`);
   } catch (e) {
     // Ignore error if column already exists
   }
