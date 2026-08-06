@@ -432,6 +432,7 @@
         </div>
         <div class="d-flex align-items-center">
           <button class="btn btn-sm btn-outline-light me-2 py-1 px-2" id="btnPrintTxn" title="Print Transaction History" style="border-color: rgba(255,255,255,0.3); font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.05); color: #fff;">🖨 Print</button>
+          <button class="btn btn-sm btn-success me-2 py-1 px-2" id="btnShareWhatsapp" title="Send to WhatsApp" style="font-size: 0.72rem; border-radius: 4px; background: #25D366; border-color: #25D366; color: #fff;"><i class="bi bi-whatsapp me-1"></i>WhatsApp</button>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
       </div>
@@ -512,6 +513,40 @@
   </div>
 </div>
 
+<!-- ══ WhatsApp Share Modal ══════════════════════════════════════════════════ -->
+<div class="modal fade" id="whatsappShareModal" tabindex="-1" aria-labelledby="waShareModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, #25D366, #128C7E); border-radius:14px 14px 0 0;">
+        <h6 class="modal-title fw-bold fs-7" id="waShareModalLabel"><i class="bi bi-whatsapp me-2"></i>Send Statement via WhatsApp</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 bg-light d-flex flex-column gap-3">
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1" for="waFromMobile">From Mobile Number (You)</label>
+            <input type="text" class="form-control form-control-sm" id="waFromMobile" placeholder="Your mobile number" autocomplete="off">
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1" for="waToMobile">To Mobile Number (Borrower) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="waToMobile" placeholder="Borrower mobile number" autocomplete="off">
+          </div>
+        </div>
+        <div>
+          <label class="form-label fs-8 text-secondary mb-1" for="waMessageText">Message *</label>
+          <textarea class="form-control form-control-sm" id="waMessageText" rows="6" placeholder="Enter message here..." style="font-size: 0.82rem;"></textarea>
+        </div>
+        <div class="small text-muted" style="font-size: 0.72rem;">
+          Note: Open WhatsApp will launch WhatsApp Web or your local WhatsApp app with the message prefilled for the recipient.
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top py-2">
+        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-sm btn-success px-4" id="btnSendWhatsappConfirm" style="background: #25D366; border-color: #25D366;">🚀 Open WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Scripts -->
 <script src="assets/js/bootstrap.bundle.min.js"></script>
@@ -522,6 +557,7 @@
 <script src="js/utils.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/connect.js"></script>
+<script src="js/jspdf.umd.min.js"></script>
 <script src="js/borrower.js"></script>
 </body>
 </html>

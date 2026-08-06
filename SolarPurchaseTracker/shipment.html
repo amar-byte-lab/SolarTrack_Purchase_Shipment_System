@@ -331,6 +331,29 @@
   .resizer:hover, .resizer.resizing {
     background: var(--st-blue-500, #3498db);
   }
+
+  /* Notepad-style custom textarea */
+  .notepad-textarea {
+    background: linear-gradient(#fdfcee 0%, #fdfcee 96%, #e7e3cd 96%);
+    background-size: 100% 1.8rem;
+    line-height: 1.8rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #d8d3b5;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #4a4325;
+    resize: vertical;
+    width: 100%;
+    min-height: 180px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+  }
+  .notepad-textarea:focus {
+    outline: none;
+    border-color: #c9bf8f;
+    box-shadow: 0 0 0 3px rgba(253, 216, 53, 0.25);
+  }
 </style>
 <style id="shipDynamicStyles"></style>
 </head>
@@ -551,28 +574,29 @@
           <div class="col-12"><hr class="my-1 opacity-25"></div>
           <div class="col-12"><h6 class="fw-bold mb-0 text-primary fs-7">Logistics & Financials</h6></div>
           
-          <div class="col-md-3 col-6">
+          <div class="col-md">
             <label class="form-label fs-7 mb-0">Vehicle Number</label>
             <input type="text" class="form-control form-control-sm" id="editVehicleNumber" autocomplete="off">
           </div>
-          <div class="col-md-3 col-6">
+          <div class="col-md">
             <label class="form-label fs-7 mb-0">Invoice Number</label>
             <input type="text" class="form-control form-control-sm" id="editInvoiceNumber" autocomplete="off">
           </div>
+          <!-- Commented out old Remarks field to move it to the bottom as Note
           <div class="col-md-6 col-12">
             <label class="form-label fs-7 mb-0">Remarks</label>
             <input type="text" class="form-control form-control-sm" id="editRemarks" autocomplete="off">
           </div>
-          
-          <div class="col-md-4 col-4">
+          -->
+          <div class="col-md">
             <label class="form-label fs-7 mb-0" id="lblEditVendorPaid">Paid (₹)</label>
             <input type="number" min="0" class="form-control form-control-sm edit-calc-input" id="editVendorPaid" value="0" placeholder="0" autocomplete="off">
           </div>
-          <div class="col-md-4 col-4">
+          <div class="col-md">
             <label class="form-label fs-7 mb-0">Transport Cost (₹)</label>
             <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0" autocomplete="off">
           </div>
-          <div class="col-md-4 col-4">
+          <div class="col-md">
             <label class="form-label fs-7 mb-0">Transport Paid (₹)</label>
             <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportPaid" value="0" autocomplete="off">
           </div>
@@ -623,12 +647,18 @@
             </div>
           </div>
 
+          <!-- Commented out Attached Documents Feature
           <div class="col-12 mt-2">
             <h6 class="fw-bold mb-1 text-primary fs-7">Attached Documents</h6>
             <input type="file" class="form-control form-control-sm" id="editUploadedDocs" multiple>
             <div id="editUploadedDocsList" class="d-flex flex-wrap gap-1 p-2 border rounded bg-white mt-1" style="min-height: 50px; max-height: 100px; overflow-y: auto;">
-              <!-- Documents list -->
+              <!- - Documents list - ->
             </div>
+          </div>
+          -->
+          <div class="col-12 mt-2">
+            <h6 class="fw-bold mb-1 text-primary fs-7">Note</h6>
+            <textarea class="notepad-textarea" id="editRemarks" placeholder="Write shipment notes here..." autocomplete="off"></textarea>
           </div>
         </div>
       </div>

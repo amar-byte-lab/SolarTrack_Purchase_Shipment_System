@@ -11,6 +11,7 @@ let _borrowers      = [];
 let _txnCache       = {};
 let _activeBid      = null;
 let _txnModal       = null;
+let _waShareModal   = null;
 let _searchQuery    = '';
 let _selectedCols   = [];   // columns checked for color coding
 let isAddingNew     = false; // whether we are inline adding a borrower
@@ -47,6 +48,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnModalDeact').addEventListener('click', toggleBorrowerStatus);
   document.getElementById('btnModalRemove').addEventListener('click', removeActiveBorrower);
   document.getElementById('btnPrintTxn').addEventListener('click', printActiveBorrowerTxns);
+  const btnShareWhatsapp = document.getElementById('btnShareWhatsapp');
+  if (btnShareWhatsapp) {
+    btnShareWhatsapp.addEventListener('click', shareActiveBorrowerWhatsapp);
+  }
+  const btnSendWhatsappConfirm = document.getElementById('btnSendWhatsappConfirm');
+  if (btnSendWhatsappConfirm) {
+    btnSendWhatsappConfirm.addEventListener('click', sendWhatsappConfirmed);
+  }
 
   // Toggle form drawer (WhatsApp-style slide up)
   document.getElementById('btnToggleForm').addEventListener('click', () => {
@@ -844,6 +853,296 @@ function printActiveBorrowerTxns() {
 
   // Restore original document title
   document.title = originalTitle;
+}
+
+// ── Send to WhatsApp Mobile Compacted PDF ──────────────────────────────────
+async function shareActiveBorrowerWhatsapp() {
+  if (!_activeBid) return;
+  const borrower = _borrowers.find(b => b.BorrowerID === _activeBid);
+  if (!borrower) return;
+
+  const { net } = netBalance(_activeBid);
+  let balText = '';
+  if (net > 0) balText = `₹${net.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (Outstanding)`;
+  else if (net < 0) balText = `₹${Math.abs(net).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (Surplus)`;
+  else balText = 'Settled';
+
+  // Format message
+  let message = `Hello ${borrower.Name},\n\n`;
+  message += `Here is your transaction ledger summary from SolarTrack.\n`;
+  message += `Current Balance: *${balText}*.\n\n`;
+  message += `Please check the attached PDF statement for details.\n\n`;
+  message += `Thank you!`;
+
+  // Pre-populate WhatsApp share modal
+  document.getElementById('waFromMobile').value = localStorage.getItem('whatsapp_from_mobile') || '';
+  document.getElementById('waToMobile').value = borrower.Mobile || '';
+  document.getElementById('waMessageText').value = message;
+
+  // Initialize and show the modal if not already done
+  if (!_waShareModal) {
+    _waShareModal = new bootstrap.Modal(document.getElementById('whatsappShareModal'), { keyboard: true });
+  }
+  _waShareModal.show();
+}
+
+// ── Confirm Send to WhatsApp ───────────────────────────────────────────────
+async function sendWhatsappConfirmed() {
+  const fromMobile = document.getElementById('waFromMobile').value.trim();
+  const toMobile = document.getElementById('waToMobile').value.trim();
+  const message = document.getElementById('waMessageText').value;
+
+  if (!toMobile) {
+    UI.toast('Recipient mobile number is required.', 'warning');
+    document.getElementById('waToMobile').focus();
+    return;
+  }
+
+  // Save the "From" number
+  localStorage.setItem('whatsapp_from_mobile', fromMobile);
+
+  const borrower = _borrowers.find(b => b.BorrowerID === _activeBid);
+  if (!borrower) return;
+
+  const txns = _txnCache[_activeBid] || [];
+
+  const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+  if (!jsPDF) {
+    UI.toast('PDF library is not loaded properly.', 'danger');
+    return;
+  }
+
+  UI.showLoading(true);
+
+  try {
+    const doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    // Calculate stats
+    const creditTxns = txns.filter(t => t.Type === 'Credit');
+    const debitTxns = txns.filter(t => t.Type === 'Debit');
+    const creditTotal = creditTxns.reduce((sum, t) => sum + Number(t.Amount), 0);
+    const debitTotal = debitTxns.reduce((sum, t) => sum + Number(t.Amount), 0);
+    const creditCount = creditTxns.length;
+    const debitCount = debitTxns.length;
+
+    const { net } = netBalance(_activeBid);
+
+    // Date range string
+    let dateRangeStr = '—';
+    if (txns.length > 0) {
+      const sortedTxns = [...txns].sort((a, b) => a.TxnDate.localeCompare(b.TxnDate));
+      const firstDate = fmtDate(sortedTxns[0].TxnDate);
+      const lastDate = fmtDate(sortedTxns[sortedTxns.length - 1].TxnDate);
+      dateRangeStr = `${firstDate} - ${lastDate}`;
+    }
+
+    // Helper functions to draw page elements
+    function drawPageHeader() {
+      // Header block background (light grey #f1f5f9)
+      doc.setFillColor(241, 245, 249);
+      doc.rect(15, 15, 180, 22, 'F');
+
+      // Owner details (left side)
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(30, 41, 59);
+      const ownerName = (typeof Auth !== 'undefined' ? Auth.getUser()?.username : 'Amar') || 'Amar';
+      doc.text(ownerName, 20, 21);
+
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Mobile: ${fromMobile || '—'}`, 20, 26);
+
+      // Borrower/Customer details (right side)
+      doc.text(`Created on: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, 190, 21, { align: 'right' });
+      doc.text(`Customer: ${borrower.Name}`, 190, 26, { align: 'right' });
+      if (borrower.Mobile) {
+        doc.text(`Mobile: ${borrower.Mobile}`, 190, 31, { align: 'right' });
+      }
+    }
+
+    function drawTableHeader(yVal) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(15, yVal, 180, 14, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.line(15, yVal, 195, yVal);
+      doc.line(15, yVal + 14, 195, yVal + 14);
+
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Date', 20, yVal + 5.5);
+      doc.text('Notes', 50, yVal + 5.5);
+
+      doc.setTextColor(30, 138, 76); // Green for Payments
+      doc.text(`Payment(${debitCount})`, 145, yVal + 5.5, { align: 'right' });
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`₹${debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 145, yVal + 10.5, { align: 'right' });
+
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(192, 57, 43); // Red for Credits
+      doc.text(`Credit(${creditCount})`, 190, yVal + 5.5, { align: 'right' });
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`₹${creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 190, yVal + 10.5, { align: 'right' });
+    }
+
+    // Draw first page header elements
+    drawPageHeader();
+
+    // Large Balance in center
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(30, 138, 76); // Green
+    doc.text('₹' + Math.abs(net).toLocaleString('en-IN'), 105, 46, { align: 'center' });
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Balance | ${dateRangeStr}`, 105, 51, { align: 'center' });
+
+    // Table rows
+    let y = 57;
+    drawTableHeader(y);
+    y += 14;
+
+    txns.forEach(t => {
+      // Check page overflow
+      if (y > 270) {
+        doc.addPage();
+        drawPageHeader();
+        y = 45;
+        drawTableHeader(y);
+        y += 14;
+      }
+
+      const dateStr = fmtDate(t.TxnDate);
+      const isCredit = t.Type === 'Credit';
+      const amountStr = `₹${Number(t.Amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(51, 65, 85);
+      doc.text(dateStr, 20, y + 5);
+
+      // Notes wrapping
+      const notesWidth = 70;
+      const splitNotes = doc.splitTextToSize(t.Remarks || '—', notesWidth);
+      doc.text(splitNotes, 50, y + 5);
+
+      if (isCredit) {
+        doc.setFont('Helvetica', 'bold');
+        doc.setTextColor(192, 57, 43); // Red
+        doc.text(amountStr, 190, y + 5, { align: 'right' });
+      } else {
+        doc.setFont('Helvetica', 'bold');
+        doc.setTextColor(30, 138, 76); // Green
+        doc.text(amountStr, 145, y + 5, { align: 'right' });
+      }
+
+      const rowHeight = Math.max(8, splitNotes.length * 4.5 + 4);
+      y += rowHeight;
+
+      // separator line
+      doc.setDrawColor(241, 245, 249);
+      doc.setLineWidth(0.2);
+      doc.line(15, y, 195, y);
+    });
+
+    // Summary footer on last page
+    if (y > 250) {
+      doc.addPage();
+      drawPageHeader();
+      y = 45;
+    }
+
+    // Draw final total line
+    doc.setDrawColor(71, 85, 105);
+    doc.setLineWidth(0.4);
+    doc.line(15, y + 2, 195, y + 2);
+    y += 8;
+
+    // Final summary text
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    
+    // In sample: Current Balance: ₹8,72,491 (Total Balance Advance)
+    const finalBalText = `Current Balance: ₹${Math.abs(net).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${net >= 0 ? 'Total Balance Outstanding' : 'Total Balance Advance'})`;
+    doc.text(finalBalText, 190, y, { align: 'right' });
+    
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`( As of ${new Date().toLocaleDateString('en-GB')} )`, 190, y + 4.5, { align: 'right' });
+    
+    doc.setFont('Helvetica', 'oblique');
+    doc.text('Powered by SolarTrack Ledger', 190, y + 9, { align: 'right' });
+
+    // Output PDF blob
+    const pdfBlob = doc.output('blob');
+    const filename = `${borrower.Name.replace(/\s+/g, '_')}_ledger.pdf`;
+
+    // Upload to server so it has a reference
+    try {
+      const arrayBuf = await pdfBlob.arrayBuffer();
+      await fetch(
+        `/api/upload-doc?shipmentNo=Borrower_${borrower.BorrowerID}&fileName=${encodeURIComponent(filename)}`,
+        { method: 'POST', body: arrayBuf }
+      );
+    } catch (e) {
+      console.error('Failed to upload PDF reference:', e);
+    }
+
+    // Sanitize receiver number
+    let phone = toMobile.replace(/\D/g, '');
+    if (phone.length === 10) {
+      phone = '91' + phone;
+    }
+
+    let sharedSuccessfully = false;
+    const fileObj = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+    // Try Web Share API for direct file attachment
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileObj] })) {
+      try {
+        await navigator.share({
+          files: [fileObj],
+          title: 'SolarTrack Ledger Statement',
+          text: message
+        });
+        sharedSuccessfully = true;
+      } catch (err) {
+        console.warn('Native Web Share failed, falling back to desktop download & message:', err);
+      }
+    }
+
+    if (!sharedSuccessfully) {
+      // Fallback: download PDF locally (only since web browser has no other way to attach local file on desktop)
+      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`;
+      window.open(waUrl, '_blank');
+      doc.save(filename);
+      UI.toast('PDF statement downloaded. Please attach it manually in WhatsApp.', 'success');
+    } else {
+      UI.toast('PDF statement shared successfully!', 'success');
+    }
+
+  } catch (err) {
+    console.error(err);
+    UI.toast('Failed to generate PDF: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+    if (_waShareModal) {
+      _waShareModal.hide();
+    }
+  }
 }
 
 async function removeActiveBorrower() {
