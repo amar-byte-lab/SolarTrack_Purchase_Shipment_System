@@ -1,0 +1,305 @@
+/* =========================================================================
+   installments.css — Customer Installment Spreadsheet Table Styles
+   ========================================================================= */
+
+.table-installments {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 0.85rem;
+  width: 100%;
+  border-top: 1px solid var(--st-border) !important;
+  border-left: 1px solid var(--st-border) !important;
+}
+
+.table-installments th {
+  background: #f1f5f9 !important;
+  color: var(--st-text-main) !important;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: 1px solid var(--st-border) !important;
+  border-bottom: 1px solid var(--st-border) !important;
+  padding: 8px 10px;
+  white-space: nowrap;
+  position: relative;
+}
+
+.table-installments td {
+  border-top: none !important;
+  border-left: none !important;
+  border-right: 1px solid var(--st-border) !important;
+  border-bottom: 1px solid var(--st-border) !important;
+  vertical-align: middle;
+  padding: 6px 10px;
+  background: var(--st-surface);
+}
+
+.table-installments td.highlight-yellow {
+  background-color: #fef08a !important; /* Soft modern pastel yellow */
+  color: #854d0e !important;
+}
+
+.table-installments tr.grand-total {
+  background-color: #ecfdf5 !important;
+  font-weight: bold;
+  border-top: 2px solid #10b981 !important;
+  border-bottom: 2px double #10b981 !important;
+}
+
+.table-installments tr.grand-total td {
+  background-color: #ecfdf5 !important;
+  color: #15803d !important;
+}
+
+.table-installments td input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--st-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.table-installments td input:focus {
+  border-color: var(--st-primary);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.table-installments td input[type="number"] {
+  text-align: right;
+}
+
+.table-installments td input[type="date"] {
+  text-align: center;
+}
+
+.table-installments tr.deactive-row td {
+  background-color: #fef2f2 !important;
+  color: #ef4444 !important;
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+/* Draggable Column Resizing */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  cursor: col-resize;
+  user-select: none;
+  height: 100%;
+  z-index: 10;
+}
+.col-resizer:hover, .col-resizer.resizing {
+  background: var(--st-primary);
+  opacity: 0.8;
+}
+
+.table-installments th.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: sticky !important;
+  top: 0;
+  z-index: 12 !important;
+  padding-right: 20px !important;
+}
+.table-installments th.sortable:hover {
+  background-color: #e2e8f0 !important;
+}
+.table-installments th.sortable::after {
+  content: ' ↕';
+  font-size: 0.7em;
+  color: #94a3b8;
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.table-installments th.sort-asc::after {
+  content: ' ▲';
+  color: var(--st-primary);
+}
+.table-installments th.sort-desc::after {
+  content: ' ▼';
+  color: var(--st-primary);
+}
+.table-installments tr.selected-row td {
+  background-color: #eff6ff !important;
+  color: var(--st-primary) !important;
+  border-color: #bfdbfe !important;
+}
+
+/* Viewport flex layout to lock elements */
+html.installments-page, body.installments-page, body.installments-page .app-shell {
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+body.installments-page .main-content {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.installments-page .page-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 15px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.st-card.mb-3 {
+  flex-shrink: 0;
+  margin-bottom: 0 !important;
+}
+
+.st-card-table-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin-bottom: 0 !important;
+  overflow: hidden;
+}
+.table-responsive-main {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+.table-installments thead th {
+  position: sticky;
+  top: 0;
+  z-index: 12 !important;
+  background: #f1f5f9 !important;
+  color: var(--st-text-main) !important;
+  box-shadow: inset 0 -1px 0 var(--st-border);
+}
+.table-installments tfoot tr.grand-total td {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  height: 37px;
+  padding: 6px 8px !important;
+  background-color: #ecfdf5 !important;
+  color: #15803d !important;
+  font-weight: bold;
+  border-top: 2px solid #10b981 !important;
+  border-bottom: 2px double #10b981 !important;
+  box-shadow: inset 0 1px 0 #10b981;
+}
+.table-installments tfoot tr.add-row-sticky td {
+  position: sticky;
+  bottom: 37px;
+  z-index: 10;
+  height: 37px;
+  padding: 6px 8px !important;
+  background-color: #f0fdf4 !important;
+  color: #166534 !important;
+  font-weight: bold;
+  box-shadow: inset 0 1px 0 #bbf7d0, inset 0 -1px 0 #bbf7d0;
+}
+
+.row.g-3.mt-1 {
+  flex-shrink: 0;
+  margin-top: 0 !important;
+}
+
+#brandSummaryTable thead th,
+#districtSummaryTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #f8fafc;
+  box-shadow: inset 0 -1px 0 var(--st-border);
+}
+
+.btn-note {
+  transition: transform 0.1s ease;
+  opacity: 0.7;
+  text-decoration: none !important;
+}
+.btn-note:hover {
+  transform: scale(1.2);
+  opacity: 1;
+}
+.note-card {
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 10px;
+  margin-bottom: 8px;
+  transition: box-shadow 0.2s;
+}
+.note-card:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.note-card-customer {
+  border-left: 4px solid var(--st-primary) !important;
+}
+.note-card-Partner {
+  border-left: 4px solid var(--st-accent) !important;
+}
+.note-type-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.note-timestamp {
+  font-size: 0.7rem;
+  color: var(--st-text-muted);
+  font-weight: 500;
+}
+.note-text {
+  font-size: 0.82rem;
+  color: var(--st-text-main);
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media print {
+  .table-installments tr.deactive-row td {
+    background-color: #fef2f2 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+  .app-shell {
+    display: block;
+  }
+  #sidebar, .topbar, .no-print, .btn, .modal {
+    display: none !important;
+  }
+  .main-content {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+  .page-body {
+    padding: 0;
+  }
+  .table-installments td.highlight-yellow {
+    background-color: #fef08a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .table-installments tr.grand-total td {
+    background-color: #ecfdf5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

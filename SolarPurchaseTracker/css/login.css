@@ -1,0 +1,80 @@
+/* =========================================================================
+   login.css — Light & Modern Auth Layout (Login, Register, Reset, Splash)
+   ========================================================================= */
+
+body.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 10%, #eff6ff 0%, #f8fafc 70%, #f1f5f9 100%);
+  margin: 0;
+  padding: 20px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.login-card, .reset-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 32px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-card:hover, .reset-card:hover {
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.08);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.brand-logo svg {
+  color: var(--st-accent, #f97316);
+}
+.brand-logo h3 {
+  font-weight: 800;
+  color: var(--st-text-main, #0f172a);
+  margin: 0;
+  letter-spacing: -0.5px;
+  font-size: 1.6rem;
+}
+
+.btn-login, .btn-reset {
+  background: var(--st-primary, #2563eb);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 8px;
+  width: 100%;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+.btn-login:hover, .btn-reset:hover {
+  background: var(--st-primary-hover, #1d4ed8);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.splash {
+  text-align: center;
+  color: var(--st-text-main, #0f172a);
+  background: #ffffff;
+  padding: 48px;
+  border-radius: 20px;
+  box-shadow: var(--st-shadow-md);
+  border: 1px solid #e2e8f0;
+  max-width: 400px;
+  width: 100%;
+}
+.splash svg {
+  color: var(--st-accent, #f97316);
+}

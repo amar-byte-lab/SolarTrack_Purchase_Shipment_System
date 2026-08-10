@@ -1,0 +1,168 @@
+/* =========================================================================
+   offer.css — Offer Generator & Quotation Builder Styles
+   ========================================================================= */
+
+html.offer-page, body.offer-page, body.offer-page .app-shell {
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+body.offer-page .main-content {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body.offer-page .page-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px;
+  gap: 15px;
+  overflow-y: auto;
+}
+
+/* Corporate Quotation styling */
+.quote-container {
+  background-color: var(--st-surface);
+  border-radius: var(--st-card-radius);
+  box-shadow: var(--st-shadow);
+  padding: 25px;
+  border: 1px solid var(--st-border);
+}
+
+.table-quote {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.table-quote th {
+  background: var(--st-bg) !important;
+  color: var(--st-text-muted) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  border: 1px solid var(--st-border);
+}
+
+.table-quote td {
+  vertical-align: middle;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--st-border);
+  border-right: 1px solid var(--st-border);
+}
+
+.table-quote td:first-child {
+  border-left: 1px solid var(--st-border);
+}
+
+.table-quote tr:last-child td {
+  border-bottom: 1px solid var(--st-border);
+}
+
+/* Compact input cells */
+.table-quote input {
+  border: 1px solid var(--st-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.table-quote input:focus {
+  border-color: var(--st-primary);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.table-quote input[type="number"] {
+  text-align: right;
+}
+
+/* Print Stylesheet Overrides */
+@media print {
+  html, body, .app-shell, .main-content, .page-body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #sidebar, .topbar, .no-print, .btn, input[type="button"] {
+    display: none !important;
+  }
+
+  .quote-container {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .form-control, textarea {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    resize: none !important;
+  }
+
+  .table-quote input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    text-align: right;
+  }
+
+  .table-quote input.q-item-name {
+    text-align: left !important;
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .page-body {
+    padding: 10px;
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+
+  html, body, .app-shell, .main-content {
+    height: auto !important;
+    overflow: auto !important;
+  }
+
+  .quote-container {
+    padding: 15px;
+  }
+
+  .table-quote {
+    font-size: 0.78rem;
+  }
+
+  .table-quote th, .table-quote td {
+    padding: 6px 8px;
+  }
+
+  .table-quote input {
+    padding: 2px 4px;
+    font-size: 0.78rem;
+  }
+}

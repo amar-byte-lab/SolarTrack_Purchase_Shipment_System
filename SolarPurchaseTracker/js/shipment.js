@@ -1308,7 +1308,7 @@ window.showVendorPaymentDetails = function(shipmentNo) {
   const drawerHeading = document.getElementById('payDrawerHeading');
   const header = document.getElementById('payModalHeader');
 
-  if (header) header.style.background = 'linear-gradient(135deg, #12314f, #1e8a4c)';
+  if (header) header.style.background = 'linear-gradient(135deg, #10b981, #059669)';
 
   if (shipmentNo === 'TOTAL') {
     if (composeBar) composeBar.style.display = 'none';
@@ -1453,7 +1453,7 @@ window.showTransportPaymentDetails = function(shipmentNo) {
   const drawerHeading = document.getElementById('payDrawerHeading');
   const header = document.getElementById('payModalHeader');
 
-  if (header) header.style.background = 'linear-gradient(135deg, #12314f, #0288d1)';
+  if (header) header.style.background = 'linear-gradient(135deg, #2563eb, #1d4ed8)';
 
   if (shipmentNo === 'TOTAL') {
     if (composeBar) composeBar.style.display = 'none';

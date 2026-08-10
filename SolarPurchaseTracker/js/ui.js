@@ -275,7 +275,7 @@ const UI = (() => {
         <!-- Row 2 (Shifted One Line Below): Page Title (h1) -->
         ${title ? `
           <div class="mt-2 pt-1 border-top">
-            <h1 class="topbar-title text-truncate m-0" style="font-size:1.25rem; font-weight:700; color:var(--st-blue-900);">${title}</h1>
+            <h1 class="topbar-title text-truncate m-0" style="font-size:1.25rem; font-weight:700; color:var(--st-text-main);">${title}</h1>
           </div>
         ` : ''}
 

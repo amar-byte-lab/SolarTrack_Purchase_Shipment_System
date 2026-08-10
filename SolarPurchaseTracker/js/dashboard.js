@@ -76,12 +76,12 @@ function renderCharts(enriched) {
     byMaterial[l.ItemName || 'Unknown'] = (byMaterial[l.ItemName || 'Unknown'] || 0) + l.FinalCost;
   }));
 
-  const palette = ['#1B4F72', '#2470A0', '#F5871F', '#5DA9E9', '#F7B267', '#7FB77E', '#C78EE0', '#E76F51'];
+  const palette = ['#2563eb', '#f97316', '#10b981', '#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#64748b'];
 
   if (chartMonthly) chartMonthly.destroy();
   chartMonthly = new Chart(document.getElementById('chartMonthly'), {
     type: 'bar',
-    data: { labels: Object.keys(byMonth), datasets: [{ label: 'Purchase (₹)', data: Object.values(byMonth), backgroundColor: '#1B4F72', borderRadius: 6 }] },
+    data: { labels: Object.keys(byMonth), datasets: [{ label: 'Purchase (₹)', data: Object.values(byMonth), backgroundColor: '#2563eb', borderRadius: 6 }] },
     options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   });
 
@@ -95,7 +95,7 @@ function renderCharts(enriched) {
   if (chartMaterial) chartMaterial.destroy();
   chartMaterial = new Chart(document.getElementById('chartMaterial'), {
     type: 'bar',
-    data: { labels: Object.keys(byMaterial), datasets: [{ label: 'Final Cost (₹)', data: Object.values(byMaterial), backgroundColor: '#F5871F', borderRadius: 6 }] },
+    data: { labels: Object.keys(byMaterial), datasets: [{ label: 'Final Cost (₹)', data: Object.values(byMaterial), backgroundColor: '#f97316', borderRadius: 6 }] },
     options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
   });
 }
