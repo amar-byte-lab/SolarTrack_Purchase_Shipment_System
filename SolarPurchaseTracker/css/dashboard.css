@@ -1,6 +1,10 @@
 /* =========================================================================
-   dashboard.css — Dashboard Layout & Chart Styles
+   dashboard.css — Modern 2026 SaaS Dashboard Styles
    ========================================================================= */
+
+#kpiRow {
+  margin-bottom: 24px;
+}
 
 #kpiRow .kpi-card {
   height: 100%;
@@ -17,7 +21,6 @@
   max-width: 100%;
 }
 
-.table-responsive {
-  border-radius: 0 0 var(--st-card-radius) var(--st-card-radius);
-  overflow: hidden;
+.recent-table-card {
+  margin-top: 20px;
 }

@@ -1,0 +1,64 @@
+/* =========================================================================
+   app.css — Global Application Utilities & Micro-Interactions
+   ========================================================================= */
+
+/* Custom Smooth Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Micro-animations */
+.fade-in {
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Font Monospace for Currency & Numbers */
+.font-monospace {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+/* Utility Font Sizes */
+.fs-7 { font-size: 0.82rem !important; }
+.fs-8 { font-size: 0.78rem !important; }
+.fs-9 { font-size: 0.72rem !important; }
+
+/* Print Media Adjustments */
+@media print {
+  .no-print, #sidebar, .topbar {
+    display: none !important;
+  }
+  .app-shell {
+    display: block !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .page-body {
+    padding: 0 !important;
+  }
+}

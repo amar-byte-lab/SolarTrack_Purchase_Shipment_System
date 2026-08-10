@@ -1,5 +1,5 @@
 /* =========================================================================
-   offer.css — Offer Generator & Quotation Builder Styles
+   offer.css — 2026 SaaS Offer Generator & Quotation Builder Styles
    ========================================================================= */
 
 html.offer-page, body.offer-page, body.offer-page .app-shell {
@@ -20,8 +20,8 @@ body.offer-page .page-body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 20px;
-  gap: 15px;
+  padding: 24px;
+  gap: 16px;
   overflow-y: auto;
 }
 
@@ -30,7 +30,7 @@ body.offer-page .page-body {
   background-color: var(--st-surface);
   border-radius: var(--st-card-radius);
   box-shadow: var(--st-shadow);
-  padding: 25px;
+  padding: 28px;
   border: 1px solid var(--st-border);
 }
 
@@ -57,19 +57,19 @@ body.offer-page .page-body {
 }
 
 .table-quote th {
-  background: var(--st-bg) !important;
-  color: var(--st-text-muted) !important;
+  background: #f8fafc !important;
+  color: var(--st-text-secondary) !important;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
-  padding: 10px 12px;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  padding: 12px 14px;
   border: 1px solid var(--st-border);
 }
 
 .table-quote td {
   vertical-align: middle;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--st-border);
   border-right: 1px solid var(--st-border);
 }
@@ -86,8 +86,8 @@ body.offer-page .page-body {
 .table-quote input {
   border: 1px solid var(--st-border);
   border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.82rem;
+  padding: 6px 10px;
+  font-size: 0.84rem;
   width: 100%;
   box-sizing: border-box;
   background: #ffffff;
@@ -97,7 +97,7 @@ body.offer-page .page-body {
 .table-quote input:focus {
   border-color: var(--st-primary);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .table-quote input[type="number"] {
@@ -148,72 +148,5 @@ body.offer-page .page-body {
 
   @page {
     margin: 1.5cm;
-  }
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .quote-header-row {
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    gap: 10px !important;
-    margin-bottom: 1rem !important;
-    padding-bottom: 0.75rem !important;
-  }
-
-  .quote-header-logo-col, .quote-header-info-col {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 0 0 100% !important;
-    text-align: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-  }
-
-  #qCompanyLogo {
-    max-height: 85px !important;
-    max-width: 220px !important;
-    margin: 0 auto !important;
-    display: block !important;
-    object-fit: contain !important;
-  }
-
-  .q-contact-info {
-    font-size: 0.72rem !important;
-    line-height: 1.45 !important;
-    text-align: center !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    letter-spacing: 0;
-  }
-
-  .page-body {
-    padding: 10px;
-    overflow-y: auto !important;
-    height: auto !important;
-  }
-
-  html, body, .app-shell, .main-content {
-    height: auto !important;
-    overflow: auto !important;
-  }
-
-  .quote-container {
-    padding: 15px;
-  }
-
-  .table-quote {
-    font-size: 0.78rem;
-  }
-
-  .table-quote th, .table-quote td {
-    padding: 6px 8px;
-  }
-
-  .table-quote input {
-    padding: 2px 4px;
-    font-size: 0.78rem;
   }
 }

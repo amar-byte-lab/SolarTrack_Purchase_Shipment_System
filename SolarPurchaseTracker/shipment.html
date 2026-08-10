@@ -115,7 +115,7 @@
 <div class="modal fade" id="docsModal" tabindex="-1" aria-labelledby="docsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
-      <div class="modal-header bg-dark text-white py-2" style="border-radius:12px 12px 0 0;">
+      <div class="modal-header bg-primary text-white py-2.5 px-3">
         <h6 class="modal-title fs-7 fw-bold" id="docsModalLabel">Shipment Documents</h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -197,7 +197,7 @@
 <div class="modal fade" id="shipmentFormModal" tabindex="-1" aria-labelledby="shipFormModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-dark text-white py-3" style="border-radius:14px 14px 0 0;">
+      <div class="modal-header bg-primary text-white py-2.5 px-3">
         <h5 class="modal-title fw-bold fs-6" id="shipFormModalLabel">Shipment Record</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="cancelInline()"></button>
       </div>
@@ -310,8 +310,13 @@
           </div>
           -->
           <div class="col-12 mt-2">
-            <h6 class="fw-bold mb-1 text-primary fs-7">Note</h6>
-            <textarea class="notepad-textarea" id="editRemarks" placeholder="Write shipment notes here..." autocomplete="off"></textarea>
+            <div class="keep-note-card">
+              <div class="keep-note-header d-flex align-items-center justify-content-between mb-1">
+                <span class="keep-note-title d-flex align-items-center gap-1.5 fw-bold"><span class="fs-6">📌</span> Keep Note</span>
+                <span class="keep-note-tag fs-8">Shipment Remarks</span>
+              </div>
+              <textarea class="keep-note-textarea" id="editRemarks" placeholder="Take a note..." autocomplete="off"></textarea>
+            </div>
           </div>
         </div>
       </div>

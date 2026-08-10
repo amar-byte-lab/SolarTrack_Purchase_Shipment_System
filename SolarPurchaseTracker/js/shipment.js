@@ -822,10 +822,9 @@ function makeTableResizable(table) {
 
     const mouseMoveHandler = function (e) {
       const dx = e.clientX - x;
-      const newWidth = Math.max(30, w + dx);
+      const newWidth = Math.max(35, w + dx);
       col.style.width = `${newWidth}px`;
       col.style.minWidth = `${newWidth}px`;
-      col.style.maxWidth = `${newWidth}px`;
     };
 
     const mouseUpHandler = function () {
@@ -836,13 +835,13 @@ function makeTableResizable(table) {
 
     resizer.addEventListener('mousedown', function (e) {
       x = e.clientX;
-      const styles = window.getComputedStyle(col);
-      w = parseInt(styles.width, 10);
+      w = col.offsetWidth || parseInt(window.getComputedStyle(col).width, 10) || 80;
 
       document.addEventListener('mousemove', mouseMoveHandler);
       document.addEventListener('mouseup', mouseUpHandler);
       resizer.classList.add('resizing');
       e.preventDefault();
+      e.stopPropagation();
     });
   });
 }
@@ -851,6 +850,13 @@ let modalListenersConfigured = false;
 function setupModalListenersOnce() {
   if (modalListenersConfigured) return;
   modalListenersConfigured = true;
+  
+  const shipModalEl = document.getElementById('shipmentFormModal');
+  if (shipModalEl) {
+    shipModalEl.addEventListener('shown.bs.modal', () => {
+      makeTableResizable(document.getElementById('editMaterialsTable'));
+    });
+  }
   
   // Make materials table columns resizable
   makeTableResizable(document.getElementById('editMaterialsTable'));

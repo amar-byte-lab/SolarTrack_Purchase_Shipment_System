@@ -1,0 +1,11 @@
+/* =========================================================================
+   borrower.css — 2026 SaaS Borrower Ledger & Credit/Debit Management
+   ========================================================================= */
+
+@import url('master.css');
+
+.bw-ledger-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

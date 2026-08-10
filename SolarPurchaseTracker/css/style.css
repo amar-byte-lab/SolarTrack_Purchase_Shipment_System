@@ -1,8 +1,10 @@
 /* =========================================================================
-   style.css — Solar Purchase Tracker
-   Imports common.css design tokens and light theme styles
+   style.css — Solar Purchase Tracker Main Entry Stylesheet
+   Imports 2026 SaaS design system design tokens, layout shell, components & app utilities
    ========================================================================= */
 
 @import url('common.css');
+@import url('components.css');
+@import url('app.css');
 
-/* Custom tweaks or overrides for compatibility */
+/* Global Overrides and Responsive Polish */

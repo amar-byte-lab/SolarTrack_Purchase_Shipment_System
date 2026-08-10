@@ -76,27 +76,27 @@ function renderCharts(enriched) {
     byMaterial[l.ItemName || 'Unknown'] = (byMaterial[l.ItemName || 'Unknown'] || 0) + l.FinalCost;
   }));
 
-  const palette = ['#2563eb', '#f97316', '#10b981', '#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#64748b'];
+  const palette = ['#4f46e5', '#06b6d4', '#059669', '#8b5cf6', '#d97706', '#ec4899', '#0284c7', '#64748b'];
 
   if (chartMonthly) chartMonthly.destroy();
   chartMonthly = new Chart(document.getElementById('chartMonthly'), {
     type: 'bar',
-    data: { labels: Object.keys(byMonth), datasets: [{ label: 'Purchase (₹)', data: Object.values(byMonth), backgroundColor: '#2563eb', borderRadius: 6 }] },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    data: { labels: Object.keys(byMonth), datasets: [{ label: 'Purchase (₹)', data: Object.values(byMonth), backgroundColor: '#4f46e5', borderRadius: 8 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
   });
 
   if (chartVendor) chartVendor.destroy();
   chartVendor = new Chart(document.getElementById('chartVendor'), {
     type: 'doughnut',
-    data: { labels: Object.keys(byVendor), datasets: [{ data: Object.values(byVendor), backgroundColor: palette }] },
-    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+    data: { labels: Object.keys(byVendor), datasets: [{ data: Object.values(byVendor), backgroundColor: palette, borderWidth: 2, borderColor: '#ffffff' }] },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11, family: 'Inter' }, padding: 14 } } } }
   });
 
   if (chartMaterial) chartMaterial.destroy();
   chartMaterial = new Chart(document.getElementById('chartMaterial'), {
     type: 'bar',
-    data: { labels: Object.keys(byMaterial), datasets: [{ label: 'Final Cost (₹)', data: Object.values(byMaterial), backgroundColor: '#f97316', borderRadius: 6 }] },
-    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+    data: { labels: Object.keys(byMaterial), datasets: [{ label: 'Final Cost (₹)', data: Object.values(byMaterial), backgroundColor: '#06b6d4', borderRadius: 8 }] },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } } }
   });
 }
 

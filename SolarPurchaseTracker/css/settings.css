@@ -1,0 +1,19 @@
+/* =========================================================================
+   settings.css — 2026 SaaS Application Settings Center
+   ========================================================================= */
+
+@import url('master.css');
+
+.settings-section-card {
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-card-radius);
+  box-shadow: var(--st-shadow-xs);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.settings-section-card .section-title {
+  margin-top: 0;
+  margin-bottom: 16px;
+}

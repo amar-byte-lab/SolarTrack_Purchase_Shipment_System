@@ -1,5 +1,5 @@
 /* =========================================================================
-   installments.css — Customer Installment Spreadsheet Table Styles
+   installments.css — Modern 2026 SaaS Customer Installments Styles
    ========================================================================= */
 
 .table-installments {
@@ -12,16 +12,19 @@
 }
 
 .table-installments th {
-  background: #f1f5f9 !important;
-  color: var(--st-text-main) !important;
-  font-weight: 600;
+  background: #f8fafc !important;
+  color: var(--st-text-secondary) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
   text-align: center;
   vertical-align: middle;
   border-top: none !important;
   border-left: none !important;
   border-right: 1px solid var(--st-border) !important;
   border-bottom: 1px solid var(--st-border) !important;
-  padding: 8px 10px;
+  padding: 10px 12px;
   white-space: nowrap;
   position: relative;
 }
@@ -32,25 +35,27 @@
   border-right: 1px solid var(--st-border) !important;
   border-bottom: 1px solid var(--st-border) !important;
   vertical-align: middle;
-  padding: 6px 10px;
+  padding: 8px 10px;
   background: var(--st-surface);
 }
 
 .table-installments td.highlight-yellow {
-  background-color: #fef08a !important; /* Soft modern pastel yellow */
-  color: #854d0e !important;
+  background-color: #fef3c7 !important; /* Soft modern pastel amber */
+  color: #92400e !important;
+  font-weight: 600;
 }
 
 .table-installments tr.grand-total {
-  background-color: #ecfdf5 !important;
+  background-color: var(--st-success-bg) !important;
   font-weight: bold;
-  border-top: 2px solid #10b981 !important;
-  border-bottom: 2px double #10b981 !important;
+  border-top: 2px solid var(--st-success-border) !important;
+  border-bottom: 2px double var(--st-success-border) !important;
 }
 
 .table-installments tr.grand-total td {
-  background-color: #ecfdf5 !important;
-  color: #15803d !important;
+  background-color: var(--st-success-bg) !important;
+  color: var(--st-success-hover) !important;
+  font-weight: 700;
 }
 
 .table-installments td input {
@@ -58,7 +63,7 @@
   box-sizing: border-box;
   border: 1px solid var(--st-border);
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 5px 8px;
   font-size: 0.85rem;
   background: #ffffff;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -67,7 +72,7 @@
 .table-installments td input:focus {
   border-color: var(--st-primary);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .table-installments td input[type="number"] {
@@ -79,10 +84,10 @@
 }
 
 .table-installments tr.deactive-row td {
-  background-color: #fef2f2 !important;
-  color: #ef4444 !important;
+  background-color: var(--st-danger-bg) !important;
+  color: var(--st-danger) !important;
   text-decoration: line-through;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 /* Draggable Column Resizing */
@@ -107,17 +112,17 @@
   position: sticky !important;
   top: 0;
   z-index: 12 !important;
-  padding-right: 20px !important;
+  padding-right: 22px !important;
 }
 .table-installments th.sortable:hover {
-  background-color: #e2e8f0 !important;
+  background-color: #f1f5f9 !important;
 }
 .table-installments th.sortable::after {
   content: ' ↕';
-  font-size: 0.7em;
+  font-size: 0.75em;
   color: #94a3b8;
   position: absolute;
-  right: 5px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -130,9 +135,9 @@
   color: var(--st-primary);
 }
 .table-installments tr.selected-row td {
-  background-color: #eff6ff !important;
+  background-color: var(--st-primary-light) !important;
   color: var(--st-primary) !important;
-  border-color: #bfdbfe !important;
+  border-color: #c7d2fe !important;
 }
 
 /* Viewport flex layout to lock elements */
@@ -152,8 +157,8 @@ body.installments-page .page-body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 15px;
-  gap: 10px;
+  padding: 18px 24px;
+  gap: 12px;
   overflow: hidden;
 }
 
@@ -180,33 +185,22 @@ body.installments-page .page-body {
   position: sticky;
   top: 0;
   z-index: 12 !important;
-  background: #f1f5f9 !important;
-  color: var(--st-text-main) !important;
+  background: #f8fafc !important;
+  color: var(--st-text-secondary) !important;
   box-shadow: inset 0 -1px 0 var(--st-border);
 }
 .table-installments tfoot tr.grand-total td {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  height: 37px;
-  padding: 6px 8px !important;
-  background-color: #ecfdf5 !important;
-  color: #15803d !important;
-  font-weight: bold;
-  border-top: 2px solid #10b981 !important;
-  border-bottom: 2px double #10b981 !important;
-  box-shadow: inset 0 1px 0 #10b981;
-}
-.table-installments tfoot tr.add-row-sticky td {
-  position: sticky;
-  bottom: 37px;
-  z-index: 10;
-  height: 37px;
-  padding: 6px 8px !important;
-  background-color: #f0fdf4 !important;
-  color: #166534 !important;
-  font-weight: bold;
-  box-shadow: inset 0 1px 0 #bbf7d0, inset 0 -1px 0 #bbf7d0;
+  height: 38px;
+  padding: 8px 10px !important;
+  background-color: var(--st-success-bg) !important;
+  color: var(--st-success-hover) !important;
+  font-weight: 700;
+  border-top: 2px solid var(--st-success-border) !important;
+  border-bottom: 2px double var(--st-success-border) !important;
+  box-shadow: inset 0 1px 0 var(--st-success-border);
 }
 
 .row.g-3.mt-1 {
@@ -224,8 +218,8 @@ body.installments-page .page-body {
 }
 
 .btn-note {
-  transition: transform 0.1s ease;
-  opacity: 0.7;
+  transition: transform 0.15s ease;
+  opacity: 0.75;
   text-decoration: none !important;
 }
 .btn-note:hover {
@@ -235,33 +229,34 @@ body.installments-page .page-body {
 .note-card {
   border-radius: 8px;
   background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  padding: 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  border: 1px solid var(--st-border);
+  padding: 12px;
   margin-bottom: 8px;
   transition: box-shadow 0.2s;
 }
 .note-card:hover {
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 8px rgba(15, 23, 42, 0.08);
 }
 .note-card-customer {
   border-left: 4px solid var(--st-primary) !important;
 }
 .note-card-Partner {
-  border-left: 4px solid var(--st-accent) !important;
+  border-left: 4px solid var(--st-secondary) !important;
 }
 .note-type-badge {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
 }
 .note-timestamp {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--st-text-muted);
   font-weight: 500;
 }
 .note-text {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--st-text-main);
   margin-top: 4px;
   white-space: pre-wrap;
@@ -270,7 +265,7 @@ body.installments-page .page-body {
 
 @media print {
   .table-installments tr.deactive-row td {
-    background-color: #fef2f2 !important;
+    background-color: var(--st-danger-bg) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -293,12 +288,12 @@ body.installments-page .page-body {
     padding: 0;
   }
   .table-installments td.highlight-yellow {
-    background-color: #fef08a !important;
+    background-color: #fef3c7 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   .table-installments tr.grand-total td {
-    background-color: #ecfdf5 !important;
+    background-color: var(--st-success-bg) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
