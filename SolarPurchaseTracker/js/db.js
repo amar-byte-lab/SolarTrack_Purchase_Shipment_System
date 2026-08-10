@@ -78,17 +78,41 @@ const DB = (() => {
     return null;
   }
 
-  async function tryRestoreFolder() {
+  function syncSessionCache() {
     try {
-      // 1. Check backend status
+      sessionStorage.setItem('st_db_cache', JSON.stringify(cache));
+    } catch (e) {}
+  }
+
+  async function tryRestoreFolder() {
+    mode = 'sqlite';
+    
+    // 1. Instant restore from sessionStorage if available (0ms delay for sub-page navigation)
+    try {
+      const stored = sessionStorage.getItem('st_db_cache');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object' && parsed.shipments) {
+          cache = parsed;
+          // Silent non-blocking background refresh
+          refreshCacheInBackground();
+          return true;
+        }
+      }
+    } catch (e) {}
+
+    // 2. Initial fresh fetch if no session cache exists
+    return await fetchFreshDatabase();
+  }
+
+  async function fetchFreshDatabase() {
+    try {
       const resp = await fetch('/api/status');
       if (!resp.ok) throw new Error('API server unreachable');
 
-      // 2. Load all tables concurrently from PostgreSQL / Database via REST API
-      mode = 'sqlite';
       const tableKeys = Object.keys(FILE_MAP).filter(k => k !== 'borrowers' && k !== 'borrower_txns');
-      cache.borrowers = [];
-      cache.borrower_txns = [];
+      cache.borrowers = cache.borrowers || [];
+      cache.borrower_txns = cache.borrower_txns || [];
 
       const fetchPromises = tableKeys.map(async key => {
         try {
@@ -99,10 +123,10 @@ const DB = (() => {
         }
       });
 
+      const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+      const userId = currentUser ? currentUser.userid : '';
       const borrowerListPromise = (async () => {
         try {
-          const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-          const userId = currentUser ? currentUser.userid : '';
           const rb = await fetch(`/api/borrower-list?userId=${userId}`);
           cache.borrowers = rb.ok ? await rb.json() : [];
         } catch {
@@ -111,16 +135,24 @@ const DB = (() => {
       })();
 
       await Promise.all([...fetchPromises, borrowerListPromise]);
+      syncSessionCache();
       return true;
     } catch (e) {
       console.warn('Backend server unavailable, falling back to offline browser cache:', e);
-      // Fallback to local browser cache
       mode = 'cache';
       for (const key of Object.keys(FILE_MAP)) {
-        cache[key] = [];
+        if (!cache[key]) cache[key] = [];
       }
       return true;
     }
+  }
+
+  function refreshCacheInBackground() {
+    setTimeout(async () => {
+      try {
+        await fetchFreshDatabase();
+      } catch (e) {}
+    }, 200);
   }
 
   function isReady() {
@@ -165,6 +197,7 @@ const DB = (() => {
   async function insert(key, row) {
     if (!cache[key]) cache[key] = [];
     cache[key].push(row);
+    syncSessionCache();
 
     if (mode === 'sqlite') {
       await fetch(`/api/insert?table=${key}`, {
@@ -183,6 +216,7 @@ const DB = (() => {
 
     // Update local cache
     cache[key] = cache[key].map(r => matchFn(r) ? { ...r, ...newData } : r);
+    syncSessionCache();
 
     if (mode === 'sqlite' && pkValue !== null) {
       await fetch(`/api/update?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
@@ -200,6 +234,7 @@ const DB = (() => {
 
     // Update local cache
     cache[key] = cache[key].filter(r => !matchFn(r));
+    syncSessionCache();
 
     if (mode === 'sqlite' && pkValue !== null) {
       await fetch(`/api/delete?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
@@ -210,6 +245,7 @@ const DB = (() => {
 
   async function replaceAll(key, rows) {
     cache[key] = rows;
+    syncSessionCache();
 
     if (mode === 'sqlite') {
       await fetch(`/api/replace?table=${key}`, {
@@ -295,6 +331,7 @@ const DB = (() => {
 
   function clearCache() {
     cache = {};
+    try { sessionStorage.removeItem('st_db_cache'); } catch (e) {}
   }
 
   return {

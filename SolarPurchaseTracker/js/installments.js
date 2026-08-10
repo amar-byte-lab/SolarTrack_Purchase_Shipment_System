@@ -705,7 +705,7 @@ function updateDistrictStats() {
     'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
   ];
 
-  const totalBadge = `<span class="badge rounded-pill bg-success text-white px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: bold; background-color: var(--st-success, #2ec4b6) !important;">Total: ${totalCount}</span>`;
+  const totalBadge = `<span class="badge rounded-pill bg-success text-white px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: bold; background-color: #05966900 !important;">Total: ${totalCount}</span>`;
 
   const districtBadges = sortedDistricts.map((dist, index) => {
     const count = counts[dist];

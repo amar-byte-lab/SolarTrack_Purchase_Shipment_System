@@ -120,7 +120,11 @@ const UI = (() => {
 
     const links = el.querySelectorAll('.sidebar-nav .nav-link');
     links.forEach(link => {
-      link.addEventListener('click', () => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+          showTopProgress(70);
+        }
         if (window.innerWidth <= 900) {
           toggleMobileSidebar(false);
         }
@@ -203,16 +207,25 @@ const UI = (() => {
     });
   }
 
-  function showLoading(show = true) {
-    let el = document.getElementById('loadingOverlay');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'loadingOverlay';
-      el.className = 'loading-overlay';
-      el.innerHTML = `<div class="spinner-border text-primary" role="status"></div>`;
-      document.body.appendChild(el);
+  function showTopProgress(percent) {
+    let bar = document.getElementById('stTopProgress');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'stTopProgress';
+      document.documentElement.appendChild(bar);
     }
-    el.style.display = show ? 'flex' : 'none';
+    bar.style.opacity = '1';
+    bar.style.width = percent + '%';
+    if (percent >= 100) {
+      setTimeout(() => {
+        if (bar) bar.style.opacity = '0';
+        setTimeout(() => { if (bar) bar.style.width = '0%'; }, 250);
+      }, 150);
+    }
+  }
+
+  function showLoading(show = true) {
+    showTopProgress(show ? 40 : 100);
   }
 
   function money(n) {
@@ -392,5 +405,5 @@ const UI = (() => {
     setInterval(loadNotifications, 30000);
   }
 
-  return { icon, renderSidebar, refreshDbStatusBadge, renderTopbar, toast, confirmDialog, showLoading, money, fmtDate, todayISO };
+  return { icon, renderSidebar, refreshDbStatusBadge, renderTopbar, toast, confirmDialog, showLoading, showTopProgress, money, fmtDate, todayISO };
 })();

@@ -3,7 +3,39 @@
    Clean, Bright, Smart, Modern, Professional Light Theme
    ========================================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* ---------------- Top Navigation & Async Loading Bar ---------------- */
+#stTopProgress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(90deg, #4f46e5, #06b6d4, #10b981);
+  z-index: 999999;
+  transition: width 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
+  pointer-events: none;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.loading-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 :root {
   /* 2026 SaaS Modern Color Palette */
@@ -146,7 +178,7 @@ a:hover {
 .brand-title-line1 {
   font-size: 0.94rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--st-primary);
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
@@ -154,7 +186,7 @@ a:hover {
 .brand-title-line2 {
   font-size: 0.7rem;
   font-weight: 700;
-  color: var(--st-primary);
+  color: #ff7c07;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;

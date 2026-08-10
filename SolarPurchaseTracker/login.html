@@ -31,11 +31,16 @@
       </div>
 
       <div class="mb-3 text-start">
-        <div class="d-flex justify-content-between align-items-center">
-          <label for="txtPassword" class="form-label fs-8 fw-semibold text-secondary mb-1">Password</label>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label for="txtPassword" class="form-label fs-8 fw-semibold text-secondary mb-0">Password</label>
           <a href="#" class="fs-8 text-decoration-none" onclick="switchToForgot(event)">Forgot Password?</a>
         </div>
-        <input type="password" class="form-control form-control-lg fs-7" id="txtPassword" placeholder="Enter Password" required>
+        <div class="position-relative">
+          <input type="password" class="form-control form-control-lg fs-7 pe-5" id="txtPassword" placeholder="Enter Password" required>
+          <button type="button" class="btn border-0 position-absolute end-0 top-50 translate-middle-y px-3 text-secondary toggle-password-btn" id="btnTogglePassword" tabindex="-1" title="Show/Hide Password" style="background: transparent; z-index: 5;">
+            👁️
+          </button>
+        </div>
       </div>
 
       <button type="submit" class="btn btn-login fs-7 mb-3" id="btnLoginSubmit">
@@ -74,7 +79,12 @@
 
       <div class="mb-2 text-start">
         <label for="txtRegPassword" class="form-label fs-8 fw-semibold text-secondary mb-1">Password</label>
-        <input type="password" class="form-control form-control-sm fs-7" id="txtRegPassword" placeholder="Enter Password" required>
+        <div class="position-relative">
+          <input type="password" class="form-control form-control-sm fs-7 pe-5" id="txtRegPassword" placeholder="Enter Password" required>
+          <button type="button" class="btn border-0 position-absolute end-0 top-50 translate-middle-y px-2.5 text-secondary toggle-password-btn" id="btnToggleRegPassword" tabindex="-1" title="Show/Hide Password" style="background: transparent; z-index: 5;">
+            👁️
+          </button>
+        </div>
       </div>
 
       <div class="mb-3 text-start">
@@ -273,6 +283,23 @@
       submitBtn.innerHTML = '✉️ Send Reset Link';
     }
   });
+
+  function setupPasswordToggle(inputId, buttonId) {
+    const input = document.getElementById(inputId);
+    const button = document.getElementById(buttonId);
+    if (!input || !button) return;
+
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      const isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      button.textContent = isPassword ? '🙈' : '👁️';
+      button.setAttribute('title', isPassword ? 'Hide Password' : 'Show Password');
+    });
+  }
+
+  setupPasswordToggle('txtPassword', 'btnTogglePassword');
+  setupPasswordToggle('txtRegPassword', 'btnToggleRegPassword');
 </script>
 </body>
 </html>
