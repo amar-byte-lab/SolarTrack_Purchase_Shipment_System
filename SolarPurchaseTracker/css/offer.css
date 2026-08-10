@@ -34,6 +34,21 @@ body.offer-page .page-body {
   border: 1px solid var(--st-border);
 }
 
+/* Quotation Header Logo Styling */
+#qCompanyLogo {
+  max-height: 110px !important;
+  max-width: 260px !important;
+  width: auto;
+  object-fit: contain;
+}
+
+#printSellerLogo {
+  height: 100px !important;
+  width: auto;
+  max-width: 230px !important;
+  object-fit: contain;
+}
+
 .table-quote {
   border-collapse: separate !important;
   border-spacing: 0 !important;
@@ -138,6 +153,42 @@ body.offer-page .page-body {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .quote-header-row {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 10px !important;
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .quote-header-logo-col, .quote-header-info-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  #qCompanyLogo {
+    max-height: 85px !important;
+    max-width: 220px !important;
+    margin: 0 auto !important;
+    display: block !important;
+    object-fit: contain !important;
+  }
+
+  .q-contact-info {
+    font-size: 0.72rem !important;
+    line-height: 1.45 !important;
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    letter-spacing: 0;
+  }
+
   .page-body {
     padding: 10px;
     overflow-y: auto !important;

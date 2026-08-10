@@ -26,6 +26,7 @@ const UI = (() => {
     gear: '<path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.29a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.29-.159a1.873 1.873 0 0 0-2.692 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.693-1.115l-.291.16c-.764.415-1.6-.42-1.184-1.185l.159-.29A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.291c-.415-.764.42-1.6 1.185-1.184l.29.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>',
     wallet: '<path d="M0 3a2 2 0 0 1 2-2h13.5a.5.5 0 0 1 0 1H15v2a1 1 0 0 1 1 1v8.5a1.5 1.5 0 0 1-1.5 1.5h-12A2.5 2.5 0 0 1 0 12.5V3zm1 1.732V12.5A1.5 1.5 0 0 0 2.5 14h12a.5.5 0 0 0 .5-.5V5H2a1.993 1.993 0 0 1-1-.268zM1 3a1 1 0 0 0 1 1h12V2H2a1 1 0 0 0-1 1z"/>',
     file: '<path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/> <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.793 4L10 .207A1 1 0 0 0 9.293 0H4zm5.5 1.5v2a1 1 0 0 0 1 1h2l-3-3z"/>',
+    logout: '<path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>',
   };
 
   function icon(name, size = 18) {
@@ -83,18 +84,21 @@ const UI = (() => {
           </span>
         </div>
         <button class="btn btn-logout-mobile w-100 py-1.5 fs-7 d-flex align-items-center justify-content-center gap-2" onclick="Auth.logout()" title="Logout">
-          🚪 <span>Logout</span>
+          ${icon('logout', 16)} <span>Logout</span>
         </button>
       </div>
     ` : '';
 
     el.innerHTML = `
       <div class="brand d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-          <span class="brand-mark">${icon('grid', 22)}</span>
-          <span class="brand-text">Solar<b>Track</b></span>
+        <div class="d-flex align-items-center gap-2 overflow-hidden" title="Shri Trutiyadev Solar Enterprises">
+          <img src="assets/sampleFiles/LogoWithoutLetter.png" alt="Logo" class="sidebar-brand-icon">
+          <div class="brand-text-wrapper">
+            <span class="brand-title-line1">Shri Trutiyadev</span>
+            <span class="brand-title-line2">Solar Enterprises</span>
+          </div>
         </div>
-        <button class="btn text-white p-0 d-md-none border-0 fs-5" id="btnSidebarClose" title="Close Menu" style="line-height: 1; opacity: 0.9; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">✕</button>
+        <button class="btn text-secondary p-0 d-md-none border-0 fs-5 flex-shrink-0" id="btnSidebarClose" title="Close Menu" style="line-height: 1; opacity: 0.9; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">✕</button>
       </div>
       <nav class="nav flex-column sidebar-nav">
         ${visibleNavItems.map(item => `
@@ -237,8 +241,8 @@ const UI = (() => {
         <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-success'} fs-8 py-1.5 px-2 text-nowrap">
           👤 ${user.username || user.userid} <span class="d-none d-sm-inline">(${user.role.charAt(0).toUpperCase() + user.role.slice(1)})</span>
         </span>
-        <button class="btn btn-sm btn-outline-danger font-monospace fs-8 px-2 py-1 text-nowrap" onclick="Auth.logout()" title="Logout">
-          🚪 <span class="d-none d-sm-inline">Logout</span>
+        <button class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1 text-nowrap rounded-2 shadow-sm" onclick="Auth.logout()" title="Logout">
+          ${icon('logout', 14)} <span class="d-none d-sm-inline fw-semibold">Logout</span>
         </button>
       </div>
     ` : '';
