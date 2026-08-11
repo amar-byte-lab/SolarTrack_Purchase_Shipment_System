@@ -766,6 +766,44 @@ function getCommDiffBadge(comm, commPaid) {
   }
 }
 
+function calculateDelay(loginDateStr) {
+  if (!loginDateStr) return '';
+  const loginDate = new Date(loginDateStr);
+  if (isNaN(loginDate.getTime())) return '';
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  loginDate.setHours(0, 0, 0, 0);
+  
+  const diffTime = today.getTime() - loginDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays + ' days';
+}
+
+function calculateInstDelay(loginDateStr, instDateStr) {
+  if (!loginDateStr || !instDateStr) return '';
+  const d1 = new Date(loginDateStr);
+  const d2 = new Date(instDateStr);
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return '';
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+  const diffTime = d2.getTime() - d1.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays + ' days';
+}
+
+function calculateCommDelay(commDateStr, instDateStr) {
+  if (!commDateStr || !instDateStr) return '';
+  const d1 = new Date(commDateStr);
+  const d2 = new Date(instDateStr);
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return '';
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+  const diffTime = d1.getTime() - d2.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays + ' days';
+}
+
 function renderList() {
   updateDistrictStats();
   const search = (document.getElementById('fSearch').value || '').toLowerCase();
@@ -1019,17 +1057,42 @@ function renderList() {
       `;
     } else {
       // Render normal static row
-      let rowClass = isDeactive ? 'deactive-row' : '';
+      const isCommissioned = Boolean(r.CommissioningDate && String(r.CommissioningDate).trim() !== '');
+      const hasInstDate = Boolean(r.InstallationDate && String(r.InstallationDate).trim() !== '');
+      const hasLoginDate = Boolean(r.LoginDate && String(r.LoginDate).trim() !== '');
+
+      let delayBadgeHtml = '';
+      let rowClass = '';
+
+      if (isDeactive) {
+        rowClass = 'deactive-row';
+      } else if (isCommissioned) {
+        rowClass = 'comm-completed-row';
+      } else if (hasInstDate) {
+        const commDelayVal = calculateDelay(r.InstallationDate);
+        if (commDelayVal) {
+          delayBadgeHtml = `
+            <sup class="ms-0.5"><a href="#" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.58rem; padding:1px 3px; font-weight:500;">Comm. Delay ${commDelayVal}</a></sup>
+          `;
+        }
+      } else if (hasLoginDate) {
+        const instDelayVal = calculateDelay(r.LoginDate);
+        if (instDelayVal) {
+          delayBadgeHtml = `
+            <sup class="ms-0.5"><a href="#" class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.58rem; padding:1px 3px; font-weight:500;">Inst. Delay ${instDelayVal}</a></sup>
+          `;
+        }
+      }
 
       return `
         <tr class="${rowClass}">
           <td class="text-center fw-semibold">${r.SlNo}</td>
           <td>
             <div class="d-flex flex-column align-items-start" style="font-size: 0.85rem; gap: 2px;">
-              <div class="d-flex align-items-center gap-2 flex-wrap">
+              <div class="d-flex align-items-center gap-1 flex-wrap">
                 <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
                   ${r.Name || ''} (${r.District || '—'})
-                </a>
+                </a>${delayBadgeHtml}
                 ${(() => {
                   const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(r.SlNo));
                   const customerRemarksCount = remarks.filter(n => n.Type === 'Customer' || !n.Type).length;
@@ -1067,20 +1130,10 @@ function renderList() {
                   </div>
                 `;
               })()}
-              
-              <div class="d-flex align-items-center gap-2 mt-1" style="font-size: 0.75rem;">
-                <span class="text-muted">Comm:</span>
-                <span class="fw-semibold text-dark font-monospace">₹${comm.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-                <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showCommissionHistory(${r.SlNo})" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Comm Pending ${getCommDiffBadge(comm, commPaid)}
-                </button>
-              </div>
-
               <div class="d-flex align-items-center gap-2 mt-1 pt-1 border-top w-100" style="font-size: 0.75rem;">
-                <span class="text-muted">Partner Price:</span>
                 <span class="fw-semibold text-dark font-monospace">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Partner Pending ${getTxnDiffBadge(partnerPrice, vPaid)}
+                  Pending ${getTxnDiffBadge(partnerPrice, vPaid)}
                 </button>
               </div>
             </div>
