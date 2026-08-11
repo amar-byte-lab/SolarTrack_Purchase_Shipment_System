@@ -190,3 +190,17 @@ body.offer-page .page-body {
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
 }
 
+/* Mobile Collapsible Bank Details for offer.html */
+@media (max-width: 768px) {
+  .bank-details-collapse {
+    display: none;
+    margin-top: 8px;
+  }
+}
+
+@media (min-width: 769px) {
+  .bank-details-collapse {
+    display: block !important;
+  }
+}
+

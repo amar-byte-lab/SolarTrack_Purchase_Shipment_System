@@ -221,44 +221,8 @@
 
             <!-- Offer Totals & Bank / Payment Details -->
             <div class="row g-3">
-              <!-- Left: Bank Details -->
-              <div class="col-md-6 col-12" id="paymentDetailsSection">
-                <!-- Screen Card -->
-                <div class="p-3 border rounded bg-white shadow-sm h-100 no-print">
-                  <h6 class="fw-bold text-primary mb-3 fs-7 text-start border-bottom pb-2">🏦 Company Bank & Payment
-                    Details</h6>
-                  <div class="font-monospace fs-7 text-secondary text-start lh-base">
-                    <div class="row g-2">
-                      <div class="col-4 text-muted fw-semibold text-start">A/c Holder:</div>
-                      <div class="col-8 fw-bold text-dark text-start" id="lblBankAcHolder">-</div>
-
-                      <div class="col-4 text-muted fw-semibold text-start">Bank Name:</div>
-                      <div class="col-8 fw-bold text-dark text-start" id="lblBankName">-</div>
-
-                      <div class="col-4 text-muted fw-semibold text-start">A/c No:</div>
-                      <div class="col-8 fw-bold text-dark text-start" id="lblBankAcNo">-</div>
-
-                      <div class="col-4 text-muted fw-semibold text-start">IFS Code:</div>
-                      <div class="col-8 fw-bold text-dark text-start" id="lblBankBranchIFS">-</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Print Card -->
-                <div class="d-none d-print-block">
-                  <h6 class="fw-bold text-primary border-bottom pb-1 mb-2 fs-7 text-start">🏦 Company Bank & Payment
-                    Details</h6>
-                  <div class="font-monospace fs-8 text-secondary text-start lh-sm">
-                    <strong>A/c Holder:</strong> <span id="lblPrintBankAcHolder">-</span><br>
-                    <strong>Bank Name:</strong> <span id="lblPrintBankName">-</span><br>
-                    <strong>A/c No:</strong> <span id="lblPrintBankAcNo">-</span><br>
-                    <strong>IFS Code:</strong> <span id="lblPrintBankBranchIFS">-</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right: Totals Card -->
-              <div class="col-md-6 col-12">
+              <!-- Right: Totals Card (Order 1 on Mobile, Order 2 on Desktop) -->
+              <div class="col-md-6 col-12 order-1 order-md-2">
                 <div class="p-3 border rounded bg-white shadow-sm">
                   <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center">
                     <!-- Subtotal line (Always visible) -->
@@ -288,15 +252,6 @@
                         <!-- Populated dynamically by offer.js -->
                       </select>
                     </div>
-
-                    <!-- Total Value Column Configuration (no-print) -->
-                    <!-- <div class="col-12 mt-2 pt-2 border-top no-print text-start">
-                      <label class="form-label fs-8 text-secondary mb-1">Total Value (₹) Column Mode</label>
-                      <select class="form-select form-select-sm" id="qTotalValueMode" style="font-size:0.75rem;">
-                        <option value="merged" selected>Merge all rows into a single value (Default)</option>
-                        <option value="each">Provide a value for each row</option>
-                      </select>
-                    </div> -->
 
                     <!-- Subsidy Breakdown Lines (Visible on screen and print if selected) -->
                     <div class="col-12 p-0 text-end" id="subsidySummaryLines" style="display: none;">
@@ -331,6 +286,47 @@
                           onclick="addAdjustmentLine('other')">+ Other</button>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Left: Bank Details (Order 2 on Mobile - right above Terms & Conditions!, Order 1 on Desktop) -->
+              <div class="col-md-6 col-12 order-2 order-md-1" id="paymentDetailsSection">
+                <!-- Screen Card -->
+                <div class="p-3 border rounded bg-white shadow-sm h-100 no-print">
+                  <div class="d-flex justify-content-between align-items-center cursor-pointer border-bottom pb-2 mb-2"
+                    onclick="toggleOfferSection('collapseBankDetails', 'iconBankDetails')" style="cursor: pointer;">
+                    <h6 class="fw-bold text-primary fs-7 mb-0 text-start">🏦 Company Bank & Payment Details</h6>
+                    <span id="iconBankDetails" class="text-muted fs-8 d-md-none">▼</span>
+                  </div>
+                  <div id="collapseBankDetails" class="bank-details-collapse">
+                    <div class="font-monospace fs-7 text-secondary text-start lh-base">
+                      <div class="row g-2">
+                        <div class="col-4 text-muted fw-semibold text-start">A/c Holder:</div>
+                        <div class="col-8 fw-bold text-dark text-start" id="lblBankAcHolder">-</div>
+
+                        <div class="col-4 text-muted fw-semibold text-start">Bank Name:</div>
+                        <div class="col-8 fw-bold text-dark text-start" id="lblBankName">-</div>
+
+                        <div class="col-4 text-muted fw-semibold text-start">A/c No:</div>
+                        <div class="col-8 fw-bold text-dark text-start" id="lblBankAcNo">-</div>
+
+                        <div class="col-4 text-muted fw-semibold text-start">IFS Code:</div>
+                        <div class="col-8 fw-bold text-dark text-start" id="lblBankBranchIFS">-</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Print Card -->
+                <div class="d-none d-print-block">
+                  <h6 class="fw-bold text-primary border-bottom pb-1 mb-2 fs-7 text-start">🏦 Company Bank & Payment
+                    Details</h6>
+                  <div class="font-monospace fs-8 text-secondary text-start lh-sm">
+                    <strong>A/c Holder:</strong> <span id="lblPrintBankAcHolder">-</span><br>
+                    <strong>Bank Name:</strong> <span id="lblPrintBankName">-</span><br>
+                    <strong>A/c No:</strong> <span id="lblPrintBankAcNo">-</span><br>
+                    <strong>IFS Code:</strong> <span id="lblPrintBankBranchIFS">-</span>
                   </div>
                 </div>
               </div>
