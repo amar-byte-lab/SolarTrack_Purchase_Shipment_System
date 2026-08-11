@@ -528,3 +528,97 @@
   color: #b45309;
   opacity: 0.7;
 }
+
+/* ---------------- 10. Mobile Responsive Enhancements for Ledger Modal ---------------- */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 8px !important;
+  }
+  .modal-header {
+    padding: 8px 12px !important;
+  }
+  #txnBorrowerName {
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+  }
+  .bw-modal-bal {
+    font-size: 0.68rem !important;
+    padding: 2px 8px !important;
+    margin-left: 0 !important;
+    margin-top: 2px !important;
+    display: inline-block !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+  .modal-header .btn {
+    font-size: 0.65rem !important;
+    padding: 3px 6px !important;
+  }
+  .chat-bg {
+    padding: 10px 10px !important;
+    min-height: 200px !important;
+    max-height: 320px !important;
+  }
+  .chat-bubble {
+    max-width: 88% !important;
+    padding: 6px 10px 6px !important;
+    min-width: 110px !important;
+  }
+  .bubble-amount {
+    font-size: 0.95rem !important;
+  }
+  .bubble-label {
+    font-size: 0.6rem !important;
+  }
+  .bubble-remarks {
+    font-size: 0.72rem !important;
+  }
+  .bubble-meta {
+    font-size: 0.6rem !important;
+  }
+  .chat-date-sep span {
+    font-size: 0.64rem !important;
+    padding: 2px 8px !important;
+  }
+  .compose-bar {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+  .compose-bar .compose-hint {
+    font-size: 0.72rem !important;
+  }
+  .btn-deact {
+    font-size: 0.64rem !important;
+    padding: 3px 6px !important;
+  }
+  .btn-open-form {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1rem !important;
+  }
+  .txn-running-footer {
+    padding: 6px 12px !important;
+  }
+  .txn-running-footer span {
+    font-size: 0.7rem !important;
+  }
+  .txn-running-footer strong {
+    font-size: 0.82rem !important;
+  }
+  .txn-form-drawer.open {
+    padding: 12px 12px !important;
+    max-height: 340px !important;
+  }
+  .txn-form-drawer h6 {
+    font-size: 0.82rem !important;
+  }
+  .txn-form-drawer .form-label {
+    font-size: 0.7rem !important;
+    margin-bottom: 2px !important;
+  }
+  .txn-form-drawer .form-control, .txn-form-drawer .form-select {
+    font-size: 0.78rem !important;
+    padding: 4px 8px !important;
+  }
+}

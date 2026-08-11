@@ -9,3 +9,118 @@
   flex-direction: column;
   gap: 16px;
 }
+
+/* Mobile Responsive Optimization for Main Borrower Page */
+@media (max-width: 576px) {
+  .page-body {
+    padding: 10px 8px !important;
+  }
+  
+  .bw-kpi-strip {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .bw-kpi {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    border-radius: 10px !important;
+  }
+
+  .bw-kpi-icon {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+  }
+  .bw-kpi-icon svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .bw-kpi-val {
+    font-size: 0.88rem !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    word-break: break-word !important;
+  }
+
+  .bw-kpi-lbl {
+    font-size: 0.6rem !important;
+    margin-top: 1px !important;
+    letter-spacing: 0 !important;
+  }
+
+  .bw-filter-bar {
+    padding: 8px 10px !important;
+    margin-bottom: 8px !important;
+    border-radius: 8px !important;
+  }
+
+  .bw-filter-bar span {
+    font-size: 0.76rem !important;
+  }
+
+  .bw-table-card {
+    border-radius: 8px !important;
+  }
+
+  .bw-kbd-hint {
+    font-size: 0.62rem !important;
+    padding: 4px 8px !important;
+    line-height: 1.3 !important;
+  }
+
+  .bw-kbd-hint kbd {
+    font-size: 0.58rem !important;
+    padding: 1px 3px !important;
+  }
+
+  .bw-table {
+    font-size: 0.76rem !important;
+  }
+
+  .bw-table thead th {
+    padding: 6px 6px !important;
+    font-size: 0.64rem !important;
+  }
+
+  .bw-table tbody td {
+    padding: 6px 6px !important;
+    font-size: 0.76rem !important;
+    white-space: normal !important;
+  }
+
+  .bw-col-name {
+    min-width: 150px !important;
+  }
+
+  .bw-col-name span {
+    font-size: 0.78rem !important;
+  }
+
+  .btn-txn-inline {
+    font-size: 0.64rem !important;
+    padding: 2px 5px !important;
+    margin-left: 3px !important;
+  }
+
+  .bw-out {
+    font-size: 0.64rem !important;
+    padding: 1px 5px !important;
+    margin-left: 3px !important;
+  }
+
+  .btn-deact, .btn-reactivate {
+    font-size: 0.64rem !important;
+    padding: 2px 5px !important;
+  }
+
+  .add-row-sticky td {
+    padding: 6px 6px !important;
+    font-size: 0.76rem !important;
+  }
+}
