@@ -1133,12 +1133,43 @@ function renderList() {
       `;
     } else {
       // Render normal static row
+      const isCommissioned = Boolean(r.CommissioningDate && String(r.CommissioningDate).trim() !== '');
+      const hasInstDate = Boolean(r.InstallationDate && String(r.InstallationDate).trim() !== '');
+      const hasLoginDate = Boolean(r.LoginDate && String(r.LoginDate).trim() !== '');
+
+      let delayBadgeHtml = '';
+      let rowClass = '';
+
+      if (isDeactive) {
+        rowClass = 'deactive-row';
+      } else if (isCommissioned) {
+        rowClass = 'comm-completed-row';
+      } else if (hasInstDate) {
+        const commDelayVal = calculateDelay(r.InstallationDate);
+        if (commDelayVal) {
+          delayBadgeHtml = `
+            <a href="#" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.72rem;">
+              Comm. Delay ${commDelayVal}
+            </a>
+          `;
+        }
+      } else if (hasLoginDate) {
+        const instDelayVal = calculateDelay(r.LoginDate);
+        if (instDelayVal) {
+          delayBadgeHtml = `
+            <a href="#" class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.72rem;">
+              Inst. Delay ${instDelayVal}
+            </a>
+          `;
+        }
+      }
+
       return `
-        <tr class="${isDeactive ? 'deactive-row' : ''}">
+        <tr class="${rowClass}">
           <td class="text-center fw-semibold">${r.SlNo}</td>
           <td>
             <div class="d-flex flex-column align-items-start" style="font-size: 0.85rem; gap: 2px;">
-              <div class="d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
                 <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
                   ${r.Name || ''} (${r.District || '—'})
                 </a>
@@ -1152,6 +1183,7 @@ function renderList() {
                     </button>
                   `;
                 })()}
+                ${delayBadgeHtml}
               </div>
               
               <!-- Customer Price & Pending Txn functionality -->
@@ -1220,7 +1252,7 @@ function renderList() {
               })()}
             </div>
           </td>
-          <td class="col-timestamp text-center align-middle">
+          <td class="col-timestamp text-center align-middle" onclick="showTimestampDetailsPopup(${r.SlNo});" style="cursor: pointer;" title="Click to view Timestamp details">
             <div class="d-flex flex-column" style="font-size: 0.8rem; gap: 4px; min-width: 175px;">
               <div class="d-flex justify-content-between align-items-center">
                 <span class="text-secondary" style="font-size: 0.72rem; font-weight: 500;">Login:</span>
@@ -1965,6 +1997,37 @@ window.showPartnerDetailsPopup = function(slNo) {
   modal.show();
 };
 
+window.showTimestampDetailsPopup = function(slNo) {
+  const r = getInstallmentRows().find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) return;
+
+  const titleEl = document.getElementById('tsModalTitle');
+  if (titleEl) {
+    titleEl.textContent = `Timestamp Details — ${r.Name || ''}${r.District ? ' (' + r.District + ')' : ''}`;
+  }
+
+  const loginDateStr = fmtDateExcel(r.LoginDate) || '—';
+  const loginDelay = calculateDelay(r.LoginDate);
+  document.getElementById('tsModalLoginDate').textContent = loginDateStr;
+  document.getElementById('tsModalLoginDelay').textContent = loginDelay ? `(${loginDelay})` : '—';
+
+  const instDateStr = fmtDateExcel(r.InstallationDate) || '—';
+  const instDelay = calculateInstDelay(r.LoginDate, r.InstallationDate);
+  document.getElementById('tsModalInstDate').textContent = instDateStr;
+  document.getElementById('tsModalInstDelay').textContent = instDelay ? `(${instDelay})` : '—';
+
+  const commDateStr = fmtDateExcel(r.CommissioningDate) || '—';
+  const commDelay = calculateCommDelay(r.CommissioningDate, r.InstallationDate);
+  document.getElementById('tsModalCommDate').textContent = commDateStr;
+  document.getElementById('tsModalCommDelay').textContent = commDelay ? `(${commDelay})` : '—';
+
+  const modalEl = document.getElementById('timestampDetailsModal');
+  if (modalEl) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+};
+
 window.showInstallmentNotes = function(slNo, filterType = 'Customer') {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
@@ -2076,6 +2139,7 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cVendorPrice').value = r.VendorPrice || '';
       document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
       document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
+      document.getElementById('cCommissioningDate').value = r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '';
       document.getElementById('cBrokerName').value = r.BrokerName || '';
       document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|')[0];
       document.getElementById('cCommission').value = r.Commission || '';
@@ -2094,7 +2158,7 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
     }
   } else {
-    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
+    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -2242,6 +2306,7 @@ async function saveCustomerModal() {
     VendorPrice: calculatedVendorPrice,
     LoginDate: document.getElementById('cLoginDate').value || null,
     InstallationDate: document.getElementById('cInstallationDate').value || null,
+    CommissioningDate: document.getElementById('cCommissioningDate').value || null,
     BrokerName: document.getElementById('cBrokerName').value.trim(),
     BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
     Commission: Number(document.getElementById('cCommission').value) || 0
@@ -2264,7 +2329,6 @@ async function saveCustomerModal() {
       rowData.Total = 0;
       rowData.VendorPaid = 0;
       rowData.CommissionPaid = 0;
-      rowData.CommissioningDate = '';
       await DB.insert('installments', rowData);
       UI.toast('New Customer record added.', 'success');
     }

@@ -90,6 +90,11 @@
   opacity: 0.8;
 }
 
+.table-installments tr.comm-completed-row td {
+  background-color: #d1e7dd !important;
+  color: #0f5132 !important;
+}
+
 /* Draggable Column Resizing */
 .col-resizer {
   position: absolute;

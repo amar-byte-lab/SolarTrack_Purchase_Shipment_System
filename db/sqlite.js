@@ -43,12 +43,15 @@ function init() {
     // Ignore error if column already exists
   }
 
-  // Migrate installments table to add VendorPrice and VendorPaid columns
+  // Migrate installments table to add VendorPrice, VendorPaid, and CommissioningDate columns
   try {
     db.exec(`ALTER TABLE installments ADD COLUMN "VendorPrice" REAL`);
   } catch (e) {}
   try {
     db.exec(`ALTER TABLE installments ADD COLUMN "VendorPaid" REAL`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE installments ADD COLUMN "CommissioningDate" TEXT`);
   } catch (e) {}
 
   // Migrate installment_txns table to add TxnType column

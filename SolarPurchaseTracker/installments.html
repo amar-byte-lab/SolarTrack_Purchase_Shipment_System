@@ -375,6 +375,53 @@
     </div>
   </div>
 
+  <!-- Timestamp Details Modal -->
+  <div class="modal fade" id="timestampDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+        <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+          <h6 class="modal-title fw-bold fs-7" id="tsModalTitle">Timestamp Details</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 bg-light d-flex flex-column gap-3">
+          <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+            <div class="d-flex flex-column gap-2" style="font-size: 0.85rem;">
+              <!-- Login Date -->
+              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border">
+                <div>
+                  <span class="fw-bold text-secondary d-block fs-8 mb-0.5">🗓 Login Date</span>
+                  <span class="fw-semibold text-dark fs-7 font-monospace" id="tsModalLoginDate">—</span>
+                </div>
+                <span class="badge bg-primary-subtle text-primary-emphasis font-monospace" id="tsModalLoginDelay">—</span>
+              </div>
+              
+              <!-- Installation Date -->
+              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border">
+                <div>
+                  <span class="fw-bold text-secondary d-block fs-8 mb-0.5">🛠 Installation Date</span>
+                  <span class="fw-semibold text-dark fs-7 font-monospace" id="tsModalInstDate">—</span>
+                </div>
+                <span class="badge bg-info-subtle text-info-emphasis font-monospace" id="tsModalInstDelay">—</span>
+              </div>
+              
+              <!-- Commissioning Date -->
+              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border">
+                <div>
+                  <span class="fw-bold text-secondary d-block fs-8 mb-0.5">⚡ Commissioning Date</span>
+                  <span class="fw-semibold text-dark fs-7 font-monospace" id="tsModalCommDate">—</span>
+                </div>
+                <span class="badge bg-success-subtle text-success-emphasis font-monospace" id="tsModalCommDelay">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light border-top py-1">
+          <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <!-- ══ Notes & Remarks Modal ════════════════════════════════ -->
 <div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
@@ -461,13 +508,17 @@
                   <label class="form-label fs-8 text-secondary mb-1">Brand / System</label>
                   <input type="text" class="form-control form-control-sm" id="cBrand" list="brandList" placeholder="Enter brand name">
                 </div>
-                <div class="col-6 mb-2">
+                <div class="col-4 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Login Date</label>
                   <input type="date" class="form-control form-control-sm" id="cLoginDate">
                 </div>
-                <div class="col-6 mb-2">
+                <div class="col-4 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Installation Date</label>
                   <input type="date" class="form-control form-control-sm" id="cInstallationDate">
+                </div>
+                <div class="col-4 mb-2">
+                  <label class="form-label fs-8 text-secondary mb-1">Comm. Date</label>
+                  <input type="date" class="form-control form-control-sm" id="cCommissioningDate">
                 </div>
                 <div class="col-6 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Partner / Agent Name</label>
