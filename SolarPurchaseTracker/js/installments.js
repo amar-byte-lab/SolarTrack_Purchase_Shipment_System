@@ -21,11 +21,12 @@ const DISTRICTS = [
   'Puri', 'Rayagada', 'Sambalpur', 'Subarnapur', 'Sundargarh'
 ];
 
-const COLORABLE_COLS = [
-  { key: 'col-Partner', label: 'Partner Details', default: '#ffffff' },
+const DEFAULT_COLUMN_COLORS = [
+  { key: 'col-sl', label: 'Sl.', default: '#ffffff' },
+  { key: 'col-customer', label: 'Customer', default: '#ffffff' },
+  { key: 'col-partner', label: 'Partner', default: '#ffffff' },
   { key: 'col-price', label: 'Total expense', default: '#ffffff' },
-  { key: 'col-timestamp', label: 'Timestamp', default: '#ffffff' },
-  { key: 'col-comm', label: 'Commission', default: '#ffff00' }
+  { key: 'col-actions', label: 'Actions', default: '#ffffff' }
 ];
 
 window.onDbReady = function () {
@@ -438,7 +439,7 @@ function applyCustomStyles() {
   const savedColors = JSON.parse(localStorage.getItem('installmentColColors') || '{}');
   let styleText = '';
   
-  COLORABLE_COLS.forEach(c => {
+  DEFAULT_COLUMN_COLORS.forEach(c => {
     const color = savedColors[c.key] !== undefined ? savedColors[c.key] : c.default;
     if (color && color !== '#ffffff') {
       styleText += `
@@ -475,36 +476,6 @@ function updateSortHeadersUI() {
     }
   });
 }
-
-window.changeTimestampSort = function (col, label, event) {
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-  
-  const th = document.getElementById('thTimestamp');
-  if (th) {
-    th.setAttribute('data-sort', col);
-  }
-  const btn = document.getElementById('btnSortTimestamp');
-  if (btn) {
-    btn.textContent = 'Sort: ' + label;
-  }
-  
-  // Highlight active dropdown item
-  document.querySelectorAll('#thTimestamp .dropdown-item').forEach(item => {
-    if (item.getAttribute('data-col') === col) {
-      item.classList.add('active');
-    } else {
-      item.classList.remove('active');
-    }
-  });
-
-  sortCol = col;
-  sortDir = 'asc';
-  updateSortHeadersUI();
-  renderList();
-};
 
 function populateDatalists() {
   // 1. District multiselect menu
@@ -605,7 +576,7 @@ function populateColorColCheckboxes() {
   if (!menu) return;
   const currentUser = Auth.getUser();
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
-  const cols = COLORABLE_COLS.filter(c => isAdmin || c.key !== 'col-price');
+  const cols = DEFAULT_COLUMN_COLORS.filter(c => isAdmin || c.key !== 'col-price');
   menu.innerHTML = cols.map(c => `
     <div class="form-check mb-1">
       <input class="form-check-input color-col-chk" type="checkbox" value="${c.key}" id="col_chk_${c.key}" ${selectedColorCols.includes(c.key) ? 'checked' : ''}>
@@ -630,11 +601,11 @@ function updateColorColDropdownButton() {
   if (!btn) return;
   const currentUser = Auth.getUser();
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
-  const cols = COLORABLE_COLS.filter(c => isAdmin || c.key !== 'col-price');
+  const cols = DEFAULT_COLUMN_COLORS.filter(c => isAdmin || c.key !== 'col-price');
   if (selectedColorCols.length === 0) {
     btn.textContent = 'Select Columns';
   } else if (selectedColorCols.length === 1) {
-    const col = COLORABLE_COLS.find(c => c.key === selectedColorCols[0]);
+    const col = DEFAULT_COLUMN_COLORS.find(c => c.key === selectedColorCols[0]);
     btn.textContent = col ? col.label : '1 Column';
   } else if (selectedColorCols.length === cols.length) {
     btn.textContent = 'All Columns';
@@ -653,7 +624,7 @@ function updateColorPickerValue() {
   // Show the color of the first checked column
   const colKey = selectedColorCols[0];
   const savedColors = JSON.parse(localStorage.getItem('installmentColColors') || '{}');
-  const matched = COLORABLE_COLS.find(c => c.key === colKey);
+  const matched = DEFAULT_COLUMN_COLORS.find(c => c.key === colKey);
   const defaultColor = matched ? matched.default : '#ffffff';
   const color = savedColors[colKey] !== undefined ? savedColors[colKey] : defaultColor;
   picker.value = color || '#ffffff';
@@ -759,44 +730,6 @@ function fmtDateExcel(d) {
   return `${day}-${month}-${year}`;
 }
 
-function calculateDelay(loginDateStr) {
-  if (!loginDateStr) return '';
-  const loginDate = new Date(loginDateStr);
-  if (isNaN(loginDate.getTime())) return '';
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  loginDate.setHours(0, 0, 0, 0);
-  
-  const diffTime = today.getTime() - loginDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays + ' days';
-}
-
-function calculateInstDelay(loginDateStr, instDateStr) {
-  if (!loginDateStr || !instDateStr) return '';
-  const d1 = new Date(loginDateStr);
-  const d2 = new Date(instDateStr);
-  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return '';
-  d1.setHours(0, 0, 0, 0);
-  d2.setHours(0, 0, 0, 0);
-  const diffTime = d2.getTime() - d1.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays + ' days';
-}
-
-function calculateCommDelay(commDateStr, instDateStr) {
-  if (!commDateStr || !instDateStr) return '';
-  const d1 = new Date(commDateStr);
-  const d2 = new Date(instDateStr);
-  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return '';
-  d1.setHours(0, 0, 0, 0);
-  d2.setHours(0, 0, 0, 0);
-  const diffTime = d1.getTime() - d2.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays + ' days';
-}
-
 function getRawDelayDays(dateStr) {
   if (!dateStr) return -999999;
   const d = new Date(dateStr);
@@ -809,24 +742,6 @@ function getRawDelayDays(dateStr) {
 
 function getInstallmentRows() {
   return DB.getAll('installments');
-}
-
-function fmtCommissionField(comm, commPaid) {
-  if (!comm && !commPaid) return '';
-  const cStr = fmtCurrency(comm) || '₹0';
-  if (commPaid) {
-    return `${cStr} (-${fmtCurrency(commPaid)})`;
-  }
-  return cStr;
-}
-
-function fmtPriceField(price, totalPaid) {
-  if (!price && !totalPaid) return '';
-  const pStr = fmtCurrency(price) || '₹0';
-  if (totalPaid) {
-    return `${pStr} (-${fmtCurrency(totalPaid)})`;
-  }
-  return pStr;
 }
 
 function getTxnDiffBadge(price, totalPaid) {
@@ -962,18 +877,18 @@ function renderList() {
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
 
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '6' : '5'}" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '4' : '3'}" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
     const tfoot = document.querySelector('#installmentsTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="${isAdmin ? '5' : '4'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="${isAdmin ? '3' : '2'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
         <tr class="grand-total" style="height:37px;">
           <td class="text-center">0</td>
           <td colspan="2">GRAND TOTAL</td>
-          <td colspan="${isAdmin ? '3' : '2'}"></td>
+          ${isAdmin ? '<td colspan="1"></td>' : ''}
         </tr>
       `;
     }
@@ -1029,10 +944,6 @@ function renderList() {
       sumCommPaid += commPaid;
       sumPartnerPrice += partnerPrice;
     }
-
-    const delayStr = calculateDelay(r.LoginDate);
-
-
 
     if (isEditing) {
       // Render input fields for inline editing
@@ -1098,31 +1009,6 @@ function renderList() {
               </div>
             </div>
           </td>
-          <td class="col-timestamp">
-            <div class="d-flex flex-column gap-2" style="min-width: 190px;">
-              <div class="d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center mb-0.5">
-                  <span class="fs-8 text-secondary">Login Date</span>
-                  <span class="text-muted font-monospace fs-8" id="editLoginDelay" style="white-space: nowrap;">(${calculateDelay(r.LoginDate) || '—'})</span>
-                </div>
-                <input type="date" class="form-control form-control-sm" id="editLoginDate" value="${r.LoginDate ? new Date(r.LoginDate).toISOString().split('T')[0] : ''}">
-              </div>
-              <div class="d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center mb-0.5">
-                  <span class="fs-8 text-secondary">Inst. Date</span>
-                  <span class="text-muted font-monospace fs-8" id="editInstDelay" style="white-space: nowrap;">(${calculateInstDelay(r.LoginDate, r.InstallationDate) || '—'})</span>
-                </div>
-                <input type="date" class="form-control form-control-sm" id="editInstallationDate" value="${r.InstallationDate ? new Date(r.InstallationDate).toISOString().split('T')[0] : ''}">
-              </div>
-              <div class="d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center mb-0.5">
-                  <span class="fs-8 text-secondary">Comm. Date</span>
-                  <span class="text-muted font-monospace fs-8" id="editCommDelay" style="white-space: nowrap;">(${calculateCommDelay(r.CommissioningDate, r.InstallationDate) || '—'})</span>
-                </div>
-                <input type="date" class="form-control form-control-sm" id="editCommissioningDate" value="${r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().split('T')[0] : ''}">
-              </div>
-            </div>
-          </td>
           <td class="no-print text-center align-middle">
             <div class="d-flex gap-1 justify-content-center">
               <button class="btn btn-sm btn-success py-0 px-2" onclick="saveInline(${r.SlNo})" title="Save">💾</button>
@@ -1133,36 +1019,7 @@ function renderList() {
       `;
     } else {
       // Render normal static row
-      const isCommissioned = Boolean(r.CommissioningDate && String(r.CommissioningDate).trim() !== '');
-      const hasInstDate = Boolean(r.InstallationDate && String(r.InstallationDate).trim() !== '');
-      const hasLoginDate = Boolean(r.LoginDate && String(r.LoginDate).trim() !== '');
-
-      let delayBadgeHtml = '';
-      let rowClass = '';
-
-      if (isDeactive) {
-        rowClass = 'deactive-row';
-      } else if (isCommissioned) {
-        rowClass = 'comm-completed-row';
-      } else if (hasInstDate) {
-        const commDelayVal = calculateDelay(r.InstallationDate);
-        if (commDelayVal) {
-          delayBadgeHtml = `
-            <a href="#" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.72rem;">
-              Comm. Delay ${commDelayVal}
-            </a>
-          `;
-        }
-      } else if (hasLoginDate) {
-        const instDelayVal = calculateDelay(r.LoginDate);
-        if (instDelayVal) {
-          delayBadgeHtml = `
-            <a href="#" class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.72rem;">
-              Inst. Delay ${instDelayVal}
-            </a>
-          `;
-        }
-      }
+      let rowClass = isDeactive ? 'deactive-row' : '';
 
       return `
         <tr class="${rowClass}">
@@ -1183,15 +1040,12 @@ function renderList() {
                     </button>
                   `;
                 })()}
-                ${delayBadgeHtml}
               </div>
               
-              <!-- Customer Price & Pending Txn functionality -->
               <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top w-100" style="font-size: 0.8rem;">
-                <span class="text-muted">Cust Price:</span>
                 <span class="fw-semibold text-dark font-monospace">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Customer')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Pending Txn ${getTxnDiffBadge(price, total)}
+                  Pending${getTxnDiffBadge(price, total)}
                 </button>
               </div>
             </div>
@@ -1214,7 +1068,6 @@ function renderList() {
                 `;
               })()}
               
-              <!-- Commission Info -->
               <div class="d-flex align-items-center gap-2 mt-1" style="font-size: 0.75rem;">
                 <span class="text-muted">Comm:</span>
                 <span class="fw-semibold text-dark font-monospace">₹${comm.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
@@ -1223,7 +1076,6 @@ function renderList() {
                 </button>
               </div>
 
-              <!-- Vendor Price & Vend Txn functionality -->
               <div class="d-flex align-items-center gap-2 mt-1 pt-1 border-top w-100" style="font-size: 0.75rem;">
                 <span class="text-muted">Partner Price:</span>
                 <span class="fw-semibold text-dark font-monospace">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
@@ -1240,7 +1092,6 @@ function renderList() {
                 <span class="fw-semibold text-dark">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
               </div>
               ${(() => {
-                const partnerPrice = (expenses && expenses.partner) || 0;
                 const profit = partnerPrice - comm - vPrice;
                 const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
                 return `
@@ -1250,25 +1101,6 @@ function renderList() {
                   </div>
                 `;
               })()}
-            </div>
-          </td>
-          <td class="col-timestamp text-center align-middle" onclick="showTimestampDetailsPopup(${r.SlNo});" style="cursor: pointer;" title="Click to view Timestamp details">
-            <div class="d-flex flex-column" style="font-size: 0.8rem; gap: 4px; min-width: 175px;">
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="text-secondary" style="font-size: 0.72rem; font-weight: 500;">Login:</span>
-                <span class="fw-semibold text-dark font-monospace">${fmtDateExcel(r.LoginDate) || '—'}</span>
-                <span class="text-muted font-monospace" style="font-size: 0.7rem;">(${calculateDelay(r.LoginDate) || '—'})</span>
-              </div>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="text-secondary" style="font-size: 0.72rem; font-weight: 500;">Inst:</span>
-                <span class="fw-semibold text-dark font-monospace">${fmtDateExcel(r.InstallationDate) || '—'}</span>
-                <span class="text-muted font-monospace" style="font-size: 0.7rem;">(${calculateInstDelay(r.LoginDate, r.InstallationDate) || '—'})</span>
-              </div>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="text-secondary" style="font-size: 0.72rem; font-weight: 500;">Comm:</span>
-                <span class="fw-semibold text-dark font-monospace">${fmtDateExcel(r.CommissioningDate) || '—'}</span>
-                <span class="text-muted font-monospace" style="font-size: 0.7rem;">(${calculateCommDelay(r.CommissioningDate, r.InstallationDate) || '—'})</span>
-              </div>
             </div>
           </td>
           <td class="no-print text-center admin-only-column">
@@ -1298,7 +1130,7 @@ function renderList() {
       tfootHTML += `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="${isAdmin ? '5' : '3'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="${isAdmin ? '4' : '2'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
       `;
     }
@@ -1338,7 +1170,6 @@ function renderList() {
             })()}
           </div>
         </td>
-        <td></td>
         <td class="no-print admin-only-column"></td>
       </tr>
     `;
