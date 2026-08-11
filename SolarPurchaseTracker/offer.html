@@ -31,7 +31,7 @@
         <div id="offerContainer" class="quote-container" style="display:none;">
 
           <!-- Corporate Quotation Header (Screen view only) -->
-          <div class="row g-2 mb-4 pb-3 border-bottom align-items-center no-print quote-header-row">
+          <!-- <div class="row g-2 mb-4 pb-3 border-bottom align-items-center no-print quote-header-row">
             <div class="col-md-6 quote-header-logo-col text-start d-flex align-items-center justify-content-start">
               <img id="qCompanyLogo" src="assets/sampleFiles/CompanyLogo.jpeg" alt="Logo" class="border rounded p-1 bg-white img-fluid"
                 style="max-height: 110px; max-width: 260px; object-fit: contain;">
@@ -41,7 +41,7 @@
               <div class="text-muted fs-8 font-monospace q-contact-info" id="lblCompanyPhone">Mob: -</div>
               <div class="text-muted fs-8 font-monospace q-contact-info" id="lblCompanyGST">GSTIN: -</div>
             </div>
-          </div>
+          </div> -->
 
           <!-- Product Sets Selection Section (Collapsible checkbox list taking 40% height scrollable) -->
           <div class="st-card p-3 mb-4 bg-light border-0 no-print" style="border: 1px dashed #ced4da !important;">
@@ -185,7 +185,13 @@
                   <tr>
                     <th>Item Name & Description</th>
                     <th class="text-center" style="width: 80px;">Qty</th>
-                    <th class="text-end" style="width: 160px;">Total Value (₹)</th>
+                    <th class="text-end" style="width: 170px;">
+                      Value (₹)
+                      <div class="form-check form-check-inline no-print ms-1 mb-0 align-middle">
+                        <input class="form-check-input chk-square" type="checkbox" id="chkMergeTotalValue" checked style="cursor: pointer;">
+                        <label class="form-check-label fs-8 text-secondary fw-semibold ms-1" for="chkMergeTotalValue" style="cursor: pointer; user-select: none;">Merge</label>
+                      </div>
+                    </th>
                     <th class="no-print text-center" style="width: 50px;"></th>
                   </tr>
                 </thead>
@@ -284,13 +290,13 @@
                     </div>
 
                     <!-- Total Value Column Configuration (no-print) -->
-                    <div class="col-12 mt-2 pt-2 border-top no-print text-start">
+                    <!-- <div class="col-12 mt-2 pt-2 border-top no-print text-start">
                       <label class="form-label fs-8 text-secondary mb-1">Total Value (₹) Column Mode</label>
                       <select class="form-select form-select-sm" id="qTotalValueMode" style="font-size:0.75rem;">
                         <option value="merged" selected>Merge all rows into a single value (Default)</option>
                         <option value="each">Provide a value for each row</option>
                       </select>
-                    </div>
+                    </div> -->
 
                     <!-- Subsidy Breakdown Lines (Visible on screen and print if selected) -->
                     <div class="col-12 p-0 text-end" id="subsidySummaryLines" style="display: none;">

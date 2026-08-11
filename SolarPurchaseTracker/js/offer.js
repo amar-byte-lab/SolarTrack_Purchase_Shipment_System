@@ -54,11 +54,22 @@ window.onDbReady = function () {
   // Load and apply Company Profile Settings
   loadCompanyProfileSettings();
 
-  // Setup Total Value Column Mode change listener
+  // Setup Total Value Column Mode change listener (Checkbox & Select synchronization)
+  const chkMerge = document.getElementById('chkMergeTotalValue');
   const modeSelect = document.getElementById('qTotalValueMode');
+
+  if (chkMerge) {
+    chkMerge.addEventListener('change', (e) => {
+      if (modeSelect) modeSelect.value = e.target.checked ? 'merged' : 'each';
+      rebuildQuoteGridFromDOM(true);
+      recalculateOffer();
+    });
+  }
+
   if (modeSelect) {
-    modeSelect.addEventListener('change', () => {
-      rebuildQuoteGridFromDOM();
+    modeSelect.addEventListener('change', (e) => {
+      if (chkMerge) chkMerge.checked = (e.target.value === 'merged');
+      rebuildQuoteGridFromDOM(true);
       recalculateOffer();
     });
   }
@@ -309,8 +320,9 @@ function generatePrintItemsGrid() {
   const tbody = document.getElementById('printItemsTbody');
   if (!tbody) return;
 
+  const chkMerge = document.getElementById('chkMergeTotalValue');
   const modeSelect = document.getElementById('qTotalValueMode');
-  const totalValueMode = modeSelect ? modeSelect.value : 'merged';
+  const totalValueMode = chkMerge ? (chkMerge.checked ? 'merged' : 'each') : (modeSelect ? modeSelect.value : 'merged');
 
   // Recalculate totals
   let subtotal = 0;
@@ -915,20 +927,32 @@ function addQuoteItem(itemName = '', qty = 1, price = 0, productName = '') {
   const tr = document.createElement('tr');
   tr.className = 'quote-item-row';
   tr.setAttribute('data-product', productName);
+  tr.setAttribute('data-unit-price', price);
+  tr.setAttribute('data-saved-price', price * qty);
+  tr.setAttribute('data-price', price * qty);
   tr.innerHTML = `
     <td><input type="text" class="q-item-name" value="${itemName}"></td>
     <td><input type="number" class="q-qty" value="${qty}"></td>
-    <td><input type="number" class="q-price" value="${price}"></td>
+    <td><input type="number" class="q-price" value="${price * qty}"></td>
   `;
   tbody.appendChild(tr);
 }
 
-function rebuildQuoteGridFromDOM() {
+function rebuildQuoteGridFromDOM(forceAutoCalcOnToggle = false) {
   const tbody = document.getElementById('quoteTbody');
   if (!tbody) return;
 
+  const chkMerge = document.getElementById('chkMergeTotalValue');
   const modeSelect = document.getElementById('qTotalValueMode');
-  const totalValueMode = modeSelect ? modeSelect.value : 'merged';
+  const totalValueMode = chkMerge ? (chkMerge.checked ? 'merged' : 'each') : (modeSelect ? modeSelect.value : 'merged');
+
+  // Keep dropdown and checkbox in 2-way sync
+  if (modeSelect && modeSelect.value !== totalValueMode) {
+    modeSelect.value = totalValueMode;
+  }
+  if (chkMerge && chkMerge.checked !== (totalValueMode === 'merged')) {
+    chkMerge.checked = (totalValueMode === 'merged');
+  }
 
   // Read current row data
   const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -937,27 +961,63 @@ function rebuildQuoteGridFromDOM() {
   let oldSubtotal = 0;
 
   const hasMerged = !!document.getElementById('mergedQuoteTotalCell');
+  const allDbItems = DB.getAll('product_items') || [];
 
   rows.forEach(row => {
     if (row.classList.contains('quote-header-row')) {
       currentGroup = row.getAttribute('data-product');
       data.push({ type: 'header', productName: currentGroup });
     } else if (row.classList.contains('quote-item-row')) {
-      const itemName = row.querySelector('.q-item-name').value;
-      const qty = Number(row.querySelector('.q-qty').value) || 0;
-      let price = 0;
+      const itemNameInput = row.querySelector('.q-item-name');
+      const itemName = itemNameInput ? itemNameInput.value : '';
+      const qtyInput = row.querySelector('.q-qty');
+      const qty = qtyInput ? (Number(qtyInput.value) || 0) : 0;
+      const productName = row.getAttribute('data-product') || '';
+      
+      let unitPrice = Number(row.getAttribute('data-unit-price')) || 0;
+      let savedPrice = Number(row.getAttribute('data-saved-price')) || Number(row.getAttribute('data-price')) || 0;
+
       const priceInput = row.querySelector('.q-price');
       if (priceInput) {
-        price = Number(priceInput.value) || 0;
         if (!hasMerged) {
-          oldSubtotal += price;
+          const userVal = Number(priceInput.value) || 0;
+          savedPrice = userVal;
+          oldSubtotal += userVal;
         } else {
-          oldSubtotal = price;
+          oldSubtotal = Number(priceInput.value) || 0;
         }
-      } else {
-        price = Number(row.getAttribute('data-price')) || 0;
       }
-      data.push({ type: 'item', productName: row.getAttribute('data-product'), itemName, qty, price });
+
+      // Look up DB price fallback if unitPrice or savedPrice missing
+      if ((!unitPrice || !savedPrice) && itemName) {
+        const dbItem = allDbItems.find(it => it.ItemName && it.ItemName.trim().toLowerCase() === itemName.trim().toLowerCase());
+        if (dbItem && dbItem.Price) {
+          unitPrice = unitPrice || Number(dbItem.Price);
+          savedPrice = savedPrice || (unitPrice * qty);
+        }
+      }
+
+      if (!savedPrice && unitPrice && qty) {
+        savedPrice = unitPrice * qty;
+      }
+
+      data.push({
+        type: 'item',
+        productName,
+        itemName,
+        qty,
+        unitPrice,
+        savedPrice,
+        price: savedPrice
+      });
+    }
+  });
+
+  // Calculate sum of individual item saved prices across all rows
+  let calculatedSum = 0;
+  data.forEach(d => {
+    if (d.type === 'item') {
+      calculatedSum += (d.savedPrice || (d.unitPrice * d.qty));
     }
   });
 
@@ -987,21 +1047,26 @@ function rebuildQuoteGridFromDOM() {
       const tr = document.createElement('tr');
       tr.className = 'quote-item-row';
       tr.setAttribute('data-product', d.productName || '');
-      tr.setAttribute('data-price', d.price);
+      tr.setAttribute('data-unit-price', d.unitPrice || 0);
+
+      const itemRowVal = d.savedPrice || (d.unitPrice * d.qty);
+      tr.setAttribute('data-saved-price', itemRowVal);
+      tr.setAttribute('data-price', itemRowVal);
 
       let totalValueHtml = '';
       if (totalValueMode === 'merged') {
         if (itemIndex === 0) {
+          const displayMergedVal = (forceAutoCalcOnToggle || !hasMerged || oldSubtotal === 0) ? calculatedSum : oldSubtotal;
           totalValueHtml = `
             <td rowspan="${itemRowsCount}" class="align-middle text-end" id="mergedQuoteTotalCell">
-              <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${oldSubtotal}" placeholder="Total Value">
+              <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${displayMergedVal}" placeholder="Total Value">
             </td>
           `;
         }
       } else {
         totalValueHtml = `
           <td>
-            <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${d.price}" placeholder="0.00">
+            <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${itemRowVal}" placeholder="0.00">
           </td>
         `;
       }
@@ -1021,12 +1086,32 @@ function rebuildQuoteGridFromDOM() {
 
       tbody.appendChild(tr);
 
-      // Listeners
-      tr.querySelector('.q-qty').addEventListener('input', recalculateOffer);
+      // Listener for quantity change
+      const qtyInput = tr.querySelector('.q-qty');
+      if (qtyInput) {
+        qtyInput.addEventListener('input', (e) => {
+          const newQty = Number(e.target.value) || 0;
+          const uPrice = Number(tr.getAttribute('data-unit-price')) || 0;
+          if (uPrice > 0) {
+            const newRowVal = uPrice * newQty;
+            tr.setAttribute('data-saved-price', newRowVal);
+            tr.setAttribute('data-price', newRowVal);
+            const pInput = tr.querySelector('.q-price');
+            if (pInput) pInput.value = newRowVal;
+          }
+          if (totalValueMode === 'merged') {
+            rebuildQuoteGridFromDOM(true);
+          }
+          recalculateOffer();
+        });
+      }
+
       const priceInput = tr.querySelector('.q-price');
       if (priceInput) {
         priceInput.addEventListener('input', (e) => {
-          tr.setAttribute('data-price', e.target.value);
+          const val = Number(e.target.value) || 0;
+          tr.setAttribute('data-saved-price', val);
+          tr.setAttribute('data-price', val);
           recalculateOffer();
         });
       }
@@ -1182,8 +1267,9 @@ window.updateAdjValue = function(key, val) {
 
 function recalculateOffer() {
   const rows = document.querySelectorAll('.quote-item-row');
+  const chkMerge = document.getElementById('chkMergeTotalValue');
   const modeSelect = document.getElementById('qTotalValueMode');
-  const totalValueMode = modeSelect ? modeSelect.value : 'merged';
+  const totalValueMode = chkMerge ? (chkMerge.checked ? 'merged' : 'each') : (modeSelect ? modeSelect.value : 'merged');
   let subtotal = 0;
 
   if (totalValueMode === 'merged') {
@@ -1609,7 +1695,9 @@ window.exportQuotationToDocx = async function() {
 
   // --- 3. DYNAMIC ITEMS TABLE GENERATION ---
   const quoteRows = document.querySelectorAll('.quote-item-row');
-  const totalValueMode = document.getElementById('qTotalValueMode')?.value || 'merged';
+  const chkMerge = document.getElementById('chkMergeTotalValue');
+  const modeSelect = document.getElementById('qTotalValueMode');
+  const totalValueMode = chkMerge ? (chkMerge.checked ? 'merged' : 'each') : (modeSelect ? modeSelect.value : 'merged');
 
   let subtotal = 0;
   if (totalValueMode === 'merged') {
