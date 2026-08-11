@@ -644,6 +644,31 @@ function updateDistrictDropdownButton() {
   }
 }
 
+window.toggleDistrictBadgeFilter = function(dist, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  if (dist === 'ALL' || dist === 'Total') {
+    selectedDistricts = [];
+  } else {
+    const targetDist = dist === 'No District' ? '(No District)' : dist;
+    const idx = selectedDistricts.indexOf(targetDist);
+    if (idx > -1) {
+      selectedDistricts.splice(idx, 1);
+    } else {
+      selectedDistricts.push(targetDist);
+    }
+  }
+
+  // Sync checkboxes in district dropdown
+  document.querySelectorAll('.district-chk').forEach(chk => {
+    chk.checked = selectedDistricts.includes(chk.value);
+  });
+  updateDistrictDropdownButton();
+  renderList();
+};
+
 function updateDistrictStats() {
   const container = document.getElementById('districtStatsContainer');
   if (!container) return;
@@ -676,13 +701,26 @@ function updateDistrictStats() {
     'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
   ];
 
-  const totalBadge = `<span class="badge rounded-pill bg-success text-white px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: bold; background-color: #05966900 !important;">Total: ${totalCount}</span>`;
+  const isTotalActive = selectedDistricts.length === 0;
+  const totalBadgeClass = isTotalActive
+    ? 'bg-dark text-white border border-2 border-success shadow-sm fw-bold'
+    : 'bg-success-subtle text-success-emphasis border border-success-subtle';
+
+  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="badge rounded-pill ${totalBadgeClass} px-2.5 py-1 fs-8" style="font-size: 0.74rem !important; font-weight: ${isTotalActive ? '700' : '500'}; cursor: pointer; transition: all 0.15s ease; ${isTotalActive ? 'box-shadow: 0 2px 5px rgba(0,0,0,0.25); transform: scale(1.05);' : 'opacity: 0.85;'}" title="Click to clear filter and show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
 
   const districtBadges = sortedDistricts.map((dist, index) => {
     const count = counts[dist];
+    const targetDist = dist === 'No District' ? '(No District)' : dist;
+    const isSelected = selectedDistricts.includes(targetDist);
     const style = badgeStyles[index % badgeStyles.length];
-    return `<span class="badge rounded-pill ${style} px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500;">${dist}: ${count}</span>`;
-  }).join('');
+
+    const safeDist = dist.replace(/'/g, "\\'");
+    if (isSelected) {
+      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-primary text-white border border-2 border-dark shadow-sm px-2.5 py-1 fs-8" style="font-size: 0.76rem !important; font-weight: 700 !important; cursor: pointer; box-shadow: 0 2px 6px rgba(13, 110, 253, 0.4); transform: scale(1.06); transition: all 0.15s ease;" title="Selected filter. Click to toggle off.">✓ ${dist}: ${count}</span>`;
+    } else {
+      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill ${style} px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500; cursor: pointer; opacity: 0.85; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
+    }
+  }).join(' ');
 
   container.innerHTML = totalBadge + ' ' + districtBadges;
 }
