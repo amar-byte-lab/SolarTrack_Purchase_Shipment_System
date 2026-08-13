@@ -47,8 +47,15 @@ CREATE TABLE IF NOT EXISTS installments (
   "CommissionPaid" NUMERIC,
   "BrokerName" TEXT,
   "BrokerNumber" TEXT,
-  "CommissioningDate" TEXT
+  "CommissioningDate" TEXT,
+  "PinCode" TEXT,
+  "State" TEXT
 );
+
+-- Migrations to add new columns if table exists
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ConsumerNo" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "PinCode" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "State" TEXT;
 
 CREATE TABLE IF NOT EXISTS installment_txns (
   "TxnID" TEXT PRIMARY KEY,

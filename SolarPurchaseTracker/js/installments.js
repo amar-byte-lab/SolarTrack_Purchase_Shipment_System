@@ -857,6 +857,8 @@ function renderList() {
       String(r.Name || '').toLowerCase().includes(search) ||
       String(r.ConsumerNo || '').toLowerCase().includes(search) ||
       String(r.District || '').toLowerCase().includes(search) ||
+      String(r.PinCode || '').toLowerCase().includes(search) ||
+      String(r.State || '').toLowerCase().includes(search) ||
       String(r.Address || '').toLowerCase().includes(search) ||
       String(r.MobileNumber || '').toLowerCase().includes(search) ||
       String(r.CommittedBrand || '').toLowerCase().includes(search) ||
@@ -1519,9 +1521,11 @@ window.saveInline = async function (slNo) {
   const row = {
     SlNo: Number(slNo),
     Name: name,
-    ConsumerNo: document.getElementById('editConsumerNo') ? document.getElementById('editConsumerNo').value.trim() : (r ? (r.ConsumerNo || '') : ''),
+    ConsumerNo: document.getElementById('editConsumerNo') ? document.getElementById('editConsumerNo').value.trim() : (existing ? (existing.ConsumerNo || '') : ''),
     Status: isAddingNew ? 'Active' : currentStatus,
     District: document.getElementById('editDistrict').value,
+    PinCode: existing ? (existing.PinCode || '') : '',
+    State: existing ? (existing.State || 'Odisha') : 'Odisha',
     Address: document.getElementById('editAddress').value.trim(),
     MobileNumber: document.getElementById('editMobileNumber').value.trim(),
     CommittedBrand: document.getElementById('editCommittedBrand').value.trim(),

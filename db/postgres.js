@@ -39,6 +39,38 @@ async function getTable(tableName) {
   return data || [];
 }
 
+async function safeUpsert(tableName, row) {
+  let item = { ...row };
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { error } = await supabase.from(tableName).upsert([item]);
+    if (!error) return;
+
+    const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
+    if (match && match[1] && item.hasOwnProperty(match[1])) {
+      console.warn(`[PostgreSQL] Column '${match[1]}' does not exist in table '${tableName}'. Removing field and retrying...`);
+      delete item[match[1]];
+      continue;
+    }
+    throw error;
+  }
+}
+
+async function safeUpdate(tableName, matchField, val, newData) {
+  let item = { ...newData };
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { error } = await supabase.from(tableName).update(item).eq(matchField, val);
+    if (!error) return;
+
+    const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
+    if (match && match[1] && item.hasOwnProperty(match[1])) {
+      console.warn(`[PostgreSQL] Column '${match[1]}' does not exist in table '${tableName}'. Removing field and retrying...`);
+      delete item[match[1]];
+      continue;
+    }
+    throw error;
+  }
+}
+
 async function importTable(tableName, rows) {
   const pk = PRIMARY_KEYS[tableName] || 'id';
   const isInt = ['SlNo', 'BorrowerID', 'id'].includes(pk);
@@ -49,20 +81,22 @@ async function importTable(tableName, rows) {
   }
   if (rows && rows.length > 0) {
     const { error } = await supabase.from(tableName).upsert(rows);
-    if (error) throw error;
+    if (error) {
+      for (const r of rows) {
+        await safeUpsert(tableName, r);
+      }
+    }
   }
 }
 
 async function insertRow(tableName, row) {
-  const { error } = await supabase.from(tableName).upsert([row]);
-  if (error) throw error;
+  await safeUpsert(tableName, row);
 }
 
 async function updateRow(tableName, matchField, matchValue, newData) {
   const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
   const val = isInt ? Number(matchValue) : matchValue;
-  const { error } = await supabase.from(tableName).update(newData).eq(matchField, val);
-  if (error) throw error;
+  await safeUpdate(tableName, matchField, val, newData);
 }
 
 async function deleteRow(tableName, matchField, matchValue) {

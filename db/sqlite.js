@@ -14,7 +14,7 @@ function init() {
   db.exec(`CREATE TABLE IF NOT EXISTS settings ("Key" TEXT PRIMARY KEY, "Value" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS vendors ("VendorName" TEXT PRIMARY KEY, "Address" TEXT, "Phone" TEXT, "GSTIN" TEXT, "Email" TEXT, "Remarks" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS items ("ItemName" TEXT PRIMARY KEY, "Category" TEXT, "Unit" TEXT, "HSNCode" TEXT, "GSTPercent" TEXT, "Status" TEXT)`);
-  db.exec(`CREATE TABLE IF NOT EXISTS installments ("SlNo" INTEGER PRIMARY KEY, "Name" TEXT, "ConsumerNo" TEXT, "Status" TEXT, "District" TEXT, "Address" TEXT, "MobileNumber" TEXT, "CommittedBrand" TEXT, "FirstInstallment" REAL, "SecondInstallment" REAL, "ThirdInstallment" REAL, "Total" REAL, "CommittedPrice" REAL, "VendorPrice" REAL, "VendorPaid" REAL, "LoginDate" TEXT, "InstallationDate" TEXT, "Commission" REAL, "CommissionPaid" REAL, "BrokerName" TEXT, "BrokerNumber" TEXT, "CommissioningDate" TEXT)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS installments ("SlNo" INTEGER PRIMARY KEY, "Name" TEXT, "ConsumerNo" TEXT, "Status" TEXT, "District" TEXT, "Address" TEXT, "MobileNumber" TEXT, "CommittedBrand" TEXT, "FirstInstallment" REAL, "SecondInstallment" REAL, "ThirdInstallment" REAL, "Total" REAL, "CommittedPrice" REAL, "VendorPrice" REAL, "VendorPaid" REAL, "LoginDate" TEXT, "InstallationDate" TEXT, "Commission" REAL, "CommissionPaid" REAL, "BrokerName" TEXT, "BrokerNumber" TEXT, "CommissioningDate" TEXT, "PinCode" TEXT, "State" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS installment_txns ("TxnID" TEXT PRIMARY KEY, "SlNo" INTEGER, "TxnDate" TEXT, "Amount" REAL, "Remark" TEXT, "TxnType" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS commission_txns ("TxnID" TEXT PRIMARY KEY, "SlNo" INTEGER, "TxnDate" TEXT, "Amount" REAL, "Remark" TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS installment_remarks ("RemarkID" TEXT PRIMARY KEY, "SlNo" INTEGER, "Type" TEXT, "Remark" TEXT, "CreatedAt" TEXT)`);
@@ -43,7 +43,7 @@ function init() {
     // Ignore error if column already exists
   }
 
-  // Migrate installments table to add VendorPrice, VendorPaid, CommissioningDate, and ConsumerNo columns
+  // Migrate installments table to add VendorPrice, VendorPaid, CommissioningDate, ConsumerNo, PinCode, and State columns
   try {
     db.exec(`ALTER TABLE installments ADD COLUMN "VendorPrice" REAL`);
   } catch (e) {}
@@ -55,6 +55,12 @@ function init() {
   } catch (e) {}
   try {
     db.exec(`ALTER TABLE installments ADD COLUMN "ConsumerNo" TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE installments ADD COLUMN "PinCode" TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE installments ADD COLUMN "State" TEXT`);
   } catch (e) {}
 
   // Migrate installment_txns table to add TxnType column
