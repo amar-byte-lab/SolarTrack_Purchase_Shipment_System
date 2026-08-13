@@ -2355,6 +2355,8 @@ function initResizableColumns() {
 
 /* ══ Excel Import, Preview, verification, TXT Export, and Database Saving Helpers ══ */
 let parsedCustomers = [];
+let parsedConflictingCustomers = [];
+let parsedIdenticalCount = 0;
 let parsedMissingCustomers = [];
 
 async function handleExcelImport(e) {
@@ -2396,18 +2398,37 @@ async function handleExcelImport(e) {
         return lk === 'mobile no.' || lk === 'mobile no' || lk === 'mobile' || lk === 'mobile number' || lk === 'phone' || lk === 'phonenumber' || lk === 'mobileno';
       });
 
+      const districtKey = keys.find(k => {
+        const lk = k.toLowerCase().trim();
+        return lk === 'district' || lk === 'dist';
+      });
+
+      const brokerKey = keys.find(k => {
+        const lk = k.toLowerCase().trim();
+        return lk === 'broker' || lk === 'partner' || lk === 'broker name' || lk === 'partner name' || lk === 'broker/partner name';
+      });
+
+      const addressKey = keys.find(k => {
+        const lk = k.toLowerCase().trim();
+        return lk === 'address' || lk === 'full address' || lk === 'location';
+      });
+
       if (!nameKey) {
         UI.toast('Invalid format! Could not find "Consumer Name" or "Name" column.', 'danger');
         return;
       }
 
-      // Get existing grid records to check duplicates and calculate missing rows
-      const existingRecords = DB.getAll('installments');
+      // Get existing grid records to check duplicates, differences, and missing rows
+      const existingRecords = DB.getAll('installments') || [];
       const seenNamesInExcel = new Set();
+      
       parsedCustomers = [];
+      parsedConflictingCustomers = [];
+      parsedIdenticalCount = 0;
       parsedMissingCustomers = [];
 
       const excelNamesSet = new Set();
+      const norm = (v) => (v ? String(v).trim().toLowerCase() : '');
 
       jsonData.forEach((row) => {
         const rawName = String(row[nameKey] || '').trim();
@@ -2415,36 +2436,83 @@ async function handleExcelImport(e) {
 
         const rawConsumerNo = consumerNoKey ? String(row[consumerNoKey] || '').trim() : '';
         const rawMobile = mobileKey ? String(row[mobileKey] || '').trim() : '';
-        const cleanNameVal = cleanName(rawName);
+        const rawDistrict = districtKey ? String(row[districtKey] || '').trim() : '';
+        const rawBroker = brokerKey ? String(row[brokerKey] || '').trim() : '';
+        const rawAddress = addressKey ? String(row[addressKey] || '').trim() : '';
 
+        const cleanNameVal = cleanName(rawName);
         excelNamesSet.add(cleanNameVal);
 
-        let status = 'New Name';
-        let isDuplicate = false;
+        // 1. Check if already in database/grid by Name
+        const gridMatch = existingRecords.find(r => cleanName(r.Name) === cleanNameVal);
 
-        // 1. Check if already in database/grid
-        const existsInGrid = existingRecords.some(r => cleanName(r.Name) === cleanNameVal);
-        if (existsInGrid) {
-          status = 'Duplicate (Already in Grid)';
-          isDuplicate = true;
+        if (gridMatch) {
+          // Compare values between Grid and Excel
+          const cNoDiff = norm(gridMatch.ConsumerNo) !== norm(rawConsumerNo) && Boolean(rawConsumerNo);
+          const mobDiff = norm(gridMatch.MobileNumber) !== norm(rawMobile) && Boolean(rawMobile);
+          const distDiff = norm(gridMatch.District) !== norm(rawDistrict) && Boolean(rawDistrict);
+          const brokerDiff = norm(gridMatch.BrokerName) !== norm(rawBroker) && Boolean(rawBroker);
+          const addrDiff = norm(gridMatch.Address) !== norm(rawAddress) && Boolean(rawAddress);
+
+          const hasDifferences = cNoDiff || mobDiff || distDiff || brokerDiff || addrDiff;
+
+          if (!hasDifferences) {
+            // BOTH ARE 100% IDENTICAL! Auto-skip (do not display 2 times or show checkbox)
+            parsedIdenticalCount++;
+          } else {
+            // DATA HAS DIFFERENCES! Add to conflict comparison list
+            parsedConflictingCustomers.push({
+              SlNo: gridMatch.SlNo,
+              Name: gridMatch.Name,
+              GridData: {
+                ConsumerNo: gridMatch.ConsumerNo || '',
+                MobileNumber: gridMatch.MobileNumber || '',
+                District: gridMatch.District || '',
+                BrokerName: gridMatch.BrokerName || '',
+                Address: gridMatch.Address || ''
+              },
+              ExcelData: {
+                ConsumerNo: rawConsumerNo || gridMatch.ConsumerNo || '',
+                MobileNumber: rawMobile || gridMatch.MobileNumber || '',
+                District: rawDistrict || gridMatch.District || '',
+                BrokerName: rawBroker || gridMatch.BrokerName || '',
+                Address: rawAddress || gridMatch.Address || ''
+              },
+              Diffs: {
+                ConsumerNo: cNoDiff,
+                MobileNumber: mobDiff,
+                District: distDiff,
+                BrokerName: brokerDiff,
+                Address: addrDiff
+              },
+              SelectedChoice: 'EXCEL' // Default selection
+            });
+          }
         } 
         // 2. Check if duplicate within the Excel itself
         else if (seenNamesInExcel.has(cleanNameVal)) {
-          status = 'Duplicate (In Excel)';
-          isDuplicate = true;
+          parsedCustomers.push({
+            Name: rawName,
+            ConsumerNo: rawConsumerNo,
+            MobileNumber: rawMobile,
+            District: rawDistrict,
+            BrokerName: rawBroker,
+            Status: 'Duplicate (In Excel)',
+            IsDuplicate: true
+          });
         } else {
+          // BRAND NEW CUSTOMER
           seenNamesInExcel.add(cleanNameVal);
+          parsedCustomers.push({
+            Name: rawName,
+            ConsumerNo: rawConsumerNo,
+            MobileNumber: rawMobile,
+            District: rawDistrict,
+            BrokerName: rawBroker,
+            Status: 'New Name',
+            IsDuplicate: false
+          });
         }
-
-        parsedCustomers.push({
-          Name: rawName,
-          ConsumerNo: rawConsumerNo,
-          MobileNumber: rawMobile,
-          District: '',
-          BrokerName: '',
-          Status: status,
-          IsDuplicate: isDuplicate
-        });
       });
 
       // Find grid records missing in the Excel file
@@ -2462,7 +2530,7 @@ async function handleExcelImport(e) {
         }
       });
 
-      if (parsedCustomers.length === 0) {
+      if (parsedCustomers.length === 0 && parsedConflictingCustomers.length === 0 && parsedIdenticalCount === 0) {
         UI.toast('No customer names found in the Excel file.', 'warning');
         return;
       }
@@ -2500,104 +2568,177 @@ function escapeHtml(str) {
             .replace(/'/g, '&#039;');
 }
 
+window.bulkSelectConflictChoice = function(choice) {
+  parsedConflictingCustomers.forEach(c => { c.SelectedChoice = choice; });
+  renderImportPreviewModal();
+};
+
+window.setConflictChoice = function(index, choice) {
+  if (parsedConflictingCustomers[index]) {
+    parsedConflictingCustomers[index].SelectedChoice = choice;
+    renderImportPreviewModal();
+  }
+};
+
 function renderImportPreviewModal() {
-  // 1. Render import candidates
-  const tbody = document.querySelector('#importPreviewTable tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  parsedCustomers.forEach((c, index) => {
-    const tr = document.createElement('tr');
-
-    // Status Badge
-    let badgeClass = 'bg-success';
-    if (c.Status === 'Duplicate (Already in Grid)') {
-      badgeClass = 'bg-danger';
-    } else if (c.Status === 'Duplicate (In Excel)') {
-      badgeClass = 'bg-warning text-dark';
-    }
-
-    // Checked status: new names are checked, duplicates are unchecked
-    const isChecked = !c.IsDuplicate;
-    const checkedAttr = isChecked ? 'checked' : '';
-
-    tr.innerHTML = `
-      <td class="text-center">
-        <input type="checkbox" class="chk-import-row" data-index="${index}" ${checkedAttr}>
-      </td>
-      <td class="text-center">${index + 1}</td>
-      <td class="fw-semibold">${escapeHtml(c.Name)}</td>
-      <td class="font-monospace">${escapeHtml(c.ConsumerNo || '—')}</td>
-      <td>${escapeHtml(c.MobileNumber || '—')}</td>
-      <td>
-        <div class="position-relative">
-          <input type="text" class="form-control form-control-sm import-district-input" id="importDistrict_${index}" placeholder="Select District" autocomplete="off" style="font-size: 0.8rem; min-width: 130px;" value="${escapeHtml(c.District || '')}">
-        </div>
-      </td>
-      <td>
-        <div class="position-relative">
-          <input type="text" class="form-control form-control-sm import-broker-input" id="importBroker_${index}" placeholder="Select Partner" autocomplete="off" style="font-size: 0.8rem; min-width: 150px;" value="${escapeHtml(c.BrokerName || '')}">
-        </div>
-      </td>
-      <td>
-        <span class="badge ${badgeClass}">${c.Status}</span>
-      </td>
+  // Render Summary Badges
+  const badgesContainer = document.getElementById('importSummaryBadges');
+  if (badgesContainer) {
+    const newCount = parsedCustomers.filter(c => !c.IsDuplicate).length;
+    badgesContainer.innerHTML = `
+      <span class="badge bg-success px-2.5 py-1 fs-8">🆕 New Customers: ${newCount}</span>
+      <span class="badge bg-warning text-dark px-2.5 py-1 fs-8">⚡ Data Differences: ${parsedConflictingCustomers.length}</span>
+      <span class="badge bg-secondary px-2.5 py-1 fs-8">✓ Identical (Skipped): ${parsedIdenticalCount}</span>
+      <span class="badge bg-danger px-2.5 py-1 fs-8">⚠️ Missing in Excel: ${parsedMissingCustomers.length}</span>
     `;
-    tbody.appendChild(tr);
-  });
+  }
 
-  // Post-render initialization of searchable dropdowns for each import candidate row
-  parsedCustomers.forEach((c, index) => {
-    // District
-    Utils.initSearchableDropdown(`importDistrict_${index}`, DISTRICTS, (val) => {
-      parsedCustomers[index].District = val;
-    });
+  // 1. Render Conflicting Records (Grid vs Excel comparison)
+  const conflictContainer = document.getElementById('conflictContainer');
+  const conflictSection = document.getElementById('conflictSection');
 
-    const distInput = document.getElementById(`importDistrict_${index}`);
-    if (distInput) {
-      distInput.addEventListener('input', (e) => {
-        parsedCustomers[index].District = e.target.value.trim();
+  if (conflictContainer && conflictSection) {
+    if (parsedConflictingCustomers.length === 0) {
+      conflictSection.style.display = 'none';
+    } else {
+      conflictSection.style.display = 'block';
+      conflictContainer.innerHTML = parsedConflictingCustomers.map((item, idx) => {
+        const isExcel = item.SelectedChoice === 'EXCEL';
+        const isGrid = item.SelectedChoice === 'GRID';
+
+        const fmtVal = (diff, val) => diff ? `<mark class="bg-warning text-dark px-1.5 py-0.5 rounded font-monospace fw-bold">${escapeHtml(val || '—')}</mark>` : escapeHtml(val || '—');
+
+        return `
+          <div class="card border shadow-sm p-2.5 bg-white rounded-3">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+              <span class="fw-bold text-dark fs-7">👤 ${escapeHtml(item.Name)} <small class="text-muted font-monospace">(Sl. #${item.SlNo})</small></span>
+              <span class="badge bg-warning text-dark fs-8">Difference Detected</span>
+            </div>
+            
+            <div class="row g-2">
+              <!-- Option A: Current Excel Data -->
+              <div class="col-md-6">
+                <div class="border rounded p-2.5 h-100 ${isExcel ? 'border-primary bg-primary-subtle bg-opacity-10 shadow-sm' : 'bg-light'}" style="font-size: 0.82rem;">
+                  <div class="form-check mb-1">
+                    <input class="form-check-input" type="radio" name="conflictChoice_${idx}" id="choiceExcel_${idx}" value="EXCEL" ${isExcel ? 'checked' : ''} onchange="window.setConflictChoice(${idx}, 'EXCEL')">
+                    <label class="form-check-label fw-bold text-primary" for="choiceExcel_${idx}">
+                      📥 Save Current Excel Data (Overwrite)
+                    </label>
+                  </div>
+                  <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2" style="font-size:0.78rem;">
+                    <div><strong>Consumer No:</strong> ${fmtVal(item.Diffs.ConsumerNo, item.ExcelData.ConsumerNo)}</div>
+                    <div><strong>Mobile Number:</strong> ${fmtVal(item.Diffs.MobileNumber, item.ExcelData.MobileNumber)}</div>
+                    <div><strong>District:</strong> ${fmtVal(item.Diffs.District, item.ExcelData.District)}</div>
+                    <div><strong>Partner Name:</strong> ${fmtVal(item.Diffs.BrokerName, item.ExcelData.BrokerName)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Option B: Previous Grid Data -->
+              <div class="col-md-6">
+                <div class="border rounded p-2.5 h-100 ${isGrid ? 'border-secondary bg-secondary-subtle bg-opacity-10 shadow-sm' : 'bg-light'}" style="font-size: 0.82rem;">
+                  <div class="form-check mb-1">
+                    <input class="form-check-input" type="radio" name="conflictChoice_${idx}" id="choiceGrid_${idx}" value="GRID" ${isGrid ? 'checked' : ''} onchange="window.setConflictChoice(${idx}, 'GRID')">
+                    <label class="form-check-label fw-bold text-secondary" for="choiceGrid_${idx}">
+                      💾 Keep Previously Saved Data (Grid Data)
+                    </label>
+                  </div>
+                  <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2" style="font-size:0.78rem;">
+                    <div><strong>Consumer No:</strong> ${escapeHtml(item.GridData.ConsumerNo || '—')}</div>
+                    <div><strong>Mobile Number:</strong> ${escapeHtml(item.GridData.MobileNumber || '—')}</div>
+                    <div><strong>District:</strong> ${escapeHtml(item.GridData.District || '—')}</div>
+                    <div><strong>Partner Name:</strong> ${escapeHtml(item.GridData.BrokerName || '—')}</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 2. Render New Customers
+  const tbody = document.querySelector('#importPreviewTable tbody');
+  const newCustomersSection = document.getElementById('newCustomersSection');
+
+  if (tbody && newCustomersSection) {
+    tbody.innerHTML = '';
+    const newItems = parsedCustomers.filter(c => !c.IsDuplicate);
+
+    if (newItems.length === 0) {
+      newCustomersSection.style.display = 'none';
+    } else {
+      newCustomersSection.style.display = 'block';
+      parsedCustomers.forEach((c, index) => {
+        if (c.IsDuplicate) return;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-center">
+            <input type="checkbox" class="chk-import-row" data-index="${index}" checked>
+          </td>
+          <td class="text-center">${index + 1}</td>
+          <td class="fw-semibold">${escapeHtml(c.Name)}</td>
+          <td class="font-monospace">${escapeHtml(c.ConsumerNo || '—')}</td>
+          <td>${escapeHtml(c.MobileNumber || '—')}</td>
+          <td>
+            <div class="position-relative">
+              <input type="text" class="form-control form-control-sm import-district-input" id="importDistrict_${index}" placeholder="Select District" autocomplete="off" style="font-size: 0.8rem; min-width: 130px;" value="${escapeHtml(c.District || '')}">
+            </div>
+          </td>
+          <td>
+            <div class="position-relative">
+              <input type="text" class="form-control form-control-sm import-broker-input" id="importBroker_${index}" placeholder="Select Partner" autocomplete="off" style="font-size: 0.8rem; min-width: 150px;" value="${escapeHtml(c.BrokerName || '')}">
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-success">${c.Status}</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
       });
-      distInput.addEventListener('change', (e) => {
-        parsedCustomers[index].District = e.target.value.trim();
+
+      // Post-render searchable dropdowns
+      parsedCustomers.forEach((c, index) => {
+        if (c.IsDuplicate) return;
+        Utils.initSearchableDropdown(`importDistrict_${index}`, DISTRICTS, (val) => {
+          parsedCustomers[index].District = val;
+        });
+
+        const distInput = document.getElementById(`importDistrict_${index}`);
+        if (distInput) {
+          distInput.addEventListener('input', (e) => { parsedCustomers[index].District = e.target.value.trim(); });
+        }
+
+        const vendors = DB.getAll('vendors') || [];
+        const vendorNames = vendors.map(v => v.VendorName).sort((a, b) => a.localeCompare(b));
+        Utils.initSearchableDropdown(`importBroker_${index}`, vendorNames, (val) => {
+          parsedCustomers[index].BrokerName = val;
+        });
+
+        const brokerInput = document.getElementById(`importBroker_${index}`);
+        if (brokerInput) {
+          brokerInput.addEventListener('input', (e) => { parsedCustomers[index].BrokerName = e.target.value.trim(); });
+        }
       });
     }
+  }
 
-    // Broker / Partner Name
-    const vendors = DB.getAll('vendors') || [];
-    const vendorNames = vendors.map(v => v.VendorName).sort((a, b) => a.localeCompare(b));
-    Utils.initSearchableDropdown(`importBroker_${index}`, vendorNames, (val) => {
-      parsedCustomers[index].BrokerName = val;
-    });
-
-    const brokerInput = document.getElementById(`importBroker_${index}`);
-    if (brokerInput) {
-      brokerInput.addEventListener('input', (e) => {
-        parsedCustomers[index].BrokerName = e.target.value.trim();
-      });
-      brokerInput.addEventListener('change', (e) => {
-        parsedCustomers[index].BrokerName = e.target.value.trim();
-      });
-    }
-  });
-
-  // 2. Render missing database records
+  // 3. Render missing database records
   const tbodyMissing = document.querySelector('#missingPreviewTable tbody');
-  if (tbodyMissing) {
+  const missingCustomersSection = document.getElementById('missingCustomersSection');
+
+  if (tbodyMissing && missingCustomersSection) {
     tbodyMissing.innerHTML = '';
     if (parsedMissingCustomers.length === 0) {
-      tbodyMissing.innerHTML = `
-        <tr>
-          <td colspan="7" class="text-center text-muted py-3">
-            No grid records are missing from the uploaded Excel file. All database entries matched.
-          </td>
-        </tr>
-      `;
+      missingCustomersSection.style.display = 'none';
     } else {
+      missingCustomersSection.style.display = 'block';
       parsedMissingCustomers.forEach((c, index) => {
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
-
         tr.innerHTML = `
           <td class="text-center" style="background-color: #fff3cd !important; color: #664d03 !important;">${index + 1}</td>
           <td class="fw-semibold" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.Name)}</td>
@@ -2614,14 +2755,8 @@ function renderImportPreviewModal() {
     }
   }
 
-  // Reset select all checkbox
-  const chkAll = document.getElementById('chkSelectAllImport');
-  if (chkAll) {
-    chkAll.checked = parsedCustomers.every(c => !c.IsDuplicate);
-  }
-
   const modalEl = document.getElementById('importPreviewModal');
-  const modal = new bootstrap.Modal(modalEl);
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
 }
 
@@ -2629,47 +2764,35 @@ function downloadTxtReport() {
   let txt = 'IMPORT CUSTOMER PREVIEW REPORT\n';
   txt += `Generated on: ${new Date().toLocaleString()}\n`;
   txt += '======================================================================\n\n';
-  txt += 'SECTION 1: EXCEL RECORDS TO IMPORT\n';
+  txt += 'SECTION 1: DATA DIFFERENCES (GRID vs EXCEL)\n';
   txt += '----------------------------------------------------------------------\n';
-  txt += 'Sl. | Consumer Name | Consumer No | Mobile Number | District | Broker / Partner Name | Status\n';
-  txt += '----------------------------------------------------------------------\n';
+  
+  parsedConflictingCustomers.forEach((c, idx) => {
+    txt += `${idx + 1}. Consumer: ${c.Name} (Sl. #${c.SlNo})\n`;
+    txt += `   Selected Choice: ${c.SelectedChoice === 'EXCEL' ? 'Excel Data (Overwrite)' : 'Grid Data (Keep Previous)'}\n`;
+    txt += `   Excel Values -> ConsumerNo: ${c.ExcelData.ConsumerNo || 'N/A'}, Mobile: ${c.ExcelData.MobileNumber || 'N/A'}, District: ${c.ExcelData.District || 'N/A'}, Partner: ${c.ExcelData.BrokerName || 'N/A'}\n`;
+    txt += `   Grid Values  -> ConsumerNo: ${c.GridData.ConsumerNo || 'N/A'}, Mobile: ${c.GridData.MobileNumber || 'N/A'}, District: ${c.GridData.District || 'N/A'}, Partner: ${c.GridData.BrokerName || 'N/A'}\n\n`;
+  });
 
-  parsedCustomers.forEach((c, idx) => {
-    const name = c.Name;
-    const consumerNo = c.ConsumerNo || 'N/A';
-    const mobile = c.MobileNumber || 'N/A';
-    const district = c.District || 'N/A';
-    const broker = c.BrokerName || 'N/A';
-    const status = c.Status;
-    txt += `${idx + 1}. | ${name} | ${consumerNo} | ${mobile} | ${district} | ${broker} | ${status}\n`;
+  txt += 'SECTION 2: NEW EXCEL RECORDS TO ADD\n';
+  txt += '----------------------------------------------------------------------\n';
+  parsedCustomers.filter(c => !c.IsDuplicate).forEach((c, idx) => {
+    txt += `${idx + 1}. | ${c.Name} | ${c.ConsumerNo || 'N/A'} | ${c.MobileNumber || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
   });
 
   txt += '\n======================================================================\n';
-  txt += 'SECTION 2: GRID RECORDS MISSING IN EXCEL FILE\n';
+  txt += 'SECTION 3: GRID RECORDS MISSING IN EXCEL FILE\n';
   txt += '----------------------------------------------------------------------\n';
-  txt += 'Sl. | Consumer Name | Mobile Number | District | Broker / Partner Name | Status\n';
-  txt += '----------------------------------------------------------------------\n';
-
-  if (parsedMissingCustomers.length === 0) {
-    txt += '(No grid records are missing from the uploaded Excel file)\n';
-  } else {
-    parsedMissingCustomers.forEach((c, idx) => {
-      const name = c.Name;
-      const mobile = c.MobileNumber || 'N/A';
-      const district = c.District || 'N/A';
-      const broker = c.BrokerName || 'N/A';
-      const status = c.Status;
-      txt += `${idx + 1}. | ${name} | ${mobile} | ${district} | ${broker} | ${status}\n`;
-    });
-  }
+  parsedMissingCustomers.forEach((c, idx) => {
+    txt += `${idx + 1}. | ${c.Name} | ${c.MobileNumber || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
+  });
 
   txt += '\n======================================================================\n';
   txt += `Summary Metrics:\n`;
-  txt += `- Total Excel Records: ${parsedCustomers.length}\n`;
-  txt += `  * New Names: ${parsedCustomers.filter(c => c.Status === 'New Name').length}\n`;
-  txt += `  * Duplicates in Grid: ${parsedCustomers.filter(c => c.Status === 'Duplicate (Already in Grid)').length}\n`;
-  txt += `  * Duplicates in Excel: ${parsedCustomers.filter(c => c.Status === 'Duplicate (In Excel)').length}\n`;
-  txt += `- Total Missing Grid Records: ${parsedMissingCustomers.length}\n`;
+  txt += `- New Names: ${parsedCustomers.filter(c => !c.IsDuplicate).length}\n`;
+  txt += `- Conflicting Names: ${parsedConflictingCustomers.length}\n`;
+  txt += `- Identical Records (Skipped): ${parsedIdenticalCount}\n`;
+  txt += `- Missing Grid Records: ${parsedMissingCustomers.length}\n`;
 
   const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -2683,15 +2806,18 @@ function downloadTxtReport() {
 }
 
 async function saveImportedCustomers() {
-  const checkboxes = document.querySelectorAll('.chk-import-row:checked');
-  if (checkboxes.length === 0) {
-    UI.toast('Please check at least one customer to save.', 'warning');
+  const newCheckboxes = document.querySelectorAll('.chk-import-row:checked');
+  const hasNewToSave = newCheckboxes.length > 0;
+  const hasConflictsToSave = parsedConflictingCustomers.length > 0;
+
+  if (!hasNewToSave && !hasConflictsToSave) {
+    UI.toast('No customer selections to save.', 'warning');
     return;
   }
 
   UI.showLoading(true);
   try {
-    const allRows = DB.getAll('installments');
+    const allRows = DB.getAll('installments') || [];
     let currentMaxSl = allRows.reduce((max, r) => Math.max(max, Number(r.SlNo) || 0), 0);
 
     const currentUser = Auth.getUser();
@@ -2700,25 +2826,17 @@ async function saveImportedCustomers() {
       creatorSuffix = '|creator:' + currentUser.userid;
     }
 
-    const defaultExpenses = {
-      material: 0,
-      partner: 0,
-      install: 0,
-      gst_pct: 0,
-      gst: 0,
-      other: 0
-    };
-
+    const defaultExpenses = { material: 0, partner: 0, install: 0, gst_pct: 0, gst: 0, other: 0 };
     const vendors = DB.getAll('vendors') || [];
     const promises = [];
 
-    checkboxes.forEach(chk => {
+    // 1. Insert New Customers
+    newCheckboxes.forEach(chk => {
       const idx = Number(chk.getAttribute('data-index'));
       const customer = parsedCustomers[idx];
-      if (customer) {
+      if (customer && !customer.IsDuplicate) {
         currentMaxSl++;
 
-        // Find selected broker's phone number
         const foundVendor = vendors.find(v => v.VendorName === customer.BrokerName);
         const vendorPhone = foundVendor ? (foundVendor.Phone || '').trim() : '';
         const brokerNumberVal = vendorPhone + creatorSuffix + '|expenses:' + JSON.stringify(defaultExpenses);
@@ -2727,7 +2845,7 @@ async function saveImportedCustomers() {
           SlNo: currentMaxSl,
           Name: customer.Name,
           ConsumerNo: customer.ConsumerNo || '',
-          MobileNumber: customer.MobileNumber,
+          MobileNumber: customer.MobileNumber || '',
           Status: 'Active',
           District: customer.District || '',
           Address: '',
@@ -2751,6 +2869,26 @@ async function saveImportedCustomers() {
       }
     });
 
+    // 2. Update Conflicting Customers where Excel Data choice was selected
+    let excelUpdateCount = 0;
+    parsedConflictingCustomers.forEach(c => {
+      if (c.SelectedChoice === 'EXCEL') {
+        excelUpdateCount++;
+        const existingRow = allRows.find(r => Number(r.SlNo) === Number(c.SlNo));
+        if (existingRow) {
+          const updatedRow = {
+            ...existingRow,
+            ConsumerNo: c.ExcelData.ConsumerNo || existingRow.ConsumerNo || '',
+            MobileNumber: c.ExcelData.MobileNumber || existingRow.MobileNumber || '',
+            District: c.ExcelData.District || existingRow.District || '',
+            BrokerName: c.ExcelData.BrokerName || existingRow.BrokerName || '',
+            Address: c.ExcelData.Address || existingRow.Address || ''
+          };
+          promises.push(DB.update('installments', r => Number(r.SlNo) === Number(c.SlNo), updatedRow));
+        }
+      }
+    });
+
     await Promise.all(promises);
 
     // Close modal
@@ -2758,7 +2896,8 @@ async function saveImportedCustomers() {
     const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();
 
-    UI.toast(`Successfully saved ${checkboxes.length} customer(s) to the database.`, 'success');
+    const newSavedCount = newCheckboxes.length;
+    UI.toast(`Saved successfully: ${newSavedCount} new customer(s) added, ${excelUpdateCount} existing customer(s) updated from Excel.`, 'success');
     renderList();
   } catch (err) {
     console.error(err);

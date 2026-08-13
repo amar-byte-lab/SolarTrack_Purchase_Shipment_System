@@ -616,58 +616,91 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 bg-light">
-        <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <span class="text-muted fs-8">Verify client details, districts, and partner assignments before importing.</span>
+        <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom pb-2">
+          <div>
+            <span class="text-muted fs-8 d-block">Compare client details, analyze data differences between saved Grid Data & Excel Data before saving.</span>
+            <div id="importSummaryBadges" class="d-flex flex-wrap gap-2 mt-1">
+              <!-- Injected dynamically by JS -->
+            </div>
+          </div>
           <button type="button" class="btn btn-sm btn-outline-dark py-1 px-3 fs-8 fw-semibold" id="btnDownloadTxt">
-            📄 Download as TXT
+            📄 Download Report (.txt)
           </button>
         </div>
         
-        <div class="table-responsive bg-white rounded shadow-sm border mb-2" style="max-height: 380px; overflow-y: auto;">
-          <table class="table table-sm table-hover align-middle mb-0" id="importPreviewTable" style="font-size:0.85rem;">
-            <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
-              <tr>
-                <th class="text-center" style="width: 40px;">
-                  <input type="checkbox" id="chkSelectAllImport" checked>
-                </th>
-                <th class="text-center" style="width: 50px;">Sl.</th>
-                <th>Consumer Name</th>
-                <th>Consumer No</th>
-                <th>Mobile Number</th>
-                <th>District</th>
-                <th>Broker / Partner Name</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Injected dynamically by JS -->
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- Missing in Excel Section -->
-        <h6 class="fw-bold mt-3 mb-2 text-danger-emphasis"><span class="me-1">⚠️</span>Grid Records Missing in Excel File</h6>
-        <div class="table-responsive bg-white rounded shadow-sm border mb-2" style="min-height: 100px; max-height: 220px; overflow-y: auto;">
-          <table class="table table-sm table-hover align-middle mb-0" id="missingPreviewTable" style="font-size:0.85rem;">
-            <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
-              <tr>
-                <th class="text-center" style="width: 50px;">Sl.</th>
-                <th>Consumer Name</th>
-                <th>Consumer No</th>
-                <th>Mobile Number</th>
-                <th>District</th>
-                <th>Broker / Partner Name</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Injected dynamically by JS -->
-            </tbody>
-          </table>
+        <!-- Section 1: Data Differences & Conflict Comparison (Grid vs Excel) -->
+        <div id="conflictSection" class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-warning-emphasis mb-0 fs-7">
+              <span class="me-1">⚡</span>Existing Customers with Data Differences (Grid Data vs Excel Data)
+            </h6>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-8 fw-semibold" onclick="window.bulkSelectConflictChoice('EXCEL')">Select All Excel Data</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2 fs-8 fw-semibold" onclick="window.bulkSelectConflictChoice('GRID')">Select All Grid Data</button>
+            </div>
+          </div>
+          
+          <div class="alert alert-warning py-1.5 px-3 fs-8 mb-2 d-flex align-items-center gap-2">
+            <span>💡</span>
+            <span>Check or select which version to save against the Consumer Name. Highlighted fields show differences between previously saved Grid data and current Excel data.</span>
+          </div>
+
+          <div id="conflictContainer" class="d-flex flex-column gap-2" style="max-height: 380px; overflow-y: auto;">
+            <!-- Injected dynamically by JS -->
+          </div>
         </div>
 
-        <div class="fs-8 text-secondary mt-1">
-          * Checked customers will be saved to the database. Duplicates and missing records are unchecked/excluded by default.
+        <!-- Section 2: New Customers to Add -->
+        <div id="newCustomersSection" class="mb-3">
+          <h6 class="fw-bold mb-2 text-success-emphasis fs-7"><span class="me-1">🆕</span>New Customers to Add</h6>
+          <div class="table-responsive bg-white rounded shadow-sm border mb-2" style="max-height: 280px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0" id="importPreviewTable" style="font-size:0.85rem;">
+              <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                <tr>
+                  <th class="text-center" style="width: 40px;">
+                    <input type="checkbox" id="chkSelectAllImport" checked>
+                  </th>
+                  <th class="text-center" style="width: 50px;">Sl.</th>
+                  <th>Consumer Name</th>
+                  <th>Consumer No</th>
+                  <th>Mobile Number</th>
+                  <th>District</th>
+                  <th>Broker / Partner Name</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Section 3: Missing in Excel Section -->
+        <div id="missingCustomersSection">
+          <h6 class="fw-bold mt-3 mb-2 text-danger-emphasis fs-7"><span class="me-1">⚠️</span>Grid Records Missing in Excel File</h6>
+          <div class="table-responsive bg-white rounded shadow-sm border mb-2" style="min-height: 80px; max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0" id="missingPreviewTable" style="font-size:0.85rem;">
+              <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                <tr>
+                  <th class="text-center" style="width: 50px;">Sl.</th>
+                  <th>Consumer Name</th>
+                  <th>Consumer No</th>
+                  <th>Mobile Number</th>
+                  <th>District</th>
+                  <th>Broker / Partner Name</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="fs-8 text-secondary mt-2">
+          * Selected customer records (new entries and chosen grid/excel versions) will be saved directly to the database. Identical existing records are auto-skipped.
         </div>
       </div>
       <div class="modal-footer bg-light border-top py-2">
