@@ -954,18 +954,18 @@ function renderList() {
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
 
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '4' : '3'}" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
     const tfoot = document.querySelector('#installmentsTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="${isAdmin ? '3' : '2'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="${isAdmin ? '4' : '3'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
         <tr class="grand-total" style="height:37px;">
           <td class="text-center">0</td>
           <td colspan="2">GRAND TOTAL</td>
-          ${isAdmin ? '<td colspan="1"></td>' : ''}
+          <td colspan="${isAdmin ? '2' : '1'}"></td>
         </tr>
       `;
     }
@@ -1131,19 +1131,8 @@ function renderList() {
             <div class="d-flex flex-column align-items-start" style="font-size: 0.85rem; gap: 2px;">
               <div class="d-flex align-items-center gap-1 flex-wrap">
                 <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
-                  ${r.Name || ''} (${r.District || '—'})
+                  ${r.Name || ''}
                 </a>${delayBadgeHtml}
-                ${r.ConsumerNo ? `<span class="badge bg-light text-secondary border font-monospace ms-1" style="font-size:0.7rem; font-weight:normal;" title="Consumer No">${escapeHtml(r.ConsumerNo)}</span>` : ''}
-                ${(() => {
-                  const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(r.SlNo));
-                  const customerRemarksCount = remarks.filter(n => n.Type === 'Customer' || !n.Type).length;
-                  return `
-                    <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative" onclick="showInstallmentNotes(${r.SlNo}, 'Customer')" title="Customer Notes/Remarks (${customerRemarksCount} added)" style="font-size: 0.95rem; line-height: 1;">
-                      📝
-                      ${customerRemarksCount > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.55rem; padding: 2px 4px; border: 1px solid #fff;">${customerRemarksCount}</span>` : ''}
-                    </button>
-                  `;
-                })()}
               </div>
               
               <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top w-100" style="font-size: 0.8rem;">
@@ -1197,7 +1186,7 @@ function renderList() {
               })()}
             </div>
           </td>
-          <td class="no-print text-center admin-only-column">
+          <td class="no-print text-center">
             <div class="d-flex gap-1 justify-content-center">
               ${isDeactive ? `
                 <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="restoreRow(${r.SlNo})" title="Restore">↻</button>
@@ -1224,7 +1213,7 @@ function renderList() {
       tfootHTML += `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="${isAdmin ? '4' : '2'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
+          <td colspan="${isAdmin ? '4' : '3'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
         </tr>
       `;
     }
@@ -1264,7 +1253,7 @@ function renderList() {
             })()}
           </div>
         </td>
-        <td class="no-print admin-only-column"></td>
+        <td class="no-print"></td>
       </tr>
     `;
     tfoot.innerHTML = tfootHTML;
@@ -2061,6 +2050,8 @@ window.openCustomerModal = function(slNo) {
       if (document.getElementById('cConsumerNo')) document.getElementById('cConsumerNo').value = r.ConsumerNo || '';
       document.getElementById('cMobile').value = r.MobileNumber || '';
       document.getElementById('cDistrict').value = r.District || '';
+      if (document.getElementById('cPinCode')) document.getElementById('cPinCode').value = r.PinCode || '';
+      if (document.getElementById('cState')) document.getElementById('cState').value = r.State || 'Odisha';
       document.getElementById('cAddress').value = r.Address || '';
       document.getElementById('cBrand').value = r.CommittedBrand || '';
       document.getElementById('cPrice').value = r.CommittedPrice || '';
@@ -2086,11 +2077,12 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
     }
   } else {
-    ['cName', 'cConsumerNo', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
+    ['cName', 'cConsumerNo', 'cMobile', 'cAddress', 'cBrand', 'cPinCode', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
     document.getElementById('cDistrict').value = '';
+    if (document.getElementById('cState')) document.getElementById('cState').value = 'Odisha';
     document.getElementById('cLoginDate').value = UI.todayISO();
   }
 
@@ -2229,6 +2221,8 @@ async function saveCustomerModal() {
     ConsumerNo: document.getElementById('cConsumerNo') ? document.getElementById('cConsumerNo').value.trim() : '',
     MobileNumber: document.getElementById('cMobile').value.trim(),
     District: document.getElementById('cDistrict').value,
+    PinCode: document.getElementById('cPinCode') ? document.getElementById('cPinCode').value.trim() : '',
+    State: document.getElementById('cState') ? document.getElementById('cState').value.trim() : 'Odisha',
     Address: document.getElementById('cAddress').value.trim(),
     CommittedBrand: document.getElementById('cBrand').value.trim(),
     CommittedPrice: Number(document.getElementById('cPrice').value) || 0,

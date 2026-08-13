@@ -119,7 +119,7 @@
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
                 <th>Partner</th>
                 <th class="col-price admin-only-column">Total expense</th>
-                <th class="no-print admin-only-column">Actions</th>
+                <th class="no-print">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -484,23 +484,31 @@
                   <label class="form-label fs-8 text-secondary mb-1">Consumer No.</label>
                   <input type="text" class="form-control form-control-sm" id="cConsumerNo" placeholder="Enter Consumer No">
                 </div>
-                <div class="col-12 mb-2">
+                <div class="col-6 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Mobile / Phone Number</label>
                   <input type="text" class="form-control form-control-sm" id="cMobile" placeholder="Enter mobile number">
                 </div>
-                <div class="col-12 mb-2">
-                  <label class="form-label fs-8 text-secondary mb-1">District</label>
-                  <select class="form-select form-select-sm" id="cDistrict">
-                    <option value="">-- Select District --</option>
-                  </select>
+                <div class="col-6 mb-2">
+                  <label class="form-label fs-8 text-secondary mb-1">Brand / System</label>
+                  <input type="text" class="form-control form-control-sm" id="cBrand" list="brandList" placeholder="Enter brand name">
                 </div>
                 <div class="col-12 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Address / Location</label>
                   <input type="text" class="form-control form-control-sm" id="cAddress" placeholder="Enter Village/Po/Ps/Locality">
                 </div>
-                <div class="col-12 mb-2">
-                  <label class="form-label fs-8 text-secondary mb-1">Brand / System</label>
-                  <input type="text" class="form-control form-control-sm" id="cBrand" list="brandList" placeholder="Enter brand name">
+                <div class="col-5 mb-2">
+                  <label class="form-label fs-8 text-secondary mb-1">District</label>
+                  <select class="form-select form-select-sm" id="cDistrict">
+                    <option value="">-- Select District --</option>
+                  </select>
+                </div>
+                <div class="col-4 mb-2">
+                  <label class="form-label fs-8 text-secondary mb-1">Pin Code</label>
+                  <input type="text" class="form-control form-control-sm" id="cPinCode" placeholder="Pin Code">
+                </div>
+                <div class="col-3 mb-2">
+                  <label class="form-label fs-8 text-secondary mb-1">State</label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="cState" value="Odisha" readonly>
                 </div>
                 <div class="col-4 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Login Date</label>
