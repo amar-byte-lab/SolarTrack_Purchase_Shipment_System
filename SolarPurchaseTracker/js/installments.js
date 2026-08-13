@@ -1155,10 +1155,6 @@ function renderList() {
                     <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
                       ${r.BrokerName || '—'}
                     </a>
-                    <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative" onclick="showInstallmentNotes(${r.SlNo}, 'Partner')" title="Partner Notes/Remarks (${partnerRemarksCount} added)" style="font-size: 0.95rem; line-height: 1;">
-                      📝
-                      ${partnerRemarksCount > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.55rem; padding: 2px 4px; border: 1px solid #fff;">${partnerRemarksCount}</span>` : ''}
-                    </button>
                   </div>
                 `;
               })()}
@@ -1840,7 +1836,10 @@ function updateCommModalTotal() {
   document.getElementById('lblCommTxnTotal').textContent = '₹' + Math.round(total).toLocaleString('en-IN');
 }
 
+let currentCustomerDetailsSlNo = null;
+
 window.showCustomerDetailsPopup = function(slNo) {
+  currentCustomerDetailsSlNo = slNo;
   const r = getInstallmentRows().find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
 
@@ -1848,36 +1847,107 @@ window.showCustomerDetailsPopup = function(slNo) {
   if (document.getElementById('detConsumerNo')) document.getElementById('detConsumerNo').textContent = r.ConsumerNo || '—';
   document.getElementById('detMobile').textContent = r.MobileNumber || '—';
   document.getElementById('detBrand').textContent = r.CommittedBrand || '—';
-  document.getElementById('detAddress').textContent = r.Address || '—';
+  const addrParts = [];
+  if (r.Address) addrParts.push(r.Address);
+  if (r.District) addrParts.push(`District: ${r.District}`);
+  addrParts.push(`State: ${r.State || 'Odisha'}`);
+  if (r.PinCode) addrParts.push(`Pin: ${r.PinCode}`);
+  const fullAddr = addrParts.join(', ') || '—';
+  document.getElementById('detAddress').textContent = fullAddr.toUpperCase();
 
-  // Load remarks (Customer specific only!)
+  // Clear new note textarea
+  const noteInput = document.getElementById('detNewNoteText');
+  if (noteInput) noteInput.value = '';
+
+  renderCustomerPopupNotes(slNo);
+
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('customerDetailsModal'));
+  modal.show();
+};
+
+function renderCustomerPopupNotes(slNo) {
   const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(slNo) && (n.Type === 'Customer' || !n.Type));
+  remarks.sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
+
   const remarksContainer = document.getElementById('detNotesList');
   if (remarksContainer) {
     if (remarks.length === 0) {
-      remarksContainer.innerHTML = '<div class="text-muted text-center py-2 fs-7 bg-light rounded">No remarks added yet.</div>';
+      remarksContainer.innerHTML = '<div class="text-muted text-center py-3 fs-8 bg-light rounded border border-dashed">No notes added yet. Use the box above to add one.</div>';
     } else {
       remarksContainer.innerHTML = remarks.map(t => {
-        const dateObj = new Date(t.CreatedAt || Date.now());
-        const formattedDate = dateObj.toLocaleDateString('en-IN', {
-          day: '2-digit', month: 'short', year: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-        });
+        let formattedDate = '';
+        try {
+          const dt = new Date(t.CreatedAt || Date.now());
+          const datePart = fmtDateExcel(dt);
+          const timePart = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          formattedDate = `${datePart} ${timePart}`;
+        } catch (e) {
+          formattedDate = t.CreatedAt;
+        }
         return `
-          <div class="p-2 bg-light border-start border-primary border-3 rounded fs-7">
-            <div class="d-flex justify-content-between text-muted fs-8 mb-1">
-              <span>Customer Remark</span>
-              <span>${formattedDate}</span>
+          <div class="card border-0 shadow-sm p-2.5 position-relative" style="background-color: #fff9c4; border-left: 4px solid #fbc02d !important; border-radius: 8px;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-semibold text-secondary" style="font-size: 0.7rem;">📌 Note • ${formattedDate}</span>
+              <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none fw-bold" onclick="deleteCustomerPopupNote('${t.RemarkID}')" title="Delete Note" style="font-size: 0.8rem; line-height: 1;">✕</button>
             </div>
-            <div class="text-dark">${t.Remark}</div>
+            <div class="text-dark fw-medium fs-7" style="white-space: pre-wrap; word-break: break-word;">${t.Remark}</div>
           </div>
         `;
       }).join('');
     }
   }
+}
 
-  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('customerDetailsModal'));
-  modal.show();
+window.saveCustomerPopupNote = async function() {
+  if (!currentCustomerDetailsSlNo) return;
+  const noteInput = document.getElementById('detNewNoteText');
+  const remarkText = noteInput ? noteInput.value.trim() : '';
+
+  if (!remarkText) {
+    UI.toast('Please enter a note before saving.', 'warning');
+    if (noteInput) noteInput.focus();
+    return;
+  }
+
+  UI.showLoading(true);
+  try {
+    const note = {
+      RemarkID: Utils.uid('RMK'),
+      SlNo: currentCustomerDetailsSlNo,
+      Type: 'Customer',
+      Remark: remarkText,
+      CreatedAt: new Date().toISOString()
+    };
+    await DB.insert('installment_remarks', note);
+    if (noteInput) noteInput.value = '';
+    UI.toast('Note added successfully.', 'success');
+    renderCustomerPopupNotes(currentCustomerDetailsSlNo);
+    renderList();
+  } catch (err) {
+    UI.toast('Error adding note: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+window.deleteCustomerPopupNote = async function(remarkId) {
+  const remark = DB.getAll('installment_remarks').find(t => t.RemarkID === remarkId);
+  if (!remark) return;
+
+  const ok = await UI.confirmDialog('Are you sure you want to delete this note?', 'Delete Note', 'Delete', 'btn-danger');
+  if (!ok) return;
+
+  UI.showLoading(true);
+  try {
+    await DB.remove('installment_remarks', t => t.RemarkID === remarkId);
+    UI.toast('Note deleted.', 'success');
+    renderCustomerPopupNotes(currentCustomerDetailsSlNo);
+    renderList();
+  } catch (err) {
+    UI.toast('Error deleting note: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
 };
 
 window.showPartnerDetailsPopup = function(slNo) {
@@ -1886,32 +1956,6 @@ window.showPartnerDetailsPopup = function(slNo) {
 
   document.getElementById('partnerDetailsModalTitle').textContent = r.BrokerName || 'Partner Details';
   document.getElementById('detPartnerPhone').textContent = (r.BrokerNumber || '').split('|')[0] || '—';
-
-  // Load Partner remarks
-  const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(slNo) && n.Type === 'Partner');
-  const remarksContainer = document.getElementById('detPartnerNotesList');
-  if (remarksContainer) {
-    if (remarks.length === 0) {
-      remarksContainer.innerHTML = '<div class="text-muted text-center py-2 fs-7 bg-light rounded">No partner remarks added yet.</div>';
-    } else {
-      remarksContainer.innerHTML = remarks.map(t => {
-        const dateObj = new Date(t.CreatedAt || Date.now());
-        const formattedDate = dateObj.toLocaleDateString('en-IN', {
-          day: '2-digit', month: 'short', year: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-        });
-        return `
-          <div class="p-2 bg-light border-start border-warning border-3 rounded fs-7">
-            <div class="d-flex justify-content-between text-muted fs-8 mb-1">
-              <span>Partner Remark</span>
-              <span>${formattedDate}</span>
-            </div>
-            <div class="text-dark">${t.Remark}</div>
-          </div>
-        `;
-      }).join('');
-    }
-  }
 
   const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('partnerDetailsModal'));
   modal.show();
