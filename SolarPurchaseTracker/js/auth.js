@@ -171,13 +171,13 @@ const Auth = (() => {
     
     if (!isPowerUser) {
       if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        const allowed = ['installments.html', 'offer.html', 'borrower.html'];
+        const allowed = ['installments.html', 'offer.html', 'agreement.html', 'borrower.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'installments.html';
           return;
         }
       } else {
-        const allowed = ['offer.html', 'borrower.html'];
+        const allowed = ['offer.html', 'agreement.html', 'borrower.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'offer.html';
           return;

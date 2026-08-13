@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agreement Generate — Solar Purchase Tracker</title>
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/auth.js"></script>
+  <style>
+    .customer-list-item {
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      border-left: 3px solid transparent;
+    }
+    .customer-list-item:hover {
+      background-color: var(--st-gray-100, #f8f9fa);
+      border-left-color: var(--st-blue-500, #3b82f6);
+    }
+    .customer-list-item.active {
+      background-color: rgba(59, 130, 246, 0.08);
+      border-left-color: var(--st-blue-700, #1d4ed8);
+      font-weight: 600;
+    }
+    .customer-scroll-list {
+      max-height: 280px;
+      min-height: 220px;
+      overflow-y: auto;
+    }
+    @media (max-width: 767.98px) {
+      .customer-scroll-list {
+        max-height: 220px;
+        min-height: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- Sidebar loaded dynamically -->
+    <div id="sidebar"></div>
+
+    <div class="main-content">
+      <!-- Topbar loaded dynamically -->
+      <div class="topbar" id="topbar"></div>
+
+      <div class="page-body">
+        
+        <!-- Page Header Banner -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+          <div>
+            <h5 class="fw-bold text-dark mb-0">📄 Agreement Generator</h5>
+            <small class="text-muted">Generate Consumer & Vendor Agreement Word Document (.docx)</small>
+          </div>
+          <div>
+            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-3 py-1.5 fs-8 fw-semibold">
+              Template: Agreement_Consumer_Vendor.docx
+            </span>
+          </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="row g-3">
+          
+          <!-- Left Column: Customer Directory & Search -->
+          <div class="col-lg-5 col-xl-4">
+            <div class="st-card h-100 p-3">
+              
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-dark mb-0 fs-7">👥 Select Customer</h6>
+                <span class="badge bg-secondary-subtle text-secondary fs-8" id="customerCountBadge">0 Customers</span>
+              </div>
+
+              <!-- Search Input Box & District Badges -->
+              <div class="mb-2">
+                <div class="input-group input-group-sm mb-2">
+                  <span class="input-group-text bg-white border-end-0 text-muted">🔍</span>
+                  <input type="text" id="custSearchInput" class="form-control border-start-0 ps-0" placeholder="Search customer name, district or consumer no..." oninput="onAgreementSearchInput()">
+                </div>
+                <!-- District Stats Badges (Total & District Badges) -->
+                <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center p-1.5 bg-light rounded border mb-2" style="font-size: 0.75rem; max-height: 100px; overflow-y: auto;">
+                  <!-- Injected dynamically by JS -->
+                </div>
+              </div>
+
+              <!-- Scrollable Customer List -->
+              <div class="customer-scroll-list border rounded p-1" id="customerListContainer">
+                <div class="text-center text-muted py-4 fs-8">Loading customer list...</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right Column: Agreement Details & Export -->
+          <div class="col-lg-7 col-xl-8">
+            <div class="st-card h-100 p-3 p-md-4">
+              
+              <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                <h6 class="fw-bold text-dark mb-0 fs-7">📝 Agreement Fields (Editable)</h6>
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fs-8">Auto-Filled from Selection</span>
+              </div>
+              <form id="agreementForm" onsubmit="event.preventDefault(); generateAgreementDocx();">
+                
+                <!-- Field 1: Customer Name -->
+                <div class="mb-3">
+                  <label for="agrName" class="form-label fw-bold fs-7 text-dark">
+                    1. Customer Name </span> <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" id="agrName" class="form-control form-control-lg fw-semibold" placeholder="e.g. Amar Mohanty" readonly>
+                </div>
+
+                <!-- Field 2: Consumer Number -->
+                <div class="mb-3">
+                  <label for="agrConsumerNo" class="form-label fw-bold fs-7 text-dark">
+                    2. Consumer Number </span> <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" id="agrConsumerNo" class="form-control form-control-lg fw-semibold" placeholder="e.g. 751000123456" required>
+                </div>
+
+                <!-- Field 3: Full Address (UPPERCASE) -->
+                <div class="mb-4">
+                  <label for="agrAddress" class="form-label fw-bold fs-7 text-dark">
+                    3. Full Address </span> <span class="text-danger">*</span>
+                  </label>
+                  <textarea id="agrAddress" class="form-control fw-semibold text-uppercase" rows="4" placeholder="e.g. AT/PO KESINGA, DISTRICT: KALAHANDI, STATE: ODISHA, PIN: 766012" required></textarea>
+                </div>
+
+                <!-- Action Button -->
+                <div class="pt-2 border-top d-flex justify-content-end align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="resetAgreementForm()">Reset Form</button>
+                  <button type="submit" id="btnGenerateAgreement" class="btn btn-success fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-2">
+                    <span>📄 Generate Agreement (.docx)</span>
+                  </button>
+                </div>
+
+              </form>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/jszip.min.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/connect.js"></script>
+  <script src="js/agreement.js"></script>
+</body>
+</html>

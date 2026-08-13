@@ -11,6 +11,7 @@ const UI = (() => {
     { href: 'installments.html',    icon: 'coin',       label: 'Customer' },
     { href: 'item-master.html',     icon: 'box',        label: 'Products' },
     { href: 'offer.html',           icon: 'file',       label: 'Offer Generator' },
+    { href: 'agreement.html',       icon: 'doc',        label: 'Agreement Generate' },
     { href: 'vendor-master.html',   icon: 'people',     label: 'Vendor Master' },
     { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
@@ -55,6 +56,10 @@ const UI = (() => {
 <rect x="7" y="16" width="10" height="2" rx="1" fill="#FFFFFF"/>
 <circle cx="16" cy="11" r="3.5" fill="#F59E0B"/>
 <path d="M16 9.2L16.7 10.6L18.2 10.8L17.1 11.9L17.4 13.4L16 12.6L14.6 13.4L14.9 11.9L13.8 10.8L15.3 10.6L16 9.2Z" fill="#FFFFFF"/>`,
+    doc: `<path d="M4 4C4 2.89543 4.89543 2 6 2H14L20 8V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V4Z" fill="#10B981"/>
+<path d="M14 2V8H20" fill="#6EE7B7"/>
+<rect x="7" y="12" width="10" height="2" rx="1" fill="#FFFFFF"/>
+<rect x="7" y="16" width="7" height="2" rx="1" fill="#FFFFFF"/>`,
     logout: `<path d="M16 17L21 12L16 7M21 12H9" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M9 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H9" stroke="#F87171" stroke-width="2" stroke-linecap="round"/>`,
   };
@@ -102,9 +107,9 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['installments.html', 'offer.html', 'borrower.html'].includes(item.href);
+            return ['installments.html', 'offer.html', 'agreement.html', 'borrower.html'].includes(item.href);
           }
-          return ['offer.html', 'borrower.html'].includes(item.href);
+          return ['offer.html', 'agreement.html', 'borrower.html'].includes(item.href);
         })
       : [];
 
