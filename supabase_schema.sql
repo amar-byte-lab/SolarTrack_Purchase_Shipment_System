@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS items (
 CREATE TABLE IF NOT EXISTS installments (
   "SlNo" BIGINT PRIMARY KEY,
   "Name" TEXT,
+  "ConsumerNo" TEXT,
   "Status" TEXT,
   "District" TEXT,
   "Address" TEXT,

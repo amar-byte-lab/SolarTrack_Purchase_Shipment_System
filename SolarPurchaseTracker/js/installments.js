@@ -855,6 +855,7 @@ function renderList() {
   if (search) {
     rows = rows.filter(r =>
       String(r.Name || '').toLowerCase().includes(search) ||
+      String(r.ConsumerNo || '').toLowerCase().includes(search) ||
       String(r.District || '').toLowerCase().includes(search) ||
       String(r.Address || '').toLowerCase().includes(search) ||
       String(r.MobileNumber || '').toLowerCase().includes(search) ||
@@ -1029,6 +1030,7 @@ function renderList() {
           <td>
             <div class="d-flex flex-column gap-1">
               <input type="text" class="form-control form-control-sm" id="editName" value="${r.Name || ''}" placeholder="Name *" required>
+              <input type="text" class="form-control form-control-sm" id="editConsumerNo" value="${r.ConsumerNo || ''}" placeholder="Consumer No">
               <input type="text" class="form-control form-control-sm" id="editMobileNumber" value="${r.MobileNumber || ''}" placeholder="Mobile">
               <input type="text" class="form-control form-control-sm" id="editCommittedBrand" value="${r.CommittedBrand || ''}" placeholder="Brand">
               <select class="form-select form-select-sm" id="editDistrict">
@@ -1131,6 +1133,7 @@ function renderList() {
                 <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
                   ${r.Name || ''} (${r.District || '—'})
                 </a>${delayBadgeHtml}
+                ${r.ConsumerNo ? `<span class="badge bg-light text-secondary border font-monospace ms-1" style="font-size:0.7rem; font-weight:normal;" title="Consumer No">${escapeHtml(r.ConsumerNo)}</span>` : ''}
                 ${(() => {
                   const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(r.SlNo));
                   const customerRemarksCount = remarks.filter(n => n.Type === 'Customer' || !n.Type).length;
@@ -1527,6 +1530,7 @@ window.saveInline = async function (slNo) {
   const row = {
     SlNo: Number(slNo),
     Name: name,
+    ConsumerNo: document.getElementById('editConsumerNo') ? document.getElementById('editConsumerNo').value.trim() : (r ? (r.ConsumerNo || '') : ''),
     Status: isAddingNew ? 'Active' : currentStatus,
     District: document.getElementById('editDistrict').value,
     Address: document.getElementById('editAddress').value.trim(),
@@ -1848,6 +1852,7 @@ window.showCustomerDetailsPopup = function(slNo) {
   if (!r) return;
 
   document.getElementById('customerDetailsModalTitle').textContent = `${r.Name} (${r.District || 'No District'})`;
+  if (document.getElementById('detConsumerNo')) document.getElementById('detConsumerNo').textContent = r.ConsumerNo || '—';
   document.getElementById('detMobile').textContent = r.MobileNumber || '—';
   document.getElementById('detBrand').textContent = r.CommittedBrand || '—';
   document.getElementById('detAddress').textContent = r.Address || '—';
@@ -2053,6 +2058,7 @@ window.openCustomerModal = function(slNo) {
     const r = getInstallmentRows().find(x => Number(x.SlNo) === Number(slNo));
     if (r) {
       document.getElementById('cName').value = r.Name || '';
+      if (document.getElementById('cConsumerNo')) document.getElementById('cConsumerNo').value = r.ConsumerNo || '';
       document.getElementById('cMobile').value = r.MobileNumber || '';
       document.getElementById('cDistrict').value = r.District || '';
       document.getElementById('cAddress').value = r.Address || '';
@@ -2080,7 +2086,7 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
     }
   } else {
-    ['cName', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
+    ['cName', 'cConsumerNo', 'cMobile', 'cAddress', 'cBrand', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -2220,6 +2226,7 @@ async function saveCustomerModal() {
 
   const rowData = {
     Name: name,
+    ConsumerNo: document.getElementById('cConsumerNo') ? document.getElementById('cConsumerNo').value.trim() : '',
     MobileNumber: document.getElementById('cMobile').value.trim(),
     District: document.getElementById('cDistrict').value,
     Address: document.getElementById('cAddress').value.trim(),
@@ -2337,6 +2344,11 @@ async function handleExcelImport(e) {
         return lk === 'consumer name' || lk === 'name' || lk === 'customer name' || lk === 'consumername';
       });
 
+      const consumerNoKey = keys.find(k => {
+        const lk = k.toLowerCase().trim();
+        return lk === 'consumer no' || lk === 'consumer no.' || lk === 'consumer number' || lk === 'consumer_no' || lk === 'consumerno' || lk === 'consumer id' || lk === 'consumerid' || lk === 'account no' || lk === 'ca no' || lk === 'consumer #' || lk === 'consumer_id' || lk === 'c.a. no' || lk === 'cano';
+      });
+
       const mobileKey = keys.find(k => {
         const lk = k.toLowerCase().trim();
         return lk === 'mobile no.' || lk === 'mobile no' || lk === 'mobile' || lk === 'mobile number' || lk === 'phone' || lk === 'phonenumber' || lk === 'mobileno';
@@ -2359,6 +2371,7 @@ async function handleExcelImport(e) {
         const rawName = String(row[nameKey] || '').trim();
         if (!rawName) return; // skip empty name rows
 
+        const rawConsumerNo = consumerNoKey ? String(row[consumerNoKey] || '').trim() : '';
         const rawMobile = mobileKey ? String(row[mobileKey] || '').trim() : '';
         const cleanNameVal = cleanName(rawName);
 
@@ -2383,6 +2396,7 @@ async function handleExcelImport(e) {
 
         parsedCustomers.push({
           Name: rawName,
+          ConsumerNo: rawConsumerNo,
           MobileNumber: rawMobile,
           District: '',
           BrokerName: '',
@@ -2397,6 +2411,7 @@ async function handleExcelImport(e) {
         if (!excelNamesSet.has(cleanGridName)) {
           parsedMissingCustomers.push({
             Name: r.Name,
+            ConsumerNo: r.ConsumerNo || '',
             MobileNumber: r.MobileNumber || '',
             District: r.District || '',
             BrokerName: r.BrokerName || '',
@@ -2470,6 +2485,7 @@ function renderImportPreviewModal() {
       </td>
       <td class="text-center">${index + 1}</td>
       <td class="fw-semibold">${escapeHtml(c.Name)}</td>
+      <td class="font-monospace">${escapeHtml(c.ConsumerNo || '—')}</td>
       <td>${escapeHtml(c.MobileNumber || '—')}</td>
       <td>
         <div class="position-relative">
@@ -2530,7 +2546,7 @@ function renderImportPreviewModal() {
     if (parsedMissingCustomers.length === 0) {
       tbodyMissing.innerHTML = `
         <tr>
-          <td colspan="6" class="text-center text-muted py-3">
+          <td colspan="7" class="text-center text-muted py-3">
             No grid records are missing from the uploaded Excel file. All database entries matched.
           </td>
         </tr>
@@ -2543,6 +2559,7 @@ function renderImportPreviewModal() {
         tr.innerHTML = `
           <td class="text-center" style="background-color: #fff3cd !important; color: #664d03 !important;">${index + 1}</td>
           <td class="fw-semibold" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.Name)}</td>
+          <td class="font-monospace" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.ConsumerNo || '—')}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.MobileNumber || '—')}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.District || '—')}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.BrokerName || '—')}</td>
@@ -2572,16 +2589,17 @@ function downloadTxtReport() {
   txt += '======================================================================\n\n';
   txt += 'SECTION 1: EXCEL RECORDS TO IMPORT\n';
   txt += '----------------------------------------------------------------------\n';
-  txt += 'Sl. | Consumer Name | Mobile Number | District | Broker / Partner Name | Status\n';
+  txt += 'Sl. | Consumer Name | Consumer No | Mobile Number | District | Broker / Partner Name | Status\n';
   txt += '----------------------------------------------------------------------\n';
 
   parsedCustomers.forEach((c, idx) => {
     const name = c.Name;
+    const consumerNo = c.ConsumerNo || 'N/A';
     const mobile = c.MobileNumber || 'N/A';
     const district = c.District || 'N/A';
     const broker = c.BrokerName || 'N/A';
     const status = c.Status;
-    txt += `${idx + 1}. | ${name} | ${mobile} | ${district} | ${broker} | ${status}\n`;
+    txt += `${idx + 1}. | ${name} | ${consumerNo} | ${mobile} | ${district} | ${broker} | ${status}\n`;
   });
 
   txt += '\n======================================================================\n';
@@ -2666,6 +2684,7 @@ async function saveImportedCustomers() {
         const rowData = {
           SlNo: currentMaxSl,
           Name: customer.Name,
+          ConsumerNo: customer.ConsumerNo || '',
           MobileNumber: customer.MobileNumber,
           Status: 'Active',
           District: customer.District || '',

@@ -69,7 +69,7 @@ body.offer-page .page-body {
 
 .table-quote td {
   vertical-align: middle;
-  padding: 10px 14px;
+  padding: 0px 6px;
   border-bottom: 1px solid var(--st-border);
   border-right: 1px solid var(--st-border);
 }

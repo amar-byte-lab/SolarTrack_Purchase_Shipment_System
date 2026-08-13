@@ -298,6 +298,11 @@
           <div class="card border-0 shadow-sm rounded-3 p-3">
             <div class="d-flex flex-column gap-2" style="font-size: 0.82rem;">
               <div>
+                <span class="text-secondary d-block fs-8 mb-0.5">Consumer No</span>
+                <span class="fw-semibold text-dark fs-7" id="detConsumerNo">—</span>
+              </div>
+              <hr class="my-1 opacity-10">
+              <div>
                 <span class="text-secondary d-block fs-8 mb-0.5">Mobile Number</span>
                 <span class="fw-semibold text-dark fs-7" id="detMobile">—</span>
               </div>
@@ -476,6 +481,10 @@
                   <input type="text" class="form-control form-control-sm" id="cName" placeholder="Enter full name" required>
                 </div>
                 <div class="col-6 mb-2">
+                  <label class="form-label fs-8 text-secondary mb-1">Consumer No.</label>
+                  <input type="text" class="form-control form-control-sm" id="cConsumerNo" placeholder="Enter Consumer No">
+                </div>
+                <div class="col-12 mb-2">
                   <label class="form-label fs-8 text-secondary mb-1">Mobile / Phone Number</label>
                   <input type="text" class="form-control form-control-sm" id="cMobile" placeholder="Enter mobile number">
                 </div>
@@ -608,6 +617,7 @@
                 </th>
                 <th class="text-center" style="width: 50px;">Sl.</th>
                 <th>Consumer Name</th>
+                <th>Consumer No</th>
                 <th>Mobile Number</th>
                 <th>District</th>
                 <th>Broker / Partner Name</th>
@@ -628,6 +638,7 @@
               <tr>
                 <th class="text-center" style="width: 50px;">Sl.</th>
                 <th>Consumer Name</th>
+                <th>Consumer No</th>
                 <th>Mobile Number</th>
                 <th>District</th>
                 <th>Broker / Partner Name</th>
