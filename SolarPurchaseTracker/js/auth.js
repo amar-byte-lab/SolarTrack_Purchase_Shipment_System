@@ -137,13 +137,7 @@ const Auth = (() => {
     // 1. If on login page
     if (page === 'login.html') {
       if (currentUser) {
-        if (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') {
-          window.location.href = 'dashboard.html';
-        } else if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-          window.location.href = 'installments.html';
-        } else {
-          window.location.href = 'offer.html';
-        }
+        window.location.href = 'installments.html';
       }
       return;
     }
@@ -156,13 +150,7 @@ const Auth = (() => {
 
     // 3. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
-      if (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') {
-        window.location.href = 'dashboard.html';
-      } else if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        window.location.href = 'installments.html';
-      } else {
-        window.location.href = 'offer.html';
-      }
+      window.location.href = 'installments.html';
       return;
     }
 

@@ -193,13 +193,7 @@
     const res = await Auth.login(userid, password);
 
     if (res.success) {
-      if (res.user.role === 'admin' || res.user.role === 'superadmin' || res.user.userid === 'amar') {
-        window.location.href = 'dashboard.html';
-      } else if (res.user.role === 'partner') {
-        window.location.href = 'installments.html';
-      } else {
-        window.location.href = 'offer.html';
-      }
+      window.location.href = 'installments.html';
     } else {
       alertEl.textContent = res.error || 'Invalid User ID or Password';
       alertEl.style.display = 'block';
