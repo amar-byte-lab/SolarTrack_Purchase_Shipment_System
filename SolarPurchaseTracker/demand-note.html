@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demand Note Generate — Solar Purchase Tracker</title>
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/auth.js"></script>
+  <style>
+    .pdf-drop-zone {
+      border: 2px dashed #4f46e5;
+      border-radius: 12px;
+      padding: 30px 20px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+    .pdf-drop-zone:hover, .pdf-drop-zone.dragover {
+      background: #eef2ff;
+      border-color: #4338ca;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.12);
+    }
+    .file-badge-list {
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .demand-excel-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.85rem;
+      font-family: 'Calibri', 'Inter', sans-serif;
+    }
+    .demand-excel-table th {
+      background-color: #bdd7ee !important;
+      color: #000000 !important;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #000000 !important;
+      padding: 10px 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .demand-excel-table td {
+      border: 1px solid #000000 !important;
+      padding: 8px 8px;
+      vertical-align: middle;
+      text-align: center;
+      color: #000000;
+      background: #ffffff;
+    }
+    .demand-excel-table td input {
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+    .demand-excel-table td input:focus {
+      outline: 2px solid #4f46e5;
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- Sidebar loaded dynamically -->
+    <div id="sidebar"></div>
+
+    <div class="main-content">
+      <!-- Topbar loaded dynamically -->
+      <div class="topbar" id="topbar"></div>
+
+      <div class="page-body">
+        
+        <!-- Page Title & Header -->
+        <div class="st-card p-3 mb-3 bg-white border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <h5 class="fw-bold text-primary mb-1">📄 Demand Note Generate</h5>
+              <p class="text-secondary fs-8 mb-0">Upload multiple NetMeter PDF document forms to extract applicant details and generate the official formatted Excel sheet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload & Action Section -->
+        <div class="row g-3 mb-3">
+          <div class="col-lg-7 col-12">
+            <div class="st-card p-3 h-100 bg-white border-0 shadow-sm">
+              <div class="pdf-drop-zone" id="pdfDropZone">
+                <div class="fs-1 mb-2">📥</div>
+                <h6 class="fw-bold text-primary mb-1">Upload or Drag & Drop NetMeter PDF Documents</h6>
+                <p class="text-muted fs-8 mb-2">Select single or multiple NetMeter PDF application files to extract details</p>
+                <button type="button" class="btn btn-sm btn-primary px-3 py-1 fw-semibold" id="btnBrowseFiles" onclick="document.getElementById('pdfFileInput').click();">📂 Browse PDF Files</button>
+              </div>
+              <input type="file" id="pdfFileInput" accept=".pdf,application/pdf" multiple style="display: none;">
+            </div>
+          </div>
+
+          <div class="col-lg-5 col-12">
+            <div class="st-card p-3 h-100 bg-white border-0 shadow-sm d-flex flex-column justify-content-between">
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold text-secondary mb-0 fs-7">Selected Files (<span id="fileCountBadge">0</span>)</h6>
+                  <button type="button" class="btn btn-xs btn-outline-danger" id="btnClearFiles">Clear All</button>
+                </div>
+                <div class="file-badge-list pe-1" id="fileListContainer">
+                  <div class="text-center text-muted fs-8 py-4">No PDF files selected yet.</div>
+                </div>
+              </div>
+              <div class="pt-2 mt-2 border-top d-flex gap-2">
+                <button type="button" class="btn btn-primary w-100 fw-bold" id="btnProcessPdfs" disabled>
+                  ⚡ Parse PDFs & Generate Preview
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Parsed Data Preview Table Card -->
+        <div class="st-card p-3 bg-white border-0 shadow-sm mb-4" id="previewCard" style="display: none;">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+              <h6 class="fw-bold text-primary mb-0 fs-7">📋 Demand Note Data Preview (<span id="parsedRowCount">0</span> rows)</h6>
+              <span class="text-muted fs-8">Review or edit details below before downloading Excel</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-success fw-bold px-3" id="btnExportExcel">
+                📊 Download Excel Sheet (.xlsx)
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-responsive border rounded">
+            <table class="demand-excel-table" id="demandNoteTable">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">SL NO</th>
+                  <th>REFERENCE NO</th>
+                  <th>APPLICANT NAME</th>
+                  <th>SERVICE NO</th>
+                  <th style="width: 110px;">REQUESTED LOAD</th>
+                  <th>CIRCLE</th>
+                  <th>DIVISION</th>
+                  <th>SUB-DIVISION</th>
+                  <th>SECTION</th>
+                  <th>VENDOR NAME</th>
+                  <th style="width: 120px;">METER PAYMENT</th>
+                  <th style="width: 40px;" class="no-print"></th>
+                </tr>
+              </thead>
+              <tbody id="demandNoteTbody">
+                <!-- Parsed rows rendered dynamically by demand-note.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/xlsx.full.min.js"></script>
+  <script src="js/pdf.min.js"></script>
+  <script src="js/pdf.worker.min.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/demand-note.js"></script>
+  <script src="js/connect.js" defer></script>
+</body>
+</html>
