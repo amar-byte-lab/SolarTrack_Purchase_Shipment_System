@@ -93,9 +93,8 @@
             <thead>
               <tr>
                 <th class="sortable" data-sort="PurchaseDate">Date</th>
-                <th class="sortable" data-sort="VendorName">Vendor</th>
                 <th>Item Name (Qty)</th>
-                <th>Grand Total</th>
+                <th class="sortable" data-sort="VendorName">Grand Total</th>
                 <th class="no-print">Actions</th>
               </tr>
             </thead>
@@ -361,6 +360,24 @@
           </div>
         </div>
 
+      </div>
+      <div class="modal-footer bg-light border-top py-1">
+        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Item Price Breakdown Modal ════════════════════════════════ -->
+<div class="modal fade" id="itemBreakupModal" tabindex="-1" aria-labelledby="itemBreakupModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+        <h6 class="modal-title fw-bold fs-7" id="itemBreakupModalLabel">Item Cost Breakdown</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 bg-light" id="itemBreakupModalBody">
+        <!-- Breakdown cards injected dynamically by JS -->
       </div>
       <div class="modal-footer bg-light border-top py-1">
         <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>

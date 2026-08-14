@@ -14,8 +14,6 @@ let activeTab = 'Buy';
 let selectedColorCols = [];
 const COLORABLE_COLS = [
   { key: 'col-date',    label: 'Date',        default: '#ffffff' },
-  { key: 'col-type',    label: 'Type',        default: '#ffffff' },
-  { key: 'col-vendor',  label: 'Vendor',      default: '#ffffff' },
   { key: 'col-qty',     label: 'Item (Qty)',  default: '#ffffff' },
   { key: 'col-total',   label: 'Grand Total', default: '#ffffff' },
 ];
@@ -290,13 +288,13 @@ function renderList() {
 
   const tbody = document.querySelector('#shipTable tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
     const tfoot = document.querySelector('#shipTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
         <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="4" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
+          <td colspan="3" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
         </tr>
       `;
     }
@@ -380,40 +378,27 @@ function renderList() {
     html.push(`
       <tr ${rowStyle}>
         <td class="col-date">${UI.fmtDate(r.PurchaseDate)}</td>
-        <td class="col-vendor">
-          <div class="d-flex align-items-center flex-wrap gap-1">
-            <span class="fw-semibold text-dark" style="font-size:0.88rem; margin-right:4px;">${r.VendorName || '-'}</span>
-            ${typeBadge}
-            ${statusBadge}
-            ${docsButton}
-            ${notesButton}
-          </div>
-        </td>
         <td class="col-qty" style="font-size:0.82rem; white-space:normal; min-width:280px;">
-          ${r.lines.map(l => {
+          ${r.lines.map((l, idx) => {
             const unitSuffix = l.Unit ? ' ' + l.Unit.trim() : '';
 
             let mspHTML = '';
-              const mspVal = (l.MinSellingPrice !== undefined && l.MinSellingPrice !== null) ? UI.money(l.MinSellingPrice) : null;
-              if (mspVal) {
-                mspHTML = `
-                  <div class="mt-1">
-                    <span style="font-size:0.7rem; font-weight:600; color: #198754; background: #e8f5e9; padding: 2px 6px; border-radius: 4px; display: inline-block;">
-                      Min Selling: ${mspVal}
-                    </span>
-                  </div>
-                `;
-              } else {
-                mspHTML = `
-                  <div class="mt-1">
-                    <span style="font-size:0.7rem; color: #8592a0; border: 1px dashed #dee2e6; padding: 1px 5px; border-radius: 4px; display: inline-block;">
-                      Min Selling: —
-                    </span>
-                  </div>
-                `;
-              }
+            let mspNum = 0;
+            if (l.MinSellingPrice !== undefined && l.MinSellingPrice !== null) {
+              const cleanStr = String(l.MinSellingPrice).replace(/[^0-9.]/g, '');
+              mspNum = parseFloat(cleanStr) || 0;
+            }
+            if (mspNum > 0 && shipmentType !== 'Sell' && activeTab !== 'Sell') {
+              mspHTML = `
+                <div class="mt-1">
+                  <span style="font-size:0.7rem; font-weight:600; color: #198754; background: #e8f5e9; padding: 2px 6px; border-radius: 4px; display: inline-block;">
+                    Min Selling: ${UI.money(mspNum)}
+                  </span>
+                </div>
+              `;
+            }
 
-            return `<div class="mb-2"><strong>${l.ItemName}</strong> (${l.Quantity}${unitSuffix})${mspHTML}</div>`;
+            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix})${mspHTML}</div>`;
           }).join('') || '<span class="text-muted">—</span>'}
         </td>
         <td class="col-total text-end fw-bold font-monospace">
@@ -422,6 +407,13 @@ function renderList() {
             <div class="d-flex gap-1 mt-1 no-print">
               <button class="btn btn-xs ${vendorBtnClass} font-monospace" onclick="showVendorPaymentDetails('${r.ShipmentNo}')" style="font-size:0.68rem; padding:1px 4px;">${vendorBtnText}</button>
               <button class="btn btn-xs ${transportBtnClass} font-monospace" onclick="showTransportPaymentDetails('${r.ShipmentNo}')" style="font-size:0.68rem; padding:1px 4px;">${transportBtnText}</button>
+            </div>
+            <div class="d-flex align-items-center justify-content-end flex-wrap gap-1 mt-1 font-sans" style="font-size:0.8rem; font-weight:normal;">
+              <span class="fw-semibold text-dark me-1">${r.VendorName || '-'}</span>
+              ${typeBadge}
+              ${statusBadge}
+              ${docsButton}
+              ${notesButton}
             </div>
           </div>
         </td>
@@ -445,7 +437,7 @@ function renderList() {
     tfootHTML += `
       <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
         <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-        <td colspan="4" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
+        <td colspan="3" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
       </tr>
     `;
     
@@ -470,7 +462,7 @@ function renderList() {
     // 2. Grand Total Row
     tfootHTML += `
       <tr class="grand-total" style="height:37px;">
-        <td colspan="3">GRAND TOTAL</td>
+        <td colspan="2">GRAND TOTAL</td>
         <td class="text-end fw-bold font-monospace">
           <div class="d-flex flex-column align-items-end" style="gap:2px;">
             <span>${UI.money(sumGrandTotal)}</span>
@@ -1785,5 +1777,73 @@ window.deleteShipmentNote = async function(remarkId) {
     UI.toast('Error deleting note: ' + err.message, 'danger');
   } finally {
     UI.showLoading(false);
+  }
+};
+
+window.showItemPriceBreakup = function(shipmentNo, lineIndex) {
+  const shipments = getEnrichedShipments(true);
+  const r = shipments.find(s => s.ShipmentNo === shipmentNo);
+  if (!r || !r.lines || !r.lines[lineIndex]) return;
+
+  const l = r.lines[lineIndex];
+  const unitSuffix = l.Unit ? ' ' + l.Unit.trim() : '';
+
+  document.getElementById('itemBreakupModalLabel').textContent = `Cost Breakdown — ${l.ItemName}`;
+
+  const mspVal = (l.MinSellingPrice !== undefined && l.MinSellingPrice !== null && Number(l.MinSellingPrice) > 0)
+    ? UI.money(l.MinSellingPrice)
+    : '—';
+
+  const bodyEl = document.getElementById('itemBreakupModalBody');
+  if (bodyEl) {
+    bodyEl.innerHTML = `
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+          <span class="fw-bold text-dark fs-6">${l.ItemName}</span>
+          <span class="badge bg-primary-subtle text-primary-emphasis font-monospace fs-7">Qty: ${l.Quantity}${unitSuffix}</span>
+        </div>
+        <div class="d-flex flex-column gap-2 fs-7 font-monospace">
+          <div class="d-flex justify-content-between">
+            <span class="text-secondary">Base Rate / Unit:</span>
+            <span class="fw-semibold text-dark">${UI.money(l.PurchaseRate)}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-secondary">Base Purchase Value:</span>
+            <span class="fw-semibold text-dark">${UI.money(l.PurchaseValue)}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-secondary">GST (${l.GSTPercentage}%):</span>
+            <span class="fw-semibold text-dark">${UI.money(l.GSTShare)}</span>
+          </div>
+          <div class="d-flex justify-content-between border-top pt-1">
+            <span class="text-secondary">Total Price (+ GST):</span>
+            <span class="fw-semibold text-dark">${UI.money(l.TotalPurchaseValue)}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-secondary">Transport Share:</span>
+            <span class="fw-semibold text-dark">${UI.money(l.TransportShare)}</span>
+          </div>
+          <div class="d-flex justify-content-between border-top pt-1 text-primary fw-bold">
+            <span>Final Total Cost:</span>
+            <span>${UI.money(l.FinalCost)}</span>
+          </div>
+          <div class="d-flex justify-content-between text-success fw-bold">
+            <span>Effective Cost / Unit:</span>
+            <span>${UI.money(l.CostPerUnit)}</span>
+          </div>
+          ${mspVal !== '—' ? `
+          <div class="d-flex justify-content-between border-top pt-1 text-secondary">
+            <span>Min Selling Price (MSP):</span>
+            <span class="fw-bold text-success">${mspVal}</span>
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  const modalEl = document.getElementById('itemBreakupModal');
+  if (modalEl) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
   }
 };

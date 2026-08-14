@@ -956,14 +956,15 @@ function renderList() {
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
 
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found. Click "+" at the bottom to add one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found.${isAdmin ? ' Click "+" at the bottom to add one.' : ''}</td></tr>`;
     const tfoot = document.querySelector('#installmentsTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
+        ${isAdmin ? `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
           <td colspan="${isAdmin ? '4' : '3'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
-        </tr>
+        </tr>` : ''}
         <tr class="grand-total" style="height:37px;">
           <td class="text-center">0</td>
           <td colspan="2">GRAND TOTAL</td>
@@ -1207,7 +1208,7 @@ function renderList() {
     let tfootHTML = '';
     
     // Add row is rendered inside tfoot sitting on top of grand total (using bottom: 37px offset)
-    if (!isAddingNew) {
+    if (!isAddingNew && isAdmin) {
       tfootHTML += `
         <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
           <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
