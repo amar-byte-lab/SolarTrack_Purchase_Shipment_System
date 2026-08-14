@@ -9,6 +9,7 @@ const DEFAULT_SOLAR_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.or
 
 const activeAdjustments = {
   discount: { active: false, label: 'Discount (₹)', type: 'subtraction', value: 0, sign: '-' },
+  gst: { active: false, label: 'GST (%)', type: 'tax', value: 0, sign: '+' },
   cgst: { active: false, label: 'CGST (%)', type: 'tax', value: 0, sign: '+' },
   sgst: { active: false, label: 'SGST (%)', type: 'tax', value: 0, sign: '+' },
   transport: { active: false, label: 'Transportation (₹)', type: 'addition', value: 0, sign: '+' },
@@ -197,6 +198,29 @@ function convertNumberToWords(amount) {
   return 'Rupees ' + str.trim() + ' Only';
 }
 
+function getSelectedOfficeAddress() {
+  let addresses = [];
+  try {
+    const settings = DB.getAll('settings');
+    const getSetting = (key, def = '') => (settings.find(s => s.Key === key) || {}).Value ?? def;
+    addresses = JSON.parse(getSetting('CompanyAddresses', '[]'));
+  } catch (e) {
+    addresses = [];
+  }
+  if (!Array.isArray(addresses) || addresses.length === 0) {
+    addresses = ['AT/PO: Kesinga, Dist: Kalahandi, Odisha - 766012'];
+  }
+  const textarea = document.getElementById('qOfficeAddress');
+  if (textarea && textarea.value.trim()) {
+    return textarea.value;
+  }
+  const select = document.getElementById('qOfficeAddressSelect');
+  if (select && select.value !== '' && addresses[select.value]) {
+    return addresses[select.value];
+  }
+  return addresses[0] || '';
+}
+
 function syncPrintLabels() {
   const settings = DB.getAll('settings');
   const getSetting = (key, def = '') => (settings.find(s => s.Key === key) || {}).Value ?? def;
@@ -209,8 +233,8 @@ function syncPrintLabels() {
   // 2. Seller Details
   const companyName = getSetting('CompanyName', 'SolarTrack');
   const gstNum = getSetting('CompanyGST', '');
-  const sellerAddr = document.getElementById('qOfficeAddress').value;
-  const sellerPhone = document.getElementById('qCompanyPhone').value;
+  const sellerAddr = getSelectedOfficeAddress();
+  const sellerPhone = (document.getElementById('qCompanyPhone') ? document.getElementById('qCompanyPhone').value : '') || '';
   const sellerEmail = document.getElementById('qCompanyEmail').value;
   const logoBase64 = 'assets/sampleFiles/CompanyLogo.jpeg';
 
@@ -344,11 +368,15 @@ function generatePrintItemsGrid() {
   }
 
   // Tax rates
+  const gstActive = activeAdjustments.gst ? activeAdjustments.gst.active : false;
+  const gstRate = gstActive ? activeAdjustments.gst.value : 0;
   const cgstActive = activeAdjustments.cgst.active;
   const cgstRate = cgstActive ? activeAdjustments.cgst.value : 0;
   const sgstActive = activeAdjustments.sgst.active;
   const sgstRate = sgstActive ? activeAdjustments.sgst.value : 0;
 
+  let gstAmount = 0;
+  if (gstActive) gstAmount = (taxableValue * gstRate) / 100;
   let cgstAmount = 0;
   if (cgstActive) cgstAmount = (taxableValue * cgstRate) / 100;
   let sgstAmount = 0;
@@ -360,7 +388,7 @@ function generatePrintItemsGrid() {
   if (activeAdjustments.labour.active) otherCharges += activeAdjustments.labour.value || 0;
   if (activeAdjustments.other.active) otherCharges += activeAdjustments.other.value || 0;
 
-  const grandTotal = Math.max(0, taxableValue + cgstAmount + sgstAmount + otherCharges);
+  const grandTotal = Math.max(0, taxableValue + gstAmount + cgstAmount + sgstAmount + otherCharges);
 
   // Update table headers with dynamic rates
   const cgstHeader = document.getElementById('printCgstHeader');
@@ -383,6 +411,9 @@ function generatePrintItemsGrid() {
   if (activeAdjustments.discount.active && discountVal > 0) {
     printRows.push({ type: 'adj', desc: 'Less: Discount', qty: '-', price: -discountVal });
   }
+  if (gstActive && gstAmount > 0) {
+    printRows.push({ type: 'adj', desc: `Add: GST (${gstRate}%)`, qty: '-', price: gstAmount });
+  }
   if (activeAdjustments.transport.active && activeAdjustments.transport.value > 0) {
     printRows.push({ type: 'adj', desc: 'Add: Transportation Charges', qty: '-', price: activeAdjustments.transport.value });
   }
@@ -400,6 +431,7 @@ function generatePrintItemsGrid() {
   // Calculate sum of basic prices column for the total row
   let sumBasicPrices = subtotal;
   if (activeAdjustments.discount.active) sumBasicPrices -= discountVal;
+  if (gstActive) sumBasicPrices += gstAmount;
   if (activeAdjustments.transport.active) sumBasicPrices += activeAdjustments.transport.value || 0;
   if (activeAdjustments.labour.active) sumBasicPrices += activeAdjustments.labour.value || 0;
   if (activeAdjustments.other.active) sumBasicPrices += activeAdjustments.other.value || 0;
@@ -738,27 +770,26 @@ function loadCompanyProfileSettings() {
     addresses = [];
   }
 
+  if (!Array.isArray(addresses) || addresses.length === 0) {
+    addresses = ['AT/PO: Kesinga, Dist: Kalahandi, Odisha - 766012'];
+  }
+
   const select = document.getElementById('qOfficeAddressSelect');
   const textarea = document.getElementById('qOfficeAddress');
 
-  if (select && textarea) {
-    if (addresses.length === 0) {
-      select.innerHTML = `<option value="">-- No addresses configured --</option>`;
-      textarea.value = '';
-    } else {
-      select.innerHTML = addresses.map((addr, idx) => `
-        <option value="${idx}">${addr.length > 50 ? addr.slice(0, 50) + '...' : addr}</option>
-      `).join('');
-      
-      // Default to first address
-      textarea.value = addresses[0] || '';
-    }
+  if (select) {
+    select.innerHTML = addresses.map((addr, idx) => `
+      <option value="${idx}">${addr}</option>
+    `).join('');
+
+    if (textarea) textarea.value = addresses[0] || '';
 
     select.addEventListener('change', (e) => {
       const idx = e.target.value;
-      if (idx !== '' && addresses[idx]) {
+      if (idx !== '' && addresses[idx] && textarea) {
         textarea.value = addresses[idx];
       }
+      syncPrintLabels();
     });
   }
 
@@ -1058,15 +1089,15 @@ function rebuildQuoteGridFromDOM(forceAutoCalcOnToggle = false) {
         if (itemIndex === 0) {
           const displayMergedVal = (forceAutoCalcOnToggle || !hasMerged || oldSubtotal === 0) ? calculatedSum : oldSubtotal;
           totalValueHtml = `
-            <td rowspan="${itemRowsCount}" class="align-middle text-end" id="mergedQuoteTotalCell">
-              <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${displayMergedVal}" placeholder="Total Value">
+            <td rowspan="${itemRowsCount}" class="align-middle text-start" id="mergedQuoteTotalCell">
+              <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-start font-monospace" value="${displayMergedVal}" placeholder="Total Value">
             </td>
           `;
         }
       } else {
         totalValueHtml = `
           <td>
-            <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-end font-monospace" value="${itemRowVal}" placeholder="0.00">
+            <input type="number" step="any" min="0" class="form-control form-control-sm q-price text-start font-monospace" value="${itemRowVal}" placeholder="0.00">
           </td>
         `;
       }
@@ -1299,7 +1330,14 @@ function recalculateOffer() {
     runningTotal = taxableValue;
   }
 
-  // 2. Calculate CGST/SGST based on taxable value
+  // 2. Calculate GST/CGST/SGST based on taxable value
+  let gstAmount = 0;
+  if (activeAdjustments.gst && activeAdjustments.gst.active) {
+    const gstPercent = activeAdjustments.gst.value || 0;
+    gstAmount = (taxableValue * gstPercent) / 100;
+    runningTotal += gstAmount;
+  }
+
   let cgstAmount = 0;
   if (activeAdjustments.cgst.active) {
     const cgstPercent = activeAdjustments.cgst.value || 0;
@@ -1529,7 +1567,7 @@ window.exportQuotationToDocx = async function() {
   }));
 
   // Add Seller Address
-  const sellerAddrText = document.getElementById('qOfficeAddress').value || '';
+  const sellerAddrText = getSelectedOfficeAddress();
   sellerAddrText.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
     sellerParagraphs.push(new Paragraph({
       children: [new TextRun({ text: line, size: 20, font: "Times New Roman" })],
@@ -1717,11 +1755,15 @@ window.exportQuotationToDocx = async function() {
     taxableValue = Math.max(0, subtotal - discountVal);
   }
 
+  const gstActive = activeAdjustments.gst ? activeAdjustments.gst.active : false;
+  const gstRate = gstActive ? activeAdjustments.gst.value : 0;
   const cgstActive = activeAdjustments.cgst.active;
   const cgstRate = cgstActive ? activeAdjustments.cgst.value : 0;
   const sgstActive = activeAdjustments.sgst.active;
   const sgstRate = sgstActive ? activeAdjustments.sgst.value : 0;
 
+  let gstAmount = 0;
+  if (gstActive) gstAmount = (taxableValue * gstRate) / 100;
   let cgstAmount = 0;
   if (cgstActive) cgstAmount = (taxableValue * cgstRate) / 100;
   let sgstAmount = 0;
@@ -1732,7 +1774,7 @@ window.exportQuotationToDocx = async function() {
   if (activeAdjustments.labour.active) otherCharges += activeAdjustments.labour.value || 0;
   if (activeAdjustments.other.active) otherCharges += activeAdjustments.other.value || 0;
 
-  const grandTotal = Math.max(0, taxableValue + cgstAmount + sgstAmount + otherCharges);
+  const grandTotal = Math.max(0, taxableValue + gstAmount + cgstAmount + sgstAmount + otherCharges);
 
   let printRows = [];
   quoteRows.forEach(row => {
@@ -1744,6 +1786,9 @@ window.exportQuotationToDocx = async function() {
 
   if (activeAdjustments.discount.active && discountVal > 0) {
     printRows.push({ type: 'adj', desc: 'Less: Discount', qty: '-', price: -discountVal });
+  }
+  if (gstActive && gstAmount > 0) {
+    printRows.push({ type: 'adj', desc: `Add: GST (${gstRate}%)`, qty: '-', price: gstAmount });
   }
   if (activeAdjustments.transport.active && activeAdjustments.transport.value > 0) {
     printRows.push({ type: 'adj', desc: 'Add: Transportation Charges', qty: '-', price: activeAdjustments.transport.value });

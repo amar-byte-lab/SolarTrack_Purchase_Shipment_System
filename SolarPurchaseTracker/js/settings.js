@@ -216,6 +216,9 @@ function loadSettingsForm() {
   } catch (e) {
     officeAddresses = [];
   }
+  if (!Array.isArray(officeAddresses) || officeAddresses.length === 0) {
+    officeAddresses = ['AT/PO: Kesinga, Dist: Kalahandi, Odisha - 766012'];
+  }
   renderAddressesList();
 
   // Load Subsidies

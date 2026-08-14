@@ -104,6 +104,10 @@ body.offer-page .page-body {
   text-align: right;
 }
 
+.table-quote input.q-price {
+  text-align: left !important;
+}
+
 /* Print Stylesheet Overrides */
 @media print {
   html, body, .app-shell, .main-content, .page-body {
@@ -190,11 +194,71 @@ body.offer-page .page-body {
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
 }
 
-/* Mobile Collapsible Bank Details for offer.html */
+/* Mobile View Optimizations for Quotation Table */
 @media (max-width: 768px) {
   .bank-details-collapse {
     display: none;
     margin-top: 8px;
+  }
+
+  .table-quote {
+    font-size: 0.75rem !important;
+  }
+
+  .table-quote th {
+    padding: 6px 4px !important;
+    font-size: 0.68rem !important;
+    letter-spacing: 0em !important;
+  }
+
+  .table-quote th:nth-child(2) {
+    width: 52px !important;
+  }
+
+  .table-quote th:nth-child(3) {
+    width: 105px !important;
+  }
+
+  .table-quote th:nth-child(4) {
+    width: 32px !important;
+    padding: 4px 2px !important;
+  }
+
+  .table-quote td {
+    padding: 2px 3px !important;
+  }
+
+  .table-quote input {
+    font-size: 0.74rem !important;
+    padding: 3px 5px !important;
+    height: 28px !important;
+    border-radius: 4px !important;
+  }
+
+  .table-quote input.q-qty {
+    width: 46px !important;
+    padding: 3px 2px !important;
+    font-size: 0.74rem !important;
+  }
+
+  .table-quote input.q-item-name {
+    font-size: 0.74rem !important;
+  }
+
+  .table-quote .form-check-inline {
+    margin-right: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .table-quote .chk-square, #chkMergeTotalValue {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .table-quote .form-check-label {
+    font-size: 0.65rem !important;
+    margin-left: 2px !important;
   }
 }
 

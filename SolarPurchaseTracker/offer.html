@@ -72,31 +72,53 @@
                 <div class="row g-3">
                   <!-- 1. Seller Details (From) -->
                   <div class="col-md-6 col-12">
-                    <div class="p-3 bg-white border rounded h-100">
-                      <h6 class="fw-bold text-primary mb-2 fs-7 border-bottom pb-2 text-start">From (Seller Details)
-                      </h6>
+                    <div class="p-3 bg-white border rounded h-100 text-start">
+                      <h6 class="fw-bold text-primary mb-2 fs-7 border-bottom pb-2">From (Seller Details)</h6>
                       <div class="mb-2">
                         <label class="form-label fs-8 text-secondary mb-1">Select Registered Office</label>
                         <select class="form-select form-select-sm bg-white" id="qOfficeAddressSelect">
                           <!-- Populated from Settings -->
                         </select>
                       </div>
-                      <div class="mb-2">
-                        <label class="form-label fs-8 text-secondary mb-1">Office Address (Editable for this offer
-                          only)</label>
-                        <textarea class="form-control bg-white fw-semibold" id="qOfficeAddress" rows="3"
-                          placeholder="Registered office address"></textarea>
-                      </div>
-                      <div class="row g-2">
-                        <div class="col-6 text-start">
+                      <div class="row g-2 mb-2">
+                        <div class="col-6">
                           <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
                           <input class="form-control form-control-sm bg-white font-monospace fw-semibold"
                             id="qCompanyPhone" placeholder="Seller phone">
                         </div>
-                        <div class="col-6 text-start">
-                          <label class="form-label fs-8 text-secondary mb-1">Company Email (Non-editable)</label>
+                        <div class="col-6">
+                          <label class="form-label fs-8 text-secondary mb-1">Company Email</label>
                           <input class="form-control form-control-sm bg-light font-monospace fw-semibold"
                             id="qCompanyEmail" placeholder="Seller email" readonly>
+                        </div>
+                      </div>
+                      <div class="row g-2 mb-2">
+                        <div class="col-6">
+                          <label class="form-label fs-8 text-secondary mb-1">Quotation Date</label>
+                          <input type="date" class="form-control form-control-sm bg-white font-monospace fw-semibold"
+                            id="qDate">
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fs-8 text-secondary mb-1">Quote No.</label>
+                          <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold"
+                            id="qQuoteNo" placeholder="TR2607201357">
+                        </div>
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-4">
+                          <label class="form-label fs-9 text-secondary mb-1">Validity</label>
+                          <input type="text" class="form-control form-control-sm bg-white fw-semibold" id="qValidity"
+                            value="10 Days">
+                        </div>
+                        <div class="col-4">
+                          <label class="form-label fs-9 text-secondary mb-1">Delivery</label>
+                          <input type="text" class="form-control form-control-sm bg-white fw-semibold"
+                            id="qDeliveryDate" value="Within 1 wk. in advance">
+                        </div>
+                        <div class="col-4">
+                          <label class="form-label fs-9 text-secondary mb-1">Payment</label>
+                          <input type="text" class="form-control form-control-sm bg-white fw-semibold"
+                            id="qPaymentTerms" value="Advance Mode">
                         </div>
                       </div>
                     </div>
@@ -104,52 +126,24 @@
 
                   <!-- 2. Buyer Details (To) -->
                   <div class="col-md-6 col-12">
-                    <div class="p-3 bg-white border rounded h-100">
-                      <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2 text-start">To (Client Details)
-                      </h6>
-                      <div class="mb-2 text-start">
-                        <label class="form-label fs-8 text-secondary mb-1">Customer Name</label>
-                        <input type="text" class="form-control form-control-sm bg-white fw-bold" id="qCustName"
-                          placeholder="Enter customer name">
-                      </div>
+                    <div class="p-3 bg-white border rounded h-100 text-start">
+                      <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2">To (Client Details)</h6>
                       <div class="row g-2 mb-2">
-                        <div class="col-6 text-start">
+                        <div class="col-6">
+                          <label class="form-label fs-8 text-secondary mb-1">Customer Name</label>
+                          <input type="text" class="form-control form-control-sm bg-white fw-bold" id="qCustName"
+                            placeholder="Enter customer name">
+                        </div>
+                        <div class="col-6">
                           <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
                           <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold"
                             id="qCustMobile" placeholder="Enter mobile number">
                         </div>
-                        <div class="col-6 text-start">
-                          <label class="form-label fs-8 text-secondary mb-1">Quotation Date</label>
-                          <input type="date" class="form-control form-control-sm bg-white font-monospace fw-semibold"
-                            id="qDate">
-                        </div>
                       </div>
-                      <div class="text-start mb-2">
+                      <div>
                         <label class="form-label fs-8 text-secondary mb-1">Customer Address</label>
-                        <textarea class="form-control bg-white fw-semibold" id="qCustAddress" rows="3"
+                        <textarea class="form-control bg-white fw-semibold" id="qCustAddress" rows="4"
                           placeholder="Enter customer address"></textarea>
-                      </div>
-                      <div class="row g-2 text-start">
-                        <div class="col-3">
-                          <label class="form-label fs-9 text-secondary mb-1">Quote No.</label>
-                          <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold"
-                            id="qQuoteNo" placeholder="TR2607201357">
-                        </div>
-                        <div class="col-3">
-                          <label class="form-label fs-9 text-secondary mb-1">Validity</label>
-                          <input type="text" class="form-control form-control-sm bg-white fw-semibold" id="qValidity"
-                            value="10 Days">
-                        </div>
-                        <div class="col-3">
-                          <label class="form-label fs-9 text-secondary mb-1">Delivery Date</label>
-                          <input type="text" class="form-control form-control-sm bg-white fw-semibold"
-                            id="qDeliveryDate" value="Within 1 wk. in advance">
-                        </div>
-                        <div class="col-3">
-                          <label class="form-label fs-9 text-secondary mb-1">Payment Terms</label>
-                          <input type="text" class="form-control form-control-sm bg-white fw-semibold"
-                            id="qPaymentTerms" value="Advance Mode">
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -186,11 +180,11 @@
                     <th>Item Name & Description</th>
                     <th class="text-center" style="width: 80px;">Qty</th>
                     <th class="text-end" style="width: 170px;">
-                      Value (₹)
-                      <div class="form-check form-check-inline no-print ms-1 mb-0 align-middle">
+                      Value
+                      <!-- <div class="form-check form-check-inline no-print ms-1 mb-0 align-middle"> -->
                         <input class="form-check-input chk-square" type="checkbox" id="chkMergeTotalValue" checked style="cursor: pointer;">
-                        <label class="form-check-label fs-8 text-secondary fw-semibold ms-1" for="chkMergeTotalValue" style="cursor: pointer; user-select: none;">Merge</label>
-                      </div>
+                        <label class="form-check-label fs-8 text-secondary fw-semibold ms-1" for="chkMergeTotalValue" style="cursor: pointer; user-select: none;">Mrg.</label>
+                      <!-- </div> -->
                     </th>
                     <th class="no-print text-center" style="width: 50px;"></th>
                   </tr>
@@ -204,16 +198,6 @@
                       <button type="button" class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1"
                         onclick="addQuoteRowDirect()">➕ Add Custom Item</button>
                     </td>
-                  </tr>
-                  <tr class="table-light fw-bold">
-                    <td colspan="2" class="text-end pe-3 fs-7">Items Subtotal:</td>
-                    <td class="text-end font-monospace fs-7" id="tblSubtotalVal">₹0.00</td>
-                    <td class="no-print"></td>
-                  </tr>
-                  <tr class="table-primary fw-bold" style="font-size: 0.95rem;">
-                    <td colspan="2" class="text-end pe-3 text-primary">Grand Total:</td>
-                    <td class="text-end font-monospace text-primary fw-bold" id="tblGrandTotalVal">₹0.00</td>
-                    <td class="no-print"></td>
                   </tr>
                 </tfoot>
               </table>
@@ -245,35 +229,14 @@
                     <div class="col-6 text-start text-primary fw-bold fs-6">Grand Total:</div>
                     <div class="col-6 text-primary fw-bold fs-6" id="lblOfferGrandTotal">₹0.00</div>
 
-                    <!-- Subsidy Dropdown Selector (no-print) -->
-                    <div class="col-12 mt-2 pt-2 border-top no-print text-start">
-                      <label class="form-label fs-8 text-secondary mb-1">Apply Government Subsidy</label>
-                      <select class="form-select form-select-sm" id="qSubsidySelect" style="font-size:0.75rem;">
-                        <!-- Populated dynamically by offer.js -->
-                      </select>
-                    </div>
-
-                    <!-- Subsidy Breakdown Lines (Visible on screen and print if selected) -->
-                    <div class="col-12 p-0 text-end" id="subsidySummaryLines" style="display: none;">
-                      <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center m-0">
-                        <div class="col-6 text-start text-success">State Subsidy:</div>
-                        <div class="col-6 text-success" id="lblStateSubsidy">₹0.00</div>
-
-                        <div class="col-6 text-start text-success">Central Subsidy:</div>
-                        <div class="col-6 text-success" id="lblCentralSubsidy">₹0.00</div>
-
-                        <div class="col-6 text-start text-success fw-bold">Total Subsidy:</div>
-                        <div class="col-6 text-success fw-bold" id="lblTotalSubsidy">₹0.00</div>
-
-                      </div>
-                    </div>
-
                     <!-- Add Adjustment Buttons (no-print) -->
                     <div class="col-12 no-print mt-2 pt-2 border-top text-start">
                       <span class="fs-8 fw-bold text-secondary d-block mb-1">Add adjustments/charges:</span>
                       <div class="d-flex flex-wrap gap-1" id="adjButtons">
                         <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8"
                           id="btnAdd_discount" onclick="addAdjustmentLine('discount')">+ Discount</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_gst"
+                          onclick="addAdjustmentLine('gst')">+ GST (%)</button>
                         <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_cgst"
                           onclick="addAdjustmentLine('cgst')">+ CGST (%)</button>
                         <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8" id="btnAdd_sgst"
@@ -286,6 +249,30 @@
                           onclick="addAdjustmentLine('other')">+ Other</button>
                       </div>
                     </div>
+
+                    <!-- Subsidy Dropdown Selector (no-print) -->
+                    <div class="col-12 mt-2 pt-2 border-top no-print text-start">
+                      <label class="form-label fs-8 text-secondary mb-1">Apply Government Subsidy</label>
+                      <select class="form-select form-select-sm" id="qSubsidySelect" style="font-size:0.75rem;">
+                        <!-- Populated dynamically by offer.js -->
+                      </select>
+                    </div>
+
+                    <!-- Subsidy Breakdown Lines (Visible on screen and print if selected) -->
+                    <!-- <div class="col-12 p-0 text-end" id="subsidySummaryLines" style="display: none;">
+                      <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center m-0">
+                        <div class="col-6 text-start text-success">State Subsidy:</div>
+                        <div class="col-6 text-success" id="lblStateSubsidy">₹0.00</div>
+
+                        <div class="col-6 text-start text-success">Central Subsidy:</div>
+                        <div class="col-6 text-success" id="lblCentralSubsidy">₹0.00</div>
+
+                        <div class="col-6 text-start text-success fw-bold">Total Subsidy:</div>
+                        <div class="col-6 text-success fw-bold" id="lblTotalSubsidy">₹0.00</div>
+
+                      </div>
+                    </div> -->
+
                   </div>
                 </div>
               </div>

@@ -268,6 +268,36 @@ body.installments-page .page-body {
   word-break: break-word;
 }
 
+/* Mobile View Responsiveness & Scrollable Search/Filters */
+@media (max-width: 768px) {
+  html.installments-page, body.installments-page, body.installments-page .app-shell {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: auto !important;
+  }
+
+  body.installments-page .main-content {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+
+  body.installments-page .page-body {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 10px 12px !important;
+  }
+
+  #searchCollapse.show, #searchCollapse.collapsing {
+    max-height: 23vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+    margin-bottom: 8px;
+  }
+}
+
 @media print {
   .table-installments tr.deactive-row td {
     background-color: var(--st-danger-bg) !important;
