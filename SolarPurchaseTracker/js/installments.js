@@ -1161,7 +1161,7 @@ function renderList() {
               <div class="d-flex align-items-center gap-2 mt-1 pt-1 border-top w-100" style="font-size: 0.75rem;">
                 <span class="fw-semibold text-dark font-monospace">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Pending ${getTxnDiffBadge(partnerPrice, vPaid)}
+                  Pending ${getTxnDiffBadge(price - partnerPrice, vPaid)}
                 </button>
               </div>
             </div>
@@ -1230,7 +1230,7 @@ function renderList() {
         <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
           <div class="d-flex flex-column align-items-start">
             <div>Comm: ${fmtGrandTotal(sumComm)} <span class="text-muted fw-normal" style="font-size:0.68rem;">(Pending: ${fmtGrandTotal(sumComm - sumCommPaid)})</span></div>
-            <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-muted fw-normal" style="font-size:0.68rem;">(Pending: ${fmtGrandTotal(sumPartnerPrice - sumVendorPaid)})</span></div>
+            <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-muted fw-normal" style="font-size:0.68rem;">(Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)})</span></div>
           </div>
         </td>
         <td class="text-start fw-bold font-monospace align-middle admin-only-column" style="font-size:0.72rem;">
@@ -1742,12 +1742,43 @@ window.showTransactionHistory = function(slNo, txnType = 'Customer') {
 function updateTxnModalTotal() {
   const slNo = Number(document.getElementById('txnSlNo').value);
   const txnType = document.getElementById('txnType').value || 'Customer';
+  const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+
   const txns = DB.getAll('installment_txns').filter(t => 
     Number(t.SlNo) === Number(slNo) && 
     (t.TxnType === txnType || (txnType === 'Customer' && (!t.TxnType || t.TxnType === '')))
   );
-  const total = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
-  document.getElementById('lblTxnTotal').textContent = '₹' + Math.round(total).toLocaleString('en-IN');
+  const totalPaid = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
+
+  const lblTotal = document.getElementById('lblTxnTotal');
+  if (lblTotal) lblTotal.textContent = '₹' + Math.round(totalPaid).toLocaleString('en-IN');
+
+  const lblPending = document.getElementById('lblTxnPending');
+  if (lblPending && r) {
+    let targetPrice = 0;
+    if (txnType === 'Customer') {
+      targetPrice = Number(r.CommittedPrice) || 0;
+    } else {
+      let expenses = null;
+      if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+        try {
+          const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+          expenses = JSON.parse(jsonStr);
+        } catch (e) {}
+      }
+      const partnerPrice = (expenses && expenses.partner) || 0;
+      const custPrice = Number(r.CommittedPrice) || 0;
+      targetPrice = custPrice - partnerPrice;
+    }
+    const pendingAmount = targetPrice - totalPaid;
+    if (pendingAmount >= 0) {
+      lblPending.textContent = '₹' + Math.round(pendingAmount).toLocaleString('en-IN');
+      lblPending.className = 'fw-bold text-danger font-monospace fs-6';
+    } else {
+      lblPending.textContent = '+₹' + Math.round(Math.abs(pendingAmount)).toLocaleString('en-IN') + ' (Overpaid)';
+      lblPending.className = 'fw-bold text-primary font-monospace fs-6';
+    }
+  }
 }
 
 async function syncCommissionTotal(slNo) {

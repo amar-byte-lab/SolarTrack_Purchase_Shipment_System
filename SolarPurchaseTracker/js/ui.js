@@ -6,14 +6,14 @@
 const UI = (() => {
 
   const NAV_ITEMS = [
-    { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
+    // { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
     { href: 'installments.html',    icon: 'coin',       label: 'Customer' },
-    { href: 'item-master.html',     icon: 'box',        label: 'Products' },
+    // { href: 'item-master.html',     icon: 'box',        label: 'Products' },
     { href: 'offer.html',           icon: 'file',       label: 'Offer Generator' },
     { href: 'agreement.html',       icon: 'doc',        label: 'Agreement Generate' },
     { href: 'demand-note.html',     icon: 'doc',        label: 'Demand Note Generate' },
-    { href: 'vendor-master.html',   icon: 'people',     label: 'Vendor Master' },
+    // { href: 'vendor-master.html',   icon: 'people',     label: 'Vendor Master' },
     { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
