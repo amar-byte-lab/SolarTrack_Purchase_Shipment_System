@@ -404,16 +404,8 @@ function renderList() {
         <td class="col-total text-end fw-bold font-monospace">
           <div class="d-flex flex-column align-items-end" style="gap:2px;">
             <span>${UI.money(grandTotal)}</span>
-            <div class="d-flex gap-1 mt-1 no-print">
-              <button class="btn btn-xs ${vendorBtnClass} font-monospace" onclick="showVendorPaymentDetails('${r.ShipmentNo}')" style="font-size:0.68rem; padding:1px 4px;">${vendorBtnText}</button>
-              <button class="btn btn-xs ${transportBtnClass} font-monospace" onclick="showTransportPaymentDetails('${r.ShipmentNo}')" style="font-size:0.68rem; padding:1px 4px;">${transportBtnText}</button>
-            </div>
             <div class="d-flex align-items-center justify-content-end flex-wrap gap-1 mt-1 font-sans" style="font-size:0.8rem; font-weight:normal;">
               <span class="fw-semibold text-dark me-1">${r.VendorName || '-'}</span>
-              ${typeBadge}
-              ${statusBadge}
-              ${docsButton}
-              ${notesButton}
             </div>
           </div>
         </td>
@@ -466,10 +458,6 @@ function renderList() {
         <td class="text-end fw-bold font-monospace">
           <div class="d-flex flex-column align-items-end" style="gap:2px;">
             <span>${UI.money(sumGrandTotal)}</span>
-            <div class="d-flex gap-1 mt-1 no-print">
-              <button class="btn btn-xs ${totalVendorBtnClass} font-monospace" onclick="showVendorPaymentDetails('TOTAL')" style="font-size:0.68rem; padding:1px 4px;">${totalVendorBtnText}</button>
-              <button class="btn btn-xs ${totalTransportBtnClass} font-monospace" onclick="showTransportPaymentDetails('TOTAL')" style="font-size:0.68rem; padding:1px 4px;">${totalTransportBtnText}</button>
-            </div>
           </div>
         </td>
         <td class="no-print"></td>
@@ -914,9 +902,9 @@ window.addInlineRow = function() {
   document.getElementById('editVehicleNumber').value = '';
   document.getElementById('editInvoiceNumber').value = '';
   
-  document.getElementById('editVendorPaid').value = 0;
+  if (document.getElementById('editVendorPaid')) document.getElementById('editVendorPaid').value = 0;
   document.getElementById('editTransportationCost').value = 0;
-  document.getElementById('editTransportPaid').value = 0;
+  if (document.getElementById('editTransportPaid')) document.getElementById('editTransportPaid').value = 0;
   document.getElementById('editRemarks').value = '';
   
   setupModalListenersOnce();
@@ -955,9 +943,9 @@ window.editRow = function(shipmentNo) {
   document.getElementById('editVehicleNumber').value = s.VehicleNumber || '';
   document.getElementById('editInvoiceNumber').value = s.InvoiceNumber || '';
   
-  document.getElementById('editVendorPaid').value = s.VendorPaid || 0;
+  if (document.getElementById('editVendorPaid')) document.getElementById('editVendorPaid').value = s.VendorPaid || 0;
   document.getElementById('editTransportationCost').value = s.TransportationCost || 0;
-  document.getElementById('editTransportPaid').value = s.TransportPaid || 0;
+  if (document.getElementById('editTransportPaid')) document.getElementById('editTransportPaid').value = s.TransportPaid || 0;
   document.getElementById('editRemarks').value = s.Remarks || '';
   
   setupModalListenersOnce();
@@ -995,13 +983,16 @@ window.cancelInline = function() {
 
 window.saveInline = async function(shipmentNo) {
   const isEdit = !isAddingNew;
+  const existingShipment = DB.getAll('shipments').find(s => s.ShipmentNo === shipmentNo);
   const purchaseDate = document.getElementById('editPurchaseDate').value;
   const vendorName = document.getElementById('editVendorName').value.trim();
   const shipmentType = document.getElementById('editShipmentType').value;
   
   const transportationCost = document.getElementById('editTransportationCost').value;
-  const vendorPaid = document.getElementById('editVendorPaid').value;
-  const transportPaid = document.getElementById('editTransportPaid').value;
+  const elVendorPaid = document.getElementById('editVendorPaid');
+  const elTransportPaid = document.getElementById('editTransportPaid');
+  const vendorPaid = elVendorPaid ? elVendorPaid.value : (existingShipment?.VendorPaid || 0);
+  const transportPaid = elTransportPaid ? elTransportPaid.value : (existingShipment?.TransportPaid || 0);
   
   const vehicleNumber = document.getElementById('editVehicleNumber').value.trim();
   const invoiceNumber = document.getElementById('editInvoiceNumber').value.trim();
