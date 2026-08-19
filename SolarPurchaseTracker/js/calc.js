@@ -67,7 +67,9 @@ const Calc = (() => {
 
     const lines = withValue.map(m => {
       const shareRatio = purchaseTotal > 0 ? (m.PurchaseValue / purchaseTotal) : 0;
-      const transportShare = round2(shareRatio * transport);
+      const transportShare = (m.TransportationCost !== undefined && m.TransportationCost !== null && m.TransportationCost !== '' && !isNaN(Number(m.TransportationCost)))
+        ? round2(Number(m.TransportationCost))
+        : round2(shareRatio * transport);
       // Individual GST amount is exactly the item's GST amount
       const gstShare = m.ItemGstAmount;
       const finalCost = round2(m.PurchaseValue + transportShare + gstShare);

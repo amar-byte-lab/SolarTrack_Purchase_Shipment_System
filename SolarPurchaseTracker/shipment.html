@@ -240,9 +240,17 @@
             <input type="text" class="form-control form-control-sm" id="editRemarks" autocomplete="off">
           </div>
           -->
-          <div class="col-md">
+          <div class="col-md-3">
             <label class="form-label fs-7 mb-0">Transport Cost (₹)</label>
             <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0" autocomplete="off">
+          </div>
+          <div class="col-md-3 d-flex align-items-end pb-1">
+            <div class="form-check">
+              <input class="form-check-input edit-calc-input" type="checkbox" id="editAddToMaterialCost" checked>
+              <label class="form-check-label fs-7 fw-bold text-primary" for="editAddToMaterialCost">
+                Add to Material Cost
+              </label>
+            </div>
           </div>
  
           <div class="col-12"><hr class="my-1 opacity-25"></div>

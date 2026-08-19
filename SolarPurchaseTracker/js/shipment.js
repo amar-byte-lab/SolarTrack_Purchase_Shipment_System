@@ -514,6 +514,7 @@ function createMaterialRow(data, defaultGstPercent = 18) {
   const gst  = data ? (data.GSTPercentage !== undefined && data.GSTPercentage !== null ? Number(data.GSTPercentage) : defaultGstPercent) : defaultGstPercent;
   const rateWithGst = rate * (1 + gst / 100);
   const tot  = data ? (Number(data.TotalPurchaseValue)  || (qty * rate * (1 + gst / 100))) : 0;
+  const savedTransport = data ? (data.TransportationCost !== undefined && data.TransportationCost !== null && data.TransportationCost !== '' ? Number(data.TransportationCost) : '') : '';
   const msp  = data ? (data.MinSellingPrice !== undefined && data.MinSellingPrice !== null ? Number(data.MinSellingPrice) : '') : '';
 
   const tr = document.createElement('tr');
@@ -526,7 +527,7 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     <td><input type="number" class="form-control form-control-sm mat-gst border-0 p-0 text-end" min="0" max="100" step="any" value="${gst}" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-rate-with-gst border-0 p-0 text-end" min="0" step="any" value="${rateWithGst ? round2(rateWithGst) : ''}" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-total border-0 p-0 text-end fw-semibold" min="0" step="any" value="${tot ? round2(tot) : ''}" placeholder="Total" autocomplete="off"></td>
-    <td><input type="number" class="form-control form-control-sm mat-transport border-0 p-0 text-end fw-semibold" min="0" step="any" placeholder="0" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-transport border-0 p-0 text-end fw-semibold" min="0" step="any" value="${savedTransport !== '' ? round2(savedTransport) : ''}" placeholder="0" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-transport-unit border-0 p-0 text-end fw-semibold" min="0" step="any" placeholder="0" readonly tabindex="-1" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-msp border-0 p-0 text-end" min="0" step="any" value="${msp}" placeholder="Auto" autocomplete="off"></td>
     <td class="text-center"><span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeMaterialRowInline(this)">✕</span></td>
@@ -545,6 +546,9 @@ function createMaterialRow(data, defaultGstPercent = 18) {
 
   const matTransportEl = tr.querySelector('.mat-transport');
   if (matTransportEl) {
+    if (savedTransport !== '') {
+      matTransportEl.dataset.userEdited = 'true';
+    }
     matTransportEl.addEventListener('input', () => {
       if (matTransportEl.value.trim() === '') {
         delete matTransportEl.dataset.userEdited;
@@ -771,7 +775,46 @@ window.addMaterialRowInline = function() {
 function recalcInlineForm() {
   const materials = readMaterialsFromInlineForm();
   let transportCost = Number(document.getElementById('editTransportationCost').value) || 0;
+  const addToMaterialCostChk = document.getElementById('editAddToMaterialCost');
+  const isAddToMaterialCost = addToMaterialCostChk ? addToMaterialCostChk.checked : true;
   const rows = document.querySelectorAll('#editMaterialsTbody tr');
+
+  if (!isAddToMaterialCost) {
+    rows.forEach(row => {
+      const transportEl = row.querySelector('.mat-transport');
+      const transportUnitEl = row.querySelector('.mat-transport-unit');
+      const mspEl = row.querySelector('.mat-msp');
+      const rateWithGst = Number(row.querySelector('.mat-rate-with-gst')?.value) || 0;
+
+      if (transportEl) {
+        transportEl.value = 0;
+        transportEl.disabled = true;
+      }
+      if (transportUnitEl) transportUnitEl.value = 0;
+      if (mspEl && mspEl.dataset.customOverride !== 'true') {
+        const autoMsp = Calc.round2(rateWithGst);
+        mspEl.value = autoMsp > 0 ? autoMsp : '';
+      }
+    });
+
+    const result = Calc.computeShipment(materials, transportCost, 0);
+    const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
+    const lblGST = document.getElementById('lblGstAmount');
+    const lblTransport = document.getElementById('lblTransportCost');
+    const lblGrand = document.getElementById('lblGrandTotal');
+
+    if (lblSubtotal) lblSubtotal.textContent = UI.money(result.purchaseTotal);
+    if (lblGST) lblGST.textContent = UI.money(result.gstAmount);
+    if (lblTransport) lblTransport.textContent = UI.money(result.transport);
+    if (lblGrand) lblGrand.textContent = UI.money(result.grandTotal);
+    return;
+  }
+
+  // Ensure transportEl inputs are enabled when Add to Material Cost is checked
+  rows.forEach(row => {
+    const transportEl = row.querySelector('.mat-transport');
+    if (transportEl) transportEl.disabled = false;
+  });
 
   // 1. Calculate sum of user-edited transport costs on material rows
   let sumUserEditedTransport = 0;
@@ -870,6 +913,7 @@ function readMaterialsFromInlineForm() {
     const rate  = Number(row.querySelector('.mat-rate')?.value)  || 0;
     const gst   = Number(row.querySelector('.mat-gst')?.value)   || 0;
     const total = Number(row.querySelector('.mat-total')?.value) || 0;
+    const transport = Number(row.querySelector('.mat-transport')?.value) || 0;
     const mspRaw = row.querySelector('.mat-msp')?.value?.trim() || '';
     const msp   = (mspRaw === '' || isNaN(Number(mspRaw))) ? null : Number(mspRaw);
     const unit  = row.querySelector('.mat-unit')?.value?.trim() || '';
@@ -881,6 +925,7 @@ function readMaterialsFromInlineForm() {
       PurchaseRate:      rate,
       GSTPercentage:     gst,
       TotalPurchaseValue: total,
+      TransportationCost: transport,
       MinSellingPrice:   msp
     };
   }).filter(m => m.ItemName);
@@ -1003,6 +1048,7 @@ window.addInlineRow = function() {
   
   if (document.getElementById('editVendorPaid')) document.getElementById('editVendorPaid').value = 0;
   document.getElementById('editTransportationCost').value = 0;
+  if (document.getElementById('editAddToMaterialCost')) document.getElementById('editAddToMaterialCost').checked = true;
   if (document.getElementById('editTransportPaid')) document.getElementById('editTransportPaid').value = 0;
   document.getElementById('editRemarks').value = '';
   
@@ -1044,6 +1090,9 @@ window.editRow = function(shipmentNo) {
   
   if (document.getElementById('editVendorPaid')) document.getElementById('editVendorPaid').value = s.VendorPaid || 0;
   document.getElementById('editTransportationCost').value = s.TransportationCost || 0;
+  if (document.getElementById('editAddToMaterialCost')) {
+    document.getElementById('editAddToMaterialCost').checked = s.AddToMaterialCost !== undefined && s.AddToMaterialCost !== null ? (s.AddToMaterialCost == 1 || s.AddToMaterialCost === true) : true;
+  }
   if (document.getElementById('editTransportPaid')) document.getElementById('editTransportPaid').value = s.TransportPaid || 0;
   document.getElementById('editRemarks').value = s.Remarks || '';
   
@@ -1140,6 +1189,9 @@ window.saveInline = async function(shipmentNo) {
     pendingFiles = [];
     currentDocs = [];
 
+    const elAddToMaterialCost = document.getElementById('editAddToMaterialCost');
+    const addToMaterialCostVal = elAddToMaterialCost ? (elAddToMaterialCost.checked ? 1 : 0) : 1;
+
     const shipmentRow = {
       ShipmentNo: shipmentNo,
       PurchaseDate: purchaseDate,
@@ -1153,6 +1205,7 @@ window.saveInline = async function(shipmentNo) {
       TransportPaid: Number(transportPaid),
       Documents: docNames,
       Remarks: remarks,
+      AddToMaterialCost: addToMaterialCostVal,
       CreatedAt: isEdit ? (existingShipment?.CreatedAt || new Date().toISOString()) : new Date().toISOString(),
     };
 
@@ -1176,6 +1229,7 @@ window.saveInline = async function(shipmentNo) {
         PurchaseRate: m.PurchaseRate,
         TotalPurchaseValue: m.TotalPurchaseValue || Calc.round2(m.Quantity * m.PurchaseRate * (1 + (m.GSTPercentage || 0) / 100)),
         GSTPercentage: m.GSTPercentage,
+        TransportationCost: m.TransportationCost !== undefined ? Number(m.TransportationCost) : 0,
         MinSellingPrice: m.MinSellingPrice,
       };
     });

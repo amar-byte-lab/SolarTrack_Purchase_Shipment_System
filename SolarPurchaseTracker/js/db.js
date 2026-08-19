@@ -22,8 +22,8 @@ const DB = (() => {
   };
 
   const HEADERS = {
-    shipments:        ['ShipmentNo', 'PurchaseDate', 'VendorName', 'ShipmentType', 'VehicleNumber', 'InvoiceNumber', 'TransportationCost', 'GSTPercentage', 'VendorPaid', 'TransportPaid', 'Documents', 'Remarks', 'CreatedAt'],
-    materials:        ['RowID', 'ShipmentNo', 'ItemName', 'Category', 'Quantity', 'Unit', 'PurchaseRate', 'TotalPurchaseValue', 'GSTPercentage', 'MinSellingPrice'],
+    shipments:        ['ShipmentNo', 'PurchaseDate', 'VendorName', 'ShipmentType', 'VehicleNumber', 'InvoiceNumber', 'TransportationCost', 'GSTPercentage', 'VendorPaid', 'TransportPaid', 'Documents', 'Remarks', 'AddToMaterialCost', 'CreatedAt'],
+    materials:        ['RowID', 'ShipmentNo', 'ItemName', 'Category', 'Quantity', 'Unit', 'PurchaseRate', 'TotalPurchaseValue', 'GSTPercentage', 'TransportationCost', 'MinSellingPrice'],
     vendors:          ['VendorName', 'Address', 'Phone', 'GSTIN', 'Email', 'Remarks'],
     items:            ['ItemName', 'Category', 'Unit', 'HSNCode', 'GSTPercent', 'Status'],
     settings:         ['Key', 'Value'],
