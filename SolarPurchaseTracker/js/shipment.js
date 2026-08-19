@@ -546,10 +546,8 @@ function createMaterialRow(data, defaultGstPercent = 18) {
 
   const matTransportEl = tr.querySelector('.mat-transport');
   if (matTransportEl) {
-    if (savedTransport !== '') {
-      matTransportEl.dataset.userEdited = 'true';
-    }
     matTransportEl.addEventListener('input', () => {
+      delete matTransportEl.dataset.lastVal;
       if (matTransportEl.value.trim() === '') {
         delete matTransportEl.dataset.userEdited;
       } else {
@@ -820,8 +818,9 @@ function recalcInlineForm() {
     const transportEl = row.querySelector('.mat-transport');
     if (transportEl) {
       transportEl.disabled = false;
-      if ((Number(transportEl.value) === 0 || transportEl.value === '') && transportEl.dataset.lastVal) {
+      if (transportEl.dataset.lastVal) {
         transportEl.value = transportEl.dataset.lastVal;
+        delete transportEl.dataset.lastVal;
       }
     }
   });
@@ -829,27 +828,14 @@ function recalcInlineForm() {
   // 2. Calculate sum of user-edited transport costs on material rows
   let sumUserEditedTransport = 0;
   let hasUserEditedTransport = false;
-  let allRowsUserEdited = (rows.length > 0);
 
   rows.forEach(row => {
     const tEl = row.querySelector('.mat-transport');
-    if (tEl && tEl.dataset.userEdited === 'true' && Number(tEl.value) > 0) {
+    if (tEl && tEl.dataset.userEdited === 'true' && tEl.value.trim() !== '') {
       sumUserEditedTransport += Number(tEl.value) || 0;
       hasUserEditedTransport = true;
-    } else {
-      if (tEl && Number(tEl.value) === 0) {
-        delete tEl.dataset.userEdited;
-      }
-      allRowsUserEdited = false;
     }
   });
-
-  // If all rows are user-edited OR if user-edited sum exceeds main total transport cost, update main total transport cost
-  if (allRowsUserEdited || (hasUserEditedTransport && sumUserEditedTransport > transportCost)) {
-    transportCost = Calc.round2(sumUserEditedTransport);
-    const transportInput = document.getElementById('editTransportationCost');
-    if (transportInput) transportInput.value = transportCost;
-  }
 
   // Remaining transport cost for auto-distribution among un-edited rows
   let remTransportCost = Math.max(0, transportCost - sumUserEditedTransport);
@@ -859,7 +845,7 @@ function recalcInlineForm() {
   let uneditedCount = 0;
   rows.forEach(row => {
     const tEl = row.querySelector('.mat-transport');
-    if (!tEl || tEl.dataset.userEdited !== 'true') {
+    if (!tEl || tEl.dataset.userEdited !== 'true' || tEl.value.trim() === '') {
       const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
       sumUneditedTotalPriceWithGst += totWithGst;
       uneditedCount++;
@@ -874,10 +860,13 @@ function recalcInlineForm() {
 
     const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
     const q = Number(row.querySelector('.mat-qty')?.value) || 0;
-    const rateWithGst = Number(row.querySelector('.mat-rate-with-gst')?.value) || 0;
+    const rate = Number(row.querySelector('.mat-rate')?.value) || 0;
+    const gst = Number(row.querySelector('.mat-gst')?.value) || 0;
+    const rateWithGstInput = Number(row.querySelector('.mat-rate-with-gst')?.value) || 0;
+    const rateWithGst = rateWithGstInput > 0 ? rateWithGstInput : Calc.round2(rate * (1 + gst / 100));
 
     let transportShare = 0;
-    if (transportEl && transportEl.dataset.userEdited === 'true' && Number(transportEl.value) > 0) {
+    if (transportEl && transportEl.dataset.userEdited === 'true' && transportEl.value.trim() !== '') {
       transportShare = Number(transportEl.value) || 0;
     } else {
       if (sumUneditedTotalPriceWithGst > 0 && remTransportCost > 0) {
@@ -889,7 +878,7 @@ function recalcInlineForm() {
     }
 
     let transportPerUnit = 0;
-    if (q > 0 && transportShare > 0) {
+    if (q > 0) {
       transportPerUnit = Calc.round2(transportShare / q);
     }
     if (transportUnitEl) transportUnitEl.value = transportPerUnit ? transportPerUnit : 0;
@@ -1019,6 +1008,13 @@ function setupModalListenersOnce() {
       recalcInlineForm();
     }
   });
+
+  const chkAddMat = document.getElementById('editAddToMaterialCost');
+  if (chkAddMat) {
+    chkAddMat.addEventListener('change', () => {
+      recalcInlineForm();
+    });
+  }
 
   // Toggle Shipment Type label update
   const shipTypeSelect = document.getElementById('editShipmentType');
