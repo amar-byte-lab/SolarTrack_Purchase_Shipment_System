@@ -526,7 +526,9 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     <td><input type="number" class="form-control form-control-sm mat-gst border-0 p-0 text-end" min="0" max="100" step="any" value="${gst}" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-rate-with-gst border-0 p-0 text-end" min="0" step="any" value="${rateWithGst ? round2(rateWithGst) : ''}" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-total border-0 p-0 text-end fw-semibold" min="0" step="any" value="${tot ? round2(tot) : ''}" placeholder="Total" autocomplete="off"></td>
-    <td><input type="number" class="form-control form-control-sm mat-msp border-0 p-0 text-end" min="0" step="any" value="${msp}" placeholder="Optional" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-transport border-0 p-0 text-end fw-semibold" min="0" step="any" placeholder="0" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-transport-unit border-0 p-0 text-end fw-semibold" min="0" step="any" placeholder="0" readonly tabindex="-1" autocomplete="off"></td>
+    <td><input type="number" class="form-control form-control-sm mat-msp border-0 p-0 text-end" min="0" step="any" value="${msp}" placeholder="Auto" autocomplete="off"></td>
     <td class="text-center"><span class="text-danger fw-bold" style="cursor:pointer; font-size:0.9rem;" onclick="removeMaterialRowInline(this)">✕</span></td>
   `;
   
@@ -540,6 +542,18 @@ function createMaterialRow(data, defaultGstPercent = 18) {
   const nameEl  = tr.querySelector('.mat-name');
   const totalWithoutGstEl = tr.querySelector('.mat-total-without-gst');
   const unitEl  = tr.querySelector('.mat-unit');
+
+  const matTransportEl = tr.querySelector('.mat-transport');
+  if (matTransportEl) {
+    matTransportEl.addEventListener('input', () => {
+      if (matTransportEl.value.trim() === '') {
+        delete matTransportEl.dataset.userEdited;
+      } else {
+        matTransportEl.dataset.userEdited = 'true';
+      }
+      recalcInlineForm();
+    });
+  }
 
   function onQtyInput() {
     const q = Number(qtyEl.value) || 0;
@@ -729,6 +743,18 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     }
   });
 
+  const mspEl = tr.querySelector('.mat-msp');
+  if (mspEl) {
+    mspEl.addEventListener('input', () => {
+      if (mspEl.value.trim() === '') {
+        delete mspEl.dataset.customOverride;
+        recalcInlineForm();
+      } else {
+        mspEl.dataset.customOverride = 'true';
+      }
+    });
+  }
+
   recalcInlineForm();
 }
 
@@ -744,16 +770,88 @@ window.addMaterialRowInline = function() {
 
 function recalcInlineForm() {
   const materials = readMaterialsFromInlineForm();
-  const transportCost = Number(document.getElementById('editTransportationCost').value) || 0;
-  
+  let transportCost = Number(document.getElementById('editTransportationCost').value) || 0;
+  const rows = document.querySelectorAll('#editMaterialsTbody tr');
+
+  // 1. Calculate sum of user-edited transport costs on material rows
+  let sumUserEditedTransport = 0;
+  let hasUserEditedTransport = false;
+  let allRowsUserEdited = (rows.length > 0);
+
+  rows.forEach(row => {
+    const tEl = row.querySelector('.mat-transport');
+    if (tEl && tEl.dataset.userEdited === 'true') {
+      sumUserEditedTransport += Number(tEl.value) || 0;
+      hasUserEditedTransport = true;
+    } else {
+      allRowsUserEdited = false;
+    }
+  });
+
+  // If all rows are user-edited OR if user-edited sum exceeds main total transport cost, update main total transport cost
+  if (allRowsUserEdited || (hasUserEditedTransport && sumUserEditedTransport > transportCost)) {
+    transportCost = Calc.round2(sumUserEditedTransport);
+    const transportInput = document.getElementById('editTransportationCost');
+    if (transportInput) transportInput.value = transportCost;
+  }
+
+  // Remaining transport cost for auto-distribution among un-edited rows
+  let remTransportCost = Math.max(0, transportCost - sumUserEditedTransport);
+
+  // 2. Sum Total Price + GST of un-edited rows
+  let sumUneditedTotalPriceWithGst = 0;
+  let uneditedCount = 0;
+  rows.forEach(row => {
+    const tEl = row.querySelector('.mat-transport');
+    if (!tEl || tEl.dataset.userEdited !== 'true') {
+      const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
+      sumUneditedTotalPriceWithGst += totWithGst;
+      uneditedCount++;
+    }
+  });
+
+  // 3. Process each row
+  rows.forEach(row => {
+    const transportEl = row.querySelector('.mat-transport');
+    const transportUnitEl = row.querySelector('.mat-transport-unit');
+    const mspEl = row.querySelector('.mat-msp');
+
+    const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
+    const q = Number(row.querySelector('.mat-qty')?.value) || 0;
+    const rateWithGst = Number(row.querySelector('.mat-rate-with-gst')?.value) || 0;
+
+    let transportShare = 0;
+    if (transportEl && transportEl.dataset.userEdited === 'true') {
+      transportShare = Number(transportEl.value) || 0;
+    } else {
+      if (sumUneditedTotalPriceWithGst > 0 && remTransportCost > 0) {
+        transportShare = Calc.round2((totWithGst / sumUneditedTotalPriceWithGst) * remTransportCost);
+      } else if (remTransportCost > 0 && uneditedCount > 0) {
+        transportShare = Calc.round2(remTransportCost / uneditedCount);
+      }
+      if (transportEl) transportEl.value = transportShare ? transportShare : 0;
+    }
+
+    let transportPerUnit = 0;
+    if (q > 0 && transportShare > 0) {
+      transportPerUnit = Calc.round2(transportShare / q);
+    }
+    if (transportUnitEl) transportUnitEl.value = transportPerUnit ? transportPerUnit : 0;
+
+    // Auto-fill MSP/Unit = Rate/Unit+GST + Transportation Cost/Unit (if not user custom override)
+    if (mspEl && mspEl.dataset.customOverride !== 'true') {
+      const autoMsp = Calc.round2(rateWithGst + transportPerUnit);
+      mspEl.value = autoMsp > 0 ? autoMsp : '';
+    }
+  });
+
+  // 4. Update Summary Labels
   const result = Calc.computeShipment(materials, transportCost, 0);
-  
-  // Set modal summary labels
   const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
   const lblGST = document.getElementById('lblGstAmount');
   const lblTransport = document.getElementById('lblTransportCost');
   const lblGrand = document.getElementById('lblGrandTotal');
-  
+
   if (lblSubtotal) lblSubtotal.textContent = UI.money(result.purchaseTotal);
   if (lblGST) lblGST.textContent = UI.money(result.gstAmount);
   if (lblTransport) lblTransport.textContent = UI.money(result.transport);
@@ -764,21 +862,22 @@ function readMaterialsFromInlineForm() {
   const rows = document.querySelectorAll('#editMaterialsTbody tr');
   const items = DB.getAll('items');
   return Array.from(rows).map(row => {
-    const itemName = row.querySelector('.mat-name').value.trim();
-    const matched = items.find(i => i.ItemName.toLowerCase() === itemName.toLowerCase());
+    const itemName = row.querySelector('.mat-name')?.value?.trim() || '';
+    const matched = items.find(i => i.ItemName && i.ItemName.toLowerCase() === itemName.toLowerCase());
     const category = matched ? (matched.Category || '') : '';
     
-    const qty   = Number(row.querySelector('.mat-qty').value)   || 0;
-    const rate  = Number(row.querySelector('.mat-rate').value)  || 0;
-    const gst   = Number(row.querySelector('.mat-gst').value)   || 0;
-    const total = Number(row.querySelector('.mat-total').value) || 0;
-    const mspRaw = row.querySelector('.mat-msp').value.trim();
-    const msp   = mspRaw === '' ? null : Number(mspRaw);
+    const qty   = Number(row.querySelector('.mat-qty')?.value)   || 0;
+    const rate  = Number(row.querySelector('.mat-rate')?.value)  || 0;
+    const gst   = Number(row.querySelector('.mat-gst')?.value)   || 0;
+    const total = Number(row.querySelector('.mat-total')?.value) || 0;
+    const mspRaw = row.querySelector('.mat-msp')?.value?.trim() || '';
+    const msp   = (mspRaw === '' || isNaN(Number(mspRaw))) ? null : Number(mspRaw);
+    const unit  = row.querySelector('.mat-unit')?.value?.trim() || '';
     return {
       ItemName:          itemName,
       Category:          category,
       Quantity:          qty,
-      Unit:              row.querySelector('.mat-unit').value.trim(),
+      Unit:              unit,
       PurchaseRate:      rate,
       GSTPercentage:     gst,
       TotalPurchaseValue: total,
@@ -982,8 +1081,14 @@ window.cancelInline = function() {
 };
 
 window.saveInline = async function(shipmentNo) {
-  const isEdit = !isAddingNew;
+  if (!shipmentNo) shipmentNo = editingShipmentNo;
+  if (!shipmentNo) {
+    UI.toast('Error: Missing shipment number.', 'danger');
+    return;
+  }
+
   const existingShipment = DB.getAll('shipments').find(s => s.ShipmentNo === shipmentNo);
+  const isEdit = !isAddingNew || !!existingShipment;
   const purchaseDate = document.getElementById('editPurchaseDate').value;
   const vendorName = document.getElementById('editVendorName').value.trim();
   const shipmentType = document.getElementById('editShipmentType').value;
@@ -1048,10 +1153,11 @@ window.saveInline = async function(shipmentNo) {
       TransportPaid: Number(transportPaid),
       Documents: docNames,
       Remarks: remarks,
-      CreatedAt: isEdit ? (DB.getAll('shipments').find(s => s.ShipmentNo === shipmentNo)?.CreatedAt || new Date().toISOString()) : new Date().toISOString(),
+      CreatedAt: isEdit ? (existingShipment?.CreatedAt || new Date().toISOString()) : new Date().toISOString(),
     };
 
-    if (isEdit) {
+    const exists = DB.getAll('shipments').some(s => s.ShipmentNo === shipmentNo);
+    if (exists) {
       await DB.update('shipments', s => s.ShipmentNo === shipmentNo, shipmentRow);
     } else {
       await DB.insert('shipments', shipmentRow);
@@ -1781,6 +1887,11 @@ window.showItemPriceBreakup = function(shipmentNo, lineIndex) {
 
   document.getElementById('itemBreakupModalLabel').textContent = `Cost Breakdown — ${l.ItemName}`;
 
+  const gstPerUnit = Calc.round2(l.PurchaseRate * ((l.GSTPercentage || 0) / 100));
+  const totalPricePerUnit = Calc.round2(l.PurchaseRate * (1 + (l.GSTPercentage || 0) / 100));
+  const transportPerUnit = l.Quantity > 0 ? Calc.round2(l.TransportShare / l.Quantity) : 0;
+  const effectiveCostPerUnit = l.CostPerUnit || Calc.round2(totalPricePerUnit + transportPerUnit);
+
   const mspVal = (l.MinSellingPrice !== undefined && l.MinSellingPrice !== null && Number(l.MinSellingPrice) > 0)
     ? UI.money(l.MinSellingPrice)
     : '—';
@@ -1799,32 +1910,24 @@ window.showItemPriceBreakup = function(shipmentNo, lineIndex) {
             <span class="fw-semibold text-dark">${UI.money(l.PurchaseRate)}</span>
           </div>
           <div class="d-flex justify-content-between">
-            <span class="text-secondary">Base Purchase Value:</span>
-            <span class="fw-semibold text-dark">${UI.money(l.PurchaseValue)}</span>
-          </div>
-          <div class="d-flex justify-content-between">
-            <span class="text-secondary">GST (${l.GSTPercentage}%):</span>
-            <span class="fw-semibold text-dark">${UI.money(l.GSTShare)}</span>
+            <span class="text-secondary">GST (${l.GSTPercentage}% / Unit):</span>
+            <span class="fw-semibold text-dark">${UI.money(gstPerUnit)}</span>
           </div>
           <div class="d-flex justify-content-between border-top pt-1">
-            <span class="text-secondary">Total Price (+ GST):</span>
-            <span class="fw-semibold text-dark">${UI.money(l.TotalPurchaseValue)}</span>
+            <span class="text-secondary">Total Price per Unit:</span>
+            <span class="fw-semibold text-dark">${UI.money(totalPricePerUnit)}</span>
           </div>
           <div class="d-flex justify-content-between">
-            <span class="text-secondary">Transport Share:</span>
-            <span class="fw-semibold text-dark">${UI.money(l.TransportShare)}</span>
+            <span class="text-secondary">Transportation Share / Unit:</span>
+            <span class="fw-semibold text-dark">${UI.money(transportPerUnit)}</span>
           </div>
-          <div class="d-flex justify-content-between border-top pt-1 text-primary fw-bold">
-            <span>Final Total Cost:</span>
-            <span>${UI.money(l.FinalCost)}</span>
-          </div>
-          <div class="d-flex justify-content-between text-success fw-bold">
+          <div class="d-flex justify-content-between border-top pt-1 text-success fw-bold fs-6">
             <span>Effective Cost / Unit:</span>
-            <span>${UI.money(l.CostPerUnit)}</span>
+            <span>${UI.money(effectiveCostPerUnit)}</span>
           </div>
           ${mspVal !== '—' ? `
           <div class="d-flex justify-content-between border-top pt-1 text-secondary">
-            <span>Min Selling Price (MSP):</span>
+            <span>Min Selling Price (MSP/Unit):</span>
             <span class="fw-bold text-success">${mspVal}</span>
           </div>` : ''}
         </div>
