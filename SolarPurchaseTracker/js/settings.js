@@ -42,7 +42,7 @@ window.onDbReady = function () {
   if (dbModeText) {
     dbModeText.textContent = 
       mode === 'fs' ? 'Live local folder (auto-save)' : 
-      (mode === 'sqlite' ? 'SQLite Server Database (solartrack.db)' : 'Offline Browser Storage (Local Cache)');
+      (mode === 'postgres' ? 'PostgreSQL Database (Supabase)' : 'Offline Browser Storage (Local Cache)');
   }
 
   if (mode === 'fs') {
@@ -55,14 +55,14 @@ window.onDbReady = function () {
         catch (e) { if (e.name !== 'AbortError') UI.toast(e.message, 'danger'); }
       });
     }
-  } else if (mode === 'sqlite') {
+  } else if (mode === 'postgres') {
     const sqliteModeBox = document.getElementById('sqliteModeBox');
     if (sqliteModeBox) sqliteModeBox.classList.remove('d-none');
     const btnDownloadAllSqlite = document.getElementById('btnDownloadAllSqlite');
     if (btnDownloadAllSqlite) {
       btnDownloadAllSqlite.addEventListener('click', () => {
         DB.downloadAllWorkbooks();
-        UI.toast('SQLite tables exported to Excel.', 'success');
+        UI.toast('PostgreSQL tables exported to Excel.', 'success');
       });
     }
   } else {

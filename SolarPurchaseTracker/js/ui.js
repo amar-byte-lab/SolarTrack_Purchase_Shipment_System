@@ -177,7 +177,7 @@ const UI = (() => {
       let modeText = 'Live Folder';
       if (DB.getMode() === 'cache') modeText = 'Offline Cache';
       else if (DB.getMode() === 'upload') modeText = 'Upload Mode';
-      else if (DB.getMode() === 'sqlite') modeText = 'SQLite Database';
+      else if (DB.getMode() === 'postgres') modeText = 'PostgreSQL Database';
       
       badge.innerHTML = `● Database connected <span class="mode-tag">${modeText}</span>`;
       badge.classList.add('ok');

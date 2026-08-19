@@ -15,3 +15,4 @@ uploads/
 
 # Production build files
 dist/
+/.vs

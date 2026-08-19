@@ -1,5 +1,5 @@
 /* =========================================================================
-   db.js — Client-side SQLite & persistent cache API wrapper
+   db.js — Client-side API & persistent cache API wrapper
    ========================================================================= */
 
 const DB = (() => {
@@ -38,7 +38,7 @@ const DB = (() => {
     product_items: ['RowID', 'ProductName', 'ItemName', 'Price'],
   };
 
-  let mode = 'sqlite';
+  let mode = 'postgres';
   let cache = {};
 
   function idbOpen() {
@@ -85,7 +85,7 @@ const DB = (() => {
   }
 
   async function tryRestoreFolder() {
-    mode = 'sqlite';
+    mode = 'postgres';
     
     // 1. Instant restore from sessionStorage if available (0ms delay for sub-page navigation)
     try {
@@ -199,7 +199,7 @@ const DB = (() => {
     cache[key].push(row);
     syncSessionCache();
 
-    if (mode === 'sqlite') {
+    if (mode === 'postgres') {
       await fetch(`/api/insert?table=${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -218,7 +218,7 @@ const DB = (() => {
     cache[key] = cache[key].map(r => matchFn(r) ? { ...r, ...newData } : r);
     syncSessionCache();
 
-    if (mode === 'sqlite' && pkValue !== null) {
+    if (mode === 'postgres' && pkValue !== null) {
       await fetch(`/api/update?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -236,7 +236,7 @@ const DB = (() => {
     cache[key] = cache[key].filter(r => !matchFn(r));
     syncSessionCache();
 
-    if (mode === 'sqlite' && pkValue !== null) {
+    if (mode === 'postgres' && pkValue !== null) {
       await fetch(`/api/delete?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
         method: 'POST'
       });
@@ -247,7 +247,7 @@ const DB = (() => {
     cache[key] = rows;
     syncSessionCache();
 
-    if (mode === 'sqlite') {
+    if (mode === 'postgres') {
       await fetch(`/api/replace?table=${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

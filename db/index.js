@@ -1,13 +1,6 @@
 require('dotenv').config();
 
-const dbType = (process.env.DB_TYPE || 'postgresql').trim().toLowerCase();
-
-let activeDriver;
-if (dbType === 'sqlite') {
-  activeDriver = require('./sqlite');
-} else {
-  activeDriver = require('./postgres');
-}
+const activeDriver = require('./postgres');
 
 module.exports = {
   dbType,
