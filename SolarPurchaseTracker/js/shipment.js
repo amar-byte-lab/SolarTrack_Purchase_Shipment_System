@@ -773,7 +773,6 @@ window.addMaterialRowInline = function() {
 };
 
 function recalcInlineForm() {
-  const materials = readMaterialsFromInlineForm();
   let transportCost = Number(document.getElementById('editTransportationCost').value) || 0;
   const addToMaterialCostChk = document.getElementById('editAddToMaterialCost');
   const isAddToMaterialCost = addToMaterialCostChk ? addToMaterialCostChk.checked : true;
@@ -787,6 +786,9 @@ function recalcInlineForm() {
       const rateWithGst = Number(row.querySelector('.mat-rate-with-gst')?.value) || 0;
 
       if (transportEl) {
+        if (Number(transportEl.value) > 0) {
+          transportEl.dataset.lastVal = transportEl.value;
+        }
         transportEl.value = 0;
         transportEl.disabled = true;
       }
@@ -797,7 +799,10 @@ function recalcInlineForm() {
       }
     });
 
-    const result = Calc.computeShipment(materials, transportCost, 0);
+    const rawMaterials = readMaterialsFromInlineForm();
+    const materialsNoTransport = rawMaterials.map(m => ({ ...m, TransportationCost: 0 }));
+    const result = Calc.computeShipment(materialsNoTransport, transportCost, 0);
+
     const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
     const lblGST = document.getElementById('lblGstAmount');
     const lblTransport = document.getElementById('lblTransportCost');
@@ -810,23 +815,31 @@ function recalcInlineForm() {
     return;
   }
 
-  // Ensure transportEl inputs are enabled when Add to Material Cost is checked
+  // 1. Enable transportEl fields when checked & restore lastVal if present
   rows.forEach(row => {
     const transportEl = row.querySelector('.mat-transport');
-    if (transportEl) transportEl.disabled = false;
+    if (transportEl) {
+      transportEl.disabled = false;
+      if ((Number(transportEl.value) === 0 || transportEl.value === '') && transportEl.dataset.lastVal) {
+        transportEl.value = transportEl.dataset.lastVal;
+      }
+    }
   });
 
-  // 1. Calculate sum of user-edited transport costs on material rows
+  // 2. Calculate sum of user-edited transport costs on material rows
   let sumUserEditedTransport = 0;
   let hasUserEditedTransport = false;
   let allRowsUserEdited = (rows.length > 0);
 
   rows.forEach(row => {
     const tEl = row.querySelector('.mat-transport');
-    if (tEl && tEl.dataset.userEdited === 'true') {
+    if (tEl && tEl.dataset.userEdited === 'true' && Number(tEl.value) > 0) {
       sumUserEditedTransport += Number(tEl.value) || 0;
       hasUserEditedTransport = true;
     } else {
+      if (tEl && Number(tEl.value) === 0) {
+        delete tEl.dataset.userEdited;
+      }
       allRowsUserEdited = false;
     }
   });
@@ -841,7 +854,7 @@ function recalcInlineForm() {
   // Remaining transport cost for auto-distribution among un-edited rows
   let remTransportCost = Math.max(0, transportCost - sumUserEditedTransport);
 
-  // 2. Sum Total Price + GST of un-edited rows
+  // 3. Sum Total Price + GST of un-edited rows
   let sumUneditedTotalPriceWithGst = 0;
   let uneditedCount = 0;
   rows.forEach(row => {
@@ -853,7 +866,7 @@ function recalcInlineForm() {
     }
   });
 
-  // 3. Process each row
+  // 4. Process each row and update input values
   rows.forEach(row => {
     const transportEl = row.querySelector('.mat-transport');
     const transportUnitEl = row.querySelector('.mat-transport-unit');
@@ -864,7 +877,7 @@ function recalcInlineForm() {
     const rateWithGst = Number(row.querySelector('.mat-rate-with-gst')?.value) || 0;
 
     let transportShare = 0;
-    if (transportEl && transportEl.dataset.userEdited === 'true') {
+    if (transportEl && transportEl.dataset.userEdited === 'true' && Number(transportEl.value) > 0) {
       transportShare = Number(transportEl.value) || 0;
     } else {
       if (sumUneditedTotalPriceWithGst > 0 && remTransportCost > 0) {
@@ -888,8 +901,10 @@ function recalcInlineForm() {
     }
   });
 
-  // 4. Update Summary Labels
+  // 5. Read updated materials AFTER fields are populated
+  const materials = readMaterialsFromInlineForm();
   const result = Calc.computeShipment(materials, transportCost, 0);
+
   const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
   const lblGST = document.getElementById('lblGstAmount');
   const lblTransport = document.getElementById('lblTransportCost');
