@@ -182,40 +182,36 @@
             </button>
           </div>
 
-          <!-- Slide-up form drawer -->
+          <!-- Slide-up form drawer (Compact Layout) -->
           <div class="txn-form-drawer" id="txnFormDrawer">
-            <h6>New Transaction</h6>
-
-            <!-- Date + Amount side by side on wide screens -->
-            <div class="row g-2 mb-2">
-              <div class="col-6">
-                <label class="form-label">Date <span style="color:#c0392b">*</span></label>
-                <input type="date" class="form-control" id="txnInputDate">
+            <div class="bw-compact-form-wrap">
+              <div class="bw-compact-left">
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <input type="number" class="form-control form-control-sm" id="txnInputAmount" placeholder="Amount ₹ *" min="0" step="0.01">
+                  </div>
+                  <div class="col-6">
+                    <input type="date" class="form-control form-control-sm" id="txnInputDate">
+                  </div>
+                </div>
+                <div>
+                  <textarea class="form-control form-control-sm" id="txnInputRemarks" rows="2" placeholder="Optional comment / note…"></textarea>
+                </div>
               </div>
-              <div class="col-6">
-                <label class="form-label">Amount ₹ <span style="color:#c0392b">*</span></label>
-                <input type="number" class="form-control" id="txnInputAmount" placeholder="0" min="0" step="0.01">
+              <div class="bw-compact-right">
+                <button type="button" class="btn-txn-icon btn-received" id="btnSaveReceived" title="Received (Debit)" aria-label="Received (Debit)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/>
+                  </svg>
+                  <span class="btn-icon-sublabel">Received</span>
+                </button>
+                <button type="button" class="btn-txn-icon btn-given" id="btnSaveGiven" title="Given (Credit)" aria-label="Given (Credit)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 15a.5.5 0 0 1-.5-.5V2.707L4.354 5.854a.5.5 0 1 1-.708-.708l4-4a.5.5 0 0 1 .708 0l4 4a.5.5 0 0 1-.708.708L8.5 2.707V14.5A.5.5 0 0 1 8 15z"/>
+                  </svg>
+                  <span class="btn-icon-sublabel">Given</span>
+                </button>
               </div>
-            </div>
-
-            <div class="mb-2">
-              <label class="form-label">Type <span style="color:#c0392b">*</span></label>
-              <div class="type-toggle">
-                <input type="radio" name="txnType" id="typCredit" value="Credit" checked>
-                <label for="typCredit" class="credit-lbl">▲ Credit<br><span style="font-weight:400;font-size:.65rem;">Money Given</span></label>
-                <input type="radio" name="txnType" id="typDebit" value="Debit">
-                <label for="typDebit" class="debit-lbl">▼ Debit<br><span style="font-weight:400;font-size:.65rem;">Received Back</span></label>
-              </div>
-            </div>
-
-            <div class="mb-2">
-              <label class="form-label">Remarks</label>
-              <input type="text" class="form-control" id="txnInputRemarks" placeholder="Optional note…">
-            </div>
-
-            <div class="drawer-actions">
-              <button class="btn-save-txn" id="btnSaveTxn">💾 Save</button>
-              <button class="btn-reset-txn" id="btnResetTxns">🔄 Reset Balance</button>
             </div>
           </div>
 

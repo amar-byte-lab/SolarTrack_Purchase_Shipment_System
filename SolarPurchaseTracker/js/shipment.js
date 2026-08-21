@@ -395,7 +395,7 @@ function renderList() {
               `;
             }
 
-            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix})${mspHTML}</div>`;
+            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix})</div>`;
         }).join('') || '<span class="text-muted">—</span>'}
         </td>
         <td class="col-total text-end fw-bold font-monospace">

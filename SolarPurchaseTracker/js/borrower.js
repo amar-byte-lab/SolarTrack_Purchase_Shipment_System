@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Txn form buttons
-  document.getElementById('btnSaveTxn').addEventListener('click', saveTxn);
-  document.getElementById('btnResetTxns').addEventListener('click', resetAllTxns);
+  document.getElementById('btnSaveReceived')?.addEventListener('click', () => saveTxn('Debit'));
+  document.getElementById('btnSaveGiven')?.addEventListener('click', () => saveTxn('Credit'));
   document.getElementById('btnModalDeact').addEventListener('click', toggleBorrowerStatus);
   document.getElementById('btnModalRemove').addEventListener('click', removeActiveBorrower);
   document.getElementById('btnPrintTxn').addEventListener('click', printActiveBorrowerTxns);
@@ -65,15 +65,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isOpen  = drawer.classList.toggle('open');
     btn.classList.toggle('active', isOpen);
     btn.textContent = isOpen ? '✕' : '✚';
-    hint.textContent = isOpen ? 'Fill the form and tap 💾 Save…' : 'Tap ✚ to add a transaction…';
+    hint.textContent = isOpen ? 'Fill details & tap Received or Given…' : 'Tap ✚ to add a transaction…';
     if (isOpen) {
       setTimeout(() => document.getElementById('txnInputAmount')?.focus(), 350);
     }
   });
 
-  // Enter on amount saves
-  document.getElementById('txnInputAmount').addEventListener('keydown', e => { if (e.key === 'Enter') saveTxn(); });
-  document.getElementById('txnInputRemarks').addEventListener('keydown', e => { if (e.key === 'Enter') saveTxn(); });
+  // Enter on amount/remarks saves default Credit
+  document.getElementById('txnInputAmount')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveTxn('Credit'); });
+  document.getElementById('txnInputRemarks')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveTxn('Credit'); });
 
   document.getElementById('txnInputDate').value = todayISO();
 
@@ -399,12 +399,14 @@ window.openTxnModal = async function(bid) {
   }
 
   // Disable form fields for closed borrowers
-  ['txnInputDate', 'txnInputAmount', 'txnInputRemarks', 'typCredit', 'typDebit'].forEach(id => {
+  ['txnInputDate', 'txnInputAmount', 'txnInputRemarks'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !isActive;
   });
-  document.getElementById('btnSaveTxn').disabled   = !isActive;
-  document.getElementById('btnResetTxns').disabled  = !isActive;
+  const btnReceived = document.getElementById('btnSaveReceived');
+  const btnGiven    = document.getElementById('btnSaveGiven');
+  if (btnReceived) btnReceived.disabled = !isActive;
+  if (btnGiven)    btnGiven.disabled    = !isActive;
   document.getElementById('btnToggleForm').disabled = !isActive;
   document.getElementById('btnToggleForm').style.opacity = isActive ? '1' : '0.4';
 
@@ -412,7 +414,6 @@ window.openTxnModal = async function(bid) {
   document.getElementById('txnInputDate').value    = todayISO();
   document.getElementById('txnInputAmount').value  = '';
   document.getElementById('txnInputRemarks').value = '';
-  document.getElementById('typCredit').checked     = true;
   
   const drawer = document.getElementById('txnFormDrawer');
   const btn    = document.getElementById('btnToggleForm');
@@ -486,12 +487,12 @@ function renderTxnHistory(bid) {
 }
 
 // ── Save transaction ────────────────────────────────────────────────────
-async function saveTxn() {
+async function saveTxn(forcedType) {
   if (!_activeBid) return;
   const dateVal  = document.getElementById('txnInputDate').value;
   const amtRaw   = document.getElementById('txnInputAmount').value;
   const remarks  = document.getElementById('txnInputRemarks').value.trim();
-  const typeVal  = document.querySelector('input[name="txnType"]:checked')?.value || 'Credit';
+  const typeVal  = forcedType || 'Credit';
 
   if (!dateVal) { UI.toast('Select a date', 'warning'); document.getElementById('txnInputDate').focus(); return; }
   const amount = parseFloat(amtRaw);
@@ -511,13 +512,12 @@ async function saveTxn() {
     document.getElementById('txnInputAmount').value  = '';
     document.getElementById('txnInputRemarks').value = '';
     document.getElementById('txnInputDate').value    = todayISO();
-    document.getElementById('typCredit').checked     = true;
 
     renderTxnHistory(_activeBid); updateModalBalance(_activeBid);
     renderGrid(); renderKPIs();
     document.getElementById('txnHistoryPane').scrollTop = 99999;
     document.getElementById('txnInputAmount').focus();
-    UI.toast(`✓ ${typeVal} ${money(amount)} saved`, 'success');
+    UI.toast(`✓ ${typeVal === 'Credit' ? 'Given' : 'Received'} ${money(amount)} saved`, 'success');
   } catch (e) { UI.toast('Error: ' + e.message, 'danger'); }
 }
 
