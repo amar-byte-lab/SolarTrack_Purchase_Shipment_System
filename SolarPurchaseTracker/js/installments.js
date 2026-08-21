@@ -1127,6 +1127,18 @@ function renderList() {
         }
       }
 
+      const isNetMeterPaid = (r.NetMeterPaid != null) ? (r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1) : !!(expenses && expenses.net_meter_paid);
+      const netMeterAmt = (r.NetMeterPayment != null && r.NetMeterPayment !== '') ? Number(r.NetMeterPayment) : (expenses && expenses.net_meter_payment ? Number(expenses.net_meter_payment) : 0);
+
+      let netMeterBadgeHtml = '';
+      if (isNetMeterPaid) {
+        netMeterBadgeHtml = `
+          <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}" style="font-size:0.62rem; padding:1px 4px; font-weight:600; vertical-align: middle;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" class="me-1" viewBox="0 0 16 16" style="vertical-align:-1px;"><path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.268a.5.5 0 0 1 0 .707l-.914.915a.5.5 0 1 1-.707-.708l.914-.914a.5.5 0 0 1 .707 0zM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/><path d="M0 10a8 8 0 1 1 15.547 2.561.5.5 0 1 1-.875-.486A7 7 0 1 0 1.328 12.075a.5.5 0 1 1-.875.486A7.97 7.97 0 0 1 0 10"/></svg>₹${netMeterAmt.toLocaleString('en-IN')}
+          </span>
+        `;
+      }
+
       return `
         <tr class="${rowClass}">
           <td class="text-center fw-semibold">${r.SlNo}</td>
@@ -1135,7 +1147,7 @@ function renderList() {
               <div class="d-flex align-items-center gap-1 flex-wrap">
                 <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
                   ${r.Name || ''}
-                </a>${delayBadgeHtml}
+                </a>${delayBadgeHtml}${netMeterBadgeHtml}
               </div>
               
               <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top w-100" style="font-size: 0.8rem;">
@@ -2140,7 +2152,9 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
       document.getElementById('cCommissioningDate').value = r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '';
       document.getElementById('cBrokerName').value = r.BrokerName || '';
-      document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|')[0];
+      if (document.getElementById('cBrokerNumber')) {
+        document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|')[0];
+      }
       document.getElementById('cCommission').value = r.Commission || '';
 
       let expenses = null;
@@ -2155,12 +2169,23 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cTransportCost').value = (expenses && expenses.transport) || 0;
       document.getElementById('cGSTPercentage').value = (expenses && expenses.gst_pct) || 18;
       document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
+      if (document.getElementById('cNetMeterPayment')) {
+        const netMeterVal = (r.NetMeterPayment != null && r.NetMeterPayment !== '') ? r.NetMeterPayment : ((expenses && expenses.net_meter_payment != null && expenses.net_meter_payment !== '') ? expenses.net_meter_payment : '');
+        document.getElementById('cNetMeterPayment').value = netMeterVal;
+      }
+      if (document.getElementById('cNetMeterPaid')) {
+        const isPaid = (r.NetMeterPaid != null) ? !!r.NetMeterPaid : !!(expenses && expenses.net_meter_paid);
+        document.getElementById('cNetMeterPaid').checked = isPaid;
+      }
     }
   } else {
-    ['cName', 'cConsumerNo', 'cMobile', 'cAddress', 'cBrand', 'cPinCode', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit'].forEach(id => {
+    ['cName', 'cConsumerNo', 'cMobile', 'cAddress', 'cBrand', 'cPinCode', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit', 'cNetMeterPayment'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    if (document.getElementById('cNetMeterPaid')) {
+      document.getElementById('cNetMeterPaid').checked = false;
+    }
     document.getElementById('cDistrict').value = '';
     if (document.getElementById('cState')) document.getElementById('cState').value = 'Odisha';
     document.getElementById('cLoginDate').value = UI.todayISO();
@@ -2291,10 +2316,30 @@ async function saveCustomerModal() {
     transport: Number(document.getElementById('cTransportCost').value) || 0,
     gst_pct: gstPctVal,
     gst: calculatedGSTAmount,
-    other: Number(document.getElementById('cOtherCost').value) || 0
+    other: Number(document.getElementById('cOtherCost').value) || 0,
+    net_meter_payment: document.getElementById('cNetMeterPayment') ? (Number(document.getElementById('cNetMeterPayment').value) || 0) : 0,
+    net_meter_paid: document.getElementById('cNetMeterPaid') ? document.getElementById('cNetMeterPaid').checked : false
   };
   const calculatedVendorPrice = expenses.material + expenses.install + expenses.transport + expenses.gst + expenses.other;
-  const phoneClean = document.getElementById('cBrokerNumber').value.trim().split('|')[0];
+  const cBrokerNumEl = document.getElementById('cBrokerNumber');
+  let phoneClean = cBrokerNumEl ? cBrokerNumEl.value.trim().split('|')[0] : '';
+  if (!phoneClean && slNoVal) {
+    const slNo = Number(slNoVal);
+    const existing = DB.getAll('installments').find(x => Number(x.SlNo) === slNo);
+    if (existing && existing.BrokerNumber) {
+      phoneClean = existing.BrokerNumber.split('|')[0];
+    }
+  }
+  if (!phoneClean) {
+    const brokerName = document.getElementById('cBrokerName') ? document.getElementById('cBrokerName').value.trim() : '';
+    if (brokerName) {
+      const vendors = DB.getAll('vendors') || [];
+      const foundVendor = vendors.find(v => v.VendorName === brokerName);
+      if (foundVendor && foundVendor.Phone) {
+        phoneClean = foundVendor.Phone;
+      }
+    }
+  }
 
   const rowData = {
     Name: name,
@@ -2312,7 +2357,9 @@ async function saveCustomerModal() {
     CommissioningDate: document.getElementById('cCommissioningDate').value || null,
     BrokerName: document.getElementById('cBrokerName').value.trim(),
     BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
-    Commission: Number(document.getElementById('cCommission').value) || 0
+    Commission: Number(document.getElementById('cCommission').value) || 0,
+    NetMeterPayment: expenses.net_meter_payment,
+    NetMeterPaid: expenses.net_meter_paid
   };
 
   UI.showLoading(true);
