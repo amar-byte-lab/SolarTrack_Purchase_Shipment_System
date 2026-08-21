@@ -47,7 +47,8 @@ async function safeUpsert(tableName, row) {
 
     const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
     if (match && match[1] && item.hasOwnProperty(match[1])) {
-      console.warn(`[PostgreSQL] Column '${match[1]}' does not exist in table '${tableName}'. Removing field and retrying...`);
+      console.warn(`\n⚠️ [PostgreSQL MIGRATION REQUIRED] Column '${match[1]}' does not exist in table '${tableName}'.`);
+      console.warn(`Please run: ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS "${match[1]}" NUMERIC;\n`);
       delete item[match[1]];
       continue;
     }
@@ -63,7 +64,8 @@ async function safeUpdate(tableName, matchField, val, newData) {
 
     const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
     if (match && match[1] && item.hasOwnProperty(match[1])) {
-      console.warn(`[PostgreSQL] Column '${match[1]}' does not exist in table '${tableName}'. Removing field and retrying...`);
+      console.warn(`\n⚠️ [PostgreSQL MIGRATION REQUIRED] Column '${match[1]}' does not exist in table '${tableName}'.`);
+      console.warn(`Please run: ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS "${match[1]}" NUMERIC;\n`);
       delete item[match[1]];
       continue;
     }
@@ -211,6 +213,7 @@ async function deleteBorrower(borrowerID) {
 }
 
 module.exports = {
+  dbType: 'postgresql',
   driverName: 'PostgreSQL (Supabase)',
   getStatus,
   getTable,

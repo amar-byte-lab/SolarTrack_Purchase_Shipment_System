@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const activeDriver = require('./postgres');
+const dbType = activeDriver.dbType || process.env.DB_TYPE || 'postgresql';
 
 module.exports = {
   dbType,

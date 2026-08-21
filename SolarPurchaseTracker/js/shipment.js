@@ -546,12 +546,26 @@ function createMaterialRow(data, defaultGstPercent = 18) {
 
   const matTransportEl = tr.querySelector('.mat-transport');
   if (matTransportEl) {
+    if (data && data.TransportationCost !== undefined && data.TransportationCost !== null && data.TransportationCost !== '') {
+      matTransportEl.dataset.loadedFromDb = 'true';
+    }
     matTransportEl.addEventListener('input', () => {
       delete matTransportEl.dataset.lastVal;
+      delete matTransportEl.dataset.loadedFromDb;
       if (matTransportEl.value.trim() === '') {
         delete matTransportEl.dataset.userEdited;
+        delete matTransportEl.dataset.lastEditedTime;
       } else {
         matTransportEl.dataset.userEdited = 'true';
+        matTransportEl.dataset.lastEditedTime = String(Date.now());
+
+        const allTransportEls = Array.from(document.querySelectorAll('#editMaterialsTbody .mat-transport'));
+        const editedEls = allTransportEls.filter(el => el.dataset.userEdited === 'true');
+        if (editedEls.length === allTransportEls.length && allTransportEls.length > 1) {
+          editedEls.sort((a, b) => Number(a.dataset.lastEditedTime || 0) - Number(b.dataset.lastEditedTime || 0));
+          delete editedEls[0].dataset.userEdited;
+          delete editedEls[0].dataset.lastEditedTime;
+        }
       }
       recalcInlineForm();
     });
@@ -639,32 +653,33 @@ function createMaterialRow(data, defaultGstPercent = 18) {
       rateEl.value = round2(computedR);
       if (q > 0) {
         totalWithoutGstEl.value = round2(q * computedR);
+        totalEl.value = round2(q * rg);
       }
     }
     recalcInlineForm();
   }
 
   function onRateWithGstInput() {
+    const q = Number(qtyEl.value) || 0;
     const rg = Number(rateWithGstEl.value) || 0;
     const g = Number(gstEl.value) || 0;
-    const q = Number(qtyEl.value) || 0;
     const twg = Number(totalWithoutGstEl.value) || 0;
     const t = Number(totalEl.value) || 0;
 
     if (rg > 0) {
-      const r = rg / (1 + g / 100);
-      rateEl.value = round2(r);
+      const computedR = rg / (1 + g / 100);
+      rateEl.value = round2(computedR);
       if (q > 0) {
-        totalWithoutGstEl.value = round2(q * r);
+        totalWithoutGstEl.value = round2(q * computedR);
         totalEl.value = round2(q * rg);
       } else if (twg > 0) {
-        const computedQ = twg / r;
+        const computedQ = twg / computedR;
         qtyEl.value = round2(computedQ);
         totalEl.value = round2(computedQ * rg);
       } else if (t > 0) {
         const computedQ = t / rg;
         qtyEl.value = round2(computedQ);
-        totalWithoutGstEl.value = round2(computedQ * r);
+        totalWithoutGstEl.value = round2(computedQ * computedR);
       }
     }
     recalcInlineForm();
@@ -676,23 +691,24 @@ function createMaterialRow(data, defaultGstPercent = 18) {
     const g = Number(gstEl.value) || 0;
     const rg = Number(rateWithGstEl.value) || 0;
     const r = Number(rateEl.value) || 0;
+    const twg = Number(totalWithoutGstEl.value) || 0;
 
     if (t > 0) {
-      const twg = t / (1 + g / 100);
-      totalWithoutGstEl.value = round2(twg);
+      const computedTwg = t / (1 + g / 100);
+      totalWithoutGstEl.value = round2(computedTwg);
 
       if (q > 0) {
         const computedRg = t / q;
         rateWithGstEl.value = round2(computedRg);
         const computedR = computedRg / (1 + g / 100);
         rateEl.value = round2(computedR);
-      } else if (rg > 0) {
-        const computedQ = t / rg;
+      } else if (twg > 0) {
+        const computedQ = t / (twg * (1 + g / 100));
         qtyEl.value = round2(computedQ);
-        const computedR = rg / (1 + g / 100);
+        const computedR = twg / computedQ;
         rateEl.value = round2(computedR);
       } else if (r > 0) {
-        const computedQ = twg / r;
+        const computedQ = computedTwg / r;
         qtyEl.value = round2(computedQ);
         const computedRg = r * (1 + g / 100);
         rateWithGstEl.value = round2(computedRg);
@@ -747,6 +763,12 @@ function createMaterialRow(data, defaultGstPercent = 18) {
 
   const mspEl = tr.querySelector('.mat-msp');
   if (mspEl) {
+    if (data && data.MinSellingPrice !== undefined && data.MinSellingPrice !== null && data.MinSellingPrice !== '') {
+      const expectedAutoMsp = round2(rateWithGst + (qty > 0 && savedTransport !== '' ? Number(savedTransport) / qty : 0));
+      if (round2(Number(data.MinSellingPrice)) !== expectedAutoMsp) {
+        mspEl.dataset.customOverride = 'true';
+      }
+    }
     mspEl.addEventListener('input', () => {
       if (mspEl.value.trim() === '') {
         delete mspEl.dataset.customOverride;
@@ -837,45 +859,75 @@ function recalcInlineForm() {
     }
   });
 
-  // Remaining transport cost for auto-distribution among un-edited rows
-  let remTransportCost = Math.max(0, transportCost - sumUserEditedTransport);
+  if (!hasUserEditedTransport) {
+    let hasDbLoadedValues = false;
+    rows.forEach(row => {
+      const tEl = row.querySelector('.mat-transport');
+      if (tEl && tEl.dataset.loadedFromDb === 'true') {
+        hasDbLoadedValues = true;
+      }
+    });
 
-  // 3. Sum Total Price + GST of un-edited rows
-  let sumUneditedTotalPriceWithGst = 0;
-  let uneditedCount = 0;
-  rows.forEach(row => {
-    const tEl = row.querySelector('.mat-transport');
-    if (!tEl || tEl.dataset.userEdited !== 'true' || tEl.value.trim() === '') {
-      const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
-      sumUneditedTotalPriceWithGst += totWithGst;
-      uneditedCount++;
+    if (!hasDbLoadedValues) {
+      let sumAllTotals = 0;
+      rows.forEach(row => {
+        sumAllTotals += Number(row.querySelector('.mat-total')?.value) || 0;
+      });
+
+      rows.forEach(row => {
+        const tEl = row.querySelector('.mat-transport');
+        const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
+        let share = 0;
+        if (sumAllTotals > 0 && transportCost > 0) {
+          share = Calc.round2((totWithGst / sumAllTotals) * transportCost);
+        } else if (transportCost > 0 && rows.length > 0) {
+          share = Calc.round2(transportCost / rows.length);
+        }
+        if (tEl) tEl.value = share;
+      });
     }
-  });
+  } else {
+    let remTransportCost = Math.max(0, transportCost - sumUserEditedTransport);
+    let sumUneditedTotals = 0;
+    let uneditedCount = 0;
 
-  // 4. Process each row and update input values
+    rows.forEach(row => {
+      const tEl = row.querySelector('.mat-transport');
+      if (!tEl || tEl.dataset.userEdited !== 'true' || tEl.value.trim() === '') {
+        sumUneditedTotals += Number(row.querySelector('.mat-total')?.value) || 0;
+        uneditedCount++;
+      }
+    });
+
+    rows.forEach(row => {
+      const tEl = row.querySelector('.mat-transport');
+      if (!tEl || tEl.dataset.userEdited !== 'true' || tEl.value.trim() === '') {
+        const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
+        let share = 0;
+        if (sumUneditedTotals > 0 && remTransportCost > 0) {
+          share = Calc.round2((totWithGst / sumUneditedTotals) * remTransportCost);
+        } else if (remTransportCost > 0 && uneditedCount > 0) {
+          share = Calc.round2(remTransportCost / uneditedCount);
+        } else {
+          share = 0;
+        }
+        if (tEl) tEl.value = share;
+      }
+    });
+  }
+
+  // 4. Process each row to update TRANS./UNIT, MSP/UNIT, and summary labels
   rows.forEach(row => {
     const transportEl = row.querySelector('.mat-transport');
     const transportUnitEl = row.querySelector('.mat-transport-unit');
     const mspEl = row.querySelector('.mat-msp');
 
-    const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
     const q = Number(row.querySelector('.mat-qty')?.value) || 0;
     const rate = Number(row.querySelector('.mat-rate')?.value) || 0;
     const gst = Number(row.querySelector('.mat-gst')?.value) || 0;
     const rateWithGstInput = Number(row.querySelector('.mat-rate-with-gst')?.value) || 0;
     const rateWithGst = rateWithGstInput > 0 ? rateWithGstInput : Calc.round2(rate * (1 + gst / 100));
-
-    let transportShare = 0;
-    if (transportEl && transportEl.dataset.userEdited === 'true' && transportEl.value.trim() !== '') {
-      transportShare = Number(transportEl.value) || 0;
-    } else {
-      if (sumUneditedTotalPriceWithGst > 0 && remTransportCost > 0) {
-        transportShare = Calc.round2((totWithGst / sumUneditedTotalPriceWithGst) * remTransportCost);
-      } else if (remTransportCost > 0 && uneditedCount > 0) {
-        transportShare = Calc.round2(remTransportCost / uneditedCount);
-      }
-      if (transportEl) transportEl.value = transportShare ? transportShare : 0;
-    }
+    const transportShare = transportEl ? (Number(transportEl.value) || 0) : 0;
 
     let transportPerUnit = 0;
     if (q > 0) {
@@ -883,7 +935,6 @@ function recalcInlineForm() {
     }
     if (transportUnitEl) transportUnitEl.value = transportPerUnit ? transportPerUnit : 0;
 
-    // Auto-fill MSP/Unit = Rate/Unit+GST + Transportation Cost/Unit (if not user custom override)
     if (mspEl && mspEl.dataset.customOverride !== 'true') {
       const autoMsp = Calc.round2(rateWithGst + transportPerUnit);
       mspEl.value = autoMsp > 0 ? autoMsp : '';
@@ -1163,6 +1214,9 @@ window.saveInline = async function(shipmentNo) {
   const invoiceNumber = document.getElementById('editInvoiceNumber').value.trim();
   const remarks = document.getElementById('editRemarks').value.trim();
   
+  // Ensure inline calculations are fresh before reading form data
+  recalcInlineForm();
+
   const materials = readMaterialsFromInlineForm();
 
   const rules = [
@@ -1230,6 +1284,10 @@ window.saveInline = async function(shipmentNo) {
     // Replace all material rows for this shipment
     const allMaterials = DB.getAll('materials').filter(m => m.ShipmentNo !== shipmentNo);
     const newRows = materials.map(m => {
+      const transportShareVal = addToMaterialCostVal === 1
+        ? (m.TransportationCost !== undefined && m.TransportationCost !== null && m.TransportationCost !== '' ? Number(m.TransportationCost) : 0)
+        : 0;
+
       return {
         RowID: Utils.uid('MAT'),
         ShipmentNo: shipmentNo,
@@ -1240,7 +1298,7 @@ window.saveInline = async function(shipmentNo) {
         PurchaseRate: m.PurchaseRate,
         TotalPurchaseValue: m.TotalPurchaseValue || Calc.round2(m.Quantity * m.PurchaseRate * (1 + (m.GSTPercentage || 0) / 100)),
         GSTPercentage: m.GSTPercentage,
-        TransportationCost: m.TransportationCost !== undefined ? Number(m.TransportationCost) : 0,
+        TransportationCost: transportShareVal,
         MinSellingPrice: m.MinSellingPrice,
       };
     });
