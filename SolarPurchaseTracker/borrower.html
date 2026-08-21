@@ -162,10 +162,6 @@
               <span style="font-size:.7rem;color:#b8a898;">Tap ✚ below to add one</span>
             </div>
             <div id="txnList"></div>
-            <div class="txn-running-footer" id="txnRunningFooter" style="display:none;">
-              <span style="font-size:.76rem;color:#6b7885;">Net Balance</span>
-              <strong id="txnRunningAmt" style="font-size:.9rem;">₹0</strong>
-            </div>
           </div>
 
           <!-- Compose bar (always visible, like WhatsApp bottom bar) -->
@@ -188,10 +184,10 @@
               <div class="bw-compact-left">
                 <div class="row g-2 mb-2">
                   <div class="col-6">
-                    <input type="number" class="form-control form-control-sm" id="txnInputAmount" placeholder="Amount ₹ *" min="0" step="0.01">
+                    <input type="date" class="form-control form-control-sm" id="txnInputDate">
                   </div>
                   <div class="col-6">
-                    <input type="date" class="form-control form-control-sm" id="txnInputDate">
+                    <input type="number" class="form-control form-control-sm" id="txnInputAmount" placeholder="Amount ₹ *" min="0" step="0.01">
                   </div>
                 </div>
                 <div>

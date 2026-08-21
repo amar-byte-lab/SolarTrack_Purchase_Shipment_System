@@ -441,13 +441,11 @@ function renderTxnHistory(bid) {
   const txns    = _txnCache[bid] || [];
   const listEl  = document.getElementById('txnList');
   const emptyEl = document.getElementById('txnEmptyState');
-  const footerEl = document.getElementById('txnRunningFooter');
-  const runAmtEl = document.getElementById('txnRunningAmt');
 
   if (txns.length === 0) {
-    emptyEl.style.display = 'flex'; listEl.innerHTML = ''; footerEl.style.display = 'none'; return;
+    emptyEl.style.display = 'flex'; listEl.innerHTML = ''; return;
   }
-  emptyEl.style.display = 'none'; footerEl.style.display = 'flex';
+  emptyEl.style.display = 'none';
 
   let lastDate = null, html = '';
   txns.forEach(t => {
@@ -479,11 +477,6 @@ function renderTxnHistory(bid) {
     }
   });
   listEl.innerHTML = html;
-
-  const { net } = netBalance(bid);
-  if (net > 0)      { runAmtEl.textContent = '−' + money(net); runAmtEl.style.color = '#c0392b'; }
-  else if (net < 0) { runAmtEl.textContent = '+' + money(Math.abs(net)); runAmtEl.style.color = '#1e8a4c'; }
-  else              { runAmtEl.textContent = 'Settled ✓'; runAmtEl.style.color = '#6b7885'; }
 }
 
 // ── Save transaction ────────────────────────────────────────────────────
