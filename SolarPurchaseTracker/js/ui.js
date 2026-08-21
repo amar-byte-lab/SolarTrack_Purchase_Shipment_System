@@ -9,6 +9,7 @@ const UI = (() => {
     // { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
     { href: 'installments.html',    icon: 'coin',       label: 'Customer' },
+    { href: 'work-note.html',       icon: 'doc',        label: 'Work Note' },
     // { href: 'item-master.html',     icon: 'box',        label: 'Products' },
     { href: 'offer.html',           icon: 'file',       label: 'Offer Generator' },
     { href: 'agreement.html',       icon: 'doc',        label: 'Agreement Generate' },
@@ -108,9 +109,9 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['installments.html', 'offer.html', 'agreement.html', 'borrower.html'].includes(item.href);
+            return ['installments.html', 'work-note.html', 'offer.html', 'agreement.html', 'borrower.html'].includes(item.href);
           }
-          return ['offer.html', 'agreement.html', 'borrower.html'].includes(item.href);
+          return ['offer.html', 'agreement.html', 'borrower.html', 'work-note.html'].includes(item.href);
         })
       : [];
 

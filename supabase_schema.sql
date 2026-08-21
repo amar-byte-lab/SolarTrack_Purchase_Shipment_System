@@ -217,4 +217,15 @@ INSERT INTO users ("userid", "username", "email", "password", "role", "status", 
   ('admin', 'Admin', 'admin@example.com', 'adminpassword', 'admin', 'Approved', '2026-07-23T10:46:05+05:30')
 ON CONFLICT DO NOTHING;
 
+-- Work Notes Table
+CREATE TABLE IF NOT EXISTS work_notes (
+  "NoteID" TEXT PRIMARY KEY,
+  "NoteTitle" TEXT,
+  "CommonNote" TEXT,
+  "SelectedBadges" TEXT,
+  "CustomerData" TEXT,
+  "CreatedAt" TEXT,
+  "UpdatedAt" TEXT
+);
+
 

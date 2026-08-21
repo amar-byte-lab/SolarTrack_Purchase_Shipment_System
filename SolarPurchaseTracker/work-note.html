@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" class="work-note-page">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Note — Solar Purchase Tracker</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/installments.css">
+<script src="js/auth.js"></script>
+<style>
+  .badge-toggle {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+    font-size: 0.68rem !important;
+    padding: 1px 6px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .badge-toggle:hover {
+    border-color: #6366f1;
+    color: #4f46e5;
+    background-color: #eef2ff;
+  }
+  .badge-toggle.active {
+    background-color: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.2);
+  }
+  .badge-toggle-custom {
+    border-style: dashed;
+    border-color: #0284c7;
+    color: #0284c7;
+    background-color: #f0f9ff;
+  }
+  .badge-toggle-custom:hover {
+    background-color: #e0f2fe;
+  }
+  .keep-note-box {
+    background-color: #fefce8;
+    border: 1px dashed #fde047;
+    border-radius: 6px;
+    padding: 4px 6px;
+  }
+  .editable-cell-input {
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    padding: 1px 3px;
+    font-size: 0.68rem !important;
+    width: 100%;
+    min-width: 65px;
+    height: 20px;
+    background-color: #ffffff;
+  }
+  .editable-cell-input:focus {
+    border-color: #4f46e5;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+  }
+  .saved-note-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    background: #ffffff;
+  }
+  .saved-note-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.1);
+  }
+  .cust-list-container {
+    max-height: 130px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1px 3px;
+    background: #ffffff;
+  }
+  .hover-bg:hover {
+    background-color: #f8fafc;
+  }
+  .cust-item-row {
+    min-height: 22px;
+  }
+
+  .st-card-compact {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
+  }
+
+  /* Compact form controls */
+  .form-label-compact {
+    font-size: 0.68rem !important;
+    font-weight: 700;
+    margin-bottom: 1px;
+    color: #475569;
+  }
+  .input-sm-compact {
+    font-size: 0.68rem !important;
+    padding: 1px 4px;
+    height: 22px;
+  }
+
+  /* Compact Borderless Table Styles */
+  #workNoteTable {
+    font-size: 0.68rem !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  #workNoteTable th {
+    font-size: 0.65rem !important;
+    font-weight: 700;
+    padding: 2px 3px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #334155;
+  }
+  #workNoteTable td {
+    padding: 1px 3px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+  }
+
+  @media (max-width: 768px) {
+    .page-body {
+      padding: 4px !important;
+    }
+    .st-card-compact {
+      padding: 4px 6px !important;
+      margin-bottom: 5px !important;
+    }
+    .cust-list-container {
+      max-height: 110px;
+    }
+  }
+</style>
+</head>
+<body class="work-note-page">
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="page-body">
+      <!-- Short Title Header -->
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <h5 class="fw-bold mb-0 text-primary fs-6">📝 Work Note</h5>
+      </div>
+
+      <!-- 1. Search & Filter Bar -->
+      <div class="st-card-compact no-print">
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+          <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
+            <span class="fw-bold text-primary-emphasis" style="font-size: 0.68rem;">🔍 Search & Filters</span>
+            <span class="text-muted" id="searchCollapseIndicator" style="font-size: 0.68rem;">▼ Show</span>
+          </div>
+          <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center ms-auto" style="font-size: 0.62rem;"></div>
+        </div>
+        <div class="collapse" id="searchCollapse">
+          <div class="pt-1">
+            <div class="row g-1 align-items-end">
+              <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label-compact">Search</label>
+                <input type="text" class="form-control input-sm-compact" id="fSearch" placeholder="Name, Mobile, Brand...">
+              </div>
+              <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label-compact">Partner</label>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary input-sm-compact w-100 dropdown-toggle text-start text-truncate py-0" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                    All Partners
+                  </button>
+                  <div class="dropdown-menu p-1" id="partnerMultiselectMenu" style="max-height: 160px; overflow-y: auto; min-width: 160px; font-size:0.68rem;">
+                    <!-- Checkboxes injected by js -->
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label-compact">Date Type</label>
+                <select class="form-select input-sm-compact" id="fDateType">
+                  <option value="LoginDate" selected>Login Date</option>
+                  <option value="InstallationDate">Installation Date</option>
+                  <option value="CommissioningDate">Commissioning Date</option>
+                </select>
+              </div>
+              <div class="col-6 col-sm-3 col-md-2">
+                <label class="form-label-compact">From Date</label>
+                <input type="date" class="form-control input-sm-compact" id="fLoginFrom">
+              </div>
+              <div class="col-6 col-sm-3 col-md-2">
+                <label class="form-label-compact">To Date</label>
+                <input type="date" class="form-control input-sm-compact" id="fLoginTo">
+              </div>
+              <div class="col-auto d-flex align-items-center mb-1">
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" id="chkShowDeactive" style="width: 12px; height: 12px;">
+                  <label class="form-check-label fw-semibold text-secondary ms-1" for="chkShowDeactive" style="font-size: 0.68rem;">Show Deactive</label>
+                </div>
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-outline-secondary input-sm-compact py-0" id="btnClearFilters">Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Customer Selection Section -->
+      <div class="st-card-compact">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-dark" style="font-size: 0.68rem;">👥 Select Customers</span>
+          <div class="d-flex align-items-center gap-1 mb-0">
+            <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="chkSelectAllCustomers" style="width: 12px; height: 12px;">
+            <label class="form-check-label fw-bold text-primary ms-1 cursor-pointer" for="chkSelectAllCustomers" id="lblSelectAll" style="font-size: 0.68rem;">Select All</label>
+          </div>
+        </div>
+        <div class="cust-list-container" id="customerSelectionContainer">
+          <!-- Checkbox list injected dynamically -->
+        </div>
+        <div class="text-secondary mt-1 fw-semibold" id="selectedCustomerCountLabel" style="font-size: 0.65rem;">0 selected</div>
+      </div>
+
+      <!-- 3. Badges Selection Section -->
+      <div class="st-card-compact">
+        <div class="fw-bold text-dark mb-1" style="font-size: 0.68rem;">🏷️ Select Columns</div>
+        <div class="d-flex flex-wrap gap-1" id="badgesContainer">
+          <!-- Badges injected dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- 4. Dynamic Work Note Table Builder -->
+      <div class="st-card-compact" id="tableCard" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-primary" style="font-size: 0.68rem;">📊 Work Note Table</span>
+          <span class="text-secondary fw-bold" id="tableRowCountLabel" style="font-size: 0.65rem;">0 rows</span>
+        </div>
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+          <table class="table table-borderless table-hover align-middle mb-0" id="workNoteTable">
+            <thead>
+              <tr id="workNoteTheadRow">
+                <!-- Headers injected dynamically -->
+              </tr>
+            </thead>
+            <tbody id="workNoteTbody">
+              <!-- Rows injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 5. Note Title & Common Remarks -->
+      <div class="st-card-compact">
+        <div class="row g-1">
+          <div class="col-12">
+            <label class="form-label-compact">📌 Work Note Title *</label>
+            <input type="text" class="form-control input-sm-compact" id="txtNoteTitle" placeholder="e.g. August Net Metering Sheet...">
+            <input type="hidden" id="txtNoteID">
+          </div>
+          <div class="col-12">
+            <div class="keep-note-box">
+              <label class="form-label-compact text-warning-emphasis mb-0.5">📝 Common Remarks</label>
+              <textarea class="form-control border-0 bg-transparent shadow-none" id="txtCommonNote" rows="2" placeholder="Enter batch remarks or instructions..." style="font-size: 0.68rem;"></textarea>
+            </div>
+          </div>
+          <div class="col-12 d-flex justify-content-end gap-1 pt-1">
+            <button class="btn btn-secondary btn-sm input-sm-compact py-0" id="btnCancelEdit" style="display:none;" onclick="resetWorkNoteEditor()">Cancel</button>
+            <button class="btn btn-primary btn-sm input-sm-compact py-0 px-2 fw-bold" id="btnSaveWorkNote">💾 Save Work Note</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Saved Work Notes List -->
+      <div class="st-card-compact">
+        <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+          <span class="fw-bold text-primary" style="font-size: 0.68rem;">📚 Saved Notes</span>
+          <div style="width: 100%; max-width: 150px;">
+            <input type="text" class="form-control input-sm-compact" id="fSavedNoteSearch" placeholder="Search saved notes...">
+          </div>
+        </div>
+        <div class="row g-1" id="savedNotesContainer">
+          <!-- Saved notes cards injected dynamically -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Custom Column Name Input -->
+<div class="modal fade" id="customColumnModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-1 px-2">
+        <h6 class="modal-title fw-bold" id="customColModalTitle" style="font-size: 0.72rem;">Add Custom Column</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-2">
+        <label class="form-label text-secondary mb-1" style="font-size: 0.68rem;">Column Title *</label>
+        <input type="text" class="form-control input-sm-compact" id="txtCustomColName" placeholder="e.g. Inspection Date...">
+        <input type="hidden" id="hdnCustomColType" value="text">
+      </div>
+      <div class="modal-footer py-1 px-2">
+        <button type="button" class="btn btn-xs btn-secondary py-0" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-xs btn-primary py-0" id="btnConfirmAddCustomCol">Add Column</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Viewing Saved Work Note Details in Popup -->
+<div class="modal fade" id="viewNoteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-1.5 bg-light">
+        <h6 class="modal-title fw-bold text-primary" id="viewNoteModalTitle" style="font-size: 0.75rem;">Work Note Details</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-2" id="viewNoteModalBody">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="modal-footer py-1 bg-light d-flex justify-content-between flex-wrap gap-1">
+        <span class="text-secondary" id="viewNoteModalMeta" style="font-size: 0.68rem;"></span>
+        <div>
+          <button type="button" class="btn btn-xs btn-secondary me-1 py-0" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-xs btn-warning text-dark fw-bold me-1 py-0" id="btnEditSavedNoteFromModal">✏️ Edit</button>
+          <button type="button" class="btn btn-xs btn-danger py-0" id="btnDeleteSavedNoteFromModal">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/bootstrap.bundle.min.js" defer></script>
+<script src="js/db.js" defer></script>
+<script src="js/calc.js" defer></script>
+<script src="js/validation.js" defer></script>
+<script src="js/utils.js" defer></script>
+<script src="js/ui.js?v=1.0.1" defer></script>
+<script src="js/connect.js" defer></script>
+<script src="js/work-note.js?v=1.0.1" defer></script>
+</body>
+</html>

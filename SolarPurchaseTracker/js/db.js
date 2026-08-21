@@ -19,6 +19,7 @@ const DB = (() => {
         shipment_remarks: { file: null, sheet: null },
         products: { file: null, sheet: null },
         product_items: { file: null, sheet: null },
+        work_notes: { file: null, sheet: null },
     };
 
     const HEADERS = {
@@ -36,6 +37,7 @@ const DB = (() => {
         shipment_remarks: ['RemarkID', 'ShipmentNo', 'Remark', 'CreatedAt'],
         products: ['ProductName', 'CreatedAt'],
         product_items: ['RowID', 'ProductName', 'ItemName', 'Price'],
+        work_notes: ['NoteID', 'NoteTitle', 'CommonNote', 'SelectedBadges', 'CustomerData', 'CreatedAt', 'UpdatedAt'],
     };
 
     let mode = 'postgres';
@@ -75,6 +77,7 @@ const DB = (() => {
         if (key === 'shipment_remarks') return 'RemarkID';
         if (key === 'products') return 'ProductName';
         if (key === 'product_items') return 'RowID';
+        if (key === 'work_notes') return 'NoteID';
         return null;
     }
 
@@ -117,9 +120,21 @@ const DB = (() => {
             const fetchPromises = tableKeys.map(async key => {
                 try {
                     const r = await fetch(`/api/get?table=${key}`);
-                    cache[key] = r.ok ? await r.json() : [];
+                    const fetchedRows = r.ok ? await r.json() : [];
+                    if (Array.isArray(fetchedRows) && cache[key] && Array.isArray(cache[key]) && cache[key].length > 0) {
+                        const pkName = getPrimaryKey(key);
+                        if (pkName) {
+                            const fetchedKeys = new Set(fetchedRows.map(d => String(d[pkName])));
+                            const localOnly = cache[key].filter(r => !fetchedKeys.has(String(r[pkName])));
+                            cache[key] = [...fetchedRows, ...localOnly];
+                        } else {
+                            cache[key] = fetchedRows;
+                        }
+                    } else {
+                        cache[key] = Array.isArray(fetchedRows) ? fetchedRows : [];
+                    }
                 } catch {
-                    cache[key] = [];
+                    cache[key] = cache[key] || [];
                 }
             });
 

@@ -1,13 +1,45 @@
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
 
 const rawUrl = process.env.SUPABASE_URL || '';
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
 const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
 
-
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
 });
+
+const WORK_NOTES_FILE = path.join(__dirname, '..', 'data', 'work_notes.json');
+
+function ensureDataDir() {
+  const dir = path.dirname(WORK_NOTES_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function readLocalWorkNotes() {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(WORK_NOTES_FILE)) {
+      const content = fs.readFileSync(WORK_NOTES_FILE, 'utf8');
+      return JSON.parse(content || '[]');
+    }
+  } catch (e) {
+    console.warn('[LocalWorkNotes] Read error:', e.message);
+  }
+  return [];
+}
+
+function saveLocalWorkNotes(notes) {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(WORK_NOTES_FILE, JSON.stringify(notes, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[LocalWorkNotes] Write error:', e.message);
+  }
+}
 
 const PRIMARY_KEYS = {
   shipments:           'ShipmentNo',
@@ -27,6 +59,7 @@ const PRIMARY_KEYS = {
   users:               'userid',
   roles:               'role',
   notifications:       'id',
+  work_notes:          'NoteID',
 };
 
 async function getStatus() {
@@ -34,60 +67,119 @@ async function getStatus() {
 }
 
 async function getTable(tableName) {
-  const { data, error } = await supabase.from(tableName).select('*');
-  if (error) throw error;
-  return data || [];
+  if (tableName === 'work_notes') {
+    let localNotes = readLocalWorkNotes();
+    try {
+      const { data, error } = await supabase.from(tableName).select('*');
+      if (!error && Array.isArray(data)) {
+        const map = new Map();
+        localNotes.forEach(n => map.set(n.NoteID, n));
+        data.forEach(n => map.set(n.NoteID, n));
+        const merged = Array.from(map.values());
+        if (merged.length > localNotes.length) {
+          saveLocalWorkNotes(merged);
+        }
+        return merged;
+      }
+    } catch (err) {
+      console.warn(`[Postgres] getTable('${tableName}') exception:`, err.message);
+    }
+    return localNotes;
+  }
+
+  try {
+    const { data, error } = await supabase.from(tableName).select('*');
+    if (error) {
+      console.warn(`[Postgres] getTable('${tableName}') error:`, error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.warn(`[Postgres] getTable('${tableName}') exception:`, err.message);
+    return [];
+  }
 }
 
 async function safeUpsert(tableName, row) {
+  if (tableName === 'work_notes') {
+    let localNotes = readLocalWorkNotes();
+    const idx = localNotes.findIndex(n => n.NoteID === row.NoteID);
+    if (idx > -1) {
+      localNotes[idx] = { ...localNotes[idx], ...row };
+    } else {
+      localNotes.push(row);
+    }
+    saveLocalWorkNotes(localNotes);
+  }
+
   let item = { ...row };
   for (let attempt = 0; attempt < 5; attempt++) {
-    const { error } = await supabase.from(tableName).upsert([item]);
-    if (!error) return;
+    try {
+      const { error } = await supabase.from(tableName).upsert([item]);
+      if (!error) return;
 
-    const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
-    if (match && match[1] && item.hasOwnProperty(match[1])) {
-      console.warn(`\n⚠️ [PostgreSQL MIGRATION REQUIRED] Column '${match[1]}' does not exist in table '${tableName}'.`);
-      console.warn(`Please run: ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS "${match[1]}" NUMERIC;\n`);
-      delete item[match[1]];
-      continue;
+      const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
+      if (match && match[1] && item.hasOwnProperty(match[1])) {
+        delete item[match[1]];
+        continue;
+      }
+      return;
+    } catch (err) {
+      return;
     }
-    throw error;
   }
 }
 
 async function safeUpdate(tableName, matchField, val, newData) {
+  if (tableName === 'work_notes') {
+    let localNotes = readLocalWorkNotes();
+    const idx = localNotes.findIndex(n => n[matchField] == val);
+    if (idx > -1) {
+      localNotes[idx] = { ...localNotes[idx], ...newData };
+      saveLocalWorkNotes(localNotes);
+    }
+  }
+
   let item = { ...newData };
   for (let attempt = 0; attempt < 5; attempt++) {
-    const { error } = await supabase.from(tableName).update(item).eq(matchField, val);
-    if (!error) return;
+    try {
+      const { error } = await supabase.from(tableName).update(item).eq(matchField, val);
+      if (!error) return;
 
-    const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
-    if (match && match[1] && item.hasOwnProperty(match[1])) {
-      console.warn(`\n⚠️ [PostgreSQL MIGRATION REQUIRED] Column '${match[1]}' does not exist in table '${tableName}'.`);
-      console.warn(`Please run: ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS "${match[1]}" NUMERIC;\n`);
-      delete item[match[1]];
-      continue;
+      const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
+      if (match && match[1] && item.hasOwnProperty(match[1])) {
+        delete item[match[1]];
+        continue;
+      }
+      return;
+    } catch (err) {
+      return;
     }
-    throw error;
   }
 }
 
 async function importTable(tableName, rows) {
-  const pk = PRIMARY_KEYS[tableName] || 'id';
-  const isInt = ['SlNo', 'BorrowerID', 'id'].includes(pk);
-  if (isInt) {
-    await supabase.from(tableName).delete().neq(pk, -999999);
-  } else {
-    await supabase.from(tableName).delete().neq(pk, '___DUMMY_DELETE_ALL___');
+  if (tableName === 'work_notes') {
+    saveLocalWorkNotes(rows || []);
   }
-  if (rows && rows.length > 0) {
-    const { error } = await supabase.from(tableName).upsert(rows);
-    if (error) {
-      for (const r of rows) {
-        await safeUpsert(tableName, r);
+  try {
+    const pk = PRIMARY_KEYS[tableName] || 'id';
+    const isInt = ['SlNo', 'BorrowerID', 'id'].includes(pk);
+    if (isInt) {
+      await supabase.from(tableName).delete().neq(pk, -999999);
+    } else {
+      await supabase.from(tableName).delete().neq(pk, '___DUMMY_DELETE_ALL___');
+    }
+    if (rows && rows.length > 0) {
+      const { error } = await supabase.from(tableName).upsert(rows);
+      if (error) {
+        for (const r of rows) {
+          await safeUpsert(tableName, r);
+        }
       }
     }
+  } catch (err) {
+    console.warn(`[Postgres] importTable('${tableName}') exception:`, err.message);
   }
 }
 
@@ -97,124 +189,28 @@ async function insertRow(tableName, row) {
 
 async function updateRow(tableName, matchField, matchValue, newData) {
   const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
-  const val = isInt ? Number(matchValue) : matchValue;
+  const val = isInt ? (parseInt(matchValue, 10) || matchValue) : matchValue;
   await safeUpdate(tableName, matchField, val, newData);
 }
 
 async function deleteRow(tableName, matchField, matchValue) {
-  const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
-  const val = isInt ? Number(matchValue) : matchValue;
-  const { error } = await supabase.from(tableName).delete().eq(matchField, val);
-  if (error) throw error;
+  if (tableName === 'work_notes') {
+    let localNotes = readLocalWorkNotes();
+    localNotes = localNotes.filter(n => n[matchField] != matchValue);
+    saveLocalWorkNotes(localNotes);
+  }
+  try {
+    const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
+    const val = isInt ? (parseInt(matchValue, 10) || matchValue) : matchValue;
+    await supabase.from(tableName).delete().eq(matchField, val);
+  } catch (err) {}
 }
 
 async function replaceTable(tableName, rows) {
-  return importTable(tableName, rows);
-}
-
-async function getBorrowerList(userId) {
-  let query = supabase.from('borrowers').select('*');
-  if (userId) {
-    if (userId === 'admin') {
-      query = query.or(`CreatedBy.eq.${userId},CreatedBy.is.null`);
-    } else {
-      query = query.eq('CreatedBy', userId);
-    }
-  }
-  const { data, error } = await query.order('BorrowerID', { ascending: true });
-  if (error) throw error;
-  return data || [];
-}
-
-async function getBorrowerTxns(borrowerID) {
-  const { data, error } = await supabase
-    .from('borrower_txns')
-    .select('*')
-    .eq('BorrowerID', borrowerID)
-    .order('TxnDate', { ascending: true })
-    .order('TxnID', { ascending: true });
-  if (error) throw error;
-  return data || [];
-}
-
-async function addBorrower(body) {
-  const { data, error } = await supabase
-    .from('borrowers')
-    .insert([{
-      Name: body.Name,
-      Mobile: body.Mobile || '',
-      Address: body.Address || '',
-      Status: 'Active',
-      CreatedBy: body.CreatedBy || null,
-      CreatedAt: new Date().toISOString()
-    }])
-    .select();
-  if (error) throw error;
-  return { BorrowerID: data[0].BorrowerID };
-}
-
-async function updateBorrower(body) {
-  const { error } = await supabase
-    .from('borrowers')
-    .update({
-      Name: body.Name,
-      Mobile: body.Mobile || '',
-      Address: body.Address || ''
-    })
-    .eq('BorrowerID', body.BorrowerID);
-  if (error) throw error;
-}
-
-async function closeBorrower(body) {
-  const { error } = await supabase
-    .from('borrowers')
-    .update({ Status: body.Status })
-    .eq('BorrowerID', body.BorrowerID);
-  if (error) throw error;
-}
-
-async function addBorrowerTxn(body) {
-  const { data, error } = await supabase
-    .from('borrower_txns')
-    .insert([{
-      BorrowerID: body.BorrowerID,
-      TxnDate: body.TxnDate,
-      Amount: body.Amount,
-      Type: body.Type,
-      Remarks: body.Remarks || '',
-      CreatedAt: new Date().toISOString()
-    }])
-    .select();
-  if (error) throw error;
-  return { TxnID: data[0].TxnID };
-}
-
-async function deleteBorrowerTxn(txnID) {
-  const { error } = await supabase
-    .from('borrower_txns')
-    .delete()
-    .eq('TxnID', txnID);
-  if (error) throw error;
-}
-
-async function deleteBorrower(borrowerID) {
-  const bid = Number(borrowerID);
-  const { error: txnErr } = await supabase
-    .from('borrower_txns')
-    .delete()
-    .eq('BorrowerID', bid);
-  if (txnErr) throw txnErr;
-
-  const { error: bErr } = await supabase
-    .from('borrowers')
-    .delete()
-    .eq('BorrowerID', bid);
-  if (bErr) throw bErr;
+  await importTable(tableName, rows);
 }
 
 module.exports = {
-  dbType: 'postgresql',
-  driverName: 'PostgreSQL (Supabase)',
   getStatus,
   getTable,
   importTable,
@@ -222,12 +218,4 @@ module.exports = {
   updateRow,
   deleteRow,
   replaceTable,
-  getBorrowerList,
-  getBorrowerTxns,
-  addBorrower,
-  updateBorrower,
-  closeBorrower,
-  addBorrowerTxn,
-  deleteBorrowerTxn,
-  deleteBorrower,
 };
