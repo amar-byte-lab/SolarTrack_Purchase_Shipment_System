@@ -6,15 +6,12 @@
 const UI = (() => {
 
   const NAV_ITEMS = [
-    // { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
-    { href: 'installments.html',    icon: 'coin',       label: 'Customer' },
-    { href: 'work-note.html',       icon: 'doc',        label: 'Work Note' },
-    // { href: 'item-master.html',     icon: 'box',        label: 'Products' },
-    { href: 'offer.html',           icon: 'file',       label: 'Offer Generator' },
-    { href: 'agreement.html',       icon: 'doc',        label: 'Agreement Generate' },
-    { href: 'demand-note.html',     icon: 'doc',        label: 'Demand Note Generate' },
-    // { href: 'vendor-master.html',   icon: 'people',     label: 'Vendor Master' },
+    { href: 'installments.html',    icon: 'customer',   label: 'Customer' },
+    { href: 'work-note.html',       icon: 'worknote',   label: 'Work Note' },
+    { href: 'offer.html',           icon: 'offer',      label: 'Offer Generator' },
+    { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement Generate' },
+    { href: 'demand-note.html',     icon: 'demand',     label: 'Demand Note Generate' },
     { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
@@ -29,23 +26,25 @@ const UI = (() => {
 <rect x="3" y="8" width="9" height="2.2" rx="1" fill="#F59E0B"/>
 <circle cx="6" cy="15.5" r="2.5" fill="#1E293B" stroke="#F8FAFC" stroke-width="1.5"/>
 <circle cx="18" cy="15.5" r="2.5" fill="#1E293B" stroke="#F8FAFC" stroke-width="1.5"/>`,
-    coin: `<circle cx="12" cy="12" r="9.5" fill="#F59E0B"/>
-<circle cx="12" cy="12" r="8" fill="#FBBF24"/>
-<circle cx="12" cy="9" r="3" fill="#1E3A8A"/>
-<path d="M6.5 17C6.5 14.2 9 13.2 12 13.2C15 13.2 17.5 14.2 17.5 17" fill="#1E3A8A"/>`,
-    box: `<path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#FDBA74"/>
-<path d="M2 7V17L12 22V12L2 7Z" fill="#F97316"/>
-<path d="M12 12V22L22 17V7L12 12Z" fill="#EA580C"/>
-<path d="M9 5.5L15 8.5M12 7L12 12" stroke="#06B6D4" stroke-width="1.5" stroke-linecap="round"/>`,
-    people: `<circle cx="12" cy="8" r="3" fill="#2563EB"/>
-<path d="M6 18C6 15 8.7 13.5 12 13.5C15.3 13.5 18 15 18 18" fill="#2563EB"/>
-<circle cx="5" cy="10" r="2.3" fill="#0D9488"/>
-<path d="M1 18C1 15.8 2.8 14.5 5 14.5C6.1 14.5 7.1 14.8 7.8 15.4C7 16.3 6.4 17.3 6.1 18H1Z" fill="#0D9488"/>
-<circle cx="19" cy="10" r="2.3" fill="#7C3AED"/>
-<path d="M23 18H17.9C17.6 17.3 17 16.3 16.2 15.4C16.9 14.8 17.9 14.5 19 14.5C21.2 14.5 23 15.8 23 18Z" fill="#7C3AED"/>`,
-    'bar-chart': `<rect x="3" y="12" width="4" height="9" rx="1" fill="#3B82F6"/>
-<rect x="10" y="7" width="4" height="14" rx="1" fill="#10B981"/>
-<rect x="17" y="3" width="4" height="18" rx="1" fill="#F59E0B"/>`,
+    customer: `<circle cx="12" cy="7.5" r="4" fill="#3B82F6"/>
+<path d="M4 19C4 15 7.5 13 12 13C16.5 13 20 15 20 19V20H4V19Z" fill="#1D4ED8"/>`,
+    worknote: `<rect x="4" y="2" width="16" height="20" rx="2.5" fill="#F59E0B"/>
+<path d="M7 6H17M7 10H14M7 14H11" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+<circle cx="16.5" cy="15.5" r="3.5" fill="#0284C7"/>
+<path d="M15 15.5L16 16.5L18 14.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+    offer: `<path d="M12.8 2.3L20.7 10.2C21.1 10.6 21.1 11.2 20.7 11.6L12.6 19.7C12.2 20.1 11.6 20.1 11.2 19.7L3.3 11.8C3.1 11.6 3 11.3 3 11V3.5C3 2.7 3.7 2 4.5 2H12C12.3 2 12.6 2.1 12.8 2.3Z" fill="#E11D48"/>
+<circle cx="7.5" cy="6.5" r="2" fill="#FFFFFF"/>
+<path d="M9.5 14.5L14.5 9.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+<circle cx="11" cy="10.5" r="1" fill="#FFFFFF"/>
+<circle cx="13" cy="13.5" r="1" fill="#FFFFFF"/>`,
+    agreement: `<rect x="4" y="2" width="16" height="20" rx="2" fill="#0D9488"/>
+<path d="M7 6H17M7 10H14M7 14H12" stroke="#CCFBF1" stroke-width="1.8" stroke-linecap="round"/>
+<circle cx="15.5" cy="15.5" r="3.5" fill="#F43F5E"/>
+<path d="M14.5 15.5L15.5 16.5L17 14.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+    demand: `<rect x="3" y="2" width="18" height="20" rx="2" fill="#7C3AED"/>
+<path d="M6 6H18M6 10H14" stroke="#EDE9FE" stroke-width="1.8" stroke-linecap="round"/>
+<rect x="6" y="13.5" width="12" height="5.5" rx="1.5" fill="#A78BFA"/>
+<circle cx="12" cy="16.2" r="1.5" fill="#FFFFFF"/>`,
     gear: `<path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" fill="#06B6D4"/>
 <path fill-rule="evenodd" clip-rule="evenodd" d="M10.707 2.228C11.161 1.706 12.839 1.706 13.293 2.228L13.821 2.834C14.331 3.42 15.228 3.565 15.899 3.167L16.594 2.756C17.194 2.401 18.381 3.087 18.472 3.774L18.551 4.372C18.647 5.099 19.261 5.642 19.992 5.642H20.598C21.298 5.642 22.001 6.643 21.782 7.307L21.574 7.935C21.32 8.704 21.688 9.537 22.428 9.878L22.99 10.137C23.6 10.418 23.6 11.982 22.99 12.263L22.428 12.522C21.688 12.863 21.32 13.696 21.574 14.465L21.782 15.093C22.001 15.757 21.298 16.758 20.598 16.758H19.992C19.261 16.758 18.647 17.301 18.551 18.028L18.472 18.626C18.381 19.313 17.194 19.999 16.594 19.644L15.899 19.233C15.228 18.835 14.331 18.98 13.821 19.566L13.293 20.172C12.839 20.694 11.161 20.694 10.707 20.172L10.179 19.566C9.669 18.98 8.772 18.835 8.101 19.233L7.406 19.644C6.806 19.999 5.619 19.313 5.528 18.626L5.449 18.028C5.353 17.301 4.739 16.758 4.008 16.758H3.402C2.702 16.758 1.999 15.757 2.218 15.093L2.426 14.465C2.68 13.696 2.312 12.863 2.312 12.522L1.572 12.263C0.4 11.982 0.4 10.418 1.01 10.137L1.572 9.878C2.312 9.537 2.68 8.704 2.426 7.935L2.218 7.307C1.999 6.643 2.702 5.642 3.402 5.642H4.008C4.739 5.642 5.353 5.099 5.449 4.372L5.528 3.774C5.619 3.087 6.806 2.401 7.406 2.756L8.101 3.167C8.772 3.565 9.669 3.42 10.179 2.834L10.707 2.228ZM12 17C14.7614 17 17 14.7614 17 12C17 9.23858 14.7614 7 12 7C9.23858 7 7 9.23858 7 12C7 14.7614 9.23858 17 12 17Z" fill="#6366F1"/>`,
     wallet: `<path d="M3 5C3 3.89543 3.89543 3 5 3H18C19.1046 3 20 3.89543 20 5V7H5C3.89543 7 3 6.10457 3 5Z" fill="#34D399"/>
