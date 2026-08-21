@@ -30,31 +30,9 @@
         <div class="collapse" id="searchCollapse">
           <div class="pt-3">
             <div class="row g-2 align-items-end">
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label class="form-label fw-bold">Search</label>
                 <input type="text" class="form-control" id="fSearch" placeholder="Name, Address, Mobile, Brand...">
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">District</label>
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary w-100 dropdown-toggle text-start text-truncate" type="button" id="btnDistrictMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.85rem; padding: 6px 10px;">
-                    All Districts
-                  </button>
-                  <div class="dropdown-menu p-3" id="districtMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.85rem;">
-                    <!-- Checkboxes injected by js -->
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">Committed Brand</label>
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary w-100 dropdown-toggle text-start text-truncate" type="button" id="btnBrandMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.85rem; padding: 6px 10px;">
-                    All Brands
-                  </button>
-                  <div class="dropdown-menu p-3" id="brandMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.85rem;">
-                    <!-- Checkboxes injected by js -->
-                  </div>
-                </div>
               </div>
               <div class="col-md-2">
                 <label class="form-label fw-bold">Partner</label>
@@ -67,7 +45,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md">
+              <div class="col-md-2">
                 <label class="form-label fw-bold">Filter Date Type</label>
                 <select class="form-select" id="fDateType">
                   <option value="LoginDate" selected>Login Date</option>
@@ -75,34 +53,22 @@
                   <option value="CommissioningDate">Commissioning Date</option>
                 </select>
               </div>
-              <div class="col-md">
+              <div class="col-md-2">
                 <label class="form-label fw-bold">From Date</label>
                 <input type="date" class="form-control" id="fLoginFrom">
               </div>
-              <div class="col-md">
+              <div class="col-md-2">
                 <label class="form-label fw-bold">To Date</label>
                 <input type="date" class="form-control" id="fLoginTo">
               </div>
-              <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" id="btnClearFilters">Clear Filters</button>
-              </div>
-            </div>
-            <hr class="my-3 opacity-25">
-            <div class="row g-2 align-items-center">
-              <div class="col-md-auto fw-bold text-primary-emphasis" style="font-size:0.85rem;"><span class="me-1">🎨</span>Column Color Customizer:</div>
-              <div class="col-md-3">
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle text-start text-truncate w-100" type="button" id="btnColColorMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.8rem; padding: 4px 10px;">
-                    Select Columns
-                  </button>
-                  <div class="dropdown-menu p-3" id="ccColumnMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.8rem;">
-                    <!-- Checkboxes injected by JS -->
-                  </div>
+              <div class="col-md-auto d-flex align-items-center mb-1">
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" id="chkShowDeactive">
+                  <label class="form-check-label fs-7 fw-semibold text-secondary" for="chkShowDeactive">Show Deactive</label>
                 </div>
               </div>
-              <div class="col-md-2 d-flex align-items-center gap-2">
-                <input type="color" class="form-control form-control-sm form-control-color border" id="ccColorPicker" value="#ffff00" title="Choose color" style="width:40px; height:30px; padding:2px;">
-                <button class="btn btn-sm btn-outline-primary py-1" id="btnResetColors" style="font-size:0.75rem;">Reset All</button>
+              <div class="col-md-auto">
+                <button class="btn btn-outline-secondary" id="btnClearFilters">Clear Filters</button>
               </div>
             </div>
           </div>

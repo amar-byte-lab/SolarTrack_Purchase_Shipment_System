@@ -44,30 +44,11 @@
                 <label class="form-label">Vendor</label>
                 <select class="form-select" id="fVendor"><option value="">All Vendors</option></select>
               </div>
-              <div class="col-md-2 col-12">
+              <div class="col-md-2 col-12 d-flex flex-column justify-content-end">
                 <button class="btn btn-outline-secondary w-100" id="btnClearFilters">Clear Filters</button>
               </div>
-            </div>
-            <hr class="my-2 opacity-25">
-            <!-- Color customizer -->
-            <div class="row g-2 align-items-center">
-              <div class="col-md-auto fw-bold text-primary-emphasis" style="font-size:0.8rem;"><span class="me-1">🎨</span>Column Color Customizer:</div>
-              <div class="col-md-3 col-7">
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle text-start text-truncate w-100" type="button" id="btnColColorMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.78rem; padding: 4px 10px;">
-                    Select Columns
-                  </button>
-                  <div class="dropdown-menu p-3" id="ccColumnMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.78rem;">
-                    <!-- Checked dynamically in js -->
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-2 col-5 d-flex align-items-center gap-2">
-                <input type="color" class="form-control form-control-sm form-control-color border" id="ccColorPicker" value="#ffff00" title="Choose color" style="width:36px; height:28px; padding:2px;">
-                <button class="btn btn-sm btn-outline-primary py-1" id="btnResetColors" style="font-size:0.75rem;">Reset</button>
-              </div>
-              <div class="col-md-auto ms-auto d-flex align-items-center">
-                <div class="form-check mb-0">
+              <div class="col-md-auto col-12 d-flex align-items-end mb-1">
+                <div class="form-check mb-1">
                   <input class="form-check-input" type="checkbox" id="chkShowDeleted">
                   <label class="form-check-label fs-7 fw-semibold text-secondary" for="chkShowDeleted">Show Deleted Shipments</label>
                 </div>

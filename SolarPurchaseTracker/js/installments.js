@@ -127,7 +127,7 @@ window.onDbReady = function () {
   if (btnSaveCust) btnSaveCust.addEventListener('click', saveCustomerModal);
 
   // Search & Filter listeners
-  ['fSearch', 'fLoginFrom', 'fLoginTo', 'fDateType'].forEach(id => {
+  ['fSearch', 'fLoginFrom', 'fLoginTo', 'fDateType', 'chkShowDeactive'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', Utils.debounce(renderList, 200));
@@ -154,6 +154,8 @@ window.onDbReady = function () {
     ['fSearch', 'fLoginFrom', 'fLoginTo'].forEach(id => document.getElementById(id).value = '');
     const dateTypeSel = document.getElementById('fDateType');
     if (dateTypeSel) dateTypeSel.value = 'LoginDate';
+    const chkDeactive = document.getElementById('chkShowDeactive');
+    if (chkDeactive) chkDeactive.checked = false;
     selectedDistricts = [];
     selectedBrands = [];
     selectedPartners = [];
@@ -167,25 +169,31 @@ window.onDbReady = function () {
   });
 
   // Color Customizer listeners
-  document.getElementById('ccColorPicker').addEventListener('input', (e) => {
-    if (selectedColorCols.length === 0) {
-      UI.toast('Please check at least one column from the dropdown first.', 'warning');
-      return;
-    }
-    const color = e.target.value;
-    const savedColors = JSON.parse(localStorage.getItem('installmentColColors') || '{}');
-    selectedColorCols.forEach(col => {
-      savedColors[col] = color;
+  const colorPickerEl = document.getElementById('ccColorPicker');
+  if (colorPickerEl) {
+    colorPickerEl.addEventListener('input', (e) => {
+      if (selectedColorCols.length === 0) {
+        UI.toast('Please check at least one column from the dropdown first.', 'warning');
+        return;
+      }
+      const color = e.target.value;
+      const savedColors = JSON.parse(localStorage.getItem('installmentColColors') || '{}');
+      selectedColorCols.forEach(col => {
+        savedColors[col] = color;
+      });
+      localStorage.setItem('installmentColColors', JSON.stringify(savedColors));
+      applyCustomStyles();
     });
-    localStorage.setItem('installmentColColors', JSON.stringify(savedColors));
-    applyCustomStyles();
-  });
+  }
 
-  document.getElementById('btnResetColors').addEventListener('click', () => {
-    localStorage.removeItem('installmentColColors');
-    applyCustomStyles();
-    updateColorPickerValue();
-  });
+  const resetColorsBtn = document.getElementById('btnResetColors');
+  if (resetColorsBtn) {
+    resetColorsBtn.addEventListener('click', () => {
+      localStorage.removeItem('installmentColColors');
+      applyCustomStyles();
+      updateColorPickerValue();
+    });
+  }
 
   // Bi-directional click handlers on Sales Summary table rows
   const brandSummaryTbody = document.querySelector('#brandSummaryTable tbody');
@@ -848,8 +856,14 @@ function renderList() {
   const loginFrom = document.getElementById('fLoginFrom').value;
   const loginTo = document.getElementById('fLoginTo').value;
   const dateType = document.getElementById('fDateType') ? document.getElementById('fDateType').value : 'LoginDate';
+  const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
 
   let rows = getInstallmentRows();
+
+  // Filter Deactive customers unless 'Show Deactive' checkbox is checked
+  if (!showDeactive) {
+    rows = rows.filter(r => r.Status !== 'Deactive');
+  }
 
   // Apply search
   if (search) {

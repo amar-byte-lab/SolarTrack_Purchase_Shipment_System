@@ -75,20 +75,26 @@ window.onDbReady = function () {
     });
 
     // Color picker
-    document.getElementById('ccColorPicker').addEventListener('input', e => {
-        if (selectedColorCols.length === 0) { UI.toast('Please check at least one column first.', 'warning'); return; }
-        const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-        selectedColorCols.forEach(k => { saved[k] = e.target.value; });
-        localStorage.setItem(LS_KEY, JSON.stringify(saved));
-        applyCustomStyles();
-    });
+    const ccColorPicker = document.getElementById('ccColorPicker');
+    if (ccColorPicker) {
+        ccColorPicker.addEventListener('input', e => {
+            if (selectedColorCols.length === 0) { UI.toast('Please check at least one column first.', 'warning'); return; }
+            const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+            selectedColorCols.forEach(k => { saved[k] = e.target.value; });
+            localStorage.setItem(LS_KEY, JSON.stringify(saved));
+            applyCustomStyles();
+        });
+    }
 
-    document.getElementById('btnResetColors').addEventListener('click', () => {
-        localStorage.removeItem(LS_KEY);
-        applyCustomStyles();
-        updateColorPickerValue();
-        UI.toast('Column colors reset', 'info');
-    });
+    const btnResetColors = document.getElementById('btnResetColors');
+    if (btnResetColors) {
+        btnResetColors.addEventListener('click', () => {
+            localStorage.removeItem(LS_KEY);
+            applyCustomStyles();
+            updateColorPickerValue();
+            UI.toast('Column colors reset', 'info');
+        });
+    }
 
     const collapseEl = document.getElementById('searchCollapse');
     if (collapseEl) {
