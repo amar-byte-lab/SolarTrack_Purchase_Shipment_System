@@ -147,5 +147,24 @@ const Utils = (() => {
     };
   }
 
-  return { uid, nextShipmentNo, getQueryParam, debounce, exportRowsToExcel, exportTableToPDF, csvEscape, initSearchableDropdown };
+  function fmtDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return String(dateStr);
+      const day = String(d.getDate()).padStart(2, '0');
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = monthNames[d.getMonth()];
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch {
+      return String(dateStr);
+    }
+  }
+
+  function formatDate(dateStr) {
+    return fmtDate(dateStr);
+  }
+
+  return { uid, nextShipmentNo, getQueryParam, debounce, exportRowsToExcel, exportTableToPDF, csvEscape, initSearchableDropdown, fmtDate, formatDate };
 })();

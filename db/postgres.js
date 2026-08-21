@@ -1,6 +1,4 @@
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
 
 const rawUrl = process.env.SUPABASE_URL || '';
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
@@ -9,37 +7,6 @@ const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBL
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
 });
-
-const WORK_NOTES_FILE = path.join(__dirname, '..', 'data', 'work_notes.json');
-
-function ensureDataDir() {
-  const dir = path.dirname(WORK_NOTES_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-}
-
-function readLocalWorkNotes() {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(WORK_NOTES_FILE)) {
-      const content = fs.readFileSync(WORK_NOTES_FILE, 'utf8');
-      return JSON.parse(content || '[]');
-    }
-  } catch (e) {
-    console.warn('[LocalWorkNotes] Read error:', e.message);
-  }
-  return [];
-}
-
-function saveLocalWorkNotes(notes) {
-  try {
-    ensureDataDir();
-    fs.writeFileSync(WORK_NOTES_FILE, JSON.stringify(notes, null, 2), 'utf8');
-  } catch (e) {
-    console.warn('[LocalWorkNotes] Write error:', e.message);
-  }
-}
 
 const PRIMARY_KEYS = {
   shipments:           'ShipmentNo',
@@ -67,52 +34,55 @@ async function getStatus() {
 }
 
 async function getTable(tableName) {
-  if (tableName === 'work_notes') {
-    let localNotes = readLocalWorkNotes();
-    try {
-      const { data, error } = await supabase.from(tableName).select('*');
-      if (!error && Array.isArray(data)) {
-        const map = new Map();
-        localNotes.forEach(n => map.set(n.NoteID, n));
-        data.forEach(n => map.set(n.NoteID, n));
-        const merged = Array.from(map.values());
-        if (merged.length > localNotes.length) {
-          saveLocalWorkNotes(merged);
-        }
-        return merged;
-      }
-    } catch (err) {
-      console.warn(`[Postgres] getTable('${tableName}') exception:`, err.message);
-    }
-    return localNotes;
-  }
-
   try {
     const { data, error } = await supabase.from(tableName).select('*');
     if (error) {
-      console.warn(`[Postgres] getTable('${tableName}') error:`, error.message);
+      console.error(`[Postgres] getTable('${tableName}') error:`, error.message);
       return [];
+    }
+    if (data && Array.isArray(data)) {
+      return data.map(row => {
+        const normalized = { ...row };
+        Object.keys(row).forEach(k => {
+          const lower = k.toLowerCase();
+          if (lower === 'noteid') normalized.NoteID = row[k];
+          if (lower === 'notetitle') normalized.NoteTitle = row[k];
+          if (lower === 'commonnote') normalized.CommonNote = row[k];
+          if (lower === 'selectedbadges') normalized.SelectedBadges = row[k];
+          if (lower === 'customerdata') normalized.CustomerData = row[k];
+          if (lower === 'createdat') normalized.CreatedAt = row[k];
+          if (lower === 'updatedat') normalized.UpdatedAt = row[k];
+        });
+        return normalized;
+      });
     }
     return data || [];
   } catch (err) {
-    console.warn(`[Postgres] getTable('${tableName}') exception:`, err.message);
+    console.error(`[Postgres] getTable('${tableName}') exception:`, err.message);
     return [];
   }
 }
 
 async function safeUpsert(tableName, row) {
-  if (tableName === 'work_notes') {
-    let localNotes = readLocalWorkNotes();
-    const idx = localNotes.findIndex(n => n.NoteID === row.NoteID);
-    if (idx > -1) {
-      localNotes[idx] = { ...localNotes[idx], ...row };
-    } else {
-      localNotes.push(row);
-    }
-    saveLocalWorkNotes(localNotes);
-  }
-
   let item = { ...row };
+  if (tableName === 'work_notes') {
+    item = {
+      NoteID: row.NoteID || row.noteid,
+      noteid: row.NoteID || row.noteid,
+      NoteTitle: row.NoteTitle || row.notetitle,
+      notetitle: row.NoteTitle || row.notetitle,
+      CommonNote: row.CommonNote || row.commonnote,
+      commonnote: row.CommonNote || row.commonnote,
+      SelectedBadges: row.SelectedBadges || row.selectedbadges,
+      selectedbadges: row.SelectedBadges || row.selectedbadges,
+      CustomerData: row.CustomerData || row.customerdata,
+      customerdata: row.CustomerData || row.customerdata,
+      CreatedAt: row.CreatedAt || row.createdat,
+      createdat: row.CreatedAt || row.createdat,
+      UpdatedAt: row.UpdatedAt || row.updatedat,
+      updatedat: row.UpdatedAt || row.updatedat,
+    };
+  }
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       const { error } = await supabase.from(tableName).upsert([item]);
@@ -123,24 +93,35 @@ async function safeUpsert(tableName, row) {
         delete item[match[1]];
         continue;
       }
+      console.error(`[Postgres] safeUpsert('${tableName}') error:`, error.message);
       return;
     } catch (err) {
+      console.error(`[Postgres] safeUpsert('${tableName}') exception:`, err.message);
       return;
     }
   }
 }
 
 async function safeUpdate(tableName, matchField, val, newData) {
-  if (tableName === 'work_notes') {
-    let localNotes = readLocalWorkNotes();
-    const idx = localNotes.findIndex(n => n[matchField] == val);
-    if (idx > -1) {
-      localNotes[idx] = { ...localNotes[idx], ...newData };
-      saveLocalWorkNotes(localNotes);
-    }
-  }
-
   let item = { ...newData };
+  if (tableName === 'work_notes') {
+    item = {
+      NoteID: newData.NoteID || newData.noteid || val,
+      noteid: newData.NoteID || newData.noteid || val,
+      NoteTitle: newData.NoteTitle || newData.notetitle,
+      notetitle: newData.NoteTitle || newData.notetitle,
+      CommonNote: newData.CommonNote || newData.commonnote,
+      commonnote: newData.CommonNote || newData.commonnote,
+      SelectedBadges: newData.SelectedBadges || newData.selectedbadges,
+      selectedbadges: newData.SelectedBadges || newData.selectedbadges,
+      CustomerData: newData.CustomerData || newData.customerdata,
+      customerdata: newData.CustomerData || newData.customerdata,
+      CreatedAt: newData.CreatedAt || newData.createdat,
+      createdat: newData.CreatedAt || newData.createdat,
+      UpdatedAt: newData.UpdatedAt || newData.updatedat,
+      updatedat: newData.UpdatedAt || newData.updatedat,
+    };
+  }
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       const { error } = await supabase.from(tableName).update(item).eq(matchField, val);
@@ -151,17 +132,16 @@ async function safeUpdate(tableName, matchField, val, newData) {
         delete item[match[1]];
         continue;
       }
+      console.error(`[Postgres] safeUpdate('${tableName}') error:`, error.message);
       return;
     } catch (err) {
+      console.error(`[Postgres] safeUpdate('${tableName}') exception:`, err.message);
       return;
     }
   }
 }
 
 async function importTable(tableName, rows) {
-  if (tableName === 'work_notes') {
-    saveLocalWorkNotes(rows || []);
-  }
   try {
     const pk = PRIMARY_KEYS[tableName] || 'id';
     const isInt = ['SlNo', 'BorrowerID', 'id'].includes(pk);
@@ -194,20 +174,74 @@ async function updateRow(tableName, matchField, matchValue, newData) {
 }
 
 async function deleteRow(tableName, matchField, matchValue) {
-  if (tableName === 'work_notes') {
-    let localNotes = readLocalWorkNotes();
-    localNotes = localNotes.filter(n => n[matchField] != matchValue);
-    saveLocalWorkNotes(localNotes);
-  }
   try {
     const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
     const val = isInt ? (parseInt(matchValue, 10) || matchValue) : matchValue;
-    await supabase.from(tableName).delete().eq(matchField, val);
-  } catch (err) {}
+    const { error } = await supabase.from(tableName).delete().eq(matchField, val);
+    if (error) console.warn(`[Postgres] deleteRow('${tableName}') warning:`, error.message);
+  } catch (err) {
+    console.warn(`[Postgres] deleteRow('${tableName}') exception:`, err.message);
+  }
 }
 
 async function replaceTable(tableName, rows) {
   await importTable(tableName, rows);
+}
+
+async function getBorrowerList(userId) {
+  try {
+    const { data, error } = await supabase.from('borrowers').select('*');
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function getBorrowerTxns(borrowerID) {
+  try {
+    const { data, error } = await supabase.from('borrower_txns').select('*').eq('BorrowerID', borrowerID);
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function addBorrower(body) {
+  try {
+    await safeUpsert('borrowers', body);
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
+async function updateBorrower(body) {
+  try {
+    await safeUpdate('borrowers', 'BorrowerID', body.BorrowerID, body);
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
+async function closeBorrower(body) {
+  try {
+    await safeUpdate('borrowers', 'BorrowerID', body.BorrowerID, { Status: 'Closed' });
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
+async function addBorrowerTxn(body) {
+  try {
+    await safeUpsert('borrower_txns', body);
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
 }
 
 module.exports = {
@@ -218,4 +252,10 @@ module.exports = {
   updateRow,
   deleteRow,
   replaceTable,
+  getBorrowerList,
+  getBorrowerTxns,
+  addBorrower,
+  updateBorrower,
+  closeBorrower,
+  addBorrowerTxn,
 };

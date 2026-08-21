@@ -9,19 +9,20 @@
 <link rel="stylesheet" href="css/installments.css">
 <script src="js/auth.js"></script>
 <style>
+  /* Matching Typography & Sizing with installments.html */
   .badge-toggle {
     cursor: pointer;
     user-select: none;
     transition: all 0.15s ease;
-    font-size: 0.68rem !important;
-    padding: 1px 6px;
-    border-radius: 10px;
+    font-size: 0.82rem;
+    padding: 3px 10px;
+    border-radius: 12px;
     border: 1px solid #cbd5e1;
     background-color: #f8fafc;
     color: #334155;
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
   }
   .badge-toggle:hover {
     border-color: #6366f1;
@@ -47,16 +48,17 @@
     background-color: #fefce8;
     border: 1px dashed #fde047;
     border-radius: 6px;
-    padding: 4px 6px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
   }
   .editable-cell-input {
     border: 1px solid #cbd5e1;
-    border-radius: 3px;
-    padding: 1px 3px;
-    font-size: 0.68rem !important;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 0.85rem;
     width: 100%;
-    min-width: 65px;
-    height: 20px;
+    min-width: 75px;
+    height: 28px;
     background-color: #ffffff;
   }
   .editable-cell-input:focus {
@@ -75,71 +77,122 @@
     box-shadow: 0 2px 6px rgba(99, 102, 241, 0.1);
   }
   .cust-list-container {
-    max-height: 130px;
+    max-height: 160px;
     overflow-y: auto;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 1px 3px;
+    padding: 3px 6px;
     background: #ffffff;
   }
   .hover-bg:hover {
     background-color: #f8fafc;
   }
   .cust-item-row {
-    min-height: 22px;
+    min-height: 28px;
   }
 
   .st-card-compact {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 4px 8px;
-    margin-bottom: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
   }
 
-  /* Compact form controls */
+  /* Form controls matching installments.html */
   .form-label-compact {
-    font-size: 0.68rem !important;
+    font-size: 0.80rem;
     font-weight: 700;
-    margin-bottom: 1px;
+    margin-bottom: 3px;
     color: #475569;
   }
   .input-sm-compact {
-    font-size: 0.68rem !important;
-    padding: 1px 4px;
-    height: 22px;
+    font-size: 0.85rem;
+    padding: 3px 8px;
+    height: 30px;
   }
 
-  /* Compact Borderless Table Styles */
-  #workNoteTable {
+  /* Responsive helper classes matching installments.html */
+  .wn-text-sm { font-size: 0.82rem; }
+  .wn-text-base { font-size: 0.85rem; }
+  .wn-cust-name { font-size: 0.85rem; font-weight: 600; }
+  .wn-district-badge { font-size: 0.78rem; }
+
+  /* Ultra-Compact Work Note Table & Modal Table Styles */
+  #workNoteTable, #modalWorkNoteTable {
     font-size: 0.68rem !important;
     border-collapse: separate;
     border-spacing: 0;
   }
-  #workNoteTable th {
+  #workNoteTable th, #modalWorkNoteTable th {
     font-size: 0.65rem !important;
     font-weight: 700;
-    padding: 2px 3px !important;
+    padding: 2px 4px !important;
     background-color: #f8fafc !important;
     border-bottom: 1px solid #e2e8f0 !important;
     color: #334155;
+    white-space: nowrap;
   }
-  #workNoteTable td {
+  #workNoteTable td, #modalWorkNoteTable td {
     padding: 1px 3px !important;
     border-bottom: 1px solid #f1f5f9 !important;
   }
+  #workNoteTable .editable-cell-input, #modalWorkNoteTable .editable-cell-input {
+    font-size: 0.68rem !important;
+    height: 20px !important;
+    padding: 1px 3px !important;
+    min-width: 60px;
+  }
+  #workNoteTable .wn-cust-name, #modalWorkNoteTable .wn-cust-name {
+    font-size: 0.68rem !important;
+    font-weight: 600;
+  }
 
-  @media (max-width: 768px) {
+  /* Mobile Responsive Tweaks (< 768px) */
+  @media (max-width: 767.98px) {
     .page-body {
-      padding: 4px !important;
+      padding: 6px !important;
     }
     .st-card-compact {
+      padding: 6px 8px !important;
+      margin-bottom: 6px !important;
+    }
+    .badge-toggle {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+    }
+    .editable-cell-input {
+      font-size: 0.78rem;
+      height: 25px;
+      padding: 2px 4px;
+    }
+    .form-label-compact {
+      font-size: 0.75rem;
+    }
+    .input-sm-compact {
+      font-size: 0.78rem;
+      height: 26px;
+    }
+    .wn-text-sm { font-size: 0.75rem; }
+    .wn-text-base { font-size: 0.78rem; }
+    .wn-cust-name { font-size: 0.78rem; font-weight: 600; }
+    .wn-district-badge { font-size: 0.72rem; }
+    #workNoteTable {
+      font-size: 0.78rem;
+    }
+    #workNoteTable th {
+      font-size: 0.70rem;
       padding: 4px 6px !important;
-      margin-bottom: 5px !important;
     }
-    .cust-list-container {
-      max-height: 110px;
+    #workNoteTable td {
+      padding: 3px 6px !important;
     }
+  }
+  /* Section Header matching installments.html */
+  .wn-section-header {
+    font-size: 0.85rem !important;
+    font-weight: 700;
+    color: #1e1b4b;
   }
 </style>
 </head>
@@ -152,17 +205,12 @@
     <div class="topbar" id="topbar"></div>
 
     <div class="page-body">
-      <!-- Short Title Header -->
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <h5 class="fw-bold mb-0 text-primary fs-6">📝 Work Note</h5>
-      </div>
-
       <!-- 1. Search & Filter Bar -->
       <div class="st-card-compact no-print">
         <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
           <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
-            <span class="fw-bold text-primary-emphasis" style="font-size: 0.68rem;">🔍 Search & Filters</span>
-            <span class="text-muted" id="searchCollapseIndicator" style="font-size: 0.68rem;">▼ Show</span>
+            <span class="wn-section-header">🔍 Search & Filters</span>
+            <span class="text-muted wn-text-sm" id="searchCollapseIndicator">▼ Show</span>
           </div>
           <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center ms-auto" style="font-size: 0.62rem;"></div>
         </div>
@@ -203,7 +251,7 @@
               <div class="col-auto d-flex align-items-center mb-1">
                 <div class="form-check mb-0">
                   <input class="form-check-input" type="checkbox" id="chkShowDeactive" style="width: 12px; height: 12px;">
-                  <label class="form-check-label fw-semibold text-secondary ms-1" for="chkShowDeactive" style="font-size: 0.68rem;">Show Deactive</label>
+                  <label class="form-check-label fw-semibold text-secondary ms-1 wn-text-sm" for="chkShowDeactive">Show Deactive</label>
                 </div>
               </div>
               <div class="col-auto">
@@ -217,21 +265,21 @@
       <!-- 2. Customer Selection Section -->
       <div class="st-card-compact">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="fw-bold text-dark" style="font-size: 0.68rem;">👥 Select Customers</span>
+          <span class="wn-section-header">👥 Select Customers</span>
           <div class="d-flex align-items-center gap-1 mb-0">
             <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="chkSelectAllCustomers" style="width: 12px; height: 12px;">
-            <label class="form-check-label fw-bold text-primary ms-1 cursor-pointer" for="chkSelectAllCustomers" id="lblSelectAll" style="font-size: 0.68rem;">Select All</label>
+            <label class="form-check-label fw-bold text-primary ms-1 cursor-pointer wn-text-sm" for="chkSelectAllCustomers" id="lblSelectAll">Select All</label>
           </div>
         </div>
         <div class="cust-list-container" id="customerSelectionContainer">
           <!-- Checkbox list injected dynamically -->
         </div>
-        <div class="text-secondary mt-1 fw-semibold" id="selectedCustomerCountLabel" style="font-size: 0.65rem;">0 selected</div>
+        <div class="text-secondary mt-1 fw-semibold wn-text-sm" id="selectedCustomerCountLabel">0 selected</div>
       </div>
 
       <!-- 3. Badges Selection Section -->
       <div class="st-card-compact">
-        <div class="fw-bold text-dark mb-1" style="font-size: 0.68rem;">🏷️ Select Columns</div>
+        <div class="wn-section-header mb-1">🏷️ Select Columns</div>
         <div class="d-flex flex-wrap gap-1" id="badgesContainer">
           <!-- Badges injected dynamically by JS -->
         </div>
@@ -240,8 +288,8 @@
       <!-- 4. Dynamic Work Note Table Builder -->
       <div class="st-card-compact" id="tableCard" style="display:none;">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="fw-bold text-primary" style="font-size: 0.68rem;">📊 Work Note Table</span>
-          <span class="text-secondary fw-bold" id="tableRowCountLabel" style="font-size: 0.65rem;">0 rows</span>
+          <span class="wn-section-header">📊 Work Note Table</span>
+          <span class="text-secondary fw-bold wn-text-sm" id="tableRowCountLabel">0 rows</span>
         </div>
         <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
           <table class="table table-borderless table-hover align-middle mb-0" id="workNoteTable">
@@ -268,7 +316,7 @@
           <div class="col-12">
             <div class="keep-note-box">
               <label class="form-label-compact text-warning-emphasis mb-0.5">📝 Common Remarks</label>
-              <textarea class="form-control border-0 bg-transparent shadow-none" id="txtCommonNote" rows="2" placeholder="Enter batch remarks or instructions..." style="font-size: 0.68rem;"></textarea>
+              <textarea class="form-control border-0 bg-transparent shadow-none wn-text-sm" id="txtCommonNote" rows="2" placeholder="Enter batch remarks or instructions..."></textarea>
             </div>
           </div>
           <div class="col-12 d-flex justify-content-end gap-1 pt-1">
@@ -281,7 +329,7 @@
       <!-- 6. Saved Work Notes List -->
       <div class="st-card-compact">
         <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
-          <span class="fw-bold text-primary" style="font-size: 0.68rem;">📚 Saved Notes</span>
+          <span class="wn-section-header">📚 Saved Notes</span>
           <div style="width: 100%; max-width: 150px;">
             <input type="text" class="form-control input-sm-compact" id="fSavedNoteSearch" placeholder="Search saved notes...">
           </div>
@@ -331,8 +379,7 @@
         <span class="text-secondary" id="viewNoteModalMeta" style="font-size: 0.68rem;"></span>
         <div>
           <button type="button" class="btn btn-xs btn-secondary me-1 py-0" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-xs btn-warning text-dark fw-bold me-1 py-0" id="btnEditSavedNoteFromModal">✏️ Edit</button>
-          <button type="button" class="btn btn-xs btn-danger py-0" id="btnDeleteSavedNoteFromModal">🗑️ Delete</button>
+          <button type="button" class="btn btn-xs btn-primary fw-bold py-0" id="btnUpdateSavedNoteFromModal">💾 Save Changes</button>
         </div>
       </div>
     </div>

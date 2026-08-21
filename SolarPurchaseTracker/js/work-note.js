@@ -5,16 +5,14 @@
 let selectedCustomerSlNos = [];
 let selectedDistricts = [];
 let selectedBadges = [
-  { key: 'CommittedBrand', label: 'Brand', type: 'preset' },
-  { key: 'CommittedPrice', label: 'Cust. Cost', type: 'preset' },
-  { key: 'PartnerPrice', label: 'Part. Cost', type: 'preset' },
-  { key: 'NetMeterPayment', label: 'Meter', type: 'preset' }
+  { key: 'CommittedBrand', label: 'Brand', type: 'preset' }
 ];
 let customBadgeIndex = 1;
 let selectedPartners = [];
 let editingNoteID = null;
 let currentEditedCellValues = {}; // key: `${slNo}_${badgeKey}` -> value
 let currentViewingNoteID = null;
+let currentModalCellValues = {}; // key: `${slNo}_${badgeKey}` -> value inside popup
 
 const PRESET_BADGES = [
   { key: 'CommittedBrand', label: 'Brand', type: 'preset' },
@@ -40,14 +38,37 @@ window.onDbReady = async function () {
   await fetchAndRenderSavedNotes();
 };
 
+function getNoteVal(n, key) {
+  if (!n) return '';
+  if (n[key] !== undefined && n[key] !== null) return n[key];
+  const lower = key.toLowerCase();
+  if (n[lower] !== undefined && n[lower] !== null) return n[lower];
+  return '';
+}
+
+function formatNoteDate(dateStr) {
+  if (!dateStr) return 'Recent';
+  if (typeof Utils !== 'undefined' && typeof Utils.fmtDate === 'function') {
+    return Utils.fmtDate(dateStr) || 'Recent';
+  }
+  if (typeof Utils !== 'undefined' && typeof Utils.formatDate === 'function') {
+    return Utils.formatDate(dateStr) || 'Recent';
+  }
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString('en-IN');
+  } catch(e){}
+  return String(dateStr);
+}
+
 async function fetchAndRenderSavedNotes() {
   try {
     const res = await fetch('/api/get?table=work_notes');
     if (res.ok) {
       const dbNotes = await res.json();
       if (Array.isArray(dbNotes)) {
-        if (typeof DB !== 'undefined' && typeof DB.replaceAll === 'function') {
-          await DB.replaceAll('work_notes', dbNotes);
+        if (typeof DB !== 'undefined' && typeof DB.setLocalCache === 'function') {
+          DB.setLocalCache('work_notes', dbNotes);
         }
       }
     }
@@ -142,43 +163,16 @@ function initEventListeners() {
     confirmAddColBtn.addEventListener('click', handleAddCustomColumnConfirm);
   }
 
-  // Save Work Note button
+  // Save Work Note button (for main generator form)
   const saveNoteBtn = document.getElementById('btnSaveWorkNote');
   if (saveNoteBtn) {
     saveNoteBtn.addEventListener('click', saveWorkNote);
   }
 
-  // View modal edit/delete buttons
-  const modalEditBtn = document.getElementById('btnEditSavedNoteFromModal');
-  if (modalEditBtn) {
-    modalEditBtn.addEventListener('click', () => {
-      if (currentViewingNoteID) {
-        const modalEl = document.getElementById('viewNoteModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-        loadSavedNoteIntoEditor(currentViewingNoteID);
-      }
-    });
-  }
-
-  const modalDeleteBtn = document.getElementById('btnDeleteSavedNoteFromModal');
-  if (modalDeleteBtn) {
-    modalDeleteBtn.addEventListener('click', async () => {
-      if (currentViewingNoteID) {
-        const confirmed = await UI.confirmDialog('Are you sure you want to delete this Work Note?');
-        if (confirmed) {
-          await DB.remove('work_notes', x => x.NoteID === currentViewingNoteID);
-          UI.toast('Work Note deleted successfully.', 'success');
-          const modalEl = document.getElementById('viewNoteModal');
-          const modal = bootstrap.Modal.getInstance(modalEl);
-          if (modal) modal.hide();
-          if (editingNoteID === currentViewingNoteID) {
-            resetWorkNoteEditor();
-          }
-          await fetchAndRenderSavedNotes();
-        }
-      }
-    });
+  // View modal update button
+  const modalUpdateBtn = document.getElementById('btnUpdateSavedNoteFromModal');
+  if (modalUpdateBtn) {
+    modalUpdateBtn.addEventListener('click', updateWorkNoteFromModal);
   }
 }
 
@@ -241,7 +235,7 @@ function updateDistrictStats() {
     ? 'bg-dark text-white border border-2 border-success shadow-sm fw-bold'
     : 'bg-success-subtle text-success-emphasis border border-success-subtle';
 
-  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="badge rounded-pill ${totalBadgeClass} px-1.5 py-0.5" style="font-size: 0.62rem !important; font-weight: ${isTotalActive ? '700' : '500'}; cursor: pointer; transition: all 0.15s ease;" title="Click to clear filter and show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
+  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="badge rounded-pill ${totalBadgeClass} px-1.5 py-0.5 wn-district-badge" style="cursor: pointer; transition: all 0.15s ease;" title="Click to clear filter and show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
 
   const districtBadges = sortedDistricts.map((dist, index) => {
     const count = counts[dist];
@@ -251,9 +245,9 @@ function updateDistrictStats() {
 
     const safeDist = dist.replace(/'/g, "\\'");
     if (isSelected) {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-primary text-white border border-2 border-dark shadow-sm px-1.5 py-0.5" style="font-size: 0.62rem !important; font-weight: 700 !important; cursor: pointer; transition: all 0.15s ease;" title="Selected filter. Click to toggle off.">✓ ${dist}: ${count}</span>`;
+      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-primary text-white border border-2 border-dark shadow-sm px-1.5 py-0.5 wn-district-badge" style="font-weight: 700 !important; cursor: pointer; transition: all 0.15s ease;" title="Selected filter. Click to toggle off.">✓ ${dist}: ${count}</span>`;
     } else {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill ${style} px-1.5 py-0.5" style="font-size: 0.6rem !important; font-weight: 500; cursor: pointer; opacity: 0.85; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
+      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill ${style} px-1.5 py-0.5 wn-district-badge" style="cursor: pointer; opacity: 0.85; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
     }
   });
 
@@ -319,15 +313,15 @@ function renderCustomerSelectionList() {
   if (!container) return;
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="text-muted text-center py-1" style="font-size: 0.68rem;">No customers found.</div>`;
+    container.innerHTML = `<div class="text-muted text-center py-1 wn-text-sm">No customers found.</div>`;
   } else {
     container.innerHTML = filtered.map(r => {
       const sl = Number(r.SlNo);
       const isChecked = selectedCustomerSlNos.includes(sl);
       return `
         <div class="d-flex align-items-center gap-1.5 py-0.5 px-1.5 border-bottom border-light hover-bg cust-item-row">
-          <input class="form-check-input cust-chk m-0 cursor-pointer flex-shrink-0" type="checkbox" value="${sl}" id="cust_chk_${sl}" ${isChecked ? 'checked' : ''} style="width: 12px; height: 12px;">
-          <label class="form-check-label text-dark cursor-pointer mb-0 flex-grow-1" for="cust_chk_${sl}" style="font-size: 0.68rem !important; font-weight: 600;">
+          <input class="form-check-input cust-chk m-0 cursor-pointer flex-shrink-0" type="checkbox" value="${sl}" id="cust_chk_${sl}" ${isChecked ? 'checked' : ''} style="width: 13px; height: 13px;">
+          <label class="form-check-label text-dark cursor-pointer mb-0 flex-grow-1 wn-cust-name" for="cust_chk_${sl}">
             ${r.Name || 'Unnamed'}
           </label>
         </div>
@@ -344,6 +338,7 @@ function renderCustomerSelectionList() {
           selectedCustomerSlNos = selectedCustomerSlNos.filter(x => x !== sl);
         }
         updateSelectAllState(filtered);
+        updateCustomerCountLabel();
         renderWorkNoteTable();
       });
     });
@@ -545,15 +540,13 @@ function renderWorkNoteTable() {
 
   if (rowCountLabel) rowCountLabel.textContent = `${selectedRows.length} rows`;
 
-  // Render Borderless Ultra-Compact Table Headers (0.65rem)
   theadRow.innerHTML = `
-    <th class="text-center" style="width:25px; font-size: 0.65rem !important;">#</th>
-    <th style="min-width:110px; font-size: 0.65rem !important;">CUSTOMER NAME</th>
-    ${selectedBadges.map(b => `<th style="min-width:85px; font-size: 0.65rem !important;">${b.label.toUpperCase()}</th>`).join('')}
-    <th class="text-center" style="width:30px; font-size: 0.65rem !important;">ACT</th>
+    <th class="text-center" style="width:25px;">#</th>
+    <th style="min-width:110px;">CUSTOMER NAME</th>
+    ${selectedBadges.map(b => `<th style="min-width:85px;">${b.label.toUpperCase()}</th>`).join('')}
+    <th class="text-center" style="width:30px;">ACT</th>
   `;
 
-  // Render Table Rows (Populates raw DB default values for new notes or edited values for existing notes)
   tbody.innerHTML = selectedRows.map((r, idx) => {
     const sl = Number(r.SlNo);
     const cellsHtml = selectedBadges.map(badge => {
@@ -563,7 +556,6 @@ function renderWorkNoteTable() {
         val = getCustomerDefaultValue(r, badge);
       }
 
-      // If badge is NetMeterPayment, render Paid checkbox INSIDE the textbox itself
       if (badge.key === 'NetMeterPayment') {
         const paidKey = `${sl}_NetMeterPaid`;
         let paidVal = currentEditedCellValues[paidKey];
@@ -576,7 +568,7 @@ function renderWorkNoteTable() {
           <td class="py-0.5">
             <div class="position-relative d-flex align-items-center">
               <input type="text" class="editable-cell-input pe-4" data-sl="${sl}" data-badge="NetMeterPayment" value="${val !== null && val !== undefined ? String(val).replace(/"/g, '&quot;') : ''}" onchange="handleCellInputChange(this)">
-              <input type="checkbox" class="form-check-input cursor-pointer position-absolute end-0 me-1.5" data-sl="${sl}" data-badge="NetMeterPaid" ${isPaid ? 'checked' : ''} onchange="handleCellChkChange(this)" style="width:12px; height:12px; top:50%; transform:translateY(-50%);" title="Meter Paid Checkbox">
+              <input type="checkbox" class="form-check-input cursor-pointer position-absolute end-0 me-1.5" data-sl="${sl}" data-badge="NetMeterPaid" ${isPaid ? 'checked' : ''} onchange="handleCellChkChange(this)" style="width:13px; height:13px; top:50%; transform:translateY(-50%);" title="Meter Paid Checkbox">
             </div>
           </td>
         `;
@@ -592,13 +584,13 @@ function renderWorkNoteTable() {
 
     return `
       <tr>
-        <td class="text-center fw-bold align-middle py-0.5" style="font-size: 0.68rem !important;">${idx + 1}</td>
-        <td class="text-dark align-middle py-0.5" style="font-size: 0.68rem !important; font-weight: 600;">
+        <td class="text-center fw-bold align-middle py-0.5 wn-text-sm">${idx + 1}</td>
+        <td class="text-dark align-middle py-0.5 wn-cust-name">
           ${r.Name || 'Unnamed'}
         </td>
         ${cellsHtml}
         <td class="text-center align-middle py-0.5">
-          <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeCustomerFromNote(${sl})" title="Remove" style="font-size: 0.65rem;">✕</button>
+          <button class="btn btn-sm btn-outline-danger py-0 px-1 wn-text-sm" onclick="removeCustomerFromNote(${sl})" title="Remove">✕</button>
         </td>
       </tr>
     `;
@@ -668,7 +660,6 @@ async function saveWorkNote() {
       }
       rowValues[badge.key] = val;
 
-      // If badge is NetMeterPayment, also save NetMeterPaid status
       if (badge.key === 'NetMeterPayment') {
         const paidKey = `${sl}_NetMeterPaid`;
         let paidVal = currentEditedCellValues[paidKey];
@@ -691,14 +682,14 @@ async function saveWorkNote() {
     CommonNote: commonNote,
     SelectedBadges: JSON.stringify(selectedBadges),
     CustomerData: JSON.stringify(customerData),
-    CreatedAt: editingNoteID ? ((DB.getAll('work_notes') || []).find(x => x.NoteID === editingNoteID) || {}).CreatedAt || nowISO : nowISO,
+    CreatedAt: editingNoteID ? (getNoteVal((DB.getAll('work_notes') || []).find(x => getNoteVal(x, 'NoteID') == editingNoteID), 'CreatedAt') || nowISO) : nowISO,
     UpdatedAt: nowISO
   };
 
   UI.showLoading(true);
   try {
     if (editingNoteID) {
-      await DB.update('work_notes', x => x.NoteID === editingNoteID, noteRecord);
+      await DB.update('work_notes', x => getNoteVal(x, 'NoteID') == editingNoteID, noteRecord);
       UI.toast(`Work Note "${title}" updated.`, 'success');
     } else {
       await DB.insert('work_notes', noteRecord);
@@ -729,10 +720,7 @@ window.resetWorkNoteEditor = function() {
   if (saveBtn) saveBtn.textContent = '💾 Save Work Note';
 
   selectedBadges = [
-    { key: 'CommittedBrand', label: 'Brand', type: 'preset' },
-    { key: 'CommittedPrice', label: 'Cust. Cost', type: 'preset' },
-    { key: 'PartnerPrice', label: 'Part. Cost', type: 'preset' },
-    { key: 'NetMeterPayment', label: 'Meter', type: 'preset' }
+    { key: 'CommittedBrand', label: 'Brand', type: 'preset' }
   ];
 
   renderBadgesContainer();
@@ -747,19 +735,19 @@ function renderSavedNotesList() {
   const search = (document.getElementById('fSavedNoteSearch') ? document.getElementById('fSavedNoteSearch').value : '').toLowerCase();
   let notes = DB.getAll('work_notes') || [];
   notes = [...notes];
-  notes.sort((a, b) => new Date(b.UpdatedAt || b.CreatedAt) - new Date(a.UpdatedAt || a.CreatedAt));
+  notes.sort((a, b) => new Date(getNoteVal(b, 'UpdatedAt') || getNoteVal(b, 'CreatedAt')) - new Date(getNoteVal(a, 'UpdatedAt') || getNoteVal(a, 'CreatedAt')));
 
   if (search) {
     notes = notes.filter(n =>
-      String(n.NoteTitle || '').toLowerCase().includes(search) ||
-      String(n.NoteID || '').toLowerCase().includes(search) ||
-      String(n.CommonNote || '').toLowerCase().includes(search)
+      String(getNoteVal(n, 'NoteTitle')).toLowerCase().includes(search) ||
+      String(getNoteVal(n, 'NoteID')).toLowerCase().includes(search) ||
+      String(getNoteVal(n, 'CommonNote')).toLowerCase().includes(search)
     );
   }
 
   if (notes.length === 0) {
     container.innerHTML = `
-      <div class="col-12 text-center text-muted py-2 bg-light rounded border border-dashed" style="font-size: 0.68rem;">
+      <div class="col-12 text-center text-muted py-2 bg-light rounded border border-dashed wn-text-sm">
         No saved notes found.
       </div>
     `;
@@ -767,37 +755,21 @@ function renderSavedNotesList() {
   }
 
   container.innerHTML = notes.map(n => {
-    let customerCount = 0;
-    let badgeCount = 0;
-    try {
-      const custData = JSON.parse(n.CustomerData || '[]');
-      customerCount = custData.length;
-      const badges = JSON.parse(n.SelectedBadges || '[]');
-      badgeCount = badges.length;
-    } catch(e){}
-
-    const formattedDate = Utils.fmtDate(n.UpdatedAt || n.CreatedAt) || 'Recent';
+    const noteID = getNoteVal(n, 'NoteID');
+    const noteTitle = getNoteVal(n, 'NoteTitle') || 'Untitled Note';
 
     return `
       <div class="col-12 col-md-6 col-lg-4">
-        <div class="saved-note-card p-2 d-flex flex-column h-100 shadow-sm cursor-pointer" onclick="viewSavedNoteModal('${n.NoteID}')">
-          <div class="d-flex justify-content-between align-items-start mb-1">
-            <h6 class="fw-bold text-primary mb-0 text-truncate" style="font-size: 0.68rem !important;" title="${n.NoteTitle}">${n.NoteTitle || 'Untitled Note'}</h6>
+        <div class="d-flex align-items-center justify-content-between p-1.5 px-2 mb-1 bg-white rounded border shadow-2xs hover-bg cursor-pointer" onclick="viewSavedNoteModal('${noteID}')">
+          <div class="fw-bold text-primary text-truncate flex-grow-1 me-2 wn-cust-name" title="${noteTitle}">
+            📝 ${noteTitle}
           </div>
-          <div class="text-secondary mb-1" style="font-size: 0.62rem !important;">
-            📅 ${formattedDate} | 👥 ${customerCount} Cust | 🏷️ ${badgeCount} Cols
-          </div>
-          ${n.CommonNote ? `
-            <div class="keep-note-box p-1 mb-1 text-dark text-truncate" style="max-height: 40px; font-size: 0.62rem !important;">
-              💬 ${n.CommonNote}
-            </div>
-          ` : ''}
-          <div class="mt-auto pt-1 d-flex justify-content-between align-items-center border-top" onclick="event.stopPropagation();">
-            <button class="btn btn-xs btn-outline-primary fw-bold py-0" onclick="viewSavedNoteModal('${n.NoteID}')" style="font-size: 0.62rem;">
-              👁️ View
+          <div class="d-flex align-items-center gap-1 flex-shrink-0" onclick="event.stopPropagation();">
+            <button class="btn btn-xs btn-outline-primary fw-bold py-0 px-1.5 wn-text-sm" onclick="viewSavedNoteModal('${noteID}')" title="View / Edit Work Note">
+              👁️
             </button>
-            <button class="btn btn-xs btn-outline-warning text-dark fw-bold py-0" onclick="loadSavedNoteIntoEditor('${n.NoteID}')" style="font-size: 0.62rem;">
-              ✏️ Edit
+            <button class="btn btn-xs btn-outline-danger py-0 px-1.5 wn-text-sm" onclick="deleteSavedNoteDirect('${noteID}')" title="Delete Work Note">
+              🗑️
             </button>
           </div>
         </div>
@@ -806,58 +778,121 @@ function renderSavedNotesList() {
   }).join('');
 }
 
+window.deleteSavedNoteDirect = async function(noteID) {
+  const confirmed = await UI.confirmDialog('Are you sure you want to delete this Work Note?');
+  if (confirmed) {
+    await DB.remove('work_notes', x => getNoteVal(x, 'NoteID') == noteID);
+    UI.toast('Work Note deleted successfully.', 'success');
+    await fetchAndRenderSavedNotes();
+  }
+};
+
 window.viewSavedNoteModal = function(noteID) {
   currentViewingNoteID = noteID;
-  const note = (DB.getAll('work_notes') || []).find(x => x.NoteID === noteID);
+  currentModalCellValues = {};
+
+  const notes = DB.getAll('work_notes') || [];
+  const note = notes.find(x => getNoteVal(x, 'NoteID') == noteID);
   if (!note) return;
 
   let badges = [];
   let custData = [];
   try {
-    badges = JSON.parse(note.SelectedBadges || '[]');
-    custData = JSON.parse(note.CustomerData || '[]');
+    const rawB = getNoteVal(note, 'SelectedBadges');
+    badges = (typeof rawB === 'string' ? JSON.parse(rawB) : (rawB || [])).filter(b => b.key !== 'NetMeterPaid');
+    const rawC = getNoteVal(note, 'CustomerData');
+    custData = typeof rawC === 'string' ? JSON.parse(rawC) : (rawC || []);
   } catch(e){}
 
-  document.getElementById('viewNoteModalTitle').textContent = `📝 ${note.NoteTitle}`;
-  document.getElementById('viewNoteModalMeta').textContent = `Created: ${Utils.fmtDate(note.CreatedAt)} | Customers: ${custData.length}`;
+  const title = getNoteVal(note, 'NoteTitle') || 'Untitled Note';
+  const commonNote = getNoteVal(note, 'CommonNote');
+  const createdAt = getNoteVal(note, 'CreatedAt');
+
+  document.getElementById('viewNoteModalTitle').textContent = `📝 Edit Work Note`;
+  document.getElementById('viewNoteModalMeta').textContent = `Created: ${formatNoteDate(createdAt)} | ${custData.length} Customers`;
+
+  // Pre-fill modal cell values from saved JSON snapshot
+  custData.forEach(r => {
+    const sl = Number(r.SlNo || r.slno);
+    badges.forEach(b => {
+      const val = r[b.key] !== undefined ? r[b.key] : r[b.key.toLowerCase()];
+      if (val !== undefined) {
+        currentModalCellValues[`${sl}_${b.key}`] = val;
+      }
+    });
+    const paidVal = r['NetMeterPaid'] !== undefined ? r['NetMeterPaid'] : r['netmeterpaid'];
+    if (paidVal !== undefined) {
+      currentModalCellValues[`${sl}_NetMeterPaid`] = paidVal;
+    }
+  });
 
   const bodyEl = document.getElementById('viewNoteModalBody');
   if (bodyEl) {
     bodyEl.innerHTML = `
-      ${note.CommonNote ? `
-        <div class="keep-note-box mb-2">
-          <h6 class="fw-bold text-warning-emphasis mb-1" style="font-size: 0.68rem;">📝 Common Remarks:</h6>
-          <div class="text-dark" style="white-space: pre-wrap; font-size: 0.68rem;">${note.CommonNote}</div>
+      <div class="row g-2 mb-2">
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-bold text-dark mb-0 wn-text-sm">📌 Note Title *</label>
+          <input type="text" class="form-control input-sm-compact" id="modalNoteTitle" value="${String(title).replace(/"/g, '&quot;')}">
         </div>
-      ` : ''}
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-bold text-dark mb-0 wn-text-sm">💬 Common Remarks</label>
+          <input type="text" class="form-control input-sm-compact" id="modalCommonNote" value="${String(commonNote || '').replace(/"/g, '&quot;')}" placeholder="Optional batch instructions...">
+        </div>
+      </div>
 
       <div class="table-responsive" style="max-height: 380px;">
-        <table class="table table-borderless table-striped align-middle mb-0" style="font-size: 0.68rem;">
+        <table class="table table-borderless table-striped align-middle mb-0" id="modalWorkNoteTable">
           <thead class="table-dark sticky-top">
             <tr>
-              <th class="text-center" style="width:25px; font-size: 0.65rem;">#</th>
-              <th style="font-size: 0.65rem;">Customer Name</th>
-              ${badges.map(b => `<th style="font-size: 0.65rem;">${b.label}</th>`).join('')}
+              <th class="text-center" style="width:25px;">#</th>
+              <th>Customer Name</th>
+              ${badges.map(b => `<th>${b.label}</th>`).join('')}
+              <th class="text-center" style="width:30px;">ACT</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="modalWorkNoteTbody">
             ${custData.length === 0 ? `
-              <tr><td colspan="${badges.length + 2}" class="text-center text-muted">No data saved.</td></tr>
-            ` : custData.map((row, idx) => `
-              <tr>
-                <td class="text-center fw-bold">${idx + 1}</td>
-                <td class="fw-bold text-dark" style="font-size: 0.68rem !important;">${row.Name || 'Unnamed'}</td>
-                ${badges.map(b => {
-                  let val = row[b.key];
-                  if (b.key === 'NetMeterPayment') {
-                    const paidVal = row['NetMeterPaid'];
-                    const isPaid = paidVal === true || paidVal === 'Paid' || paidVal === 'true' || paidVal === 1 || paidVal === '1';
-                    return `<td>${val !== undefined && val !== null ? String(val) : '—'} <span class="badge ${isPaid ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}" style="font-size:0.62rem;">${isPaid ? '✓ Paid' : 'Unpaid'}</span></td>`;
-                  }
-                  return `<td>${val !== undefined && val !== null ? String(val) : '—'}</td>`;
-                }).join('')}
-              </tr>
-            `).join('')}
+              <tr><td colspan="${badges.length + 3}" class="text-center text-muted">No data in note.</td></tr>
+            ` : custData.map((row, idx) => {
+              const sl = Number(row.SlNo || row.slno);
+              return `
+                <tr id="modal_row_${sl}">
+                  <td class="text-center fw-bold align-middle py-0.5 wn-text-sm">${idx + 1}</td>
+                  <td class="fw-bold text-dark align-middle py-0.5 wn-cust-name">${row.Name || row.name || 'Unnamed'}</td>
+                  ${badges.map(b => {
+                    const cellKey = `${sl}_${b.key}`;
+                    let val = currentModalCellValues[cellKey];
+                    if (val === undefined) val = row[b.key] !== undefined ? row[b.key] : row[b.key.toLowerCase()];
+
+                    if (b.key === 'NetMeterPayment') {
+                      const paidKey = `${sl}_NetMeterPaid`;
+                      let paidVal = currentModalCellValues[paidKey];
+                      if (paidVal === undefined) paidVal = row['NetMeterPaid'] !== undefined ? row['NetMeterPaid'] : row['netmeterpaid'];
+                      const isPaid = paidVal === true || paidVal === 'Paid' || paidVal === 'true' || paidVal === 1 || paidVal === '1';
+
+                      return `
+                        <td class="py-0.5">
+                          <div class="position-relative d-flex align-items-center">
+                            <input type="text" class="editable-cell-input pe-4" data-sl="${sl}" data-badge="NetMeterPayment" value="${val !== null && val !== undefined ? String(val).replace(/"/g, '&quot;') : ''}" onchange="handleModalCellInputChange(this)">
+                            <input type="checkbox" class="form-check-input cursor-pointer position-absolute end-0 me-1.5" data-sl="${sl}" data-badge="NetMeterPaid" ${isPaid ? 'checked' : ''} onchange="handleModalCellChkChange(this)" style="width:13px; height:13px; top:50%; transform:translateY(-50%);" title="Meter Paid Checkbox">
+                          </div>
+                        </td>
+                      `;
+                    }
+
+                    const inputType = b.type === 'custom_date' ? 'date' : 'text';
+                    return `
+                      <td class="py-0.5">
+                        <input type="${inputType}" class="editable-cell-input" data-sl="${sl}" data-badge="${b.key}" value="${val !== null && val !== undefined ? String(val).replace(/"/g, '&quot;') : ''}" onchange="handleModalCellInputChange(this)">
+                      </td>
+                    `;
+                  }).join('')}
+                  <td class="text-center align-middle py-0.5">
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1 wn-text-sm" onclick="removeModalCustomerRow(${sl})" title="Remove Row">✕</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -868,49 +903,101 @@ window.viewSavedNoteModal = function(noteID) {
   modal.show();
 };
 
-window.loadSavedNoteIntoEditor = function(noteID) {
-  const note = (DB.getAll('work_notes') || []).find(x => x.NoteID === noteID);
-  if (!note) return;
+window.handleModalCellInputChange = function(inputEl) {
+  const sl = Number(inputEl.getAttribute('data-sl'));
+  const badgeKey = inputEl.getAttribute('data-badge');
+  currentModalCellValues[`${sl}_${badgeKey}`] = inputEl.value;
+};
 
-  editingNoteID = noteID;
-  currentEditedCellValues = {};
+window.handleModalCellChkChange = function(chkEl) {
+  const sl = Number(chkEl.getAttribute('data-sl'));
+  const badgeKey = chkEl.getAttribute('data-badge');
+  currentModalCellValues[`${sl}_${badgeKey}`] = chkEl.checked ? 'Paid' : 'Unpaid';
+};
 
-  document.getElementById('txtNoteTitle').value = note.NoteTitle || '';
-  document.getElementById('txtNoteID').value = note.NoteID;
-  document.getElementById('txtCommonNote').value = note.CommonNote || '';
+window.removeModalCustomerRow = function(slNo) {
+  const rowEl = document.getElementById(`modal_row_${slNo}`);
+  if (rowEl) rowEl.remove();
+};
 
-  const cancelBtn = document.getElementById('btnCancelEdit');
-  if (cancelBtn) cancelBtn.style.display = 'inline-block';
+async function updateWorkNoteFromModal() {
+  if (!currentViewingNoteID) return;
 
-  const saveBtn = document.getElementById('btnSaveWorkNote');
-  if (saveBtn) saveBtn.textContent = '💾 Update Work Note';
+  const titleInput = document.getElementById('modalNoteTitle');
+  const title = titleInput ? titleInput.value.trim() : '';
+  const commonNoteInput = document.getElementById('modalCommonNote');
+  const commonNote = commonNoteInput ? commonNoteInput.value.trim() : '';
 
-  try {
-    selectedBadges = JSON.parse(note.SelectedBadges || '[]').filter(b => b.key !== 'NetMeterPaid');
-    const custData = JSON.parse(note.CustomerData || '[]');
-    selectedCustomerSlNos = custData.map(r => Number(r.SlNo));
-
-    // Restore saved cell values into currentEditedCellValues
-    custData.forEach(r => {
-      const sl = Number(r.SlNo);
-      selectedBadges.forEach(b => {
-        if (r[b.key] !== undefined) {
-          currentEditedCellValues[`${sl}_${b.key}`] = r[b.key];
-        }
-      });
-      if (r['NetMeterPaid'] !== undefined) {
-        currentEditedCellValues[`${sl}_NetMeterPaid`] = r['NetMeterPaid'];
-      }
-    });
-  } catch(e) {
-    console.error('Error parsing saved note data:', e);
+  if (!title) {
+    UI.toast('Please enter a Work Note Title.', 'danger');
+    if (titleInput) titleInput.focus();
+    return;
   }
 
-  renderBadgesContainer();
-  renderCustomerSelectionList();
-  renderWorkNoteTable();
+  const notes = DB.getAll('work_notes') || [];
+  const existing = notes.find(x => getNoteVal(x, 'NoteID') == currentViewingNoteID);
+  if (!existing) return;
 
-  // Scroll to editor top
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  UI.toast(`Editing Work Note "${note.NoteTitle}".`, 'info');
-};
+  let badges = [];
+  let custData = [];
+  try {
+    const rawB = getNoteVal(existing, 'SelectedBadges');
+    badges = typeof rawB === 'string' ? JSON.parse(rawB) : (rawB || []);
+    const rawC = getNoteVal(existing, 'CustomerData');
+    custData = typeof rawC === 'string' ? JSON.parse(rawC) : (rawC || []);
+  } catch(e){}
+
+  // Collect remaining rows from modal table
+  const tbody = document.getElementById('modalWorkNoteTbody');
+  const remainingRows = [];
+  if (tbody) {
+    const trs = tbody.querySelectorAll('tr[id^="modal_row_"]');
+    trs.forEach(tr => {
+      const sl = Number(tr.id.replace('modal_row_', ''));
+      const origRow = custData.find(r => Number(r.SlNo || r.slno) === sl) || { SlNo: sl };
+
+      const updatedRow = { ...origRow };
+      badges.forEach(b => {
+        const cellKey = `${sl}_${b.key}`;
+        if (currentModalCellValues[cellKey] !== undefined) {
+          updatedRow[b.key] = currentModalCellValues[cellKey];
+        }
+      });
+
+      const paidKey = `${sl}_NetMeterPaid`;
+      if (currentModalCellValues[paidKey] !== undefined) {
+        updatedRow['NetMeterPaid'] = currentModalCellValues[paidKey];
+      }
+
+      remainingRows.push(updatedRow);
+    });
+  }
+
+  const nowISO = new Date().toISOString();
+  const updatedNote = {
+    NoteID: currentViewingNoteID,
+    NoteTitle: title,
+    CommonNote: commonNote,
+    SelectedBadges: JSON.stringify(badges),
+    CustomerData: JSON.stringify(remainingRows),
+    CreatedAt: getNoteVal(existing, 'CreatedAt') || nowISO,
+    UpdatedAt: nowISO
+  };
+
+  UI.showLoading(true);
+  try {
+    await DB.update('work_notes', x => getNoteVal(x, 'NoteID') == currentViewingNoteID, updatedNote);
+    UI.toast(`Work Note "${title}" updated successfully.`, 'success');
+
+    const modalEl = document.getElementById('viewNoteModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    await fetchAndRenderSavedNotes();
+  } catch (err) {
+    console.error('Error updating work note from modal:', err);
+    UI.toast('Failed to update Work Note.', 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+}

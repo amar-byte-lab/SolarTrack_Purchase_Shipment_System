@@ -258,6 +258,11 @@ const DB = (() => {
         }
     }
 
+    function setLocalCache(key, rows) {
+        cache[key] = Array.isArray(rows) ? rows : [];
+        syncSessionCache();
+    }
+
     async function replaceAll(key, rows) {
         cache[key] = rows;
         syncSessionCache();
@@ -361,6 +366,7 @@ const DB = (() => {
         update,
         remove,
         replaceAll,
+        setLocalCache,
         HEADERS,
         downloadAllWorkbooks,
         saveDocumentFile,
