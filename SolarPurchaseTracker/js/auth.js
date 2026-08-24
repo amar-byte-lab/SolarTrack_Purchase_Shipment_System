@@ -137,7 +137,7 @@ const Auth = (() => {
     // 1. If on login page
     if (page === 'login.html') {
       if (currentUser) {
-        window.location.href = 'installments.html';
+        window.location.href = 'offer.html';
       }
       return;
     }
@@ -150,7 +150,7 @@ const Auth = (() => {
 
     // 3. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
-      window.location.href = 'installments.html';
+      window.location.href = 'offer.html';
       return;
     }
 
@@ -161,7 +161,7 @@ const Auth = (() => {
       if (currentUser.role === 'partner' || currentUser.role === 'associates') {
         const allowed = ['installments.html', 'offer.html', 'agreement.html', 'borrower.html'];
         if (!allowed.includes(page)) {
-          window.location.href = 'installments.html';
+          window.location.href = 'offer.html';
           return;
         }
       } else {

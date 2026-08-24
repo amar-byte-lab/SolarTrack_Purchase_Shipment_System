@@ -735,7 +735,11 @@ function renderSavedNotesList() {
   const search = (document.getElementById('fSavedNoteSearch') ? document.getElementById('fSavedNoteSearch').value : '').toLowerCase();
   let notes = DB.getAll('work_notes') || [];
   notes = [...notes];
-  notes.sort((a, b) => new Date(getNoteVal(b, 'UpdatedAt') || getNoteVal(b, 'CreatedAt')) - new Date(getNoteVal(a, 'UpdatedAt') || getNoteVal(a, 'CreatedAt')));
+  notes.sort((a, b) => {
+    const dateA = new Date(getNoteVal(a, 'UpdatedAt') || getNoteVal(a, 'CreatedAt') || 0).getTime();
+    const dateB = new Date(getNoteVal(b, 'UpdatedAt') || getNoteVal(b, 'CreatedAt') || 0).getTime();
+    return (isNaN(dateB) ? 0 : dateB) - (isNaN(dateA) ? 0 : dateA);
+  });
 
   if (search) {
     notes = notes.filter(n =>
@@ -747,31 +751,88 @@ function renderSavedNotesList() {
 
   if (notes.length === 0) {
     container.innerHTML = `
-      <div class="col-12 text-center text-muted py-2 bg-light rounded border border-dashed wn-text-sm">
+      <div class="col-12 text-center text-muted py-3 bg-light rounded-3 border border-dashed wn-text-sm">
         No saved notes found.
       </div>
     `;
     return;
   }
 
-  container.innerHTML = notes.map(n => {
+  const colorClasses = [
+    'keep-card-yellow',
+    'keep-card-blue',
+    'keep-card-green',
+    'keep-card-purple',
+    'keep-card-orange'
+  ];
+
+  container.innerHTML = notes.map((n, idx) => {
     const noteID = getNoteVal(n, 'NoteID');
     const noteTitle = getNoteVal(n, 'NoteTitle') || 'Untitled Note';
+    const commonNote = getNoteVal(n, 'CommonNote') || '';
+    const dateStr = formatNoteDate(getNoteVal(n, 'UpdatedAt') || getNoteVal(n, 'CreatedAt'));
+
+    let custData = [];
+    let badges = [];
+    try {
+      const rawC = getNoteVal(n, 'CustomerData');
+      custData = typeof rawC === 'string' ? JSON.parse(rawC) : (rawC || []);
+      const rawB = getNoteVal(n, 'SelectedBadges');
+      badges = typeof rawB === 'string' ? JSON.parse(rawB) : (rawB || []);
+    } catch(e){}
+
+    const custCount = custData.length;
+    const custNames = custData.map(c => c.Name || c.name || 'Unnamed').filter(Boolean);
+    const custPreview = custNames.slice(0, 3).join(', ');
+    const moreCustCount = custNames.length > 3 ? custNames.length - 3 : 0;
+    const badgeLabels = badges.map(b => b.label || b.key).filter(Boolean).slice(0, 3).join(', ');
+
+    const colorClass = colorClasses[idx % colorClasses.length];
 
     return `
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="d-flex align-items-center justify-content-between p-1.5 px-2 mb-1 bg-white rounded border shadow-2xs hover-bg cursor-pointer" onclick="viewSavedNoteModal('${noteID}')">
-          <div class="fw-bold text-primary text-truncate flex-grow-1 me-2 wn-cust-name" title="${noteTitle}">
-            📝 ${noteTitle}
+      <div class="col-12 col-md-6 col-lg-4 d-flex align-items-stretch mb-2">
+        <div class="saved-note-card ${colorClass} w-100 p-2.5 shadow-sm cursor-pointer d-flex flex-column justify-content-between" onclick="viewSavedNoteModal('${noteID}')">
+          <div>
+            <!-- Card Header -->
+            <div class="d-flex align-items-start justify-content-between gap-1 mb-1.5">
+              <h6 class="fw-bold text-dark mb-0 text-truncate flex-grow-1" style="font-size: 0.88rem;" title="${noteTitle}">
+                📌 ${noteTitle}
+              </h6>
+              <div class="d-flex align-items-center gap-1 flex-shrink-0" onclick="event.stopPropagation();">
+                <button class="btn btn-xs btn-light border py-0 px-1.5 rounded-pill shadow-2xs hover-shadow wn-text-sm" onclick="viewSavedNoteModal('${noteID}')" title="View / Edit Work Note">
+                  ✏️
+                </button>
+                <button class="btn btn-xs btn-outline-danger py-0 px-1.5 rounded-pill wn-text-sm" onclick="deleteSavedNoteDirect('${noteID}')" title="Delete Work Note">
+                  🗑️
+                </button>
+              </div>
+            </div>
+
+            <!-- Common Note / Remarks Preview -->
+            ${commonNote ? `
+              <div class="p-1.5 rounded mb-1.5 text-secondary" style="font-size: 0.78rem; background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.06); max-height: 55px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                📝 ${commonNote}
+              </div>
+            ` : ''}
+
+            <!-- Customers Preview -->
+            ${custCount > 0 ? `
+              <div class="mb-1.5" style="font-size: 0.76rem; color: #334155;">
+                <span class="fw-bold text-dark">👥 Customers:</span>
+                <span class="text-secondary">${custPreview}${moreCustCount > 0 ? ` <span class="fw-semibold text-primary">+${moreCustCount} more</span>` : ''}</span>
+              </div>
+            ` : ''}
           </div>
-          <div class="d-flex align-items-center gap-1 flex-shrink-0" onclick="event.stopPropagation();">
-            <button class="btn btn-xs btn-outline-primary fw-bold py-0 px-1.5 wn-text-sm" onclick="viewSavedNoteModal('${noteID}')" title="View / Edit Work Note">
-              👁️
-            </button>
-            <button class="btn btn-xs btn-outline-danger py-0 px-1.5 wn-text-sm" onclick="deleteSavedNoteDirect('${noteID}')" title="Delete Work Note">
-              🗑️
-            </button>
+
+          <!-- Footer Metadata Badges & Date -->
+          <div class="pt-1.5 border-top border-light-subtle d-flex align-items-center justify-content-between flex-wrap gap-1" style="font-size: 0.72rem;">
+            <div class="d-flex align-items-center gap-1 flex-wrap">
+              <span class="badge bg-white text-dark border px-1.5 py-0.5 rounded-pill shadow-2xs">👥 ${custCount} rows</span>
+              ${badgeLabels ? `<span class="badge bg-white text-secondary border px-1.5 py-0.5 rounded-pill shadow-2xs">🏷️ ${badgeLabels}</span>` : ''}
+            </div>
+            <span class="text-muted fw-semibold ms-auto">📅 ${dateStr}</span>
           </div>
+
         </div>
       </div>
     `;
