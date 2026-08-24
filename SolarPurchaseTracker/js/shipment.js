@@ -844,15 +844,21 @@ function recalcInlineForm() {
     });
 
     if (!hasUserEditedTransport) {
-        let hasDbLoadedValues = false;
+        let sumLoadedTransport = 0;
+        let loadedCount = 0;
+
         rows.forEach(row => {
             const tEl = row.querySelector('.mat-transport');
             if (tEl && tEl.dataset.loadedFromDb === 'true') {
-                hasDbLoadedValues = true;
+                sumLoadedTransport += Number(tEl.value) || 0;
+                loadedCount++;
             }
         });
 
-        if (!hasDbLoadedValues) {
+        // Consider DB loaded values valid only if all rows were loaded, sum > 0, and sum matches shipment transportCost
+        const hasValidDbLoaded = (loadedCount === rows.length) && (sumLoadedTransport > 0) && (Calc.round2(sumLoadedTransport) === Calc.round2(transportCost));
+
+        if (!hasValidDbLoaded) {
             let sumAllTotals = 0;
             rows.forEach(row => {
                 sumAllTotals += Number(row.querySelector('.mat-total')?.value) || 0;
