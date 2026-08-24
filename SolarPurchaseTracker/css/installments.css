@@ -333,3 +333,150 @@ body.installments-page .page-body {
     print-color-adjust: exact;
   }
 }
+
+/* =========================================================================
+   Clean & Simple Row Component Styles for Installments Table
+   ========================================================================= */
+.table-installments tbody tr {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.table-installments tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+.table-installments td {
+  padding: 9px 12px !important;
+  vertical-align: middle !important;
+}
+
+.inst-card-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.inst-row-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inst-customer-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.88rem;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.inst-customer-name:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.inst-partner-name {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.84rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease;
+}
+
+.inst-partner-name:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.inst-chip-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.inst-amount-label {
+  font-weight: 700;
+  font-family: var(--st-font-mono, monospace);
+  color: #334155;
+  font-size: 0.82rem;
+}
+
+.inst-status-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  font-family: var(--st-font-mono, monospace);
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 1.2;
+}
+
+.inst-status-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+
+.inst-status-settled {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #bbf7d0 !important;
+}
+
+.inst-status-pending {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
+}
+
+.inst-status-surplus {
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
+}
+
+.inst-finance-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 120px;
+}
+
+.inst-finance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+
+.inst-act-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+

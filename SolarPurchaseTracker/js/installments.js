@@ -1147,78 +1147,79 @@ function renderList() {
       let netMeterBadgeHtml = '';
       if (isNetMeterPaid) {
         netMeterBadgeHtml = `
-          <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}" style="font-size:0.62rem; padding:1px 4px; font-weight:600; vertical-align: middle;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" class="me-1" viewBox="0 0 16 16" style="vertical-align:-1px;"><path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.268a.5.5 0 0 1 0 .707l-.914.915a.5.5 0 1 1-.707-.708l.914-.914a.5.5 0 0 1 .707 0zM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/><path d="M0 10a8 8 0 1 1 15.547 2.561.5.5 0 1 1-.875-.486A7 7 0 1 0 1.328 12.075a.5.5 0 1 1-.875.486A7.97 7.97 0 0 1 0 10"/></svg>₹${netMeterAmt.toLocaleString('en-IN')}
+          <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2 py-0.5" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}" style="font-size:0.64rem; font-weight:600; vertical-align: middle;">
+            ⚡ Meter ₹${netMeterAmt.toLocaleString('en-IN')}
           </span>
         `;
       }
 
+      function renderPill(targetAmt, paidAmt, onclickAttr) {
+        const diff = targetAmt - paidAmt;
+        if (Math.abs(diff) < 0.01) {
+          return `<button type="button" class="btn inst-status-pill inst-status-settled no-print" onclick="${onclickAttr}" title="Click to view payment history">✓ Settled</button>`;
+        } else if (diff > 0) {
+          return `<button type="button" class="btn inst-status-pill inst-status-pending no-print" onclick="${onclickAttr}" title="Click to view payment history">💳 Pending ₹${diff.toLocaleString('en-IN')}</button>`;
+        } else {
+          return `<button type="button" class="btn inst-status-pill inst-status-surplus no-print" onclick="${onclickAttr}" title="Click to view payment history">+₹${Math.abs(diff).toLocaleString('en-IN')} Advance</button>`;
+        }
+      }
+
+      const custPillHtml = renderPill(price, total, `showTransactionHistory(${r.SlNo}, 'Customer')`);
+      const vendorPillHtml = renderPill(price - partnerPrice, vPaid, `showTransactionHistory(${r.SlNo}, 'Vendor')`);
+      const profit = partnerPrice - comm - vPrice;
+      const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+
       return `
         <tr class="${rowClass}">
-          <td class="text-center fw-semibold">${r.SlNo}</td>
+          <td class="text-center fw-bold text-secondary align-middle" style="font-size:0.85rem;">${r.SlNo}</td>
           <td>
-            <div class="d-flex flex-column align-items-start" style="font-size: 0.85rem; gap: 2px;">
-              <div class="d-flex align-items-center gap-1 flex-wrap">
-                <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
+            <div class="inst-card-block">
+              <div class="inst-row-header">
+                <a href="#" class="inst-customer-name" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
                   ${r.Name || ''}
-                </a>${delayBadgeHtml}${netMeterBadgeHtml}
+                </a>
+                ${delayBadgeHtml}
+                ${netMeterBadgeHtml}
               </div>
-              
-              <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top w-100" style="font-size: 0.8rem;">
-                <span class="fw-semibold text-dark font-monospace">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-                <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Customer')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Pending${getTxnDiffBadge(price, total)}
-                </button>
+              <div class="inst-chip-bar">
+                <span class="inst-amount-label">Price: ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                ${custPillHtml}
               </div>
             </div>
           </td>
           <td class="col-Partner">
-            <div class="d-flex flex-column align-items-start" style="font-size: 0.8rem; gap: 1px;">
-              ${(() => {
-                const remarks = DB.getAll('installment_remarks').filter(n => Number(n.SlNo) === Number(r.SlNo));
-                const partnerRemarksCount = remarks.filter(n => n.Type === 'Partner').length;
-                return `
-                  <div class="d-flex align-items-center gap-2">
-                    <a href="#" class="fw-bold text-primary text-decoration-none" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
-                      ${r.BrokerName || '—'}
-                    </a>
-                  </div>
-                `;
-              })()}
-              <div class="d-flex align-items-center gap-2 mt-1 pt-1 border-top w-100" style="font-size: 0.75rem;">
-                <span class="fw-semibold text-dark font-monospace">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-                <button class="btn btn-xs btn-outline-secondary no-print font-monospace" onclick="showTransactionHistory(${r.SlNo}, 'Vendor')" style="font-size:0.65rem; padding:1px 4px; border-color: #ccc; white-space: nowrap;">
-                  Pending ${getTxnDiffBadge(price - partnerPrice, vPaid)}
-                </button>
+            <div class="inst-card-block">
+              <div class="inst-row-header">
+                <a href="#" class="inst-partner-name" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
+                  ${r.BrokerName || '—'}
+                </a>
+              </div>
+              <div class="inst-chip-bar">
+                <span class="inst-amount-label">Cost: ₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                ${vendorPillHtml}
               </div>
             </div>
           </td>
-          <td class="col-price font-monospace fs-8 align-middle">
-            <div class="d-flex flex-column align-items-start px-1" style="gap: 2px;">
-              <div>
-                <span class="text-secondary fw-normal">Exp.:</span> 
+          <td class="col-price font-monospace align-middle">
+            <div class="inst-finance-box">
+              <div class="inst-finance-row">
+                <span class="text-secondary fw-normal">Exp:</span> 
                 <span class="fw-semibold text-dark">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
               </div>
-              ${(() => {
-                const profit = partnerPrice - comm - vPrice;
-                const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
-                return `
-                  <div>
-                    <span class="text-secondary fw-normal">Profit:</span> 
-                    <span class="${profitColorClass}">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-                  </div>
-                `;
-              })()}
+              <div class="inst-finance-row border-top pt-1">
+                <span class="text-secondary fw-normal">Profit:</span> 
+                <span class="${profitColorClass}">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+              </div>
             </div>
           </td>
-          <td class="no-print text-center">
+          <td class="no-print text-center align-middle">
             <div class="d-flex gap-1 justify-content-center">
               ${isDeactive ? `
-                <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="restoreRow(${r.SlNo})" title="Restore">↻</button>
-                <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">❌</button>
+                <button class="btn btn-sm btn-light border text-success inst-act-btn" onclick="restoreRow(${r.SlNo})" title="Restore Row">↻</button>
+                <button class="btn btn-sm btn-light border text-danger inst-act-btn" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">✕</button>
               ` : `
-                <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editRow(${r.SlNo})" title="Edit">✎</button>
-                <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteRow(${r.SlNo})" title="Deactivate">🗑</button>
+                <button class="btn btn-sm btn-light border text-primary inst-act-btn" onclick="editRow(${r.SlNo})" title="Edit Row">✎</button>
+                <button class="btn btn-sm btn-light border text-danger inst-act-btn" onclick="deleteRow(${r.SlNo})" title="Deactivate Row">🗑</button>
               `}
             </div>
           </td>
