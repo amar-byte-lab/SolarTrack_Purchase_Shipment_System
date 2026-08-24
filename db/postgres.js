@@ -68,22 +68,15 @@ async function safeUpsert(tableName, row) {
   if (tableName === 'work_notes') {
     item = {
       NoteID: row.NoteID || row.noteid,
-      noteid: row.NoteID || row.noteid,
       NoteTitle: row.NoteTitle || row.notetitle,
-      notetitle: row.NoteTitle || row.notetitle,
       CommonNote: row.CommonNote || row.commonnote,
-      commonnote: row.CommonNote || row.commonnote,
       SelectedBadges: row.SelectedBadges || row.selectedbadges,
-      selectedbadges: row.SelectedBadges || row.selectedbadges,
       CustomerData: row.CustomerData || row.customerdata,
-      customerdata: row.CustomerData || row.customerdata,
       CreatedAt: row.CreatedAt || row.createdat,
-      createdat: row.CreatedAt || row.createdat,
       UpdatedAt: row.UpdatedAt || row.updatedat,
-      updatedat: row.UpdatedAt || row.updatedat,
     };
   }
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 10; attempt++) {
     try {
       const { error } = await supabase.from(tableName).upsert([item]);
       if (!error) return;
@@ -104,27 +97,22 @@ async function safeUpsert(tableName, row) {
 
 async function safeUpdate(tableName, matchField, val, newData) {
   let item = { ...newData };
+  let field = matchField;
   if (tableName === 'work_notes') {
+    if (field && field.toLowerCase() === 'noteid') field = 'NoteID';
     item = {
       NoteID: newData.NoteID || newData.noteid || val,
-      noteid: newData.NoteID || newData.noteid || val,
       NoteTitle: newData.NoteTitle || newData.notetitle,
-      notetitle: newData.NoteTitle || newData.notetitle,
       CommonNote: newData.CommonNote || newData.commonnote,
-      commonnote: newData.CommonNote || newData.commonnote,
       SelectedBadges: newData.SelectedBadges || newData.selectedbadges,
-      selectedbadges: newData.SelectedBadges || newData.selectedbadges,
       CustomerData: newData.CustomerData || newData.customerdata,
-      customerdata: newData.CustomerData || newData.customerdata,
       CreatedAt: newData.CreatedAt || newData.createdat,
-      createdat: newData.CreatedAt || newData.createdat,
       UpdatedAt: newData.UpdatedAt || newData.updatedat,
-      updatedat: newData.UpdatedAt || newData.updatedat,
     };
   }
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 10; attempt++) {
     try {
-      const { error } = await supabase.from(tableName).update(item).eq(matchField, val);
+      const { error } = await supabase.from(tableName).update(item).eq(field, val);
       if (!error) return;
 
       const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
@@ -175,9 +163,13 @@ async function updateRow(tableName, matchField, matchValue, newData) {
 
 async function deleteRow(tableName, matchField, matchValue) {
   try {
-    const isInt = ['SlNo', 'BorrowerID', 'id'].includes(matchField);
+    let field = matchField;
+    if (tableName === 'work_notes' && field && field.toLowerCase() === 'noteid') {
+      field = 'NoteID';
+    }
+    const isInt = ['SlNo', 'BorrowerID', 'id'].includes(field);
     const val = isInt ? (parseInt(matchValue, 10) || matchValue) : matchValue;
-    const { error } = await supabase.from(tableName).delete().eq(matchField, val);
+    const { error } = await supabase.from(tableName).delete().eq(field, val);
     if (error) console.warn(`[Postgres] deleteRow('${tableName}') warning:`, error.message);
   } catch (err) {
     console.warn(`[Postgres] deleteRow('${tableName}') exception:`, err.message);

@@ -215,11 +215,15 @@ const DB = (() => {
         syncSessionCache();
 
         if (mode === 'postgres') {
-            await fetch(`/api/insert?table=${key}`, {
+            const res = await fetch(`/api/insert?table=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(row)
             });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Server insert failed for ${key}`);
+            }
         }
         return row;
     }
@@ -227,34 +231,42 @@ const DB = (() => {
     async function update(key, matchFn, newData) {
         const pkName = getPrimaryKey(key);
         const originalRow = cache[key].find(r => matchFn(r));
-        const pkValue = originalRow ? originalRow[pkName] : null;
+        const pkValue = originalRow ? (originalRow[pkName] !== undefined && originalRow[pkName] !== null ? originalRow[pkName] : originalRow[pkName ? pkName.toLowerCase() : '']) : null;
 
         // Update local cache
         cache[key] = cache[key].map(r => matchFn(r) ? { ...r, ...newData } : r);
         syncSessionCache();
 
         if (mode === 'postgres' && pkValue !== null) {
-            await fetch(`/api/update?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
+            const res = await fetch(`/api/update?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newData)
             });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Server update failed for ${key}`);
+            }
         }
     }
 
     async function remove(key, matchFn) {
         const pkName = getPrimaryKey(key);
         const originalRow = cache[key].find(r => matchFn(r));
-        const pkValue = originalRow ? originalRow[pkName] : null;
+        const pkValue = originalRow ? (originalRow[pkName] !== undefined && originalRow[pkName] !== null ? originalRow[pkName] : originalRow[pkName ? pkName.toLowerCase() : '']) : null;
 
         // Update local cache
         cache[key] = cache[key].filter(r => !matchFn(r));
         syncSessionCache();
 
         if (mode === 'postgres' && pkValue !== null) {
-            await fetch(`/api/delete?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
+            const res = await fetch(`/api/delete?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
                 method: 'POST'
             });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Server delete failed for ${key}`);
+            }
         }
     }
 
