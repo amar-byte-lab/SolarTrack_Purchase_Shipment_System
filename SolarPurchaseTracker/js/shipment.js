@@ -390,18 +390,9 @@ function renderList() {
 
             const tUnit = l.Quantity > 0 ? (l.TransportShare / l.Quantity) : 0;
             const mspNum = Calc.round2((Number(l.PurchaseRate) || 0) + tUnit);
-            let mspHTML = '';
-            if (mspNum > 0 && shipmentType !== 'Sell' && activeTab !== 'Sell') {
-                mspHTML = `
-                <div class="mt-1">
-                  <span style="font-size:0.7rem; font-weight:600; color: #198754; background: #e8f5e9; padding: 2px 6px; border-radius: 4px; display: inline-block;">
-                    Min Selling: ${UI.money(mspNum)}
-                  </span>
-                </div>
-              `;
-            }
+            const mspText = mspNum > 0 ? ` <span class="text-success font-monospace ms-1" style="font-size:0.78rem; font-weight:600;">{MSP/Unit:${UI.money(mspNum)}}</span>` : '';
 
-            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix})</div>`;
+            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix})${mspText}</div>`;
         }).join('') || '<span class="text-muted">—</span>'}
         </td>
         <td class="col-total text-end fw-bold font-monospace">
