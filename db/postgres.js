@@ -182,30 +182,64 @@ async function replaceTable(tableName, rows) {
 
 async function getBorrowerList(userId) {
   try {
+    const uid = (userId || '').trim().toLowerCase();
     const { data, error } = await supabase.from('borrowers').select('*');
-    if (error) return [];
-    return data || [];
-  } catch {
+    if (error) {
+      console.error('[Postgres] getBorrowerList error:', error.message);
+      return [];
+    }
+    if (!data || !Array.isArray(data)) return [];
+
+    if (!uid) return data;
+
+    // Return user-specific borrowers (or legacy rows with no CreatedBy)
+    return data.filter(b => {
+      const creator = (b.CreatedBy || b.createdby || '').trim().toLowerCase();
+      return !creator || creator === uid;
+    });
+  } catch (err) {
+    console.error('[Postgres] getBorrowerList exception:', err.message);
     return [];
   }
 }
 
 async function getBorrowerTxns(borrowerID) {
   try {
-    const { data, error } = await supabase.from('borrower_txns').select('*').eq('BorrowerID', borrowerID);
-    if (error) return [];
+    const id = parseInt(borrowerID, 10) || borrowerID;
+    const { data, error } = await supabase.from('borrower_txns').select('*').eq('BorrowerID', id);
+    if (error) {
+      console.error('[Postgres] getBorrowerTxns error:', error.message);
+      return [];
+    }
     return data || [];
-  } catch {
+  } catch (err) {
+    console.error('[Postgres] getBorrowerTxns exception:', err.message);
     return [];
   }
 }
 
 async function addBorrower(body) {
   try {
-    await safeUpsert('borrowers', body);
+    const item = {
+      Name: body.Name,
+      Mobile: body.Mobile || '',
+      Address: body.Address || '',
+      Status: body.Status || 'Active',
+      CreatedAt: new Date().toISOString(),
+      CreatedBy: (body.CreatedBy || '').trim()
+    };
+    const { data, error } = await supabase.from('borrowers').insert([item]).select();
+    if (error) {
+      console.error('[Postgres] addBorrower error:', error.message);
+      return { success: false, error: error.message };
+    }
+    if (data && data[0]) {
+      return { success: true, BorrowerID: data[0].BorrowerID, ...data[0] };
+    }
     return { success: true };
-  } catch {
-    return { success: false };
+  } catch (err) {
+    console.error('[Postgres] addBorrower exception:', err.message);
+    return { success: false, error: err.message };
   }
 }
 
@@ -220,7 +254,8 @@ async function updateBorrower(body) {
 
 async function closeBorrower(body) {
   try {
-    await safeUpdate('borrowers', 'BorrowerID', body.BorrowerID, { Status: 'Closed' });
+    const status = body.Status || 'Closed';
+    await safeUpdate('borrowers', 'BorrowerID', body.BorrowerID, { Status: status });
     return { success: true };
   } catch {
     return { success: false };
@@ -229,10 +264,57 @@ async function closeBorrower(body) {
 
 async function addBorrowerTxn(body) {
   try {
-    await safeUpsert('borrower_txns', body);
+    const item = {
+      BorrowerID: parseInt(body.BorrowerID, 10) || body.BorrowerID,
+      TxnDate: body.TxnDate,
+      Amount: parseFloat(body.Amount) || 0,
+      Type: body.Type,
+      Remarks: body.Remarks || '',
+      CreatedAt: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('borrower_txns').insert([item]).select();
+    if (error) {
+      console.error('[Postgres] addBorrowerTxn error:', error.message);
+      return { success: false, error: error.message };
+    }
+    if (data && data[0]) {
+      return { success: true, TxnID: data[0].TxnID, ...data[0] };
+    }
     return { success: true };
-  } catch {
-    return { success: false };
+  } catch (err) {
+    console.error('[Postgres] addBorrowerTxn exception:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+async function deleteBorrowerTxn(txnID) {
+  try {
+    const id = parseInt(txnID, 10) || txnID;
+    const { error } = await supabase.from('borrower_txns').delete().eq('TxnID', id);
+    if (error) {
+      console.error('[Postgres] deleteBorrowerTxn error:', error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[Postgres] deleteBorrowerTxn exception:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+async function deleteBorrower(borrowerID) {
+  try {
+    const id = parseInt(borrowerID, 10) || borrowerID;
+    await supabase.from('borrower_txns').delete().eq('BorrowerID', id);
+    const { error } = await supabase.from('borrowers').delete().eq('BorrowerID', id);
+    if (error) {
+      console.error('[Postgres] deleteBorrower error:', error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[Postgres] deleteBorrower exception:', err.message);
+    return { success: false, error: err.message };
   }
 }
 
@@ -250,4 +332,6 @@ module.exports = {
   updateBorrower,
   closeBorrower,
   addBorrowerTxn,
+  deleteBorrowerTxn,
+  deleteBorrower,
 };

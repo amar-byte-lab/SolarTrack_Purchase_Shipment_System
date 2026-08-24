@@ -173,8 +173,8 @@ async function loadBorrowers() {
   UI.showLoading(true);
   try {
     const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-    const userId = currentUser ? currentUser.userid : '';
-    const r = await fetch(`/api/borrower-list?userId=${userId}`);
+    const userId = currentUser ? (currentUser.userid || currentUser.username) : '';
+    const r = await fetch(`/api/borrower-list?userId=${encodeURIComponent(userId)}`);
     _borrowers = r.ok ? await r.json() : [];
     await Promise.all(_borrowers.map(b => loadTxnsFor(b.BorrowerID)));
     renderKPIs();
@@ -497,8 +497,9 @@ async function saveTxn(forcedType) {
       body: JSON.stringify({ BorrowerID: _activeBid, TxnDate: dateVal, Amount: amount, Type: typeVal, Remarks: remarks })
     });
     const data = await resp.json();
-    if (!data.TxnID) throw new Error('No TxnID');
+    if (!resp.ok || !data.TxnID) throw new Error(data.error || 'Failed to save transaction');
 
+    if (!_txnCache[_activeBid]) _txnCache[_activeBid] = [];
     _txnCache[_activeBid].push({ TxnID: data.TxnID, BorrowerID: _activeBid, TxnDate: dateVal, Amount: amount, Type: typeVal, Remarks: remarks, CreatedAt: new Date().toISOString() });
     _txnCache[_activeBid].sort((a, b) => a.TxnDate.localeCompare(b.TxnDate) || a.TxnID - b.TxnID);
 
@@ -519,10 +520,14 @@ window.deleteTxn = async function(txnId, bid) {
   const ok = await UI.confirmDialog('Delete this transaction? Cannot be undone.', 'Delete Transaction', 'Delete', 'btn-danger');
   if (!ok) return;
   try {
-    await fetch('/api/borrower-txn-delete', {
+    const resp = await fetch('/api/borrower-txn-delete', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ TxnID: txnId })
     });
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to delete transaction');
+    }
     _txnCache[bid] = (_txnCache[bid] || []).filter(t => t.TxnID !== txnId);
     renderTxnHistory(bid); updateModalBalance(bid); renderGrid(); renderKPIs();
     UI.toast('Transaction deleted', 'info');
