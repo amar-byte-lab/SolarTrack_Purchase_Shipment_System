@@ -27,23 +27,35 @@ window.onDbReady = function () {
 
     document.getElementById('btnPrintList').addEventListener('click', () => window.print());
 
-    // Tabs for Buy / Sell
+    // Tabs for Buy / Sell / PriceHistory
     const tabBuy = document.getElementById('tabBuy');
     const tabSell = document.getElementById('tabSell');
-    if (tabBuy && tabSell) {
-        tabBuy.addEventListener('click', () => {
-            activeTab = 'Buy';
-            tabBuy.classList.add('active');
-            tabSell.classList.remove('active');
+    const tabPriceHistory = document.getElementById('tabPriceHistory');
+    const mainShipmentView = document.getElementById('mainShipmentView');
+    const mainPriceHistoryView = document.getElementById('mainPriceHistoryView');
+
+    window.switchMainTab = function (type) {
+        activeTab = type;
+        [tabBuy, tabSell, tabPriceHistory].forEach(t => t && t.classList.remove('active'));
+
+        if (type === 'Buy' && tabBuy) tabBuy.classList.add('active');
+        if (type === 'Sell' && tabSell) tabSell.classList.add('active');
+        if (type === 'PriceHistory' && tabPriceHistory) tabPriceHistory.classList.add('active');
+
+        if (type === 'PriceHistory') {
+            if (mainShipmentView) mainShipmentView.style.display = 'none';
+            if (mainPriceHistoryView) mainPriceHistoryView.style.display = 'block';
+            renderPriceHistoryList();
+        } else {
+            if (mainPriceHistoryView) mainPriceHistoryView.style.display = 'none';
+            if (mainShipmentView) mainShipmentView.style.display = 'block';
             renderList();
-        });
-        tabSell.addEventListener('click', () => {
-            activeTab = 'Sell';
-            tabSell.classList.add('active');
-            tabBuy.classList.remove('active');
-            renderList();
-        });
-    }
+        }
+    };
+
+    if (tabBuy) tabBuy.addEventListener('click', () => switchMainTab('Buy'));
+    if (tabSell) tabSell.addEventListener('click', () => switchMainTab('Sell'));
+    if (tabPriceHistory) tabPriceHistory.addEventListener('click', () => switchMainTab('PriceHistory'));
 
     // Filters
     ['fSearch', 'fFrom', 'fTo', 'fVendor'].forEach(id => {
@@ -2383,7 +2395,17 @@ window.savePriceRecord = async function () {
         if (gstEl) gstEl.value = 18;
         renderPhAllItemsTable();
 
-        switchPriceHistoryTab('history');
+        // Close popup if open
+        const popupEl = document.getElementById('priceHistoryPopup');
+        if (popupEl) {
+            let bsModal = bootstrap.Modal.getInstance(popupEl);
+            if (bsModal) bsModal.hide();
+        }
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+
+        renderPriceHistoryList();
+        if (typeof switchMainTab === 'function') switchMainTab('PriceHistory');
     } catch (err) {
         UI.toast('Error saving price records: ' + err.message, 'danger');
     } finally {
@@ -2393,10 +2415,13 @@ window.savePriceRecord = async function () {
 
 window.renderPriceHistoryList = function () {
     const container = document.getElementById('priceHistoryCardsContainer');
-    if (!container) return;
+    const mainContainer = document.getElementById('mainPriceHistoryCardsContainer');
+    if (!container && !mainContainer) return;
 
     const records = DB.getAll('price_history') || [];
-    const search = (document.getElementById('phSearchInput')?.value || '').toLowerCase().trim();
+    const popupSearch = (document.getElementById('phSearchInput')?.value || '').toLowerCase().trim();
+    const mainSearch = (document.getElementById('mainPhSearchInput')?.value || '').toLowerCase().trim();
+    const search = mainSearch || popupSearch;
 
     let filtered = records;
     if (search) {
@@ -2409,8 +2434,11 @@ window.renderPriceHistoryList = function () {
 
     filtered.sort((a, b) => new Date(b.Date || b.CreatedAt || 0) - new Date(a.Date || a.CreatedAt || 0));
 
+    const emptyHtml = `<div class="text-center text-muted py-4 border rounded bg-light col-12">No price history records found.</div>`;
+
     if (!filtered.length) {
-        container.innerHTML = `<div class="text-center text-muted py-4 border rounded bg-light">No price history records found.</div>`;
+        if (container) container.innerHTML = emptyHtml;
+        if (mainContainer) mainContainer.innerHTML = emptyHtml;
         return;
     }
 
@@ -2481,7 +2509,8 @@ window.renderPriceHistoryList = function () {
     `;
     }).join('');
 
-    container.innerHTML = cardListHtml;
+    if (container) container.innerHTML = cardListHtml;
+    if (mainContainer) mainContainer.innerHTML = cardListHtml;
 };
 
 window.openEditPriceRecordModal = function (batchKey) {

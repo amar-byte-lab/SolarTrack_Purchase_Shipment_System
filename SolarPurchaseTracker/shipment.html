@@ -58,7 +58,7 @@
         </div>
       </div>
 
-      <!-- Tabs for Buy / Sell & Price History Button -->
+      <!-- Tabs for Buy / Sell / Price History Log & Add Price Record Button -->
       <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
         <ul class="nav nav-pills" id="shipmentTypeTabs">
           <li class="nav-item">
@@ -67,28 +67,50 @@
           <li class="nav-item ms-2">
             <button class="nav-link fw-bold py-1 px-3" data-type="Sell" id="tabSell" style="font-size: 0.85rem;">📤 Sell Shipments</button>
           </li>
+          <li class="nav-item ms-2">
+            <button class="nav-link fw-bold py-1 px-3" data-type="PriceHistory" id="tabPriceHistory" style="font-size: 0.85rem;">📜 Price History Log</button>
+          </li>
         </ul>
-        <button class="btn btn-sm btn-outline-primary fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" id="btnTogglePriceHistory" onclick="togglePriceHistoryPopup()" style="font-size: 0.85rem; border-radius: 8px;">
-          🏷️ Price History
+        <button class="btn btn-sm btn-outline-primary fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" id="btnTogglePriceHistory" onclick="togglePriceHistoryPopup('add')" style="font-size: 0.85rem; border-radius: 8px;">
+          ➕ Add Price Record
         </button>
       </div>
 
-      <div class="st-card st-card-table-container">
-        <div class="table-responsive-main">
-          <table class="table table-hover table-installments mb-0" id="shipTable">
-            <thead>
-              <tr>
-                <th class="sortable" data-sort="PurchaseDate">Date</th>
-                <th>Item Name (Qty)</th>
-                <th class="sortable" data-sort="VendorName">Grand Total</th>
-                <th class="no-print">Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-            <tfoot>
-              <!-- Grand Total injected by JS -->
-            </tfoot>
-          </table>
+      <!-- Main View 1: Buy / Sell Shipments Table -->
+      <div id="mainShipmentView">
+        <div class="st-card st-card-table-container">
+          <div class="table-responsive-main">
+            <table class="table table-hover table-installments mb-0" id="shipTable">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="PurchaseDate">Date</th>
+                  <th>Item Name (Qty)</th>
+                  <th class="sortable" data-sort="VendorName">Grand Total</th>
+                  <th class="no-print">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <!-- Grand Total injected by JS -->
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main View 2: Price History Log Cards View -->
+      <div id="mainPriceHistoryView" style="display:none;">
+        <div class="st-card p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div class="flex-grow-1" style="max-width:400px;">
+              <input type="text" class="form-control form-control-sm" id="mainPhSearchInput" placeholder="🔍 Search note title, item name or remarks..." oninput="renderPriceHistoryList()">
+            </div>
+          </div>
+          
+          <!-- Cards Grid Container on Main Page -->
+          <div id="mainPriceHistoryCardsContainer" class="d-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 4px;">
+            <!-- Dynamic Square Price History Cards rendered by renderPriceHistoryList() -->
+          </div>
         </div>
       </div>
 
@@ -379,23 +401,11 @@
   <!-- Draggable Header -->
   <div class="popup-header bg-primary text-white py-2 px-3 d-flex justify-content-between align-items-center" id="priceHistoryHeader" style="cursor:move; border-radius:13px 13px 0 0; user-select:none;">
     <div class="d-flex align-items-center gap-2">
-      <span class="fs-6">🏷️</span>
-      <h6 class="mb-0 fw-bold fs-7">Price History & Tracker</h6>
+      <span class="fs-6">➕</span>
+      <h6 class="mb-0 fw-bold fs-7">Add Price Record</h6>
       <span class="badge bg-white text-primary fs-8 ms-1">Movable</span>
     </div>
     <button type="button" class="btn-close btn-close-white btn-sm" onclick="togglePriceHistoryPopup(false)" aria-label="Close"></button>
-  </div>
-
-  <!-- Popup Nav Tabs -->
-  <div class="popup-nav bg-light border-bottom px-3 pt-2">
-    <ul class="nav nav-tabs border-0" id="priceHistoryPopupTabs" role="tablist">
-      <li class="nav-item">
-        <button class="nav-link active py-1 px-3 fs-7 fw-bold" id="tabAddPrice" onclick="switchPriceHistoryTab('add')">➕ Add Price Record</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link py-1 px-3 fs-7 fw-bold" id="tabViewPriceHistory" onclick="switchPriceHistoryTab('history')">📜 Price History Log</button>
-      </li>
-    </ul>
   </div>
 
   <!-- Popup Body (Expanded Height) -->
@@ -570,17 +580,7 @@
       </form>
     </div>
 
-    <!-- Tab 2 Content: Price History Cards Feed -->
-    <div id="priceTabContentHistory" style="display:none;">
-      <div class="mb-2.5 d-flex gap-2 align-items-center">
-        <input type="text" class="form-control form-control-sm" id="phSearchInput" placeholder="🔍 Search note title, item name or remarks..." oninput="renderPriceHistoryList()">
-      </div>
-      
-      <!-- Cards Grid Container for Square Type Cards -->
-      <div id="priceHistoryCardsContainer" class="d-grid" style="grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 14px; max-height:460px; overflow-y:auto; padding:6px 8px;">
-        <!-- Dynamic Square Price History Cards rendered by renderPriceHistoryList() -->
-      </div>
-    </div>
+
 
   </div>
 </div>
