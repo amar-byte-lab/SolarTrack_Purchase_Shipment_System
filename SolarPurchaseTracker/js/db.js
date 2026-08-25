@@ -20,6 +20,7 @@ const DB = (() => {
         products: { file: null, sheet: null },
         product_items: { file: null, sheet: null },
         work_notes: { file: null, sheet: null },
+        price_history: { file: null, sheet: null },
     };
 
     const HEADERS = {
@@ -38,6 +39,7 @@ const DB = (() => {
         products: ['ProductName', 'CreatedAt'],
         product_items: ['RowID', 'ProductName', 'ItemName', 'Price'],
         work_notes: ['NoteID', 'NoteTitle', 'CommonNote', 'SelectedBadges', 'CustomerData', 'CreatedAt', 'UpdatedAt'],
+        price_history: ['RecordID', 'BatchID', 'Date', 'NoteName', 'ItemName', 'Quantity', 'Unit', 'TotalWithoutGst', 'TotalWithGst', 'RateWithoutGst', 'RateWithGst', 'Remarks', 'CreatedAt'],
     };
 
     let mode = 'postgres';
@@ -78,6 +80,7 @@ const DB = (() => {
         if (key === 'products') return 'ProductName';
         if (key === 'product_items') return 'RowID';
         if (key === 'work_notes') return 'NoteID';
+        if (key === 'price_history') return 'RecordID';
         return null;
     }
 
@@ -252,20 +255,20 @@ const DB = (() => {
 
     async function remove(key, matchFn) {
         const pkName = getPrimaryKey(key);
-        const originalRow = cache[key].find(r => matchFn(r));
-        const pkValue = originalRow ? (originalRow[pkName] !== undefined && originalRow[pkName] !== null ? originalRow[pkName] : originalRow[pkName ? pkName.toLowerCase() : '']) : null;
+        const matchingRows = cache[key].filter(r => matchFn(r));
 
         // Update local cache
         cache[key] = cache[key].filter(r => !matchFn(r));
         syncSessionCache();
 
-        if (mode === 'postgres' && pkValue !== null) {
-            const res = await fetch(`/api/delete?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
-                method: 'POST'
-            });
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || `Server delete failed for ${key}`);
+        if (mode === 'postgres' && matchingRows.length > 0) {
+            for (const row of matchingRows) {
+                const pkValue = row[pkName] !== undefined && row[pkName] !== null ? row[pkName] : row[pkName ? pkName.toLowerCase() : ''];
+                if (pkValue !== null && pkValue !== undefined && pkValue !== '') {
+                    await fetch(`/api/delete?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
+                        method: 'POST'
+                    }).catch(() => {});
+                }
             }
         }
     }
@@ -377,6 +380,7 @@ const DB = (() => {
         insert,
         update,
         remove,
+        delete: remove,
         replaceAll,
         setLocalCache,
         HEADERS,

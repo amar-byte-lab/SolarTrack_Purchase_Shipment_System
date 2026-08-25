@@ -58,15 +58,20 @@
         </div>
       </div>
 
-      <!-- Tabs for Buy / Sell -->
-      <ul class="nav nav-pills mb-2" id="shipmentTypeTabs">
-        <li class="nav-item">
-          <button class="nav-link active fw-bold py-1 px-3" data-type="Buy" id="tabBuy" style="font-size: 0.85rem;">📥 Buy Shipments</button>
-        </li>
-        <li class="nav-item ms-2">
-          <button class="nav-link fw-bold py-1 px-3" data-type="Sell" id="tabSell" style="font-size: 0.85rem;">📤 Sell Shipments</button>
-        </li>
-      </ul>
+      <!-- Tabs for Buy / Sell & Price History Button -->
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <ul class="nav nav-pills" id="shipmentTypeTabs">
+          <li class="nav-item">
+            <button class="nav-link active fw-bold py-1 px-3" data-type="Buy" id="tabBuy" style="font-size: 0.85rem;">📥 Buy Shipments</button>
+          </li>
+          <li class="nav-item ms-2">
+            <button class="nav-link fw-bold py-1 px-3" data-type="Sell" id="tabSell" style="font-size: 0.85rem;">📤 Sell Shipments</button>
+          </li>
+        </ul>
+        <button class="btn btn-sm btn-outline-primary fw-bold px-3 d-flex align-items-center gap-1 shadow-sm" id="btnTogglePriceHistory" onclick="togglePriceHistoryPopup()" style="font-size: 0.85rem; border-radius: 8px;">
+          🏷️ Price History
+        </button>
+      </div>
 
       <div class="st-card st-card-table-container">
         <div class="table-responsive-main">
@@ -364,6 +369,306 @@
       </div>
       <div class="modal-footer bg-light border-top py-1">
         <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Floating Draggable Price History & Tracker Popup ══════════════════ -->
+<div class="draggable-popup-card shadow-lg" id="priceHistoryPopup" style="display:none; position:fixed; top:60px; right:20px; width:540px; max-width:92vw; z-index:1060; background:#fff; border-radius:14px; border:1px solid #cbd5e1; box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;">
+  <!-- Draggable Header -->
+  <div class="popup-header bg-primary text-white py-2 px-3 d-flex justify-content-between align-items-center" id="priceHistoryHeader" style="cursor:move; border-radius:13px 13px 0 0; user-select:none;">
+    <div class="d-flex align-items-center gap-2">
+      <span class="fs-6">🏷️</span>
+      <h6 class="mb-0 fw-bold fs-7">Price History & Tracker</h6>
+      <span class="badge bg-white text-primary fs-8 ms-1">Movable</span>
+    </div>
+    <button type="button" class="btn-close btn-close-white btn-sm" onclick="togglePriceHistoryPopup(false)" aria-label="Close"></button>
+  </div>
+
+  <!-- Popup Nav Tabs -->
+  <div class="popup-nav bg-light border-bottom px-3 pt-2">
+    <ul class="nav nav-tabs border-0" id="priceHistoryPopupTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active py-1 px-3 fs-7 fw-bold" id="tabAddPrice" onclick="switchPriceHistoryTab('add')">➕ Add Price Record</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link py-1 px-3 fs-7 fw-bold" id="tabViewPriceHistory" onclick="switchPriceHistoryTab('history')">📜 Price History Log</button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Popup Body (Expanded Height) -->
+  <div class="popup-body p-3" style="max-height: 640px; overflow-y: auto;">
+    
+    <!-- Tab 1 Content: Add Price Record Form -->
+    <div id="priceTabContentAdd">
+      <form id="formAddPriceRecord" onsubmit="event.preventDefault(); savePriceRecord();">
+        <!-- Date, Note Name & Keep Note Theme Remarks -->
+        <div class="row g-2 mb-2">
+          <div class="col-sm-6 col-12">
+            <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Date</label>
+            <input type="date" class="form-control form-control-sm" id="phDate" required>
+          </div>
+          <div class="col-sm-6 col-12">
+            <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Note Name / Title</label>
+            <input type="text" class="form-control form-control-sm" id="phNoteName" placeholder="e.g. Panel Discount, Supplier Rate..." autocomplete="off">
+          </div>
+          <div class="col-12">
+            <div class="keep-note-card p-2" style="border-radius:10px;">
+              <div class="keep-note-header d-flex align-items-center justify-content-between mb-1">
+                <span class="keep-note-title d-flex align-items-center gap-1.5 fw-bold fs-8"><span>📌</span> Keep Note Remarks</span>
+                <span class="keep-note-tag fs-8">Price Record</span>
+              </div>
+              <textarea class="keep-note-textarea fs-8" id="phRemarks" rows="2" placeholder="Take a note / add price record notes..." autocomplete="off" style="min-height:45px; font-size:0.8rem;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Single Top Header for All Sections -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-1.5 bg-light border border-bottom-0 text-secondary fw-bold rounded-top" style="font-size:0.7rem; letter-spacing:0.3px;">
+          <span class="flex-grow-1">ITEM NAME</span>
+          <span style="width:75px;" class="text-center">QTY</span>
+          <span style="width:125px;" class="text-end me-1">PRICE (₹)</span>
+        </div>
+
+        <div style="max-height: 400px; overflow-y: auto; padding-right:2px;">
+          
+          <!-- Section 1: Core Solar Equipment (Sky Blue Theme) -->
+          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
+            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #0284c7, #0369a1); cursor:pointer;" onclick="togglePhSection('sec1')">
+              <div class="d-flex align-items-center gap-1.5">
+                <span id="phIconSec1" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
+                <span>🔹 Section-1: Core Equipment</span>
+              </div>
+              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                <button type="button" class="btn btn-xs btn-light text-dark fw-bold py-0 px-2 fs-8 shadow-sm" onclick="addPhSectionItem('sec1')" title="Add new item to Section 1">➕ Item</button>
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" id="chkMergeSec1" onchange="togglePhSecMerge('sec1')">
+                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec1">Merge Price</label>
+                </div>
+                <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end" id="phLumpSec1" placeholder="Section Total ₹" style="width:115px; display:none; height:24px; font-size:0.75rem;" oninput="onPhSecLumpInput('sec1')">
+              </div>
+            </div>
+            <div class="card-body p-2" id="secBodySec1" style="background:#f0f9ff;">
+              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
+                <tbody id="tbodyPhSec1"></tbody>
+              </table>
+              <div class="text-end pt-1">
+                <button type="button" class="btn btn-xs btn-outline-primary fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec1')">➕ Add Item</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Cables (Emerald Green Theme) -->
+          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
+            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #16a34a, #15803d); cursor:pointer;" onclick="togglePhSection('sec2')">
+              <div class="d-flex align-items-center gap-1.5">
+                <span id="phIconSec2" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
+                <span>🔹 Section-2: Cables</span>
+              </div>
+              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                <button type="button" class="btn btn-xs btn-light text-dark fw-bold py-0 px-2 fs-8 shadow-sm" onclick="addPhSectionItem('sec2')" title="Add new item to Section 2">➕ Item</button>
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" id="chkMergeSec2" onchange="togglePhSecMerge('sec2')">
+                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec2">Merge Price</label>
+                </div>
+                <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end" id="phLumpSec2" placeholder="Section Total ₹" style="width:115px; display:none; height:24px; font-size:0.75rem;" oninput="onPhSecLumpInput('sec2')">
+              </div>
+            </div>
+            <div class="card-body p-2" id="secBodySec2" style="background:#f0fdf4;">
+              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
+                <tbody id="tbodyPhSec2"></tbody>
+              </table>
+              <div class="text-end pt-1">
+                <button type="button" class="btn btn-xs btn-outline-success fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec2')">➕ Add Item</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Hardware & Connectors (Amber Theme) -->
+          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
+            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #d97706, #b45309); cursor:pointer;" onclick="togglePhSection('sec3')">
+              <div class="d-flex align-items-center gap-1.5">
+                <span id="phIconSec3" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
+                <span>🔹 Section-3: Hardware & Connectors</span>
+              </div>
+              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                <button type="button" class="btn btn-xs btn-light text-dark fw-bold py-0 px-2 fs-8 shadow-sm" onclick="addPhSectionItem('sec3')" title="Add new item to Section 3">➕ Item</button>
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" id="chkMergeSec3" onchange="togglePhSecMerge('sec3')">
+                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec3">Merge Price</label>
+                </div>
+                <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end" id="phLumpSec3" placeholder="Section Total ₹" style="width:115px; display:none; height:24px; font-size:0.75rem;" oninput="onPhSecLumpInput('sec3')">
+              </div>
+            </div>
+            <div class="card-body p-2" id="secBodySec3" style="background:#fffbeb;">
+              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
+                <tbody id="tbodyPhSec3"></tbody>
+              </table>
+              <div class="text-end pt-1">
+                <button type="button" class="btn btn-xs btn-outline-warning fw-semibold py-0 px-2 fs-8 text-dark" onclick="addPhSectionItem('sec3')">➕ Add Item</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Accessories & Conduit (Purple Theme) -->
+          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
+            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); cursor:pointer;" onclick="togglePhSection('sec4')">
+              <div class="d-flex align-items-center gap-1.5">
+                <span id="phIconSec4" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
+                <span>🔹 Section-4: Accessories & Conduit</span>
+              </div>
+              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                <button type="button" class="btn btn-xs btn-light text-dark fw-bold py-0 px-2 fs-8 shadow-sm" onclick="addPhSectionItem('sec4')" title="Add new item to Section 4">➕ Item</button>
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" id="chkMergeSec4" onchange="togglePhSecMerge('sec4')">
+                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec4">Merge Price</label>
+                </div>
+                <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end" id="phLumpSec4" placeholder="Section Total ₹" style="width:115px; display:none; height:24px; font-size:0.75rem;" oninput="onPhSecLumpInput('sec4')">
+              </div>
+            </div>
+            <div class="card-body p-2" id="secBodySec4" style="background:#faf5ff;">
+              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
+                <tbody id="tbodyPhSec4"></tbody>
+              </table>
+              <div class="text-end pt-1">
+                <button type="button" class="btn btn-xs btn-outline-secondary fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec4')">➕ Add Item</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Summary Footer & GST Input -->
+        <div class="p-2.5 mt-2 bg-light border rounded font-monospace" style="font-size:0.78rem;">
+          <div class="row g-2 align-items-center">
+            <div class="col-6">
+              <span class="text-secondary fw-semibold">Total Price (w/o GST):</span>
+              <div class="fw-bold text-primary fs-7" id="lblPhSubtotal">₹0.00</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fs-8 fw-semibold mb-0 text-secondary">GST %</label>
+              <div class="input-group input-group-sm">
+                <input type="number" min="0" max="100" step="any" class="form-control font-monospace fw-bold" id="phGstPct" value="18" oninput="recalcPhSummary()">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-12"><hr class="my-1 opacity-25"></div>
+            <div class="col-12 d-flex justify-content-between align-items-center">
+              <span class="fw-bold text-success fs-7">Total Price with GST:</span>
+              <span class="fw-bold text-success fs-6" id="lblPhGrandTotal">₹0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-2 text-end">
+          <button type="submit" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm">
+            💾 Save Price Records
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tab 2 Content: Price History Cards Feed -->
+    <div id="priceTabContentHistory" style="display:none;">
+      <div class="mb-2.5 d-flex gap-2 align-items-center">
+        <input type="text" class="form-control form-control-sm" id="phSearchInput" placeholder="🔍 Search note title, item name or remarks..." oninput="renderPriceHistoryList()">
+      </div>
+      
+      <!-- Cards Grid Container for Square Type Cards -->
+      <div id="priceHistoryCardsContainer" class="d-grid" style="grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 14px; max-height:460px; overflow-y:auto; padding:6px 8px;">
+        <!-- Dynamic Square Price History Cards rendered by renderPriceHistoryList() -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ Edit Price Record Modal Popup ══════════════════════════════════ -->
+<div class="modal fade" id="editPriceRecordModal" tabindex="-1" aria-labelledby="editPriceRecordModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+      <div class="modal-header bg-primary text-white py-2 px-3" style="border-radius:14px 14px 0 0;">
+        <div class="d-flex align-items-center gap-2">
+          <span class="fs-6">✏️</span>
+          <h6 class="modal-title fw-bold fs-7" id="editPriceRecordModalLabel">Edit Price Record Details</h6>
+        </div>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-3" style="max-height: 75vh; overflow-y: auto;">
+        <form id="formEditPriceRecord" onsubmit="event.preventDefault(); updatePriceRecordBatch();">
+          <input type="hidden" id="editPhBatchKey">
+          
+          <!-- Date & Note Name -->
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6 col-12">
+              <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Date</label>
+              <input type="date" class="form-control form-control-sm" id="editPhDate" required>
+            </div>
+            <div class="col-sm-6 col-12">
+              <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Note Name / Title</label>
+              <input type="text" class="form-control form-control-sm" id="editPhNoteName" placeholder="Note Title..." autocomplete="off">
+            </div>
+            <div class="col-12">
+              <div class="keep-note-card p-2" style="border-radius:10px;">
+                <div class="keep-note-header d-flex align-items-center justify-content-between mb-1">
+                  <span class="keep-note-title d-flex align-items-center gap-1.5 fw-bold fs-8"><span>📌</span> Keep Note Remarks</span>
+                  <span class="keep-note-tag fs-8">Editable Note</span>
+                </div>
+                <textarea class="keep-note-textarea fs-8" id="editPhRemarks" rows="2" placeholder="Edit note remarks..." autocomplete="off" style="min-height:45px; font-size:0.8rem;"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items Table Header -->
+          <div class="d-flex align-items-center justify-content-between px-3 py-1.5 bg-light border border-bottom-0 text-secondary fw-bold rounded-top mb-0" style="font-size:0.7rem;">
+            <span class="flex-grow-1">ITEM NAME</span>
+            <span style="width:75px;" class="text-center">QTY</span>
+            <span style="width:125px;" class="text-end me-1">PRICE (₹)</span>
+            <span style="width:35px;" class="text-center"></span>
+          </div>
+
+          <!-- Items Table Body -->
+          <div class="border rounded-bottom p-2 mb-2 bg-white" style="max-height: 260px; overflow-y: auto;">
+            <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
+              <tbody id="tbodyEditPhItems"></tbody>
+            </table>
+            <div class="text-end pt-2 border-top mt-1">
+              <button type="button" class="btn btn-xs btn-outline-primary fw-bold py-1 px-2 fs-8" onclick="addEditPhItemRow()">➕ Add Item to Record</button>
+            </div>
+          </div>
+
+          <!-- GST % & Summary -->
+          <div class="p-2.5 bg-light border rounded font-monospace" style="font-size:0.78rem;">
+            <div class="row g-2 align-items-center">
+              <div class="col-6">
+                <span class="text-secondary fw-semibold">Subtotal (w/o GST):</span>
+                <div class="fw-bold text-primary fs-7" id="lblEditPhSubtotal">₹0.00</div>
+              </div>
+              <div class="col-6">
+                <label class="form-label fs-8 fw-semibold mb-0 text-secondary">GST %</label>
+                <div class="input-group input-group-sm">
+                  <input type="number" min="0" max="100" step="any" class="form-control font-monospace fw-bold" id="editPhGstPct" value="18" oninput="recalcEditPhSummary()">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="col-12"><hr class="my-1 opacity-25"></div>
+              <div class="col-12 d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-success fs-7">Grand Total with GST:</span>
+                <span class="fw-bold text-success fs-6" id="lblEditPhGrandTotal">₹0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 text-end d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-success px-4 fw-bold shadow-sm">
+              💾 Update Price Record
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

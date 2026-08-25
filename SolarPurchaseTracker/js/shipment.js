@@ -2036,3 +2036,651 @@ window.showItemPriceBreakup = function (shipmentNo, lineIndex) {
         modal.show();
     }
 };
+
+/* =========================================================================
+   Price History & Tracker Floating Draggable Popup Module
+   ========================================================================= */
+
+/* =========================================================================
+   Price History & Tracker Floating Draggable Popup Module
+   ========================================================================= */
+
+const SECTION_PRICE_ITEMS = {
+    sec1: [
+        { name: 'Panel', defaultUnit: 'Pc' },
+        { name: 'Inverter', defaultUnit: 'Pc' },
+        { name: 'Mounting Structure', defaultUnit: 'Set' },
+        { name: 'ACDB', defaultUnit: 'Pc' },
+        { name: 'DCDB', defaultUnit: 'Pc' },
+        { name: 'Earthing System', defaultUnit: 'Set' },
+    ],
+    sec2: [
+        { name: 'AC Cable', defaultUnit: 'Meter' },
+        { name: 'DC Cable', defaultUnit: 'Meter' },
+        { name: 'Earthing Cable', defaultUnit: 'Meter' },
+    ],
+    sec3: [
+        { name: 'Anchor bolt', defaultUnit: 'Pc' },
+        { name: 'MC4 Connector', defaultUnit: 'Pair' },
+        { name: 'Mid, End Clamp with SS U bolt', defaultUnit: 'Set' },
+    ],
+    sec4: [
+        { name: 'Cable Tray', defaultUnit: 'Meter' },
+        { name: 'Cable Tie', defaultUnit: 'Pkt' },
+        { name: 'Conduct Pipe', defaultUnit: 'Meter' },
+        { name: 'Tee', defaultUnit: 'Pc' },
+        { name: 'Bend', defaultUnit: 'Pc' },
+        { name: 'Flexible', defaultUnit: 'Meter' },
+        { name: 'C-Clip & Gripping', defaultUnit: 'Pc' },
+        { name: 'Insulation tape', defaultUnit: 'Pc' },
+    ]
+};
+
+let isPhDraggableInitialized = false;
+
+window.togglePriceHistoryPopup = function (show) {
+    const popup = document.getElementById('priceHistoryPopup');
+    if (!popup) return;
+
+    if (show === undefined) {
+        show = popup.style.display === 'none' || popup.style.display === '' || window.getComputedStyle(popup).display === 'none';
+    }
+
+    if (show) {
+        popup.style.display = 'block';
+        popup.style.zIndex = '1060';
+        const phDate = document.getElementById('phDate');
+        if (phDate && !phDate.value) phDate.value = UI.todayISO();
+
+        if (!isPhDraggableInitialized) {
+            isPhDraggableInitialized = true;
+            makeElementDraggable(popup, document.getElementById('priceHistoryHeader'));
+        }
+        renderPhAllItemsTable();
+        renderPriceHistoryList();
+    } else {
+        popup.style.display = 'none';
+    }
+};
+
+window.togglePhSection = function (secKey) {
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const body = document.getElementById(`secBody${secSuffix}`);
+    const icon = document.getElementById(`phIcon${secSuffix}`);
+    if (!body) return;
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+    } else {
+        body.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(-90deg)';
+    }
+};
+
+window.addPhSectionItem = function (secKey) {
+    const itemName = prompt('Enter new item name for this section:');
+    if (!itemName || !itemName.trim()) return;
+    const cleanName = itemName.trim();
+
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+    if (!tbody) return;
+
+    if (!SECTION_PRICE_ITEMS[secKey]) SECTION_PRICE_ITEMS[secKey] = [];
+    const exists = SECTION_PRICE_ITEMS[secKey].some(i => i.name.toLowerCase() === cleanName.toLowerCase());
+    if (!exists) {
+        SECTION_PRICE_ITEMS[secKey].push({ name: cleanName, defaultUnit: 'Pc' });
+    }
+
+    const secBody = document.getElementById(`secBody${secSuffix}`);
+    const secIcon = document.getElementById(`phIcon${secSuffix}`);
+    if (secBody && secBody.style.display === 'none') {
+        secBody.style.display = 'block';
+        if (secIcon) secIcon.style.transform = 'rotate(0deg)';
+    }
+
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-item-name', cleanName);
+    tr.setAttribute('data-default-unit', 'Pc');
+    tr.innerHTML = `
+        <td class="fw-bold text-dark p-1 align-middle">${cleanName}</td>
+        <td class="p-1 text-center align-middle" style="width:75px;"><input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center p-1" value="1" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
+        <td class="p-1 align-middle" style="width:125px;"><input type="number" min="0" step="any" class="form-control form-control-sm ph-row-price text-end font-monospace p-1" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
+    `;
+    tbody.appendChild(tr);
+
+    const chk = document.getElementById(`chkMerge${secSuffix}`);
+    if (chk && chk.checked) {
+        onPhSecLumpInput(secKey);
+    } else {
+        const priceInput = tr.querySelector('.ph-row-price');
+        if (priceInput) priceInput.focus();
+    }
+
+    recalcPhSummary();
+    if (typeof UI !== 'undefined' && UI.toast) {
+        UI.toast(`Added item "${cleanName}" to section.`, 'info');
+    }
+};
+
+function renderPhAllItemsTable() {
+    ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
+        const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+        const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+        const chk = document.getElementById(`chkMerge${secSuffix}`);
+        const lumpInput = document.getElementById(`phLump${secSuffix}`);
+
+        if (chk) chk.checked = false;
+        if (lumpInput) {
+            lumpInput.value = '';
+            lumpInput.style.display = 'none';
+        }
+
+        if (!tbody) return;
+
+        const items = SECTION_PRICE_ITEMS[secKey] || [];
+        tbody.innerHTML = items.map((item) => `
+      <tr data-item-name="${item.name}" data-default-unit="${item.defaultUnit}">
+        <td class="fw-bold text-dark p-1 align-middle">${item.name}</td>
+        <td class="p-1 text-center align-middle" style="width:75px;"><input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center p-1" value="1" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
+        <td class="p-1 align-middle" style="width:125px;"><input type="number" min="0" step="any" class="form-control form-control-sm ph-row-price text-end font-monospace p-1" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
+      </tr>
+    `).join('');
+    });
+    recalcPhSummary();
+}
+
+window.togglePhSecMerge = function (secKey) {
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const chk = document.getElementById(`chkMerge${secSuffix}`);
+    const lumpInput = document.getElementById(`phLump${secSuffix}`);
+    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+
+    if (!chk || !tbody) return;
+
+    if (chk.checked) {
+        if (lumpInput) {
+            lumpInput.style.display = 'block';
+            lumpInput.focus();
+        }
+        onPhSecLumpInput(secKey);
+    } else {
+        if (lumpInput) {
+            lumpInput.style.display = 'none';
+            lumpInput.value = '';
+        }
+        const rows = tbody.querySelectorAll('tr[data-item-name]');
+        rows.forEach(tr => {
+            const priceEl = tr.querySelector('.ph-row-price');
+            if (priceEl) {
+                priceEl.value = '';
+                priceEl.readOnly = false;
+            }
+        });
+        recalcPhSummary();
+    }
+};
+
+window.onPhSecLumpInput = function (secKey) {
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const lumpInput = document.getElementById(`phLump${secSuffix}`);
+    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+
+    if (!tbody || !lumpInput) return;
+
+    const lumpVal = Number(lumpInput.value) || 0;
+    const rows = Array.from(tbody.querySelectorAll('tr[data-item-name]'));
+
+    if (!rows.length) return;
+
+    const share = lumpVal > 0 ? Calc.round2(lumpVal / rows.length) : 0;
+
+    rows.forEach(tr => {
+        const priceEl = tr.querySelector('.ph-row-price');
+        if (priceEl) {
+            priceEl.value = share > 0 ? share : '';
+            priceEl.readOnly = true;
+        }
+    });
+
+    recalcPhSummary();
+};
+
+window.recalcPhSummary = function () {
+    const allRows = document.querySelectorAll('#priceTabContentAdd tr[data-item-name]');
+    let subtotal = 0;
+
+    allRows.forEach(tr => {
+        const price = Number(tr.querySelector('.ph-row-price')?.value) || 0;
+        subtotal += price;
+    });
+
+    const gstPct = Number(document.getElementById('phGstPct')?.value) || 0;
+    const grandTotal = Calc.round2(subtotal * (1 + gstPct / 100));
+
+    const lblSubtotal = document.getElementById('lblPhSubtotal');
+    const lblGrandTotal = document.getElementById('lblPhGrandTotal');
+
+    if (lblSubtotal) lblSubtotal.textContent = UI.money(Calc.round2(subtotal));
+    if (lblGrandTotal) lblGrandTotal.textContent = UI.money(grandTotal);
+};
+
+function makeElementDraggable(elmnt, handleEl) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = handleEl || elmnt;
+
+    header.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        if (e.target.classList.contains('btn-close')) return;
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        elmnt.style.top = Math.max(10, (elmnt.offsetTop - pos2)) + "px";
+        elmnt.style.left = Math.max(10, (elmnt.offsetLeft - pos1)) + "px";
+        elmnt.style.right = 'auto';
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+window.switchPriceHistoryTab = function (tab) {
+    const tabAdd = document.getElementById('tabAddPrice');
+    const tabHistory = document.getElementById('tabViewPriceHistory');
+    const contentAdd = document.getElementById('priceTabContentAdd');
+    const contentHistory = document.getElementById('priceTabContentHistory');
+
+    if (tab === 'add') {
+        if (tabAdd) tabAdd.classList.add('active');
+        if (tabHistory) tabHistory.classList.remove('active');
+        if (contentAdd) contentAdd.style.display = 'block';
+        if (contentHistory) contentHistory.style.display = 'none';
+    } else {
+        if (tabHistory) tabHistory.classList.add('active');
+        if (tabAdd) tabAdd.classList.remove('active');
+        if (contentHistory) contentHistory.style.display = 'block';
+        if (contentAdd) contentAdd.style.display = 'none';
+        renderPriceHistoryList();
+    }
+};
+
+window.savePriceRecord = async function () {
+    const phDate = document.getElementById('phDate')?.value || UI.todayISO();
+    const phNoteName = document.getElementById('phNoteName')?.value?.trim() || '';
+    const phRemarks = document.getElementById('phRemarks')?.value?.trim() || '';
+    const gstPct = Number(document.getElementById('phGstPct')?.value) || 0;
+
+    const allRows = document.querySelectorAll('#priceTabContentAdd tr[data-item-name]');
+    const recordsToInsert = [];
+    const batchId = Utils.uid('PHB');
+
+    allRows.forEach(tr => {
+        const itemName = tr.getAttribute('data-item-name');
+        const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
+        const qty = Number(tr.querySelector('.ph-row-qty')?.value) || 1;
+        const priceNoGst = Number(tr.querySelector('.ph-row-price')?.value) || 0;
+
+        if (priceNoGst > 0) {
+            const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
+            const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
+            const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+
+            recordsToInsert.push({
+                RecordID: Utils.uid('PH'),
+                BatchID: batchId,
+                Date: phDate,
+                NoteName: phNoteName,
+                VendorName: phNoteName,
+                ItemName: itemName,
+                Quantity: qty,
+                Unit: defaultUnit,
+                TotalWithoutGst: priceNoGst,
+                TotalWithGst: priceWithGst,
+                RateWithoutGst: rateNoGst,
+                RateWithGst: rateWithGst,
+                Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
+                CreatedAt: new Date().toISOString()
+            });
+        }
+    });
+
+    if (!recordsToInsert.length) {
+        UI.toast('Please enter a price for at least one item.', 'danger');
+        return;
+    }
+
+    UI.showLoading(true);
+    try {
+        for (const rec of recordsToInsert) {
+            await DB.insert('price_history', rec);
+        }
+        UI.toast(`Saved ${recordsToInsert.length} price record(s) successfully.`, 'success');
+
+        const form = document.getElementById('formAddPriceRecord');
+        if (form) form.reset();
+        const noteNameEl = document.getElementById('phNoteName');
+        if (noteNameEl) noteNameEl.value = '';
+        const remEl = document.getElementById('phRemarks');
+        if (remEl) remEl.value = '';
+        const dateEl = document.getElementById('phDate');
+        if (dateEl) dateEl.value = UI.todayISO();
+        const gstEl = document.getElementById('phGstPct');
+        if (gstEl) gstEl.value = 18;
+        renderPhAllItemsTable();
+
+        switchPriceHistoryTab('history');
+    } catch (err) {
+        UI.toast('Error saving price records: ' + err.message, 'danger');
+    } finally {
+        UI.showLoading(false);
+    }
+};
+
+window.renderPriceHistoryList = function () {
+    const container = document.getElementById('priceHistoryCardsContainer');
+    if (!container) return;
+
+    const records = DB.getAll('price_history') || [];
+    const search = (document.getElementById('phSearchInput')?.value || '').toLowerCase().trim();
+
+    let filtered = records;
+    if (search) {
+        filtered = records.filter(r =>
+            String(r.ItemName || '').toLowerCase().includes(search) ||
+            String(r.NoteName || r.VendorName || '').toLowerCase().includes(search) ||
+            String(r.Remarks || '').toLowerCase().includes(search)
+        );
+    }
+
+    filtered.sort((a, b) => new Date(b.Date || b.CreatedAt || 0) - new Date(a.Date || a.CreatedAt || 0));
+
+    if (!filtered.length) {
+        container.innerHTML = `<div class="text-center text-muted py-4 border rounded bg-light">No price history records found.</div>`;
+        return;
+    }
+
+    // Group items into batches
+    const batchesMap = new Map();
+    filtered.forEach(r => {
+        const batchKey = r.BatchID || (r.Date + '_' + (r.NoteName || '') + '_' + (r.CreatedAt ? r.CreatedAt.slice(0, 19) : r.RecordID));
+        if (!batchesMap.has(batchKey)) {
+            let noteText = r.Remarks || '';
+            let gstMatch = noteText.match(/\(GST:\s*([\d.]+)%\)/i);
+            let cleanRemarks = noteText.replace(/\(GST:\s*[\d.]+%\)/gi, '').replace(/^GST:\s*[\d.]+\s*%/gi, '').trim();
+
+            batchesMap.set(batchKey, {
+                batchKey: batchKey,
+                date: r.Date,
+                noteName: r.NoteName || r.VendorName || '',
+                remarks: noteText,
+                cleanRemarks: cleanRemarks,
+                gstPct: gstMatch ? Number(gstMatch[1]) : 18,
+                items: []
+            });
+        }
+        batchesMap.get(batchKey).items.push(r);
+    });
+
+    const cardListHtml = Array.from(batchesMap.values()).map(b => {
+        const totalWithGst = b.items.reduce((sum, i) => sum + (Number(i.TotalWithGst) || 0), 0);
+
+        return `
+      <div class="card border-0 shadow-sm transition-all hover-shadow h-100 d-flex flex-column justify-content-between p-2.5 position-relative" 
+           style="border-radius:12px; background:#fffdf5; border:1px solid #fde68a !important; cursor:pointer; min-height:165px;" 
+           onclick="openEditPriceRecordModal('${b.batchKey}')">
+        <div>
+          <!-- Header: Date, Title & Action buttons -->
+          <div class="d-flex justify-content-between align-items-start mb-2 pb-1.5 border-bottom" style="border-color:#fef08a !important;">
+            <div style="max-width: 70%;">
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-8 font-monospace mb-1 d-inline-block">📅 ${UI.fmtDate(b.date)}</span>
+              <h6 class="fw-bold text-dark fs-7 mb-0 text-truncate" title="${b.noteName || 'Price Record Note'}">📌 ${b.noteName || 'Price Record Note'}</h6>
+            </div>
+            <div class="d-flex align-items-center gap-1" onclick="event.stopPropagation()">
+              <button type="button" class="btn btn-xs btn-outline-primary p-1 lh-1 rounded-circle" onclick="openEditPriceRecordModal('${b.batchKey}')" title="Edit this record" style="width:24px; height:24px;">✏️</button>
+              <button type="button" class="btn btn-xs btn-outline-danger p-1 lh-1 rounded-circle" onclick="deletePriceRecordBatch('${b.batchKey}')" title="Delete this record" style="width:24px; height:24px;">🗑️</button>
+            </div>
+          </div>
+
+          <!-- Items Preview -->
+          <div class="mb-2">
+            <span class="badge bg-white text-secondary border fs-8 font-monospace fw-semibold mb-1">📦 ${b.items.length} item(s)</span>
+            <div class="fs-8 text-secondary lh-sm text-truncate" title="${b.items.map(i => i.ItemName).join(', ')}">
+              ${b.items.slice(0, 3).map(i => `<span class="fw-semibold text-dark">${i.ItemName}</span>`).join(', ')}${b.items.length > 3 ? '...' : ''}
+            </div>
+          </div>
+
+          <!-- Keep Note Remarks Box -->
+          ${b.cleanRemarks ? `
+            <div class="p-1.5 rounded mb-2 text-dark fs-8" style="background:#fff7ed; border:1px solid #fed7aa; max-height:48px; overflow:hidden; text-overflow:ellipsis;">
+              <span class="fw-bold text-amber-700">📝 Remarks:</span> ${b.cleanRemarks}
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Footer: Total Price -->
+        <div class="pt-2 border-top d-flex justify-content-between align-items-center" style="border-color:#fef08a !important;">
+          <span class="fs-8 text-muted font-monospace">GST: ${b.gstPct}%</span>
+          <span class="fw-bold text-success font-monospace fs-7">₹${totalWithGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+    `;
+    }).join('');
+
+    container.innerHTML = cardListHtml;
+};
+
+window.openEditPriceRecordModal = function (batchKey) {
+    const records = DB.getAll('price_history') || [];
+    const batchItems = records.filter(r => {
+        const key = r.BatchID || (r.Date + '_' + (r.NoteName || '') + '_' + (r.CreatedAt ? r.CreatedAt.slice(0, 19) : r.RecordID));
+        return key === batchKey;
+    });
+
+    if (!batchItems.length) {
+        UI.toast('Price record details not found.', 'warning');
+        return;
+    }
+
+    const first = batchItems[0];
+    let noteText = first.Remarks || '';
+    let gstMatch = noteText.match(/\(GST:\s*([\d.]+)%\)/i);
+    let cleanRemarks = noteText.replace(/\(GST:\s*[\d.]+%\)/gi, '').replace(/^GST:\s*[\d.]+\s*%/gi, '').trim();
+
+    document.getElementById('editPhBatchKey').value = batchKey;
+    document.getElementById('editPhDate').value = first.Date || UI.todayISO();
+    document.getElementById('editPhNoteName').value = first.NoteName || first.VendorName || '';
+    document.getElementById('editPhRemarks').value = cleanRemarks;
+    document.getElementById('editPhGstPct').value = gstMatch ? Number(gstMatch[1]) : 18;
+
+    const tbody = document.getElementById('tbodyEditPhItems');
+    if (tbody) {
+        tbody.innerHTML = '';
+        batchItems.forEach(item => {
+            addEditPhItemRow(item.ItemName, item.Quantity, item.TotalWithoutGst, item.Unit);
+        });
+    }
+
+    recalcEditPhSummary();
+
+    const modalEl = document.getElementById('editPriceRecordModal');
+    if (modalEl) {
+        let bsModal = bootstrap.Modal.getInstance(modalEl);
+        if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+    }
+};
+
+window.addEditPhItemRow = function (name = '', qty = 1, price = '', unit = 'Pc') {
+    const tbody = document.getElementById('tbodyEditPhItems');
+    if (!tbody) return;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="p-1 align-middle"><input type="text" class="form-control form-control-sm edit-item-name fw-bold" value="${name}" placeholder="Item Name" required style="font-size:0.75rem;"></td>
+        <td class="p-1 text-center align-middle" style="width:75px;"><input type="number" min="0.01" step="any" class="form-control form-control-sm edit-item-qty text-center p-1" value="${qty}" style="font-size:0.75rem;" oninput="recalcEditPhSummary()"></td>
+        <td class="p-1 align-middle" style="width:125px;"><input type="number" min="0" step="any" class="form-control form-control-sm edit-item-price text-end font-monospace p-1" value="${price}" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcEditPhSummary()"></td>
+        <td class="p-1 text-center align-middle" style="width:35px;"><button type="button" class="btn btn-xs btn-outline-danger p-0 px-1" onclick="removeEditPhItemRow(this)" title="Remove item">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalcEditPhSummary();
+};
+
+window.removeEditPhItemRow = function (btn) {
+    const tr = btn.closest('tr');
+    if (tr) tr.remove();
+    recalcEditPhSummary();
+};
+
+window.recalcEditPhSummary = function () {
+    const allRows = document.querySelectorAll('#tbodyEditPhItems tr');
+    let subtotal = 0;
+
+    allRows.forEach(tr => {
+        const price = Number(tr.querySelector('.edit-item-price')?.value) || 0;
+        subtotal += price;
+    });
+
+    const gstPct = Number(document.getElementById('editPhGstPct')?.value) || 0;
+    const grandTotal = Calc.round2(subtotal * (1 + gstPct / 100));
+
+    const lblSubtotal = document.getElementById('lblEditPhSubtotal');
+    const lblGrandTotal = document.getElementById('lblEditPhGrandTotal');
+
+    if (lblSubtotal) lblSubtotal.textContent = UI.money(Calc.round2(subtotal));
+    if (lblGrandTotal) lblGrandTotal.textContent = UI.money(grandTotal);
+};
+
+window.updatePriceRecordBatch = async function () {
+    const batchKey = document.getElementById('editPhBatchKey')?.value;
+    if (!batchKey) return;
+
+    const phDate = document.getElementById('editPhDate')?.value || UI.todayISO();
+    const phNoteName = document.getElementById('editPhNoteName')?.value?.trim() || '';
+    const phRemarks = document.getElementById('editPhRemarks')?.value?.trim() || '';
+    const gstPct = Number(document.getElementById('editPhGstPct')?.value) || 0;
+
+    const itemRows = document.querySelectorAll('#tbodyEditPhItems tr');
+    const updatedRecords = [];
+
+    itemRows.forEach(tr => {
+        const itemName = tr.querySelector('.edit-item-name')?.value?.trim();
+        const qty = Number(tr.querySelector('.edit-item-qty')?.value) || 1;
+        const priceVal = tr.querySelector('.edit-item-price')?.value;
+        const priceNoGst = priceVal !== '' && priceVal !== null && priceVal !== undefined ? Number(priceVal) : 0;
+
+        if (itemName && !isNaN(priceNoGst) && priceNoGst >= 0) {
+            const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
+            const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
+            const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+
+            updatedRecords.push({
+                RecordID: Utils.uid('PH'),
+                BatchID: batchKey,
+                Date: phDate,
+                NoteName: phNoteName,
+                VendorName: phNoteName,
+                ItemName: itemName,
+                Quantity: qty,
+                Unit: 'Pc',
+                TotalWithoutGst: priceNoGst,
+                TotalWithGst: priceWithGst,
+                RateWithoutGst: rateNoGst,
+                RateWithGst: rateWithGst,
+                Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
+                CreatedAt: new Date().toISOString()
+            });
+        }
+    });
+
+    if (!updatedRecords.length) {
+        UI.toast('Please add at least one item with a valid name.', 'danger');
+        return;
+    }
+
+    UI.showLoading(true);
+    try {
+        // Delete previous batch items from DB
+        await DB.delete('price_history', r => {
+            const key = r.BatchID || (r.Date + '_' + (r.NoteName || '') + '_' + (r.CreatedAt ? r.CreatedAt.slice(0, 19) : r.RecordID));
+            return key === batchKey;
+        });
+
+        // Insert updated batch items
+        for (const rec of updatedRecords) {
+            await DB.insert('price_history', rec);
+        }
+
+        UI.toast('Price record updated successfully!', 'success');
+
+        const modalEl = document.getElementById('editPriceRecordModal');
+        if (modalEl) {
+            let modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) {
+                modalInstance.hide();
+            } else if (window.$ && $('#editPriceRecordModal').modal) {
+                $('#editPriceRecordModal').modal('hide');
+            }
+        }
+        // Cleanup leftover backdrop if any
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+        document.body.style.removeProperty('overflow');
+
+        renderPriceHistoryList();
+    } catch (err) {
+        UI.toast('Error updating price record: ' + err.message, 'danger');
+    } finally {
+        UI.showLoading(false);
+    }
+};
+
+window.deletePriceRecordBatch = async function (batchKey) {
+    const ok = await UI.confirmDialog('Delete this price record card and all its items?', 'Delete Price Record', 'Delete', 'btn-danger');
+    if (!ok) return;
+
+    UI.showLoading(true);
+    try {
+        await DB.delete('price_history', r => {
+            const key = r.BatchID || (r.Date + '_' + (r.NoteName || '') + '_' + (r.CreatedAt ? r.CreatedAt.slice(0, 19) : r.RecordID));
+            return key === batchKey;
+        });
+        UI.toast('Price record card deleted.', 'warning');
+        renderPriceHistoryList();
+    } catch (err) {
+        UI.toast('Error deleting price record: ' + err.message, 'danger');
+    } finally {
+        UI.showLoading(false);
+    }
+};
+
+window.deletePriceRecord = async function (recordId) {
+    const ok = await UI.confirmDialog('Delete this price history record?', 'Delete Record', 'Delete', 'btn-danger');
+    if (!ok) return;
+
+    UI.showLoading(true);
+    try {
+        await DB.delete('price_history', r => r.RecordID === recordId);
+        UI.toast('Price record deleted.', 'warning');
+        renderPriceHistoryList();
+    } catch (err) {
+        UI.toast('Error deleting record: ' + err.message, 'danger');
+    } finally {
+        UI.showLoading(false);
+    }
+};

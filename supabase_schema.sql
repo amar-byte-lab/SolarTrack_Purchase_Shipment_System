@@ -217,7 +217,7 @@ INSERT INTO users ("userid", "username", "email", "password", "role", "status", 
   ('admin', 'Admin', 'admin@example.com', 'adminpassword', 'admin', 'Approved', '2026-07-23T10:46:05+05:30')
 ON CONFLICT DO NOTHING;
 
--- Work Notes Table
+// Work Notes Table
 CREATE TABLE IF NOT EXISTS work_notes (
   "NoteID" TEXT PRIMARY KEY,
   "NoteTitle" TEXT,
@@ -227,5 +227,27 @@ CREATE TABLE IF NOT EXISTS work_notes (
   "CreatedAt" TEXT,
   "UpdatedAt" TEXT
 );
+
+-- Price History Table
+CREATE TABLE IF NOT EXISTS price_history (
+  "RecordID" TEXT PRIMARY KEY,
+  "BatchID" TEXT,
+  "Date" TEXT,
+  "NoteName" TEXT,
+  "ItemName" TEXT,
+  "Quantity" NUMERIC,
+  "Unit" TEXT,
+  "TotalWithoutGst" NUMERIC,
+  "TotalWithGst" NUMERIC,
+  "RateWithoutGst" NUMERIC,
+  "RateWithGst" NUMERIC,
+  "Remarks" TEXT,
+  "CreatedAt" TEXT
+);
+
+-- Alter table queries for existing PostgreSQL / Supabase deployments
+ALTER TABLE price_history ADD COLUMN IF NOT EXISTS "BatchID" TEXT;
+ALTER TABLE price_history ADD COLUMN IF NOT EXISTS "NoteName" TEXT;
+
 
 
