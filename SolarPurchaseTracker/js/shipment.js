@@ -2129,14 +2129,87 @@ window.togglePhSection = function (secKey) {
     }
 };
 
+window.renderPhSecRows = function (secKey) {
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+    const chk = document.getElementById(`chkMerge${secSuffix}`);
+
+    if (!tbody) return;
+
+    const isMerged = chk && chk.checked;
+
+    // Read current state from existing DOM rows
+    const existingRows = Array.from(tbody.querySelectorAll('tr[data-item-name]'));
+    const rowsData = [];
+    let prevMergedVal = 0;
+
+    if (existingRows.length > 0) {
+        existingRows.forEach((tr) => {
+            const itemName = tr.getAttribute('data-item-name');
+            const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
+            const qty = tr.querySelector('.ph-row-qty')?.value || 1;
+            const price = tr.querySelector('.ph-row-price')?.value || '';
+            const mergedInput = tr.querySelector('.ph-sec-merged-price');
+            if (mergedInput) prevMergedVal = Number(mergedInput.value) || 0;
+
+            rowsData.push({ name: itemName, defaultUnit, qty, price });
+        });
+    } else {
+        const items = SECTION_PRICE_ITEMS[secKey] || [];
+        items.forEach(it => {
+            rowsData.push({ name: it.name, defaultUnit: it.defaultUnit || 'Pc', qty: 1, price: '' });
+        });
+    }
+
+    if (!rowsData.length) {
+        tbody.innerHTML = '';
+        return;
+    }
+
+    // Calculate initial merged price value if turning on merge
+    let displayMergedPrice = prevMergedVal;
+    if (isMerged && displayMergedPrice === 0) {
+        let sum = 0;
+        rowsData.forEach(r => { sum += Number(r.price) || 0; });
+        displayMergedPrice = sum > 0 ? sum : '';
+    }
+
+    tbody.innerHTML = rowsData.map((r, idx) => {
+        let priceColHtml = '';
+        if (!isMerged) {
+            priceColHtml = `
+              <td class="p-1 align-middle" style="width:125px;">
+                <input type="number" min="0" step="any" class="form-control form-control-sm ph-row-price text-end font-monospace p-1" value="${r.price}" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcPhSummary()">
+              </td>
+            `;
+        } else if (idx === 0) {
+            priceColHtml = `
+              <td rowspan="${rowsData.length}" class="p-1 align-middle text-end" style="width:125px; background:#fffdf5; border:1px solid #fde68a;">
+                <input type="number" min="0" step="any" class="form-control form-control-sm ph-sec-merged-price text-end font-monospace p-1 fw-bold text-success" value="${displayMergedPrice}" placeholder="Section Total ₹" style="font-size:0.75rem;" oninput="recalcPhSummary()">
+              </td>
+            `;
+        } else {
+            priceColHtml = '';
+        }
+
+        return `
+          <tr data-item-name="${r.name}" data-default-unit="${r.defaultUnit}">
+            <td class="fw-bold text-dark p-1 align-middle">${r.name}</td>
+            <td class="p-1 text-center align-middle" style="width:75px;">
+              <input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center p-1" value="${r.qty}" style="font-size:0.75rem;" oninput="recalcPhSummary()">
+            </td>
+            ${priceColHtml}
+          </tr>
+        `;
+    }).join('');
+
+    recalcPhSummary();
+};
+
 window.addPhSectionItem = function (secKey) {
     const itemName = prompt('Enter new item name for this section:');
     if (!itemName || !itemName.trim()) return;
     const cleanName = itemName.trim();
-
-    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
-    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
-    if (!tbody) return;
 
     if (!SECTION_PRICE_ITEMS[secKey]) SECTION_PRICE_ITEMS[secKey] = [];
     const exists = SECTION_PRICE_ITEMS[secKey].some(i => i.name.toLowerCase() === cleanName.toLowerCase());
@@ -2144,6 +2217,7 @@ window.addPhSectionItem = function (secKey) {
         SECTION_PRICE_ITEMS[secKey].push({ name: cleanName, defaultUnit: 'Pc' });
     }
 
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
     const secBody = document.getElementById(`secBody${secSuffix}`);
     const secIcon = document.getElementById(`phIcon${secSuffix}`);
     if (secBody && secBody.style.display === 'none') {
@@ -2151,25 +2225,7 @@ window.addPhSectionItem = function (secKey) {
         if (secIcon) secIcon.style.transform = 'rotate(0deg)';
     }
 
-    const tr = document.createElement('tr');
-    tr.setAttribute('data-item-name', cleanName);
-    tr.setAttribute('data-default-unit', 'Pc');
-    tr.innerHTML = `
-        <td class="fw-bold text-dark p-1 align-middle">${cleanName}</td>
-        <td class="p-1 text-center align-middle" style="width:75px;"><input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center p-1" value="1" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
-        <td class="p-1 align-middle" style="width:125px;"><input type="number" min="0" step="any" class="form-control form-control-sm ph-row-price text-end font-monospace p-1" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
-    `;
-    tbody.appendChild(tr);
-
-    const chk = document.getElementById(`chkMerge${secSuffix}`);
-    if (chk && chk.checked) {
-        onPhSecLumpInput(secKey);
-    } else {
-        const priceInput = tr.querySelector('.ph-row-price');
-        if (priceInput) priceInput.focus();
-    }
-
-    recalcPhSummary();
+    renderPhSecRows(secKey);
     if (typeof UI !== 'undefined' && UI.toast) {
         UI.toast(`Added item "${cleanName}" to section.`, 'info');
     }
@@ -2180,96 +2236,49 @@ function renderPhAllItemsTable() {
         const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
         const tbody = document.getElementById(`tbodyPh${secSuffix}`);
         const chk = document.getElementById(`chkMerge${secSuffix}`);
-        const lumpInput = document.getElementById(`phLump${secSuffix}`);
 
         if (chk) chk.checked = false;
-        if (lumpInput) {
-            lumpInput.value = '';
-            lumpInput.style.display = 'none';
-        }
-
         if (!tbody) return;
 
-        const items = SECTION_PRICE_ITEMS[secKey] || [];
-        tbody.innerHTML = items.map((item) => `
-      <tr data-item-name="${item.name}" data-default-unit="${item.defaultUnit}">
-        <td class="fw-bold text-dark p-1 align-middle">${item.name}</td>
-        <td class="p-1 text-center align-middle" style="width:75px;"><input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center p-1" value="1" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
-        <td class="p-1 align-middle" style="width:125px;"><input type="number" min="0" step="any" class="form-control form-control-sm ph-row-price text-end font-monospace p-1" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcPhSummary()"></td>
-      </tr>
-    `).join('');
+        tbody.innerHTML = '';
+        renderPhSecRows(secKey);
     });
-    recalcPhSummary();
 }
 
 window.togglePhSecMerge = function (secKey) {
-    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
-    const chk = document.getElementById(`chkMerge${secSuffix}`);
-    const lumpInput = document.getElementById(`phLump${secSuffix}`);
-    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
-
-    if (!chk || !tbody) return;
-
-    if (chk.checked) {
-        if (lumpInput) {
-            // Auto-sum existing item prices if lumpInput is empty
-            if (!lumpInput.value || Number(lumpInput.value) === 0) {
-                let currentSum = 0;
-                tbody.querySelectorAll('.ph-row-price').forEach(el => {
-                    currentSum += Number(el.value) || 0;
-                });
-                if (currentSum > 0) lumpInput.value = Calc.round2(currentSum);
-            }
-            lumpInput.style.display = 'block';
-            lumpInput.focus();
-        }
-        onPhSecLumpInput(secKey);
-    } else {
-        if (lumpInput) {
-            lumpInput.style.display = 'none';
-            lumpInput.value = '';
-        }
-        const rows = tbody.querySelectorAll('tr[data-item-name]');
-        rows.forEach(tr => {
-            const priceEl = tr.querySelector('.ph-row-price');
-            if (priceEl) {
-                priceEl.readOnly = false;
-                priceEl.style.backgroundColor = '';
-                priceEl.style.fontWeight = '';
-            }
-        });
-        recalcPhSummary();
-    }
+    renderPhSecRows(secKey);
 };
 
-window.onPhSecLumpInput = function (secKey) {
-    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
-    const lumpInput = document.getElementById(`phLump${secSuffix}`);
-    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+window.recalcPhSummary = function () {
+    let subtotal = 0;
 
-    if (!tbody || !lumpInput) return;
+    ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
+        const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+        const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+        const chk = document.getElementById(`chkMerge${secSuffix}`);
 
-    const lumpVal = Number(lumpInput.value) || 0;
-    const rows = Array.from(tbody.querySelectorAll('tr[data-item-name]'));
+        if (!tbody) return;
 
-    if (!rows.length) return;
-
-    const count = rows.length;
-    const baseShare = Math.floor((lumpVal / count) * 100) / 100;
-    const remainder = Calc.round2(lumpVal - (baseShare * count));
-
-    rows.forEach((tr, i) => {
-        const priceEl = tr.querySelector('.ph-row-price');
-        if (priceEl) {
-            const itemShare = (i === count - 1) ? Calc.round2(baseShare + remainder) : baseShare;
-            priceEl.value = (lumpVal > 0 && itemShare > 0) ? itemShare : '';
-            priceEl.readOnly = true;
-            priceEl.style.backgroundColor = '#e0f2fe';
-            priceEl.style.fontWeight = 'bold';
+        if (chk && chk.checked) {
+            const mergedInput = tbody.querySelector('.ph-sec-merged-price');
+            const mergedVal = Number(mergedInput?.value) || 0;
+            subtotal += mergedVal;
+        } else {
+            const priceInputs = tbody.querySelectorAll('.ph-row-price');
+            priceInputs.forEach(input => {
+                subtotal += Number(input.value) || 0;
+            });
         }
     });
 
-    recalcPhSummary();
+    const gstPct = Number(document.getElementById('phGstPct')?.value) || 0;
+    const grandTotal = Calc.round2(subtotal * (1 + gstPct / 100));
+
+    const lblSubtotal = document.getElementById('lblPhSubtotal');
+    const lblGrandTotal = document.getElementById('lblPhGrandTotal');
+
+    if (lblSubtotal) lblSubtotal.textContent = UI.money(Calc.round2(subtotal));
+    if (lblGrandTotal) lblGrandTotal.textContent = UI.money(grandTotal);
 };
 
 window.toggleEditPhMerge = function () {
@@ -2337,25 +2346,6 @@ window.onEditPhLumpInput = function () {
     });
 
     recalcEditPhSummary();
-};
-
-window.recalcPhSummary = function () {
-    const allRows = document.querySelectorAll('#priceTabContentAdd tr[data-item-name]');
-    let subtotal = 0;
-
-    allRows.forEach(tr => {
-        const price = Number(tr.querySelector('.ph-row-price')?.value) || 0;
-        subtotal += price;
-    });
-
-    const gstPct = Number(document.getElementById('phGstPct')?.value) || 0;
-    const grandTotal = Calc.round2(subtotal * (1 + gstPct / 100));
-
-    const lblSubtotal = document.getElementById('lblPhSubtotal');
-    const lblGrandTotal = document.getElementById('lblPhGrandTotal');
-
-    if (lblSubtotal) lblSubtotal.textContent = UI.money(Calc.round2(subtotal));
-    if (lblGrandTotal) lblGrandTotal.textContent = UI.money(grandTotal);
 };
 
 function makeElementDraggable(elmnt, handleEl) {
