@@ -625,9 +625,16 @@
           <!-- Items Table Header -->
           <div class="d-flex align-items-center justify-content-between px-3 py-1.5 bg-light border border-bottom-0 text-secondary fw-bold rounded-top mb-0" style="font-size:0.7rem;">
             <span class="flex-grow-1">ITEM NAME</span>
-            <span style="width:75px;" class="text-center">QTY</span>
-            <span style="width:125px;" class="text-end me-1">PRICE (₹)</span>
-            <span style="width:35px;" class="text-center"></span>
+            <div class="d-flex align-items-center gap-2 me-2">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="chkEditPhMerge" onchange="toggleEditPhMerge()">
+                <label class="form-check-label fs-8 text-secondary fw-semibold" for="chkEditPhMerge">Merge Price</label>
+              </div>
+              <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end p-1" id="editPhLumpInput" placeholder="Merged Total ₹" style="width:115px; display:none; height:22px; font-size:0.75rem;" oninput="onEditPhLumpInput()">
+            </div>
+            <span style="width:65px;" class="text-center">QTY</span>
+            <span style="width:115px;" class="text-end me-1">PRICE (₹)</span>
+            <span style="width:30px;" class="text-center"></span>
           </div>
 
           <!-- Items Table Body -->

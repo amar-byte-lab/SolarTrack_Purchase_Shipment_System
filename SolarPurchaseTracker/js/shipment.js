@@ -2212,6 +2212,14 @@ window.togglePhSecMerge = function (secKey) {
 
     if (chk.checked) {
         if (lumpInput) {
+            // Auto-sum existing item prices if lumpInput is empty
+            if (!lumpInput.value || Number(lumpInput.value) === 0) {
+                let currentSum = 0;
+                tbody.querySelectorAll('.ph-row-price').forEach(el => {
+                    currentSum += Number(el.value) || 0;
+                });
+                if (currentSum > 0) lumpInput.value = Calc.round2(currentSum);
+            }
             lumpInput.style.display = 'block';
             lumpInput.focus();
         }
@@ -2225,8 +2233,9 @@ window.togglePhSecMerge = function (secKey) {
         rows.forEach(tr => {
             const priceEl = tr.querySelector('.ph-row-price');
             if (priceEl) {
-                priceEl.value = '';
                 priceEl.readOnly = false;
+                priceEl.style.backgroundColor = '';
+                priceEl.style.fontWeight = '';
             }
         });
         recalcPhSummary();
@@ -2245,17 +2254,89 @@ window.onPhSecLumpInput = function (secKey) {
 
     if (!rows.length) return;
 
-    const share = lumpVal > 0 ? Calc.round2(lumpVal / rows.length) : 0;
+    const count = rows.length;
+    const baseShare = Math.floor((lumpVal / count) * 100) / 100;
+    const remainder = Calc.round2(lumpVal - (baseShare * count));
 
-    rows.forEach(tr => {
+    rows.forEach((tr, i) => {
         const priceEl = tr.querySelector('.ph-row-price');
         if (priceEl) {
-            priceEl.value = share > 0 ? share : '';
+            const itemShare = (i === count - 1) ? Calc.round2(baseShare + remainder) : baseShare;
+            priceEl.value = (lumpVal > 0 && itemShare > 0) ? itemShare : '';
             priceEl.readOnly = true;
+            priceEl.style.backgroundColor = '#e0f2fe';
+            priceEl.style.fontWeight = 'bold';
         }
     });
 
     recalcPhSummary();
+};
+
+window.toggleEditPhMerge = function () {
+    const chk = document.getElementById('chkEditPhMerge');
+    const lumpInput = document.getElementById('editPhLumpInput');
+    const tbody = document.getElementById('tbodyEditPhItems');
+
+    if (!chk || !tbody) return;
+
+    if (chk.checked) {
+        if (lumpInput) {
+            if (!lumpInput.value || Number(lumpInput.value) === 0) {
+                let currentSum = 0;
+                tbody.querySelectorAll('.edit-item-price').forEach(el => {
+                    currentSum += Number(el.value) || 0;
+                });
+                if (currentSum > 0) lumpInput.value = Calc.round2(currentSum);
+            }
+            lumpInput.style.display = 'block';
+            lumpInput.focus();
+        }
+        onEditPhLumpInput();
+    } else {
+        if (lumpInput) {
+            lumpInput.style.display = 'none';
+            lumpInput.value = '';
+        }
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(tr => {
+            const priceEl = tr.querySelector('.edit-item-price');
+            if (priceEl) {
+                priceEl.readOnly = false;
+                priceEl.style.backgroundColor = '';
+                priceEl.style.fontWeight = '';
+            }
+        });
+        recalcEditPhSummary();
+    }
+};
+
+window.onEditPhLumpInput = function () {
+    const lumpInput = document.getElementById('editPhLumpInput');
+    const tbody = document.getElementById('tbodyEditPhItems');
+
+    if (!tbody || !lumpInput) return;
+
+    const lumpVal = Number(lumpInput.value) || 0;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    if (!rows.length) return;
+
+    const count = rows.length;
+    const baseShare = Math.floor((lumpVal / count) * 100) / 100;
+    const remainder = Calc.round2(lumpVal - (baseShare * count));
+
+    rows.forEach((tr, i) => {
+        const priceEl = tr.querySelector('.edit-item-price');
+        if (priceEl) {
+            const itemShare = (i === count - 1) ? Calc.round2(baseShare + remainder) : baseShare;
+            priceEl.value = (lumpVal > 0 && itemShare > 0) ? itemShare : '';
+            priceEl.readOnly = true;
+            priceEl.style.backgroundColor = '#e0f2fe';
+            priceEl.style.fontWeight = 'bold';
+        }
+    });
+
+    recalcEditPhSummary();
 };
 
 window.recalcPhSummary = function () {
@@ -2534,7 +2615,13 @@ window.openEditPriceRecordModal = function (batchKey) {
     document.getElementById('editPhDate').value = first.Date || UI.todayISO();
     document.getElementById('editPhNoteName').value = first.NoteName || first.VendorName || '';
     document.getElementById('editPhRemarks').value = cleanRemarks;
-    document.getElementById('editPhGstPct').value = gstMatch ? Number(gstMatch[1]) : 18;
+    const chkMerge = document.getElementById('chkEditPhMerge');
+    const lumpInput = document.getElementById('editPhLumpInput');
+    if (chkMerge) chkMerge.checked = false;
+    if (lumpInput) {
+        lumpInput.value = '';
+        lumpInput.style.display = 'none';
+    }
 
     const tbody = document.getElementById('tbodyEditPhItems');
     if (tbody) {
