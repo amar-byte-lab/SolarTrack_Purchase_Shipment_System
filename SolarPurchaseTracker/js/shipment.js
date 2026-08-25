@@ -2129,7 +2129,7 @@ window.togglePhSection = function (secKey) {
     }
 };
 
-window.renderPhSecRows = function (secKey) {
+window.renderPhSecRows = function (secKey, addNewRow = false) {
     const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
     const tbody = document.getElementById(`tbodyPh${secSuffix}`);
     const chk = document.getElementById(`chkMerge${secSuffix}`);
@@ -2145,7 +2145,8 @@ window.renderPhSecRows = function (secKey) {
 
     if (existingRows.length > 0) {
         existingRows.forEach((tr) => {
-            const itemName = tr.getAttribute('data-item-name');
+            const nameInput = tr.querySelector('.ph-row-name');
+            const itemName = nameInput ? nameInput.value : tr.getAttribute('data-item-name');
             const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
             const qty = tr.querySelector('.ph-row-qty')?.value || 1;
             const price = tr.querySelector('.ph-row-price')?.value || '';
@@ -2159,6 +2160,10 @@ window.renderPhSecRows = function (secKey) {
         items.forEach(it => {
             rowsData.push({ name: it.name, defaultUnit: it.defaultUnit || 'Pc', qty: 1, price: '' });
         });
+    }
+
+    if (addNewRow) {
+        rowsData.push({ name: '', defaultUnit: 'Pc', qty: 1, price: '' });
     }
 
     if (!rowsData.length) {
@@ -2194,11 +2199,16 @@ window.renderPhSecRows = function (secKey) {
 
         return `
           <tr data-item-name="${r.name}" data-default-unit="${r.defaultUnit}">
-            <td class="fw-bold text-dark p-1 align-middle">${r.name}</td>
-            <td class="p-1 text-center align-middle" style="width:75px;">
+            <td class="p-1 align-middle">
+              <input type="text" class="form-control form-control-sm ph-row-name fw-bold text-dark p-1" value="${r.name}" placeholder="Item Name..." style="font-size:0.75rem;" oninput="this.closest('tr').setAttribute('data-item-name', this.value.trim())">
+            </td>
+            <td class="p-1 text-center align-middle" style="width:65px;">
               <input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center p-1" value="${r.qty}" style="font-size:0.75rem;" oninput="recalcPhSummary()">
             </td>
             ${priceColHtml}
+            <td class="p-1 text-center align-middle" style="width:28px;">
+              <button type="button" class="btn btn-xs text-danger p-0 border-0 fs-7 lh-1" onclick="removePhSectionRow(this, '${secKey}')" title="Remove item">✕</button>
+            </td>
           </tr>
         `;
     }).join('');
@@ -2207,17 +2217,10 @@ window.renderPhSecRows = function (secKey) {
 };
 
 window.addPhSectionItem = function (secKey) {
-    const itemName = prompt('Enter new item name for this section:');
-    if (!itemName || !itemName.trim()) return;
-    const cleanName = itemName.trim();
-
-    if (!SECTION_PRICE_ITEMS[secKey]) SECTION_PRICE_ITEMS[secKey] = [];
-    const exists = SECTION_PRICE_ITEMS[secKey].some(i => i.name.toLowerCase() === cleanName.toLowerCase());
-    if (!exists) {
-        SECTION_PRICE_ITEMS[secKey].push({ name: cleanName, defaultUnit: 'Pc' });
-    }
-
     const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+    if (!tbody) return;
+
     const secBody = document.getElementById(`secBody${secSuffix}`);
     const secIcon = document.getElementById(`phIcon${secSuffix}`);
     if (secBody && secBody.style.display === 'none') {
@@ -2225,9 +2228,17 @@ window.addPhSectionItem = function (secKey) {
         if (secIcon) secIcon.style.transform = 'rotate(0deg)';
     }
 
-    renderPhSecRows(secKey);
-    if (typeof UI !== 'undefined' && UI.toast) {
-        UI.toast(`Added item "${cleanName}" to section.`, 'info');
+    renderPhSecRows(secKey, true);
+
+    const newRowInput = tbody.querySelector('tr:last-child .ph-row-name');
+    if (newRowInput) newRowInput.focus();
+};
+
+window.removePhSectionRow = function (btn, secKey) {
+    const tr = btn.closest('tr');
+    if (tr) {
+        tr.remove();
+        renderPhSecRows(secKey, false);
     }
 };
 
@@ -2408,36 +2419,90 @@ window.savePriceRecord = async function () {
     const phRemarks = document.getElementById('phRemarks')?.value?.trim() || '';
     const gstPct = Number(document.getElementById('phGstPct')?.value) || 0;
 
-    const allRows = document.querySelectorAll('#priceTabContentAdd tr[data-item-name]');
     const recordsToInsert = [];
     const batchId = Utils.uid('PHB');
 
-    allRows.forEach(tr => {
-        const itemName = tr.getAttribute('data-item-name');
-        const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
-        const qty = Number(tr.querySelector('.ph-row-qty')?.value) || 1;
-        const priceNoGst = Number(tr.querySelector('.ph-row-price')?.value) || 0;
+    ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
+        const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+        const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+        const chk = document.getElementById(`chkMerge${secSuffix}`);
 
-        if (priceNoGst > 0) {
-            const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
-            const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
-            const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+        if (!tbody) return;
 
-            recordsToInsert.push({
-                RecordID: Utils.uid('PH'),
-                BatchID: batchId,
-                Date: phDate,
-                NoteName: phNoteName,
-                VendorName: phNoteName,
-                ItemName: itemName,
-                Quantity: qty,
-                Unit: defaultUnit,
-                TotalWithoutGst: priceNoGst,
-                TotalWithGst: priceWithGst,
-                RateWithoutGst: rateNoGst,
-                RateWithGst: rateWithGst,
-                Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
-                CreatedAt: new Date().toISOString()
+        const isMerged = chk && chk.checked;
+        const trs = Array.from(tbody.querySelectorAll('tr[data-item-name]'));
+        if (!trs.length) return;
+
+        if (isMerged) {
+            const mergedInput = tbody.querySelector('.ph-sec-merged-price');
+            const mergedVal = Number(mergedInput?.value) || 0;
+
+            if (mergedVal > 0) {
+                const count = trs.length;
+                const baseShare = Math.floor((mergedVal / count) * 100) / 100;
+                const remainder = Calc.round2(mergedVal - (baseShare * count));
+
+                trs.forEach((tr, i) => {
+                    const nameInput = tr.querySelector('.ph-row-name');
+                    const itemName = nameInput ? nameInput.value.trim() : tr.getAttribute('data-item-name');
+                    if (!itemName) return;
+                    const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
+                    const qty = Number(tr.querySelector('.ph-row-qty')?.value) || 1;
+                    const priceNoGst = (i === count - 1) ? Calc.round2(baseShare + remainder) : baseShare;
+
+                    const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
+                    const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
+                    const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+
+                    recordsToInsert.push({
+                        RecordID: Utils.uid('PH'),
+                        BatchID: batchId,
+                        Date: phDate,
+                        NoteName: phNoteName,
+                        VendorName: phNoteName,
+                        ItemName: itemName,
+                        Quantity: qty,
+                        Unit: defaultUnit,
+                        TotalWithoutGst: priceNoGst,
+                        TotalWithGst: priceWithGst,
+                        RateWithoutGst: rateNoGst,
+                        RateWithGst: rateWithGst,
+                        Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
+                        CreatedAt: new Date().toISOString()
+                    });
+                });
+            }
+        } else {
+            trs.forEach(tr => {
+                const nameInput = tr.querySelector('.ph-row-name');
+                const itemName = nameInput ? nameInput.value.trim() : tr.getAttribute('data-item-name');
+                if (!itemName) return;
+                const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
+                const qty = Number(tr.querySelector('.ph-row-qty')?.value) || 1;
+                const priceNoGst = Number(tr.querySelector('.ph-row-price')?.value) || 0;
+
+                if (priceNoGst > 0) {
+                    const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
+                    const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
+                    const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+
+                    recordsToInsert.push({
+                        RecordID: Utils.uid('PH'),
+                        BatchID: batchId,
+                        Date: phDate,
+                        NoteName: phNoteName,
+                        VendorName: phNoteName,
+                        ItemName: itemName,
+                        Quantity: qty,
+                        Unit: defaultUnit,
+                        TotalWithoutGst: priceNoGst,
+                        TotalWithGst: priceWithGst,
+                        RateWithoutGst: rateNoGst,
+                        RateWithGst: rateWithGst,
+                        Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
+                        CreatedAt: new Date().toISOString()
+                    });
+                }
             });
         }
     });
@@ -2573,7 +2638,7 @@ window.renderPriceHistoryList = function () {
 
         <!-- Footer: Total Price -->
         <div class="pt-2 border-top d-flex justify-content-between align-items-center" style="border-color:#fef08a !important;">
-          <span class="fs-8 text-muted font-monospace">GST: ${b.gstPct}%</span>
+          <span class="fs-8 text-muted font-monospace fw-semibold">Total Price:</span>
           <span class="fw-bold text-success font-monospace fs-7">₹${totalWithGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
