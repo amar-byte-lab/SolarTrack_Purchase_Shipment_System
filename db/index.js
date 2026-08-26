@@ -1,12 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
-const envPath = path.join(__dirname, '../.env');
-if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath });
-} else {
-  require('dotenv').config();
-}
+require('dotenv').config();
 
 const activeDriver = require('./postgres');
 const dbType = activeDriver.dbType || process.env.DB_TYPE || 'postgresql';

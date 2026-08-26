@@ -1,16 +1,5 @@
+require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
-
-// Determine execution environment (Local vs Production)
-const envPath = path.join(__dirname, '../.env');
-const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
-
-if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath });
-} else {
-  require('dotenv').config();
-}
 
 const DEFAULT_SUPABASE_URL = 'https://fqhsegrisdkclnocpqqb.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_qrCbrFO5HMONbrHUh68w8Q_PfBFv0Da';

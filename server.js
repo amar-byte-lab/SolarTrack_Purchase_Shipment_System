@@ -1,13 +1,5 @@
 const SERVER_START_TIME = performance.now();
-const fs = require('fs');
-const path = require('path');
-
-const envPath = path.join(__dirname, '.env');
-if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath });
-} else {
-  require('dotenv').config();
-}
+require('dotenv').config();
 const http = require('http');
 const zlib = require('zlib');
 const { exec } = require('child_process');
