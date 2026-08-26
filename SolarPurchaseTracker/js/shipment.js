@@ -2122,10 +2122,10 @@ window.togglePhSection = function (secKey) {
     if (!body) return;
     if (body.style.display === 'none') {
         body.style.display = 'block';
-        if (icon) icon.style.transform = 'rotate(0deg)';
+        if (icon) icon.textContent = '▼';
     } else {
         body.style.display = 'none';
-        if (icon) icon.style.transform = 'rotate(-90deg)';
+        if (icon) icon.textContent = '▶';
     }
 };
 
@@ -2183,14 +2183,14 @@ window.renderPhSecRows = function (secKey, addNewRow = false) {
         let priceColHtml = '';
         if (!isMerged) {
             priceColHtml = `
-              <td class="p-1 align-middle" style="width:125px;">
-                <input type="number" min="0" step="any" class="form-control form-control-sm ph-row-price text-end font-monospace p-1" value="${r.price}" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcPhSummary()">
+              <td style="width:90px;">
+                <input type="number" min="0" step="any" class="form-control form-control-sm ph-row-price text-end font-monospace" value="${r.price}" placeholder="0.00" oninput="recalcPhSummary()">
               </td>
             `;
         } else if (idx === 0) {
             priceColHtml = `
-              <td rowspan="${rowsData.length}" class="p-1 align-middle text-end" style="width:125px; background:#fffdf5; border:1px solid #fde68a;">
-                <input type="number" min="0" step="any" class="form-control form-control-sm ph-sec-merged-price text-end font-monospace p-1 fw-bold text-success" value="${displayMergedPrice}" placeholder="Section Total ₹" style="font-size:0.75rem;" oninput="recalcPhSummary()">
+              <td rowspan="${rowsData.length}" style="width:90px;">
+                <input type="number" min="0" step="any" class="form-control form-control-sm ph-sec-merged-price text-end font-monospace fw-bold text-success" value="${displayMergedPrice}" placeholder="Section Total ₹" oninput="recalcPhSummary()" style="background:#fffdf5 !important; border:1px solid #fde68a !important;">
               </td>
             `;
         } else {
@@ -2199,14 +2199,14 @@ window.renderPhSecRows = function (secKey, addNewRow = false) {
 
         return `
           <tr data-item-name="${r.name}" data-default-unit="${r.defaultUnit}">
-            <td class="p-1 align-middle">
-              <input type="text" class="form-control form-control-sm ph-row-name fw-bold text-dark p-1" value="${r.name}" placeholder="Item Name..." style="font-size:0.75rem;" oninput="this.closest('tr').setAttribute('data-item-name', this.value.trim())">
+            <td>
+              <input type="text" class="form-control form-control-sm ph-row-name fw-semibold text-dark" value="${r.name}" placeholder="Item Name..." oninput="this.closest('tr').setAttribute('data-item-name', this.value.trim())">
             </td>
-            <td class="p-1 text-center align-middle" style="width:65px;">
-              <input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center p-1" value="${r.qty}" style="font-size:0.75rem;" oninput="recalcPhSummary()">
+            <td class="text-center" style="width:45px;">
+              <input type="number" min="0.01" step="any" class="form-control form-control-sm ph-row-qty text-center" value="${r.qty}" oninput="recalcPhSummary()">
             </td>
             ${priceColHtml}
-            <td class="p-1 text-center align-middle" style="width:28px;">
+            <td class="text-center" style="width:24px;">
               <button type="button" class="btn btn-xs text-danger p-0 border-0 fs-7 lh-1" onclick="removePhSectionRow(this, '${secKey}')" title="Remove item">✕</button>
             </td>
           </tr>
@@ -2225,7 +2225,7 @@ window.addPhSectionItem = function (secKey) {
     const secIcon = document.getElementById(`phIcon${secSuffix}`);
     if (secBody && secBody.style.display === 'none') {
         secBody.style.display = 'block';
-        if (secIcon) secIcon.style.transform = 'rotate(0deg)';
+        if (secIcon) secIcon.textContent = '▼';
     }
 
     renderPhSecRows(secKey, true);
@@ -2246,9 +2246,13 @@ function renderPhAllItemsTable() {
     ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
         const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
         const tbody = document.getElementById(`tbodyPh${secSuffix}`);
+        const body = document.getElementById(`secBody${secSuffix}`);
+        const icon = document.getElementById(`phIcon${secSuffix}`);
         const chk = document.getElementById(`chkMerge${secSuffix}`);
 
         if (chk) chk.checked = false;
+        if (body) body.style.display = 'none';
+        if (icon) icon.textContent = '▶';
         if (!tbody) return;
 
         tbody.innerHTML = '';
@@ -2267,19 +2271,22 @@ window.recalcPhSummary = function () {
         const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
         const tbody = document.getElementById(`tbodyPh${secSuffix}`);
         const chk = document.getElementById(`chkMerge${secSuffix}`);
+        const secTotalBadge = document.getElementById(`phSecTotal${secSuffix}`);
+        let secTotal = 0;
 
-        if (!tbody) return;
-
-        if (chk && chk.checked) {
-            const mergedInput = tbody.querySelector('.ph-sec-merged-price');
-            const mergedVal = Number(mergedInput?.value) || 0;
-            subtotal += mergedVal;
-        } else {
-            const priceInputs = tbody.querySelectorAll('.ph-row-price');
-            priceInputs.forEach(input => {
-                subtotal += Number(input.value) || 0;
-            });
+        if (tbody) {
+            if (chk && chk.checked) {
+                const mergedInput = tbody.querySelector('.ph-sec-merged-price');
+                secTotal = Number(mergedInput?.value) || 0;
+            } else {
+                const priceInputs = tbody.querySelectorAll('.ph-row-price');
+                priceInputs.forEach(input => {
+                    secTotal += Number(input.value) || 0;
+                });
+            }
         }
+        subtotal += secTotal;
+        if (secTotalBadge) secTotalBadge.textContent = UI.money(Calc.round2(secTotal));
     });
 
     const gstPct = Number(document.getElementById('phGstPct')?.value) || 0;
@@ -2292,71 +2299,130 @@ window.recalcPhSummary = function () {
     if (lblGrandTotal) lblGrandTotal.textContent = UI.money(grandTotal);
 };
 
-window.toggleEditPhMerge = function () {
-    const chk = document.getElementById('chkEditPhMerge');
-    const lumpInput = document.getElementById('editPhLumpInput');
-    const tbody = document.getElementById('tbodyEditPhItems');
-
-    if (!chk || !tbody) return;
-
-    if (chk.checked) {
-        if (lumpInput) {
-            if (!lumpInput.value || Number(lumpInput.value) === 0) {
-                let currentSum = 0;
-                tbody.querySelectorAll('.edit-item-price').forEach(el => {
-                    currentSum += Number(el.value) || 0;
-                });
-                if (currentSum > 0) lumpInput.value = Calc.round2(currentSum);
-            }
-            lumpInput.style.display = 'block';
-            lumpInput.focus();
-        }
-        onEditPhLumpInput();
+window.toggleEditPhSection = function (secKey) {
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const body = document.getElementById(`editSecBody${secSuffix}`);
+    const icon = document.getElementById(`editPhIcon${secSuffix}`);
+    if (!body) return;
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (icon) icon.textContent = '▼';
     } else {
-        if (lumpInput) {
-            lumpInput.style.display = 'none';
-            lumpInput.value = '';
-        }
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach(tr => {
-            const priceEl = tr.querySelector('.edit-item-price');
-            if (priceEl) {
-                priceEl.readOnly = false;
-                priceEl.style.backgroundColor = '';
-                priceEl.style.fontWeight = '';
-            }
-        });
-        recalcEditPhSummary();
+        body.style.display = 'none';
+        if (icon) icon.textContent = '▶';
     }
 };
 
-window.onEditPhLumpInput = function () {
-    const lumpInput = document.getElementById('editPhLumpInput');
-    const tbody = document.getElementById('tbodyEditPhItems');
+window.renderEditPhSecRows = function (secKey, addNewRow = false) {
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const tbody = document.getElementById(`tbodyEditPh${secSuffix}`);
+    const chk = document.getElementById(`chkEditMerge${secSuffix}`);
 
-    if (!tbody || !lumpInput) return;
+    if (!tbody) return;
 
-    const lumpVal = Number(lumpInput.value) || 0;
-    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const isMerged = chk && chk.checked;
 
-    if (!rows.length) return;
+    // Read current state from existing DOM rows
+    const existingRows = Array.from(tbody.querySelectorAll('tr[data-item-name]'));
+    const rowsData = [];
+    let prevMergedVal = 0;
 
-    const count = rows.length;
-    const baseShare = Math.floor((lumpVal / count) * 100) / 100;
-    const remainder = Calc.round2(lumpVal - (baseShare * count));
+    if (existingRows.length > 0) {
+        existingRows.forEach((tr) => {
+            const nameInput = tr.querySelector('.edit-ph-row-name');
+            const itemName = nameInput ? nameInput.value : tr.getAttribute('data-item-name');
+            const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
+            const qty = tr.querySelector('.edit-ph-row-qty')?.value || 1;
+            const price = tr.querySelector('.edit-ph-row-price')?.value || '';
+            const mergedInput = tr.querySelector('.edit-ph-sec-merged-price');
+            if (mergedInput) prevMergedVal = Number(mergedInput.value) || 0;
 
-    rows.forEach((tr, i) => {
-        const priceEl = tr.querySelector('.edit-item-price');
-        if (priceEl) {
-            const itemShare = (i === count - 1) ? Calc.round2(baseShare + remainder) : baseShare;
-            priceEl.value = (lumpVal > 0 && itemShare > 0) ? itemShare : '';
-            priceEl.readOnly = true;
-            priceEl.style.backgroundColor = '#e0f2fe';
-            priceEl.style.fontWeight = 'bold';
+            rowsData.push({ name: itemName, defaultUnit, qty, price });
+        });
+    } else {
+        const items = SECTION_PRICE_ITEMS[secKey] || [];
+        items.forEach(it => {
+            rowsData.push({ name: it.name, defaultUnit: it.defaultUnit || 'Pc', qty: 1, price: '' });
+        });
+    }
+
+    if (addNewRow) {
+        rowsData.push({ name: '', defaultUnit: 'Pc', qty: 1, price: '' });
+    }
+
+    if (!rowsData.length) {
+        tbody.innerHTML = '';
+        return;
+    }
+
+    let displayMergedPrice = prevMergedVal;
+    if (isMerged && displayMergedPrice === 0) {
+        let sum = 0;
+        rowsData.forEach(r => { sum += Number(r.price) || 0; });
+        displayMergedPrice = sum > 0 ? sum : '';
+    }
+
+    tbody.innerHTML = rowsData.map((r, idx) => {
+        let priceColHtml = '';
+        if (!isMerged) {
+            priceColHtml = `
+              <td style="width:90px;">
+                <input type="number" min="0" step="any" class="form-control form-control-sm edit-ph-row-price text-end font-monospace" value="${r.price}" placeholder="0.00" oninput="recalcEditPhSummary()">
+              </td>
+            `;
+        } else if (idx === 0) {
+            priceColHtml = `
+              <td rowspan="${rowsData.length}" style="width:90px;">
+                <input type="number" min="0" step="any" class="form-control form-control-sm edit-ph-sec-merged-price text-end font-monospace fw-bold text-success" value="${displayMergedPrice}" placeholder="Section Total ₹" oninput="recalcEditPhSummary()" style="background:#fffdf5 !important; border:1px solid #fde68a !important;">
+              </td>
+            `;
+        } else {
+            priceColHtml = '';
         }
-    });
+
+        return `
+          <tr data-item-name="${r.name}" data-default-unit="${r.defaultUnit}">
+            <td>
+              <input type="text" class="form-control form-control-sm edit-ph-row-name fw-semibold text-dark" value="${r.name}" placeholder="Item Name..." oninput="this.closest('tr').setAttribute('data-item-name', this.value.trim())">
+            </td>
+            <td class="text-center" style="width:45px;">
+              <input type="number" min="0.01" step="any" class="form-control form-control-sm edit-ph-row-qty text-center" value="${r.qty}" oninput="recalcEditPhSummary()">
+            </td>
+            ${priceColHtml}
+            <td class="text-center" style="width:24px;">
+              <button type="button" class="btn btn-xs text-danger p-0 border-0 fs-7 lh-1" onclick="removeEditPhSectionRow(this, '${secKey}')" title="Remove item">✕</button>
+            </td>
+          </tr>
+        `;
+    }).join('');
 
     recalcEditPhSummary();
+};
+
+window.addEditPhSectionItem = function (secKey) {
+    const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+    const tbody = document.getElementById(`tbodyEditPh${secSuffix}`);
+    if (!tbody) return;
+
+    const secBody = document.getElementById(`editSecBody${secSuffix}`);
+    const secIcon = document.getElementById(`editPhIcon${secSuffix}`);
+    if (secBody && secBody.style.display === 'none') {
+        secBody.style.display = 'block';
+        if (secIcon) secIcon.textContent = '▼';
+    }
+
+    renderEditPhSecRows(secKey, true);
+
+    const newRowInput = tbody.querySelector('tr:last-child .edit-ph-row-name');
+    if (newRowInput) newRowInput.focus();
+};
+
+window.removeEditPhSectionRow = function (btn, secKey) {
+    const tr = btn.closest('tr');
+    if (tr) {
+        tr.remove();
+        renderEditPhSecRows(secKey, false);
+    }
 };
 
 function makeElementDraggable(elmnt, handleEl) {
@@ -2421,6 +2487,7 @@ window.savePriceRecord = async function () {
 
     const recordsToInsert = [];
     const batchId = Utils.uid('PHB');
+    const batchCreatedAt = new Date().toISOString();
 
     ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
         const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
@@ -2450,9 +2517,9 @@ window.savePriceRecord = async function () {
                     const qty = Number(tr.querySelector('.ph-row-qty')?.value) || 1;
                     const priceNoGst = (i === count - 1) ? Calc.round2(baseShare + remainder) : baseShare;
 
-                    const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
+                    const priceWithGst = priceNoGst;
                     const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
-                    const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+                    const rateWithGst = rateNoGst;
 
                     recordsToInsert.push({
                         RecordID: Utils.uid('PH'),
@@ -2467,8 +2534,8 @@ window.savePriceRecord = async function () {
                         TotalWithGst: priceWithGst,
                         RateWithoutGst: rateNoGst,
                         RateWithGst: rateWithGst,
-                        Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
-                        CreatedAt: new Date().toISOString()
+                        Remarks: phRemarks,
+                        CreatedAt: batchCreatedAt
                     });
                 });
             }
@@ -2482,9 +2549,9 @@ window.savePriceRecord = async function () {
                 const priceNoGst = Number(tr.querySelector('.ph-row-price')?.value) || 0;
 
                 if (priceNoGst > 0) {
-                    const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
+                    const priceWithGst = priceNoGst;
                     const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
-                    const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+                    const rateWithGst = rateNoGst;
 
                     recordsToInsert.push({
                         RecordID: Utils.uid('PH'),
@@ -2499,8 +2566,8 @@ window.savePriceRecord = async function () {
                         TotalWithGst: priceWithGst,
                         RateWithoutGst: rateNoGst,
                         RateWithGst: rateWithGst,
-                        Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
-                        CreatedAt: new Date().toISOString()
+                        Remarks: phRemarks,
+                        CreatedAt: batchCreatedAt
                     });
                 }
             });
@@ -2601,7 +2668,20 @@ window.renderPriceHistoryList = function () {
     });
 
     const cardListHtml = Array.from(batchesMap.values()).map(b => {
-        const totalWithGst = b.items.reduce((sum, i) => sum + (Number(i.TotalWithGst) || 0), 0);
+        // Deduplicate items by ItemName to ensure card total strictly matches popup modal sum
+        const uniqueMap = new Map();
+        b.items.forEach(i => {
+            const key = String(i.ItemName || '').toLowerCase().trim();
+            if (key) uniqueMap.set(key, i);
+        });
+        const displayItems = Array.from(uniqueMap.values());
+
+        const batchTotal = displayItems.reduce((sum, i) => {
+            const itemPrice = (i.TotalWithoutGst !== undefined && i.TotalWithoutGst !== null && i.TotalWithoutGst !== '')
+                ? Number(i.TotalWithoutGst)
+                : (Number(i.TotalWithGst) || 0);
+            return sum + (isNaN(itemPrice) ? 0 : itemPrice);
+        }, 0);
 
         return `
       <div class="card border-0 shadow-sm transition-all hover-shadow h-100 d-flex flex-column justify-content-between p-2.5 position-relative" 
@@ -2622,9 +2702,9 @@ window.renderPriceHistoryList = function () {
 
           <!-- Items Preview -->
           <div class="mb-2">
-            <span class="badge bg-white text-secondary border fs-8 font-monospace fw-semibold mb-1">📦 ${b.items.length} item(s)</span>
-            <div class="fs-8 text-secondary lh-sm text-truncate" title="${b.items.map(i => i.ItemName).join(', ')}">
-              ${b.items.slice(0, 3).map(i => `<span class="fw-semibold text-dark">${i.ItemName}</span>`).join(', ')}${b.items.length > 3 ? '...' : ''}
+            <span class="badge bg-white text-secondary border fs-8 font-monospace fw-semibold mb-1">📦 ${displayItems.length} item(s)</span>
+            <div class="fs-8 text-secondary lh-sm text-truncate" title="${displayItems.map(i => i.ItemName).join(', ')}">
+              ${displayItems.slice(0, 3).map(i => `<span class="fw-semibold text-dark">${i.ItemName}</span>`).join(', ')}${displayItems.length > 3 ? '...' : ''}
             </div>
           </div>
 
@@ -2639,7 +2719,7 @@ window.renderPriceHistoryList = function () {
         <!-- Footer: Total Price -->
         <div class="pt-2 border-top d-flex justify-content-between align-items-center" style="border-color:#fef08a !important;">
           <span class="fs-8 text-muted font-monospace fw-semibold">Total Price:</span>
-          <span class="fw-bold text-success font-monospace fs-7">₹${totalWithGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+          <span class="fw-bold text-success font-monospace fs-7">₹${batchTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </div>
     `;
@@ -2670,21 +2750,105 @@ window.openEditPriceRecordModal = function (batchKey) {
     document.getElementById('editPhDate').value = first.Date || UI.todayISO();
     document.getElementById('editPhNoteName').value = first.NoteName || first.VendorName || '';
     document.getElementById('editPhRemarks').value = cleanRemarks;
-    const chkMerge = document.getElementById('chkEditPhMerge');
-    const lumpInput = document.getElementById('editPhLumpInput');
-    if (chkMerge) chkMerge.checked = false;
-    if (lumpInput) {
-        lumpInput.value = '';
-        lumpInput.style.display = 'none';
-    }
 
-    const tbody = document.getElementById('tbodyEditPhItems');
-    if (tbody) {
-        tbody.innerHTML = '';
-        batchItems.forEach(item => {
-            addEditPhItemRow(item.ItemName, item.Quantity, item.TotalWithoutGst, item.Unit);
+    // Helper map of default template item names to section key
+    const itemSecMap = new Map();
+    for (const [secKey, items] of Object.entries(SECTION_PRICE_ITEMS)) {
+        items.forEach(it => {
+            itemSecMap.set(it.name.toLowerCase().trim(), secKey);
         });
     }
+
+    // Organize items into sec1, sec2, sec3, sec4
+    const secData = {
+        sec1: [],
+        sec2: [],
+        sec3: [],
+        sec4: []
+    };
+
+    // Pre-populate secData with default template items
+    ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
+        const chk = document.getElementById(`chkEditMerge${secKey.charAt(0).toUpperCase() + secKey.slice(1)}`);
+        if (chk) chk.checked = false;
+        (SECTION_PRICE_ITEMS[secKey] || []).forEach(it => {
+            secData[secKey].push({
+                name: it.name,
+                defaultUnit: it.defaultUnit || 'Pc',
+                qty: 1,
+                price: ''
+            });
+        });
+    });
+
+    // Populate saved batch items into secData
+    const unmatchedBatchItems = [];
+    batchItems.forEach(bItem => {
+        const itemNameLower = (bItem.ItemName || '').toLowerCase().trim();
+        let targetSecKey = itemSecMap.get(itemNameLower);
+
+        if (targetSecKey) {
+            const secArr = secData[targetSecKey];
+            const existingTpl = secArr.find(it => it.name.toLowerCase().trim() === itemNameLower);
+            if (existingTpl) {
+                existingTpl.qty = bItem.Quantity || 1;
+                existingTpl.price = (bItem.TotalWithoutGst !== undefined && bItem.TotalWithoutGst !== null) ? bItem.TotalWithoutGst : '';
+                existingTpl.defaultUnit = bItem.Unit || existingTpl.defaultUnit;
+            } else {
+                secArr.push({
+                    name: bItem.ItemName,
+                    defaultUnit: bItem.Unit || 'Pc',
+                    qty: bItem.Quantity || 1,
+                    price: bItem.TotalWithoutGst
+                });
+            }
+        } else {
+            unmatchedBatchItems.push(bItem);
+        }
+    });
+
+    // For any unmatched items, default to sec1
+    unmatchedBatchItems.forEach(bItem => {
+        secData.sec1.push({
+            name: bItem.ItemName,
+            defaultUnit: bItem.Unit || 'Pc',
+            qty: bItem.Quantity || 1,
+            price: bItem.TotalWithoutGst
+        });
+    });
+
+    // Render each section table in edit modal & collapse section body by default
+    ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
+        const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+        const tbody = document.getElementById(`tbodyEditPh${secSuffix}`);
+        const body = document.getElementById(`editSecBody${secSuffix}`);
+        const icon = document.getElementById(`editPhIcon${secSuffix}`);
+        const chk = document.getElementById(`chkEditMerge${secSuffix}`);
+
+        if (body) body.style.display = 'none';
+        if (icon) icon.textContent = '▶';
+        if (chk) chk.checked = false;
+
+        if (!tbody) return;
+
+        const rows = secData[secKey];
+        tbody.innerHTML = rows.map(r => `
+          <tr data-item-name="${r.name}" data-default-unit="${r.defaultUnit}">
+            <td>
+              <input type="text" class="form-control form-control-sm edit-ph-row-name fw-semibold text-dark" value="${r.name}" placeholder="Item Name..." oninput="this.closest('tr').setAttribute('data-item-name', this.value.trim())">
+            </td>
+            <td class="text-center" style="width:45px;">
+              <input type="number" min="0.01" step="any" class="form-control form-control-sm edit-ph-row-qty text-center" value="${r.qty}" oninput="recalcEditPhSummary()">
+            </td>
+            <td style="width:90px;">
+              <input type="number" min="0" step="any" class="form-control form-control-sm edit-ph-row-price text-end font-monospace" value="${r.price}" placeholder="0.00" oninput="recalcEditPhSummary()">
+            </td>
+            <td class="text-center" style="width:24px;">
+              <button type="button" class="btn btn-xs text-danger p-0 border-0 fs-7 lh-1" onclick="removeEditPhSectionRow(this, '${secKey}')" title="Remove item">✕</button>
+            </td>
+          </tr>
+        `).join('');
+    });
 
     recalcEditPhSummary();
 
@@ -2696,34 +2860,29 @@ window.openEditPriceRecordModal = function (batchKey) {
     }
 };
 
-window.addEditPhItemRow = function (name = '', qty = 1, price = '', unit = 'Pc') {
-    const tbody = document.getElementById('tbodyEditPhItems');
-    if (!tbody) return;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td class="p-1 align-middle"><input type="text" class="form-control form-control-sm edit-item-name fw-bold" value="${name}" placeholder="Item Name" required style="font-size:0.75rem;"></td>
-        <td class="p-1 text-center align-middle" style="width:75px;"><input type="number" min="0.01" step="any" class="form-control form-control-sm edit-item-qty text-center p-1" value="${qty}" style="font-size:0.75rem;" oninput="recalcEditPhSummary()"></td>
-        <td class="p-1 align-middle" style="width:125px;"><input type="number" min="0" step="any" class="form-control form-control-sm edit-item-price text-end font-monospace p-1" value="${price}" placeholder="0.00" style="font-size:0.75rem;" oninput="recalcEditPhSummary()"></td>
-        <td class="p-1 text-center align-middle" style="width:35px;"><button type="button" class="btn btn-xs btn-outline-danger p-0 px-1" onclick="removeEditPhItemRow(this)" title="Remove item">✕</button></td>
-    `;
-    tbody.appendChild(tr);
-    recalcEditPhSummary();
-};
-
-window.removeEditPhItemRow = function (btn) {
-    const tr = btn.closest('tr');
-    if (tr) tr.remove();
-    recalcEditPhSummary();
-};
-
 window.recalcEditPhSummary = function () {
-    const allRows = document.querySelectorAll('#tbodyEditPhItems tr');
     let subtotal = 0;
 
-    allRows.forEach(tr => {
-        const price = Number(tr.querySelector('.edit-item-price')?.value) || 0;
-        subtotal += price;
+    ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
+        const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+        const tbody = document.getElementById(`tbodyEditPh${secSuffix}`);
+        const chk = document.getElementById(`chkEditMerge${secSuffix}`);
+        const secTotalBadge = document.getElementById(`editPhSecTotal${secSuffix}`);
+        let secTotal = 0;
+
+        if (tbody) {
+            if (chk && chk.checked) {
+                const mergedInput = tbody.querySelector('.edit-ph-sec-merged-price');
+                secTotal = Number(mergedInput?.value) || 0;
+            } else {
+                const priceInputs = tbody.querySelectorAll('.edit-ph-row-price');
+                priceInputs.forEach(input => {
+                    secTotal += Number(input.value) || 0;
+                });
+            }
+        }
+        subtotal += secTotal;
+        if (secTotalBadge) secTotalBadge.textContent = UI.money(Calc.round2(secTotal));
     });
 
     const gstPct = Number(document.getElementById('editPhGstPct')?.value) || 0;
@@ -2745,41 +2904,97 @@ window.updatePriceRecordBatch = async function () {
     const phRemarks = document.getElementById('editPhRemarks')?.value?.trim() || '';
     const gstPct = Number(document.getElementById('editPhGstPct')?.value) || 0;
 
-    const itemRows = document.querySelectorAll('#tbodyEditPhItems tr');
     const updatedRecords = [];
+    const batchCreatedAt = new Date().toISOString();
 
-    itemRows.forEach(tr => {
-        const itemName = tr.querySelector('.edit-item-name')?.value?.trim();
-        const qty = Number(tr.querySelector('.edit-item-qty')?.value) || 1;
-        const priceVal = tr.querySelector('.edit-item-price')?.value;
-        const priceNoGst = priceVal !== '' && priceVal !== null && priceVal !== undefined ? Number(priceVal) : 0;
+    ['sec1', 'sec2', 'sec3', 'sec4'].forEach(secKey => {
+        const secSuffix = secKey.charAt(0).toUpperCase() + secKey.slice(1);
+        const tbody = document.getElementById(`tbodyEditPh${secSuffix}`);
+        const chk = document.getElementById(`chkEditMerge${secSuffix}`);
 
-        if (itemName && !isNaN(priceNoGst) && priceNoGst >= 0) {
-            const priceWithGst = Calc.round2(priceNoGst * (1 + gstPct / 100));
-            const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
-            const rateWithGst = qty > 0 ? Calc.round2(priceWithGst / qty) : 0;
+        if (!tbody) return;
 
-            updatedRecords.push({
-                RecordID: Utils.uid('PH'),
-                BatchID: batchKey,
-                Date: phDate,
-                NoteName: phNoteName,
-                VendorName: phNoteName,
-                ItemName: itemName,
-                Quantity: qty,
-                Unit: 'Pc',
-                TotalWithoutGst: priceNoGst,
-                TotalWithGst: priceWithGst,
-                RateWithoutGst: rateNoGst,
-                RateWithGst: rateWithGst,
-                Remarks: phRemarks ? `${phRemarks} (GST: ${gstPct}%)` : `GST: ${gstPct}%`,
-                CreatedAt: new Date().toISOString()
+        const isMerged = chk && chk.checked;
+        const trs = Array.from(tbody.querySelectorAll('tr[data-item-name]'));
+        if (!trs.length) return;
+
+        if (isMerged) {
+            const mergedInput = tbody.querySelector('.edit-ph-sec-merged-price');
+            const mergedVal = Number(mergedInput?.value) || 0;
+
+            if (mergedVal > 0) {
+                const count = trs.length;
+                const baseShare = Math.floor((mergedVal / count) * 100) / 100;
+                const remainder = Calc.round2(mergedVal - (baseShare * count));
+
+                trs.forEach((tr, i) => {
+                    const nameInput = tr.querySelector('.edit-ph-row-name');
+                    const itemName = nameInput ? nameInput.value.trim() : tr.getAttribute('data-item-name');
+                    if (!itemName) return;
+                    const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
+                    const qty = Number(tr.querySelector('.edit-ph-row-qty')?.value) || 1;
+                    const priceNoGst = (i === count - 1) ? Calc.round2(baseShare + remainder) : baseShare;
+
+                    const priceWithGst = priceNoGst;
+                    const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
+                    const rateWithGst = rateNoGst;
+
+                    updatedRecords.push({
+                        RecordID: Utils.uid('PH'),
+                        BatchID: batchKey,
+                        Date: phDate,
+                        NoteName: phNoteName,
+                        VendorName: phNoteName,
+                        ItemName: itemName,
+                        Quantity: qty,
+                        Unit: defaultUnit,
+                        TotalWithoutGst: priceNoGst,
+                        TotalWithGst: priceWithGst,
+                        RateWithoutGst: rateNoGst,
+                        RateWithGst: rateWithGst,
+                        Remarks: phRemarks,
+                        CreatedAt: batchCreatedAt
+                    });
+                });
+            }
+        } else {
+            trs.forEach(tr => {
+                const nameInput = tr.querySelector('.edit-ph-row-name');
+                const itemName = nameInput ? nameInput.value.trim() : tr.getAttribute('data-item-name');
+                if (!itemName) return;
+                const defaultUnit = tr.getAttribute('data-default-unit') || 'Pc';
+                const qty = Number(tr.querySelector('.edit-ph-row-qty')?.value) || 1;
+                const priceVal = tr.querySelector('.edit-ph-row-price')?.value;
+                const priceNoGst = priceVal !== '' && priceVal !== null && priceVal !== undefined ? Number(priceVal) : 0;
+
+                if (priceNoGst > 0) {
+                    const priceWithGst = priceNoGst;
+                    const rateNoGst = qty > 0 ? Calc.round2(priceNoGst / qty) : 0;
+                    const rateWithGst = rateNoGst;
+
+                    updatedRecords.push({
+                        RecordID: Utils.uid('PH'),
+                        BatchID: batchKey,
+                        Date: phDate,
+                        NoteName: phNoteName,
+                        VendorName: phNoteName,
+                        ItemName: itemName,
+                        Quantity: qty,
+                        Unit: defaultUnit,
+                        TotalWithoutGst: priceNoGst,
+                        TotalWithGst: priceWithGst,
+                        RateWithoutGst: rateNoGst,
+                        RateWithGst: rateWithGst,
+                        Remarks: phRemarks,
+                        CreatedAt: batchCreatedAt
+                    });
+                }
             });
         }
     });
 
     if (!updatedRecords.length) {
-        UI.toast('Please add at least one item with a valid name.', 'danger');
+        UI.toast('Please enter a price for at least one item.', 'danger');
         return;
     }
 

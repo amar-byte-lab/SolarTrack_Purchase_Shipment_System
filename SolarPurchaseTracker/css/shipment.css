@@ -307,8 +307,8 @@ th.sort-desc::after { content: ' ▼'; color: var(--st-primary); }
   transition: transform 0.05s ease-out;
   resize: both;
   overflow: hidden;
-  min-width: 440px;
-  min-height: 380px;
+  min-width: 320px;
+  min-height: 300px;
 }
 
 .draggable-popup-card .popup-header:active {
@@ -327,4 +327,76 @@ th.sort-desc::after { content: ' ▼'; color: var(--st-primary); }
   border-bottom: 2px solid #2563eb;
   background: transparent;
 }
+
+/* Mobile Responsiveness for Price History & Edit Price Record Popups */
+@media (max-width: 768px) {
+  .draggable-popup-card {
+    position: fixed !important;
+    top: 6px !important;
+    left: 6px !important;
+    right: 6px !important;
+    width: auto !important;
+    max-width: calc(100vw - 12px) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    border-radius: 12px !important;
+    resize: none !important;
+  }
+
+  .draggable-popup-card .popup-body {
+    max-height: 85vh !important;
+    padding: 8px !important;
+  }
+
+  #editPriceRecordModal .modal-dialog {
+    margin: 6px !important;
+    max-width: calc(100vw - 12px) !important;
+  }
+
+  #editPriceRecordModal .modal-body {
+    max-height: 85vh !important;
+    padding: 8px !important;
+  }
+
+  .keep-note-card {
+    padding: 6px 8px !important;
+  }
+
+  .form-control-sm {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Clean Tight Section Table Style */
+.ph-section-table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 3px !important;
+  margin-bottom: 0 !important;
+}
+
+.ph-section-table td {
+  padding: 1px 3px !important;
+  vertical-align: middle !important;
+  border: none !important;
+}
+
+.ph-section-table input.form-control {
+  height: 26px !important;
+  min-height: 26px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background-color: #ffffff !important;
+  font-size: 0.78rem !important;
+  padding: 2px 6px !important;
+  box-shadow: none !important;
+}
+
+.ph-section-table input.form-control:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+}
+
+
 

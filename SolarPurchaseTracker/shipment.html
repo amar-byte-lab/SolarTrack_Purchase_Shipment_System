@@ -399,9 +399,9 @@
 </div>
 
 <!-- ══ Floating Draggable Price History & Tracker Popup ══════════════════ -->
-<div class="draggable-popup-card shadow-lg" id="priceHistoryPopup" style="display:none; position:fixed; top:60px; right:20px; width:540px; max-width:92vw; z-index:1060; background:#fff; border-radius:14px; border:1px solid #cbd5e1; box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;">
+<div class="draggable-popup-card shadow-lg" id="priceHistoryPopup" style="display:none; position:fixed; top:40px; right:20px; width:760px; max-width:96vw; z-index:1060; background:#fff; border-radius:14px; border:1px solid #cbd5e1; box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;">
   <!-- Draggable Header -->
-  <div class="popup-header bg-primary text-white py-2 px-3 d-flex justify-content-between align-items-center" id="priceHistoryHeader" style="cursor:move; border-radius:13px 13px 0 0; user-select:none;">
+  <div class="popup-header bg-primary text-white py-1.5 px-3 d-flex justify-content-between align-items-center" id="priceHistoryHeader" style="cursor:move; border-radius:13px 13px 0 0; user-select:none;">
     <div class="d-flex align-items-center gap-2">
       <span class="fs-6">➕</span>
       <h6 class="mb-0 fw-bold fs-7">Add Price Record</h6>
@@ -410,135 +410,149 @@
     <button type="button" class="btn-close btn-close-white btn-sm" onclick="togglePriceHistoryPopup(false)" aria-label="Close"></button>
   </div>
 
-  <!-- Popup Body (Expanded Height) -->
-  <div class="popup-body p-3" style="max-height: 640px; overflow-y: auto;">
+  <!-- Popup Body -->
+  <div class="popup-body p-2.5" style="max-height: 86vh; overflow-y: auto;">
     
     <!-- Tab 1 Content: Add Price Record Form -->
     <div id="priceTabContentAdd">
       <form id="formAddPriceRecord" onsubmit="event.preventDefault(); savePriceRecord();">
         <!-- Date, Note Name & Keep Note Theme Remarks -->
-        <div class="row g-2 mb-2">
+        <div class="row g-1.5 mb-1.5">
           <div class="col-sm-6 col-12">
-            <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Date</label>
-            <input type="date" class="form-control form-control-sm" id="phDate" required>
+            <label class="form-label fs-8 fw-semibold mb-0.5 text-secondary">Date</label>
+            <input type="date" class="form-control form-control-sm p-1" id="phDate" required style="height:26px; font-size:0.75rem;">
           </div>
           <div class="col-sm-6 col-12">
-            <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Note Name / Title</label>
-            <input type="text" class="form-control form-control-sm" id="phNoteName" placeholder="e.g. Panel Discount, Supplier Rate..." autocomplete="off">
+            <label class="form-label fs-8 fw-semibold mb-0.5 text-secondary">Note Name / Title</label>
+            <input type="text" class="form-control form-control-sm p-1" id="phNoteName" placeholder="e.g. Panel Discount, Supplier Rate..." autocomplete="off" style="height:26px; font-size:0.75rem;">
           </div>
           <div class="col-12">
-            <div class="keep-note-card p-2" style="border-radius:10px;">
-              <div class="keep-note-header d-flex align-items-center justify-content-between mb-1">
+            <div class="keep-note-card p-1.5" style="border-radius:8px;">
+              <div class="keep-note-header d-flex align-items-center justify-content-between mb-0.5">
                 <span class="keep-note-title d-flex align-items-center gap-1.5 fw-bold fs-8"><span>📌</span> Keep Note Remarks</span>
                 <span class="keep-note-tag fs-8">Price Record</span>
               </div>
-              <textarea class="keep-note-textarea fs-8" id="phRemarks" rows="2" placeholder="Take a note / add price record notes..." autocomplete="off" style="min-height:45px; font-size:0.8rem;"></textarea>
+              <textarea class="keep-note-textarea fs-8" id="phRemarks" rows="1" placeholder="Take a note / add price record notes..." autocomplete="off" style="min-height:30px; height:30px; font-size:0.75rem; padding:2px 6px;"></textarea>
             </div>
           </div>
         </div>
 
         <!-- Single Top Header for All Sections -->
-        <div class="d-flex align-items-center justify-content-between px-3 py-1.5 bg-light border border-bottom-0 text-secondary fw-bold rounded-top" style="font-size:0.7rem; letter-spacing:0.3px;">
+        <div class="d-flex align-items-center justify-content-between px-2 py-1 bg-light border border-bottom-0 text-secondary fw-bold rounded-top" style="font-size:0.7rem; letter-spacing:0.3px;">
           <span class="flex-grow-1">ITEM NAME</span>
-          <span style="width:65px;" class="text-center">QTY</span>
-          <span style="width:125px;" class="text-end me-1">PRICE (₹)</span>
-          <span style="width:28px;" class="text-center"></span>
+          <span style="width:45px;" class="text-center">QTY</span>
+          <span style="width:90px;" class="text-end me-1">PRICE (₹)</span>
+          <span style="width:24px;" class="text-center"></span>
         </div>
 
-        <div style="max-height: 400px; overflow-y: auto; padding-right:2px;">
+        <div style="max-height: 520px; overflow-y: auto; padding-right:2px;">
           
-          <!-- Section 1: Core Solar Equipment (Sky Blue Theme) -->
-          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
-            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #0284c7, #0369a1); cursor:pointer;" onclick="togglePhSection('sec1')">
-              <div class="d-flex align-items-center gap-1.5">
-                <span id="phIconSec1" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
-                <span>🔹 Section-1: Core Equipment</span>
+          <div class="border rounded-bottom overflow-hidden shadow-xs mb-1.5">
+            <!-- Section 1: Core Solar Equipment (Sky Blue Theme) -->
+            <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+              <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #0284c7, #0369a1); cursor:pointer;" onclick="togglePhSection('sec1')">
+                <div class="d-flex align-items-center gap-1.5">
+                  <span id="phIconSec1" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                  <span style="font-size:0.78rem;">   Section-1: Core Equipment</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                  <div class="form-check mb-0 me-1">
+                    <input class="form-check-input" type="checkbox" id="chkMergeSec1" onchange="renderPhSecRows('sec1')">
+                    <label class="form-check-label text-white fw-semibold" for="chkMergeSec1" style="font-size:0.68rem;">Merge Price</label>
+                  </div>
+                  <div class="text-end" style="width:90px;">
+                    <span id="phSecTotalSec1" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                  </div>
+                </div>
               </div>
-              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
-                <div class="form-check mb-0">
-                  <input class="form-check-input" type="checkbox" id="chkMergeSec1" onchange="renderPhSecRows('sec1')">
-                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec1">Merge Price</label>
+              <div class="card-body p-1.5" id="secBodySec1" style="background:#f0f9ff; display:none;">
+                <table class="ph-section-table">
+                  <tbody id="tbodyPhSec1"></tbody>
+                </table>
+                <div class="text-end pt-0.5">
+                  <button type="button" class="btn btn-xs btn-outline-primary fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec1')">➕ Add Item</button>
                 </div>
               </div>
             </div>
-            <div class="card-body p-2" id="secBodySec1" style="background:#f0f9ff;">
-              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
-                <tbody id="tbodyPhSec1"></tbody>
-              </table>
-              <div class="text-end pt-1">
-                <button type="button" class="btn btn-xs btn-outline-primary fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec1')">➕ Add Item</button>
-              </div>
-            </div>
-          </div>
 
-          <!-- Section 2: Cables (Emerald Green Theme) -->
-          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
-            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #16a34a, #15803d); cursor:pointer;" onclick="togglePhSection('sec2')">
-              <div class="d-flex align-items-center gap-1.5">
-                <span id="phIconSec2" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
-                <span>🔹 Section-2: Cables</span>
+            <!-- Section 2: Cables (Emerald Green Theme) -->
+            <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+              <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #16a34a, #15803d); cursor:pointer;" onclick="togglePhSection('sec2')">
+                <div class="d-flex align-items-center gap-1.5">
+                  <span id="phIconSec2" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                  <span style="font-size:0.78rem;"> Section-2: Cables</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                  <div class="form-check mb-0 me-1">
+                    <input class="form-check-input" type="checkbox" id="chkMergeSec2" onchange="renderPhSecRows('sec2')">
+                    <label class="form-check-label text-white fw-semibold" for="chkMergeSec2" style="font-size:0.68rem;">Merge Price</label>
+                  </div>
+                  <div class="text-end" style="width:90px;">
+                    <span id="phSecTotalSec2" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                  </div>
+                </div>
               </div>
-              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
-                <div class="form-check mb-0">
-                  <input class="form-check-input" type="checkbox" id="chkMergeSec2" onchange="renderPhSecRows('sec2')">
-                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec2">Merge Price</label>
+              <div class="card-body p-1.5" id="secBodySec2" style="background:#f0fdf4; display:none;">
+                <table class="ph-section-table">
+                  <tbody id="tbodyPhSec2"></tbody>
+                </table>
+                <div class="text-end pt-0.5">
+                  <button type="button" class="btn btn-xs btn-outline-success fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec2')">➕ Add Item</button>
                 </div>
               </div>
             </div>
-            <div class="card-body p-2" id="secBodySec2" style="background:#f0fdf4;">
-              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
-                <tbody id="tbodyPhSec2"></tbody>
-              </table>
-              <div class="text-end pt-1">
-                <button type="button" class="btn btn-xs btn-outline-success fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec2')">➕ Add Item</button>
-              </div>
-            </div>
-          </div>
 
-          <!-- Section 3: Hardware & Connectors (Amber Theme) -->
-          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
-            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #d97706, #b45309); cursor:pointer;" onclick="togglePhSection('sec3')">
-              <div class="d-flex align-items-center gap-1.5">
-                <span id="phIconSec3" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
-                <span>🔹 Section-3: Hardware & Connectors</span>
+            <!-- Section 3: Hardware & Connectors (Amber Theme) -->
+            <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+              <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #d97706, #b45309); cursor:pointer;" onclick="togglePhSection('sec3')">
+                <div class="d-flex align-items-center gap-1.5">
+                  <span id="phIconSec3" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                  <span style="font-size:0.78rem;"> Section-3: Hardware & Connectors</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                  <div class="form-check mb-0 me-1">
+                    <input class="form-check-input" type="checkbox" id="chkMergeSec3" onchange="renderPhSecRows('sec3')">
+                    <label class="form-check-label text-white fw-semibold" for="chkMergeSec3" style="font-size:0.68rem;">Merge Price</label>
+                  </div>
+                  <div class="text-end" style="width:90px;">
+                    <span id="phSecTotalSec3" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                  </div>
+                </div>
               </div>
-              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
-                <div class="form-check mb-0">
-                  <input class="form-check-input" type="checkbox" id="chkMergeSec3" onchange="renderPhSecRows('sec3')">
-                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec3">Merge Price</label>
+              <div class="card-body p-1.5" id="secBodySec3" style="background:#fffbeb; display:none;">
+                <table class="ph-section-table">
+                  <tbody id="tbodyPhSec3"></tbody>
+                </table>
+                <div class="text-end pt-0.5">
+                  <button type="button" class="btn btn-xs btn-outline-warning fw-semibold py-0 px-2 fs-8 text-dark" onclick="addPhSectionItem('sec3')">➕ Add Item</button>
                 </div>
               </div>
             </div>
-            <div class="card-body p-2" id="secBodySec3" style="background:#fffbeb;">
-              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
-                <tbody id="tbodyPhSec3"></tbody>
-              </table>
-              <div class="text-end pt-1">
-                <button type="button" class="btn btn-xs btn-outline-warning fw-semibold py-0 px-2 fs-8 text-dark" onclick="addPhSectionItem('sec3')">➕ Add Item</button>
-              </div>
-            </div>
-          </div>
 
-          <!-- Section 4: Accessories & Conduit (Purple Theme) -->
-          <div class="card mb-2 border shadow-sm" style="border-radius:10px; overflow:hidden;">
-            <div class="px-3 py-1.5 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); cursor:pointer;" onclick="togglePhSection('sec4')">
-              <div class="d-flex align-items-center gap-1.5">
-                <span id="phIconSec4" style="font-size:0.75rem; display:inline-block; transition: transform 0.2s;">▼</span>
-                <span>🔹 Section-4: Accessories & Conduit</span>
-              </div>
-              <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
-                <div class="form-check mb-0">
-                  <input class="form-check-input" type="checkbox" id="chkMergeSec4" onchange="renderPhSecRows('sec4')">
-                  <label class="form-check-label fs-8 text-white fw-semibold" for="chkMergeSec4">Merge Price</label>
+            <!-- Section 4: Accessories & Conduit (Purple Theme) -->
+            <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+              <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); cursor:pointer;" onclick="togglePhSection('sec4')">
+                <div class="d-flex align-items-center gap-1.5">
+                  <span id="phIconSec4" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                  <span style="font-size:0.78rem;"> Section-4: Accessories & Conduit</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                  <div class="form-check mb-0 me-1">
+                    <input class="form-check-input" type="checkbox" id="chkMergeSec4" onchange="renderPhSecRows('sec4')">
+                    <label class="form-check-label text-white fw-semibold" for="chkMergeSec4" style="font-size:0.68rem;">Merge Price</label>
+                  </div>
+                  <div class="text-end" style="width:90px;">
+                    <span id="phSecTotalSec4" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="card-body p-2" id="secBodySec4" style="background:#faf5ff;">
-              <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
-                <tbody id="tbodyPhSec4"></tbody>
-              </table>
-              <div class="text-end pt-1">
-                <button type="button" class="btn btn-xs btn-outline-secondary fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec4')">➕ Add Item</button>
+              <div class="card-body p-1.5" id="secBodySec4" style="background:#faf5ff; display:none;">
+                <table class="ph-section-table">
+                  <tbody id="tbodyPhSec4"></tbody>
+                </table>
+                <div class="text-end pt-0.5">
+                  <button type="button" class="btn btn-xs btn-outline-secondary fw-semibold py-0 px-2 fs-8" onclick="addPhSectionItem('sec4')">➕ Add Item</button>
+                </div>
               </div>
             </div>
           </div>
@@ -546,13 +560,14 @@
         </div>
 
         <!-- Summary Footer -->
-        <div class="p-2.5 mt-2 bg-light border rounded font-monospace d-flex justify-content-between align-items-center" style="font-size:0.85rem;">
+        <div class="p-2 mt-1.5 bg-light border rounded font-monospace d-flex justify-content-between align-items-center" style="font-size:0.85rem;">
           <span class="fw-bold text-secondary">Total Price:</span>
           <span class="fw-bold text-primary fs-6" id="lblPhSubtotal">₹0.00</span>
         </div>
 
-        <div class="mt-2 text-end">
-          <button type="submit" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm">
+        <div class="mt-2 text-end d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-sm btn-info text-white px-3" onclick="closePriceHistoryPopup()">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-success px-4 fw-bold shadow-sm">
             💾 Save Price Records
           </button>
         </div>
@@ -566,9 +581,9 @@
 
 <!-- ══ Edit Price Record Modal Popup ══════════════════════════════════ -->
 <div class="modal fade" id="editPriceRecordModal" tabindex="-1" aria-labelledby="editPriceRecordModalLabel" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 760px;">
     <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-primary text-white py-2 px-3" style="border-radius:14px 14px 0 0;">
+      <div class="modal-header bg-primary text-white py-1.5 px-3" style="border-radius:14px 14px 0 0;">
         <div class="d-flex align-items-center gap-2">
           <span class="fs-6">✏️</span>
           <h6 class="modal-title fw-bold fs-7" id="editPriceRecordModalLabel">Edit Price Record Details</h6>
@@ -576,64 +591,161 @@
         <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <div class="modal-body p-3" style="max-height: 75vh; overflow-y: auto;">
+      <div class="modal-body p-2.5" style="max-height: 86vh; overflow-y: auto;">
         <form id="formEditPriceRecord" onsubmit="event.preventDefault(); updatePriceRecordBatch();">
           <input type="hidden" id="editPhBatchKey">
           
           <!-- Date & Note Name -->
-          <div class="row g-2 mb-2">
+          <div class="row g-1.5 mb-1.5">
             <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Date</label>
-              <input type="date" class="form-control form-control-sm" id="editPhDate" required>
+              <label class="form-label fs-8 fw-semibold mb-0.5 text-secondary">Date</label>
+              <input type="date" class="form-control form-control-sm p-1" id="editPhDate" required style="height:26px; font-size:0.75rem;">
             </div>
             <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 fw-semibold mb-1 text-secondary">Note Name / Title</label>
-              <input type="text" class="form-control form-control-sm" id="editPhNoteName" placeholder="Note Title..." autocomplete="off">
+              <label class="form-label fs-8 fw-semibold mb-0.5 text-secondary">Note Name / Title</label>
+              <input type="text" class="form-control form-control-sm p-1" id="editPhNoteName" placeholder="Note Title..." autocomplete="off" style="height:26px; font-size:0.75rem;">
             </div>
             <div class="col-12">
-              <div class="keep-note-card p-2" style="border-radius:10px;">
-                <div class="keep-note-header d-flex align-items-center justify-content-between mb-1">
+              <div class="keep-note-card p-1.5" style="border-radius:8px;">
+                <div class="keep-note-header d-flex align-items-center justify-content-between mb-0.5">
                   <span class="keep-note-title d-flex align-items-center gap-1.5 fw-bold fs-8"><span>📌</span> Keep Note Remarks</span>
                   <span class="keep-note-tag fs-8">Editable Note</span>
                 </div>
-                <textarea class="keep-note-textarea fs-8" id="editPhRemarks" rows="2" placeholder="Edit note remarks..." autocomplete="off" style="min-height:45px; font-size:0.8rem;"></textarea>
+                <textarea class="keep-note-textarea fs-8" id="editPhRemarks" rows="1" placeholder="Edit note remarks..." autocomplete="off" style="min-height:30px; height:30px; font-size:0.75rem; padding:2px 6px;"></textarea>
               </div>
             </div>
           </div>
 
-          <!-- Items Table Header -->
-          <div class="d-flex align-items-center justify-content-between px-3 py-1.5 bg-light border border-bottom-0 text-secondary fw-bold rounded-top mb-0" style="font-size:0.7rem;">
+          <!-- Single Top Header for All Sections -->
+          <div class="d-flex align-items-center justify-content-between px-2 py-1 bg-light border border-bottom-0 text-secondary fw-bold rounded-top" style="font-size:0.7rem; letter-spacing:0.3px;">
             <span class="flex-grow-1">ITEM NAME</span>
-            <div class="d-flex align-items-center gap-2 me-2">
-              <div class="form-check mb-0">
-                <input class="form-check-input" type="checkbox" id="chkEditPhMerge" onchange="toggleEditPhMerge()">
-                <label class="form-check-label fs-8 text-secondary fw-semibold" for="chkEditPhMerge">Merge Price</label>
-              </div>
-              <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end p-1" id="editPhLumpInput" placeholder="Merged Total ₹" style="width:115px; display:none; height:22px; font-size:0.75rem;" oninput="onEditPhLumpInput()">
-            </div>
-            <span style="width:65px;" class="text-center">QTY</span>
-            <span style="width:115px;" class="text-end me-1">PRICE (₹)</span>
-            <span style="width:30px;" class="text-center"></span>
+            <span style="width:45px;" class="text-center">QTY</span>
+            <span style="width:90px;" class="text-end me-1">PRICE (₹)</span>
+            <span style="width:24px;" class="text-center"></span>
           </div>
 
-          <!-- Items Table Body -->
-          <div class="border rounded-bottom p-2 mb-2 bg-white" style="max-height: 260px; overflow-y: auto;">
-            <table class="table table-sm table-borderless align-middle mb-0" style="font-size:0.75rem;">
-              <tbody id="tbodyEditPhItems"></tbody>
-            </table>
-            <div class="text-end pt-2 border-top mt-1">
-              <button type="button" class="btn btn-xs btn-outline-primary fw-bold py-1 px-2 fs-8" onclick="addEditPhItemRow()">➕ Add Item to Record</button>
+          <div style="max-height: 520px; overflow-y: auto; padding-right:2px;">
+            
+            <div class="border rounded-bottom overflow-hidden shadow-xs mb-1.5">
+              <!-- Section 1: Core Solar Equipment (Sky Blue Theme) -->
+              <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+                <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #0284c7, #0369a1); cursor:pointer;" onclick="toggleEditPhSection('sec1')">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <span id="editPhIconSec1" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                    <span style="font-size:0.78rem;"> Section-1: Core Equipment</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                    <div class="form-check mb-0 me-1">
+                      <input class="form-check-input" type="checkbox" id="chkEditMergeSec1" onchange="renderEditPhSecRows('sec1')">
+                      <label class="form-check-label text-white fw-semibold" for="chkEditMergeSec1" style="font-size:0.68rem;">Merge Price</label>
+                    </div>
+                    <div class="text-end" style="width:90px;">
+                      <span id="editPhSecTotalSec1" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body p-1.5" id="editSecBodySec1" style="background:#f0f9ff; display:none;">
+                  <table class="ph-section-table">
+                    <tbody id="tbodyEditPhSec1"></tbody>
+                  </table>
+                  <div class="text-end pt-0.5">
+                    <button type="button" class="btn btn-xs btn-outline-primary fw-semibold py-0 px-2 fs-8" onclick="addEditPhSectionItem('sec1')">➕ Add Item</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 2: Cables (Emerald Green Theme) -->
+              <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+                <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #16a34a, #15803d); cursor:pointer;" onclick="toggleEditPhSection('sec2')">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <span id="editPhIconSec2" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                    <span style="font-size:0.78rem;"> Section-2: Cables</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                    <div class="form-check mb-0 me-1">
+                      <input class="form-check-input" type="checkbox" id="chkEditMergeSec2" onchange="renderEditPhSecRows('sec2')">
+                      <label class="form-check-label text-white fw-semibold" for="chkEditMergeSec2" style="font-size:0.68rem;">Merge Price</label>
+                    </div>
+                    <div class="text-end" style="width:90px;">
+                      <span id="editPhSecTotalSec2" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body p-1.5" id="editSecBodySec2" style="background:#f0fdf4; display:none;">
+                  <table class="ph-section-table">
+                    <tbody id="tbodyEditPhSec2"></tbody>
+                  </table>
+                  <div class="text-end pt-0.5">
+                    <button type="button" class="btn btn-xs btn-outline-success fw-semibold py-0 px-2 fs-8" onclick="addEditPhSectionItem('sec2')">➕ Add Item</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 3: Hardware & Connectors (Amber Theme) -->
+              <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+                <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #d97706, #b45309); cursor:pointer;" onclick="toggleEditPhSection('sec3')">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <span id="editPhIconSec3" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                    <span style="font-size:0.78rem;"> Section-3: Hardware & Connectors</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                    <div class="form-check mb-0 me-1">
+                      <input class="form-check-input" type="checkbox" id="chkEditMergeSec3" onchange="renderEditPhSecRows('sec3')">
+                      <label class="form-check-label text-white fw-semibold" for="chkEditMergeSec3" style="font-size:0.68rem;">Merge Price</label>
+                    </div>
+                    <div class="text-end" style="width:90px;">
+                      <span id="editPhSecTotalSec3" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body p-1.5" id="editSecBodySec3" style="background:#fffbeb; display:none;">
+                  <table class="ph-section-table">
+                    <tbody id="tbodyEditPhSec3"></tbody>
+                  </table>
+                  <div class="text-end pt-0.5">
+                    <button type="button" class="btn btn-xs btn-outline-warning fw-semibold py-0 px-2 fs-8 text-dark" onclick="addEditPhSectionItem('sec3')">➕ Add Item</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 4: Accessories & Conduit (Purple Theme) -->
+              <div class="card mb-0 border-0" style="border-radius:0; overflow:hidden;">
+                <div class="px-2 py-1 fw-bold fs-7 text-white d-flex justify-content-between align-items-center flex-wrap gap-1" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); cursor:pointer;" onclick="toggleEditPhSection('sec4')">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <span id="editPhIconSec4" class="text-white" style="font-size:0.7rem; display:inline-block;">▶</span>
+                    <span style="font-size:0.78rem;"> Section-4: Accessories & Conduit</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1.5" onclick="event.stopPropagation()">
+                    <div class="form-check mb-0 me-1">
+                      <input class="form-check-input" type="checkbox" id="chkEditMergeSec4" onchange="renderEditPhSecRows('sec4')">
+                      <label class="form-check-label text-white fw-semibold" for="chkEditMergeSec4" style="font-size:0.68rem;">Merge Price</label>
+                    </div>
+                    <div class="text-end" style="width:90px;">
+                      <span id="editPhSecTotalSec4" class="badge bg-white text-dark font-monospace fw-bold border shadow-xs px-1.5 py-0.5" style="font-size:0.7rem;">₹0.00</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body p-1.5" id="editSecBodySec4" style="background:#faf5ff; display:none;">
+                  <table class="ph-section-table">
+                    <tbody id="tbodyEditPhSec4"></tbody>
+                  </table>
+                  <div class="text-end pt-0.5">
+                    <button type="button" class="btn btn-xs btn-outline-secondary fw-semibold py-0 px-2 fs-8" onclick="addEditPhSectionItem('sec4')">➕ Add Item</button>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
 
           <!-- Summary Footer -->
-          <div class="p-2.5 bg-light border rounded font-monospace d-flex justify-content-between align-items-center" style="font-size:0.85rem;">
+          <div class="p-2 mt-1.5 bg-light border rounded font-monospace d-flex justify-content-between align-items-center" style="font-size:0.85rem;">
             <span class="fw-bold text-secondary">Total Price:</span>
             <span class="fw-bold text-primary fs-6" id="lblEditPhSubtotal">₹0.00</span>
           </div>
 
-          <div class="mt-3 text-end d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+          <div class="mt-2 text-end d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-sm btn-info text-white px-3" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" class="btn btn-sm btn-success px-4 fw-bold shadow-sm">
               💾 Update Price Record
             </button>
