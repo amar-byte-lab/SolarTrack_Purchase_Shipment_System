@@ -14,7 +14,17 @@ if (fs.existsSync(envPath)) {
 
 const rawUrl = process.env.SUPABASE_URL || '';
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
-const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+
+// Smart Key resolution: find any key starting with 'sb_publishable_' or 'eyJ' (JWT token)
+const candidates = [
+  process.env.SUPABASE_PUBLISHABLE_KEY,
+  process.env.SUPABASE_ANON_KEY,
+  process.env.SUPABASE_KEY,
+  process.env.SUPABASE_SECRET_KEY,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+].filter(Boolean);
+
+const supabaseKey = candidates.find(k => k.startsWith('sb_publishable_') || k.startsWith('eyJ')) || candidates[0] || '';
 
 if (isProduction) {
   console.log('🌐 [Config] Production Environment detected: Using hosting server Environment Variables.');

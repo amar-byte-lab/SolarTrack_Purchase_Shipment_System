@@ -51,53 +51,21 @@ async function build() {
     if (!file.endsWith('.js') || file.endsWith('.min.js')) continue;
 
     const filePath = path.join(jsDir, file);
-    console.log(`📦 Minifying and obfuscating: js/${file}`);
+    console.log(`📦 Minifying: js/${file}`);
 
     try {
       const code = fs.readFileSync(filePath, 'utf8');
-
-      // 1. Minify using Terser (with sourceMap: false)
       const minified = await minify(code, {
-        mangle: true,
+        ecma: 2020,
         compress: true,
-        sourceMap: false,
+        mangle: false, // keep variable names safe for inline handlers
       });
 
-      if (minified.error) {
-        throw minified.error;
+      if (!minified.error && minified.code) {
+        fs.writeFileSync(filePath, minified.code, 'utf8');
       }
-
-      // 2. Obfuscate using javascript-obfuscator
-      let finalCode = minified.code;
-      try {
-        const obfuscationResult = JavaScriptObfuscator.obfuscate(minified.code, {
-          compact: true,
-          controlFlowFlattening: false, // Keep false to prevent significant performance overhead
-          deadCodeInjection: false,
-          debugProtection: false,
-          disableConsoleOutput: false,
-          identifierNamesGenerator: 'hexadecimal',
-          numbersToExpressions: false,
-          renameGlobals: false,
-          selfDefending: false,
-          simplify: true,
-          splitStrings: false,
-          stringArray: true,
-          stringArrayThreshold: 0.75,
-          unicodeEscapeSequence: false,
-          sourceMap: false // Explicitly disable source maps
-        });
-
-        finalCode = obfuscationResult.getObfuscatedCode();
-      } catch (obfuscateErr) {
-        console.warn(`⚠️ Obfuscation failed for js/${file} (falling back to Terser minification only): ${obfuscateErr.message}`);
-      }
-
-      // 3. Write back to file
-      fs.writeFileSync(filePath, finalCode, 'utf8');
     } catch (err) {
-      console.error(`❌ Failed to process js/${file}:`, err);
-      process.exit(1);
+      console.warn(`⚠️ Minification skipped for js/${file}: ${err.message}`);
     }
   }
 
