@@ -341,6 +341,8 @@ async function deleteBorrower(borrowerID) {
 }
 
 module.exports = {
+  driverName: 'PostgreSQL (Supabase)',
+  dbType: 'postgresql',
   getStatus,
   getTable,
   importTable,
