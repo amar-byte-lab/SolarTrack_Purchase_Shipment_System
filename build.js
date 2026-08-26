@@ -48,7 +48,7 @@ async function build() {
   console.log(`🚀 Processing ${files.length} application JS files...`);
 
   for (const file of files) {
-    if (!file.endsWith('.js')) continue;
+    if (!file.endsWith('.js') || file.endsWith('.min.js')) continue;
 
     const filePath = path.join(jsDir, file);
     console.log(`📦 Minifying and obfuscating: js/${file}`);
