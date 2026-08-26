@@ -4,15 +4,17 @@ const { createClient } = require('@supabase/supabase-js');
 const DEFAULT_SUPABASE_URL = 'https://fqhsegrisdkclnocpqqb.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_qrCbrFO5HMONbrHUh68w8Q_PfBFv0Da';
 
-const rawUrl = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const cleanStr = val => (val || '').toString().trim().replace(/^["']|["']$/g, '');
+
+const rawUrl = cleanStr(process.env.SUPABASE_URL) || DEFAULT_SUPABASE_URL;
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
 
 const candidates = [
-  process.env.SUPABASE_PUBLISHABLE_KEY,
-  process.env.SUPABASE_ANON_KEY,
-  process.env.SUPABASE_KEY,
-  process.env.SUPABASE_SECRET_KEY,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  cleanStr(process.env.SUPABASE_PUBLISHABLE_KEY),
+  cleanStr(process.env.SUPABASE_ANON_KEY),
+  cleanStr(process.env.SUPABASE_KEY),
+  cleanStr(process.env.SUPABASE_SECRET_KEY),
+  cleanStr(process.env.SUPABASE_SERVICE_ROLE_KEY),
   DEFAULT_SUPABASE_KEY
 ].filter(Boolean);
 
