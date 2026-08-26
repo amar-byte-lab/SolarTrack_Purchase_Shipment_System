@@ -1,8 +1,30 @@
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
+
+// Determine execution environment (Local vs Production)
+const envPath = path.join(__dirname, '../.env');
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+} else {
+  require('dotenv').config();
+}
 
 const rawUrl = process.env.SUPABASE_URL || '';
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
 const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '';
+
+if (isProduction) {
+  console.log('🌐 [Config] Production Environment detected: Using hosting server Environment Variables.');
+} else {
+  console.log('💻 [Config] Local Environment detected: Loaded variables from local .env file.');
+}
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠️ [Postgres Warning] SUPABASE_URL or SUPABASE_SECRET_KEY is missing in environment variables!');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }

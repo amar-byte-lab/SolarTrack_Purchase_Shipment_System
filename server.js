@@ -1,5 +1,13 @@
 const SERVER_START_TIME = performance.now();
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+} else {
+  require('dotenv').config();
+}
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -32,7 +40,7 @@ const smtpTransporter = nodemailer.createTransport({
 
 async function sendResetEmail(toEmail, username, resetLink) {
   const mailOptions = {
-    from: process.env.SMTP_FROM || '"SolarTrack" <no-reply@example.com>',
+    from: process.env.SMTP_FROM || process.env.SMTP_USER || '',
     to: toEmail,
     subject: 'SolarTrack Password Reset Request',
     text: `Hi ${username},\n\nYou requested a password reset for your SolarTrack account.\n\nPlease click the link below to reset your password. This link is valid for 1 hour:\n\n${resetLink}\n\nIf you did not request this, please ignore this email.`,
