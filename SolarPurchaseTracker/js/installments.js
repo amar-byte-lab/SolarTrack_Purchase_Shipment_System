@@ -711,22 +711,21 @@ function updateDistrictStats() {
 
   const isTotalActive = selectedDistricts.length === 0;
   const totalBadgeClass = isTotalActive
-    ? 'bg-dark text-white border border-2 border-success shadow-sm fw-bold'
-    : 'bg-success-subtle text-success-emphasis border border-success-subtle';
+    ? 'bg-dark text-white border border-dark fw-bold'
+    : 'bg-light text-secondary border border-secondary-subtle';
 
-  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="badge rounded-pill ${totalBadgeClass} px-2.5 py-1 fs-8" style="font-size: 0.74rem !important; font-weight: ${isTotalActive ? '700' : '500'}; cursor: pointer; transition: all 0.15s ease; ${isTotalActive ? 'box-shadow: 0 2px 5px rgba(0,0,0,0.25); transform: scale(1.05);' : 'opacity: 0.85;'}" title="Click to clear filter and show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
+  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="badge rounded-pill ${totalBadgeClass} px-2.5 py-1 fs-8" style="font-size: 0.73rem !important; font-weight: ${isTotalActive ? '700' : '500'}; cursor: pointer; transition: all 0.15s ease;" title="Click to clear filter and show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
 
-  const districtBadges = sortedDistricts.map((dist, index) => {
+  const districtBadges = sortedDistricts.map((dist) => {
     const count = counts[dist];
     const targetDist = dist === 'No District' ? '(No District)' : dist;
     const isSelected = selectedDistricts.includes(targetDist);
-    const style = badgeStyles[index % badgeStyles.length];
-
     const safeDist = dist.replace(/'/g, "\\'");
+
     if (isSelected) {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-primary text-white border border-2 border-dark shadow-sm px-2.5 py-1 fs-8" style="font-size: 0.76rem !important; font-weight: 700 !important; cursor: pointer; box-shadow: 0 2px 6px rgba(13, 110, 253, 0.4); transform: scale(1.06); transition: all 0.15s ease;" title="Selected filter. Click to toggle off.">✓ ${dist}: ${count}</span>`;
+      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-primary text-white border border-primary px-2.5 py-1 fs-8" style="font-size: 0.73rem !important; font-weight: 600 !important; cursor: pointer; transition: all 0.15s ease;" title="Selected filter. Click to toggle off.">✓ ${dist}: ${count}</span>`;
     } else {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill ${style} px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500; cursor: pointer; opacity: 0.85; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
+      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-light text-secondary border border-secondary-subtle px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500; cursor: pointer; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
     }
   }).join(' ');
 
@@ -1129,14 +1128,14 @@ function renderList() {
         const commDelayVal = calculateDelay(r.InstallationDate);
         if (commDelayVal) {
           delayBadgeHtml = `
-            <sup class="ms-0.5"><a href="#" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.58rem; padding:1px 3px; font-weight:500;">Comm. Delay ${commDelayVal}</a></sup>
+            <span class="badge bg-light text-secondary border border-secondary-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.62rem; padding:1px 4px; font-weight:500; cursor:pointer;">Comm. Delay ${commDelayVal}</span>
           `;
         }
       } else if (hasLoginDate) {
         const instDelayVal = calculateDelay(r.LoginDate);
         if (instDelayVal) {
           delayBadgeHtml = `
-            <sup class="ms-0.5"><a href="#" class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.58rem; padding:1px 3px; font-weight:500;">Inst. Delay ${instDelayVal}</a></sup>
+            <span class="badge bg-light text-secondary border border-secondary-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.62rem; padding:1px 4px; font-weight:500; cursor:pointer;">Inst. Delay ${instDelayVal}</span>
           `;
         }
       }
@@ -1147,9 +1146,7 @@ function renderList() {
       let netMeterBadgeHtml = '';
       if (isNetMeterPaid) {
         netMeterBadgeHtml = `
-          <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2 py-0.5" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}" style="font-size:0.64rem; font-weight:600; vertical-align: middle;">
-            ⚡ Meter ₹${netMeterAmt.toLocaleString('en-IN')}
-          </span>
+          <span class="badge bg-light text-success border border-success-subtle rounded-pill px-2 py-0.5 ms-1" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}" style="font-size:0.64rem; font-weight:600; vertical-align: middle;">⚡ Meter ₹${netMeterAmt.toLocaleString('en-IN')}</span>
         `;
       }
 
