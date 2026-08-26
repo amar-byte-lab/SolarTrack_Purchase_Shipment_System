@@ -1,26 +1,8 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
-const DEFAULT_SUPABASE_URL = 'https://fqhsegrisdkclnocpqqb.supabase.co';
-const DEFAULT_SUPABASE_KEY = 'sb_publishable_qrCbrFO5HMONbrHUh68w8Q_PfBFv0Da';
-
-const cleanStr = val => (val || '').toString().trim().replace(/^["']|["']$/g, '');
-
-const rawUrl = cleanStr(process.env.SUPABASE_URL);
-const supabaseUrl = (rawUrl && rawUrl.includes('supabase.co') ? rawUrl : DEFAULT_SUPABASE_URL).replace(/\/rest\/v1\/?$/, '');
-
-const candidates = [
-  cleanStr(process.env.SUPABASE_PUBLISHABLE_KEY),
-  cleanStr(process.env.SUPABASE_ANON_KEY),
-  cleanStr(process.env.SUPABASE_KEY),
-  cleanStr(process.env.SUPABASE_SECRET_KEY),
-  cleanStr(process.env.SUPABASE_SERVICE_ROLE_KEY),
-  DEFAULT_SUPABASE_KEY
-].filter(k => k && !k.startsWith('sb_secret_'));
-
-const supabaseKey = candidates.find(k => k.startsWith('sb_publishable_') || k.startsWith('eyJ')) || candidates[0] || DEFAULT_SUPABASE_KEY;
-
-console.log('✅ [Postgres Driver] Initialized with Supabase URL:', supabaseUrl, '| Key prefix:', supabaseKey.substring(0, 15));
+const supabaseUrl = (process.env.SUPABASE_URL || 'https://fqhsegrisdkclnocpqqb.supabase.co').replace(/\/rest\/v1\/?$/, '');
+const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_qrCbrFO5HMONbrHUh68w8Q_PfBFv0Da';
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
