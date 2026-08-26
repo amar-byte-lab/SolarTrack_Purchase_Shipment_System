@@ -208,10 +208,19 @@ const server = http.createServer(async (req, res) => {
         const inputPass = payload?.password || '';
 
         const users = await db.getTable('users');
-        const foundUser = users.find(u =>
-          (u.userid.toLowerCase() === inputId || (u.email && u.email.toLowerCase() === inputId) || (u.username && u.username.toLowerCase() === inputId)) &&
-          u.password === inputPass
-        );
+        if (!Array.isArray(users) || users.length === 0) {
+          console.warn(`[Auth Warning] Login attempted for "${inputId}", but database users table returned 0 records.`);
+        }
+
+        const foundUser = (Array.isArray(users) ? users : []).find(u => {
+          if (!u) return false;
+          const uid = (u.userid || u.UserID || u.userId || '').toString().trim().toLowerCase();
+          const uemail = (u.email || '').toString().trim().toLowerCase();
+          const uname = (u.username || '').toString().trim().toLowerCase();
+          const upass = (u.password || u.Password || '').toString();
+
+          return (uid === inputId || (uemail && uemail === inputId) || (uname && uname === inputId)) && upass === inputPass;
+        });
 
         if (foundUser) {
           if (foundUser.status === 'Pending') {
@@ -219,6 +228,7 @@ const server = http.createServer(async (req, res) => {
           } else if (foundUser.status === 'Rejected') {
             sendResponse(req, res, 403, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'Your account registration was rejected by Admin.' })), 'no-cache, no-store');
           } else {
+            console.log(`[Auth Success] User "${foundUser.userid}" logged in successfully (role: ${foundUser.role}).`);
             const body = JSON.stringify({
               success: true,
               user: { userid: foundUser.userid, username: foundUser.username, role: foundUser.role, email: foundUser.email, mobile: foundUser.mobile }
@@ -226,6 +236,7 @@ const server = http.createServer(async (req, res) => {
             sendResponse(req, res, 200, 'application/json', Buffer.from(body), 'no-cache, no-store');
           }
         } else {
+          console.warn(`[Auth Failed] Invalid login credentials attempted for user ID: "${inputId}"`);
           sendResponse(req, res, 401, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'Invalid User ID/Email or Password' })), 'no-cache, no-store');
         }
         return;

@@ -12,29 +12,24 @@ if (fs.existsSync(envPath)) {
   require('dotenv').config();
 }
 
-const rawUrl = process.env.SUPABASE_URL || '';
+const DEFAULT_SUPABASE_URL = 'https://fqhsegrisdkclnocpqqb.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_qrCbrFO5HMONbrHUh68w8Q_PfBFv0Da';
+
+const rawUrl = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
 
-// Smart Key resolution: find any key starting with 'sb_publishable_' or 'eyJ' (JWT token)
 const candidates = [
   process.env.SUPABASE_PUBLISHABLE_KEY,
   process.env.SUPABASE_ANON_KEY,
   process.env.SUPABASE_KEY,
   process.env.SUPABASE_SECRET_KEY,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  DEFAULT_SUPABASE_KEY
 ].filter(Boolean);
 
-const supabaseKey = candidates.find(k => k.startsWith('sb_publishable_') || k.startsWith('eyJ')) || candidates[0] || '';
+const supabaseKey = candidates.find(k => k.startsWith('sb_publishable_') || k.startsWith('eyJ')) || DEFAULT_SUPABASE_KEY;
 
-if (isProduction) {
-  console.log('🌐 [Config] Production Environment detected: Using hosting server Environment Variables.');
-} else {
-  console.log('💻 [Config] Local Environment detected: Loaded variables from local .env file.');
-}
-
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ [Postgres Warning] SUPABASE_URL or SUPABASE_SECRET_KEY is missing in environment variables!');
-}
+console.log('✅ [Postgres Driver] Initialized with Supabase URL:', supabaseUrl);
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
