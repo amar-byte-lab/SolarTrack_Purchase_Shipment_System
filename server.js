@@ -9,8 +9,6 @@ if (fs.existsSync(envPath)) {
   require('dotenv').config();
 }
 const http = require('http');
-const fs = require('fs');
-const path = require('path');
 const zlib = require('zlib');
 const { exec } = require('child_process');
 const db = require('./db');

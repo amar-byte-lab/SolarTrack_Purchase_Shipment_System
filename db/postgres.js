@@ -14,7 +14,7 @@ if (fs.existsSync(envPath)) {
 
 const rawUrl = process.env.SUPABASE_URL || '';
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '');
-const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '';
+const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
 
 if (isProduction) {
   console.log('🌐 [Config] Production Environment detected: Using hosting server Environment Variables.');
