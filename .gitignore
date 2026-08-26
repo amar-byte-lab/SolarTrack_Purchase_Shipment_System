@@ -3,7 +3,7 @@ node_modules/
 package-lock.json
 
 # env file
-# .env
+.env
 
 # Local Database & Uploads
 *.db
