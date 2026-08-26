@@ -567,6 +567,16 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      if (pathname === '/api/insert-batch') {
+        const table = parsedUrl.searchParams.get('table');
+        const rows = await getRequestBody(req);
+        await db.insertRows(table, Array.isArray(rows) ? rows : []);
+        const dbDuration = (performance.now() - dbStartTime).toFixed(2);
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
+        console.log(`[API] POST /api/insert-batch (${table}) | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
+        return;
+      }
+
       if (pathname === '/api/update') {
         const table = parsedUrl.searchParams.get('table');
         const matchField = parsedUrl.searchParams.get('matchField');
@@ -589,6 +599,19 @@ const server = http.createServer(async (req, res) => {
         const dbDuration = (performance.now() - dbStartTime).toFixed(2);
         sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
         console.log(`[API] POST /api/delete (${table}) | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
+        return;
+      }
+
+      if (pathname === '/api/delete-batch') {
+        const table = parsedUrl.searchParams.get('table');
+        const matchField = parsedUrl.searchParams.get('matchField');
+        const payload = await getRequestBody(req);
+        const matchValues = payload?.matchValues || [];
+
+        await db.deleteRows(table, matchField, matchValues);
+        const dbDuration = (performance.now() - dbStartTime).toFixed(2);
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
+        console.log(`[API] POST /api/delete-batch (${table}) | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
         return;
       }
 

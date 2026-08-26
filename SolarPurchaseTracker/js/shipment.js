@@ -2581,9 +2581,7 @@ window.savePriceRecord = async function () {
 
     UI.showLoading(true);
     try {
-        for (const rec of recordsToInsert) {
-            await DB.insert('price_history', rec);
-        }
+        await DB.insertBatch('price_history', recordsToInsert);
         UI.toast(`Saved ${recordsToInsert.length} price record(s) successfully.`, 'success');
 
         const form = document.getElementById('formAddPriceRecord');
@@ -3000,16 +2998,14 @@ window.updatePriceRecordBatch = async function () {
 
     UI.showLoading(true);
     try {
-        // Delete previous batch items from DB
-        await DB.delete('price_history', r => {
+        // Delete previous batch items from DB using batch delete
+        await DB.deleteBatch('price_history', r => {
             const key = r.BatchID || (r.Date + '_' + (r.NoteName || '') + '_' + (r.CreatedAt ? r.CreatedAt.slice(0, 19) : r.RecordID));
             return key === batchKey;
         });
 
-        // Insert updated batch items
-        for (const rec of updatedRecords) {
-            await DB.insert('price_history', rec);
-        }
+        // Insert updated batch items using batch insert
+        await DB.insertBatch('price_history', updatedRecords);
 
         UI.toast('Price record updated successfully!', 'success');
 
@@ -3042,7 +3038,7 @@ window.deletePriceRecordBatch = async function (batchKey) {
 
     UI.showLoading(true);
     try {
-        await DB.delete('price_history', r => {
+        await DB.deleteBatch('price_history', r => {
             const key = r.BatchID || (r.Date + '_' + (r.NoteName || '') + '_' + (r.CreatedAt ? r.CreatedAt.slice(0, 19) : r.RecordID));
             return key === batchKey;
         });

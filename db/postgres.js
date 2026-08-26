@@ -318,6 +318,36 @@ async function deleteBorrower(borrowerID) {
   }
 }
 
+async function insertRows(tableName, rows) {
+  if (!rows || !rows.length) return;
+  try {
+    const { error } = await supabase.from(tableName).upsert(rows);
+    if (error) {
+      for (const r of rows) {
+        await safeUpsert(tableName, r);
+      }
+    }
+  } catch (err) {
+    console.warn(`[Postgres] insertRows('${tableName}') exception:`, err.message);
+  }
+}
+
+async function deleteRows(tableName, matchField, matchValues) {
+  if (!matchValues || !matchValues.length) return;
+  try {
+    let field = matchField;
+    if (tableName === 'work_notes' && field && field.toLowerCase() === 'noteid') {
+      field = 'NoteID';
+    }
+    const isInt = ['SlNo', 'BorrowerID', 'id'].includes(field);
+    const vals = isInt ? matchValues.map(v => parseInt(v, 10) || v) : matchValues;
+    const { error } = await supabase.from(tableName).delete().in(field, vals);
+    if (error) console.warn(`[Postgres] deleteRows('${tableName}') warning:`, error.message);
+  } catch (err) {
+    console.warn(`[Postgres] deleteRows('${tableName}') exception:`, err.message);
+  }
+}
+
 module.exports = {
   driverName: 'PostgreSQL (Supabase)',
   dbType: 'postgresql',
@@ -325,8 +355,10 @@ module.exports = {
   getTable,
   importTable,
   insertRow,
+  insertRows,
   updateRow,
   deleteRow,
+  deleteRows,
   replaceTable,
   getBorrowerList,
   getBorrowerTxns,

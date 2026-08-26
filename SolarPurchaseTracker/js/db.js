@@ -364,6 +364,68 @@ const DB = (() => {
         }
     }
 
+    async function insertBatch(key, rows) {
+        if (!rows || !rows.length) return;
+        if (!cache[key]) cache[key] = [];
+        cache[key].push(...rows);
+        syncSessionCache();
+
+        if (mode === 'postgres') {
+            try {
+                const res = await fetch(`/api/insert-batch?table=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rows)
+                });
+                if (res.ok) return rows;
+            } catch (e) { }
+
+            // Fallback to parallel request execution over standard /api/insert
+            await Promise.all(rows.map(row => 
+                fetch(`/api/insert?table=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(row)
+                }).catch(() => {})
+            ));
+        }
+        return rows;
+    }
+
+    async function deleteBatch(key, matchFn) {
+        const pkName = getPrimaryKey(key);
+        const matchingRows = (cache[key] || []).filter(r => matchFn(r));
+        if (!matchingRows.length) return;
+
+        // Update local cache
+        cache[key] = (cache[key] || []).filter(r => !matchFn(r));
+        syncSessionCache();
+
+        if (mode === 'postgres') {
+            const pkValues = matchingRows.map(row => {
+                return row[pkName] !== undefined && row[pkName] !== null ? row[pkName] : row[pkName ? pkName.toLowerCase() : ''];
+            }).filter(v => v !== null && v !== undefined && v !== '');
+
+            if (pkValues.length > 0) {
+                try {
+                    const res = await fetch(`/api/delete-batch?table=${key}&matchField=${pkName}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ matchValues: pkValues })
+                    });
+                    if (res.ok) return;
+                } catch (e) { }
+
+                // Fallback to parallel delete requests over standard /api/delete
+                await Promise.all(pkValues.map(pk => 
+                    fetch(`/api/delete?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pk)}`, {
+                        method: 'POST'
+                    }).catch(() => {})
+                ));
+            }
+        }
+    }
+
     function clearCache() {
         cache = {};
         try { sessionStorage.removeItem('st_db_cache'); } catch (e) { }
@@ -378,9 +440,11 @@ const DB = (() => {
         getMode: () => mode,
         getAll,
         insert,
+        insertBatch,
         update,
         remove,
         delete: remove,
+        deleteBatch,
         replaceAll,
         setLocalCache,
         HEADERS,
