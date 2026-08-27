@@ -321,6 +321,9 @@ const UI = (() => {
             </button>
           </div>
           <div class="topbar-actions d-flex align-items-center gap-1 flex-wrap justify-content-end no-print flex-shrink-0">
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1 text-nowrap rounded-2 shadow-sm no-print no-screenshot" id="btnTopbarScreenshot" title="Take Screenshot (Alt+S)" onclick="if(typeof Screenshot!=='undefined') Screenshot.takeScreenshot();">
+              📸 <span class="d-none d-sm-inline fw-semibold">Screenshot</span>
+            </button>
             ${notificationBell}
             ${userBadge}
             ${actionsHtml || ''}
