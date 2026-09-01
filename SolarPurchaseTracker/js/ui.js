@@ -12,11 +12,20 @@ const UI = (() => {
     { href: 'offer.html',           icon: 'offer',      label: 'Offer Generator' },
     { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement Generate' },
     { href: 'demand-note.html',     icon: 'demand',     label: 'Demand Note Generate' },
+    { href: 'sizing-calc.html',     icon: 'calculator', label: 'Sizing Calculator' },
     { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
 
   const ICONS = {
+    calculator: `<rect x="4" y="2" width="16" height="20" rx="2.5" fill="#F59E0B"/>
+<rect x="6" y="5" width="12" height="4" rx="1" fill="#FFFFFF"/>
+<rect x="7" y="11" width="3" height="3" rx="0.5" fill="#FFFFFF"/>
+<rect x="11" y="11" width="3" height="3" rx="0.5" fill="#FFFFFF"/>
+<rect x="15" y="11" width="2" height="3" rx="0.5" fill="#FFFFFF"/>
+<rect x="7" y="15" width="3" height="3" rx="0.5" fill="#FFFFFF"/>
+<rect x="11" y="15" width="3" height="3" rx="0.5" fill="#FFFFFF"/>
+<rect x="15" y="15" width="2" height="5" rx="0.5" fill="#10B981"/>`,
     grid: `<rect x="2" y="2" width="9" height="9" rx="2.5" fill="#4F46E5"/>
 <rect x="13" y="2" width="9" height="9" rx="2.5" fill="#8B5CF6"/>
 <rect x="2" y="13" width="9" height="9" rx="2.5" fill="#0EA5E9"/>
@@ -108,9 +117,9 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['installments.html', 'work-note.html', 'offer.html', 'agreement.html', 'borrower.html'].includes(item.href);
+            return ['installments.html', 'work-note.html', 'offer.html', 'agreement.html', 'borrower.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['offer.html', 'agreement.html', 'borrower.html', 'work-note.html'].includes(item.href);
+          return ['offer.html', 'agreement.html', 'borrower.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : [];
 

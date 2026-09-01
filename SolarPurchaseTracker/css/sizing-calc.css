@@ -1,0 +1,422 @@
+/* =========================================================================
+   sizing-calc.css — Mobile-First Solar & Inverter-Battery Sizing Stylesheet
+   Clean, modern, touch-friendly UI for non-technical solar sales representatives.
+   ========================================================================= */
+
+/* Main Container & Page Layout */
+.sizing-page-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-bottom: 90px; /* space for sticky mobile calculate bar */
+}
+
+/* Section Header Badges */
+.step-number-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--st-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  margin-bottom: 1.25rem;
+}
+
+/* System Type Selection Cards */
+.system-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.system-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  user-select: none;
+}
+
+.system-card:hover {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.system-card.active {
+  border-color: var(--st-primary);
+  background: #f0f3ff;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+.system-card input[type="radio"] {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  accent-color: var(--st-primary);
+  width: 18px;
+  height: 18px;
+}
+
+.system-card-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1e293b;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.system-card-inverter-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--st-primary);
+  background: #e0e7ff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-top: 6px;
+}
+
+/* Summary Metrics Grid & Stat Boxes */
+.summary-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.summary-stat-box {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.summary-stat-box:hover {
+  border-color: var(--st-primary);
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+}
+
+.stat-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.calc-energy-bracket {
+  background: #e0e7ff;
+  color: #3730a3 !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+  display: inline-block;
+}
+
+.btn-2xs {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.shadow-2xs {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Appliance Steppers & Rows */
+.appliance-item-card {
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  transition: background 0.15s ease;
+}
+
+.appliance-item-card:hover {
+  background: #f8fafc;
+}
+
+.stepper-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.stepper-btn:active {
+  transform: scale(0.95);
+  background: #e2e8f0;
+}
+
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qty-display-input {
+  width: 44px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  height: 34px;
+}
+
+/* Backup Appliance Selection Pills */
+.backup-toggle-btn {
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.backup-toggle-btn.active {
+  background: var(--st-success-bg);
+  border-color: var(--st-success);
+  color: var(--st-success);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15);
+}
+
+/* Backup Hours Pills */
+.hours-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hours-pill {
+  flex: 1;
+  min-width: 60px;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hours-pill.active {
+  border-color: var(--st-primary);
+  background: var(--st-primary);
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.25);
+}
+
+/* Sticky Calculate Bar (Mobile Focus) */
+.sticky-calc-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  z-index: 999;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (min-width: 992px) {
+  .sticky-calc-bar {
+    position: static;
+    box-shadow: none;
+    padding: 0;
+    background: transparent;
+    border-top: none;
+  }
+}
+
+.btn-calculate-hero {
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-calculate-hero:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+  color: #ffffff;
+}
+
+/* Results Section Cards */
+.result-hero-card {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.25rem;
+}
+
+.result-card-header {
+  padding: 14px 18px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bg-header-inverter {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+}
+
+.bg-header-battery {
+  background: linear-gradient(135deg, #059669, #10b981);
+}
+
+.bg-header-solar {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+}
+
+.bg-header-summary {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+}
+
+.big-stat-badge {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #0f172a;
+}
+
+.sub-stat-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.spec-pill {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.ip-rating-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.discharge-rating-badge {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+/* Warnings Box */
+.warning-item-box {
+  background: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #92400e;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+/* Accordion "Why Selected" Breakdown */
+.breakdown-table th {
+  background: #f8fafc;
+  font-size: 0.8rem;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.breakdown-table td {
+  font-size: 0.85rem;
+  vertical-align: middle;
+}

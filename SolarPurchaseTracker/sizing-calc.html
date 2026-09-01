@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Solar & Inverter-Battery Sizing Calculator — Solar Track</title>
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/sizing-calc.css">
+  <script src="js/auth.js"></script>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- Sidebar loaded dynamically -->
+    <div id="sidebar"></div>
+
+    <div class="main-content">
+      <!-- Topbar loaded dynamically -->
+      <div class="topbar" id="topbar"></div>
+
+      <div class="page-body sizing-page-body">
+        
+        <!-- Header Banner -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <div>
+            <h4 class="fw-bold text-dark mb-1">Solar & Inverter-Battery Sizing Calculator</h4>
+            <p class="text-muted fs-8 mb-0">Mobile-first sizing tool for sales representatives & technical engineers</p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btnOpenAdvanced">
+              ⚙️ Advanced Settings & Master DB
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 1: SYSTEM TYPE SELECTION -->
+        <div class="step-card p-3">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="step-number-badge">1</span>
+            <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
+          </div>
+
+          <div class="system-type-grid">
+            
+            <!-- On-Grid Solar -->
+            <label class="system-card">
+              <input type="radio" name="radSystemType" value="on-grid">
+              <div class="system-card-title">
+                <span>☀️ On-Grid Solar</span>
+              </div>
+              <div class="text-muted fs-8">Direct grid tie solar generation without battery backup.</div>
+              <div class="system-card-inverter-tag">Inverter: GTI / Grid-Tied</div>
+            </label>
+
+            <!-- Off-Grid Solar -->
+            <label class="system-card active">
+              <input type="radio" name="radSystemType" value="off-grid" checked>
+              <div class="system-card-title">
+                <span>🔋 Off-Grid Solar</span>
+              </div>
+              <div class="text-muted fs-8">Standalone solar with battery storage for off-grid power.</div>
+              <div class="system-card-inverter-tag">Inverter: PCU / Solar PCU</div>
+            </label>
+
+            <!-- Hybrid Solar -->
+            <label class="system-card">
+              <input type="radio" name="radSystemType" value="hybrid">
+              <div class="system-card-title">
+                <span>⚡ Hybrid Solar</span>
+              </div>
+              <div class="text-muted fs-8">Solar + Grid + Battery backup with bi-directional flow.</div>
+              <div class="system-card-inverter-tag">Inverter: Bi-Directional / Hybrid</div>
+            </label>
+
+            <!-- Without Solar -->
+            <label class="system-card">
+              <input type="radio" name="radSystemType" value="without-solar">
+              <div class="system-card-title">
+                <span>🔌 Without Solar</span>
+              </div>
+              <div class="text-muted fs-8">Pure battery backup Home UPS / Digital Inverter.</div>
+              <div class="system-card-inverter-tag">Inverter: Home UPS / Sine Wave</div>
+            </label>
+
+          </div>
+
+          <!-- On-Grid Monthly Bill Helper (Appears only for On-Grid) -->
+          <div id="secOnGridBill" class="mt-3 p-3 bg-light rounded-3 border" style="display:none;">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-6">
+                <label class="form-label fw-bold text-dark fs-8 mb-1">Average Monthly Electricity Bill / Units (Optional)</label>
+                <input type="number" min="0" class="form-control form-control-sm" id="txtMonthlyUnits" 
+                  placeholder="e.g. 450 Units or kWh per month">
+              </div>
+              <div class="col-md-6">
+                <div class="form-check mt-3">
+                  <input class="form-check-input" type="checkbox" id="chkOnGridBattery">
+                  <label class="form-check-label fw-semibold text-dark fs-8" for="chkOnGridBattery">
+                    Enable Optional Battery Backup Configuration for On-Grid System
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: APPLIANCES & CONNECTED LOAD SUMMARY CARD -->
+        <div class="step-card p-3" id="secApplianceSummary">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="step-number-badge">2</span>
+              <div>
+                <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
+                <span class="text-muted fs-8">Summary of connected load, daily energy & power cut backup</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary fw-semibold d-flex align-items-center gap-1 shadow-sm" id="btnOpenApplianceModal" onclick="SizingUI.openApplianceModal()">
+              <span>📝 Configure Appliances & Backup Load</span>
+            </button>
+          </div>
+
+          <!-- Summary Metrics Cards Grid -->
+          <div class="summary-metrics-grid mb-3">
+            <div class="summary-stat-box" onclick="SizingUI.openApplianceModal()">
+              <div class="stat-icon-wrapper bg-primary-subtle text-primary">⚡</div>
+              <div>
+                <div class="stat-label">Total Connected Load</div>
+                <div class="stat-value text-primary" id="lblTotalConnectedLoad">0 W (0.00 kW)</div>
+              </div>
+            </div>
+
+            <div class="summary-stat-box" onclick="SizingUI.openApplianceModal()">
+              <div class="stat-icon-wrapper bg-warning-subtle text-warning">☀️</div>
+              <div>
+                <div class="stat-label">Total Calculated Daily Energy</div>
+                <div class="stat-value text-dark" id="lblTotalCalculatedEnergy">0.00 kWh / day</div>
+              </div>
+            </div>
+
+            <div class="summary-stat-box" id="statBoxBackupLoad" onclick="SizingUI.openApplianceModal()">
+              <div class="stat-icon-wrapper bg-success-subtle text-success">🛡️</div>
+              <div>
+                <div class="stat-label">Power Cut Backup Load</div>
+                <div class="stat-value text-success" id="lblSummaryBackupLoad">0 W (0.00 kW)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Appliances Preview List & Quick Link -->
+          <div class="p-2.5 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap" id="applianceSummaryBadges">
+              <!-- Rendered dynamically -->
+            </div>
+            <a href="javascript:void(0)" class="text-primary fw-semibold fs-8 text-decoration-none" onclick="SizingUI.openApplianceModal()">
+              Edit Configuration ➔
+            </a>
+          </div>
+        </div>
+
+        <!-- STEP 3: BACKUP HOURS -->
+        <div class="step-card p-3" id="secBackupHours">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="step-number-badge">3</span>
+            <h6 class="fw-bold text-dark mb-0 fs-6">How many hours of backup do you need?</h6>
+          </div>
+
+          <div class="hours-pill-group my-2">
+            <button type="button" class="hours-pill" data-hours="2">2 hr</button>
+            <button type="button" class="hours-pill active" data-hours="4">4 hr</button>
+            <button type="button" class="hours-pill" data-hours="6">6 hr</button>
+            <button type="button" class="hours-pill" data-hours="8">8 hr</button>
+            <button type="button" class="hours-pill" data-hours="10">10 hr</button>
+            <button type="button" class="hours-pill" data-hours="custom">Custom</button>
+          </div>
+
+          <div id="customHoursContainer" class="mt-2" style="display:none; max-width: 200px;">
+            <label class="form-label fs-8 text-secondary mb-1">Enter Custom Backup Hours</label>
+            <input type="number" min="0.5" step="0.5" class="form-control form-control-sm" id="txtCustomHours" value="4">
+          </div>
+        </div>
+
+        <!-- HERO CALCULATE BUTTON / STICKY FOOTER -->
+        <div class="sticky-calc-bar my-3">
+          <button type="button" class="btn btn-calculate-hero" id="btnCalculateHero">
+            ⚡ Calculate Recommended System
+          </button>
+        </div>
+
+        <!-- RESULTS CONTAINER -->
+        <div id="resultsContainer" class="mt-4">
+          <!-- Rendered dynamically by sizing-ui.js -->
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLIANCE & BACKUP CONFIGURATION MODAL -->
+  <div class="modal fade" id="applianceConfigModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-light border-bottom py-3">
+          <div>
+            <h5 class="modal-title fw-bold text-dark fs-6 mb-0">⚡ Configure Appliances & Power Cut Load</h5>
+            <p class="text-muted fs-8 mb-0">Set quantities, wattage, daily hours, and power cut backup selection</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 p-md-4">
+          
+          <div class="row g-4">
+            <!-- Left Column: Appliances & Daily Running Hours -->
+            <div class="col-lg-7">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="step-number-badge" style="width:24px; height:24px; font-size:0.75rem;">1</span>
+                  <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Daily Usage Hours</h6>
+                </div>
+                <div class="badge bg-primary fs-8 px-2.5 py-1.5" id="modalConnectedLoadBadge">0 W (0 kW)</div>
+              </div>
+              <p class="text-muted fs-8 mb-3">Adjust wattage, daily hours, and quantity. Energy in brackets updates automatically.</p>
+
+              <!-- Appliance List Container -->
+              <div id="modalApplianceListContainer">
+                <!-- Rendered dynamically by sizing-ui.js -->
+              </div>
+
+              <!-- Heavy Load AC Details (Collapsible/Dynamic) -->
+              <div id="heavyAcSection" class="p-3 bg-light rounded-3 border mt-3" style="display:none;">
+                <h6 class="fw-bold text-primary fs-7 mb-2">❄️ Air Conditioner (AC) Heavy Load Details</h6>
+                <div class="row g-2">
+                  <div class="col-6 col-md-4">
+                    <label class="form-label fs-8 text-secondary mb-1">AC Tonnage</label>
+                    <select class="form-select form-select-sm" id="selAcTon" onchange="SizingUI.updateAcTon(this.value)">
+                      <option value="0.5">0.5 Ton (600 W)</option>
+                      <option value="1">1.0 Ton (1200 W)</option>
+                      <option value="1.5" selected>1.5 Ton (1800 W)</option>
+                      <option value="2">2.0 Ton (2400 W)</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-4">
+                    <label class="form-label fs-8 text-secondary mb-1">Technology</label>
+                    <select class="form-select form-select-sm" id="selAcType" onchange="SizingUI.updateAcType(this.value)">
+                      <option value="inverter" selected>Inverter AC (1.5x Surge)</option>
+                      <option value="non-inverter">Non-Inverter AC (3.0x Surge)</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label fs-8 text-secondary mb-1">Actual AC Watts (Optional)</label>
+                    <input type="number" class="form-control form-control-sm" id="txtAcActualWatts" placeholder="e.g. 1450" onchange="SizingUI.updateAcActualWatts(this.value)">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Heavy Load Water Pump Details -->
+              <div id="heavyPumpSection" class="p-3 bg-light rounded-3 border mt-3" style="display:none;">
+                <h6 class="fw-bold text-primary fs-7 mb-2">🚰 Water Pump Heavy Load Details</h6>
+                <div class="row g-2">
+                  <div class="col-12">
+                    <label class="form-label fs-8 text-secondary mb-1">Pump Motor Rating (HP)</label>
+                    <select class="form-select form-select-sm" id="selPumpHp" onchange="SizingUI.updatePumpHp(this.value)">
+                      <option value="0.5">0.5 HP (373 W)</option>
+                      <option value="1" selected>1.0 HP (746 W)</option>
+                      <option value="1.5">1.5 HP (1119 W)</option>
+                      <option value="2">2.0 HP (1492 W)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add Custom Appliance Form -->
+              <div class="mt-3 border-top pt-3">
+                <label class="form-label fs-8 fw-semibold text-dark mb-1">Add Custom Appliance</label>
+                <div class="row g-2 align-items-center">
+                  <div class="col-5">
+                    <input type="text" class="form-control form-control-sm" id="txtCustomAppName" placeholder="Appliance Name">
+                  </div>
+                  <div class="col-3">
+                    <input type="number" min="1" class="form-control form-control-sm" id="txtCustomAppWatts" placeholder="Watts (W)">
+                  </div>
+                  <div class="col-2">
+                    <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm" id="txtCustomAppHours" placeholder="Hrs" value="4">
+                  </div>
+                  <div class="col-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-semibold" id="btnAddCustomApp" onclick="SizingUI.addCustomAppliance()">+ Add</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Column: During Power Cut, What Should Run? -->
+            <div class="col-lg-5">
+              <div class="p-3 bg-light rounded-3 border h-100 d-flex flex-column" id="modalBackupCard">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="step-number-badge" style="width:24px; height:24px; font-size:0.75rem; background: var(--st-success);">2</span>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">During Power Cut, What Should Run?</h6>
+                  </div>
+                  <div class="badge bg-success fs-8 px-2.5 py-1.5" id="lblTotalBackupLoad">0 W (0 kW)</div>
+                </div>
+                
+                <p class="text-muted fs-8 mb-2">Select from your configured appliances to run during power cut / on battery backup.</p>
+
+                <!-- Quick Action Buttons -->
+                <div class="d-flex flex-wrap gap-1.5 mb-2.5">
+                  <button type="button" class="btn btn-xs btn-outline-secondary fw-semibold" id="btnBackupSelectAll" onclick="SizingUI.selectAllBackup(true)">
+                    Select All
+                  </button>
+                  <button type="button" class="btn btn-xs btn-primary fw-semibold" id="btnBackupSelectEssential" onclick="SizingUI.selectEssentialOnly()">
+                    ⭐ Essential Only (Lights, Fans, TV, Fridge)
+                  </button>
+                  <button type="button" class="btn btn-xs btn-outline-secondary fw-semibold" id="btnBackupDeselectAll" onclick="SizingUI.selectAllBackup(false)">
+                    Clear All
+                  </button>
+                </div>
+
+                <!-- Backup Appliance List Container -->
+                <div id="modalBackupApplianceListContainer" class="bg-white rounded-3 p-2 border flex-grow-1" style="max-height: 420px; overflow-y: auto;">
+                  <!-- Rendered dynamically by sizing-ui.js -->
+                </div>
+
+                <!-- Quick Essential Appliance Add Hint -->
+                <div class="mt-2 pt-2 border-top" id="quickEssentialSection">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                    <span class="text-muted fs-9">Quick Add Essential:</span>
+                    <div class="d-flex gap-1 flex-wrap" id="quickEssentialPills">
+                      <!-- Rendered dynamically -->
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-2.5">
+          <div class="d-flex align-items-center gap-3 fs-8 text-secondary">
+            <span>Connected: <strong class="text-primary" id="modalFooterConnectedLoad">0 W</strong></span>
+            <span>Backup: <strong class="text-success" id="modalFooterBackupLoad">0 W</strong></span>
+            <span>Daily Energy: <strong class="text-dark" id="modalFooterDailyEnergy">0 kWh</strong></span>
+          </div>
+          <div>
+            <button type="button" class="btn btn-sm btn-primary fw-bold px-4" data-bs-dismiss="modal" onclick="SizingUI.applyModalChanges()">
+              ✓ Done & Apply
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADVANCED SETTINGS & MASTER DB MODAL -->
+  <div class="modal fade" id="advancedSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold text-dark fs-6">⚙️ Advanced Sizing Settings & Master Product Databases</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          
+          <!-- Parameters Section -->
+          <h6 class="fw-bold text-primary mb-3">1. Technical Calculation Parameters</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4">
+              <label class="form-label fs-8">Safety Margin %</label>
+              <input type="number" class="form-control form-control-sm" id="txtSafetyMarginPct" value="25">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label fs-8">Inverter Efficiency %</label>
+              <input type="number" class="form-control form-control-sm" id="txtInverterEffPct" value="90">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label fs-8">Lithium DoD %</label>
+              <input type="number" class="form-control form-control-sm" id="txtLithiumDoDPct" value="90">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label fs-8">Lead-Acid DoD %</label>
+              <input type="number" class="form-control form-control-sm" id="txtLeadAcidDoDPct" value="50">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label fs-8">Peak Sun Hours (hrs)</label>
+              <input type="number" step="0.1" class="form-control form-control-sm" id="txtPeakSunHours" value="5.0">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label fs-8">PV System Efficiency %</label>
+              <input type="number" class="form-control form-control-sm" id="txtPvEffPct" value="78">
+            </div>
+          </div>
+
+          <!-- Inverter Master Table -->
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold text-primary mb-0">2. Inverter Master Database</h6>
+          </div>
+          <div class="table-responsive mb-4" style="max-height: 200px;">
+            <table class="table table-sm table-hover border text-nowrap fs-8">
+              <thead class="table-light">
+                <tr>
+                  <th>Brand / Model</th>
+                  <th>Category</th>
+                  <th>kVA / kW</th>
+                  <th>Battery V</th>
+                  <th>IP Rating</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="inverterDbTbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Battery Master Table -->
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold text-primary mb-0">3. Battery Master Database</h6>
+          </div>
+          <div class="table-responsive mb-3" style="max-height: 200px;">
+            <table class="table table-sm table-hover border text-nowrap fs-8">
+              <thead class="table-light">
+                <tr>
+                  <th>Brand / Model</th>
+                  <th>Type</th>
+                  <th>Voltage & Ah</th>
+                  <th>Rating</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="batteryDbTbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="SizingUI.resetAllToDefaults()">
+            🔄 Reset to Defaults
+          </button>
+          <div>
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="SizingUI.saveAdvancedSettings()">
+              Save Parameters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/bootstrap.bundle.min.js" defer></script>
+  <script src="js/ui.js?v=1.0.2" defer></script>
+  <script src="js/sizing-db.js?v=1.0.0" defer></script>
+  <script src="js/sizing-calc.js?v=1.0.0" defer></script>
+  <script src="js/sizing-ui.js?v=1.0.0" defer></script>
+</body>
+</html>
