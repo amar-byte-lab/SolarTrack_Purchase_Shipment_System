@@ -309,6 +309,23 @@
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
 
+.modal-footer-action-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.modal-footer-action-group .btn {
+  height: 32px !important;
+  font-size: 0.8rem !important;
+  border-radius: 6px !important;
+  min-width: 72px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
 /* Backup Appliance Selection Pills */
 .backup-toggle-btn {
   border: 1.5px solid #cbd5e1;
