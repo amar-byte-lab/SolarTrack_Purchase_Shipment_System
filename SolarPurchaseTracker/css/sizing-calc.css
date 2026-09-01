@@ -64,6 +64,92 @@
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
 }
 
+/* Rich Container Dropdown for System Type (Mobile Friendly) */
+#systemTypeDropdownContainer {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
+.custom-dropdown-trigger {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1 !important;
+  transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px !important;
+}
+
+.custom-dropdown-trigger:hover,
+.custom-dropdown-trigger:focus,
+.custom-dropdown-trigger[aria-expanded="true"] {
+  border-color: var(--st-primary) !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+}
+
+.system-dropdown-menu {
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 4px !important;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  z-index: 1050;
+  white-space: normal !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-top: 4px !important;
+}
+
+.system-dropdown-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0 !important;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  padding: 6px 8px !important;
+}
+
+.system-dropdown-item:hover {
+  background: #ffffff;
+  border-color: #cbd5e1 !important;
+  transform: translateY(-1px);
+}
+
+.system-dropdown-item.active {
+  background: #f0f3ff;
+  border-color: var(--st-primary) !important;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.1);
+}
+
+@media (max-width: 576px) {
+  .sizing-page-body {
+    padding-left: 0;
+    padding-right: 0;
+    overflow-x: hidden;
+  }
+  .step-card {
+    padding: 10px 12px !important;
+    border-radius: 10px;
+  }
+  .custom-dropdown-trigger {
+    padding: 5px 8px !important;
+  }
+  .system-dropdown-item {
+    padding: 5px 7px !important;
+  }
+}
+
 .system-card input[type="radio"] {
   position: absolute;
   top: 14px;
@@ -166,55 +252,61 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-/* Appliance Steppers & Rows */
-.appliance-item-card {
-  border: 1px solid #f1f5f9;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-  transition: background 0.15s ease;
+/* Appliance Configuration Table (Compact & Mobile-Optimized) */
+.appliance-config-table {
+  font-size: 0.78rem;
+  width: 100%;
 }
 
-.appliance-item-card:hover {
+.appliance-config-table th {
+  padding: 6px 4px !important;
   background: #f8fafc;
-}
-
-.stepper-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  color: #475569;
   font-weight: 700;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
-.stepper-btn:active {
-  transform: scale(0.95);
-  background: #e2e8f0;
+.appliance-config-table td {
+  padding: 4px 3px !important;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.stepper-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.appliance-config-table tfoot td {
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
 }
 
-.qty-display-input {
-  width: 44px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 0.95rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  height: 34px;
+.appliance-config-table tr.table-primary-subtle {
+  background-color: #f8faff !important;
+}
+
+.appliance-config-table tr.table-primary-subtle:hover {
+  background-color: #f0f4ff !important;
+}
+
+.appliance-config-table tr.opacity-75 {
+  background-color: #fafafa;
+}
+
+.appliance-config-table .form-control-sm,
+.appliance-config-table .form-select-sm {
+  padding: 2px 3px !important;
+  font-size: 0.75rem !important;
+  height: 26px !important;
+  border-radius: 5px;
+  border-color: #cbd5e1;
+  line-height: 1.2;
+}
+
+.appliance-config-table .form-control-sm:focus,
+.appliance-config-table .form-select-sm:focus {
+  border-color: var(--st-primary);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
 
 /* Backup Appliance Selection Pills */

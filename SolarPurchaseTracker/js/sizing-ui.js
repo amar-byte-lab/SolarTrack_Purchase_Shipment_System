@@ -7,18 +7,18 @@
 const SizingUI = (() => {
 
   const COMMON_APPLIANCES = [
-    { id: 'led', name: 'LED Light', watts: 10, defaultQty: 5, defaultHours: 6, defaultBackup: true, icon: '💡' },
-    { id: 'fan', name: 'Fan', watts: 70, defaultQty: 3, defaultHours: 8, defaultBackup: true, icon: '🌀' },
-    { id: 'tv', name: 'TV', watts: 120, defaultQty: 1, defaultHours: 4, defaultBackup: true, icon: '📺' },
-    { id: 'fridge', name: 'Refrigerator', watts: 200, defaultQty: 1, defaultHours: 24, defaultBackup: true, icon: '❄️' },
-    { id: 'comp', name: 'Computer / Laptop', watts: 150, defaultQty: 1, defaultHours: 4, defaultBackup: false, icon: '💻' },
-    { id: 'wm', name: 'Washing Machine', watts: 500, defaultQty: 0, defaultHours: 1, defaultBackup: false, icon: '🧺' },
-    { id: 'geyser', name: 'Geyser', watts: 2000, defaultQty: 0, defaultHours: 1, defaultBackup: false, icon: '🚿' },
-    { id: 'iron', name: 'Iron', watts: 1000, defaultQty: 0, defaultHours: 1, defaultBackup: false, icon: '👔' },
-    { id: 'induction', name: 'Induction Cooker', watts: 2000, defaultQty: 0, defaultHours: 1, defaultBackup: false, icon: '🍳' },
-    { id: 'ac', name: 'Air Conditioner (AC)', watts: 1800, defaultQty: 0, defaultHours: 6, defaultBackup: false, isHeavy: true, icon: '❄️' },
-    { id: 'pump', name: 'Water Pump', watts: 746, defaultQty: 0, defaultHours: 1, defaultBackup: false, isHeavy: true, icon: '🚰' },
-    { id: 'other', name: 'Other Load', watts: 100, defaultQty: 0, defaultHours: 2, defaultBackup: false, icon: '🔌' }
+    { id: 'led', name: 'LED Light', watts: 10, defaultQty: 5, initialQty: 5, defaultHours: 14, icon: '💡', checked: true },
+    { id: 'fan', name: 'Fan', watts: 70, defaultQty: 3, initialQty: 3, defaultHours: 14, icon: '🌀', checked: true },
+    { id: 'tv', name: 'TV', watts: 120, defaultQty: 1, initialQty: 1, defaultHours: 14, icon: '📺', checked: true },
+    { id: 'fridge', name: 'Refrigerator', watts: 200, defaultQty: 1, initialQty: 1, defaultHours: 24, icon: '❄️', checked: true },
+    { id: 'comp', name: 'Computer / Laptop', watts: 150, defaultQty: 0, initialQty: 1, defaultHours: 6, icon: '💻', checked: false },
+    { id: 'wm', name: 'Washing Machine', watts: 500, defaultQty: 0, initialQty: 1, defaultHours: 1, icon: '🧺', checked: false },
+    { id: 'geyser', name: 'Geyser', watts: 2000, defaultQty: 0, initialQty: 1, defaultHours: 1, icon: '🚿', checked: false },
+    { id: 'iron', name: 'Iron', watts: 1000, defaultQty: 0, initialQty: 1, defaultHours: 0.5, icon: '👔', checked: false },
+    { id: 'induction', name: 'Induction Cooker', watts: 2000, defaultQty: 0, initialQty: 1, defaultHours: 2, icon: '🍳', checked: false },
+    { id: 'ac', name: 'Air Conditioner (AC)', watts: 1800, defaultQty: 0, initialQty: 1, defaultHours: 8, isHeavy: true, icon: '❄️', checked: false },
+    { id: 'pump', name: 'Water Pump', watts: 746, defaultQty: 0, initialQty: 1, defaultHours: 1, isHeavy: true, icon: '🚰', checked: false },
+    { id: 'other', name: 'Other Load', watts: 100, defaultQty: 0, initialQty: 1, defaultHours: 2, icon: '🔌', checked: false }
   ];
 
   let state = {
@@ -32,7 +32,6 @@ const SizingUI = (() => {
     pumpConfig: {
       hp: '1'
     },
-    backupHours: 4,
     dailyUsageKwh: '',
     monthlyUnits: '',
     enableOnGridBattery: false,
@@ -41,12 +40,39 @@ const SizingUI = (() => {
     currentResult: null
   };
 
+  const SYSTEM_TYPE_DATA = {
+    'off-grid': {
+      icon: '🔋',
+      title: 'Off-Grid Solar',
+      desc: 'Solar with battery backup for off-grid power.',
+      inverterBadge: 'PCU / Solar PCU'
+    },
+    'on-grid': {
+      icon: '☀️',
+      title: 'On-Grid Solar',
+      desc: 'Direct grid-tie solar (no battery backup).',
+      inverterBadge: 'GTI / Grid-Tied'
+    },
+    'hybrid': {
+      icon: '⚡',
+      title: 'Hybrid Solar',
+      desc: 'Solar + Grid + Battery bi-directional backup.',
+      inverterBadge: 'Bi-Directional / Hybrid'
+    },
+    'without-solar': {
+      icon: '🔌',
+      title: 'Without Solar (Home UPS)',
+      desc: 'Battery backup Home UPS Sine Wave Inverter.',
+      inverterBadge: 'Home UPS / Sine Wave'
+    }
+  };
+
   function init() {
     UI.renderSidebar('sizing-calc.html');
     UI.renderTopbar('Sizing Calculator', 'Solar, Inverter & Battery Capacity Calculator', '');
 
-    bindSystemTypeRadio();
-    bindBackupHoursPills();
+    selectSystemTypeOption(state.systemType);
+
     bindEvents();
 
     renderApplianceSummaryCard();
@@ -55,61 +81,76 @@ const SizingUI = (() => {
 
   /* ---------------- Energy & Formatting Helpers ---------------- */
   function formatEnergy(wh) {
-    if (wh >= 1000) {
-      return `${(wh / 1000).toFixed(2)} kWh`;
-    }
-    return `${Math.round(wh)} Wh`;
+    return `${Math.round(Number(wh) || 0)} Wh`;
   }
 
-  function getItemBracketText(app) {
+  function getItemBracketText(app, withParenthesis = true) {
     const qty = Number(app.defaultQty) || 0;
     const watts = Number(app.watts) || 0;
-    const hours = Number(app.defaultHours) || 1;
-    const totalWh = watts * hours * (qty > 0 ? qty : 1);
-    return `(${formatEnergy(totalWh)})`;
+    const hours = Number(app.defaultHours) || 0;
+    const effectiveQty = app.checked && qty > 0 ? qty : (qty > 0 ? qty : 1);
+    const totalWh = watts * hours * effectiveQty;
+    return withParenthesis ? `(${formatEnergy(totalWh)})` : formatEnergy(totalWh);
   }
 
-  /* ---------------- System Type Handler ---------------- */
-  function bindSystemTypeRadio() {
-    const cards = document.querySelectorAll('.system-card');
-    cards.forEach(card => {
-      card.addEventListener('click', () => {
-        const radio = card.querySelector('input[type="radio"]');
-        if (radio) {
-          radio.checked = true;
-          cards.forEach(c => c.classList.remove('active'));
-          card.classList.add('active');
-          state.systemType = radio.value;
+  /* ---------------- System Type Handler (Rich Dropdown) ---------------- */
+  function selectSystemTypeOption(typeVal) {
+    state.systemType = typeVal;
 
-          updateSystemTypeVisibility();
-          renderApplianceSummaryCard();
-          calculateAndRender();
-        }
-      });
+    const data = SYSTEM_TYPE_DATA[typeVal] || SYSTEM_TYPE_DATA['off-grid'];
+
+    // Update trigger button
+    const iconEl = document.getElementById('selSystemIcon');
+    const titleEl = document.getElementById('selSystemTitle');
+    const descEl = document.getElementById('selSystemDesc');
+    const badgeEl = document.getElementById('badgeInverterType');
+
+    if (iconEl) iconEl.textContent = data.icon;
+    if (titleEl) titleEl.textContent = data.title;
+    if (descEl) descEl.textContent = data.desc;
+    if (badgeEl) badgeEl.textContent = data.inverterBadge;
+
+    // Update item container active status and checkmark
+    const items = document.querySelectorAll('.system-dropdown-item');
+    items.forEach(item => {
+      const isTarget = item.dataset.systemType === typeVal;
+      item.classList.toggle('active', isTarget);
+      const check = item.querySelector('.check-icon');
+      if (check) check.style.display = isTarget ? 'inline' : 'none';
     });
+
+    // Close dropdown
+    const dropBtn = document.getElementById('btnSystemTypeDropdown');
+    if (dropBtn && typeof bootstrap !== 'undefined') {
+      const bsDropdown = bootstrap.Dropdown.getInstance(dropBtn);
+      if (bsDropdown) bsDropdown.hide();
+    }
+
+    updateSystemTypeVisibility();
+    renderApplianceSummaryCard();
+    calculateAndRender();
+  }
+
+  function onSystemTypeChange(typeVal) {
+    selectSystemTypeOption(typeVal);
   }
 
   function updateSystemTypeVisibility() {
     const isGrid = state.systemType === 'on-grid';
-    const backupHoursSection = document.getElementById('secBackupHours');
     const onGridSolarBillSection = document.getElementById('secOnGridBill');
-    const statBoxBackupLoad = document.getElementById('statBoxBackupLoad');
 
-    if (backupHoursSection) backupHoursSection.style.display = isGrid && !state.enableOnGridBattery ? 'none' : 'block';
     if (onGridSolarBillSection) onGridSolarBillSection.style.display = isGrid ? 'block' : 'none';
-    if (statBoxBackupLoad) statBoxBackupLoad.style.display = isGrid && !state.enableOnGridBattery ? 'none' : 'flex';
   }
 
   /* ---------------- Main Page Step 2 Summary Card ---------------- */
   function renderApplianceSummaryCard() {
     let totalConnectedWatts = 0;
     let totalDailyWh = 0;
-    let totalBackupWatts = 0;
     const activeApps = [];
 
     state.appliances.forEach(app => {
-      const qty = Number(app.defaultQty) || 0;
-      if (qty > 0) {
+      if (app.checked && Number(app.defaultQty) > 0) {
+        const qty = Number(app.defaultQty);
         const watts = Number(app.watts) || 0;
         const hours = Number(app.defaultHours) || 1;
         const totalItemW = watts * qty;
@@ -117,10 +158,6 @@ const SizingUI = (() => {
 
         totalConnectedWatts += totalItemW;
         totalDailyWh += itemDailyWh;
-
-        if (app.defaultBackup) {
-          totalBackupWatts += totalItemW;
-        }
 
         activeApps.push(app);
       }
@@ -133,18 +170,13 @@ const SizingUI = (() => {
 
     const lblEnergy = document.getElementById('lblTotalCalculatedEnergy');
     if (lblEnergy) {
-      lblEnergy.textContent = `${(totalDailyWh / 1000).toFixed(2)} kWh / day`;
-    }
-
-    const lblBackup = document.getElementById('lblSummaryBackupLoad');
-    if (lblBackup) {
-      lblBackup.textContent = `${totalBackupWatts} W (${(totalBackupWatts / 1000).toFixed(2)} kW)`;
+      lblEnergy.textContent = `${Math.round(totalDailyWh).toLocaleString()} Wh / day`;
     }
 
     const badgesContainer = document.getElementById('applianceSummaryBadges');
     if (badgesContainer) {
       if (activeApps.length === 0) {
-        badgesContainer.innerHTML = `<span class="text-muted fs-8 fst-italic">No appliances selected. Click "Configure Appliances" to add loads.</span>`;
+        badgesContainer.innerHTML = `<span class="text-muted fs-8 fst-italic">No appliances selected. Click "Configure Appliances" to select loads.</span>`;
       } else {
         badgesContainer.innerHTML = activeApps.map(app => {
           const itemWh = (app.watts || 0) * (app.defaultHours || 1) * (app.defaultQty || 1);
@@ -159,11 +191,9 @@ const SizingUI = (() => {
     }
   }
 
-  /* ---------------- Appliance & Backup Configuration Modal ---------------- */
+  /* ---------------- Appliance Configuration Modal ---------------- */
   function openApplianceModal() {
     renderModalApplianceList();
-    renderModalBackupApplianceList();
-    renderQuickEssentialPills();
     updateModalStats();
 
     const modalEl = document.getElementById('applianceConfigModal');
@@ -176,90 +206,112 @@ const SizingUI = (() => {
   function applyModalChanges() {
     renderApplianceSummaryCard();
     calculateAndRender();
-    UI.toast('Appliance & Backup configuration updated!', 'success');
+    UI.toast('Appliance configuration updated!', 'success');
   }
 
   function renderModalApplianceList() {
-    const container = document.getElementById('modalApplianceListContainer');
-    if (!container) return;
+    const tbody = document.getElementById('modalApplianceTableBody');
+    if (!tbody) return;
 
-    container.innerHTML = state.appliances.map((app, index) => {
+    tbody.innerHTML = state.appliances.map((app, index) => {
       let wattInputHtml = `
-        <div class="d-flex align-items-center gap-1">
-          <span class="text-muted fs-8">Watts:</span>
-          <input type="number" min="1" class="form-control form-control-sm text-end" style="width: 75px;" 
-            value="${app.watts}" 
-            oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
-            onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
-        </div>
+        <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1" style="width: 66px; font-size: 0.75rem; height: 26px;" 
+          value="${app.watts}" 
+          oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
+          onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
       `;
 
       if (app.id === 'ac') {
         const ton = state.acConfig.ton || '1.5';
         wattInputHtml = `
-          <div class="d-flex align-items-center gap-1">
-            <span class="text-muted fs-8">TON:</span>
-            <select class="form-select form-select-sm" style="width: 155px;" onchange="SizingUI.updateAcTon(this.value)">
-              <option value="0.5" ${ton === '0.5' ? 'selected' : ''}>0.5 Ton (600 W)</option>
-              <option value="1" ${ton === '1' ? 'selected' : ''}>1.0 Ton (1200 W)</option>
-              <option value="1.5" ${ton === '1.5' ? 'selected' : ''}>1.5 Ton (1800 W)</option>
-              <option value="2" ${ton === '2' ? 'selected' : ''}>2.0 Ton (2400 W)</option>
-            </select>
-          </div>
+          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center" style="width: 66px; font-size: 0.72rem; height: 26px;" onchange="SizingUI.updateAcTon(this.value)">
+            <option value="0.5" ${ton === '0.5' ? 'selected' : ''}>0.5T</option>
+            <option value="1" ${ton === '1' ? 'selected' : ''}>1.0T</option>
+            <option value="1.5" ${ton === '1.5' ? 'selected' : ''}>1.5T</option>
+            <option value="2" ${ton === '2' ? 'selected' : ''}>2.0T</option>
+          </select>
         `;
       } else if (app.id === 'pump') {
         const hp = state.pumpConfig.hp || '1';
         wattInputHtml = `
-          <div class="d-flex align-items-center gap-1">
-            <span class="text-muted fs-8">HP:</span>
-            <select class="form-select form-select-sm" style="width: 145px;" onchange="SizingUI.updatePumpHp(this.value)">
-              <option value="0.5" ${hp === '0.5' ? 'selected' : ''}>0.5 HP (373 W)</option>
-              <option value="1" ${hp === '1' ? 'selected' : ''}>1.0 HP (746 W)</option>
-              <option value="1.5" ${hp === '1.5' ? 'selected' : ''}>1.5 HP (1119 W)</option>
-              <option value="2" ${hp === '2' ? 'selected' : ''}>2.0 HP (1492 W)</option>
-            </select>
-          </div>
+          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center" style="width: 66px; font-size: 0.72rem; height: 26px;" onchange="SizingUI.updatePumpHp(this.value)">
+            <option value="0.5" ${hp === '0.5' ? 'selected' : ''}>0.5HP</option>
+            <option value="1" ${hp === '1' ? 'selected' : ''}>1.0HP</option>
+            <option value="1.5" ${hp === '1.5' ? 'selected' : ''}>1.5HP</option>
+            <option value="2" ${hp === '2' ? 'selected' : ''}>2.0HP</option>
+          </select>
         `;
       }
 
       const hoursHtml = `
-        <div class="d-flex align-items-center gap-1" title="Daily running time in hours (editable)">
-          <span class="text-muted fs-8">Time:</span>
-          <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-end" style="width: 60px;" 
-            value="${app.defaultHours || 4}" 
-            oninput="SizingUI.updateApplianceHours(${index}, this.value)"
-            onchange="SizingUI.updateApplianceHours(${index}, this.value)">
-          <span class="text-muted fs-8">hrs</span>
-          <span class="calc-energy-bracket fw-bold text-primary fs-8 ms-1" id="bracketEnergy_${index}" title="Calculated Daily Energy for this item">
-            ${getItemBracketText(app)}
-          </span>
-        </div>
+        <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fw-semibold mx-auto p-1" style="width: 44px; font-size: 0.75rem; height: 26px;" 
+          value="${app.defaultHours || 4}" 
+          oninput="SizingUI.updateApplianceHours(${index}, this.value)"
+          onchange="SizingUI.updateApplianceHours(${index}, this.value)">
       `;
 
+      const qtyHtml = `
+        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold mx-auto p-1" style="width: 38px; font-size: 0.75rem; height: 26px;" 
+          value="${app.defaultQty}" 
+          oninput="SizingUI.setQty(${index}, this.value)"
+          onchange="SizingUI.setQty(${index}, this.value)">
+      `;
+
+      const isChecked = !!app.checked;
+
       return `
-        <div class="appliance-item-card d-flex align-items-center justify-content-between flex-wrap gap-2 ${app.defaultQty > 0 ? 'border-primary-subtle bg-light-subtle' : ''}">
-          <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width: 150px;">
-            <span class="fs-7">${app.icon || '⚡'}</span>
-            <span class="fw-semibold text-dark fs-7">${app.name}</span>
-            ${app.isHeavy ? `<span class="badge bg-warning text-dark fs-9">Heavy Load</span>` : ''}
-          </div>
-
-          <div class="d-flex align-items-center gap-2 flex-wrap">
+        <tr class="${isChecked ? 'table-primary-subtle' : 'opacity-75 bg-light-subtle'}" id="rowApp_${index}">
+          <!-- Checkbox -->
+          <td class="text-center p-1" style="width: 28px;">
+            <input class="form-check-input mt-0" type="checkbox" id="chkApp_${index}" ${isChecked ? 'checked' : ''} 
+              onchange="SizingUI.toggleApplianceChecked(${index}, this.checked)" style="width: 15px; height: 15px; cursor: pointer;">
+          </td>
+          <!-- Appliance Name + Superscript Energy (strictly within appliance cell boundary) -->
+          <td class="p-1" style="max-width: 145px; overflow: hidden;">
+            <label class="form-check-label d-flex align-items-center justify-content-between gap-1 mb-0 w-100" for="chkApp_${index}" style="cursor: pointer;" title="${app.name}">
+              <span class="d-inline-flex align-items-center gap-1 text-truncate" style="min-width: 0;">
+                <span class="fs-7 flex-shrink-0">${app.icon || '⚡'}</span>
+                <span class="fw-semibold ${isChecked ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
+              </span>
+              <sup class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill py-0 px-1 fw-bold flex-shrink-0 align-self-start" id="bracketEnergy_${index}" style="font-size: 0.62rem; line-height: 1.1; margin-top: 1px;">
+                ${getItemBracketText(app, false)}
+              </sup>
+            </label>
+          </td>
+          <!-- Qty -->
+          <td class="text-center p-1" style="width: 44px;">
+            ${qtyHtml}
+          </td>
+          <!-- Watt (6-digit visible) -->
+          <td class="text-center p-1" style="width: 74px;">
             ${wattInputHtml}
+          </td>
+          <!-- Time -->
+          <td class="text-center p-1" style="width: 68px;">
             ${hoursHtml}
-
-            <div class="d-flex align-items-center gap-1">
-              <button type="button" class="stepper-btn" onclick="SizingUI.changeQty(${index}, -1)">-</button>
-              <input type="number" min="0" class="qty-display-input" value="${app.defaultQty}" 
-                onchange="SizingUI.setQty(${index}, this.value)">
-              <button type="button" class="stepper-btn" onclick="SizingUI.changeQty(${index}, 1)">+</button>
-            </div>
-          </div>
-        </div>
+          </td>
+        </tr>
       `;
     }).join('');
 
     renderHeavyLoadOptions();
+  }
+
+  function toggleApplianceChecked(index, isChecked) {
+    const app = state.appliances[index];
+    if (!app) return;
+
+    app.checked = isChecked;
+    if (isChecked) {
+      if ((Number(app.defaultQty) || 0) <= 0) {
+        app.defaultQty = app.initialQty || 1;
+      }
+    }
+
+    renderModalApplianceList();
+    updateModalStats();
+    renderApplianceSummaryCard();
+    calculateAndRender();
   }
 
   function updateItemBracketDom(index) {
@@ -267,7 +319,7 @@ const SizingUI = (() => {
     if (!app) return;
     const el = document.getElementById(`bracketEnergy_${index}`);
     if (el) {
-      el.textContent = getItemBracketText(app);
+      el.textContent = getItemBracketText(app, false);
       el.title = `Daily Energy Calculation: ${app.watts}W × ${app.defaultHours}h ${app.defaultQty > 1 ? '× ' + app.defaultQty + ' qty' : ''}`;
     }
   }
@@ -280,7 +332,7 @@ const SizingUI = (() => {
     const pumpSec = document.getElementById('heavyPumpSection');
 
     if (acSec) {
-      if (acApp && acApp.defaultQty > 0) {
+      if (acApp && acApp.checked && acApp.defaultQty > 0) {
         acSec.style.display = 'block';
         if (!state.acConfig.actualWatts) {
           const tonWatts = { '0.5': 600, '1': 1200, '1.5': 1800, '2': 2400 }[state.acConfig.ton] || 1800;
@@ -292,7 +344,7 @@ const SizingUI = (() => {
     }
 
     if (pumpSec) {
-      if (pumpApp && pumpApp.defaultQty > 0) {
+      if (pumpApp && pumpApp.checked && pumpApp.defaultQty > 0) {
         pumpSec.style.display = 'block';
         const hpWatts = { '0.5': 373, '1': 746, '1.5': 1119, '2': 1492 }[state.pumpConfig.hp] || 746;
         pumpApp.watts = hpWatts;
@@ -302,101 +354,18 @@ const SizingUI = (() => {
     }
   }
 
-  function renderModalBackupApplianceList() {
-    const container = document.getElementById('modalBackupApplianceListContainer');
-    if (!container) return;
-
-    const activeApps = state.appliances.filter(a => (Number(a.defaultQty) || 0) > 0);
-
-    if (activeApps.length === 0) {
-      container.innerHTML = `
-        <div class="text-center text-muted p-4">
-          <div class="fs-4 mb-2">⚡</div>
-          <p class="fs-8 fw-semibold mb-1">No active appliances configured yet.</p>
-          <p class="fs-9 text-muted mb-0">Increase quantities of appliances on the left to include them in battery backup.</p>
-        </div>
-      `;
-      updateModalStats();
-      return;
-    }
-
-    container.innerHTML = activeApps.map(app => {
-      const totalItemW = app.watts * app.defaultQty;
-      const totalDailyWh = totalItemW * (app.defaultHours || 1);
-      return `
-        <div class="d-flex align-items-center justify-content-between p-2 mb-1.5 rounded-2 border ${app.defaultBackup ? 'bg-success-subtle border-success-subtle' : 'bg-light border-light-subtle'}">
-          <div class="d-flex align-items-center gap-2">
-            <span class="fs-7">${app.icon || '⚡'}</span>
-            <div>
-              <div class="fw-semibold text-dark fs-8">${app.name}</div>
-              <div class="text-muted fs-9">${app.watts}W × ${app.defaultQty} = <strong>${totalItemW}W</strong> • <span class="text-primary font-monospace">(${formatEnergy(totalDailyWh)})</span></div>
-            </div>
-          </div>
-          <button type="button" class="backup-toggle-btn ${app.defaultBackup ? 'active' : ''}"
-            onclick="SizingUI.toggleBackupAppliance('${app.id}')">
-            ${app.defaultBackup ? '✓ In Backup' : '+ Backup'}
-          </button>
-        </div>
-      `;
-    }).join('');
-
-    updateModalStats();
-  }
-
-  function renderQuickEssentialPills() {
-    const container = document.getElementById('quickEssentialPills');
-    if (!container) return;
-
-    const essentials = [
-      { id: 'led', label: '+ LED Lights (5)', defaultQty: 5 },
-      { id: 'fan', label: '+ Fans (3)', defaultQty: 3 },
-      { id: 'tv', label: '+ TV (1)', defaultQty: 1 },
-      { id: 'fridge', label: '+ Fridge (1)', defaultQty: 1 }
-    ];
-
-    container.innerHTML = essentials.map(item => {
-      const app = state.appliances.find(a => a.id === item.id);
-      const isAlreadyActive = app && app.defaultQty > 0;
-      return `
-        <button type="button" class="btn btn-2xs ${isAlreadyActive ? 'btn-light border text-muted disabled' : 'btn-outline-primary fw-semibold'}"
-          onclick="SizingUI.quickAddEssential('${item.id}', ${item.defaultQty})">
-          ${item.label}
-        </button>
-      `;
-    }).join('');
-  }
-
-  function quickAddEssential(id, defaultQty) {
-    const app = state.appliances.find(a => a.id === id);
-    if (app) {
-      app.defaultQty = defaultQty || 1;
-      app.defaultBackup = true;
-      renderModalApplianceList();
-      renderModalBackupApplianceList();
-      renderQuickEssentialPills();
-      updateModalStats();
-      renderApplianceSummaryCard();
-      calculateAndRender();
-      UI.toast(`Added ${app.name} × ${app.defaultQty} to active load & backup!`, 'info');
-    }
-  }
-
   function updateModalStats() {
     let totalConnectedWatts = 0;
     let totalDailyWh = 0;
-    let totalBackupWatts = 0;
 
     state.appliances.forEach(app => {
-      const qty = Number(app.defaultQty) || 0;
-      if (qty > 0) {
+      if (app.checked && Number(app.defaultQty) > 0) {
+        const qty = Number(app.defaultQty);
         const watts = Number(app.watts) || 0;
         const hours = Number(app.defaultHours) || 1;
         const totalW = watts * qty;
         totalConnectedWatts += totalW;
         totalDailyWh += totalW * hours;
-        if (app.defaultBackup) {
-          totalBackupWatts += totalW;
-        }
       }
     });
 
@@ -405,100 +374,57 @@ const SizingUI = (() => {
       modalConnectedBadge.textContent = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
     }
 
-    const modalBackupBadge = document.getElementById('lblTotalBackupLoad');
-    if (modalBackupBadge) {
-      modalBackupBadge.textContent = `${totalBackupWatts} W (${(totalBackupWatts / 1000).toFixed(2)} kW)`;
-    }
-
     const footConnected = document.getElementById('modalFooterConnectedLoad');
     if (footConnected) footConnected.textContent = `${totalConnectedWatts} W`;
 
-    const footBackup = document.getElementById('modalFooterBackupLoad');
-    if (footBackup) footBackup.textContent = `${totalBackupWatts} W`;
-
     const footEnergy = document.getElementById('modalFooterDailyEnergy');
-    if (footEnergy) footEnergy.textContent = `${(totalDailyWh / 1000).toFixed(2)} kWh/day`;
-  }
-
-  /* ---------------- Backup Load Selector Actions ---------------- */
-  function toggleBackupAppliance(id) {
-    const app = state.appliances.find(a => a.id === id);
-    if (app) {
-      app.defaultBackup = !app.defaultBackup;
-      renderModalBackupApplianceList();
-      renderApplianceSummaryCard();
-      calculateAndRender();
-    }
-  }
-
-  function selectAllBackup(enable) {
-    state.appliances.forEach(a => {
-      if (a.defaultQty > 0) {
-        a.defaultBackup = !!enable;
-      }
-    });
-    renderModalBackupApplianceList();
-    renderApplianceSummaryCard();
-    calculateAndRender();
-  }
-
-  function selectEssentialOnly() {
-    state.appliances.forEach(a => {
-      if (['led', 'fan', 'tv', 'fridge'].includes(a.id)) {
-        if (a.defaultQty === 0) {
-          // auto initialize essential if all were 0
-          if (a.id === 'led') a.defaultQty = 5;
-          if (a.id === 'fan') a.defaultQty = 3;
-          if (a.id === 'tv') a.defaultQty = 1;
-          if (a.id === 'fridge') a.defaultQty = 1;
-        }
-        a.defaultBackup = true;
-      } else {
-        a.defaultBackup = false;
-      }
-    });
-
-    renderModalApplianceList();
-    renderModalBackupApplianceList();
-    renderQuickEssentialPills();
-    renderApplianceSummaryCard();
-    calculateAndRender();
-    UI.toast('Selected Essential Appliances for Backup (Lights, Fans, TV, Fridge)', 'success');
+    if (footEnergy) footEnergy.textContent = `${Math.round(totalDailyWh).toLocaleString()} Wh/day`;
   }
 
   /* ---------------- Appliance Actions & Value Updates ---------------- */
   function changeQty(index, delta) {
     if (!state.appliances[index]) return;
-    let newQty = (Number(state.appliances[index].defaultQty) || 0) + delta;
-    if (newQty < 0) newQty = 0;
-    state.appliances[index].defaultQty = newQty;
-    if (newQty > 0 && state.appliances[index].defaultBackup === undefined) {
-      state.appliances[index].defaultBackup = true;
+    const app = state.appliances[index];
+    let newQty = (Number(app.defaultQty) || 0) + delta;
+    if (newQty <= 0) {
+      newQty = 0;
+      app.checked = false;
+    } else {
+      app.checked = true;
     }
+    app.defaultQty = newQty;
+
     renderModalApplianceList();
-    renderModalBackupApplianceList();
-    renderQuickEssentialPills();
+    updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
   }
 
   function setQty(index, val) {
     if (!state.appliances[index]) return;
-    let newQty = Math.max(0, parseInt(val, 10) || 0);
-    state.appliances[index].defaultQty = newQty;
-    if (newQty > 0 && state.appliances[index].defaultBackup === undefined) {
-      state.appliances[index].defaultBackup = true;
+    const app = state.appliances[index];
+    const newQty = isNaN(parseInt(val, 10)) ? 0 : Math.max(0, parseInt(val, 10));
+    app.defaultQty = newQty;
+    app.checked = newQty > 0;
+
+    const chk = document.getElementById(`chkApp_${index}`);
+    if (chk) chk.checked = app.checked;
+
+    const row = document.getElementById(`rowApp_${index}`);
+    if (row) {
+      row.className = app.checked ? 'table-primary-subtle' : 'opacity-75 bg-light-subtle';
     }
-    renderModalApplianceList();
-    renderModalBackupApplianceList();
-    renderQuickEssentialPills();
+
+    updateItemBracketDom(index);
+    updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
   }
 
   function updateApplianceWatt(index, val) {
     if (!state.appliances[index]) return;
-    state.appliances[index].watts = Math.max(1, parseInt(val, 10) || 1);
+    const watts = isNaN(parseInt(val, 10)) ? 0 : Math.max(0, parseInt(val, 10));
+    state.appliances[index].watts = watts;
     updateItemBracketDom(index);
     updateModalStats();
     renderApplianceSummaryCard();
@@ -507,7 +433,7 @@ const SizingUI = (() => {
 
   function updateApplianceHours(index, val) {
     if (!state.appliances[index]) return;
-    const hours = Math.max(0.1, parseFloat(val) || 1);
+    const hours = isNaN(parseFloat(val)) ? 0 : Math.max(0, parseFloat(val));
     state.appliances[index].defaultHours = hours;
 
     const app = state.appliances[index];
@@ -537,7 +463,6 @@ const SizingUI = (() => {
     }
     const selAcTonEl = document.getElementById('selAcTon');
     if (selAcTonEl) selAcTonEl.value = tonVal;
-    renderModalBackupApplianceList();
     updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -556,7 +481,6 @@ const SizingUI = (() => {
       const acIndex = state.appliances.findIndex(a => a.id === 'ac');
       if (acIndex !== -1) updateItemBracketDom(acIndex);
     }
-    renderModalBackupApplianceList();
     updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -573,7 +497,6 @@ const SizingUI = (() => {
     }
     const selPumpHpEl = document.getElementById('selPumpHp');
     if (selPumpHpEl) selPumpHpEl.value = hpVal;
-    renderModalBackupApplianceList();
     updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -583,10 +506,12 @@ const SizingUI = (() => {
     const nameInput = document.getElementById('txtCustomAppName');
     const wattsInput = document.getElementById('txtCustomAppWatts');
     const hoursInput = document.getElementById('txtCustomAppHours');
+    const qtyInput = document.getElementById('txtCustomAppQty');
 
     const name = nameInput ? nameInput.value.trim() : '';
     const watts = parseInt(wattsInput ? wattsInput.value : 100, 10) || 100;
     const hours = parseFloat(hoursInput ? hoursInput.value : 4) || 4;
+    const qty = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
 
     if (!name) {
       UI.toast('Please enter appliance name', 'warning');
@@ -598,50 +523,66 @@ const SizingUI = (() => {
       id: `custom_${state.customAppliancesCount}`,
       name,
       watts,
-      defaultQty: 1,
+      defaultQty: qty,
+      initialQty: qty,
       defaultHours: hours,
-      defaultBackup: true,
-      icon: '⚙️'
+      icon: '⚙️',
+      checked: true
     });
 
     if (nameInput) nameInput.value = '';
     if (wattsInput) wattsInput.value = '';
+    if (qtyInput) qtyInput.value = '1';
 
     renderModalApplianceList();
-    renderModalBackupApplianceList();
     renderApplianceSummaryCard();
     calculateAndRender();
-    UI.toast(`Added custom appliance: ${name} (${watts}W)`, 'success');
+    UI.toast(`Added custom appliance: ${name} (${watts}W × ${qty})`, 'success');
   }
 
-  /* ---------------- Backup Hours Pills ---------------- */
-  function bindBackupHoursPills() {
-    const pills = document.querySelectorAll('.hours-pill');
-    pills.forEach(pill => {
-      pill.addEventListener('click', () => {
-        pills.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
+  function resetAppliancesToDefault() {
+    state.appliances = JSON.parse(JSON.stringify(COMMON_APPLIANCES));
+    state.acConfig = {
+      ton: '1.5',
+      acType: 'inverter',
+      actualWatts: ''
+    };
+    state.pumpConfig = {
+      hp: '1'
+    };
+    state.customAppliancesCount = 0;
 
-        const hrs = pill.dataset.hours;
-        if (hrs === 'custom') {
-          document.getElementById('customHoursContainer').style.display = 'block';
-          const customVal = Number(document.getElementById('txtCustomHours').value) || 4;
-          state.backupHours = customVal;
-        } else {
-          document.getElementById('customHoursContainer').style.display = 'none';
-          state.backupHours = Number(hrs);
-        }
-        calculateAndRender();
-      });
-    });
+    const txtCustomName = document.getElementById('txtCustomAppName');
+    if (txtCustomName) txtCustomName.value = '';
+    const txtCustomWatts = document.getElementById('txtCustomAppWatts');
+    if (txtCustomWatts) txtCustomWatts.value = '';
+    const txtCustomQty = document.getElementById('txtCustomAppQty');
+    if (txtCustomQty) txtCustomQty.value = '1';
+    const txtCustomHours = document.getElementById('txtCustomAppHours');
+    if (txtCustomHours) txtCustomHours.value = '4';
+
+    const selAcTonEl = document.getElementById('selAcTon');
+    if (selAcTonEl) selAcTonEl.value = '1.5';
+    const selAcTypeEl = document.getElementById('selAcType');
+    if (selAcTypeEl) selAcTypeEl.value = 'inverter';
+    const txtAcActualWattsEl = document.getElementById('txtAcActualWatts');
+    if (txtAcActualWattsEl) txtAcActualWattsEl.value = '';
+    const selPumpHpEl = document.getElementById('selPumpHp');
+    if (selPumpHpEl) selPumpHpEl.value = '1';
+
+    renderModalApplianceList();
+    updateModalStats();
+    renderApplianceSummaryCard();
+    calculateAndRender();
+    UI.toast('Appliances reset to default values', 'info');
   }
 
   /* ---------------- Calculation & Results Renderer ---------------- */
   function calculateAndRender() {
+    const activeAppliances = state.appliances.filter(a => a.checked && (Number(a.defaultQty) || 0) > 0);
     const result = SizingCalc.calculateSystem({
       systemType: state.systemType,
-      appliances: state.appliances,
-      backupHours: state.backupHours,
+      appliances: activeAppliances,
       monthlyUnits: Number(state.monthlyUnits) || 0,
       dailyUsageKwh: Number(state.dailyUsageKwh) || 0,
       enableOnGridBattery: state.enableOnGridBattery
@@ -720,8 +661,7 @@ const SizingUI = (() => {
             </div>
 
             <div class="d-flex flex-wrap gap-1">
-              <span class="spec-pill">Backup Energy: ${(bat.backupEnergyWh / 1000).toFixed(1)} kWh</span>
-              <span class="spec-pill">Backup Time: ${res.backupHours} Hours</span>
+              <span class="spec-pill">Daily Storage Req: ${formatEnergy(bat.backupEnergyWh)}</span>
               <span class="spec-pill">Peak Discharge Req: ${bat.maxDischargeCurrentA}A</span>
               <span class="spec-pill">Discharge Check: ${bat.dischargeCheckOk ? '✅ PASSED' : '⚠️ CHECK CURRENT'}</span>
             </div>
@@ -765,7 +705,7 @@ const SizingUI = (() => {
             </div>
 
             <div class="d-flex flex-wrap gap-1">
-              <span class="spec-pill">Daily Consumption: ${sol.dailyKwh} kWh/day</span>
+              <span class="spec-pill">Daily Consumption: ${formatEnergy(sol.dailyKwh * 1000)}/day</span>
               <span class="spec-pill">Est. Monthly Generation: ${Math.round(sol.estDailyGenKwh * 30)} Units</span>
             </div>
           </div>
@@ -788,7 +728,7 @@ const SizingUI = (() => {
             <li><strong>⚡ Inverter:</strong> ${inv.kVA} kVA (${inv.kW} kW) ${res.inverterCategory} (${inv.phase}, ${inv.ipRating})</li>
             ${res.battery ? `<li><strong>🔋 Battery:</strong> ${res.battery.systemVoltage}V ${res.battery.totalAh}Ah (${res.battery.totalInstalledKwh} kWh) — ${res.battery.configurationText}</li>` : `<li><strong>🔋 Battery:</strong> Not Required</li>`}
             ${res.solar ? `<li><strong>☀️ Solar:</strong> ${res.solar.recommendedKwp} kWp (${res.solar.panelSpec})</li>` : ''}
-            <li><strong>📊 Running Load:</strong> Connected: ${res.connectedLoadW}W | Backup: ${res.backupLoadW}W for ${res.backupHours} hrs</li>
+            <li><strong>📊 Connected Load:</strong> ${res.connectedLoadW}W | <strong>Daily Energy:</strong> ${formatEnergy(res.estimatedDailyKwh * 1000)}/day</li>
           </ul>
         </div>
       </div>
@@ -848,9 +788,9 @@ const SizingUI = (() => {
                     <td>Sum of all selected appliance operating wattages.</td>
                   </tr>
                   <tr>
-                    <td class="fw-semibold">Backup Load</td>
-                    <td>${res.backupLoadW} W</td>
-                    <td>Selected appliances operating during power outage.</td>
+                    <td class="fw-semibold">Daily Energy Demand</td>
+                    <td>${formatEnergy(res.estimatedDailyKwh * 1000)} / day</td>
+                    <td>Sum of daily energy consumption for all active appliances (Watts × Hours × Qty).</td>
                   </tr>
                   <tr>
                     <td class="fw-semibold">Safety Margin (${res.safetyMarginPct}%)</td>
@@ -871,7 +811,7 @@ const SizingUI = (() => {
                     <tr>
                       <td class="fw-semibold">Required Battery Wh</td>
                       <td>${res.battery.requiredBatteryWh} Wh</td>
-                      <td>(${res.backupLoadW}W × ${res.backupHours}h) ÷ (${cd.inverterEfficiencyPct}% Eff × ${res.battery.batteryType.includes('Lithium') ? cd.lithiumDoDPct : cd.leadAcidDoDPct}% DoD)</td>
+                      <td>Daily Energy (${formatEnergy(res.battery.backupEnergyWh)}) ÷ (${cd.inverterEfficiencyPct}% Eff × ${res.battery.batteryType.includes('Lithium') ? cd.lithiumDoDPct : cd.leadAcidDoDPct}% DoD)</td>
                     </tr>
                     <tr>
                       <td class="fw-semibold">Required Battery Ah</td>
@@ -913,7 +853,7 @@ const SizingUI = (() => {
 ${res.battery ? `🔋 Recommended Battery: ${res.battery.systemVoltage}V ${res.battery.totalAh}Ah (${res.battery.totalInstalledKwh} kWh)
    • Configuration: ${res.battery.configurationText}
    • Model: ${res.battery.selectedBrand} ${res.battery.selectedModel}
-   • Backup Time: ${res.backupHours} Hours for ${res.backupLoadW}W load
+   • Daily Energy Storage: ${formatEnergy(res.battery.backupEnergyWh)} for ${res.connectedLoadW}W load
 ` : '🔋 Battery: Not Required\n'}
 ${res.solar ? `☀️ Recommended Solar PV: ${res.solar.recommendedKwp} kWp
    • Solar Modules: ${res.solar.panelSpec}
@@ -949,15 +889,6 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     if (txtMonthlyUnits) {
       txtMonthlyUnits.addEventListener('input', (e) => {
         state.monthlyUnits = e.target.value;
-        calculateAndRender();
-      });
-    }
-
-    // Custom hours input
-    const txtCustomHours = document.getElementById('txtCustomHours');
-    if (txtCustomHours) {
-      txtCustomHours.addEventListener('input', (e) => {
-        state.backupHours = Number(e.target.value) || 4;
         calculateAndRender();
       });
     }
@@ -1073,8 +1004,11 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
 
   return {
     init,
+    selectSystemTypeOption,
+    onSystemTypeChange,
     openApplianceModal,
     applyModalChanges,
+    toggleApplianceChecked,
     changeQty,
     setQty,
     updateApplianceWatt,
@@ -1084,10 +1018,7 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     updateAcActualWatts,
     updatePumpHp,
     addCustomAppliance,
-    toggleBackupAppliance,
-    selectAllBackup,
-    selectEssentialOnly,
-    quickAddEssential,
+    resetAppliancesToDefault,
     copySummary,
     saveAdvancedSettings,
     deleteInverterItem,

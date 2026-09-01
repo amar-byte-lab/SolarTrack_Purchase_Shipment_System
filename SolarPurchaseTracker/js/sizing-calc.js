@@ -60,7 +60,8 @@ const SizingCalc = (() => {
     const sanitizedAppliances = [];
 
     rawAppliances.forEach(app => {
-      const qty = Math.max(0, Math.floor(Number(app.qty) || 0));
+      if (app.checked === false || app.isSelected === false) return;
+      const qty = Math.max(0, Math.floor(Number(app.qty !== undefined ? app.qty : app.defaultQty) || 0));
       if (qty <= 0) return;
 
       let watts = Math.max(0, Number(app.watts) || 0);
@@ -154,9 +155,11 @@ const SizingCalc = (() => {
     let batteryResult = null;
     if (requiresBattery) {
       const batteryType = params.preferredBatteryType || 'lithium';
+      const dailyEnergyWh = Math.round(estimatedDailyKwh * 1000);
       batteryResult = selectBattery({
+        dailyEnergyWh,
         backupLoadW: backupLoadW > 0 ? backupLoadW : connectedLoadW,
-        backupHours,
+        backupHours: backupHours || 4,
         inverterBatteryVoltage: inverterMatch.batteryVoltage,
         inverterMaxDischargeA: inverterMatch.maxBatteryDischargeCurrent,
         inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
@@ -297,6 +300,7 @@ const SizingCalc = (() => {
    * Calculate Battery Sizing & Configuration
    */
   function selectBattery({
+    dailyEnergyWh,
     backupLoadW,
     backupHours,
     inverterBatteryVoltage,
@@ -308,11 +312,11 @@ const SizingCalc = (() => {
     batteryList,
     peakSurgeW
   }) {
-    const backupEnergyWh = backupLoadW * backupHours;
+    const backupEnergyWh = (dailyEnergyWh > 0) ? dailyEnergyWh : (backupLoadW * (backupHours || 4));
     const eff = (inverterEfficiencyPct || 90) / 100;
     const dod = (batteryType === 'lithium' ? (lithiumDoDPct || 90) : (leadAcidDoDPct || 50)) / 100;
 
-    // Nominal Required Energy (Wh) = Backup Energy ÷ (Inverter Efficiency × Usable DoD)
+    // Nominal Required Energy (Wh) = Daily Energy ÷ (Inverter Efficiency × Usable DoD)
     const requiredBatteryWh = Math.round(backupEnergyWh / (eff * dod));
 
     // Recommend System Battery Voltage
