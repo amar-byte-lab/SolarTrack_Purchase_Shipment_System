@@ -38,7 +38,7 @@
         <div class="row g-3 mb-3 align-items-stretch">
           
           <!-- STEP 1: SYSTEM TYPE SELECTION (RICH CONTAINER DROPDOWN) -->
-          <div class="col-lg-6">
+          <div class="col-lg-6" id="colStep1Wrapper">
             <div class="step-card p-3 h-100 d-flex flex-column justify-content-between mb-0" id="secSystemType">
               <div>
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
@@ -49,9 +49,6 @@
                       <span class="text-muted fs-8" id="lblSystemTypeSubtext">System architecture</span>
                     </div>
                   </div>
-                  <span class="badge bg-primary-subtle text-primary fw-bold fs-8 px-2.5 py-1" id="badgeInverterType">
-                    Inverter: PCU / Solar PCU
-                  </span>
                 </div>
 
                 <!-- Custom Rich Dropdown Trigger & Menu -->
@@ -149,16 +146,23 @@
               <div id="secOnGridBill" class="mt-2.5 p-2.5 bg-light rounded-3 border" style="display:none;">
                 <div class="row g-2 align-items-center">
                   <div class="col-12">
-                    <label class="form-label fw-bold text-dark fs-8 mb-1">Average Monthly Bill / Units (Optional)</label>
+                    <label class="form-label fw-bold text-dark fs-8 mb-1">Average Monthly Billing Units</label>
                     <input type="number" min="0" class="form-control form-control-sm" id="txtMonthlyUnits" 
                       placeholder="e.g. 450 Units per month">
                   </div>
                   <div class="col-12">
-                    <div class="form-check mt-1">
-                      <input class="form-check-input" type="checkbox" id="chkOnGridBattery">
-                      <label class="form-check-label fw-semibold text-dark fs-8" for="chkOnGridBattery">
-                        Enable Optional Battery Backup for On-Grid
-                      </label>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-1">
+                      <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="chkOnGridBattery" style="cursor: pointer;">
+                        <label class="form-check-label fw-semibold text-dark fs-8" for="chkOnGridBattery" style="cursor: pointer;">
+                          Enable Battery backup for On-Grid
+                        </label>
+                      </div>
+                      <div id="secOnGridBackupHoursWrapper" class="d-flex align-items-center gap-1" style="display:none !important;">
+                        <label class="fs-8 fw-semibold text-secondary mb-0 text-nowrap" for="txtOnGridBackupHours">Backup:</label>
+                        <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold p-1" id="txtOnGridBackupHours" title="Backup Hours" style="width: 48px; height: 26px; font-size: 0.78rem;">
+                        <span class="fs-8 text-muted fw-semibold">Hrs</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -167,7 +171,7 @@
           </div>
 
           <!-- STEP 2: APPLIANCES & CONNECTED LOAD SUMMARY CARD -->
-          <div class="col-lg-6">
+          <div class="col-lg-6" id="colStep2Wrapper">
             <div class="step-card p-3 h-100 d-flex flex-column justify-content-between mb-0" id="secApplianceSummary">
               <div>
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5">
@@ -181,8 +185,8 @@
                 </div>
 
                 <!-- Summary Metrics Cards Grid -->
-                <div class="summary-metrics-grid mb-2.5">
-                  <div class="summary-stat-box" onclick="SizingUI.openApplianceModal()">
+                <div class="summary-metrics-grid mb-2.5" id="summaryMetricsGrid">
+                  <div class="summary-stat-box" id="boxTotalConnectedLoad" onclick="SizingUI.openApplianceModal()">
                     <div class="stat-icon-wrapper bg-primary-subtle text-primary">⚡</div>
                     <div>
                       <div class="stat-label">Total Connected Load</div>
@@ -190,7 +194,7 @@
                     </div>
                   </div>
 
-                  <div class="summary-stat-box" onclick="SizingUI.openApplianceModal()">
+                  <div class="summary-stat-box" id="boxTotalDailyEnergy" onclick="SizingUI.openApplianceModal()">
                     <div class="stat-icon-wrapper bg-warning-subtle text-warning">☀️</div>
                     <div>
                       <div class="stat-label">Total Daily Energy</div>
