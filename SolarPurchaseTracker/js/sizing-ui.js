@@ -720,24 +720,26 @@ const SizingUI = (() => {
           <div class="result-card-header bg-header-solar">
             <span>☀️ SOLAR SPECIFICATION</span>
           </div>
-          <div class="p-2.5 p-md-3 d-flex flex-column flex-grow-1">
-            <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
+          <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
+            <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
               <div class="big-stat-badge text-warning">${sol.recommendedKwp} kWp</div>
               <div class="sub-stat-text">Recommended Capacity</div>
             </div>
 
-            <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
+            <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
               <div class="fw-bold text-dark fs-7 mb-1.5">${panelCount} Panels × 550Wp (${totalPanelKwp} kWp Array)</div>
-              <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary">
-                <li>• <strong>Type:</strong> Half-Cut Mono PERC Solar PV Modules</li>
+              <div class="fs-8 text-muted mb-2.5">Half-Cut Mono PERC Solar PV Modules</div>
+              <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary ps-1">
+                <li>• <strong>Panel Type:</strong> Mono PERC Half-Cut High Efficiency</li>
                 <li>• <strong>Daily Output:</strong> ~${sol.estDailyGenKwh} Units (kWh) / day</li>
                 <li>• <strong>Monthly Gen:</strong> ~${Math.round(sol.estDailyGenKwh * 30)} Units / month</li>
+                <li>• <strong>Roof Area:</strong> ~${Math.round(sol.recommendedKwp * 100)} sq.ft required</li>
               </ul>
             </div>
 
             <div class="d-flex flex-wrap gap-1 mt-auto">
-              <span class="spec-pill">☀️ ~${sol.estDailyGenKwh} Units/day</span>
-              <span class="spec-pill">⚡ ~${Math.round(sol.estDailyGenKwh * 30)} Units/mo</span>
+              <span class="spec-pill">Output: ~${sol.estDailyGenKwh} Units/day</span>
+              <span class="spec-pill">Monthly: ~${Math.round(sol.estDailyGenKwh * 30)} Units</span>
             </div>
           </div>
         </div>
@@ -751,18 +753,20 @@ const SizingUI = (() => {
         <div class="result-card-header bg-header-inverter">
           <span>⚡ INVERTER SPECIFICATION</span>
         </div>
-        <div class="p-2.5 p-md-3 d-flex flex-column flex-grow-1">
-          <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
+        <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
+          <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
             <div class="big-stat-badge text-primary">${inv.kVA} kVA</div>
             <div class="sub-stat-text">${inv.kW} kW Rating</div>
           </div>
 
-          <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
+          <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
             <div class="fw-bold text-dark fs-7 mb-1.5">${inv.kVA} kVA / ${inv.kW} kW ${res.inverterCategory}</div>
-            <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary">
+            <div class="fs-8 text-muted mb-2.5">${inv.batteryVoltage > 0 ? `Solar PCU • ${inv.batteryVoltage}V DC System` : 'Grid-Tied On-Grid Inverter'}</div>
+            <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary ps-1">
               <li>• <strong>System Voltage:</strong> ${inv.batteryVoltage > 0 ? `${inv.batteryVoltage}V DC System` : 'Grid-Tied (Direct AC)'}</li>
               <li>• <strong>Max Running Load:</strong> Up to ${inv.continuousOutput || inv.kW * 1000} Watts</li>
               <li>• <strong>Grid Output:</strong> Single Phase 230V AC (50 Hz)</li>
+              <li>• <strong>Pure Sine Wave:</strong> Safe for all sensitive appliances</li>
             </ul>
           </div>
 
@@ -790,28 +794,27 @@ const SizingUI = (() => {
           <div class="sub-stat-text">${batLi.totalInstalledKwh} kWh Lithium LFP Pack</div>
         `;
         specBoxHtml = `
-          <div class="p-2.5 rounded-2 mb-2 border flex-grow-1" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
-            <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="p-3 rounded-3 mb-2.5 border flex-grow-1" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-1.5">
               <div class="fw-bold text-dark fs-7">${batLi.totalUnits} × ${batLi.singleBatteryVolt}V ${batLi.singleBatteryAh}Ah Pack (${batLi.totalInstalledKwh} kWh)</div>
               <span class="badge bg-success text-white fs-9 py-0.5 px-1.5">Recommended</span>
             </div>
-            <div class="fs-8 text-muted mb-2">High Efficiency LiFePO4 (LFP) with built-in Smart BMS</div>
+            <div class="fs-8 text-muted mb-2.5">High Efficiency LiFePO4 (LFP) with built-in Smart BMS</div>
             
-            <div class="d-flex flex-wrap gap-1 mb-2">
-              <span class="badge bg-white text-success border border-success-subtle fs-9">⭐ 10–12+ Yrs Lifespan (~3000–5000 Cycles)</span>
-              <span class="badge bg-white text-success border border-success-subtle fs-9">🛠️ 100% Zero Maintenance</span>
-              <span class="badge bg-white text-success border border-success-subtle fs-9">⚡ 2–3 Hours Fast Charge</span>
-              <span class="badge bg-white text-success border border-success-subtle fs-9">🔋 90% Usable DoD (High Efficiency)</span>
-              <span class="badge bg-white text-success border border-success-subtle fs-9">🏢 Compact Wall-Mount</span>
-            </div>
+            <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-dark ps-1">
+              <li>• 10–12+ Yrs Lifespan (~3000–5000 Cycles)</li>
+              <li>• 100% Zero Maintenance • Wall-Mount</li>
+              <li>• 2–3 Hours Fast Charge</li>
+              <li>• 90% Usable DoD (High Efficiency)</li>
+            </ul>
 
-            <div class="p-2 rounded-2 bg-white border border-success-subtle">
-              <div class="fs-9 fw-bold text-success mb-1">🏷️ Manufacturer Discharge Rating (Solar & Non-Solar):</div>
-              <div class="d-flex flex-wrap gap-1">
-                <span class="badge bg-success-subtle text-success border border-success-subtle fs-9">☀️/🔌 Solar & Non-Solar: <strong>0.5C Continuous (~${Math.round(batLi.singleBatteryAh * 0.5)}A)</strong></span>
-                <span class="badge bg-success-subtle text-success border border-success-subtle fs-9">🚀 Peak Draw: <strong>1.0C (~${batLi.singleBatteryAh}A)</strong></span>
-                <span class="badge bg-light text-dark border fs-9">✅ 100% Full Capacity at any Discharge Rate</span>
-              </div>
+            <div class="p-2.5 rounded-2 bg-white border border-success-subtle mt-1">
+              <div class="fs-9 fw-bold text-success mb-1.5">Manufacturer Discharge Rating (Solar & Non-Solar):</div>
+              <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
+                <li>• Solar & Non-Solar: <strong>0.5C Continuous (~${Math.round(batLi.singleBatteryAh * 0.5)}A)</strong></li>
+                <li>• Peak Draw: <strong>1.0C (~${batLi.singleBatteryAh}A)</strong></li>
+                <li>• 100% Full Capacity at any Discharge Rate</li>
+              </ul>
             </div>
           </div>
         `;
@@ -821,28 +824,28 @@ const SizingUI = (() => {
           <div class="sub-stat-text">${batLa.systemVoltage}V Tall Tubular Bank (${batLa.totalInstalledKwh} kWh)</div>
         `;
         specBoxHtml = `
-          <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-1.5">
               <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries (${batLa.totalInstalledKwh} kWh)</div>
               <span class="badge bg-primary-subtle text-primary fs-9 py-0.5 px-1.5">Standard Choice</span>
             </div>
-            <div class="fs-8 text-muted mb-2">Connected in ${batLa.systemVoltage}V Series Bank</div>
+            <div class="fs-8 text-muted mb-2.5">Connected in ${batLa.systemVoltage}V Series Bank</div>
             
-            <div class="d-flex flex-wrap gap-1 mb-2">
-              <span class="badge bg-white text-secondary border fs-9">⏳ 4–5 Yrs Lifespan (~1200–1500 Cycles)</span>
-              <span class="badge bg-white text-secondary border fs-9">💰 Lower Upfront Cost (~50% vs Lithium)</span>
-              <span class="badge bg-white text-secondary border fs-9">🛡️ Heavy Deep-Cycle Proven</span>
-              <span class="badge bg-white text-secondary border fs-9">💧 Periodic Distilled Water Top-Up</span>
-              <span class="badge bg-white text-secondary border fs-9">🔋 50% Usable DoD</span>
-            </div>
+            <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
+              <li>• 4–5 Yrs Lifespan (~1200–1500 Cycles)</li>
+              <li>• Lower Upfront Cost (~50% vs Lithium)</li>
+              <li>• Heavy Deep-Cycle Proven</li>
+              <li>• Periodic Distilled Water Top-Up</li>
+              <li>• 50% Usable DoD</li>
+            </ul>
 
-            <div class="p-2 rounded-2 bg-white border">
-              <div class="fs-9 fw-bold text-dark mb-1">🏷️ Manufacturer C-Rating (Solar vs Non-Solar):</div>
-              <div class="d-flex flex-wrap gap-1">
-                <span class="badge bg-warning-subtle text-dark border border-warning fs-9">☀️ <strong>For Solar System:</strong> Buy <strong>C10 Rating (${batLa.singleBatteryAh}Ah @ C10)</strong></span>
-                <span class="badge bg-light text-dark border fs-9">🔌 <strong>For Non-Solar (Inverter):</strong> Buy <strong>C20 Rating (~${Math.round(batLa.singleBatteryAh * 1.1)}Ah @ C20)</strong></span>
-                <span class="badge bg-light text-muted border fs-9">⚡ <strong>For Heavy / Fast Draw:</strong> <strong>C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.85)}Ah @ C5)</strong></span>
-              </div>
+            <div class="p-2.5 rounded-2 bg-white border mt-1">
+              <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer C-Rating (Solar vs Non-Solar):</div>
+              <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
+                <li>• <strong>For Solar System:</strong> Buy C10 Rating (${batLa.singleBatteryAh}Ah @ C10)</li>
+                <li>• <strong>For Non-Solar (Inverter):</strong> Buy C20 Rating (~${Math.round(batLa.singleBatteryAh * 1.1)}Ah @ C20)</li>
+                <li>• <strong>For Heavy / Fast Draw:</strong> C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.85)}Ah @ C5)</li>
+              </ul>
             </div>
           </div>
         `;
@@ -852,27 +855,27 @@ const SizingUI = (() => {
           <div class="sub-stat-text">${batLa.systemVoltage}V Flat Plate Bank (${batLa.totalInstalledKwh} kWh)</div>
         `;
         specBoxHtml = `
-          <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-1.5">
               <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries (${batLa.totalInstalledKwh} kWh)</div>
               <span class="badge bg-secondary-subtle text-muted fs-9 py-0.5 px-1.5">Basic Budget</span>
             </div>
-            <div class="fs-8 text-muted mb-2">Connected in ${batLa.systemVoltage}V Bank</div>
+            <div class="fs-8 text-muted mb-2.5">Connected in ${batLa.systemVoltage}V Bank</div>
             
-            <div class="d-flex flex-wrap gap-1 mb-2">
-              <span class="badge bg-white text-muted border fs-9">⏳ 2–3 Yrs Lifespan</span>
-              <span class="badge bg-white text-muted border fs-9">💰 Lowest Initial Purchase Cost</span>
-              <span class="badge bg-white text-muted border fs-9">⚠️ Best for Short / Rare Power Cuts</span>
-              <span class="badge bg-white text-muted border fs-9">💧 Frequent Water Top-Up Required</span>
-            </div>
+            <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
+              <li>• 2–3 Yrs Lifespan</li>
+              <li>• Lowest Initial Purchase Cost</li>
+              <li>• Best for Short / Rare Power Cuts</li>
+              <li>• Frequent Water Top-Up Required</li>
+            </ul>
 
-            <div class="p-2 rounded-2 bg-white border">
-              <div class="fs-9 fw-bold text-dark mb-1">🏷️ Manufacturer C-Rating (Solar vs Non-Solar):</div>
-              <div class="d-flex flex-wrap gap-1">
-                <span class="badge bg-light text-dark border fs-9">🔌 <strong>For Non-Solar (Inverter):</strong> Buy <strong>C20 Rating (${batLa.singleBatteryAh}Ah @ C20)</strong></span>
-                <span class="badge bg-warning-subtle text-dark border border-warning fs-9">☀️ <strong>For Solar System:</strong> Buy <strong>C10 Rating (~${Math.round(batLa.singleBatteryAh * 0.9)}Ah @ C10)</strong></span>
-                <span class="badge bg-light text-muted border fs-9">⚡ <strong>For Heavy / Fast Draw:</strong> <strong>C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.75)}Ah @ C5)</strong></span>
-              </div>
+            <div class="p-2.5 rounded-2 bg-white border mt-1">
+              <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer C-Rating (Solar vs Non-Solar):</div>
+              <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
+                <li>• <strong>For Non-Solar (Inverter):</strong> Buy C20 Rating (${batLa.singleBatteryAh}Ah @ C20)</li>
+                <li>• <strong>For Solar System:</strong> Buy C10 Rating (~${Math.round(batLa.singleBatteryAh * 0.9)}Ah @ C10)</li>
+                <li>• <strong>For Heavy / Fast Draw:</strong> C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.75)}Ah @ C5)</li>
+              </ul>
             </div>
           </div>
         `;
@@ -883,8 +886,8 @@ const SizingUI = (() => {
           <div class="result-card-header bg-header-battery">
             <span>🔋 BATTERY SPECIFICATION</span>
           </div>
-          <div class="p-2.5 p-md-3 d-flex flex-column flex-grow-1">
-            <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
+          <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
+            <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
               ${heroStatHtml}
             </div>
 
