@@ -23,6 +23,7 @@ const SizingUI = (() => {
 
   let state = {
     systemType: 'off-grid',
+    selectedBatteryType: 'lithium',
     appliances: JSON.parse(JSON.stringify(COMMON_APPLIANCES)),
     acConfig: {
       ton: '1.5',
@@ -711,25 +712,32 @@ const SizingUI = (() => {
     // 1. Solar PV Specification Card (Render only if solar is applicable)
     if (res.solar) {
       const sol = res.solar;
+      const panelCount = Math.ceil((sol.recommendedKwp * 1000) / 550);
+      const totalPanelKwp = (panelCount * 0.55).toFixed(1);
+
       activeCards.push(`
         <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-header-solar">
             <span>☀️ SOLAR SPECIFICATION</span>
           </div>
-          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-            <div class="d-flex align-items-baseline gap-2 mb-2.5 flex-wrap">
+          <div class="p-2.5 p-md-3 d-flex flex-column flex-grow-1">
+            <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
               <div class="big-stat-badge text-warning">${sol.recommendedKwp} kWp</div>
-              <div class="sub-stat-text">Estimated Generation: ~${sol.estDailyGenKwh} kWh / day</div>
+              <div class="sub-stat-text">Recommended Capacity</div>
             </div>
 
-            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
-              <div class="fw-bold text-dark fs-7 mb-1">Module Sizing Recommendation:</div>
-              <div class="text-muted fs-8">${sol.panelSpec}</div>
+            <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
+              <div class="fw-bold text-dark fs-7 mb-1.5">${panelCount} Panels × 550Wp (${totalPanelKwp} kWp Array)</div>
+              <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary">
+                <li>• <strong>Type:</strong> Half-Cut Mono PERC Solar PV Modules</li>
+                <li>• <strong>Daily Output:</strong> ~${sol.estDailyGenKwh} Units (kWh) / day</li>
+                <li>• <strong>Monthly Gen:</strong> ~${Math.round(sol.estDailyGenKwh * 30)} Units / month</li>
+              </ul>
             </div>
 
-            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
-              <span class="spec-pill">Daily Demand: ${formatEnergy(sol.dailyKwh * 1000)}/day</span>
-              <span class="spec-pill">Est. Monthly Gen: ${Math.round(sol.estDailyGenKwh * 30)} Units</span>
+            <div class="d-flex flex-wrap gap-1 mt-auto">
+              <span class="spec-pill">☀️ ~${sol.estDailyGenKwh} Units/day</span>
+              <span class="spec-pill">⚡ ~${Math.round(sol.estDailyGenKwh * 30)} Units/mo</span>
             </div>
           </div>
         </div>
@@ -743,32 +751,25 @@ const SizingUI = (() => {
         <div class="result-card-header bg-header-inverter">
           <span>⚡ INVERTER SPECIFICATION</span>
         </div>
-        <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-          <!-- Row 1: Stat & Continuous Rating in one row -->
+        <div class="p-2.5 p-md-3 d-flex flex-column flex-grow-1">
           <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
             <div class="big-stat-badge text-primary">${inv.kVA} kVA</div>
-            <div class="sub-stat-text">${inv.kW} kW Continuous Rating • ${inv.phase}</div>
+            <div class="sub-stat-text">${inv.kW} kW Rating</div>
           </div>
 
-          <!-- Row 2: Category and IP Rating badges in one row -->
-          <div class="d-flex align-items-center gap-1.5 mb-2.5 flex-wrap">
-            <span class="badge bg-primary-subtle text-primary fs-8 border">${res.inverterCategory}</span>
-            <span class="ip-rating-badge" title="Ingress Protection Waterproof Rating">
-              🛡️ ${inv.ipRating}
-            </span>
+          <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
+            <div class="fw-bold text-dark fs-7 mb-1.5">${inv.kVA} kVA / ${inv.kW} kW ${res.inverterCategory}</div>
+            <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary">
+              <li>• <strong>System Voltage:</strong> ${inv.batteryVoltage > 0 ? `${inv.batteryVoltage}V DC System` : 'Grid-Tied (Direct AC)'}</li>
+              <li>• <strong>Max Running Load:</strong> Up to ${inv.continuousOutput || inv.kW * 1000} Watts</li>
+              <li>• <strong>Grid Output:</strong> Single Phase 230V AC (50 Hz)</li>
+            </ul>
           </div>
 
-          <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
-            <div class="fw-bold text-dark fs-7 mb-1">${inv.brand} — ${inv.model}</div>
-            <div class="text-muted fs-8">${inv.notes}</div>
-          </div>
-
-          <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
-            <span class="spec-pill">Surge: ${inv.surgeOutput}W (${inv.surgeDuration}s)</span>
-            <span class="spec-pill">Battery: ${inv.batteryVoltage > 0 ? inv.batteryVoltage + 'V' : 'Grid-Tied (N/A)'}</span>
-            ${inv.maxPvInput > 0 ? `<span class="spec-pill">Max PV: ${inv.maxPvInput}Wp</span>` : ''}
-            ${inv.mpptVoltageRange !== 'N/A' ? `<span class="spec-pill">MPPT: ${inv.mpptVoltageRange}</span>` : ''}
-            <span class="spec-pill">Warranty: ${inv.warranty} Years</span>
+          <div class="d-flex flex-wrap gap-1 mt-auto">
+            <span class="spec-pill">1-Phase 230V</span>
+            ${inv.batteryVoltage > 0 ? `<span class="spec-pill">${inv.batteryVoltage}V DC</span>` : '<span class="spec-pill">On-Grid</span>'}
+            <span class="spec-pill">Max ${inv.continuousOutput || inv.kW * 1000}W</span>
           </div>
         </div>
       </div>
@@ -776,36 +777,131 @@ const SizingUI = (() => {
 
     // 3. Battery Specification Card (Render only if battery is required)
     if (res.battery) {
-      const bat = res.battery;
+      const batLi = res.batteryLithium || res.battery;
+      const batLa = res.batteryLeadAcid || res.battery;
+      const curBat = state.selectedBatteryType || 'lithium';
+
+      let heroStatHtml = '';
+      let specBoxHtml = '';
+
+      if (curBat === 'lithium') {
+        heroStatHtml = `
+          <div class="big-stat-badge text-success">${batLi.systemVoltage}V ${batLi.totalAh}Ah</div>
+          <div class="sub-stat-text">${batLi.totalInstalledKwh} kWh Lithium LFP Pack</div>
+        `;
+        specBoxHtml = `
+          <div class="p-2.5 rounded-2 mb-2 border flex-grow-1" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <div class="fw-bold text-dark fs-7">${batLi.totalUnits} × ${batLi.singleBatteryVolt}V ${batLi.singleBatteryAh}Ah Pack (${batLi.totalInstalledKwh} kWh)</div>
+              <span class="badge bg-success text-white fs-9 py-0.5 px-1.5">Recommended</span>
+            </div>
+            <div class="fs-8 text-muted mb-2">High Efficiency LiFePO4 (LFP) with built-in Smart BMS</div>
+            
+            <div class="d-flex flex-wrap gap-1 mb-2">
+              <span class="badge bg-white text-success border border-success-subtle fs-9">⭐ 10–12+ Yrs Lifespan (~3000–5000 Cycles)</span>
+              <span class="badge bg-white text-success border border-success-subtle fs-9">🛠️ 100% Zero Maintenance</span>
+              <span class="badge bg-white text-success border border-success-subtle fs-9">⚡ 2–3 Hours Fast Charge</span>
+              <span class="badge bg-white text-success border border-success-subtle fs-9">🔋 90% Usable DoD (High Efficiency)</span>
+              <span class="badge bg-white text-success border border-success-subtle fs-9">🏢 Compact Wall-Mount</span>
+            </div>
+
+            <div class="p-2 rounded-2 bg-white border border-success-subtle">
+              <div class="fs-9 fw-bold text-success mb-1">🏷️ Manufacturer Discharge Rating (Solar & Non-Solar):</div>
+              <div class="d-flex flex-wrap gap-1">
+                <span class="badge bg-success-subtle text-success border border-success-subtle fs-9">☀️/🔌 Solar & Non-Solar: <strong>0.5C Continuous (~${Math.round(batLi.singleBatteryAh * 0.5)}A)</strong></span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle fs-9">🚀 Peak Draw: <strong>1.0C (~${batLi.singleBatteryAh}A)</strong></span>
+                <span class="badge bg-light text-dark border fs-9">✅ 100% Full Capacity at any Discharge Rate</span>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (curBat === 'tubular') {
+        heroStatHtml = `
+          <div class="big-stat-badge text-success">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah</div>
+          <div class="sub-stat-text">${batLa.systemVoltage}V Tall Tubular Bank (${batLa.totalInstalledKwh} kWh)</div>
+        `;
+        specBoxHtml = `
+          <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries (${batLa.totalInstalledKwh} kWh)</div>
+              <span class="badge bg-primary-subtle text-primary fs-9 py-0.5 px-1.5">Standard Choice</span>
+            </div>
+            <div class="fs-8 text-muted mb-2">Connected in ${batLa.systemVoltage}V Series Bank</div>
+            
+            <div class="d-flex flex-wrap gap-1 mb-2">
+              <span class="badge bg-white text-secondary border fs-9">⏳ 4–5 Yrs Lifespan (~1200–1500 Cycles)</span>
+              <span class="badge bg-white text-secondary border fs-9">💰 Lower Upfront Cost (~50% vs Lithium)</span>
+              <span class="badge bg-white text-secondary border fs-9">🛡️ Heavy Deep-Cycle Proven</span>
+              <span class="badge bg-white text-secondary border fs-9">💧 Periodic Distilled Water Top-Up</span>
+              <span class="badge bg-white text-secondary border fs-9">🔋 50% Usable DoD</span>
+            </div>
+
+            <div class="p-2 rounded-2 bg-white border">
+              <div class="fs-9 fw-bold text-dark mb-1">🏷️ Manufacturer C-Rating (Solar vs Non-Solar):</div>
+              <div class="d-flex flex-wrap gap-1">
+                <span class="badge bg-warning-subtle text-dark border border-warning fs-9">☀️ <strong>For Solar System:</strong> Buy <strong>C10 Rating (${batLa.singleBatteryAh}Ah @ C10)</strong></span>
+                <span class="badge bg-light text-dark border fs-9">🔌 <strong>For Non-Solar (Inverter):</strong> Buy <strong>C20 Rating (~${Math.round(batLa.singleBatteryAh * 1.1)}Ah @ C20)</strong></span>
+                <span class="badge bg-light text-muted border fs-9">⚡ <strong>For Heavy / Fast Draw:</strong> <strong>C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.85)}Ah @ C5)</strong></span>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        heroStatHtml = `
+          <div class="big-stat-badge text-success">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah</div>
+          <div class="sub-stat-text">${batLa.systemVoltage}V Flat Plate Bank (${batLa.totalInstalledKwh} kWh)</div>
+        `;
+        specBoxHtml = `
+          <div class="p-2.5 bg-light rounded-2 mb-2 border flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries (${batLa.totalInstalledKwh} kWh)</div>
+              <span class="badge bg-secondary-subtle text-muted fs-9 py-0.5 px-1.5">Basic Budget</span>
+            </div>
+            <div class="fs-8 text-muted mb-2">Connected in ${batLa.systemVoltage}V Bank</div>
+            
+            <div class="d-flex flex-wrap gap-1 mb-2">
+              <span class="badge bg-white text-muted border fs-9">⏳ 2–3 Yrs Lifespan</span>
+              <span class="badge bg-white text-muted border fs-9">💰 Lowest Initial Purchase Cost</span>
+              <span class="badge bg-white text-muted border fs-9">⚠️ Best for Short / Rare Power Cuts</span>
+              <span class="badge bg-white text-muted border fs-9">💧 Frequent Water Top-Up Required</span>
+            </div>
+
+            <div class="p-2 rounded-2 bg-white border">
+              <div class="fs-9 fw-bold text-dark mb-1">🏷️ Manufacturer C-Rating (Solar vs Non-Solar):</div>
+              <div class="d-flex flex-wrap gap-1">
+                <span class="badge bg-light text-dark border fs-9">🔌 <strong>For Non-Solar (Inverter):</strong> Buy <strong>C20 Rating (${batLa.singleBatteryAh}Ah @ C20)</strong></span>
+                <span class="badge bg-warning-subtle text-dark border border-warning fs-9">☀️ <strong>For Solar System:</strong> Buy <strong>C10 Rating (~${Math.round(batLa.singleBatteryAh * 0.9)}Ah @ C10)</strong></span>
+                <span class="badge bg-light text-muted border fs-9">⚡ <strong>For Heavy / Fast Draw:</strong> <strong>C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.75)}Ah @ C5)</strong></span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
       activeCards.push(`
         <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-header-battery">
             <span>🔋 BATTERY SPECIFICATION</span>
           </div>
-          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-            <!-- Row 1: Stat & Storage Capacity in one row -->
+          <div class="p-2.5 p-md-3 d-flex flex-column flex-grow-1">
             <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
-              <div class="big-stat-badge text-success">${bat.systemVoltage}V ${bat.totalAh}Ah</div>
-              <div class="sub-stat-text">${bat.totalInstalledKwh} kWh Energy Storage Capacity</div>
+              ${heroStatHtml}
             </div>
 
-            <!-- Row 2: Battery Type and Rating badges in one row -->
-            <div class="d-flex align-items-center gap-1.5 mb-2.5 flex-wrap">
-              <span class="badge bg-success-subtle text-success fs-8 border">${bat.batteryType}</span>
-              <span class="discharge-rating-badge">
-                🏷️ ${bat.capacityRating}
-              </span>
+            <!-- Battery Type Selection Dropdown -->
+            <div class="mb-2">
+              <select class="form-select form-select-sm fw-semibold fs-8" id="selCardBatteryType" onchange="SizingUI.onCardBatteryTypeChange(this.value)" style="height: 32px;">
+                <option value="lithium" ${curBat === 'lithium' ? 'selected' : ''}>🔋 1. Lithium Battery (LFP) — Recommended</option>
+                <option value="tubular" ${curBat === 'tubular' ? 'selected' : ''}>🔋 2. Tall Tubular Lead-Acid — Standard Choice</option>
+                <option value="flat-plate" ${curBat === 'flat-plate' ? 'selected' : ''}>🔋 3. Flat Plate Lead-Acid — Basic Budget</option>
+              </select>
             </div>
 
-            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
-              <div class="fw-bold text-dark fs-7 mb-1">Configuration: ${bat.configurationText}</div>
-              <div class="text-muted fs-8">${bat.selectedBrand} ${bat.selectedModel} (${bat.totalUnits} Units)</div>
-            </div>
+            ${specBoxHtml}
 
-            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
-              <span class="spec-pill">Storage Req: ${formatEnergy(bat.backupEnergyWh)}</span>
-              <span class="spec-pill">Peak Discharge: ${bat.maxDischargeCurrentA}A</span>
-              <span class="spec-pill">Discharge: ${bat.dischargeCheckOk ? '✅ PASSED' : '⚠️ CHECK CURRENT'}</span>
+            <div class="d-flex flex-wrap gap-1 mt-auto">
+              <span class="spec-pill">System: ${batLi.systemVoltage}V DC</span>
+              <span class="spec-pill">Need: ~${(batLi.backupEnergyWh / 1000).toFixed(1)} kWh</span>
             </div>
           </div>
         </div>
@@ -834,21 +930,23 @@ const SizingUI = (() => {
   function copySummary() {
     if (!state.currentResult) return;
     const res = state.currentResult;
-    const text = `☀️ SOLAR & INVERTER-BATTERY RECOMMENDATION (${res.systemLabel})
---------------------------------------------------
-⚡ Recommended Inverter: ${res.inverter.kVA} kVA (${res.inverter.kW} kW) ${res.inverterCategory}
-   • Brand/Model: ${res.inverter.brand} ${res.inverter.model}
-   • IP Rating: ${res.inverter.ipRating}
-   • Voltage: ${res.inverter.batteryVoltage > 0 ? res.inverter.batteryVoltage + 'V' : 'Grid-Tied'} | Phase: ${res.inverter.phase}
+    const panelCount = res.solar ? Math.ceil((res.solar.recommendedKwp * 1000) / 550) : 0;
+    const batLi = res.batteryLithium || res.battery;
+    const batLa = res.batteryLeadAcid || res.battery;
 
-${res.battery ? `🔋 Recommended Battery: ${res.battery.systemVoltage}V ${res.battery.totalAh}Ah (${res.battery.totalInstalledKwh} kWh)
-   • Configuration: ${res.battery.configurationText}
-   • Model: ${res.battery.selectedBrand} ${res.battery.selectedModel}
-   • Daily Energy Storage: ${formatEnergy(res.battery.backupEnergyWh)} for ${res.connectedLoadW}W load
+    const text = `☀️ SOLAR & INVERTER-BATTERY SPECIFICATION (${res.systemLabel})
+--------------------------------------------------
+⚡ Inverter Requirement: ${res.inverter.kVA} kVA (${res.inverter.kW} kW) ${res.inverterCategory}
+   • System: ${res.inverter.batteryVoltage > 0 ? res.inverter.batteryVoltage + 'V DC' : 'Grid-Tied'} | 1-Phase 230V
+   • Max Continuous Load: ${res.inverter.continuousOutput || res.inverter.kW * 1000}W
+
+${res.battery ? `🔋 Battery Options:
+   • Option 1 (Lithium LFP): ${batLi.totalUnits} × ${batLi.singleBatteryVolt}V ${batLi.singleBatteryAh}Ah (${batLi.totalInstalledKwh} kWh)
+   • Option 2 (Lead-Acid): ${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries in ${batLa.systemVoltage}V Series
 ` : '🔋 Battery: Not Required\n'}
-${res.solar ? `☀️ Recommended Solar PV: ${res.solar.recommendedKwp} kWp
-   • Solar Modules: ${res.solar.panelSpec}
-   • Est. Generation: ~${res.solar.estDailyGenKwh} kWh / day
+${res.solar ? `☀️ Solar PV Requirement: ${res.solar.recommendedKwp} kWp
+   • Panels: ${panelCount} × 550Wp Mono PERC Half-Cut Modules
+   • Est. Generation: ~${res.solar.estDailyGenKwh} Units/day (~${Math.round(res.solar.estDailyGenKwh * 30)} Units/month)
 ` : ''}
 --------------------------------------------------
 Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
@@ -1193,6 +1291,13 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     }
   }
 
+  function onCardBatteryTypeChange(val) {
+    state.selectedBatteryType = val || 'lithium';
+    if (state.currentResult) {
+      renderResults(state.currentResult);
+    }
+  }
+
   return {
     init,
     selectSystemTypeOption,
@@ -1221,7 +1326,8 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     setRecoveryPresetSpend,
     setRecoveryPresetInterest,
     syncRecoveryFromSolar,
-    onFinanceTypeChange
+    onFinanceTypeChange,
+    onCardBatteryTypeChange
   };
 
 })();
