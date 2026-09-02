@@ -169,6 +169,13 @@ const SizingUI = (() => {
     selectSystemTypeOption(typeVal);
   }
 
+  const SYSTEM_DESCRIPTIONS = {
+    'off-grid': 'Selected system uses solar panels + PCU + battery bank to provide 24/7 uninterrupted off-grid power.',
+    'on-grid': 'Selected On-Grid GTI system connects directly to the electricity grid with Net Metering to offset monthly billing units.',
+    'hybrid': 'Selected Hybrid system smartly combines Solar PV, Grid export/import, and battery backup storage.',
+    'without-solar': 'Selected Home UPS system is powered from the AC grid to provide battery backup during power cuts.'
+  };
+
   function updateSystemTypeVisibility() {
     const isGrid = state.systemType === 'on-grid';
     const onGridSolarBillSection = document.getElementById('secOnGridBill');
@@ -203,10 +210,27 @@ const SizingUI = (() => {
       }
     }
 
-    const boxEnergy = document.getElementById('boxTotalDailyEnergy');
-    if (boxEnergy) {
-      boxEnergy.style.display = 'flex';
+    if (isGrid) {
+      updateOnGridDemandDisplay();
     }
+  }
+
+  function setPresetUnits(units) {
+    state.monthlyUnits = units;
+    const txt = document.getElementById('txtMonthlyUnits');
+    if (txt) txt.value = units;
+    updateOnGridDemandDisplay();
+    calculateAndRender();
+  }
+
+  function updateOnGridDemandDisplay() {
+    const units = Number(state.monthlyUnits) || 300;
+    const dailyKwh = (units / 30).toFixed(1);
+    const targetKwp = (units / (30 * 5 * 0.78)).toFixed(1);
+    const lblDaily = document.getElementById('lblOnGridDailyDemand');
+    if (lblDaily) lblDaily.textContent = `${dailyKwh} kWh / day`;
+    const lblKwp = document.getElementById('lblOnGridTargetKwp');
+    if (lblKwp) lblKwp.textContent = `~${targetKwp} kWp`;
   }
 
   /* ---------------- Main Page Step 2 Summary Card ---------------- */
@@ -681,15 +705,74 @@ const SizingUI = (() => {
     const container = document.getElementById('resultsContainer');
     if (!container) return;
 
-    // 1. Recommended Inverter Hero Card
+    // 1. Solar PV Specification Card
+    let solarHtml = '';
+    if (res.solar) {
+      const sol = res.solar;
+      solarHtml = `
+        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
+          <div class="result-card-header bg-header-solar">
+            <span>☀️ SOLAR SPECIFICATION</span>
+            <span class="badge bg-white text-dark fs-8">${sol.recommendedKwp} kWp</span>
+          </div>
+          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
+            <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
+              <div>
+                <div class="big-stat-badge text-warning">${sol.recommendedKwp} kWp</div>
+                <div class="sub-stat-text">Estimated Generation: ~${sol.estDailyGenKwh} kWh / day</div>
+              </div>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
+              <div class="fw-bold text-dark fs-7 mb-1">Module Sizing Recommendation:</div>
+              <div class="text-muted fs-8">${sol.panelSpec}</div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
+              <span class="spec-pill">Daily Demand: ${formatEnergy(sol.dailyKwh * 1000)}/day</span>
+              <span class="spec-pill">Est. Monthly Gen: ${Math.round(sol.estDailyGenKwh * 30)} Units</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      solarHtml = `
+        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
+          <div class="result-card-header bg-secondary">
+            <span>☀️ SOLAR SPECIFICATION</span>
+            <span class="badge bg-white text-dark fs-8">Not Required</span>
+          </div>
+          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
+            <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
+              <div>
+                <div class="big-stat-badge text-muted">0 kWp (AC Grid)</div>
+                <div class="sub-stat-text">Standard Inverter / Home UPS Mode</div>
+              </div>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
+              <div class="fw-bold text-dark fs-7 mb-1">Solar PV Not Required:</div>
+              <div class="text-muted fs-8">System operates purely on AC grid electricity with battery backup during grid failure without solar panel generation.</div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
+              <span class="spec-pill">PV Capex: ₹0</span>
+              <span class="spec-pill">Type: AC Mains Fed</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 2. Recommended Inverter Specification Card
     const inv = res.inverter;
     const invHtml = `
-      <div class="result-hero-card">
+      <div class="result-hero-card h-100 mb-0 d-flex flex-column">
         <div class="result-card-header bg-header-inverter">
-          <span>⚡ RECOMMENDED INVERTER</span>
+          <span>⚡ INVERTER SPECIFICATION</span>
           <span class="badge bg-white text-dark fs-8">${res.inverterCategory}</span>
         </div>
-        <div class="p-3">
+        <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
           <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
             <div>
               <div class="big-stat-badge text-primary">${inv.kVA} kVA</div>
@@ -702,15 +785,15 @@ const SizingUI = (() => {
             </div>
           </div>
 
-          <div class="p-2.5 bg-light rounded-3 mb-3 border">
+          <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
             <div class="fw-bold text-dark fs-7 mb-1">${inv.brand} — ${inv.model}</div>
             <div class="text-muted fs-8">${inv.notes}</div>
           </div>
 
-          <div class="d-flex flex-wrap gap-1">
+          <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
             <span class="spec-pill">Surge: ${inv.surgeOutput}W (${inv.surgeDuration}s)</span>
-            <span class="spec-pill">Battery Volts: ${inv.batteryVoltage > 0 ? inv.batteryVoltage + 'V' : 'N/A (Grid-Tied)'}</span>
-            ${inv.maxPvInput > 0 ? `<span class="spec-pill">Max PV Input: ${inv.maxPvInput}Wp</span>` : ''}
+            <span class="spec-pill">Battery: ${inv.batteryVoltage > 0 ? inv.batteryVoltage + 'V' : 'Grid-Tied (N/A)'}</span>
+            ${inv.maxPvInput > 0 ? `<span class="spec-pill">Max PV: ${inv.maxPvInput}Wp</span>` : ''}
             ${inv.mpptVoltageRange !== 'N/A' ? `<span class="spec-pill">MPPT: ${inv.mpptVoltageRange}</span>` : ''}
             <span class="spec-pill">Warranty: ${inv.warranty} Years</span>
           </div>
@@ -718,17 +801,17 @@ const SizingUI = (() => {
       </div>
     `;
 
-    // 2. Battery Card (if applicable)
+    // 3. Battery Specification Card (if applicable)
     let batHtml = '';
     if (res.battery) {
       const bat = res.battery;
       batHtml = `
-        <div class="result-hero-card">
+        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-header-battery">
-            <span>🔋 RECOMMENDED BATTERY BANK</span>
+            <span>🔋 BATTERY SPECIFICATION</span>
             <span class="badge bg-white text-dark fs-8">${bat.batteryType}</span>
           </div>
-          <div class="p-3">
+          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
             <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
               <div>
                 <div class="big-stat-badge text-success">${bat.systemVoltage}V ${bat.totalAh}Ah</div>
@@ -741,103 +824,71 @@ const SizingUI = (() => {
               </div>
             </div>
 
-            <div class="p-2.5 bg-light rounded-3 mb-3 border">
+            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
               <div class="fw-bold text-dark fs-7 mb-1">Configuration: ${bat.configurationText}</div>
               <div class="text-muted fs-8">Selected: ${bat.selectedBrand} ${bat.selectedModel} (${bat.totalUnits} Units)</div>
             </div>
 
-            <div class="d-flex flex-wrap gap-1">
-              <span class="spec-pill">Daily Storage Req: ${formatEnergy(bat.backupEnergyWh)}</span>
-              <span class="spec-pill">Peak Discharge Req: ${bat.maxDischargeCurrentA}A</span>
-              <span class="spec-pill">Discharge Check: ${bat.dischargeCheckOk ? '✅ PASSED' : '⚠️ CHECK CURRENT'}</span>
+            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
+              <span class="spec-pill">Storage Req: ${formatEnergy(bat.backupEnergyWh)}</span>
+              <span class="spec-pill">Peak Discharge: ${bat.maxDischargeCurrentA}A</span>
+              <span class="spec-pill">Discharge: ${bat.dischargeCheckOk ? '✅ PASSED' : '⚠️ CHECK CURRENT'}</span>
             </div>
           </div>
         </div>
       `;
     } else {
       batHtml = `
-        <div class="result-hero-card">
+        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-secondary">
-            <span>🔋 BATTERY REQUIREMENT</span>
+            <span>🔋 BATTERY SPECIFICATION</span>
+            <span class="badge bg-white text-dark fs-8">Not Required</span>
           </div>
-          <div class="p-3 text-center text-muted fw-semibold">
-            Battery: Not Required for On-Grid Solar System
-          </div>
-        </div>
-      `;
-    }
-
-    // 3. Solar PV Card (if applicable)
-    let solarHtml = '';
-    if (res.solar) {
-      const sol = res.solar;
-      solarHtml = `
-        <div class="result-hero-card">
-          <div class="result-card-header bg-header-solar">
-            <span>☀️ RECOMMENDED SOLAR PV CAPACITY</span>
-            <span class="badge bg-white text-dark fs-8">${sol.recommendedKwp} kWp</span>
-          </div>
-          <div class="p-3">
+          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
             <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
               <div>
-                <div class="big-stat-badge text-warning">${sol.recommendedKwp} kWp</div>
-                <div class="sub-stat-text">Estimated Generation: ~${sol.estDailyGenKwh} kWh / day</div>
+                <div class="big-stat-badge text-muted">0 Ah (Grid-Tied)</div>
+                <div class="sub-stat-text">Direct Net-Metering Architecture</div>
+              </div>
+              <div class="text-end">
+                <span class="discharge-rating-badge text-muted border-secondary bg-light">
+                  🏷️ Grid-Connected
+                </span>
               </div>
             </div>
 
-            <div class="p-2.5 bg-light rounded-3 mb-3 border">
-              <div class="fw-bold text-dark fs-7 mb-1">Module Sizing Recommendation:</div>
-              <div class="text-muted fs-8">${sol.panelSpec}</div>
+            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
+              <div class="fw-bold text-dark fs-7 mb-1">Battery Storage Not Required:</div>
+              <div class="text-muted fs-8">Standard On-Grid (GTI) solar systems export excess daytime generation directly to the grid via Net Metering, eliminating battery capex and replacement costs.</div>
             </div>
 
-            <div class="d-flex flex-wrap gap-1">
-              <span class="spec-pill">Daily Consumption: ${formatEnergy(sol.dailyKwh * 1000)}/day</span>
-              <span class="spec-pill">Est. Monthly Generation: ${Math.round(sol.estDailyGenKwh * 30)} Units</span>
+            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
+              <span class="spec-pill">Battery Capex: ₹0</span>
+              <span class="spec-pill">Maintenance: Zero</span>
+              <span class="spec-pill">Efficiency: ~98% Grid-Tie</span>
             </div>
           </div>
         </div>
       `;
     }
 
-    // 4. Quick Summary Card
-    const summaryHtml = `
-      <div class="result-hero-card border-primary">
-        <div class="result-card-header bg-header-summary">
-          <span>📋 SYSTEM SUMMARY FOR CUSTOMER PROPOSAL</span>
-          <button type="button" class="btn btn-sm btn-light text-primary fw-bold" onclick="SizingUI.copySummary()">
-            📋 Copy Summary
-          </button>
-        </div>
-        <div class="p-3 bg-light" id="proposalSummaryText">
-          <div class="fw-bold text-dark mb-2 fs-6">☀️ ${res.systemLabel} System</div>
-          <ul class="list-unstyled mb-0 fs-7 text-secondary gap-1 d-flex flex-column">
-            <li><strong>⚡ Inverter:</strong> ${inv.kVA} kVA (${inv.kW} kW) ${res.inverterCategory} (${inv.phase}, ${inv.ipRating})</li>
-            ${res.battery ? `<li><strong>🔋 Battery:</strong> ${res.battery.systemVoltage}V ${res.battery.totalAh}Ah (${res.battery.totalInstalledKwh} kWh) — ${res.battery.configurationText}</li>` : `<li><strong>🔋 Battery:</strong> Not Required</li>`}
-            ${res.solar ? `<li><strong>☀️ Solar:</strong> ${res.solar.recommendedKwp} kWp (${res.solar.panelSpec})</li>` : ''}
-            <li><strong>📊 Connected Load:</strong> ${res.connectedLoadW}W | <strong>Daily Energy:</strong> ${formatEnergy(res.estimatedDailyKwh * 1000)}/day</li>
-          </ul>
-        </div>
-      </div>
-    `;
-
-    // 5. Warnings List
+    // 4. Warnings List
     const warningsHtml = res.warnings && res.warnings.length > 0 ? `
-      <div class="mt-3">
-        <h6 class="fw-bold text-dark mb-2 fs-7">⚠️ System Sizing Warnings & Engineering Notes:</h6>
+      <div class="mt-4">
+        <h6 class="fw-bold text-dark mb-2.5 fs-7">⚠️ System Sizing Warnings & Engineering Notes:</h6>
         ${res.warnings.map(w => `<div class="warning-item-box">${w}</div>`).join('')}
       </div>
     ` : '';
 
-    // 6. Transparent "Why Selected" Accordion
+    // 5. Transparent "Why Selected" Accordion
     const whyHtml = renderWhySelectedAccordion(res);
 
     container.innerHTML = `
-      ${summaryHtml}
-      <div class="row g-3">
-        <div class="col-lg-6">${invHtml}</div>
-        <div class="col-lg-6">${batHtml}</div>
+      <div class="row g-3 g-xl-4 align-items-stretch">
+        <div class="col-lg-4 col-md-12 d-flex flex-column">${solarHtml}</div>
+        <div class="col-lg-4 col-md-12 d-flex flex-column">${invHtml}</div>
+        <div class="col-lg-4 col-md-12 d-flex flex-column">${batHtml}</div>
       </div>
-      ${solarHtml}
       ${warningsHtml}
       ${whyHtml}
     `;
@@ -1129,7 +1180,8 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     saveAdvancedSettings,
     deleteInverterItem,
     deleteBatteryItem,
-    resetAllToDefaults
+    resetAllToDefaults,
+    setPresetUnits
   };
 
 })();

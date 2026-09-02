@@ -1,50 +1,79 @@
 /* =========================================================================
    sizing-calc.css — Mobile-First Solar & Inverter-Battery Sizing Stylesheet
-   Clean, modern, touch-friendly UI for non-technical solar sales representatives.
+   Clean, modern, spacious UI for non-technical solar sales representatives.
    ========================================================================= */
 
 /* Main Container & Page Layout */
 .sizing-page-body {
-  max-width: 1100px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding-bottom: 90px; /* space for sticky mobile calculate bar */
+  padding: 24px 24px 100px 24px;
+}
+
+@media (max-width: 768px) {
+  .sizing-page-body {
+    padding: 16px 14px 100px 14px;
+  }
 }
 
 /* Section Header Badges */
 .step-number-badge {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--st-primary);
   color: #fff;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
 }
 
 .step-card {
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
-  margin-bottom: 1.25rem;
+  padding: 24px 26px;
+  margin-bottom: 1.5rem;
 }
 
-/* System Type Selection Cards */
+.step-card:hover {
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07);
+  border-color: #cbd5e1;
+}
+
+#secOnGridBill {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 18px 20px !important;
+  margin-top: 18px !important;
+  margin-bottom: 8px !important;
+}
+
+@media (max-width: 576px) {
+  .step-card {
+    padding: 18px 16px !important;
+    border-radius: 12px;
+  }
+}
+
+/* System Type Selection Cards (when in grid mode) */
 .system-type-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .system-card {
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   cursor: pointer;
   background: #f8fafc;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -61,14 +90,13 @@
 .system-card.active {
   border-color: var(--st-primary);
   background: #f0f3ff;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.15);
 }
 
-/* Rich Container Dropdown for System Type (Mobile Friendly) */
+/* Rich Container Dropdown for System Type */
 #systemTypeDropdownContainer {
   position: relative;
   width: 100%;
-  max-width: 100%;
 }
 
 .custom-dropdown-trigger {
@@ -76,9 +104,10 @@
   border: 1.5px solid #cbd5e1 !important;
   transition: all 0.2s ease;
   width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
-  padding: 6px 10px !important;
+  padding: 10px 16px !important;
+  border-radius: 10px !important;
+  min-height: 52px;
 }
 
 .custom-dropdown-trigger:hover,
@@ -95,7 +124,7 @@
   max-width: 100% !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
-  padding: 4px !important;
+  padding: 8px !important;
   max-height: 380px;
   overflow-y: auto;
   overflow-x: hidden !important;
@@ -103,12 +132,15 @@
   white-space: normal !important;
   left: 0 !important;
   right: 0 !important;
-  margin-top: 4px !important;
+  margin-top: 6px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12) !important;
 }
 
 .system-dropdown-item {
   background: #f8fafc;
   border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
   cursor: pointer;
   transition: all 0.18s ease;
   user-select: none;
@@ -117,7 +149,12 @@
   box-sizing: border-box !important;
   white-space: normal !important;
   word-wrap: break-word !important;
-  padding: 6px 8px !important;
+  padding: 10px 14px !important;
+  margin-bottom: 6px;
+}
+
+.system-dropdown-item:last-child {
+  margin-bottom: 0;
 }
 
 .system-dropdown-item:hover {
@@ -129,72 +166,24 @@
 .system-dropdown-item.active {
   background: #f0f3ff;
   border-color: var(--st-primary) !important;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.1);
-}
-
-@media (max-width: 576px) {
-  .sizing-page-body {
-    padding-left: 0;
-    padding-right: 0;
-    overflow-x: hidden;
-  }
-  .step-card {
-    padding: 10px 12px !important;
-    border-radius: 10px;
-  }
-  .custom-dropdown-trigger {
-    padding: 5px 8px !important;
-  }
-  .system-dropdown-item {
-    padding: 5px 7px !important;
-  }
-}
-
-.system-card input[type="radio"] {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  accent-color: var(--st-primary);
-  width: 18px;
-  height: 18px;
-}
-
-.system-card-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #1e293b;
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.system-card-inverter-tag {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--st-primary);
-  background: #e0e7ff;
-  padding: 2px 8px;
-  border-radius: 6px;
-  display: inline-block;
-  margin-top: 6px;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12);
 }
 
 /* Summary Metrics Grid & Stat Boxes */
 .summary-metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .summary-stat-box {
   background: #f8fafc;
   border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -203,17 +192,17 @@
   border-color: var(--st-primary);
   background: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.1);
 }
 
 .stat-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   flex-shrink: 0;
 }
 
@@ -221,57 +210,53 @@
   font-size: 0.75rem;
   color: #64748b;
   font-weight: 600;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
 
 .stat-value {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
-.calc-energy-bracket {
-  background: #e0e7ff;
-  color: #3730a3 !important;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.78rem;
-  white-space: nowrap;
-  letter-spacing: -0.2px;
-  display: inline-block;
+.btn-2xs {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 14px;
+  transition: all 0.15s ease;
 }
 
-.btn-2xs {
-  font-size: 0.72rem;
-  padding: 2px 8px;
-  border-radius: 12px;
+.btn-2xs:hover {
+  background: var(--st-primary);
+  color: #fff;
+  border-color: var(--st-primary);
 }
 
 .shadow-2xs {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
-/* Appliance Configuration Table (Compact & Mobile-Optimized) */
+/* Appliance Configuration Table (Compact & Clean) */
 .appliance-config-table {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   width: 100%;
 }
 
 .appliance-config-table th {
-  padding: 6px 4px !important;
+  padding: 8px 6px !important;
   background: #f8fafc;
   color: #475569;
   font-weight: 700;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.3px;
   vertical-align: middle;
   white-space: nowrap;
 }
 
 .appliance-config-table td {
-  padding: 4px 3px !important;
+  padding: 6px 5px !important;
   vertical-align: middle;
   border-bottom: 1px solid #f1f5f9;
 }
@@ -279,6 +264,7 @@
 .appliance-config-table tfoot td {
   background: #f8fafc;
   border-top: 2px solid #e2e8f0;
+  padding: 8px 6px !important;
 }
 
 .appliance-config-table tr.table-primary-subtle {
@@ -295,10 +281,10 @@
 
 .appliance-config-table .form-control-sm,
 .appliance-config-table .form-select-sm {
-  padding: 2px 3px !important;
-  font-size: 0.75rem !important;
-  height: 26px !important;
-  border-radius: 5px;
+  padding: 3px 6px !important;
+  font-size: 0.78rem !important;
+  height: 28px !important;
+  border-radius: 6px;
   border-color: #cbd5e1;
   line-height: 1.2;
 }
@@ -316,14 +302,15 @@
 }
 
 .modal-footer-action-group .btn {
-  height: 32px !important;
-  font-size: 0.8rem !important;
-  border-radius: 6px !important;
-  min-width: 72px !important;
+  height: 36px !important;
+  font-size: 0.82rem !important;
+  border-radius: 8px !important;
+  min-width: 80px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   white-space: nowrap !important;
+  padding: 6px 14px !important;
 }
 
 /* Backup Appliance Selection Pills */
@@ -332,7 +319,7 @@
   background: #f8fafc;
   color: #475569;
   border-radius: 20px;
-  padding: 4px 12px;
+  padding: 5px 14px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -344,26 +331,26 @@
   background: var(--st-success-bg);
   border-color: var(--st-success);
   color: var(--st-success);
-  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.18);
 }
 
 /* Backup Hours Pills */
 .hours-pill-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .hours-pill {
   flex: 1;
-  min-width: 60px;
+  min-width: 65px;
   text-align: center;
-  padding: 8px 12px;
+  padding: 9px 14px;
   border-radius: 8px;
   border: 1.5px solid #cbd5e1;
   background: #ffffff;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: #334155;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -373,7 +360,7 @@
   border-color: var(--st-primary);
   background: var(--st-primary);
   color: #ffffff;
-  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.28);
 }
 
 /* Sticky Calculate Bar (Mobile Focus) */
@@ -384,13 +371,13 @@
   right: 0;
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
-  padding: 10px 16px;
+  padding: 12px 18px;
   z-index: 999;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 
 @media (min-width: 992px) {
@@ -408,7 +395,7 @@
   color: #ffffff;
   font-weight: 700;
   font-size: 1rem;
-  padding: 10px 24px;
+  padding: 12px 26px;
   border-radius: 10px;
   border: none;
   box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
@@ -418,7 +405,7 @@
 
 .btn-calculate-hero:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
   color: #ffffff;
 }
 
@@ -428,18 +415,25 @@
   overflow: hidden;
   border: 1px solid #e2e8f0;
   background: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  margin-bottom: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.result-hero-card:hover {
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.09);
+  border-color: #cbd5e1;
 }
 
 .result-card-header {
-  padding: 14px 18px;
+  padding: 14px 20px;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  letter-spacing: 0.2px;
 }
 
 .bg-header-inverter {
@@ -454,19 +448,15 @@
   background: linear-gradient(135deg, #d97706, #f59e0b);
 }
 
-.bg-header-summary {
-  background: linear-gradient(135deg, #0284c7, #0ea5e9);
-}
-
 .big-stat-badge {
-  font-size: 1.8rem;
+  font-size: 1.9rem;
   font-weight: 800;
   letter-spacing: -0.5px;
   color: #0f172a;
 }
 
 .sub-stat-text {
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   color: #64748b;
   font-weight: 500;
 }
@@ -474,25 +464,27 @@
 .spec-pill {
   background: #f1f5f9;
   color: #334155;
+  border: 1px solid #e2e8f0;
   font-weight: 600;
   font-size: 0.8rem;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   display: inline-block;
   margin-right: 6px;
   margin-bottom: 6px;
+  transition: all 0.15s ease;
 }
 
 .ip-rating-badge {
   background: #dbeafe;
   color: #1e40af;
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .discharge-rating-badge {
@@ -500,21 +492,22 @@
   color: #065f46;
   border: 1px solid #a7f3d0;
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
 }
 
 /* Warnings Box */
 .warning-item-box {
   background: #fffbeb;
   border-left: 4px solid #f59e0b;
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 0.86rem;
   color: #92400e;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 500;
+  line-height: 1.5;
 }
 
 /* Accordion "Why Selected" Breakdown */
@@ -523,9 +516,11 @@
   font-size: 0.8rem;
   color: #475569;
   text-transform: uppercase;
+  padding: 10px 14px;
 }
 
 .breakdown-table td {
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   vertical-align: middle;
+  padding: 10px 14px;
 }

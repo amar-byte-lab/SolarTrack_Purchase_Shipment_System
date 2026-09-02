@@ -34,47 +34,44 @@
           </div>
         </div>
 
-        <!-- MAIN INPUTS ROW: STEP 1 (SYSTEM TYPE) & STEP 2 (APPLIANCES & LOAD) IN SAME ROW -->
-        <div class="row g-3 mb-3 align-items-stretch">
+        <!-- MAIN INPUTS ROW: SYSTEM TYPE & APPLIANCES / LOAD IN SAME ROW -->
+        <div class="row g-3 g-xl-4 mb-4 pb-2 align-items-stretch">
           
           <!-- STEP 1: SYSTEM TYPE SELECTION (RICH CONTAINER DROPDOWN) -->
           <div class="col-lg-6" id="colStep1Wrapper">
-            <div class="step-card p-3 h-100 d-flex flex-column justify-content-between mb-0" id="secSystemType">
+            <div class="step-card p-4 h-100 d-flex flex-column mb-0" id="secSystemType">
               <div>
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="step-number-badge">1</span>
-                    <div>
-                      <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
-                      <span class="text-muted fs-8" id="lblSystemTypeSubtext">System architecture</span>
-                    </div>
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                  <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
+                    <span class="text-muted fs-8" id="lblSystemTypeSubtext">System architecture</span>
                   </div>
                 </div>
 
                 <!-- Custom Rich Dropdown Trigger & Menu -->
-                <div class="dropdown mt-2 w-100" id="systemTypeDropdownContainer" style="position: relative; max-width: 480px;">
-                  <button class="btn btn-white border w-100 p-2 d-flex align-items-center justify-content-between text-start rounded-3 shadow-2xs custom-dropdown-trigger" 
+                <div class="dropdown mt-2 w-100" id="systemTypeDropdownContainer" style="position: relative;">
+                  <button class="btn btn-white border w-100 p-2.5 d-flex align-items-center justify-content-between text-start rounded-3 shadow-2xs custom-dropdown-trigger" 
                     type="button" id="btnSystemTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="max-width: 100%; overflow: hidden;">
-                    <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1 min-w-0" id="selectedSystemTypeDisplay">
-                      <span class="fs-5 flex-shrink-0" id="selSystemIcon">🔋</span>
+                    <div class="d-flex align-items-center gap-2.5 overflow-hidden flex-grow-1 min-w-0" id="selectedSystemTypeDisplay">
+                      <span class="fs-4 flex-shrink-0" id="selSystemIcon">🔋</span>
                       <div class="overflow-hidden min-w-0 flex-grow-1">
                         <div class="fw-bold text-dark fs-7 text-truncate" id="selSystemTitle">Off-Grid Solar</div>
                         <div class="text-muted fs-8 text-truncate" id="selSystemDesc">Solar with battery storage for off-grid power.</div>
                       </div>
                     </div>
-                    <span class="text-secondary fs-8 ms-1 flex-shrink-0">▼</span>
+                    <span class="text-secondary fs-8 ms-2 flex-shrink-0">▼</span>
                   </button>
 
                   <!-- Dropdown Menu with rich item containers -->
-                  <ul class="dropdown-menu w-100 p-1 shadow border rounded-3 system-dropdown-menu" aria-labelledby="btnSystemTypeDropdown">
+                  <ul class="dropdown-menu w-100 p-2 shadow border rounded-3 system-dropdown-menu" aria-labelledby="btnSystemTypeDropdown">
                     <!-- Item 1: Off-Grid -->
-                    <li class="mb-1 w-100">
-                      <div class="system-dropdown-item active p-2 rounded-2 border d-flex align-items-center justify-content-between gap-1.5 w-100" 
+                    <li class="mb-1.5 w-100">
+                      <div class="system-dropdown-item active p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100" 
                         data-system-type="off-grid" onclick="SizingUI.selectSystemTypeOption('off-grid')">
-                        <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
-                          <span class="fs-5 flex-shrink-0">🔋</span>
+                        <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+                          <span class="fs-4 flex-shrink-0">🔋</span>
                           <div class="min-w-0 flex-grow-1">
-                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1">
+                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>Off-Grid</span>
                               <span class="badge bg-primary-subtle text-primary fs-9">PCU</span>
                             </div>
@@ -86,13 +83,13 @@
                     </li>
 
                     <!-- Item 2: On-Grid -->
-                    <li class="mb-1 w-100">
-                      <div class="system-dropdown-item p-2 rounded-2 border d-flex align-items-center justify-content-between gap-1.5 w-100" 
+                    <li class="mb-1.5 w-100">
+                      <div class="system-dropdown-item p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100" 
                         data-system-type="on-grid" onclick="SizingUI.selectSystemTypeOption('on-grid')">
-                        <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
-                          <span class="fs-5 flex-shrink-0">☀️</span>
+                        <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+                          <span class="fs-4 flex-shrink-0">☀️</span>
                           <div class="min-w-0 flex-grow-1">
-                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1">
+                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>On-Grid</span>
                               <span class="badge bg-warning-subtle text-warning fs-9">GTI</span>
                             </div>
@@ -104,13 +101,13 @@
                     </li>
 
                     <!-- Item 3: Hybrid -->
-                    <li class="mb-1 w-100">
-                      <div class="system-dropdown-item p-2 rounded-2 border d-flex align-items-center justify-content-between gap-1.5 w-100" 
+                    <li class="mb-1.5 w-100">
+                      <div class="system-dropdown-item p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100" 
                         data-system-type="hybrid" onclick="SizingUI.selectSystemTypeOption('hybrid')">
-                        <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
-                          <span class="fs-5 flex-shrink-0">⚡</span>
+                        <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+                          <span class="fs-4 flex-shrink-0">⚡</span>
                           <div class="min-w-0 flex-grow-1">
-                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1">
+                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>Hybrid</span>
                               <span class="badge bg-info-subtle text-info fs-9">Bi-Directional</span>
                             </div>
@@ -123,12 +120,12 @@
 
                     <!-- Item 4: Without Solar -->
                     <li class="w-100">
-                      <div class="system-dropdown-item p-2 rounded-2 border d-flex align-items-center justify-content-between gap-1.5 w-100" 
+                      <div class="system-dropdown-item p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100" 
                         data-system-type="without-solar" onclick="SizingUI.selectSystemTypeOption('without-solar')">
-                        <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
-                          <span class="fs-5 flex-shrink-0">🔌</span>
+                        <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+                          <span class="fs-4 flex-shrink-0">🔌</span>
                           <div class="min-w-0 flex-grow-1">
-                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1">
+                            <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>Without Solar</span>
                               <span class="badge bg-secondary-subtle text-secondary fs-9">Home UPS</span>
                             </div>
@@ -140,52 +137,74 @@
                     </li>
                   </ul>
                 </div>
-              </div>
 
-              <!-- On-Grid Monthly Bill Helper (Appears only for On-Grid) -->
-              <div id="secOnGridBill" class="mt-2.5 p-2.5 bg-light rounded-3 border" style="display:none;">
-                <div class="row g-2 align-items-center">
-                  <div class="col-12">
-                    <label class="form-label fw-bold text-dark fs-8 mb-1">Average Monthly Billing Units</label>
-                    <input type="number" min="0" class="form-control form-control-sm" id="txtMonthlyUnits" 
-                      placeholder="e.g. 450 Units per month">
-                  </div>
-                  <div class="col-12">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-1">
-                      <div class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" id="chkOnGridBattery" style="cursor: pointer;">
-                        <label class="form-check-label fw-semibold text-dark fs-8" for="chkOnGridBattery" style="cursor: pointer;">
-                          Enable Battery backup for On-Grid
-                        </label>
+                <!-- On-Grid Monthly Bill Helper (Appears inside Step 1 only for On-Grid) -->
+                <div id="secOnGridBill" class="mt-4 p-3.5 p-md-4 bg-light rounded-3 border" style="display:none; margin-bottom: 6px;">
+                  <div class="row g-3 align-items-center">
+                    <div class="col-md-7 col-12">
+                      <label class="form-label fw-bold text-dark fs-7 mb-1.5" for="txtMonthlyUnits">Average Monthly Billing Units</label>
+                      <div class="input-group mb-2 shadow-2xs">
+                        <input type="number" min="0" class="form-control fw-bold fs-6" id="txtMonthlyUnits" 
+                          placeholder="e.g. 300" value="300" style="height: 42px;">
+                        <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Units / Month (kWh)</span>
                       </div>
-                      <div id="secOnGridBackupHoursWrapper" class="d-flex align-items-center gap-1" style="display:none !important;">
-                        <label class="fs-8 fw-semibold text-secondary mb-0 text-nowrap" for="txtOnGridBackupHours">Backup:</label>
-                        <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold p-1" id="txtOnGridBackupHours" title="Backup Hours" style="width: 48px; height: 26px; font-size: 0.78rem;">
-                        <span class="fs-8 text-muted fw-semibold">Hrs</span>
+                      <!-- Quick Preset Pills -->
+                      <div class="d-flex align-items-center gap-1.5 flex-wrap mt-2">
+                        <span class="text-muted fs-8 fw-semibold me-1">Quick Presets:</span>
+                        <button type="button" class="btn btn-2xs btn-outline-primary rounded-pill px-2.5 py-1 fw-bold" onclick="SizingUI.setPresetUnits(150)">150 U</button>
+                        <button type="button" class="btn btn-2xs btn-outline-primary rounded-pill px-2.5 py-1 fw-bold" onclick="SizingUI.setPresetUnits(300)">300 U</button>
+                        <button type="button" class="btn btn-2xs btn-outline-primary rounded-pill px-2.5 py-1 fw-bold" onclick="SizingUI.setPresetUnits(500)">500 U</button>
+                        <button type="button" class="btn btn-2xs btn-outline-primary rounded-pill px-2.5 py-1 fw-bold" onclick="SizingUI.setPresetUnits(800)">800 U</button>
+                        <button type="button" class="btn btn-2xs btn-outline-primary rounded-pill px-2.5 py-1 fw-bold" onclick="SizingUI.setPresetUnits(1200)">1200 U</button>
+                      </div>
+                    </div>
+                    <div class="col-md-5 col-12">
+                      <div class="p-3 bg-white rounded-3 border">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                          <span class="fs-8 text-muted fw-semibold">Daily Demand:</span>
+                          <span class="fw-bold text-dark fs-7" id="lblOnGridDailyDemand">10.0 kWh / day</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                          <span class="fs-8 text-muted fw-semibold">Target Solar Plant:</span>
+                          <span class="fw-bold text-warning fs-7" id="lblOnGridTargetKwp">~3 kWp</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12 mt-2">
+                      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2.5 border-top">
+                        <div class="form-check mb-0">
+                          <input class="form-check-input" type="checkbox" id="chkOnGridBattery" style="cursor: pointer;">
+                          <label class="form-check-label fw-semibold text-dark fs-8" for="chkOnGridBattery" style="cursor: pointer;">
+                            Enable Battery backup for On-Grid
+                          </label>
+                        </div>
+                        <div id="secOnGridBackupHoursWrapper" class="d-flex align-items-center gap-1" style="display:none !important;">
+                          <label class="fs-8 fw-semibold text-secondary mb-0 text-nowrap" for="txtOnGridBackupHours">Backup:</label>
+                          <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold p-1" id="txtOnGridBackupHours" title="Backup Hours" style="width: 48px; height: 28px; font-size: 0.78rem;">
+                          <span class="fs-8 text-muted fw-semibold">Hrs</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
 
           <!-- STEP 2: APPLIANCES & CONNECTED LOAD SUMMARY CARD -->
           <div class="col-lg-6" id="colStep2Wrapper">
-            <div class="step-card p-3 h-100 d-flex flex-column justify-content-between mb-0" id="secApplianceSummary">
+            <div class="step-card p-4 h-100 d-flex flex-column justify-content-between mb-0" id="secApplianceSummary">
               <div>
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="step-number-badge">2</span>
-                    <div>
-                      <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
-                      <span class="text-muted fs-8">Connected load & daily energy</span>
-                    </div>
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                  <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
+                    <span class="text-muted fs-8">Connected load & daily energy</span>
                   </div>
                 </div>
 
                 <!-- Summary Metrics Cards Grid -->
-                <div class="summary-metrics-grid mb-2.5" id="summaryMetricsGrid">
+                <div class="summary-metrics-grid mb-3" id="summaryMetricsGrid">
                   <div class="summary-stat-box" id="boxTotalConnectedLoad" onclick="SizingUI.openApplianceModal()">
                     <div class="stat-icon-wrapper bg-primary-subtle text-primary">⚡</div>
                     <div>
@@ -205,12 +224,12 @@
               </div>
 
               <!-- Active Appliances Preview List & Quick Link -->
-              <div class="p-2 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+              <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3" style="margin-bottom: 2px;">
                 <div class="d-flex align-items-center gap-1.5 flex-wrap" id="applianceSummaryBadges">
                   <!-- Rendered dynamically -->
                 </div>
-                <a href="javascript:void(0)" class="text-primary fw-semibold fs-8 text-decoration-none" onclick="SizingUI.openApplianceModal()">
-                  Edit ➔
+                <a href="javascript:void(0)" class="btn btn-xs btn-outline-primary fw-semibold fs-8 text-decoration-none px-2.5 py-1" onclick="SizingUI.openApplianceModal()">
+                  Configure ➔
                 </a>
               </div>
             </div>
@@ -219,7 +238,7 @@
         </div>
 
         <!-- RESULTS CONTAINER -->
-        <div id="resultsContainer" class="mt-3">
+        <div id="resultsContainer" class="mt-4 pt-1">
           <!-- Rendered dynamically by sizing-ui.js -->
         </div>
 
