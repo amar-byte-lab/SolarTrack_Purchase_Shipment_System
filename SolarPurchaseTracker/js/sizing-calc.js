@@ -492,12 +492,157 @@ const SizingCalc = (() => {
     return list;
   }
 
+  /**
+   * Odisha OERC Domestic Tariff & Solar Investment Recovery Engine
+   * @param {Object} opts
+   * @returns {Object}
+   */
+  function calculateOdishaTariffAndPayback({ monthlyUnits = 450, capitalSpend = 150000, sanctionedLoadKw = 1, annualInterestRate = 0 }) {
+    const u = Math.max(0, Number(monthlyUnits) || 0);
+    const spend = Math.max(0, Number(capitalSpend) || 0);
+    const loadKw = Math.max(0.5, Number(sanctionedLoadKw) || 1);
+    const interestRate = Math.max(0, Number(annualInterestRate) || 0);
+
+    // 1. Odisha OERC Telescopic Tariff Structure
+    const slab1Units = Math.min(u, 50);
+    const slab1Rate = 2.90;
+    const slab1Amount = slab1Units * slab1Rate;
+
+    const slab2Units = Math.min(Math.max(0, u - 50), 150);
+    const slab2Rate = 4.70;
+    const slab2Amount = slab2Units * slab2Rate;
+
+    const slab3Units = Math.min(Math.max(0, u - 200), 200);
+    const slab3Rate = 5.70;
+    const slab3Amount = slab3Units * slab3Rate;
+
+    const slab4Units = Math.max(0, u - 400);
+    const slab4Rate = 6.10;
+    const slab4Amount = slab4Units * slab4Rate;
+
+    const baseEnergyCharge = slab1Amount + slab2Amount + slab3Amount + slab4Amount;
+    const fixedCharge = loadKw * 20; // ₹20 per kW sanctioned load
+    const meterRent = 10; // ₹10 flat meter rent
+    const electricityDuty = baseEnergyCharge * 0.04; // 4% of Base Energy Charge
+    const totalMonthlyBill = baseEnergyCharge + fixedCharge + meterRent + electricityDuty;
+    const monthlySavings = totalMonthlyBill;
+    const annualSavings = monthlySavings * 12;
+
+    // 2. Recovery Timeline (Payback Period)
+    let totalMonths = 0;
+    let isRecoverable = true;
+    let recoveryError = '';
+    let totalInterestPaid = 0;
+
+    if (spend <= 0) {
+      totalMonths = 0;
+    } else if (monthlySavings <= 0) {
+      isRecoverable = false;
+      recoveryError = 'Monthly savings is ₹0. Cannot calculate recovery timeline.';
+    } else if (interestRate === 0) {
+      totalMonths = spend / monthlySavings;
+    } else {
+      const monthlyInterestRate = (interestRate / 100) / 12;
+      const initialMonthlyInterest = spend * monthlyInterestRate;
+
+      if (monthlySavings <= initialMonthlyInterest) {
+        isRecoverable = false;
+        recoveryError = `Investment cannot be recovered with this savings rate. Initial monthly interest (₹${Math.round(initialMonthlyInterest).toLocaleString('en-IN')}) exceeds monthly savings (₹${Math.round(monthlySavings).toLocaleString('en-IN')}).`;
+      } else {
+        let remainingBalance = spend;
+        let monthsCount = 0;
+        const MAX_MONTHS = 600; // 50 years maximum limit
+
+        while (remainingBalance > 0 && monthsCount < MAX_MONTHS) {
+          const interest = remainingBalance * monthlyInterestRate;
+          totalInterestPaid += interest;
+          remainingBalance = remainingBalance + interest - monthlySavings;
+          monthsCount++;
+          if (remainingBalance < 0) remainingBalance = 0;
+        }
+
+        if (monthsCount >= MAX_MONTHS) {
+          isRecoverable = false;
+          recoveryError = 'Payback timeline exceeds 50 years.';
+        } else {
+          totalMonths = monthsCount;
+        }
+      }
+    }
+
+    // 3. Format Human-Friendly Recovery Period
+    let recoveryPeriodText = '';
+    let wholeYears = 0;
+    let remainingMonths = 0;
+
+    if (isRecoverable) {
+      if (spend <= 0) {
+        recoveryPeriodText = 'Immediate (0 Months)';
+      } else {
+        wholeYears = Math.floor(totalMonths / 12);
+        remainingMonths = Math.round(totalMonths % 12);
+        if (remainingMonths === 12) {
+          wholeYears += 1;
+          remainingMonths = 0;
+        }
+
+        if (wholeYears === 0) {
+          recoveryPeriodText = `${remainingMonths} Month${remainingMonths === 1 ? '' : 's'}`;
+        } else if (remainingMonths === 0) {
+          recoveryPeriodText = `${wholeYears} Year${wholeYears === 1 ? '' : 's'}`;
+        } else {
+          recoveryPeriodText = `${wholeYears} Year${wholeYears === 1 ? '' : 's'} and ${remainingMonths} Month${remainingMonths === 1 ? '' : 's'}`;
+        }
+      }
+    }
+
+    // 4. Lifetime Long-Term ROI Projections
+    const fiveYearSavings = monthlySavings * 60;
+    const tenYearSavings = monthlySavings * 120;
+    const twentyFiveYearSavings = monthlySavings * 300;
+    const net25YearProfit = twentyFiveYearSavings - spend - totalInterestPaid;
+    const annualRoiPercent = spend > 0 ? ((annualSavings / spend) * 100).toFixed(1) : '100.0';
+
+    return {
+      monthlyUnits: u,
+      capitalSpend: spend,
+      sanctionedLoadKw: loadKw,
+      annualInterestRate: interestRate,
+      slabs: [
+        { name: '1 to 50 Units', units: slab1Units, rate: slab1Rate, amount: slab1Amount },
+        { name: '51 to 200 Units', units: slab2Units, rate: slab2Rate, amount: slab2Amount },
+        { name: '201 to 400 Units', units: slab3Units, rate: slab3Rate, amount: slab3Amount },
+        { name: 'Above 400 Units', units: slab4Units, rate: slab4Rate, amount: slab4Amount }
+      ],
+      baseEnergyCharge,
+      fixedCharge,
+      meterRent,
+      electricityDuty,
+      totalMonthlyBill,
+      monthlySavings,
+      annualSavings,
+      isRecoverable,
+      recoveryError,
+      totalMonths: Number(totalMonths.toFixed(1)),
+      wholeYears,
+      remainingMonths,
+      recoveryPeriodText,
+      totalInterestPaid: Math.round(totalInterestPaid),
+      fiveYearSavings,
+      tenYearSavings,
+      twentyFiveYearSavings,
+      net25YearProfit,
+      annualRoiPercent
+    };
+  }
+
   return {
     SYSTEM_TYPE_MAP,
     calculateSystem,
     selectInverter,
     selectBattery,
-    calculateSolar
+    calculateSolar,
+    calculateOdishaTariffAndPayback
   };
 
 })();

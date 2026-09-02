@@ -78,6 +78,7 @@ const SizingUI = (() => {
 
     renderApplianceSummaryCard();
     calculateAndRender();
+    renderCostRecovery();
   }
 
   /* ---------------- Energy & Formatting Helpers ---------------- */
@@ -705,11 +706,12 @@ const SizingUI = (() => {
     const container = document.getElementById('resultsContainer');
     if (!container) return;
 
-    // 1. Solar PV Specification Card
-    let solarHtml = '';
+    const activeCards = [];
+
+    // 1. Solar PV Specification Card (Render only if solar is applicable)
     if (res.solar) {
       const sol = res.solar;
-      solarHtml = `
+      activeCards.push(`
         <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-header-solar">
             <span>☀️ SOLAR SPECIFICATION</span>
@@ -734,39 +736,12 @@ const SizingUI = (() => {
             </div>
           </div>
         </div>
-      `;
-    } else {
-      solarHtml = `
-        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
-          <div class="result-card-header bg-secondary">
-            <span>☀️ SOLAR SPECIFICATION</span>
-            <span class="badge bg-white text-dark fs-8">Not Required</span>
-          </div>
-          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-            <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
-              <div>
-                <div class="big-stat-badge text-muted">0 kWp (AC Grid)</div>
-                <div class="sub-stat-text">Standard Inverter / Home UPS Mode</div>
-              </div>
-            </div>
-
-            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
-              <div class="fw-bold text-dark fs-7 mb-1">Solar PV Not Required:</div>
-              <div class="text-muted fs-8">System operates purely on AC grid electricity with battery backup during grid failure without solar panel generation.</div>
-            </div>
-
-            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
-              <span class="spec-pill">PV Capex: ₹0</span>
-              <span class="spec-pill">Type: AC Mains Fed</span>
-            </div>
-          </div>
-        </div>
-      `;
+      `);
     }
 
-    // 2. Recommended Inverter Specification Card
+    // 2. Recommended Inverter Specification Card (Always applicable)
     const inv = res.inverter;
-    const invHtml = `
+    activeCards.push(`
       <div class="result-hero-card h-100 mb-0 d-flex flex-column">
         <div class="result-card-header bg-header-inverter">
           <span>⚡ INVERTER SPECIFICATION</span>
@@ -799,13 +774,12 @@ const SizingUI = (() => {
           </div>
         </div>
       </div>
-    `;
+    `);
 
-    // 3. Battery Specification Card (if applicable)
-    let batHtml = '';
+    // 3. Battery Specification Card (Render only if battery is required)
     if (res.battery) {
       const bat = res.battery;
-      batHtml = `
+      activeCards.push(`
         <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-header-battery">
             <span>🔋 BATTERY SPECIFICATION</span>
@@ -836,145 +810,26 @@ const SizingUI = (() => {
             </div>
           </div>
         </div>
-      `;
-    } else {
-      batHtml = `
-        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
-          <div class="result-card-header bg-secondary">
-            <span>🔋 BATTERY SPECIFICATION</span>
-            <span class="badge bg-white text-dark fs-8">Not Required</span>
-          </div>
-          <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-            <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
-              <div>
-                <div class="big-stat-badge text-muted">0 Ah (Grid-Tied)</div>
-                <div class="sub-stat-text">Direct Net-Metering Architecture</div>
-              </div>
-              <div class="text-end">
-                <span class="discharge-rating-badge text-muted border-secondary bg-light">
-                  🏷️ Grid-Connected
-                </span>
-              </div>
-            </div>
-
-            <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
-              <div class="fw-bold text-dark fs-7 mb-1">Battery Storage Not Required:</div>
-              <div class="text-muted fs-8">Standard On-Grid (GTI) solar systems export excess daytime generation directly to the grid via Net Metering, eliminating battery capex and replacement costs.</div>
-            </div>
-
-            <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
-              <span class="spec-pill">Battery Capex: ₹0</span>
-              <span class="spec-pill">Maintenance: Zero</span>
-              <span class="spec-pill">Efficiency: ~98% Grid-Tie</span>
-            </div>
-          </div>
-        </div>
-      `;
+      `);
     }
 
-    // 4. Warnings List
-    const warningsHtml = res.warnings && res.warnings.length > 0 ? `
-      <div class="mt-4">
-        <h6 class="fw-bold text-dark mb-2.5 fs-7">⚠️ System Sizing Warnings & Engineering Notes:</h6>
-        ${res.warnings.map(w => `<div class="warning-item-box">${w}</div>`).join('')}
-      </div>
-    ` : '';
+    // Determine column class based on active cards count
+    const colClass = activeCards.length === 2 
+      ? 'col-lg-6 col-md-6 col-12' 
+      : (activeCards.length === 1 ? 'col-12' : 'col-lg-4 col-md-12 col-12');
 
-    // 5. Transparent "Why Selected" Accordion
-    const whyHtml = renderWhySelectedAccordion(res);
+    const cardsHtml = activeCards.map(c => `
+      <div class="${colClass} d-flex flex-column">${c}</div>
+    `).join('');
 
     container.innerHTML = `
       <div class="row g-3 g-xl-4 align-items-stretch">
-        <div class="col-lg-4 col-md-12 d-flex flex-column">${solarHtml}</div>
-        <div class="col-lg-4 col-md-12 d-flex flex-column">${invHtml}</div>
-        <div class="col-lg-4 col-md-12 d-flex flex-column">${batHtml}</div>
+        ${cardsHtml}
       </div>
-      ${warningsHtml}
-      ${whyHtml}
     `;
 
     // Save summary globally for clipboard copy
     state.currentResult = res;
-  }
-
-  function renderWhySelectedAccordion(res) {
-    const cd = res.calculationDetails;
-    return `
-      <div class="accordion mt-4" id="accWhySelected">
-        <div class="accordion-item border rounded-3">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed fw-bold text-primary fs-7" type="button" 
-              data-bs-toggle="collapse" data-bs-target="#collapseWhy">
-              🔍 View Detailed Calculation & "Why This Was Selected"
-            </button>
-          </h2>
-          <div id="collapseWhy" class="accordion-collapse collapse" data-bs-parent="#accWhySelected">
-            <div class="accordion-body p-3 bg-white">
-              <table class="table table-sm table-bordered breakdown-table mb-0">
-                <thead>
-                  <tr>
-                    <th>Parameter / Step</th>
-                    <th>Calculated Value</th>
-                    <th>Applied Formula & Technical Rationale</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="fw-semibold">Connected Load</td>
-                    <td>${res.connectedLoadW} W</td>
-                    <td>Sum of all selected appliance operating wattages.</td>
-                  </tr>
-                  <tr>
-                    <td class="fw-semibold">Daily Energy Demand</td>
-                    <td>${formatEnergy(res.estimatedDailyKwh * 1000)} / day</td>
-                    <td>Sum of daily energy consumption for all active appliances (Watts × Hours × Qty).</td>
-                  </tr>
-                  <tr>
-                    <td class="fw-semibold">Safety Margin (${res.safetyMarginPct}%)</td>
-                    <td>+${cd.safetyMarginW} W</td>
-                    <td>Design safety factor applied to running continuous load.</td>
-                  </tr>
-                  <tr>
-                    <td class="fw-semibold">Heavy Load Starting Surge</td>
-                    <td>+${cd.heavyLoadSurgeDeltaW} W</td>
-                    <td>AC compressor & motor starting surge allowances.</td>
-                  </tr>
-                  <tr>
-                    <td class="fw-semibold">Required Inverter Rating</td>
-                    <td>Continuous: ${res.requiredContinuousW}W<br>Peak: ${res.requiredPeakSurgeW}W</td>
-                    <td>Inverter must satisfy continuous output & peak starting surge.</td>
-                  </tr>
-                  ${res.battery ? `
-                    <tr>
-                      <td class="fw-semibold">Required Battery Wh</td>
-                      <td>${res.battery.requiredBatteryWh} Wh</td>
-                      <td>Daily Energy (${formatEnergy(res.battery.backupEnergyWh)}) ÷ (${cd.inverterEfficiencyPct}% Eff × ${res.battery.batteryType.includes('Lithium') ? cd.lithiumDoDPct : cd.leadAcidDoDPct}% DoD)</td>
-                    </tr>
-                    <tr>
-                      <td class="fw-semibold">Required Battery Ah</td>
-                      <td>${res.battery.requiredAh} Ah (${res.battery.systemVoltage}V)</td>
-                      <td>Required Battery Wh ÷ System Voltage (${res.battery.systemVoltage}V).</td>
-                    </tr>
-                    <tr>
-                      <td class="fw-semibold">Series / Parallel Configuration</td>
-                      <td>${res.battery.series} Series × ${res.battery.parallel} Parallel</td>
-                      <td>Math.ceil(System Voltage / Battery Voltage) × Math.ceil(Req. Ah / Unit Ah).</td>
-                    </tr>
-                  ` : ''}
-                  ${res.solar ? `
-                    <tr>
-                      <td class="fw-semibold">Solar PV Sizing</td>
-                      <td>${res.solar.recommendedKwp} kWp</td>
-                      <td>Daily Consumption (${res.solar.dailyKwh} kWh) ÷ (${cd.peakSunHours} Peak Sun Hours × ${cd.pvSystemEfficiencyPct}% Eff).</td>
-                    </tr>
-                  ` : ''}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   function copySummary() {
@@ -1050,11 +905,204 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
       });
     }
 
+    // Cost Recovery Inputs Live Binding
+    const recoveryInputs = ['txtRecoveryUnits', 'txtRecoverySpend', 'selRecoverySanctionedLoad', 'txtRecoveryInterest'];
+    recoveryInputs.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', renderCostRecovery);
+        el.addEventListener('change', renderCostRecovery);
+      }
+    });
+
     // Advanced Settings Modal Binds
     const btnOpenAdvanced = document.getElementById('btnOpenAdvanced');
     if (btnOpenAdvanced) {
       btnOpenAdvanced.addEventListener('click', openAdvancedSettingsModal);
     }
+  }
+
+  /* ---------------- Cost Recovery & Investment Calculator (Odisha Tariff) ---------------- */
+  function renderCostRecovery() {
+    const cardEl = document.getElementById('cardRecoveryResults');
+    if (!cardEl) return;
+
+    const unitsInput = document.getElementById('txtRecoveryUnits');
+    const spendInput = document.getElementById('txtRecoverySpend');
+    const loadInput = document.getElementById('selRecoverySanctionedLoad');
+    const interestInput = document.getElementById('txtRecoveryInterest');
+
+    const monthlyUnits = unitsInput ? Number(unitsInput.value) || 0 : 450;
+    const capitalSpend = spendInput ? Number(spendInput.value) || 0 : 150000;
+    const sanctionedLoadKw = loadInput ? Number(loadInput.value) || 1 : 1;
+    const annualInterestRate = interestInput ? Number(interestInput.value) || 0 : 0;
+
+    const res = SizingCalc.calculateOdishaTariffAndPayback({
+      monthlyUnits,
+      capitalSpend,
+      sanctionedLoadKw,
+      annualInterestRate
+    });
+
+    // Payback Hero Content
+    let paybackHeroInner = '';
+    if (res.isRecoverable) {
+      paybackHeroInner = `
+        <div class="text-uppercase fs-9 fw-bold text-muted mb-0.5" style="letter-spacing: 0.5px;">Full Investment Payback In</div>
+        <div class="fs-2 fw-extrabold text-success my-0.5">${res.recoveryPeriodText}</div>
+        <div class="fs-8 text-muted">
+          After ~${(res.totalMonths / 12).toFixed(1)} years, enjoy <strong>100% free electricity</strong> for 20+ more years.
+        </div>
+      `;
+    } else {
+      paybackHeroInner = `
+        <div class="text-danger fw-bold fs-7 mb-0.5">⚠️ Recovery Notice</div>
+        <div class="fs-8 text-danger">${res.recoveryError}</div>
+      `;
+    }
+
+    cardEl.innerHTML = `
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+        <h6 class="fw-bold text-dark mb-0 fs-7">Estimated Savings & ROI</h6>
+        <span class="badge bg-success-subtle text-success fs-8">~${res.annualRoiPercent}% Annual Return</span>
+      </div>
+
+      <!-- ALL 3 KEY STATS (Payback Hero + Monthly Saved + Annual Savings in 1 row on mobile) -->
+      <div class="row g-2.5 g-md-3 mb-2.5 align-items-stretch">
+        <div class="col-lg-6 col-12 d-flex flex-column mb-2 mb-lg-0">
+          <div class="p-2.5 p-md-3 rounded-3 border text-center h-100 d-flex flex-column justify-content-center" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+            ${paybackHeroInner}
+          </div>
+        </div>
+        <div class="col-lg-3 col-6 d-flex flex-column">
+          <div class="p-2.5 p-md-3 bg-light rounded-3 border text-center h-100 d-flex flex-column justify-content-center">
+            <span class="fs-8 text-muted fw-semibold d-block mb-1">Monthly Bill Saved</span>
+            <span class="fs-3 fw-bold text-dark">₹${Math.round(res.monthlySavings).toLocaleString('en-IN')}</span>
+            <span class="fs-9 text-muted d-block mt-0.5">₹0 Electricity Bill</span>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6 d-flex flex-column">
+          <div class="p-2.5 p-md-3 bg-light rounded-3 border text-center h-100 d-flex flex-column justify-content-center">
+            <span class="fs-8 text-muted fw-semibold d-block mb-1">Annual Savings</span>
+            <span class="fs-3 fw-bold text-primary">₹${Math.round(res.annualSavings).toLocaleString('en-IN')}</span>
+            <span class="fs-9 text-muted d-block mt-0.5">Saved Every Year</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simple Value Highlight for Sales Pitch -->
+      <div class="p-2.5 p-md-3 rounded-3 border mb-2.5" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+        <div class="d-flex gap-2">
+          <span class="fs-5">💡</span>
+          <div>
+            <div class="fw-bold text-dark fs-7 mb-0.5">10-Year Value Proposition:</div>
+            <div class="text-secondary fs-8">
+              In 10 years, this solar system saves approx. <strong>₹${(res.tenYearSavings / 100000).toFixed(2)} Lakhs</strong> in electricity bills against your initial investment of <strong>₹${(res.capitalSpend / 100000).toFixed(2)} Lakhs</strong>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Detailed Bill Breakdown (Clean & Hidden by Default) -->
+      <div class="accordion border rounded-3 mt-auto" id="accOdishaTariff">
+        <div class="accordion-item border-0">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed py-2 px-3 fs-8 fw-semibold text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOdishaBill">
+              🔍 View Odisha Tariff (OERC) Slab Breakdown
+            </button>
+          </h2>
+          <div id="collapseOdishaBill" class="accordion-collapse collapse" data-bs-parent="#accOdishaTariff">
+            <div class="accordion-body p-3 pt-1 border-top bg-light">
+              <table class="table table-sm table-borderless fs-8 mb-0">
+                <tbody>
+                  ${res.slabs.map(s => `
+                    <tr>
+                      <td class="text-secondary py-1">${s.name} (${s.units} Units @ ₹${s.rate.toFixed(2)})</td>
+                      <td class="text-end fw-semibold text-dark py-1">₹${s.amount.toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                  <tr class="border-top">
+                    <td class="text-dark fw-bold py-1">Base Energy Charge:</td>
+                    <td class="text-end fw-bold text-dark py-1">₹${res.baseEnergyCharge.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted py-0.5">Fixed Charge (${res.sanctionedLoadKw} kW @ ₹20/kW):</td>
+                    <td class="text-end text-muted py-0.5">₹${res.fixedCharge.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted py-0.5">Meter Rent:</td>
+                    <td class="text-end text-muted py-0.5">₹${res.meterRent.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted py-0.5">Electricity Duty (4%):</td>
+                    <td class="text-end text-muted py-0.5">₹${res.electricityDuty.toFixed(2)}</td>
+                  </tr>
+                  <tr class="border-top fw-bold bg-white">
+                    <td class="text-dark py-1.5 px-2">Total Monthly Bill Saved:</td>
+                    <td class="text-end text-success py-1.5 px-2">₹${res.totalMonthlyBill.toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function onFinanceTypeChange(val) {
+    const customWrapper = document.getElementById('wrapperCustomInterest');
+    const txtInterest = document.getElementById('txtRecoveryInterest');
+    if (val === 'custom') {
+      if (customWrapper) customWrapper.style.display = 'flex';
+      if (txtInterest) txtInterest.focus();
+    } else {
+      if (customWrapper) customWrapper.style.display = 'none';
+      if (txtInterest) txtInterest.value = val;
+    }
+    renderCostRecovery();
+  }
+
+  function setRecoveryPresetUnits(u) {
+    const el = document.getElementById('txtRecoveryUnits');
+    if (el) el.value = u;
+    renderCostRecovery();
+  }
+
+  function setRecoveryPresetSpend(s) {
+    const el = document.getElementById('txtRecoverySpend');
+    if (el) el.value = s;
+    renderCostRecovery();
+  }
+
+  function setRecoveryPresetInterest(i) {
+    const el = document.getElementById('txtRecoveryInterest');
+    if (el) el.value = i;
+    renderCostRecovery();
+  }
+
+  function syncRecoveryFromSolar() {
+    let units = 450;
+    let spend = 150000;
+
+    if (state.systemType === 'on-grid' && Number(state.monthlyUnits) > 0) {
+      units = Number(state.monthlyUnits);
+    } else if (state.currentResult && state.currentResult.solar && state.currentResult.solar.estDailyGenKwh > 0) {
+      units = Math.round(state.currentResult.solar.estDailyGenKwh * 30);
+    }
+
+    if (state.currentResult && state.currentResult.solar && state.currentResult.solar.recommendedKwp > 0) {
+      const kwp = state.currentResult.solar.recommendedKwp;
+      spend = Math.round(kwp * 55000); // Standard benchmark ~₹55,000/kWp
+    }
+
+    const uEl = document.getElementById('txtRecoveryUnits');
+    if (uEl) uEl.value = units;
+    const sEl = document.getElementById('txtRecoverySpend');
+    if (sEl) sEl.value = spend;
+
+    renderCostRecovery();
+    UI.toast(`Synced from Sizing Result: ${units} Units, ~₹${spend.toLocaleString('en-IN')} spend!`, 'info');
   }
 
   /* ---------------- Advanced Settings & Database Manager ---------------- */
@@ -1181,7 +1229,13 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     deleteInverterItem,
     deleteBatteryItem,
     resetAllToDefaults,
-    setPresetUnits
+    setPresetUnits,
+    renderCostRecovery,
+    setRecoveryPresetUnits,
+    setRecoveryPresetSpend,
+    setRecoveryPresetInterest,
+    syncRecoveryFromSolar,
+    onFinanceTypeChange
   };
 
 })();

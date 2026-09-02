@@ -38,8 +38,8 @@
   background: #ffffff;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
-  padding: 24px 26px;
-  margin-bottom: 1.5rem;
+  padding: 22px 24px;
+  margin-bottom: 0;
 }
 
 .step-card:hover {
@@ -416,7 +416,7 @@
   border: 1px solid #e2e8f0;
   background: #ffffff;
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   transition: all 0.2s ease;
 }
 
@@ -519,8 +519,237 @@
   padding: 10px 14px;
 }
 
-.breakdown-table td {
-  font-size: 0.86rem;
-  vertical-align: middle;
-  padding: 10px 14px;
+
+
+/* =========================================================================
+   MOBILE SCREEN ULTRA-COMPACT FIT STYLES (@media max-width: 768px)
+   Reduces font sizes, card paddings, and margins so everything fits neatly
+   ========================================================================= */
+@media (max-width: 768px) {
+  /* Main Container */
+  .sizing-page-body {
+    padding: 10px 10px 40px 10px !important;
+  }
+
+  /* Typography Scaling */
+  h4 {
+    font-size: 1.05rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  h5 {
+    font-size: 0.92rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  h6 {
+    font-size: 0.82rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  p.text-muted, span.text-muted {
+    font-size: 0.72rem !important;
+  }
+
+  /* Header Controls */
+  #btnOpenAdvanced, #btnSyncRecoveryFromSolar {
+    font-size: 0.72rem !important;
+    padding: 3px 8px !important;
+  }
+
+  /* Row & Grid Gaps */
+  .row.g-3, .row.g-xl-4, .row.g-2 {
+    --bs-gutter-y: 0.5rem !important;
+    --bs-gutter-x: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .mb-4, .mb-3 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .mt-4, .mt-5 {
+    margin-top: 0.75rem !important;
+  }
+
+  .pt-3, .pt-2, .pt-1 {
+    padding-top: 0.25rem !important;
+  }
+
+  /* Step Input Cards */
+  .step-card {
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+  }
+
+  /* System Type Dropdown */
+  .custom-dropdown-trigger {
+    padding: 6px 10px !important;
+    min-height: 38px !important;
+    border-radius: 8px !important;
+  }
+
+  #selSystemIcon {
+    font-size: 1.15rem !important;
+  }
+
+  #selSystemTitle {
+    font-size: 0.82rem !important;
+  }
+
+  #selSystemDesc {
+    display: none !important;
+  }
+
+  .system-dropdown-item {
+    padding: 6px 8px !important;
+    margin-bottom: 4px !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* On-Grid Section Inside Step 1 */
+  #secOnGridBill {
+    padding: 8px 10px !important;
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
+    border-radius: 8px !important;
+  }
+
+  #secOnGridBill input.form-control {
+    height: 32px !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* Summary Metrics Boxes (Step 2) */
+  .summary-metrics-grid {
+    gap: 8px !important;
+  }
+
+  .summary-stat-box {
+    padding: 6px 10px !important;
+    border-radius: 8px !important;
+    gap: 8px !important;
+  }
+
+  .stat-icon-wrapper {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.9rem !important;
+    border-radius: 6px !important;
+  }
+
+  .stat-label {
+    font-size: 0.65rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .stat-value {
+    font-size: 0.88rem !important;
+  }
+
+  /* Appliance Badges Preview Box */
+  #applianceSummaryBadges .badge {
+    font-size: 0.68rem !important;
+    padding: 2px 6px !important;
+  }
+
+  /* 3 Result Specification Cards */
+  .result-hero-card {
+    margin-bottom: 6px !important;
+    border-radius: 10px !important;
+  }
+
+  .result-card-header {
+    padding: 6px 10px !important;
+    font-size: 0.76rem !important;
+  }
+
+  .result-hero-card .p-3\.5, .result-hero-card .p-md-4, .result-hero-card .p-3 {
+    padding: 8px 10px !important;
+  }
+
+  .big-stat-badge {
+    font-size: 1.15rem !important;
+  }
+
+  .sub-stat-text {
+    font-size: 0.72rem !important;
+  }
+
+  .spec-pill {
+    padding: 2px 6px !important;
+    font-size: 0.68rem !important;
+    margin-right: 3px !important;
+    margin-bottom: 3px !important;
+    border-radius: 4px !important;
+  }
+
+  .ip-rating-badge, .discharge-rating-badge {
+    padding: 2px 6px !important;
+    font-size: 0.68rem !important;
+    border-radius: 5px !important;
+  }
+
+  /* Warnings & Accordion */
+  .warning-item-box {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Cost Recovery Section */
+  #secCostRecoveryContainer {
+    margin-top: 10px !important;
+    padding-top: 4px !important;
+  }
+
+  #secCostRecoveryContainer .form-control,
+  #secCostRecoveryContainer .form-select {
+    height: 34px !important;
+    font-size: 0.82rem !important;
+    padding: 4px 8px !important;
+  }
+
+  #secCostRecoveryContainer .btn-2xs {
+    padding: 2px 6px !important;
+    font-size: 0.68rem !important;
+  }
+
+  #cardRecoveryResults .fs-1 {
+    font-size: 1.25rem !important;
+  }
+
+  #cardRecoveryResults .fs-4 {
+    font-size: 1.05rem !important;
+  }
+
+  #cardRecoveryResults .p-3, #cardRecoveryResults .p-3\.5 {
+    padding: 8px 10px !important;
+  }
+
+  #cardRecoveryResults .accordion-button {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Modal Dialog on Mobile */
+  .modal-dialog {
+    margin: 8px !important;
+  }
+
+  .modal-body {
+    padding: 8px !important;
+  }
+
+  .appliance-config-table th {
+    padding: 5px 3px !important;
+    font-size: 0.65rem !important;
+  }
+
+  .appliance-config-table td {
+    padding: 4px 3px !important;
+    font-size: 0.72rem !important;
+  }
 }
