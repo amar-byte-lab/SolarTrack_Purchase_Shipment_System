@@ -279,30 +279,30 @@
 
               <!-- 3. Sanctioned Meter Load -->
               <div class="col-lg-3 col-6">
-                <label class="form-label fw-bold text-dark fs-8 mb-1" for="selRecoverySanctionedLoad">
+                <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoverySanctionedLoad">
                   Sanctioned Load
                 </label>
-                <select class="form-select fw-semibold fs-7" id="selRecoverySanctionedLoad" style="height: 38px;">
-                  <option value="1" selected>1 kW (₹20 / mo)</option>
-                  <option value="2">2 kW (₹40 / mo)</option>
-                  <option value="3">3 kW (₹60 / mo)</option>
-                  <option value="4">4 kW (₹80 / mo)</option>
-                  <option value="5">5 kW (₹100 / mo)</option>
-                  <option value="7">7 kW (₹140 / mo)</option>
-                  <option value="10">10 kW (₹200 / mo)</option>
+                <select class="form-select fw-semibold fs-8 px-2" id="selRecoverySanctionedLoad" style="height: 38px;">
+                  <option value="1" selected>1 kW (₹20/mo)</option>
+                  <option value="2">2 kW (₹40/mo)</option>
+                  <option value="3">3 kW (₹60/mo)</option>
+                  <option value="4">4 kW (₹80/mo)</option>
+                  <option value="5">5 kW (₹100/mo)</option>
+                  <option value="7">7 kW (₹140/mo)</option>
+                  <option value="10">10 kW (₹200/mo)</option>
                 </select>
               </div>
 
               <!-- 4. Payment / Financing -->
               <div class="col-lg-3 col-6">
-                <label class="form-label fw-bold text-dark fs-8 mb-1" for="selRecoveryFinanceType">
+                <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoveryFinanceType">
                   Payment / Financing
                 </label>
-                <select class="form-select fw-semibold fs-7" id="selRecoveryFinanceType" onchange="SizingUI.onFinanceTypeChange(this.value)" style="height: 38px;">
-                  <option value="0" selected>Self-Funded (0% Int)</option>
-                  <option value="7">PM Surya Ghar (7.0%)</option>
-                  <option value="9.5">Bank Loan (9.5%)</option>
-                  <option value="custom">Custom Interest...</option>
+                <select class="form-select fw-semibold fs-8 px-2" id="selRecoveryFinanceType" onchange="SizingUI.onFinanceTypeChange(this.value)" style="height: 38px;">
+                  <option value="0" selected>Cash (0% Int)</option>
+                  <option value="7">Surya Ghar (7%)</option>
+                  <option value="9.5">Bank (9.5%)</option>
+                  <option value="custom">Custom Int...</option>
                 </select>
                 
                 <div id="wrapperCustomInterest" class="input-group mt-1.5" style="display:none;">

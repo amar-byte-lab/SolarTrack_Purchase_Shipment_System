@@ -706,15 +706,20 @@
   }
 
   #secCostRecoveryContainer .form-control,
-  #secCostRecoveryContainer .form-select {
+  #secCostRecoveryContainer .form-select,
+  #secCostRecoveryContainer .input-group-text {
     height: 34px !important;
-    font-size: 0.82rem !important;
-    padding: 4px 8px !important;
+    font-size: 0.74rem !important;
+    padding: 3px 6px !important;
   }
 
-  #secCostRecoveryContainer .btn-2xs {
-    padding: 2px 6px !important;
-    font-size: 0.68rem !important;
+  #secCostRecoveryContainer select.form-select option {
+    font-size: 0.72rem !important;
+  }
+
+  #secCostRecoveryContainer .form-label {
+    font-size: 0.72rem !important;
+    margin-bottom: 2px !important;
   }
 
   #cardRecoveryResults .fs-1 {
@@ -727,6 +732,15 @@
 
   #cardRecoveryResults .p-3, #cardRecoveryResults .p-3\.5 {
     padding: 8px 10px !important;
+  }
+
+  #cardRecoveryResults .odisha-breakdown-table {
+    font-size: 0.68rem !important;
+  }
+
+  #cardRecoveryResults .odisha-breakdown-table td {
+    padding: 2px 2px !important;
+    white-space: nowrap !important;
   }
 
   #cardRecoveryResults .accordion-button {

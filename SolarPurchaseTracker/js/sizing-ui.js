@@ -715,14 +715,11 @@ const SizingUI = (() => {
         <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-header-solar">
             <span>☀️ SOLAR SPECIFICATION</span>
-            <span class="badge bg-white text-dark fs-8">${sol.recommendedKwp} kWp</span>
           </div>
           <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-            <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
-              <div>
-                <div class="big-stat-badge text-warning">${sol.recommendedKwp} kWp</div>
-                <div class="sub-stat-text">Estimated Generation: ~${sol.estDailyGenKwh} kWh / day</div>
-              </div>
+            <div class="d-flex align-items-baseline gap-2 mb-2.5 flex-wrap">
+              <div class="big-stat-badge text-warning">${sol.recommendedKwp} kWp</div>
+              <div class="sub-stat-text">Estimated Generation: ~${sol.estDailyGenKwh} kWh / day</div>
             </div>
 
             <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
@@ -745,19 +742,20 @@ const SizingUI = (() => {
       <div class="result-hero-card h-100 mb-0 d-flex flex-column">
         <div class="result-card-header bg-header-inverter">
           <span>⚡ INVERTER SPECIFICATION</span>
-          <span class="badge bg-white text-dark fs-8">${res.inverterCategory}</span>
         </div>
         <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-          <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
-            <div>
-              <div class="big-stat-badge text-primary">${inv.kVA} kVA</div>
-              <div class="sub-stat-text">${inv.kW} kW Continuous Rating • ${inv.phase}</div>
-            </div>
-            <div class="text-end">
-              <span class="ip-rating-badge" title="Ingress Protection Waterproof Rating">
-                🛡️ ${inv.ipRating}
-              </span>
-            </div>
+          <!-- Row 1: Stat & Continuous Rating in one row -->
+          <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
+            <div class="big-stat-badge text-primary">${inv.kVA} kVA</div>
+            <div class="sub-stat-text">${inv.kW} kW Continuous Rating • ${inv.phase}</div>
+          </div>
+
+          <!-- Row 2: Category and IP Rating badges in one row -->
+          <div class="d-flex align-items-center gap-1.5 mb-2.5 flex-wrap">
+            <span class="badge bg-primary-subtle text-primary fs-8 border">${res.inverterCategory}</span>
+            <span class="ip-rating-badge" title="Ingress Protection Waterproof Rating">
+              🛡️ ${inv.ipRating}
+            </span>
           </div>
 
           <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
@@ -783,24 +781,25 @@ const SizingUI = (() => {
         <div class="result-hero-card h-100 mb-0 d-flex flex-column">
           <div class="result-card-header bg-header-battery">
             <span>🔋 BATTERY SPECIFICATION</span>
-            <span class="badge bg-white text-dark fs-8">${bat.batteryType}</span>
           </div>
           <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
-            <div class="d-flex align-items-baseline justify-content-between flex-wrap gap-2 mb-2">
-              <div>
-                <div class="big-stat-badge text-success">${bat.systemVoltage}V ${bat.totalAh}Ah</div>
-                <div class="sub-stat-text">${bat.totalInstalledKwh} kWh Energy Storage Capacity</div>
-              </div>
-              <div class="text-end">
-                <span class="discharge-rating-badge">
-                  🏷️ ${bat.capacityRating}
-                </span>
-              </div>
+            <!-- Row 1: Stat & Storage Capacity in one row -->
+            <div class="d-flex align-items-baseline gap-2 mb-1.5 flex-wrap">
+              <div class="big-stat-badge text-success">${bat.systemVoltage}V ${bat.totalAh}Ah</div>
+              <div class="sub-stat-text">${bat.totalInstalledKwh} kWh Energy Storage Capacity</div>
+            </div>
+
+            <!-- Row 2: Battery Type and Rating badges in one row -->
+            <div class="d-flex align-items-center gap-1.5 mb-2.5 flex-wrap">
+              <span class="badge bg-success-subtle text-success fs-8 border">${bat.batteryType}</span>
+              <span class="discharge-rating-badge">
+                🏷️ ${bat.capacityRating}
+              </span>
             </div>
 
             <div class="p-3 bg-light rounded-3 mb-3 border flex-grow-1">
               <div class="fw-bold text-dark fs-7 mb-1">Configuration: ${bat.configurationText}</div>
-              <div class="text-muted fs-8">Selected: ${bat.selectedBrand} ${bat.selectedModel} (${bat.totalUnits} Units)</div>
+              <div class="text-muted fs-8">${bat.selectedBrand} ${bat.selectedModel} (${bat.totalUnits} Units)</div>
             </div>
 
             <div class="d-flex flex-wrap gap-1.5 mt-auto pt-2">
@@ -968,7 +967,7 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
       </div>
 
       <!-- ALL 3 KEY STATS (Payback Hero + Monthly Saved + Annual Savings in 1 row on mobile) -->
-      <div class="row g-2.5 g-md-3 mb-2.5 align-items-stretch">
+      <div class="row g-2.5 g-md-3 mb-3 align-items-stretch">
         <div class="col-lg-6 col-12 d-flex flex-column mb-2 mb-lg-0">
           <div class="p-2.5 p-md-3 rounded-3 border text-center h-100 d-flex flex-column justify-content-center" style="background: #f8fafc; border-color: #e2e8f0 !important;">
             ${paybackHeroInner}
@@ -990,21 +989,8 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
         </div>
       </div>
 
-      <!-- Simple Value Highlight for Sales Pitch -->
-      <div class="p-2.5 p-md-3 rounded-3 border mb-2.5" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
-        <div class="d-flex gap-2">
-          <span class="fs-5">💡</span>
-          <div>
-            <div class="fw-bold text-dark fs-7 mb-0.5">10-Year Value Proposition:</div>
-            <div class="text-secondary fs-8">
-              In 10 years, this solar system saves approx. <strong>₹${(res.tenYearSavings / 100000).toFixed(2)} Lakhs</strong> in electricity bills against your initial investment of <strong>₹${(res.capitalSpend / 100000).toFixed(2)} Lakhs</strong>.
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Collapsible Detailed Bill Breakdown (Clean & Hidden by Default) -->
-      <div class="accordion border rounded-3 mt-auto" id="accOdishaTariff">
+      <div class="accordion border rounded-3 mt-1" id="accOdishaTariff">
         <div class="accordion-item border-0">
           <h2 class="accordion-header">
             <button class="accordion-button collapsed py-2 px-3 fs-8 fw-semibold text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOdishaBill">
@@ -1012,34 +998,34 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
             </button>
           </h2>
           <div id="collapseOdishaBill" class="accordion-collapse collapse" data-bs-parent="#accOdishaTariff">
-            <div class="accordion-body p-3 pt-1 border-top bg-light">
-              <table class="table table-sm table-borderless fs-8 mb-0">
+            <div class="accordion-body p-2 p-md-3 pt-1 border-top bg-light">
+              <table class="table table-sm table-borderless mb-0 odisha-breakdown-table" style="font-size: 0.72rem;">
                 <tbody>
                   ${res.slabs.map(s => `
                     <tr>
-                      <td class="text-secondary py-1">${s.name} (${s.units} Units @ ₹${s.rate.toFixed(2)})</td>
-                      <td class="text-end fw-semibold text-dark py-1">₹${s.amount.toFixed(2)}</td>
+                      <td class="text-secondary py-0.5 text-nowrap">${s.name} (${s.units}U @ ₹${s.rate.toFixed(2)})</td>
+                      <td class="text-end fw-semibold text-dark py-0.5 text-nowrap">₹${s.amount.toFixed(2)}</td>
                     </tr>
                   `).join('')}
                   <tr class="border-top">
-                    <td class="text-dark fw-bold py-1">Base Energy Charge:</td>
-                    <td class="text-end fw-bold text-dark py-1">₹${res.baseEnergyCharge.toFixed(2)}</td>
+                    <td class="text-dark fw-bold py-0.5 text-nowrap">Base Energy Charge:</td>
+                    <td class="text-end fw-bold text-dark py-0.5 text-nowrap">₹${res.baseEnergyCharge.toFixed(2)}</td>
                   </tr>
                   <tr>
-                    <td class="text-muted py-0.5">Fixed Charge (${res.sanctionedLoadKw} kW @ ₹20/kW):</td>
-                    <td class="text-end text-muted py-0.5">₹${res.fixedCharge.toFixed(2)}</td>
+                    <td class="text-muted py-0.5 text-nowrap">Fixed Charge (${res.sanctionedLoadKw}kW @ ₹20/kW):</td>
+                    <td class="text-end text-muted py-0.5 text-nowrap">₹${res.fixedCharge.toFixed(2)}</td>
                   </tr>
                   <tr>
-                    <td class="text-muted py-0.5">Meter Rent:</td>
-                    <td class="text-end text-muted py-0.5">₹${res.meterRent.toFixed(2)}</td>
+                    <td class="text-muted py-0.5 text-nowrap">Meter Rent:</td>
+                    <td class="text-end text-muted py-0.5 text-nowrap">₹${res.meterRent.toFixed(2)}</td>
                   </tr>
                   <tr>
-                    <td class="text-muted py-0.5">Electricity Duty (4%):</td>
-                    <td class="text-end text-muted py-0.5">₹${res.electricityDuty.toFixed(2)}</td>
+                    <td class="text-muted py-0.5 text-nowrap">Electricity Duty (4%):</td>
+                    <td class="text-end text-muted py-0.5 text-nowrap">₹${res.electricityDuty.toFixed(2)}</td>
                   </tr>
                   <tr class="border-top fw-bold bg-white">
-                    <td class="text-dark py-1.5 px-2">Total Monthly Bill Saved:</td>
-                    <td class="text-end text-success py-1.5 px-2">₹${res.totalMonthlyBill.toFixed(2)}</td>
+                    <td class="text-dark py-1 px-1 text-nowrap">Total Monthly Bill Saved:</td>
+                    <td class="text-end text-success py-1 px-1 text-nowrap">₹${res.totalMonthlyBill.toFixed(2)}</td>
                   </tr>
                 </tbody>
               </table>
