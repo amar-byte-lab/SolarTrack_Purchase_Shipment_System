@@ -22,8 +22,11 @@ const SizingUI = (() => {
   ];
 
   let state = {
-    systemType: 'off-grid',
+    systemType: 'on-grid',
+    connectionPhase: '1-Phase',
+    sanctionedLoadKw: 3,
     selectedBatteryType: 'lithium',
+    backupHours: 4,
     appliances: JSON.parse(JSON.stringify(COMMON_APPLIANCES)),
     acConfig: {
       ton: '1.5',
@@ -34,26 +37,24 @@ const SizingUI = (() => {
       hp: '1'
     },
     dailyUsageKwh: '',
-    monthlyUnits: '',
-    enableOnGridBattery: false,
-    onGridBackupHours: 4,
+    monthlyUnits: '300',
     advancedMode: false,
     customAppliancesCount: 0,
     currentResult: null
   };
 
   const SYSTEM_TYPE_DATA = {
-    'off-grid': {
-      icon: '🔋',
-      title: 'Off-Grid Solar',
-      desc: 'Solar with battery backup for off-grid power.',
-      inverterBadge: 'PCU / Solar PCU'
-    },
     'on-grid': {
       icon: '☀️',
       title: 'On-Grid Solar',
       desc: 'Direct grid-tie solar (no battery backup).',
       inverterBadge: 'GTI / Grid-Tied'
+    },
+    'without-solar': {
+      icon: '🔌',
+      title: 'Without Solar (Home UPS)',
+      desc: 'Battery backup Home UPS Sine Wave Inverter.',
+      inverterBadge: 'Home UPS / Sine Wave'
     },
     'hybrid': {
       icon: '⚡',
@@ -61,17 +62,39 @@ const SizingUI = (() => {
       desc: 'Solar + Grid + Battery bi-directional backup.',
       inverterBadge: 'Bi-Directional / Hybrid'
     },
-    'without-solar': {
-      icon: '🔌',
-      title: 'Without Solar (Home UPS)',
-      desc: 'Battery backup Home UPS Sine Wave Inverter.',
-      inverterBadge: 'Home UPS / Sine Wave'
+    'off-grid': {
+      icon: '🔋',
+      title: 'Off-Grid Solar',
+      desc: 'Solar with battery backup for off-grid power.',
+      inverterBadge: 'PCU / Solar PCU'
     }
   };
 
   function init() {
     UI.renderSidebar('sizing-calc.html');
     UI.renderTopbar('Sizing Calculator', 'Solar, Inverter & Battery Capacity Calculator', '');
+
+    const txtUnits = document.getElementById('txtMonthlyUnits');
+    if (txtUnits && txtUnits.value) {
+      state.monthlyUnits = txtUnits.value;
+    } else {
+      state.monthlyUnits = '300';
+    }
+
+    const selPhase = document.getElementById('selSupplyPhase');
+    if (selPhase && selPhase.value) {
+      state.connectionPhase = selPhase.value;
+    }
+
+    const selLoad = document.getElementById('selSanctionedLoad');
+    if (selLoad && selLoad.value) {
+      state.sanctionedLoadKw = Number(selLoad.value) || 3;
+    }
+
+    const txtHours = document.getElementById('txtBackupHours');
+    if (txtHours && txtHours.value) {
+      state.backupHours = Number(txtHours.value) || 4;
+    }
 
     selectSystemTypeOption(state.systemType);
 
@@ -96,16 +119,6 @@ const SizingUI = (() => {
     return withParenthesis ? `(${formatEnergy(totalWh)})` : formatEnergy(totalWh);
   }
 
-  function syncOnGridBackupHoursToAppliances(hours) {
-    const hrs = Math.max(0.5, Number(hours) || 4);
-    state.onGridBackupHours = hrs;
-    state.appliances.forEach(app => {
-      if (app.checked) {
-        app.defaultHours = hrs;
-      }
-    });
-  }
-
   function resetAppliancesHoursToDefaults() {
     state.appliances.forEach(app => {
       const defaultDef = COMMON_APPLIANCES.find(d => d.id === app.id);
@@ -121,7 +134,7 @@ const SizingUI = (() => {
   function selectSystemTypeOption(typeVal) {
     state.systemType = typeVal;
 
-    const data = SYSTEM_TYPE_DATA[typeVal] || SYSTEM_TYPE_DATA['off-grid'];
+    const data = SYSTEM_TYPE_DATA[typeVal] || SYSTEM_TYPE_DATA['on-grid'];
 
     // Update trigger button
     const iconEl = document.getElementById('selSystemIcon');
@@ -150,18 +163,7 @@ const SizingUI = (() => {
       if (bsDropdown) bsDropdown.hide();
     }
 
-    if (state.systemType === 'on-grid') {
-      if (state.enableOnGridBattery) {
-        syncOnGridBackupHoursToAppliances(state.onGridBackupHours);
-      } else {
-        resetAppliancesHoursToDefaults();
-      }
-    } else {
-      if (!state.enableOnGridBattery) {
-        resetAppliancesHoursToDefaults();
-      }
-    }
-
+    resetAppliancesHoursToDefaults();
     updateSystemTypeVisibility();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -171,33 +173,45 @@ const SizingUI = (() => {
     selectSystemTypeOption(typeVal);
   }
 
+  function onBackupHoursChange(hoursVal) {
+    state.backupHours = Math.max(0.5, Number(hoursVal) || 4);
+    const txtHours = document.getElementById('txtBackupHours');
+    if (txtHours) txtHours.value = state.backupHours;
+    calculateAndRender();
+  }
+
   const SYSTEM_DESCRIPTIONS = {
-    'off-grid': 'Selected system uses solar panels + PCU + battery bank to provide 24/7 uninterrupted off-grid power.',
     'on-grid': 'Selected On-Grid GTI system connects directly to the electricity grid with Net Metering to offset monthly billing units.',
+    'without-solar': 'Selected Home UPS system is powered from the AC grid to provide battery backup during power cuts.',
     'hybrid': 'Selected Hybrid system smartly combines Solar PV, Grid export/import, and battery backup storage.',
-    'without-solar': 'Selected Home UPS system is powered from the AC grid to provide battery backup during power cuts.'
+    'off-grid': 'Selected system uses solar panels + PCU + battery bank to provide 24/7 uninterrupted off-grid power.'
   };
 
   function updateSystemTypeVisibility() {
     const isGrid = state.systemType === 'on-grid';
+    const isWithoutSolar = state.systemType === 'without-solar';
+    const isHybridOrOffGrid = state.systemType === 'hybrid' || state.systemType === 'off-grid';
+
+    // On-Grid Bill Section: Shown for on-grid, hybrid, off-grid
     const onGridSolarBillSection = document.getElementById('secOnGridBill');
+    if (onGridSolarBillSection) onGridSolarBillSection.style.display = (isGrid || isHybridOrOffGrid) ? 'block' : 'none';
 
-    if (onGridSolarBillSection) onGridSolarBillSection.style.display = isGrid ? 'block' : 'none';
-
-    const backupWrapper = document.getElementById('secOnGridBackupHoursWrapper');
-    if (backupWrapper) {
-      if (isGrid && state.enableOnGridBattery) {
-        backupWrapper.style.setProperty('display', 'flex', 'important');
-      } else {
-        backupWrapper.style.setProperty('display', 'none', 'important');
-      }
+    // Battery Backup Duration Section: Shown for without-solar, hybrid, off-grid (NEVER for on-grid)
+    const batteryBackupDetails = document.getElementById('secBatteryBackupDetails');
+    if (batteryBackupDetails) {
+      batteryBackupDetails.style.display = (isWithoutSolar || isHybridOrOffGrid) ? 'block' : 'none';
     }
 
-    // Step 2 visibility: If On-Grid and Enable Battery Backup is unchecked, hide Step 2
+    const txtBackupHours = document.getElementById('txtBackupHours');
+    if (txtBackupHours) {
+      txtBackupHours.value = state.backupHours || 4;
+    }
+
+    // Step 2 visibility: On-Grid hides Step 2, Without-Solar / Hybrid / Off-Grid shows Step 2
     const step2Col = document.getElementById('colStep2Wrapper');
     const step1Col = document.getElementById('colStep1Wrapper');
     if (step2Col) {
-      if (isGrid && !state.enableOnGridBattery) {
+      if (isGrid) {
         step2Col.style.display = 'none';
         if (step1Col) {
           step1Col.classList.remove('col-lg-6');
@@ -212,7 +226,7 @@ const SizingUI = (() => {
       }
     }
 
-    if (isGrid) {
+    if (isGrid || isHybridOrOffGrid) {
       updateOnGridDemandDisplay();
     }
   }
@@ -226,13 +240,17 @@ const SizingUI = (() => {
   }
 
   function updateOnGridDemandDisplay() {
-    const units = Number(state.monthlyUnits) || 300;
-    const dailyKwh = (units / 30).toFixed(1);
-    const targetKwp = (units / (30 * 5 * 0.78)).toFixed(1);
+    const txt = document.getElementById('txtMonthlyUnits');
+    const units = Number(state.monthlyUnits !== '' && state.monthlyUnits !== undefined ? state.monthlyUnits : (txt ? txt.value : 300)) || 300;
+    const dailyKwh = (units / 30).toFixed(2);
+    const targetKwp = (units / (30 * 5.0 * 0.78)).toFixed(2);
+    const panelCount = Math.ceil((targetKwp * 1000) / 550);
+    const actualKwp = ((panelCount * 550) / 1000).toFixed(2);
+
     const lblDaily = document.getElementById('lblOnGridDailyDemand');
     if (lblDaily) lblDaily.textContent = `${dailyKwh} kWh / day`;
     const lblKwp = document.getElementById('lblOnGridTargetKwp');
-    if (lblKwp) lblKwp.textContent = `~${targetKwp} kWp`;
+    if (lblKwp) lblKwp.textContent = `~${actualKwp} kWp (${panelCount} Panels)`;
   }
 
   /* ---------------- Main Page Step 2 Summary Card ---------------- */
@@ -644,13 +662,10 @@ const SizingUI = (() => {
       hp: '1'
     };
     state.customAppliancesCount = 0;
-    state.enableOnGridBattery = false;
-    state.onGridBackupHours = 4;
+    state.backupHours = 4;
 
-    const chkOnGridBatteryEl = document.getElementById('chkOnGridBattery');
-    if (chkOnGridBatteryEl) chkOnGridBatteryEl.checked = false;
-    const txtOnGridBackupHoursEl = document.getElementById('txtOnGridBackupHours');
-    if (txtOnGridBackupHoursEl) txtOnGridBackupHoursEl.value = '4';
+    const txtBackupHoursEl = document.getElementById('txtBackupHours');
+    if (txtBackupHoursEl) txtBackupHoursEl.value = '4';
 
     const txtCustomName = document.getElementById('txtCustomAppName');
     if (txtCustomName) txtCustomName.value = '';
@@ -676,28 +691,39 @@ const SizingUI = (() => {
     renderApplianceSummaryCard();
     calculateAndRender();
     UI.toast('Appliances reset to default values', 'info');
-
-    if (state.systemType === 'on-grid') {
-      const modalEl = document.getElementById('applianceConfigModal');
-      if (modalEl && typeof bootstrap !== 'undefined') {
-        const bsModal = bootstrap.Modal.getInstance(modalEl);
-        if (bsModal) {
-          bsModal.hide();
-        }
-      }
-    }
   }
 
   /* ---------------- Calculation & Results Renderer ---------------- */
   function calculateAndRender() {
-    const activeAppliances = state.appliances.filter(a => a.checked && (Number(a.defaultQty) || 0) > 0);
+    const activeAppliances = state.appliances
+      .filter(a => a.checked && (Number(a.defaultQty) || 0) > 0)
+      .map(a => {
+        const appCopy = { ...a };
+        if (a.id === 'ac') {
+          appCopy.acTon = state.acConfig.ton || '1.5';
+          appCopy.acType = state.acConfig.acType || 'inverter';
+          appCopy.acActualWatts = state.acConfig.actualWatts || '';
+        } else if (a.id === 'pump') {
+          appCopy.pumpHp = state.pumpConfig.hp || '1';
+        }
+        return appCopy;
+      });
+
+    const txtUnits = document.getElementById('txtMonthlyUnits');
+    const monthlyUnitsVal = Number(state.monthlyUnits !== '' && state.monthlyUnits !== undefined ? state.monthlyUnits : (txtUnits ? txtUnits.value : 300)) || 300;
+
+    const txtHours = document.getElementById('txtBackupHours');
+    const backupHoursVal = Number(state.backupHours !== undefined ? state.backupHours : (txtHours ? txtHours.value : 4)) || 4;
+
     const result = SizingCalc.calculateSystem({
       systemType: state.systemType,
+      connectionPhase: state.connectionPhase || '1-Phase',
+      sanctionedLoadKw: Number(state.sanctionedLoadKw) || 3,
       appliances: activeAppliances,
-      monthlyUnits: Number(state.monthlyUnits) || 0,
+      monthlyUnits: monthlyUnitsVal,
       dailyUsageKwh: Number(state.dailyUsageKwh) || 0,
-      enableOnGridBattery: state.enableOnGridBattery,
-      backupHours: state.onGridBackupHours
+      backupHours: backupHoursVal,
+      batteryType: state.selectedBatteryType || 'lithium'
     });
 
     renderResults(result);
@@ -707,13 +733,71 @@ const SizingUI = (() => {
     const container = document.getElementById('resultsContainer');
     if (!container) return;
 
+    let validationBannerHtml = '';
+    if (res.validation) {
+      if (res.validation.exceedsSinglePhase) {
+        validationBannerHtml = `
+          <div class="col-12">
+            <div class="alert alert-danger border-2 border-danger-subtle rounded-3 p-3 mb-1 shadow-2xs">
+              <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-start gap-2.5">
+                  <span class="fs-4">⛔</span>
+                  <div>
+                    <div class="fw-bold text-danger fs-7">Single-Phase Statutory Limit Exceeded (${res.validation.requiredKw} kW &gt; 5.0 kW)</div>
+                    <div class="fs-8 text-dark mt-0.5">
+                      DISCOM net-metering regulations in India strictly prohibit single-phase solar grid connections above <strong>5.0 kW (230V)</strong>. Inverter recommendation is capped at 5.0 kW 1-Phase.
+                    </div>
+                    <div class="fs-8 text-secondary mt-1">
+                      💡 <strong>Recommendation:</strong> Switch to <strong>Three-Phase (415V)</strong> grid connection or reduce system size to ≤ 5.0 kWp.
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <button type="button" class="btn btn-sm btn-primary fw-bold fs-8 shadow-2xs" onclick="SizingUI.switchToThreePhase()">
+                    ⚡ Switch to 3-Phase (415V)
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-danger fw-semibold fs-8" onclick="SizingUI.capToSinglePhaseLimit()">
+                    ☀️ Cap System to 5.0 kWp
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (res.validation.exceedsSanctionedLoad) {
+        validationBannerHtml = `
+          <div class="col-12">
+            <div class="alert alert-warning border-2 border-warning-subtle rounded-3 p-3 mb-1 shadow-2xs">
+              <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-start gap-2.5">
+                  <span class="fs-4">⚠️</span>
+                  <div>
+                    <div class="fw-bold text-dark fs-7">Sanctioned Meter Load Enhancement Advised</div>
+                    <div class="fs-8 text-dark mt-0.5">
+                      Required inverter capacity (<strong>${res.validation.requiredKw} kW</strong>) exceeds current sanctioned load (<strong>${res.validation.sanctionedLoadKw} kW</strong>).
+                    </div>
+                    <div class="fs-8 text-secondary mt-1">
+                      DISCOM net-metering regulations require rooftop solar capacity to not exceed 100% of sanctioned load.
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-sm btn-warning fw-bold fs-8 shadow-2xs text-dark" onclick="SizingUI.enhanceSanctionedLoad(${Math.ceil(res.validation.requiredKw)})">
+                    Enhance Load to ${Math.ceil(res.validation.requiredKw)} kW ➔
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
     const activeCards = [];
 
-    // 1. Solar PV Specification Card (Render only if solar is applicable)
+    // 1. Solar PV Specification Card (Rendered ONLY if solar is applicable: On-Grid, Hybrid, Off-Grid)
     if (res.solar) {
       const sol = res.solar;
-      const panelCount = Math.ceil((sol.recommendedKwp * 1000) / 550);
-      const totalPanelKwp = (panelCount * 0.55).toFixed(1);
 
       activeCards.push(`
         <div class="result-hero-card h-100 mb-0 d-flex flex-column">
@@ -722,24 +806,24 @@ const SizingUI = (() => {
           </div>
           <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
             <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
-              <div class="big-stat-badge text-warning">${sol.recommendedKwp} kWp</div>
+              <div class="big-stat-badge text-warning">${sol.actualArrayKwp} kWp</div>
               <div class="sub-stat-text">Recommended Capacity</div>
             </div>
 
             <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
-              <div class="fw-bold text-dark fs-7 mb-1.5">${panelCount} Panels × 550Wp (${totalPanelKwp} kWp Array)</div>
+              <div class="fw-bold text-dark fs-7 mb-1.5">${sol.panelCount} Panels × ${sol.panelWatts}Wp (${sol.actualArrayKwp} kWp Array)</div>
               <div class="fs-8 text-muted mb-2.5">Half-Cut Mono PERC Solar PV Modules</div>
-              <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary ps-1">
+              <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
                 <li>• <strong>Panel Type:</strong> Mono PERC Half-Cut High Efficiency</li>
                 <li>• <strong>Daily Output:</strong> ~${sol.estDailyGenKwh} Units (kWh) / day</li>
-                <li>• <strong>Monthly Gen:</strong> ~${Math.round(sol.estDailyGenKwh * 30)} Units / month</li>
-                <li>• <strong>Roof Area:</strong> ~${Math.round(sol.recommendedKwp * 100)} sq.ft required</li>
+                <li>• <strong>Monthly Gen:</strong> ~${sol.estMonthlyGenUnits} Units / month</li>
+                <li>• <strong>Roof Area:</strong> ~${sol.roofAreaSqFt} sq.ft required</li>
               </ul>
             </div>
 
             <div class="d-flex flex-wrap gap-1 mt-auto">
               <span class="spec-pill">Output: ~${sol.estDailyGenKwh} Units/day</span>
-              <span class="spec-pill">Monthly: ~${Math.round(sol.estDailyGenKwh * 30)} Units</span>
+              <span class="spec-pill">Monthly: ~${sol.estMonthlyGenUnits} Units</span>
             </div>
           </div>
         </div>
@@ -748,10 +832,18 @@ const SizingUI = (() => {
 
     // 2. Recommended Inverter Specification Card (Always applicable)
     const inv = res.inverter;
+    const isCapped = inv.cappedSinglePhase;
+    const inverterWarningBox = isCapped ? `
+      <div class="p-2 rounded-2 bg-danger-subtle border border-danger-subtle text-danger fs-8 fw-semibold mb-2">
+        ⛔ Capped at 5.0 kW 1-Phase max. To support full ${res.validation.requiredKw} kW capacity, upgrade grid connection to Three-Phase (415V).
+      </div>
+    ` : '';
+
     activeCards.push(`
       <div class="result-hero-card h-100 mb-0 d-flex flex-column">
-        <div class="result-card-header bg-header-inverter">
+        <div class="result-card-header bg-header-inverter d-flex justify-content-between align-items-center">
           <span>⚡ INVERTER SPECIFICATION</span>
+          ${isCapped ? '<span class="badge bg-danger text-white fs-9 py-0.5 px-1.5">1-Phase Capped (5 kW)</span>' : ''}
         </div>
         <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
           <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
@@ -761,17 +853,20 @@ const SizingUI = (() => {
 
           <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
             <div class="fw-bold text-dark fs-7 mb-1.5">${inv.kVA} kVA / ${inv.kW} kW ${res.inverterCategory}</div>
-            <div class="fs-8 text-muted mb-2.5">${inv.batteryVoltage > 0 ? `Solar PCU • ${inv.batteryVoltage}V DC System` : 'Grid-Tied On-Grid Inverter'}</div>
+            <div class="fs-8 text-muted mb-2">${inv.batteryVoltage > 0 ? `${inv.brand} • ${inv.batteryVoltage}V DC System` : 'Grid-Tied On-Grid Inverter'}</div>
+            
+            ${inverterWarningBox}
+
             <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary ps-1">
               <li>• <strong>System Voltage:</strong> ${inv.batteryVoltage > 0 ? `${inv.batteryVoltage}V DC System` : 'Grid-Tied (Direct AC)'}</li>
               <li>• <strong>Max Running Load:</strong> Up to ${inv.continuousOutput || inv.kW * 1000} Watts</li>
-              <li>• <strong>Grid Output:</strong> Single Phase 230V AC (50 Hz)</li>
-              <li>• <strong>Pure Sine Wave:</strong> Safe for all sensitive appliances</li>
+              <li>• <strong>Grid Output:</strong> ${inv.phase || '1-Phase (230V)'} AC (50 Hz)</li>
+              <li>• <strong>Inverter Model:</strong> ${inv.brand} ${inv.model}</li>
             </ul>
           </div>
 
           <div class="d-flex flex-wrap gap-1 mt-auto">
-            <span class="spec-pill">1-Phase 230V</span>
+            <span class="spec-pill">${inv.phase || '1-Phase 230V'}</span>
             ${inv.batteryVoltage > 0 ? `<span class="spec-pill">${inv.batteryVoltage}V DC</span>` : '<span class="spec-pill">On-Grid</span>'}
             <span class="spec-pill">Max ${inv.continuousOutput || inv.kW * 1000}W</span>
           </div>
@@ -779,19 +874,21 @@ const SizingUI = (() => {
       </div>
     `);
 
-    // 3. Battery Specification Card (Render only if battery is required)
+    // 3. Battery Specification Card (Rendered ONLY if battery is required: Without Solar, Hybrid, Off-Grid. NEVER On-Grid)
     if (res.battery) {
       const batLi = res.batteryLithium || res.battery;
-      const batLa = res.batteryLeadAcid || res.battery;
+      const batLa = res.batteryTubular || res.battery;
+      const batFp = res.batteryFlatPlate || res.battery;
       const curBat = state.selectedBatteryType || 'lithium';
 
       let heroStatHtml = '';
       let specBoxHtml = '';
+      let activeBatObj = curBat === 'tubular' ? batLa : (curBat === 'flat-plate' ? batFp : batLi);
 
       if (curBat === 'lithium') {
         heroStatHtml = `
-          <div class="big-stat-badge text-success">${batLi.systemVoltage}V ${batLi.totalAh}Ah</div>
-          <div class="sub-stat-text">${batLi.totalInstalledKwh} kWh Lithium LFP Pack</div>
+          <div class="big-stat-badge text-success">${batLi.systemVoltage}V ${batLi.systemBankAh}Ah</div>
+          <div class="sub-stat-text">${batLi.totalInstalledKwh} kWh Lithium LFP Bank</div>
         `;
         specBoxHtml = `
           <div class="p-3 rounded-3 mb-2.5 border flex-grow-1" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
@@ -803,17 +900,17 @@ const SizingUI = (() => {
             
             <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-dark ps-1">
               <li>• 10–12+ Yrs Lifespan (~3000–5000 Cycles)</li>
-              <li>• 100% Zero Maintenance • Wall-Mount</li>
-              <li>• 2–3 Hours Fast Charge</li>
-              <li>• 90% Usable DoD (High Efficiency)</li>
+              <li>• 100% Zero Maintenance • Wall-Mount / Compact</li>
+              <li>• 2–3 Hours Fast Charging</li>
+              <li>• 90% Usable DoD (High Conversion Efficiency)</li>
             </ul>
 
             <div class="p-2.5 rounded-2 bg-white border border-success-subtle mt-1">
-              <div class="fs-9 fw-bold text-success mb-1.5">Manufacturer Discharge Rating (Solar & Non-Solar):</div>
+              <div class="fs-9 fw-bold text-success mb-1.5">Manufacturer Discharge Rating:</div>
               <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
-                <li>• Solar & Non-Solar: <strong>0.5C Continuous (~${Math.round(batLi.singleBatteryAh * 0.5)}A)</strong></li>
-                <li>• Peak Draw: <strong>1.0C (~${batLi.singleBatteryAh}A)</strong></li>
-                <li>• 100% Full Capacity at any Discharge Rate</li>
+                <li>• Continuous Discharge: <strong>0.5C (~${Math.round(batLi.systemBankAh * 0.5)}A)</strong></li>
+                <li>• Peak Surge Draw: <strong>1.0C (~${batLi.systemBankAh}A)</strong></li>
+                <li>• Backup Duration: <strong>~${batLi.actualBackupHours} Hours</strong> at ${res.connectedLoadW}W load</li>
               </ul>
             </div>
           </div>
@@ -821,7 +918,7 @@ const SizingUI = (() => {
       } else if (curBat === 'tubular') {
         heroStatHtml = `
           <div class="big-stat-badge text-success">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah</div>
-          <div class="sub-stat-text">${batLa.systemVoltage}V Tall Tubular Bank (${batLa.totalInstalledKwh} kWh)</div>
+          <div class="sub-stat-text">${batLa.systemVoltage}V ${batLa.systemBankAh}Ah Tall Tubular Bank (${batLa.totalInstalledKwh} kWh)</div>
         `;
         specBoxHtml = `
           <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
@@ -829,52 +926,51 @@ const SizingUI = (() => {
               <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries (${batLa.totalInstalledKwh} kWh)</div>
               <span class="badge bg-primary-subtle text-primary fs-9 py-0.5 px-1.5">Standard Choice</span>
             </div>
-            <div class="fs-8 text-muted mb-2.5">Connected in ${batLa.systemVoltage}V Series Bank</div>
+            <div class="fs-8 text-muted mb-2.5">Connected in ${batLa.systemVoltage}V Series Bank (${batLa.series} Series × ${batLa.parallel} Parallel)</div>
             
             <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
               <li>• 4–5 Yrs Lifespan (~1200–1500 Cycles)</li>
-              <li>• Lower Upfront Cost (~50% vs Lithium)</li>
-              <li>• Heavy Deep-Cycle Proven</li>
-              <li>• Periodic Distilled Water Top-Up</li>
-              <li>• 50% Usable DoD</li>
+              <li>• Lower Upfront Purchase Cost</li>
+              <li>• Heavy Deep-Cycle Proven Technology</li>
+              <li>• Periodic Distilled Water Top-Up Required</li>
+              <li>• 75% Usable DoD (${batLa.usableKwh} kWh Usable)</li>
             </ul>
 
             <div class="p-2.5 rounded-2 bg-white border mt-1">
-              <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer C-Rating (Solar vs Non-Solar):</div>
+              <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer Rating & Backup:</div>
               <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
-                <li>• <strong>For Solar System:</strong> Buy C10 Rating (${batLa.singleBatteryAh}Ah @ C10)</li>
-                <li>• <strong>For Non-Solar (Inverter):</strong> Buy C20 Rating (~${Math.round(batLa.singleBatteryAh * 1.1)}Ah @ C20)</li>
-                <li>• <strong>For Heavy / Fast Draw:</strong> C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.85)}Ah @ C5)</li>
+                <li>• <strong>Battery Rating:</strong> C10 Solar Tubular (${batLa.singleBatteryAh}Ah @ 12V)</li>
+                <li>• <strong>Backup Duration:</strong> <strong>~${batLa.actualBackupHours} Hours</strong> at ${res.connectedLoadW}W load</li>
               </ul>
             </div>
           </div>
         `;
       } else {
         heroStatHtml = `
-          <div class="big-stat-badge text-success">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah</div>
-          <div class="sub-stat-text">${batLa.systemVoltage}V Flat Plate Bank (${batLa.totalInstalledKwh} kWh)</div>
+          <div class="big-stat-badge text-success">${batFp.totalUnits} × 12V ${batFp.singleBatteryAh}Ah</div>
+          <div class="sub-stat-text">${batFp.systemVoltage}V ${batFp.systemBankAh}Ah Flat Plate Bank (${batFp.totalInstalledKwh} kWh)</div>
         `;
         specBoxHtml = `
           <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
             <div class="d-flex justify-content-between align-items-center mb-1.5">
-              <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries (${batLa.totalInstalledKwh} kWh)</div>
+              <div class="fw-bold text-dark fs-7">${batFp.totalUnits} × 12V ${batFp.singleBatteryAh}Ah Batteries (${batFp.totalInstalledKwh} kWh)</div>
               <span class="badge bg-secondary-subtle text-muted fs-9 py-0.5 px-1.5">Basic Budget</span>
             </div>
-            <div class="fs-8 text-muted mb-2.5">Connected in ${batLa.systemVoltage}V Bank</div>
+            <div class="fs-8 text-muted mb-2.5">Connected in ${batFp.systemVoltage}V Bank (${batFp.series} Series × ${batFp.parallel} Parallel)</div>
             
             <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
               <li>• 2–3 Yrs Lifespan</li>
               <li>• Lowest Initial Purchase Cost</li>
               <li>• Best for Short / Rare Power Cuts</li>
-              <li>• Frequent Water Top-Up Required</li>
+              <li>• Frequent Distilled Water Top-Up Required</li>
+              <li>• 65% Usable DoD (${batFp.usableKwh} kWh Usable)</li>
             </ul>
 
             <div class="p-2.5 rounded-2 bg-white border mt-1">
-              <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer C-Rating (Solar vs Non-Solar):</div>
+              <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer Rating & Backup:</div>
               <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
-                <li>• <strong>For Non-Solar (Inverter):</strong> Buy C20 Rating (${batLa.singleBatteryAh}Ah @ C20)</li>
-                <li>• <strong>For Solar System:</strong> Buy C10 Rating (~${Math.round(batLa.singleBatteryAh * 0.9)}Ah @ C10)</li>
-                <li>• <strong>For Heavy / Fast Draw:</strong> C5 Rating (~${Math.round(batLa.singleBatteryAh * 0.75)}Ah @ C5)</li>
+                <li>• <strong>Battery Rating:</strong> C20 Flat Plate (${batFp.singleBatteryAh}Ah @ 12V)</li>
+                <li>• <strong>Backup Duration:</strong> <strong>~${batFp.actualBackupHours} Hours</strong> at ${res.connectedLoadW}W load</li>
               </ul>
             </div>
           </div>
@@ -903,8 +999,9 @@ const SizingUI = (() => {
             ${specBoxHtml}
 
             <div class="d-flex flex-wrap gap-1 mt-auto">
-              <span class="spec-pill">System: ${batLi.systemVoltage}V DC</span>
-              <span class="spec-pill">Need: ~${(batLi.backupEnergyWh / 1000).toFixed(1)} kWh</span>
+              <span class="spec-pill">System: ${activeBatObj.systemVoltage}V DC</span>
+              <span class="spec-pill">Bank: ${activeBatObj.systemBankAh}Ah (${activeBatObj.totalInstalledKwh} kWh)</span>
+              <span class="spec-pill">Backup: ~${activeBatObj.actualBackupHours} Hrs</span>
             </div>
           </div>
         </div>
@@ -922,6 +1019,7 @@ const SizingUI = (() => {
 
     container.innerHTML = `
       <div class="row g-3 g-xl-4 align-items-stretch">
+        ${validationBannerHtml}
         ${cardsHtml}
       </div>
     `;
@@ -933,23 +1031,23 @@ const SizingUI = (() => {
   function copySummary() {
     if (!state.currentResult) return;
     const res = state.currentResult;
-    const panelCount = res.solar ? Math.ceil((res.solar.recommendedKwp * 1000) / 550) : 0;
+    const panelCount = res.solar ? res.solar.panelCount : 0;
     const batLi = res.batteryLithium || res.battery;
-    const batLa = res.batteryLeadAcid || res.battery;
+    const batLa = res.batteryTubular || res.battery;
 
     const text = `☀️ SOLAR & INVERTER-BATTERY SPECIFICATION (${res.systemLabel})
 --------------------------------------------------
 ⚡ Inverter Requirement: ${res.inverter.kVA} kVA (${res.inverter.kW} kW) ${res.inverterCategory}
-   • System: ${res.inverter.batteryVoltage > 0 ? res.inverter.batteryVoltage + 'V DC' : 'Grid-Tied'} | 1-Phase 230V
+   • System: ${res.inverter.batteryVoltage > 0 ? res.inverter.batteryVoltage + 'V DC' : 'Grid-Tied'} | ${res.inverter.phase || '1-Phase 230V'}
    • Max Continuous Load: ${res.inverter.continuousOutput || res.inverter.kW * 1000}W
 
 ${res.battery ? `🔋 Battery Options:
-   • Option 1 (Lithium LFP): ${batLi.totalUnits} × ${batLi.singleBatteryVolt}V ${batLi.singleBatteryAh}Ah (${batLi.totalInstalledKwh} kWh)
-   • Option 2 (Lead-Acid): ${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries in ${batLa.systemVoltage}V Series
-` : '🔋 Battery: Not Required\n'}
-${res.solar ? `☀️ Solar PV Requirement: ${res.solar.recommendedKwp} kWp
-   • Panels: ${panelCount} × 550Wp Mono PERC Half-Cut Modules
-   • Est. Generation: ~${res.solar.estDailyGenKwh} Units/day (~${Math.round(res.solar.estDailyGenKwh * 30)} Units/month)
+   • Option 1 (Lithium LFP): ${batLi.totalUnits} × ${batLi.singleBatteryVolt}V ${batLi.singleBatteryAh}Ah (${batLi.totalInstalledKwh} kWh Bank)
+   • Option 2 (Lead-Acid): ${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries in ${batLa.systemVoltage}V Series (${batLa.totalInstalledKwh} kWh Bank)
+` : '🔋 Battery: Not Required (On-Grid Direct Tie)\n'}
+${res.solar ? `☀️ Solar PV Requirement: ${res.solar.actualArrayKwp} kWp
+   • Panels: ${res.solar.panelSpec}
+   • Est. Generation: ~${res.solar.estDailyGenKwh} Units/day (~${res.solar.estMonthlyGenUnits} Units/month)
 ` : ''}
 --------------------------------------------------
 Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
@@ -965,44 +1063,29 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     const btnCalc = document.getElementById('btnCalculateHero');
     if (btnCalc) btnCalc.addEventListener('click', calculateAndRender);
 
-    // On-Grid Battery Toggle
-    const chkOnGridBattery = document.getElementById('chkOnGridBattery');
-    if (chkOnGridBattery) {
-      chkOnGridBattery.addEventListener('change', (e) => {
-        state.enableOnGridBattery = e.target.checked;
-        if (state.enableOnGridBattery) {
-          const txtHours = document.getElementById('txtOnGridBackupHours');
-          const hrs = parseFloat(txtHours ? txtHours.value : 4) || 4;
-          syncOnGridBackupHoursToAppliances(hrs);
-        } else {
-          resetAppliancesHoursToDefaults();
-        }
-        updateSystemTypeVisibility();
-        renderModalApplianceList();
-        updateModalStats();
-        renderApplianceSummaryCard();
-        calculateAndRender();
-      });
-    }
-
-    // On-Grid Backup Hours Input
-    const txtOnGridBackupHours = document.getElementById('txtOnGridBackupHours');
-    if (txtOnGridBackupHours) {
-      txtOnGridBackupHours.addEventListener('input', (e) => {
-        const hrs = parseFloat(e.target.value) || 4;
-        syncOnGridBackupHoursToAppliances(hrs);
-        renderApplianceSummaryCard();
-        calculateAndRender();
-      });
-    }
-
-    // Monthly Units input for On-Grid
+    // Monthly Units input for On-Grid & Solar
     const txtMonthlyUnits = document.getElementById('txtMonthlyUnits');
     if (txtMonthlyUnits) {
-      txtMonthlyUnits.addEventListener('input', (e) => {
+      const handleMonthlyUnitsChange = (e) => {
         state.monthlyUnits = e.target.value;
+        updateOnGridDemandDisplay();
         calculateAndRender();
-      });
+      };
+      txtMonthlyUnits.addEventListener('input', handleMonthlyUnitsChange);
+      txtMonthlyUnits.addEventListener('change', handleMonthlyUnitsChange);
+      txtMonthlyUnits.addEventListener('keyup', handleMonthlyUnitsChange);
+    }
+
+    // Backup Hours Input for Without-Solar, Hybrid, Off-Grid
+    const txtBackupHours = document.getElementById('txtBackupHours');
+    if (txtBackupHours) {
+      const handleBackupHoursChange = (e) => {
+        state.backupHours = Math.max(0.5, Number(e.target.value) || 4);
+        calculateAndRender();
+      };
+      txtBackupHours.addEventListener('input', handleBackupHoursChange);
+      txtBackupHours.addEventListener('change', handleBackupHoursChange);
+      txtBackupHours.addEventListener('keyup', handleBackupHoursChange);
     }
 
     // Cost Recovery Inputs Live Binding
@@ -1296,15 +1379,120 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
 
   function onCardBatteryTypeChange(val) {
     state.selectedBatteryType = val || 'lithium';
-    if (state.currentResult) {
-      renderResults(state.currentResult);
+    calculateAndRender();
+  }
+
+  function onSupplyPhaseChange(val) {
+    state.connectionPhase = val || '1-Phase';
+    const selPhase = document.getElementById('selSupplyPhase');
+    if (selPhase) selPhase.value = state.connectionPhase;
+
+    // If switching to 1-Phase and load > 5kW, cap to 5kW
+    if (state.connectionPhase === '1-Phase' && state.sanctionedLoadKw > 5) {
+      state.sanctionedLoadKw = 5;
+      const selLoad = document.getElementById('selSanctionedLoad');
+      if (selLoad) selLoad.value = '5';
+      const selRecLoad = document.getElementById('selRecoverySanctionedLoad');
+      if (selRecLoad) selRecLoad.value = '5';
     }
+
+    calculateAndRender();
+    renderCostRecovery();
+  }
+
+  function onSanctionedLoadChange(val) {
+    const kw = Number(val) || 3;
+    state.sanctionedLoadKw = kw;
+    const selLoad = document.getElementById('selSanctionedLoad');
+    if (selLoad) selLoad.value = String(kw);
+    const selRecLoad = document.getElementById('selRecoverySanctionedLoad');
+    if (selRecLoad) selRecLoad.value = String(kw);
+
+    if (kw > 5 && state.connectionPhase === '1-Phase') {
+      state.connectionPhase = '3-Phase';
+      const selPhase = document.getElementById('selSupplyPhase');
+      if (selPhase) selPhase.value = '3-Phase';
+      UI.toast('Switched grid supply to 3-Phase for sanctioned load > 5 kW', 'info');
+    }
+
+    calculateAndRender();
+    renderCostRecovery();
+  }
+
+  function switchToThreePhase() {
+    state.connectionPhase = '3-Phase';
+    const reqKw = state.currentResult && state.currentResult.validation ? Math.ceil(state.currentResult.validation.requiredKw) : 6;
+    state.sanctionedLoadKw = Math.max(6, reqKw);
+
+    const selPhase = document.getElementById('selSupplyPhase');
+    if (selPhase) selPhase.value = '3-Phase';
+
+    const selLoad = document.getElementById('selSanctionedLoad');
+    if (selLoad) selLoad.value = String(state.sanctionedLoadKw);
+
+    const selRecLoad = document.getElementById('selRecoverySanctionedLoad');
+    if (selRecLoad) selRecLoad.value = String(state.sanctionedLoadKw);
+
+    calculateAndRender();
+    renderCostRecovery();
+    UI.toast('Switched to Three-Phase (415V) grid connection!', 'success');
+  }
+
+  function capToSinglePhaseLimit() {
+    state.connectionPhase = '1-Phase';
+    state.sanctionedLoadKw = 5;
+
+    const selPhase = document.getElementById('selSupplyPhase');
+    if (selPhase) selPhase.value = '1-Phase';
+
+    const selLoad = document.getElementById('selSanctionedLoad');
+    if (selLoad) selLoad.value = '5';
+
+    const selRecLoad = document.getElementById('selRecoverySanctionedLoad');
+    if (selRecLoad) selRecLoad.value = '5';
+
+    if (state.systemType === 'on-grid') {
+      state.monthlyUnits = '550';
+      const txt = document.getElementById('txtMonthlyUnits');
+      if (txt) txt.value = '550';
+      updateOnGridDemandDisplay();
+    }
+
+    calculateAndRender();
+    renderCostRecovery();
+    UI.toast('System capped to maximum permissible 1-Phase limit (5.0 kWp)', 'info');
+  }
+
+  function enhanceSanctionedLoad(targetKw) {
+    const kw = Math.max(1, Number(targetKw) || 5);
+    state.sanctionedLoadKw = kw;
+
+    if (kw > 5) {
+      state.connectionPhase = '3-Phase';
+      const selPhase = document.getElementById('selSupplyPhase');
+      if (selPhase) selPhase.value = '3-Phase';
+    }
+
+    const selLoad = document.getElementById('selSanctionedLoad');
+    if (selLoad) selLoad.value = String(kw);
+
+    const selRecLoad = document.getElementById('selRecoverySanctionedLoad');
+    if (selRecLoad) selRecLoad.value = String(kw);
+
+    calculateAndRender();
+    renderCostRecovery();
+    UI.toast(`Sanctioned load enhanced to ${kw} kW`, 'success');
   }
 
   return {
     init,
     selectSystemTypeOption,
     onSystemTypeChange,
+    onSupplyPhaseChange,
+    onSanctionedLoadChange,
+    switchToThreePhase,
+    capToSinglePhaseLimit,
+    enhanceSanctionedLoad,
     openApplianceModal,
     applyModalChanges,
     toggleApplianceChecked,
@@ -1330,7 +1518,8 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     setRecoveryPresetInterest,
     syncRecoveryFromSolar,
     onFinanceTypeChange,
-    onCardBatteryTypeChange
+    onCardBatteryTypeChange,
+    onBackupHoursChange
   };
 
 })();

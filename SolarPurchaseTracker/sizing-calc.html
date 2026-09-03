@@ -157,20 +157,56 @@
                         </div>
                       </div>
                     </div>
-                    <div class="col-12 mt-2">
-                      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2.5 border-top">
-                        <div class="form-check mb-0">
-                          <input class="form-check-input" type="checkbox" id="chkOnGridBattery" style="cursor: pointer;">
-                          <label class="form-check-label fw-semibold text-dark fs-8" for="chkOnGridBattery" style="cursor: pointer;">
-                            Enable Battery backup for On-Grid
-                          </label>
-                        </div>
-                        <div id="secOnGridBackupHoursWrapper" class="d-flex align-items-center gap-1" style="display:none !important;">
-                          <label class="fs-8 fw-semibold text-secondary mb-0 text-nowrap" for="txtOnGridBackupHours">Backup:</label>
-                          <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold p-1" id="txtOnGridBackupHours" title="Backup Hours" style="width: 48px; height: 28px; font-size: 0.78rem;">
-                          <span class="fs-8 text-muted fw-semibold">Hrs</span>
-                        </div>
-                      </div>
+                  </div>
+                </div>
+
+                <!-- Customer Connection Phase & Sanctioned Load -->
+                <div class="row g-2.5 mt-3 pt-3 border-top" id="secGridConnectionDetails">
+                  <div class="col-sm-6 col-12">
+                    <label class="form-label fw-bold text-dark fs-8 mb-1" for="selSupplyPhase">
+                      🔌 Grid Supply Phase
+                    </label>
+                    <select class="form-select form-select-sm fw-bold fs-8 shadow-2xs" id="selSupplyPhase" onchange="SizingUI.onSupplyPhaseChange(this.value)" style="height: 38px;">
+                      <option value="1-Phase" selected>1-Phase (230V) — Max 5 kW Permissible</option>
+                      <option value="3-Phase">3-Phase (415V) — Multi-kW / Heavy Load</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-6 col-12">
+                    <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selSanctionedLoad">
+                      ⚡ Customer Sanctioned Load
+                    </label>
+                    <div class="input-group shadow-2xs">
+                      <select class="form-select form-select-sm fw-bold fs-8" id="selSanctionedLoad" onchange="SizingUI.onSanctionedLoadChange(this.value)" style="height: 38px;">
+                        <option value="1">1 kW (₹20/mo)</option>
+                        <option value="2">2 kW (₹40/mo)</option>
+                        <option value="3" selected>3 kW (₹60/mo)</option>
+                        <option value="4">4 kW (₹80/mo)</option>
+                        <option value="5">5 kW (₹100/mo) — 1-Phase Max</option>
+                        <option value="6">6 kW (₹120/mo) — 3-Phase</option>
+                        <option value="7">7 kW (₹140/mo) — 3-Phase</option>
+                        <option value="8">8 kW (₹160/mo) — 3-Phase</option>
+                        <option value="10">10 kW (₹200/mo) — 3-Phase</option>
+                        <option value="12">12 kW (₹240/mo) — 3-Phase</option>
+                        <option value="15">15 kW (₹300/mo) — 3-Phase</option>
+                        <option value="20">20 kW (₹400/mo) — 3-Phase</option>
+                      </select>
+                      <span class="input-group-text bg-white fw-semibold text-secondary fs-8">kW</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Battery Backup Duration (Only for Without Solar, Hybrid, Off-Grid. NEVER for On-Grid) -->
+                <div class="mt-3 p-3 bg-light rounded-3 border" id="secBatteryBackupDetails" style="display:none;">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                      <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtBackupHours">
+                        🔋 Required Battery Backup Duration
+                      </label>
+                      <div class="fs-9 text-muted">Hours of uninterrupted power supply during grid outages</div>
+                    </div>
+                    <div class="input-group shadow-2xs" style="width: 140px;">
+                      <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold fs-7" id="txtBackupHours" onchange="SizingUI.onBackupHoursChange(this.value)" style="height: 38px;">
+                      <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Hours</span>
                     </div>
                   </div>
                 </div>
@@ -435,9 +471,115 @@
         </div>
       </div>
     </div>
+  <!-- ADVANCED SETTINGS & MASTER DB MODAL -->
+  <div class="modal fade" id="advancedSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-light border-bottom py-3">
+          <h5 class="modal-title fw-bold text-dark fs-6 mb-0">⚙️ Advanced Calculation Settings & Master DB</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <ul class="nav nav-tabs mb-3" id="advancedTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-semibold fs-8" id="params-tab" data-bs-toggle="tab" data-bs-target="#tabParams" type="button" role="tab">⚡ Calculation Parameters</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold fs-8" id="inverters-tab" data-bs-toggle="tab" data-bs-target="#tabInverters" type="button" role="tab">🔌 Inverters Database</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-semibold fs-8" id="batteries-tab" data-bs-toggle="tab" data-bs-target="#tabBatteries" type="button" role="tab">🔋 Batteries Database</button>
+            </li>
+          </ul>
+          <div class="tab-content" id="advancedTabContent">
+            <!-- Tab 1: Parameters -->
+            <div class="tab-pane fade show active" id="tabParams" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Safety Margin (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtSafetyMarginPct" min="0" max="100" value="25">
+                  <span class="fs-9 text-muted">Applied to continuous load</span>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Inverter Efficiency (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtInverterEffPct" min="50" max="100" value="90">
+                  <span class="fs-9 text-muted">Standard DC-AC conversion</span>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Peak Sun Hours (PSH)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtPeakSunHours" min="1" max="10" step="0.1" value="5.0">
+                  <span class="fs-9 text-muted">Daily sun hours (India avg: 5.0)</span>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">PV System Efficiency (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtPvEffPct" min="50" max="100" value="78">
+                  <span class="fs-9 text-muted">Overall yield efficiency</span>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Lithium Usable DoD (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtLithiumDoDPct" min="50" max="100" value="90">
+                  <span class="fs-9 text-muted">Depth of discharge for LiFePO4</span>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Lead-Acid Usable DoD (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtLeadAcidDoDPct" min="20" max="80" value="50">
+                  <span class="fs-9 text-muted">Depth of discharge for Tubular</span>
+                </div>
+              </div>
+            </div>
+            <!-- Tab 2: Inverters DB -->
+            <div class="tab-pane fade" id="tabInverters" role="tabpanel">
+              <div class="table-responsive border rounded-3" style="max-height: 360px;">
+                <table class="table table-hover align-middle mb-0 fs-8">
+                  <thead class="table-light sticky-top">
+                    <tr>
+                      <th>Model & Brand</th>
+                      <th>Category</th>
+                      <th>Rating</th>
+                      <th>Battery DC</th>
+                      <th>IP Rating</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inverterDbTbody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <!-- Tab 3: Batteries DB -->
+            <div class="tab-pane fade" id="tabBatteries" role="tabpanel">
+              <div class="table-responsive border rounded-3" style="max-height: 360px;">
+                <table class="table table-hover align-middle mb-0 fs-8">
+                  <thead class="table-light sticky-top">
+                    <tr>
+                      <th>Model & Brand</th>
+                      <th>Chemistry</th>
+                      <th>Capacity</th>
+                      <th>Rating</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="batteryDbTbody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light d-flex justify-content-between align-items-center py-2.5 px-3">
+          <button type="button" class="btn btn-sm btn-outline-danger fw-semibold px-3 py-1.5 fs-8" onclick="SizingUI.resetAllToDefaults()">
+            ↺ Reset DB to Defaults
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-secondary fw-semibold px-3 py-1.5 fs-8" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-sm btn-primary fw-bold px-3.5 py-1.5 fs-8" onclick="SizingUI.saveAdvancedSettings()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-
-
 
   <script src="assets/js/bootstrap.bundle.min.js" defer></script>
   <script src="js/ui.js?v=1.0.2" defer></script>
