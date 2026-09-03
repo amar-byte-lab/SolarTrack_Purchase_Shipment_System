@@ -20,15 +20,6 @@
       <div class="topbar" id="topbar"></div>
 
       <div class="page-body sizing-page-body">
-        
-        <!-- Header Banner -->
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-          <div>
-            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btnOpenAdvanced">
-              ⚙️ Advanced Settings & Master DB
-            </button>
-          </div>
-        </div>
 
         <!-- MAIN INPUTS ROW: SYSTEM TYPE & APPLIANCES / LOAD IN SAME ROW -->
         <div class="row g-3 align-items-stretch mb-2">
@@ -40,7 +31,6 @@
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                   <div>
                     <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
-                    <span class="text-muted fs-8" id="lblSystemTypeSubtext">System architecture</span>
                   </div>
                 </div>
 
@@ -134,64 +124,98 @@
                   </ul>
                 </div>
 
-                <!-- On-Grid Monthly Bill Helper (Appears inside Step 1 only for On-Grid) -->
-                <div id="secOnGridBill" class="mt-4 p-3.5 p-md-4 bg-light rounded-3 border" style="display:none; margin-bottom: 6px;">
-                  <div class="row g-3 align-items-center">
-                    <div class="col-md-7 col-12">
-                      <label class="form-label fw-bold text-dark fs-7 mb-1.5" for="txtMonthlyUnits">Average Monthly Billing Units</label>
-                      <div class="input-group mb-2 shadow-2xs">
-                        <input type="number" min="0" class="form-control fw-bold fs-6" id="txtMonthlyUnits" 
-                          placeholder="e.g. 300" value="300" style="height: 42px;">
-                        <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Units / Month (kWh)</span>
+                <!-- Customer Connection Phase & Sanctioned Load + Solar Parameters -->
+                <div id="secGridConnectionDetails" class="mt-3.5 p-3.5 p-md-4 bg-light rounded-3 border" style="margin-bottom: 6px;">
+                  <div class="row g-2.5 align-items-center">
+                    
+                    <!-- 1. Grid Supply Phase (col-md-6 on desktop, col-12 on mobile) -->
+                    <div class="col-md-6 col-12">
+                      <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selSupplyPhase">
+                        Grid Supply Phase
+                      </label>
+                      <div class="input-group shadow-2xs">
+                        <select class="form-select fw-semibold fs-8" id="selSupplyPhase" onchange="SizingUI.onSupplyPhaseChange(this.value)" style="height: 38px;">
+                          <option value="1-Phase" selected>1-Phase (230V) — Max 5 kW Permissible</option>
+                          <option value="3-Phase">3-Phase (415V) — Multi-kW / Heavy Load</option>
+                        </select>
                       </div>
                     </div>
-                    <div class="col-md-5 col-12">
-                      <div class="p-3 bg-white rounded-3 border">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                          <span class="fs-8 text-muted fw-semibold">Daily Demand:</span>
-                          <span class="fw-bold text-dark fs-7" id="lblOnGridDailyDemand">10.0 kWh / day</span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <span class="fs-8 text-muted fw-semibold">Target Solar Plant:</span>
-                          <span class="fw-bold text-warning fs-7" id="lblOnGridTargetKwp">~3 kWp</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Customer Connection Phase & Sanctioned Load -->
-                <div class="row g-2.5 mt-3 pt-3 border-top" id="secGridConnectionDetails">
-                  <div class="col-sm-6 col-12">
-                    <label class="form-label fw-bold text-dark fs-8 mb-1" for="selSupplyPhase">
-                      🔌 Grid Supply Phase
-                    </label>
-                    <select class="form-select form-select-sm fw-bold fs-8 shadow-2xs" id="selSupplyPhase" onchange="SizingUI.onSupplyPhaseChange(this.value)" style="height: 38px;">
-                      <option value="1-Phase" selected>1-Phase (230V) — Max 5 kW Permissible</option>
-                      <option value="3-Phase">3-Phase (415V) — Multi-kW / Heavy Load</option>
-                    </select>
-                  </div>
-                  <div class="col-sm-6 col-12">
-                    <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selSanctionedLoad">
-                      ⚡ Customer Sanctioned Load
-                    </label>
-                    <div class="input-group shadow-2xs">
-                      <select class="form-select form-select-sm fw-bold fs-8" id="selSanctionedLoad" onchange="SizingUI.onSanctionedLoadChange(this.value)" style="height: 38px;">
-                        <option value="1">1 kW (₹20/mo)</option>
-                        <option value="2">2 kW (₹40/mo)</option>
-                        <option value="3" selected>3 kW (₹60/mo)</option>
-                        <option value="4">4 kW (₹80/mo)</option>
-                        <option value="5">5 kW (₹100/mo) — 1-Phase Max</option>
-                        <option value="6">6 kW (₹120/mo) — 3-Phase</option>
-                        <option value="7">7 kW (₹140/mo) — 3-Phase</option>
-                        <option value="8">8 kW (₹160/mo) — 3-Phase</option>
-                        <option value="10">10 kW (₹200/mo) — 3-Phase</option>
-                        <option value="12">12 kW (₹240/mo) — 3-Phase</option>
-                        <option value="15">15 kW (₹300/mo) — 3-Phase</option>
-                        <option value="20">20 kW (₹400/mo) — 3-Phase</option>
-                      </select>
-                      <span class="input-group-text bg-white fw-semibold text-secondary fs-8">kW</span>
+                    <!-- 2. Customer Sanctioned Load (col-md-6 on desktop, col-6 on mobile) -->
+                    <div class="col-md-6 col-6">
+                      <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selSanctionedLoad">
+                        Sanctioned Load
+                      </label>
+                      <div class="input-group shadow-2xs">
+                        <select class="form-select fw-semibold fs-8" id="selSanctionedLoad" onchange="SizingUI.onSanctionedLoadChange(this.value)" style="height: 38px;">
+                          <option value="1">1 kW (₹20/mo)</option>
+                          <option value="2">2 kW (₹40/mo)</option>
+                          <option value="3" selected>3 kW (₹60/mo)</option>
+                          <option value="4">4 kW (₹80/mo)</option>
+                          <option value="5">5 kW (₹100/mo) — 1-Phase Max</option>
+                          <option value="6">6 kW (₹120/mo) — 3-Phase</option>
+                          <option value="7">7 kW (₹140/mo) — 3-Phase</option>
+                          <option value="8">8 kW (₹160/mo) — 3-Phase</option>
+                          <option value="10">10 kW (₹200/mo) — 3-Phase</option>
+                          <option value="12">12 kW (₹240/mo) — 3-Phase</option>
+                          <option value="15">15 kW (₹300/mo) — 3-Phase</option>
+                          <option value="20">20 kW (₹400/mo) — 3-Phase</option>
+                        </select>
+                        <span class="input-group-text bg-white fw-semibold text-secondary fs-8">kW</span>
+                      </div>
                     </div>
+
+                    <!-- 3. Monthly Billing Units (col-md-4 on desktop, col-6 on mobile - in one row with Sanctioned Load on mobile!) -->
+                    <div class="col-md-4 col-6 sec-solar-param-field" id="wrapMonthlyUnits">
+                      <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtMonthlyUnits">
+                        Monthly Units
+                      </label>
+                      <div class="input-group shadow-2xs">
+                        <input type="number" min="0" class="form-control fw-semibold fs-8" id="txtMonthlyUnits" 
+                          placeholder="e.g. 300" value="300" style="height: 38px;">
+                        <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Units</span>
+                      </div>
+                    </div>
+
+                    <!-- 4. Total Investment (₹) (col-md-4 on desktop, col-6 on mobile) -->
+                    <div class="col-md-4 col-6 sec-solar-param-field" id="wrapRecoverySpend">
+                      <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtRecoverySpend">
+                        Total Investment
+                      </label>
+                      <div class="input-group shadow-2xs">
+                        <span class="input-group-text bg-white fw-bold text-dark fs-8">₹</span>
+                        <input type="number" min="0" step="5000" class="form-control fw-semibold fs-8" id="txtRecoverySpend" 
+                          value="150000" style="height: 38px;">
+                      </div>
+                    </div>
+
+                    <!-- 5. Payment / Financing (col-md-4 on desktop, col-6 on mobile - in one row with Investment on mobile!) -->
+                    <div class="col-md-4 col-6 sec-solar-param-field" id="wrapRecoveryFinance">
+                      <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoveryFinanceType">
+                        Financing
+                      </label>
+                      <div class="input-group shadow-2xs">
+                        <select class="form-select fw-semibold fs-8" id="selRecoveryFinanceType" onchange="SizingUI.onFinanceTypeChange(this.value)" style="height: 38px;">
+                          <option value="0" selected>Cash / Full (0% Int)</option>
+                          <option value="7">PM Surya Ghar (7%)</option>
+                          <option value="9.5">Bank Loan (9.5%)</option>
+                          <option value="custom">Custom Interest...</option>
+                        </select>
+                      </div>
+                      
+                      <div id="wrapperCustomInterest" class="input-group mt-1.5 shadow-2xs" style="display:none;">
+                        <input type="number" min="0" max="30" step="0.25" class="form-control fw-bold fs-8" id="txtRecoveryInterest" value="0" placeholder="Interest %" style="height: 32px;">
+                        <span class="input-group-text bg-white text-muted fs-8">% p.a.</span>
+                      </div>
+                    </div>
+
+                    <!-- Daily Demand: Simple Highlighted Line (No Container) -->
+                    <div class="col-12 mt-1 pt-1 sec-solar-param-field" id="wrapDailyDemand">
+                      <div class="fs-8 text-secondary">
+                        ⚡ Daily Demand: <strong class="text-primary fw-bold" id="lblOnGridDailyDemand">10.00 kWh / day</strong>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
 
@@ -224,36 +248,37 @@
                     <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
                     <span class="text-muted fs-8">Connected load & daily energy</span>
                   </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-primary fw-bold fs-8 px-3 py-1.5 shadow-2xs d-inline-flex align-items-center gap-1.5" onclick="SizingUI.openApplianceModal()">
+                      <span>⚙️</span>
+                      <span>Configure Appliances</span>
+                    </button>
+                  </div>
                 </div>
 
-                <!-- Summary Metrics Cards Grid -->
-                <div class="summary-metrics-grid mb-3" id="summaryMetricsGrid">
-                  <div class="summary-stat-box" id="boxTotalConnectedLoad" onclick="SizingUI.openApplianceModal()">
-                    <div class="stat-icon-wrapper bg-primary-subtle text-primary">⚡</div>
-                    <div>
-                      <div class="stat-label">Total Connected Load</div>
-                      <div class="stat-value text-primary" id="lblTotalConnectedLoad">0 W (0.00 kW)</div>
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                  <div class="row g-2 text-center">
+                    <div class="col-6 border-end">
+                      <span class="text-muted fs-8 fw-semibold d-block mb-1">Total Connected Load</span>
+                      <strong class="fs-6 text-dark" id="lblTotalConnectedLoad">0 W (0.00 kW)</strong>
+                    </div>
+                    <div class="col-6">
+                      <span class="text-muted fs-8 fw-semibold d-block mb-1">Total Daily Energy</span>
+                      <strong class="fs-6 text-primary" id="lblTotalCalculatedEnergy">0 Wh / day</strong>
                     </div>
                   </div>
+                </div>
 
-                  <div class="summary-stat-box" id="boxTotalDailyEnergy" onclick="SizingUI.openApplianceModal()">
-                    <div class="stat-icon-wrapper bg-warning-subtle text-warning">☀️</div>
-                    <div>
-                      <div class="stat-label">Total Daily Energy</div>
-                      <div class="stat-value text-dark" id="lblTotalCalculatedEnergy">0 Wh / day</div>
-                    </div>
+                <div class="mb-2">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1.5">Selected Appliances Summary</label>
+                  <div class="d-flex flex-wrap gap-1.5 p-2.5 bg-white rounded-3 border" id="applianceSummaryBadges" style="min-height: 52px;">
+                    <!-- Rendered dynamically -->
                   </div>
                 </div>
               </div>
 
-              <!-- Active Appliances Preview List & Quick Link -->
-              <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3" style="margin-bottom: 2px;">
-                <div class="d-flex align-items-center gap-1.5 flex-wrap" id="applianceSummaryBadges">
-                  <!-- Rendered dynamically -->
-                </div>
-                <a href="javascript:void(0)" class="btn btn-xs btn-outline-primary fw-semibold fs-8 text-decoration-none px-2.5 py-1" onclick="SizingUI.openApplianceModal()">
-                  Configure ➔
-                </a>
+              <div class="mt-3 pt-2 border-top d-flex align-items-center justify-content-between text-muted fs-8">
+                <span>💡 Click "Configure Appliances" to adjust wattage & hours.</span>
               </div>
             </div>
           </div>
@@ -269,78 +294,18 @@
         <div class="mt-2" id="secCostRecoveryContainer">
           <div class="step-card p-3.5 p-md-4 mb-2">
             
-            <!-- Section Header -->
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
-              <div>
-                <h5 class="fw-bold text-dark mb-0 fs-6 d-flex align-items-center gap-2">
-                  <span>💰</span>
-                  <span>Solar Investment & Payback Calculator</span>
-                </h5>
-              </div>
+            <!-- Section Header with Annual Return Badge in 1 single line -->
+            <div class="d-flex align-items-center justify-content-between flex-nowrap gap-2 mb-2.5 pb-2 border-bottom w-100">
+              <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5 text-nowrap" style="font-size: clamp(0.85rem, 3.2vw, 1rem);">
+                <span>💰</span>
+                <span>Investment & Payback</span>
+              </h5>
+              <span class="badge bg-success-subtle text-success fw-bold text-nowrap flex-shrink-0" id="badgeRecoveryAnnualRoi" style="font-size: clamp(0.7rem, 2.5vw, 0.8rem); padding: 4px 8px;">
+                ~12.4% Annual Return
+              </span>
             </div>
 
-            <!-- 4 INPUT ELEMENTS IN 1 SINGLE ROW (col-lg-3) / 2 ROWS ON MOBILE (col-6) -->
-            <div class="row g-2.5 g-md-3 mb-3">
-              
-              <!-- 1. Monthly Consumption -->
-              <div class="col-lg-3 col-6">
-                <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtRecoveryUnits">
-                  Monthly Consumption
-                </label>
-                <div class="input-group">
-                  <input type="number" min="0" step="10" class="form-control fw-bold fs-7" id="txtRecoveryUnits" value="450" style="height: 38px;">
-                  <span class="input-group-text bg-light text-muted fs-8">Units / mo</span>
-                </div>
-              </div>
-
-              <!-- 2. Total Solar Investment -->
-              <div class="col-lg-3 col-6">
-                <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtRecoverySpend">
-                  Total Investment (₹)
-                </label>
-                <div class="input-group">
-                  <span class="input-group-text bg-light fw-bold text-dark fs-7">₹</span>
-                  <input type="number" min="0" step="5000" class="form-control fw-bold fs-7" id="txtRecoverySpend" value="150000" style="height: 38px;">
-                </div>
-              </div>
-
-              <!-- 3. Sanctioned Meter Load -->
-              <div class="col-lg-3 col-6">
-                <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoverySanctionedLoad">
-                  Sanctioned Load
-                </label>
-                <select class="form-select fw-semibold fs-8 px-2" id="selRecoverySanctionedLoad" style="height: 38px;">
-                  <option value="1" selected>1 kW (₹20/mo)</option>
-                  <option value="2">2 kW (₹40/mo)</option>
-                  <option value="3">3 kW (₹60/mo)</option>
-                  <option value="4">4 kW (₹80/mo)</option>
-                  <option value="5">5 kW (₹100/mo)</option>
-                  <option value="7">7 kW (₹140/mo)</option>
-                  <option value="10">10 kW (₹200/mo)</option>
-                </select>
-              </div>
-
-              <!-- 4. Payment / Financing -->
-              <div class="col-lg-3 col-6">
-                <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoveryFinanceType">
-                  Payment / Financing
-                </label>
-                <select class="form-select fw-semibold fs-8 px-2" id="selRecoveryFinanceType" onchange="SizingUI.onFinanceTypeChange(this.value)" style="height: 38px;">
-                  <option value="0" selected>Cash (0% Int)</option>
-                  <option value="7">Surya Ghar (7%)</option>
-                  <option value="9.5">Bank (9.5%)</option>
-                  <option value="custom">Custom Int...</option>
-                </select>
-                
-                <div id="wrapperCustomInterest" class="input-group mt-1.5" style="display:none;">
-                  <input type="number" min="0" max="30" step="0.25" class="form-control fw-bold fs-8" id="txtRecoveryInterest" value="0" placeholder="Interest %" style="height: 32px;">
-                  <span class="input-group-text bg-light text-muted fs-8">% p.a.</span>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- ESTIMATED SAVINGS & ROI RESULTS CONTAINER -->
+            <!-- ESTIMATED SAVINGS & ROI RESULTS CONTAINER (Input lines removed as requested) -->
             <div id="cardRecoveryResults">
               <!-- Rendered dynamically by SizingUI.renderCostRecovery -->
             </div>

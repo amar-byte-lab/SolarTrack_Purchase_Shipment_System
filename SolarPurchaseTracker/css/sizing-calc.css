@@ -47,13 +47,39 @@
   border-color: #cbd5e1;
 }
 
-#secOnGridBill {
+#secGridConnectionDetails {
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   background: #f8fafc;
   padding: 18px 20px !important;
   margin-top: 18px !important;
   margin-bottom: 8px !important;
+}
+
+#secGridConnectionDetails .form-label {
+  font-size: 0.78rem !important;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 18px;
+  line-height: 18px;
+}
+
+#secGridConnectionDetails .input-group,
+#secGridConnectionDetails .form-select,
+#secGridConnectionDetails .form-control,
+#secGridConnectionDetails .input-group-text {
+  height: 38px !important;
+  box-sizing: border-box;
+}
+
+#secGridConnectionDetails .form-select {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  line-height: 1.4 !important;
 }
 
 @media (max-width: 576px) {
@@ -609,17 +635,27 @@
     font-size: 0.78rem !important;
   }
 
-  /* On-Grid Section Inside Step 1 */
-  #secOnGridBill {
-    padding: 8px 10px !important;
-    margin-top: 8px !important;
-    margin-bottom: 4px !important;
-    border-radius: 8px !important;
+  /* Grid & Solar Section Inside Step 1 */
+  #secGridConnectionDetails {
+    padding: 12px 12px !important;
+    margin-top: 10px !important;
+    margin-bottom: 6px !important;
+    border-radius: 10px !important;
   }
 
-  #secOnGridBill input.form-control {
-    height: 32px !important;
-    font-size: 0.82rem !important;
+  #secGridConnectionDetails .form-label {
+    font-size: 0.74rem !important;
+    margin-bottom: 3px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+  }
+
+  #secGridConnectionDetails .input-group,
+  #secGridConnectionDetails .form-control,
+  #secGridConnectionDetails .form-select,
+  #secGridConnectionDetails .input-group-text {
+    height: 38px !important;
+    font-size: 0.8rem !important;
   }
 
   /* Summary Metrics Boxes (Step 2) */
