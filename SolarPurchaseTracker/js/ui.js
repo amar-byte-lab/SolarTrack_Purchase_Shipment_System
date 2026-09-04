@@ -8,11 +8,11 @@ const UI = (() => {
   const NAV_ITEMS = [
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
     { href: 'installments.html',    icon: 'customer',   label: 'Customer' },
-    { href: 'work-note.html',       icon: 'worknote',   label: 'Work Note' },
-    { href: 'offer.html',           icon: 'offer',      label: 'Offer Generator' },
-    { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement Generate' },
-    { href: 'demand-note.html',     icon: 'demand',     label: 'Demand Note Generate' },
-    { href: 'sizing-calc.html',     icon: 'calculator', label: 'Sizing Calculator' },
+    { href: 'work-note.html',       icon: 'worknote',   label: 'Note' },
+    { href: 'offer.html',           icon: 'offer',      label: 'Offer' },
+    { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement' },
+    { href: 'demand-note.html',     icon: 'demand',     label: 'NetMeter' },
+    { href: 'sizing-calc.html',     icon: 'calculator', label: 'Calculator' },
     { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
