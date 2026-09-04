@@ -53,7 +53,7 @@ const SizingCalc = (() => {
     let connectedLoadW = 0;
     let backupLoadW = 0;
     let estimatedDailyKwh = 0;
-    let heavyLoadSurgeDeltaW = 0;
+    const motorSurgeDeltas = [];
 
     const acWarnings = [];
     const pumpWarnings = [];
@@ -67,7 +67,7 @@ const SizingCalc = (() => {
       let watts = Math.max(0, Number(app.watts) || 0);
 
       // Handle Heavy Load Overrides & Starting Surge Calculation (AC)
-      if (app.id === 'ac' || app.acTon || app.isHeavy && app.name && app.name.toLowerCase().includes('ac')) {
+      if (app.id === 'ac' || app.acTon || (app.isHeavy && app.name && app.name.toLowerCase().includes('ac'))) {
         const acTon = app.acTon || '1.5';
         if (app.acActualWatts && Number(app.acActualWatts) > 0) {
           watts = Math.max(1, Number(app.acActualWatts));
@@ -80,27 +80,29 @@ const SizingCalc = (() => {
           ? (Number(params.acInverterSurgeFactor) || 1.5)
           : (Number(params.acNonInverterSurgeFactor) || 3.0);
 
-        const surgeDelta = Math.round((watts * (surgeMultiplier - 1)) * qty);
-        heavyLoadSurgeDeltaW += surgeDelta;
-        acWarnings.push(`AC starting surge (${acType === 'inverter' ? 'Inverter AC' : 'Non-Inverter AC'}, ${surgeMultiplier}x) accounted for in inverter peak rating.`);
+        // Individual motor starting surge delta (IEEE 1562 standard diversity: single largest inrush)
+        const singleMotorSurgeDelta = Math.round(watts * (surgeMultiplier - 1));
+        motorSurgeDeltas.push(singleMotorSurgeDelta);
+        acWarnings.push(`AC motor inrush surge (${acType === 'inverter' ? 'Inverter AC' : 'Non-Inverter AC'}, ${surgeMultiplier}x) factored into inverter peak rating.`);
       }
 
       // Handle Heavy Load Overrides & Starting Surge Calculation (Water Pump)
-      if (app.id === 'pump' || app.pumpHp || app.isHeavy && app.name && app.name.toLowerCase().includes('pump')) {
+      if (app.id === 'pump' || app.pumpHp || (app.isHeavy && app.name && app.name.toLowerCase().includes('pump'))) {
         const pumpHp = app.pumpHp || '1';
         if (!watts || watts === 0) {
           const hpWattsMap = { '0.5': 373, '1': 746, '1.5': 1119, '2': 1492 };
           watts = hpWattsMap[pumpHp] || 746;
         }
         const surgeMultiplier = Number(params.pumpSurgeFactor) || 3.5;
-        const surgeDelta = Math.round((watts * (surgeMultiplier - 1)) * qty);
-        heavyLoadSurgeDeltaW += surgeDelta;
-        pumpWarnings.push(`Pump motor starting surge (${surgeMultiplier}x) accounted for in inverter peak rating.`);
+        const singleMotorSurgeDelta = Math.round(watts * (surgeMultiplier - 1));
+        motorSurgeDeltas.push(singleMotorSurgeDelta);
+        pumpWarnings.push(`Pump motor starting surge (${surgeMultiplier}x) factored into inverter peak rating.`);
       }
 
       const totalAppWatts = watts * qty;
       connectedLoadW += totalAppWatts;
 
+      // Check if appliance is designated for emergency battery backup
       const isBackup = app.isBackup !== undefined ? !!app.isBackup : true;
       if (isBackup) {
         backupLoadW += totalAppWatts;
@@ -119,15 +121,35 @@ const SizingCalc = (() => {
       });
     });
 
+    // Largest single motor inrush surge delta (Standard electrical engineering diversity)
+    const maxMotorSurgeDeltaW = motorSurgeDeltas.length > 0 ? Math.max(...motorSurgeDeltas) : 0;
+
     // 2. Solar PV Sizing (Executed ONLY when requiresSolar is true: On-Grid, Hybrid, Off-Grid. NEVER Without Solar)
+    const sanctionedLoadKw = Math.max(0.5, Number(input.sanctionedLoadKw) || 3);
+    const connectionPhase = input.connectionPhase || '1-Phase';
+    const isSinglePhase = connectionPhase === '1-Phase' || !connectionPhase;
+    const SINGLE_PHASE_MAX_LIMIT_KW = 5.0;
+
+    // Estimate daily battery recharge demand for Off-Grid / autonomous systems
+    const activeBackupW = backupLoadW > 0 ? backupLoadW : connectedLoadW;
+    const estBackupEnergyWh = activeBackupW * backupHours;
+    const estBatteryRechargeKwh = estBackupEnergyWh / (0.88 * 1000); // 88% battery roundtrip charging efficiency
+
     let solarResult = null;
     if (sysMeta.requiresSolar) {
       solarResult = calculateSolar({
         systemType: sysTypeKey,
-        monthlyUnits: Number(input.monthlyUnits) || 300,
+        monthlyUnits: Number(input.monthlyUnits) || 0,
         dailyUsageKwh: Number(input.dailyUsageKwh) || estimatedDailyKwh,
+        batteryRechargeKwh: estBatteryRechargeKwh,
         peakSunHours: Number(params.peakSunHours) || 5.0,
-        pvSystemEfficiencyPct: Number(params.pvSystemEfficiencyPct) || 78
+        pvSystemEfficiencyPct: Number(params.pvSystemEfficiencyPct) || 78,
+        inverterLossPct: Number(params.inverterLossPct) || 4,
+        dcAcCableLossPct: Number(params.dcAcCableLossPct) || 2,
+        tempLossPct: Number(params.tempLossPct) || 7,
+        soilingLossPct: Number(params.soilingLossPct) || 4,
+        shadingOrientationLossPct: Number(params.shadingOrientationLossPct) || 3,
+        sanctionedLoadKw
       });
     }
 
@@ -136,32 +158,39 @@ const SizingCalc = (() => {
     let baseRunningLoadW = connectedLoadW;
     let requiredContinuousW = Math.round(baseRunningLoadW * (1 + safetyMarginPct / 100));
 
-    // For On-Grid (GTI) & Hybrid: Inverter continuous capacity is driven by Solar PV Array rating
+    // For On-Grid (GTI), Hybrid & Off-Grid: Inverter continuous capacity must satisfy Solar PV Array AC rating
     if (sysTypeKey === 'on-grid' && solarResult && solarResult.actualArrayKwp > 0) {
-      const solarArrayContinuousW = Math.round(solarResult.actualArrayKwp * 1000);
+      const targetInverterKw = Math.max(1, Math.round(solarResult.actualArrayKwp / 1.12));
+      const solarArrayContinuousW = targetInverterKw * 1000;
       requiredContinuousW = Math.max(requiredContinuousW, solarArrayContinuousW);
     } else if (sysTypeKey === 'hybrid' && solarResult && solarResult.actualArrayKwp > 0) {
-      const solarArrayContinuousW = Math.round(solarResult.actualArrayKwp * 1000);
+      const targetInverterKw = Math.max(1, Math.round(solarResult.actualArrayKwp / 1.12));
+      const solarArrayContinuousW = targetInverterKw * 1000;
       requiredContinuousW = Math.max(requiredContinuousW, solarArrayContinuousW);
+    } else if (sysTypeKey === 'off-grid' && solarResult && solarResult.actualArrayKwp > 0) {
+      // Off-Grid PCU continuous rating must comfortably process solar input
+      const targetPcuKw = Math.max(1, Math.round(solarResult.actualArrayKwp / 1.25));
+      requiredContinuousW = Math.max(requiredContinuousW, targetPcuKw * 1000);
     }
 
-    const requiredPeakSurgeW = Math.round(requiredContinuousW + heavyLoadSurgeDeltaW);
+    // Peak surge applies motor diversity: Continuous running load + largest single motor starting spike
+    const requiredPeakSurgeW = Math.round(requiredContinuousW + maxMotorSurgeDeltaW);
 
-    // 4. Validate Single-Phase Permissible Limit (5 kW max in India/DISCOMs) & Sanctioned Load
-    const connectionPhase = input.connectionPhase || '1-Phase';
-    const sanctionedLoadKw = Math.max(0.5, Number(input.sanctionedLoadKw) || 3);
-    const isSinglePhase = connectionPhase === '1-Phase' || !connectionPhase;
-    const SINGLE_PHASE_MAX_LIMIT_KW = 5.0;
-
+    // 4. Validate Single-Phase Permissible Limit (5 kW max AC) & Sanctioned Load
     const rawRequiredKw = Math.round((requiredContinuousW / 1000) * 10) / 10;
-    const exceedsSinglePhase = isSinglePhase && rawRequiredKw > SINGLE_PHASE_MAX_LIMIT_KW;
-    const exceedsSanctionedLoad = rawRequiredKw > sanctionedLoadKw;
+    const effectiveSolarKw = solarResult ? solarResult.actualArrayKwp : rawRequiredKw;
+    const maxPermissibleSinglePhaseDcKw = Math.round(SINGLE_PHASE_MAX_LIMIT_KW * 1.15 * 10) / 10;
+    const maxPermissibleSanctionedDcKw = Math.round(sanctionedLoadKw * 1.15 * 10) / 10;
+
+    const exceedsSinglePhase = isSinglePhase && (rawRequiredKw > SINGLE_PHASE_MAX_LIMIT_KW || (solarResult && solarResult.actualArrayKwp > maxPermissibleSinglePhaseDcKw));
+    const exceedsSanctionedLoad = rawRequiredKw > sanctionedLoadKw || (solarResult && solarResult.actualArrayKwp > maxPermissibleSanctionedDcKw);
 
     const validation = {
       connectionPhase,
       isSinglePhase,
       sanctionedLoadKw,
-      requiredKw: rawRequiredKw,
+      requiredKw: Math.max(rawRequiredKw, Math.round(effectiveSolarKw / 1.12)),
+      effectiveSolarKw,
       maxAllowedSinglePhaseKw: SINGLE_PHASE_MAX_LIMIT_KW,
       exceedsSinglePhase,
       exceedsSanctionedLoad,
@@ -174,12 +203,12 @@ const SizingCalc = (() => {
 
     if (exceedsSinglePhase) {
       validation.title = 'Single-Phase Statutory Limit Exceeded';
-      validation.message = `Calculated inverter requirement of ${rawRequiredKw} kW exceeds the permissible Single-Phase (230V) limit of 5.0 kW. Under DISCOM net-metering regulations in India, single-phase rooftop solar installations above 5 kW are not allowed.`;
+      validation.message = `Calculated capacity (${validation.requiredKw} kW) exceeds the permissible Single-Phase (230V) limit of 5.0 kW. Under DISCOM net-metering regulations across India, single-phase rooftop solar export is capped at 5.0 kW.`;
       validation.suggestion = `Switch your grid supply connection to Three-Phase (415V) or reduce plant capacity to ≤ 5.0 kWp.`;
     } else if (exceedsSanctionedLoad) {
-      validation.title = 'Sanctioned Meter Load Enhancement Required';
-      validation.message = `Calculated inverter capacity (${rawRequiredKw} kW) exceeds customer's current sanctioned load (${sanctionedLoadKw} kW). Net-metering regulations require solar capacity not to exceed 100% of sanctioned load.`;
-      validation.suggestion = `Customer must apply for sanctioned load enhancement to ${Math.ceil(rawRequiredKw)} kW before solar net-meter installation.`;
+      validation.title = 'Sanctioned Meter Load Enhancement Required (DISCOM Policy)';
+      validation.message = `Recommended solar capacity (${effectiveSolarKw} kWp) exceeds customer's current sanctioned load (${sanctionedLoadKw} kW). Under DISCOM net-metering guidelines, rooftop solar capacity cannot exceed 100% of sanctioned load.`;
+      validation.suggestion = `Customer must enhance sanctioned load to ${Math.ceil(effectiveSolarKw)} kW before solar net-meter installation, or cap solar capacity to ≤ ${sanctionedLoadKw} kWp under current connection.`;
     }
 
     // 5. Select Inverter from Master Database
@@ -288,7 +317,7 @@ const SizingCalc = (() => {
       estimatedDailyKwh: Math.round(estimatedDailyKwh * 100) / 100,
       calculationDetails: {
         baseRunningLoadW,
-        heavyLoadSurgeDeltaW,
+        maxMotorSurgeDeltaW,
         safetyMarginW: Math.round(baseRunningLoadW * (safetyMarginPct / 100)),
         requiredContinuousW,
         requiredPeakSurgeW,
@@ -712,49 +741,85 @@ const SizingCalc = (() => {
   /**
    * Calculate Solar PV Capacity
    * Strictly based on:
-   * Daily Demand = Monthly Billing Units / 30
+   * - On-Grid: Daily Demand = Monthly Billing Units / 30
+   * - Off-Grid: Daily Demand = Daytime Appliance Energy + Battery Recharging Energy
+   * - Hybrid: Daily Demand = Monthly Billing Units / 30 OR Appliance + Battery Demand
    * Required Solar kWp = Daily Demand / (Peak Sun Hours × (PR / 100))
    * Panel Count = CEIL(Required Solar kWp * 1000 / Panel Wattage)
    * Actual Array kWp = Panel Count * Panel Wattage / 1000
+   * Accounts for: System losses (Inverter, Thermal, Wiring, Soiling, Shading), Solar Irradiation & DISCOM limits
    */
   function calculateSolar({
     systemType,
     monthlyUnits,
     dailyUsageKwh,
+    batteryRechargeKwh = 0,
     peakSunHours,
-    pvSystemEfficiencyPct
+    pvSystemEfficiencyPct,
+    inverterLossPct = 4,
+    dcAcCableLossPct = 2,
+    tempLossPct = 7,
+    soilingLossPct = 4,
+    shadingOrientationLossPct = 3,
+    sanctionedLoadKw = 3
   }) {
     let dailyDemandKwh = 0;
 
     if (systemType === 'on-grid') {
       const units = Number(monthlyUnits) || 300;
       dailyDemandKwh = units / 30;
+    } else if (systemType === 'off-grid') {
+      // Off-Grid is sized strictly from local load energy + battery recharging demand
+      const applianceDailyKwh = Math.max(0.5, Number(dailyUsageKwh) || 5.0);
+      const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
+      dailyDemandKwh = applianceDailyKwh + batRecharge;
     } else {
-      // For Hybrid / Off-Grid: Use monthly units if provided, else daily appliances kWh
+      // For Hybrid: Use monthly units if provided, else daily appliances + battery recharge
       if (Number(monthlyUnits) > 0) {
         dailyDemandKwh = Number(monthlyUnits) / 30;
       } else {
-        dailyDemandKwh = Math.max(1, Number(dailyUsageKwh) || 10);
+        const applianceDailyKwh = Math.max(0.5, Number(dailyUsageKwh) || 5.0);
+        const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
+        dailyDemandKwh = applianceDailyKwh + batRecharge;
       }
     }
 
     const sunHours = Math.max(1, Number(peakSunHours) || 5.0);
-    const prEff = Math.max(0.1, (Number(pvSystemEfficiencyPct) || 78) / 100);
+    
+    // Detailed system losses computation:
+    const invLoss = Math.max(0, Number(inverterLossPct) || 4);
+    const cableLoss = Math.max(0, Number(dcAcCableLossPct) || 2);
+    const tempLoss = Math.max(0, Number(tempLossPct) || 7);
+    const soilLoss = Math.max(0, Number(soilingLossPct) || 4);
+    const shadeLoss = Math.max(0, Number(shadingOrientationLossPct) || 3);
 
-    // Required Solar kWp
+    // Compound performance ratio (PR)
+    const compoundPr = (1 - invLoss / 100) * (1 - cableLoss / 100) * (1 - tempLoss / 100) * (1 - soilLoss / 100) * (1 - shadeLoss / 100);
+    const prEff = pvSystemEfficiencyPct ? Math.max(0.1, Number(pvSystemEfficiencyPct) / 100) : compoundPr;
+    const effectivePrPct = Math.round(prEff * 100);
+    const totalLossPct = Math.round((1 - prEff) * 100);
+
+    // Required Solar kWp for daily energy demand
     const requiredSolarKwp = dailyDemandKwh / (sunHours * prEff);
 
-    // Standard 550Wp Mono PERC Panels
+    // Standard 550Wp Mono PERC Half-Cut Panels
     const panelWatts = 550;
     const panelCount = Math.ceil((requiredSolarKwp * 1000) / panelWatts);
-
-    // Actual Installed Array kWp = panelCount * panelWatts / 1000
     const actualArrayKwp = Math.round(((panelCount * panelWatts) / 1000) * 100) / 100;
 
-    // Estimated Daily Generation = actualArrayKwp * PSH * PR
+    // Real-world generation output accounting for all system losses
     const estDailyGenKwh = Math.round((actualArrayKwp * sunHours * prEff) * 100) / 100;
     const estMonthlyGenUnits = Math.round(estDailyGenKwh * 30);
+    const estAnnualGenUnits = Math.round(estDailyGenKwh * 365);
     const roofAreaSqFt = Math.round(actualArrayKwp * 100);
+
+    // DISCOM Sanctioned Load Validation: Allows standard 1.15x DC oversizing on Inverter / Sanctioned Load
+    const sLoadKw = Number(sanctionedLoadKw) || 3;
+    const maxPermissibleDcKwp = Math.round(sLoadKw * 1.15 * 10) / 10;
+    const exceedsSanctioned = actualArrayKwp > maxPermissibleDcKwp;
+    const permissibleSolarKwp = Math.min(actualArrayKwp, maxPermissibleDcKwp);
+    const permissiblePanelCount = Math.floor((permissibleSolarKwp * 1000) / panelWatts);
+    const permissibleArrayKwp = Math.round(((permissiblePanelCount * panelWatts) / 1000) * 100) / 100;
 
     return {
       dailyDemandKwh: Math.round(dailyDemandKwh * 100) / 100,
@@ -762,8 +827,24 @@ const SizingCalc = (() => {
       requiredSolarKwp: Math.round(requiredSolarKwp * 100) / 100,
       actualArrayKwp,
       recommendedKwp: actualArrayKwp,
+      permissibleArrayKwp,
+      exceedsSanctionedLoad: exceedsSanctioned,
+      sanctionedLoadKw: sLoadKw,
+      peakSunHours: sunHours,
+      effectivePrPct,
+      totalLossPct,
+      lossBreakdown: {
+        inverterLossPct: invLoss,
+        dcAcCableLossPct: cableLoss,
+        tempLossPct: tempLoss,
+        soilingLossPct: soilLoss,
+        shadingOrientationLossPct: shadeLoss,
+        totalLossPct,
+        effectivePrPct
+      },
       estDailyGenKwh,
       estMonthlyGenUnits,
+      estAnnualGenUnits,
       panelCount,
       panelWatts,
       roofAreaSqFt,
@@ -818,42 +899,56 @@ const SizingCalc = (() => {
   }
 
   /**
-   * Odisha OERC Domestic Tariff & Solar Investment Recovery Engine
+   * Multi-DISCOM Tariff & Solar Investment Recovery Engine
    * @param {Object} opts
    * @returns {Object}
    */
-  function calculateOdishaTariffAndPayback({ monthlyUnits = 450, capitalSpend = 150000, sanctionedLoadKw = 1, annualInterestRate = 0 }) {
+  function calculateTariffAndPayback({
+    monthlyUnits = 450,
+    capitalSpend = 150000,
+    sanctionedLoadKw = 3,
+    annualInterestRate = 0,
+    discomId = 'odisha_oerc'
+  }) {
     const u = Math.max(0, Number(monthlyUnits) || 0);
     const spend = Math.max(0, Number(capitalSpend) || 0);
     const loadKw = Math.max(0.5, Number(sanctionedLoadKw) || 1);
     const interestRate = Math.max(0, Number(annualInterestRate) || 0);
 
-    // 1. Odisha OERC Telescopic Tariff Structure
-    const slab1Units = Math.min(u, 50);
-    const slab1Rate = 2.90;
-    const slab1Amount = slab1Units * slab1Rate;
+    // 1. Fetch Configured DISCOM Tariff Schedule
+    const tariff = SizingDB.getTariffSchedule(discomId);
 
-    const slab2Units = Math.min(Math.max(0, u - 50), 150);
-    const slab2Rate = 4.70;
-    const slab2Amount = slab2Units * slab2Rate;
+    // 2. Dynamic Slab Breakdown Calculation
+    let remainingUnits = u;
+    let baseEnergyCharge = 0;
+    const slabsBreakdown = [];
 
-    const slab3Units = Math.min(Math.max(0, u - 200), 200);
-    const slab3Rate = 5.70;
-    const slab3Amount = slab3Units * slab3Rate;
+    for (const slab of tariff.slabs) {
+      if (remainingUnits <= 0) break;
+      const slabCapacity = slab.max === Infinity ? remainingUnits : Math.max(0, slab.max - slab.min);
+      const billableInSlab = Math.min(remainingUnits, slabCapacity);
+      const amount = billableInSlab * slab.rate;
+      baseEnergyCharge += amount;
+      remainingUnits -= billableInSlab;
+      slabsBreakdown.push({
+        name: slab.name,
+        units: Math.round(billableInSlab * 10) / 10,
+        rate: slab.rate,
+        amount: Math.round(amount * 100) / 100
+      });
+    }
 
-    const slab4Units = Math.max(0, u - 400);
-    const slab4Rate = 6.10;
-    const slab4Amount = slab4Units * slab4Rate;
-
-    const baseEnergyCharge = slab1Amount + slab2Amount + slab3Amount + slab4Amount;
-    const fixedCharge = loadKw * 20; // ₹20 per kW sanctioned load
-    const meterRent = 10; // ₹10 flat meter rent
-    const electricityDuty = baseEnergyCharge * 0.04; // 4% of Base Energy Charge
+    const fixedCharge = loadKw * (tariff.fixedChargePerKw || 20);
+    const meterRent = tariff.meterRent || 10;
+    const dutyRate = (tariff.electricityDutyPct || 4) / 100;
+    const electricityDuty = baseEnergyCharge * dutyRate;
     const totalMonthlyBill = baseEnergyCharge + fixedCharge + meterRent + electricityDuty;
-    const monthlySavings = totalMonthlyBill;
+
+    // Under Net-Metering, solar offsets generated energy charges & proportionate electricity duty
+    const monthlySavings = baseEnergyCharge + electricityDuty;
     const annualSavings = monthlySavings * 12;
 
-    // 2. Recovery Timeline (Payback Period)
+    // 3. Recovery Timeline (Payback Period on Capital Spend)
     let totalMonths = 0;
     let isRecoverable = true;
     let recoveryError = '';
@@ -863,7 +958,7 @@ const SizingCalc = (() => {
       totalMonths = 0;
     } else if (monthlySavings <= 0) {
       isRecoverable = false;
-      recoveryError = 'Monthly savings is ₹0. Cannot calculate recovery timeline.';
+      recoveryError = 'Monthly energy savings is ₹0. Cannot calculate recovery timeline.';
     } else if (interestRate === 0) {
       totalMonths = spend / monthlySavings;
     } else {
@@ -872,7 +967,7 @@ const SizingCalc = (() => {
 
       if (monthlySavings <= initialMonthlyInterest) {
         isRecoverable = false;
-        recoveryError = `Investment cannot be recovered with this savings rate. Initial monthly interest (₹${Math.round(initialMonthlyInterest).toLocaleString('en-IN')}) exceeds monthly savings (₹${Math.round(monthlySavings).toLocaleString('en-IN')}).`;
+        recoveryError = `Investment cannot be recovered with this savings rate. Initial monthly interest (₹${Math.round(initialMonthlyInterest).toLocaleString('en-IN')}) exceeds monthly energy savings (₹${Math.round(monthlySavings).toLocaleString('en-IN')}).`;
       } else {
         let remainingBalance = spend;
         let monthsCount = 0;
@@ -895,14 +990,14 @@ const SizingCalc = (() => {
       }
     }
 
-    // 3. Format Human-Friendly Recovery Period
+    // 4. Format Human-Friendly Recovery Period
     let recoveryPeriodText = '';
     let wholeYears = 0;
     let remainingMonths = 0;
 
     if (isRecoverable) {
       if (spend <= 0) {
-        recoveryPeriodText = 'Immediate (0 Months)';
+        recoveryPeriodText = 'Immediate (₹0 Investment)';
       } else {
         wholeYears = Math.floor(totalMonths / 12);
         remainingMonths = Math.round(totalMonths % 12);
@@ -921,7 +1016,7 @@ const SizingCalc = (() => {
       }
     }
 
-    // 4. Lifetime Long-Term ROI Projections
+    // 5. Lifetime Long-Term ROI Projections
     const fiveYearSavings = monthlySavings * 60;
     const tenYearSavings = monthlySavings * 120;
     const twentyFiveYearSavings = monthlySavings * 300;
@@ -933,12 +1028,10 @@ const SizingCalc = (() => {
       capitalSpend: spend,
       sanctionedLoadKw: loadKw,
       annualInterestRate: interestRate,
-      slabs: [
-        { name: '1 to 50 Units', units: slab1Units, rate: slab1Rate, amount: slab1Amount },
-        { name: '51 to 200 Units', units: slab2Units, rate: slab2Rate, amount: slab2Amount },
-        { name: '201 to 400 Units', units: slab3Units, rate: slab3Rate, amount: slab3Amount },
-        { name: 'Above 400 Units', units: slab4Units, rate: slab4Rate, amount: slab4Amount }
-      ],
+      discomId: tariff.id,
+      discomName: tariff.name,
+      discomState: tariff.state,
+      slabs: slabsBreakdown,
       baseEnergyCharge,
       fixedCharge,
       meterRent,
@@ -961,13 +1054,20 @@ const SizingCalc = (() => {
     };
   }
 
+  // Backward compatibility wrapper
+  function calculateOdishaTariffAndPayback(opts) {
+    return calculateTariffAndPayback(opts);
+  }
+
   return {
     SYSTEM_TYPE_MAP,
     calculateSystem,
     selectInverter,
     selectBattery,
     calculateSolar,
+    calculateTariffAndPayback,
     calculateOdishaTariffAndPayback
   };
 
 })();
+

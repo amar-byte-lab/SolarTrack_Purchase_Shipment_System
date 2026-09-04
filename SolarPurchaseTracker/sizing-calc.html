@@ -125,6 +125,7 @@
                 </div>
 
                 <!-- Customer Connection Phase & Sanctioned Load + Solar Parameters -->
+                <!-- Customer Connection Phase & Sanctioned Load + Solar Parameters -->
                 <div id="secGridConnectionDetails" class="mt-3.5 p-3.5 p-md-4 bg-light rounded-3 border" style="margin-bottom: 6px;">
                   <div class="row g-2.5 align-items-center">
                     
@@ -141,8 +142,22 @@
                       </div>
                     </div>
 
-                    <!-- 2. Customer Sanctioned Load (col-md-6 on desktop, col-6 on mobile) -->
-                    <div class="col-md-6 col-6">
+                    <!-- 2. DISCOM / State Tariff Selection -->
+                    <div class="col-md-6 col-12 sec-solar-param-field" id="wrapDiscomSelect">
+                      <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selDiscomTariff">
+                        Electricity DISCOM / Tariff Region
+                      </label>
+                      <div class="input-group shadow-2xs">
+                        <select class="form-select fw-semibold fs-8" id="selDiscomTariff" onchange="SizingUI.onDiscomChange(this.value)" style="height: 38px;">
+                          <option value="odisha_oerc" selected>Odisha OERC (TPCODL/TPNODL/TPSODL/TPWODL)</option>
+                          <option value="national_standard">National Average Residential Tariff</option>
+                          <option value="commercial_standard">Commercial / Non-Domestic (LT)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- 3. Customer Sanctioned Load -->
+                    <div class="col-md-3 col-6 sec-solar-param-field">
                       <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selSanctionedLoad">
                         Sanctioned Load
                       </label>
@@ -161,45 +176,42 @@
                           <option value="15">15 kW (₹300/mo) — 3-Phase</option>
                           <option value="20">20 kW (₹400/mo) — 3-Phase</option>
                         </select>
-                        <span class="input-group-text bg-white fw-semibold text-secondary fs-8">kW</span>
                       </div>
                     </div>
 
-                    <!-- 3. Monthly Billing Units (col-md-4 on desktop, col-6 on mobile - in one row with Sanctioned Load on mobile!) -->
-                    <div class="col-md-4 col-6 sec-solar-param-field" id="wrapMonthlyUnits">
+                    <!-- 4. Monthly Billing Units -->
+                    <div class="col-md-3 col-6 sec-solar-param-field" id="wrapMonthlyUnits">
                       <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtMonthlyUnits">
                         Monthly Units
                       </label>
                       <div class="input-group shadow-2xs">
                         <input type="number" min="0" class="form-control fw-semibold fs-8" id="txtMonthlyUnits" 
                           placeholder="e.g. 300" value="300" style="height: 38px;">
-                        <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Units</span>
                       </div>
                     </div>
 
-                    <!-- 4. Total Investment (₹) (col-md-4 on desktop, col-6 on mobile) -->
-                    <div class="col-md-4 col-6 sec-solar-param-field" id="wrapRecoverySpend">
+                    <!-- 5. Total Estimated Investment (₹) -->
+                    <div class="col-md-3 col-6 sec-solar-param-field" id="wrapRecoverySpend">
                       <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtRecoverySpend">
-                        Total Investment
+                        Investment (₹)
                       </label>
                       <div class="input-group shadow-2xs">
-                        <span class="input-group-text bg-white fw-bold text-dark fs-8">₹</span>
                         <input type="number" min="0" step="5000" class="form-control fw-semibold fs-8" id="txtRecoverySpend" 
                           value="150000" style="height: 38px;">
                       </div>
                     </div>
 
-                    <!-- 5. Payment / Financing (col-md-4 on desktop, col-6 on mobile - in one row with Investment on mobile!) -->
-                    <div class="col-md-4 col-6 sec-solar-param-field" id="wrapRecoveryFinance">
+                    <!-- 6. Payment / Financing -->
+                    <div class="col-md-3 col-6 sec-solar-param-field" id="wrapRecoveryFinance">
                       <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoveryFinanceType">
                         Financing
                       </label>
                       <div class="input-group shadow-2xs">
                         <select class="form-select fw-semibold fs-8" id="selRecoveryFinanceType" onchange="SizingUI.onFinanceTypeChange(this.value)" style="height: 38px;">
-                          <option value="0" selected>Cash / Full (0% Int)</option>
-                          <option value="7">PM Surya Ghar (7%)</option>
-                          <option value="9.5">Bank Loan (9.5%)</option>
-                          <option value="custom">Custom Interest...</option>
+                          <option value="0" selected>Cash (0% Int)</option>
+                          <option value="7">Solar Loan (7% p.a.)</option>
+                          <option value="9.5">Standard Loan (9.5% p.a.)</option>
+                          <option value="custom">Custom Int...</option>
                         </select>
                       </div>
                       
@@ -209,7 +221,7 @@
                       </div>
                     </div>
 
-                    <!-- Daily Demand: Simple Highlighted Line (No Container) -->
+                    <!-- Daily Demand: Simple Highlighted Line -->
                     <div class="col-12 mt-1 pt-1 sec-solar-param-field" id="wrapDailyDemand">
                       <div class="fs-8 text-secondary">
                         ⚡ Daily Demand: <strong class="text-primary fw-bold" id="lblOnGridDailyDemand">10.00 kWh / day</strong>
@@ -333,16 +345,17 @@
             <h6 class="fw-bold text-dark mb-0 fs-7">Appliances List & Usage Hours</h6>
             <div class="badge bg-primary fs-8 px-2 py-1" id="modalConnectedLoadBadge">0 W (0 kW)</div>
           </div>
-          <!-- Appliance Configuration Table (Compact 5-Column Screen-Fit) -->
+          <!-- Appliance Configuration Table (Screen-Fit with Essential Backup Toggle) -->
           <div class="table-responsive border rounded-3 mb-2.5" style="max-height: 480px; overflow-y: auto;">
             <table class="table table-hover align-middle mb-0 appliance-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 28px;" class="text-center p-1">#</th>
+                  <th style="width: 28px;" class="text-center p-1" title="Select Appliance">#</th>
                   <th style="min-width: 105px;" class="p-1">Appliance</th>
                   <th style="width: 44px;" class="text-center p-1">Qty</th>
                   <th style="width: 74px;" class="text-center p-1">Watt</th>
                   <th style="width: 68px;" class="text-center p-1">Time</th>
+                  <th style="width: 40px;" class="text-center p-1" title="Emergency Battery Backup Enabled">🔋</th>
                 </tr>
               </thead>
               <tbody id="modalApplianceTableBody">
@@ -366,11 +379,13 @@
                     <div class="d-flex align-items-center justify-content-center gap-1">
                       <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center p-1 fw-semibold" id="txtCustomAppHours" 
                         value="4" title="Daily running hours" style="width: 34px; font-size: 0.75rem; height: 26px;">
-                      <button type="button" class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs" id="btnAddCustomApp" 
-                        style="width: 24px; height: 24px; font-size: 1rem; font-weight: bold; line-height: 1;" title="Add Appliance" onclick="SizingUI.addCustomAppliance()">
-                        +
-                      </button>
                     </div>
+                  </td>
+                  <td class="text-center p-1" style="width: 40px;">
+                    <button type="button" class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs mx-auto" id="btnAddCustomApp" 
+                      style="width: 24px; height: 24px; font-size: 1rem; font-weight: bold; line-height: 1;" title="Add Custom Appliance" onclick="SizingUI.addCustomAppliance()">
+                      +
+                    </button>
                   </td>
                 </tr>
               </tfoot>
@@ -436,6 +451,8 @@
         </div>
       </div>
     </div>
+  </div>
+
   <!-- ADVANCED SETTINGS & MASTER DB MODAL -->
   <div class="modal fade" id="advancedSettingsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -478,7 +495,7 @@
                 <div class="col-md-4 col-6">
                   <label class="form-label fs-8 fw-bold text-dark mb-1">PV System Efficiency (%)</label>
                   <input type="number" class="form-control form-control-sm fw-semibold" id="txtPvEffPct" min="50" max="100" value="78">
-                  <span class="fs-9 text-muted">Overall yield efficiency</span>
+                  <span class="fs-9 text-muted">Overall compound PR yield</span>
                 </div>
                 <div class="col-md-4 col-6">
                   <label class="form-label fs-8 fw-bold text-dark mb-1">Lithium Usable DoD (%)</label>
@@ -486,9 +503,19 @@
                   <span class="fs-9 text-muted">Depth of discharge for LiFePO4</span>
                 </div>
                 <div class="col-md-4 col-6">
-                  <label class="form-label fs-8 fw-bold text-dark mb-1">Lead-Acid Usable DoD (%)</label>
-                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtLeadAcidDoDPct" min="20" max="80" value="50">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Tall Tubular DoD (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtTubularDoDPct" min="20" max="90" value="75">
                   <span class="fs-9 text-muted">Depth of discharge for Tubular</span>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Flat Plate DoD (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtFlatPlateDoDPct" min="20" max="80" value="65">
+                  <span class="fs-9 text-muted">Depth of discharge for Flat Plate</span>
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="form-label fs-8 fw-bold text-dark mb-1">Battery Charging Efficiency (%)</label>
+                  <input type="number" class="form-control form-control-sm fw-semibold" id="txtBatteryChargingEffPct" min="50" max="100" value="88">
+                  <span class="fs-9 text-muted">Off-grid charging roundtrip efficiency</span>
                 </div>
               </div>
             </div>

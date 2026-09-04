@@ -12,13 +12,71 @@ const SizingDB = (() => {
     lithiumDoDPct: 90,           // 90% DoD for Lithium LFP
     tubularDoDPct: 75,           // 75-80% DoD for Tall Tubular
     flatPlateDoDPct: 65,         // 65-70% DoD for Flat Plate
-    leadAcidDoDPct: 75,          // Default Lead-Acid DoD
-    peakSunHours: 5.0,           // 5.0 kWh/m2/day
-    pvSystemEfficiencyPct: 78,   // 78% overall PV system yield efficiency (PR)
+    leadAcidDoDPct: 75,          // Harmonized generic lead-acid DoD (defaults to Tubular)
+    batteryChargingEffPct: 88,   // 88% battery charging efficiency
+    peakSunHours: 5.0,           // 5.0 kWh/m2/day actual solar irradiation
+    inverterLossPct: 4,          // 4% Inverter conversion & MPPT loss
+    dcAcCableLossPct: 2,         // 2% DC/AC cable ohmic loss
+    tempLossPct: 7,              // 7% Temperature thermal derating loss
+    soilingLossPct: 4,           // 4% Dust & soiling loss
+    shadingOrientationLossPct: 3,// 3% Orientation, tilt & near-shading loss
+    pvSystemEfficiencyPct: 78,   // 78% overall compound PR yield efficiency
     acNonInverterSurgeFactor: 3.0,
     acInverterSurgeFactor: 1.5,
     pumpSurgeFactor: 3.5,
-    preferredBatteryType: 'lithium' // 'lithium', 'tubular', or 'flat-plate'
+    preferredBatteryType: 'lithium', // 'lithium', 'tubular', or 'flat-plate'
+    selectedDiscom: 'odisha_oerc'
+  };
+
+  const TARIFF_SCHEDULES = {
+    'odisha_oerc': {
+      id: 'odisha_oerc',
+      state: 'Odisha',
+      name: 'Odisha OERC (TPCODL / TPNODL / TPSODL / TPWODL)',
+      category: 'Residential Domestic (LT-Domestic)',
+      slabs: [
+        { name: '1 to 50 Units', min: 0, max: 50, rate: 2.90 },
+        { name: '51 to 200 Units', min: 50, max: 200, rate: 4.70 },
+        { name: '201 to 400 Units', min: 200, max: 400, rate: 5.70 },
+        { name: 'Above 400 Units', min: 400, max: Infinity, rate: 6.10 }
+      ],
+      fixedChargePerKw: 20,
+      meterRent: 10,
+      electricityDutyPct: 4,
+      singlePhaseMaxKw: 5.0,
+      netMeteringAllowed: true
+    },
+    'national_standard': {
+      id: 'national_standard',
+      state: 'National Benchmark',
+      name: 'National Standard Average Residential',
+      category: 'Residential Domestic',
+      slabs: [
+        { name: '1 to 100 Units', min: 0, max: 100, rate: 4.50 },
+        { name: '101 to 300 Units', min: 100, max: 300, rate: 6.20 },
+        { name: '301 to 500 Units', min: 300, max: 500, rate: 7.50 },
+        { name: 'Above 500 Units', min: 500, max: Infinity, rate: 8.50 }
+      ],
+      fixedChargePerKw: 50,
+      meterRent: 15,
+      electricityDutyPct: 5,
+      singlePhaseMaxKw: 5.0,
+      netMeteringAllowed: true
+    },
+    'commercial_standard': {
+      id: 'commercial_standard',
+      state: 'All India',
+      name: 'Commercial & Non-Domestic General',
+      category: 'Commercial (LT-General)',
+      slabs: [
+        { name: 'All Units (Flat Commercial Tariff)', min: 0, max: Infinity, rate: 8.50 }
+      ],
+      fixedChargePerKw: 150,
+      meterRent: 25,
+      electricityDutyPct: 6,
+      singlePhaseMaxKw: 5.0,
+      netMeteringAllowed: true
+    }
   };
 
   const DEFAULT_INVERTERS = [
@@ -981,6 +1039,15 @@ const SizingDB = (() => {
     localStorage.setItem('sizing_batteries', JSON.stringify(list));
   }
 
+  function getTariffSchedule(discomId) {
+    const key = discomId || getParams().selectedDiscom || 'odisha_oerc';
+    return TARIFF_SCHEDULES[key] || TARIFF_SCHEDULES['odisha_oerc'];
+  }
+
+  function getTariffList() {
+    return Object.values(TARIFF_SCHEDULES);
+  }
+
   function resetToDefaults() {
     localStorage.removeItem('sizing_params');
     localStorage.removeItem('sizing_inverters');
@@ -991,13 +1058,17 @@ const SizingDB = (() => {
     DEFAULT_PARAMS,
     DEFAULT_INVERTERS,
     DEFAULT_BATTERIES,
+    TARIFF_SCHEDULES,
     getParams,
     saveParams,
     getInverters,
     saveInverters,
     getBatteries,
     saveBatteries,
+    getTariffSchedule,
+    getTariffList,
     resetToDefaults
   };
 
 })();
+
