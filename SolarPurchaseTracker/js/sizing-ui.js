@@ -402,7 +402,7 @@ const SizingUI = (() => {
 
     const loadText = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
     const kwhVal = (totalDailyWh / 1000).toFixed(2);
-    const demandText = `${kwhVal} kWh / day (${Math.round(totalDailyWh).toLocaleString()} Wh)`;
+    const demandText = `${kwhVal} kWh / day`;
 
     const lblAppLoad = document.getElementById('lblApplianceBasisConnectedLoad');
     if (lblAppLoad) lblAppLoad.textContent = loadText;
@@ -1057,8 +1057,7 @@ const SizingUI = (() => {
         specBoxHtml = `
           <div class="p-3 rounded-3 mb-2.5 border flex-grow-1" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
             <div class="d-flex justify-content-between align-items-center mb-1.5">
-              <div class="fw-bold text-dark fs-7">${batLi.totalUnits} × ${batLi.singleBatteryVolt}V ${batLi.singleBatteryAh}Ah Pack (${batLi.totalInstalledKwh} kWh)</div>
-              <span class="badge bg-success text-white fs-9 py-0.5 px-1.5">Recommended</span>
+              <div class="fw-bold text-dark fs-7">${batLi.totalUnits} × ${batLi.singleBatteryVolt}V ${batLi.singleBatteryAh}Ah Pack</div>
             </div>
             <div class="fs-8 text-muted mb-2.5">High Efficiency LiFePO4 (LFP) with built-in Smart BMS</div>
             
@@ -1087,8 +1086,7 @@ const SizingUI = (() => {
         specBoxHtml = `
           <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
             <div class="d-flex justify-content-between align-items-center mb-1.5">
-              <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries (${batLa.totalInstalledKwh} kWh)</div>
-              <span class="badge bg-primary-subtle text-primary fs-9 py-0.5 px-1.5">Standard Choice</span>
+              <div class="fw-bold text-dark fs-7">${batLa.totalUnits} × 12V ${batLa.singleBatteryAh}Ah Batteries</div>
             </div>
             <div class="fs-8 text-muted mb-2.5">Connected in ${batLa.systemVoltage}V Series Bank (${batLa.series} Series × ${batLa.parallel} Parallel)</div>
             
@@ -1117,8 +1115,7 @@ const SizingUI = (() => {
         specBoxHtml = `
           <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
             <div class="d-flex justify-content-between align-items-center mb-1.5">
-              <div class="fw-bold text-dark fs-7">${batFp.totalUnits} × 12V ${batFp.singleBatteryAh}Ah Batteries (${batFp.totalInstalledKwh} kWh)</div>
-              <span class="badge bg-secondary-subtle text-muted fs-9 py-0.5 px-1.5">Basic Budget</span>
+              <div class="fw-bold text-dark fs-7">${batFp.totalUnits} × 12V ${batFp.singleBatteryAh}Ah Batteries</div>
             </div>
             <div class="fs-8 text-muted mb-2.5">Connected in ${batFp.systemVoltage}V Bank (${batFp.series} Series × ${batFp.parallel} Parallel)</div>
             
@@ -1313,7 +1310,6 @@ const SizingUI = (() => {
           <!-- Explanation & Calculations Box (In Pure Odia) -->
           <div class="p-3 bg-white rounded-3 border mb-3">
             <h6 class="fw-bold text-dark fs-7 mb-2 d-flex align-items-center gap-1.5">
-              <span>📐</span>
               <span>ଏହି ହିସାବ କିପରି କାମ କରେ? (How Sizing Works)</span>
             </h6>
             <div class="fs-8 text-secondary lh-base">

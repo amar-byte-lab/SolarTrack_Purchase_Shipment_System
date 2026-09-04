@@ -149,7 +149,7 @@
                       </label>
                       <div class="input-group shadow-2xs">
                         <select class="form-select fw-semibold fs-8" id="selDiscomTariff" onchange="SizingUI.onDiscomChange(this.value)" style="height: 38px;">
-                          <option value="odisha_oerc" selected>Odisha OERC (TPCODL/TPNODL/TPSODL/TPWODL)</option>
+                          <option value="odisha_oerc" selected>Odisha OERC</option>
                           <option value="national_standard">National Average Residential Tariff</option>
                           <option value="commercial_standard">Commercial / Non-Domestic (LT)</option>
                         </select>
@@ -259,18 +259,18 @@
                   <!-- Dynamic Sub-panel for Monthly Units -->
                   <div id="wrapBasisMonthlyUnitsInputs" class="pt-2.5 mt-2 border-top">
                     <div class="row g-2 align-items-center">
-                      <div class="col-sm-6 col-12">
-                        <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtMonthlyUnits">Monthly Billing Units</label>
+                      <div class="col-6">
+                        <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtMonthlyUnits">Monthly Units</label>
                         <div class="input-group shadow-2xs">
-                          <input type="number" min="0" class="form-control fw-semibold fs-8" id="txtMonthlyUnits" 
+                          <input type="number" min="0" class="form-control fw-semibold fs-8 px-2" id="txtMonthlyUnits" 
                             placeholder="e.g. 300" value="300" style="height: 38px;">
-                          <span class="input-group-text bg-white text-muted fs-8">Units/mo</span>
+                          <span class="input-group-text bg-white text-muted fs-8 px-1.5">Units/mo</span>
                         </div>
                       </div>
-                      <div class="col-sm-6 col-12">
-                        <label class="form-label fw-semibold text-secondary fs-8 mb-1">Daily Demand</label>
-                        <div class="p-2 bg-white rounded-2 border shadow-2xs d-flex align-items-center" style="height: 38px;">
-                          <strong class="text-primary fw-bold fs-7" id="lblMonthlyBasisDailyDemand">10.00 kWh / day</strong>
+                      <div class="col-6">
+                        <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Daily Demand</label>
+                        <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
+                          <strong class="text-primary fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblMonthlyBasisDailyDemand">10.00 kWh / day</strong>
                         </div>
                       </div>
                     </div>
@@ -279,16 +279,16 @@
                   <!-- Dynamic Sub-panel for Configured Appliances Load -->
                   <div id="wrapBasisApplianceLoadInputs" class="pt-2.5 mt-2 border-top" style="display:none;">
                     <div class="row g-2 align-items-center">
-                      <div class="col-sm-6 col-12">
-                        <label class="form-label fw-semibold text-secondary fs-8 mb-1">Total Connected Load</label>
-                        <div class="p-2 bg-white rounded-2 border shadow-2xs d-flex align-items-center" style="height: 38px;">
-                          <strong class="text-dark fw-bold fs-7" id="lblApplianceBasisConnectedLoad">0 W (0.00 kW)</strong>
+                      <div class="col-6">
+                        <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Connected Load</label>
+                        <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
+                          <strong class="text-dark fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblApplianceBasisConnectedLoad">0 W (0.00 kW)</strong>
                         </div>
                       </div>
-                      <div class="col-sm-6 col-12">
-                        <label class="form-label fw-semibold text-secondary fs-8 mb-1">Daily Demand</label>
-                        <div class="p-2 bg-white rounded-2 border shadow-2xs d-flex align-items-center" style="height: 38px;">
-                          <strong class="text-primary fw-bold fs-7" id="lblApplianceBasisDailyDemand">0.00 kWh / day (0 Wh)</strong>
+                      <div class="col-6">
+                        <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Daily Demand</label>
+                        <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
+                          <strong class="text-primary fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblApplianceBasisDailyDemand">0.00 kWh / day</strong>
                         </div>
                       </div>
                     </div>
@@ -297,37 +297,37 @@
                   <!-- Dynamic Sub-panel for Backup Duration -->
                   <div id="wrapBasisBackupDurationInputs" class="pt-2.5 mt-2 border-top" style="display:none;">
                     <div class="row g-2 align-items-center">
-                      <div class="col-md-4 col-sm-12">
+                      <div class="col-md-4 col-12">
                         <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtBackupHours">
                           Backup Duration
                         </label>
                         <div class="input-group shadow-2xs">
                           <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold fs-7" id="txtBackupHours" onchange="SizingUI.onBackupHoursChange(this.value)" oninput="SizingUI.onBackupHoursChange(this.value)" style="height: 38px;">
-                          <span class="input-group-text bg-white fw-semibold text-secondary fs-8">hr</span>
+                          <span class="input-group-text bg-white fw-semibold text-secondary fs-8 px-2">hr</span>
                         </div>
                       </div>
-                      <div class="col-md-4 col-sm-6 col-12">
-                        <label class="form-label fw-semibold text-secondary fs-8 mb-1">Total Connected Load</label>
-                        <div class="p-2 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center text-nowrap" style="height: 38px;">
-                          <strong class="text-dark fw-bold fs-7" id="lblBackupBasisConnectedLoad">0 W (0.00 kW)</strong>
+                      <div class="col-md-4 col-6">
+                        <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Connected Load</label>
+                        <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
+                          <strong class="text-dark fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblBackupBasisConnectedLoad">0 W (0.00 kW)</strong>
                         </div>
                       </div>
-                      <div class="col-md-4 col-sm-6 col-12">
-                        <label class="form-label fw-semibold text-secondary fs-8 mb-1">Daily Demand</label>
-                        <div class="p-2 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center text-nowrap" style="height: 38px;">
-                          <strong class="text-primary fw-bold fs-7" id="lblBackupBasisDailyDemand">0.00 kWh / day (0 Wh)</strong>
+                      <div class="col-md-4 col-6">
+                        <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Daily Demand</label>
+                        <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
+                          <strong class="text-primary fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblBackupBasisDailyDemand">0.00 kWh / day</strong>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Selected Appliances Summary with Icon Button -->
+                <!-- Selected Appliances Summary with Question Mark Symbol -->
                 <div class="mb-2" id="wrapSelectedAppliancesSummary">
-                  <div class="d-flex align-items-center justify-content-between mb-1.5">
+                  <div class="d-flex align-items-center gap-1.5 mb-1.5">
                     <label class="form-label fs-8 fw-bold text-dark mb-0">Selected Appliances Summary</label>
-                    <button type="button" class="btn btn-xs btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center shadow-2xs rounded-circle" id="btnEditApplianceSchedule" title="Set Load & Hours" style="width: 26px; height: 26px;" onclick="SizingUI.openApplianceModal()">
-                      <span style="font-size: 0.8rem;">⚙️</span>
+                    <button type="button" class="btn btn-xs btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center rounded-circle border text-muted" id="btnEditApplianceSchedule" title="Set Load & Hours" style="width: 18px; height: 18px; font-size: 11px; font-weight: bold; line-height: 1;" onclick="SizingUI.openApplianceModal()">
+                      ?
                     </button>
                   </div>
                   <div class="d-flex flex-wrap gap-1.5 p-2.5 bg-white rounded-3 border" id="applianceSummaryBadges" style="min-height: 52px;">
