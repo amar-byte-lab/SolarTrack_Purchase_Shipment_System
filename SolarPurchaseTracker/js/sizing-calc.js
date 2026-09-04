@@ -1127,3 +1127,8 @@ const SizingCalc = (() => {
 
 })();
 
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = SizingCalc;
+}
+
+

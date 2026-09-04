@@ -298,30 +298,32 @@ const SizingUI = (() => {
 
     const lblBadge = document.getElementById('lblBasisBadge');
     if (lblBadge) {
-      if (isMonthly) lblBadge.textContent = '📊 Monthly Units';
-      else if (isAppliance) lblBadge.textContent = '⚡ Configured Appliances Load';
-      else lblBadge.textContent = '⏱️ Backup Duration';
+      if (isMonthly) lblBadge.textContent = 'Monthly Units';
+      else if (isAppliance) lblBadge.textContent = 'Configured Appliances Load';
+      else lblBadge.textContent = 'Backup Duration';
     }
 
-    // Step 2 visibility: On-Grid hides Step 2 when on Monthly Units, but shows Step 2 when on Configured Appliances Load
-    const isGrid = state.systemType === 'on-grid';
+    // Hide Total Connected Load, Total Daily Energy, and Selected Appliances Summary for Monthly Units basis
+    const wrapStats = document.getElementById('wrapConnectedLoadEnergyStats');
+    const wrapSummary = document.getElementById('wrapSelectedAppliancesSummary');
+    const btnConfigure = document.getElementById('btnConfigureAppliances');
+
+    if (wrapStats) wrapStats.style.display = isMonthly ? 'none' : 'block';
+    if (wrapSummary) wrapSummary.style.display = isMonthly ? 'none' : 'block';
+    if (btnConfigure) btnConfigure.style.display = isMonthly ? 'none' : 'inline-flex';
+
+    // Step 2 contains Sizing Calculation Basis and Appliances summary - keep both columns visible (col-lg-6)
     const step2Col = document.getElementById('colStep2Wrapper');
     const step1Col = document.getElementById('colStep1Wrapper');
     if (step2Col) {
-      if (isGrid && isMonthly) {
-        step2Col.style.display = 'none';
-        if (step1Col) {
-          step1Col.classList.remove('col-lg-6');
-          step1Col.classList.add('col-lg-12');
-        }
-      } else {
-        step2Col.style.display = 'block';
-        if (step1Col) {
-          step1Col.classList.remove('col-lg-12');
-          step1Col.classList.add('col-lg-6');
-        }
+      step2Col.style.display = 'block';
+      if (step1Col) {
+        step1Col.classList.remove('col-lg-12');
+        step1Col.classList.add('col-lg-6');
       }
     }
+
+    updateOnGridDemandDisplay();
   }
 
   function onEnergyBasisChange(val) {
@@ -343,16 +345,44 @@ const SizingUI = (() => {
     calculateAndRender();
   }
 
-  function updateOnGridDemandDisplay() {
-    const txt = document.getElementById('txtMonthlyUnits');
-    const units = Number(state.monthlyUnits !== '' && state.monthlyUnits !== undefined ? state.monthlyUnits : (txt ? txt.value : 300)) || 300;
-    const dailyKwh = (units / 30).toFixed(2);
-    const targetKwp = (units / (30 * 5.0 * 0.78)).toFixed(2);
+  function updateOnGridDemandDisplay(calcResult) {
+    let dailyKwh = 0;
+    const basis = state.energyCalculationBasis || 'monthly_units';
+
+    if (calcResult && calcResult.solar && typeof calcResult.solar.dailyDemandKwh === 'number') {
+      dailyKwh = calcResult.solar.dailyDemandKwh;
+    } else if (basis === 'monthly_units') {
+      const txt = document.getElementById('txtMonthlyUnits');
+      const units = Number(state.monthlyUnits !== '' && state.monthlyUnits !== undefined ? state.monthlyUnits : (txt ? txt.value : 300)) || 300;
+      dailyKwh = units / 30;
+    } else if (basis === 'appliance_load' || basis === 'appliance_schedule') {
+      let totalDailyWh = 0;
+      state.appliances.forEach(app => {
+        if (app.checked && Number(app.defaultQty) > 0) {
+          totalDailyWh += (Number(app.watts) || 0) * Number(app.defaultQty) * (Number(app.defaultHours) || 1);
+        }
+      });
+      dailyKwh = totalDailyWh / 1000;
+    } else {
+      // backup_duration
+      let backupWh = 0;
+      const hours = Number(state.backupHours) || 4;
+      state.appliances.forEach(app => {
+        if (app.checked && app.isBackup !== false && Number(app.defaultQty) > 0) {
+          backupWh += (Number(app.watts) || 0) * Number(app.defaultQty) * (Number(app.defaultHours) || hours);
+        }
+      });
+      dailyKwh = backupWh / 1000;
+    }
+
+    const sunHours = 5.0;
+    const pr = 0.78;
+    const targetKwp = (dailyKwh / (sunHours * pr)).toFixed(2);
     const panelCount = Math.ceil((targetKwp * 1000) / 550);
     const actualKwp = ((panelCount * 550) / 1000).toFixed(2);
 
     const lblDaily = document.getElementById('lblOnGridDailyDemand');
-    if (lblDaily) lblDaily.textContent = `${dailyKwh} kWh / day`;
+    if (lblDaily) lblDaily.textContent = `${Number(dailyKwh).toFixed(2)} kWh / day`;
     const lblKwp = document.getElementById('lblOnGridTargetKwp');
     if (lblKwp) lblKwp.textContent = `~${actualKwp} kWp (${panelCount} Panels)`;
   }
@@ -859,6 +889,7 @@ const SizingUI = (() => {
       batteryType: state.selectedBatteryType || 'lithium'
     });
 
+    updateOnGridDemandDisplay(result);
     renderResults(result);
   }
 
@@ -1211,11 +1242,11 @@ const SizingUI = (() => {
       ? 'Lithium LFP - 90% DoD' 
       : (curBat === 'tubular' ? 'Tall Tubular Lead-Acid - 75% DoD' : 'Flat Plate Lead-Acid - 65% DoD');
 
-    let basisBadgeLabel = `⏱️ ${backupHrs} ଘଣ୍ଟା Backup Duration Basis`;
+    let basisBadgeLabel = `${backupHrs} ଘଣ୍ଟା Backup Duration Basis`;
     if (isScheduleBasis) {
-      basisBadgeLabel = '⚡ Configured Appliances Load Basis';
+      basisBadgeLabel = 'Configured Appliances Load Basis';
     } else if (isMonthlyBasis) {
-      basisBadgeLabel = '📊 Monthly Units Basis';
+      basisBadgeLabel = 'Monthly Units Basis';
     }
 
     let formulaDescription = `ଜରୁରୀ ଲୋଡ୍ (${backupKw} kW) × ନିର୍ଦ୍ଦିଷ୍ଟ ବ୍ୟାକଅପ୍ ସମୟ (${backupHrs} ଘଣ୍ଟା) = <strong>${backupKwh} kWh (ୟୁନିଟ୍)</strong>`;
