@@ -1020,15 +1020,166 @@ const SizingUI = (() => {
       <div class="${colClass} d-flex flex-column">${c}</div>
     `).join('');
 
+    const odiaSummaryHtml = buildOdiaBackupSummary(res);
+
     container.innerHTML = `
       <div class="row g-3 g-xl-4 align-items-stretch">
         ${validationBannerHtml}
         ${cardsHtml}
+        ${odiaSummaryHtml}
       </div>
     `;
 
     // Save summary globally for clipboard copy
     state.currentResult = res;
+  }
+
+  /**
+   * Build Customer-Friendly Odia Summary & Advisory Card for Battery Backup & Load Correlation
+   * @param {Object} res 
+   * @returns {string} HTML string
+   */
+  function buildOdiaBackupSummary(res) {
+    if (!res) return '';
+
+    const isBatterySystem = !!res.battery;
+    const curBat = state.selectedBatteryType || 'lithium';
+    const activeBat = curBat === 'tubular' 
+      ? (res.batteryTubular || res.battery) 
+      : (curBat === 'flat-plate' ? (res.batteryFlatPlate || res.battery) : (res.batteryLithium || res.battery));
+
+    const connectedWatts = res.connectedLoadW || 0;
+    const connectedKw = (connectedWatts / 1000).toFixed(2);
+    const backupWatts = res.backupLoadW || 0;
+    const backupKw = (backupWatts / 1000).toFixed(2);
+    const backupHrs = Number(res.backupHours) || 4;
+    const backupKwh = ((backupWatts * backupHrs) / 1000).toFixed(2);
+
+    if (!isBatterySystem) {
+      return `
+        <div class="col-12 mt-2">
+          <div class="p-3.5 p-md-4 rounded-3 border bg-white shadow-2xs">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 mb-2.5 border-bottom">
+              <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2 fs-7">
+                <span>On-Grid System & Power Backup Guide</span>
+              </h6>
+            </div>
+            <div class="fs-8 text-secondary lh-base">
+              <p class="mb-2">
+              <strong>On-Grid Solar:</strong> ଏହି ସିଷ୍ଟମରେ ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବ୍ୟବହାର ହୁଏ ନାହିଁ। ଦିନବେଳା ସୌର ପ୍ୟାନେଲରୁ ଉତ୍ପାଦିତ ବିଦ୍ୟୁତ୍ ଆପଣଙ୍କ ଘରୋଇ ଲୋଡ୍ (<strong>${connectedWatts} Watts / ${connectedKw} kW</strong>) କୁ ଚଳାଇବା ସହିତ ଅତିରିକ୍ତ ବିଦ୍ୟୁତ୍ DISCOM Grid କୁ ନେଟ୍-ମିଟରିଂ ମାଧ୍ୟମରେ ପଠାଇ Electric Bill 0 କରେ।
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const batChemistryLabel = curBat === 'lithium' 
+      ? 'Lithium LFP - 90% DoD' 
+      : (curBat === 'tubular' ? 'Tall Tubular Lead-Acid - 75% DoD' : 'Flat Plate Lead-Acid - 65% DoD');
+
+    return `
+      <div class="col-12 mt-2">
+        <div class="step-card p-3.5 p-md-4 mb-0 border shadow-2xs" style="background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);">
+          
+          <!-- Header with Title & Badge -->
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 mb-3 border-bottom">
+            <div>
+              <h5 class="fw-bold text-dark mb-0.5 d-flex align-items-center gap-2 fs-6">
+                <span>🔋</span>
+                <span>Battery Backup & Connected Load Correlation</span>
+              </h5>
+              <span class="text-muted fs-8">ଆପଣଙ୍କ ଦୈନିକ ଲୋଡ୍, ବିଦ୍ୟୁତ୍ କାଟ ସମୟରେ ଜରୁରୀ ବ୍ୟାକଅପ୍ ଏବଂ ବ୍ୟାଟେରୀ କ୍ଷମତାର ସରଳ ବିବରଣୀ</span>
+            </div>
+          </div>
+
+          <!-- 4 Visual Key Metrics Row -->
+          <div class="row g-2.5 mb-3 text-center">
+            <!-- 1. Total Connected Load -->
+            <div class="col-md-3 col-6 d-flex flex-column">
+              <div class="p-2.5 bg-white rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs">
+                <span class="text-muted fs-8 fw-semibold d-block mb-1">ସମୁଦାୟ ସଂଯୁକ୍ତ ଲୋଡ୍</span>
+                <span class="fs-5 fw-bold text-dark">${connectedWatts} W</span>
+                <span class="fs-9 text-muted d-block mt-0.5">ଘରର ସମସ୍ତ ଉପକରଣ (${connectedKw} kW)</span>
+              </div>
+            </div>
+            <!-- 2. Essential Backup Load -->
+            <div class="col-md-3 col-6 d-flex flex-column">
+              <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs" style="background: #eff6ff; border-color: #bfdbfe !important;">
+                <span class="text-primary fs-8 fw-semibold d-block mb-1">ଜରୁରୀ ବ୍ୟାକଅପ୍ ଲୋଡ୍</span>
+                <span class="fs-5 fw-extrabold text-primary">${backupWatts} W</span>
+                <span class="fs-9 text-primary d-block mt-0.5">ପାୱାରକଟ୍ ସମୟରେ ଚାଲିବା ଲୋଡ୍ (${backupKw} kW)</span>
+              </div>
+            </div>
+            <!-- 3. Target Backup Duration -->
+            <div class="col-md-3 col-6 d-flex flex-column">
+              <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+                <span class="text-success fs-8 fw-semibold d-block mb-1">ଆବଶ୍ୟକୀୟ ବ୍ୟାକଅପ୍</span>
+                <span class="fs-5 fw-extrabold text-success">${backupHrs} ଘଣ୍ଟା</span>
+                <span class="fs-9 text-success d-block mt-0.5">ନିରବଚ୍ଛିନ୍ନ ବିଦ୍ୟୁତ୍ ଯୋଗାଣ</span>
+              </div>
+            </div>
+            <!-- 4. Required Energy -->
+            <div class="col-md-3 col-6 d-flex flex-column">
+              <div class="p-2.5 bg-white rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs">
+                <span class="text-muted fs-8 fw-semibold d-block mb-1">ଆବଶ୍ୟକୀୟ ଶକ୍ତି (Energy)</span>
+                <span class="fs-5 fw-bold text-dark">${backupKwh} ୟୁନିଟ୍</span>
+                <span class="fs-9 text-muted d-block mt-0.5">${backupKwh} kWh (${Math.round(backupWatts * backupHrs)} Wh)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Explanation & Calculations Box (In Pure Odia) -->
+          <div class="p-3 bg-white rounded-3 border mb-3">
+            <h6 class="fw-bold text-dark fs-7 mb-2 d-flex align-items-center gap-1.5">
+              <span>📐</span>
+              <span>ଏହି ହିସାବ କିପରି କାମ କରେ? (How Sizing Works)</span>
+            </h6>
+            <div class="fs-8 text-secondary lh-base">
+              <div class="mb-2">
+                <strong>୧. Energy Formula:</strong><br>
+                <div class="my-1.5 p-2 bg-light rounded border text-dark fs-8">
+                  <code>ଆବଶ୍ୟକୀୟ ଶକ୍ତି (kWh) = ଜରୁରୀ ଲୋଡ୍ (${backupKw} kW) × ବ୍ୟାକଅପ୍ ସମୟ (${backupHrs} ଘଣ୍ଟା) = <strong>${backupKwh} kWh (ୟୁନିଟ୍)</strong></code>
+                </div>
+              </div>
+              <div>
+                <strong>୨. Battery Selection (${batChemistryLabel}):</strong><br>
+                ବ୍ୟାଟେରୀର ଡିସଚାର୍ଜ ଦକ୍ଷତା (DoD) ଏବଂ ଇନଭର୍ଟର କନଭର୍ସନ ଲସ୍ (Loss) କୁ ହିସାବ କରି ଆପଣଙ୍କୁ <strong>${activeBat.systemVoltage}V ${activeBat.systemBankAh}Ah (${activeBat.totalInstalledKwh} kWh)</strong> ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ପ୍ରସ୍ତାବ ଦିଆଯାଇଛି, ଯାହାକି <strong>${backupWatts} Watts</strong> ଲୋଡ୍ କୁ ସମ୍ପୂର୍ଣ୍ଣ <strong>~${activeBat.actualBackupHours} ଘଣ୍ଟା</strong> ପର୍ଯ୍ୟନ୍ତ ନିରବଚ୍ଛିନ୍ନ ଶକ୍ତି ଯୋଗାଇବ।
+              </div>
+            </div>
+          </div>
+
+          <!-- Important Customer Advisory / Guidelines (In Polite Odia) -->
+          <div class="p-3 rounded-3 border" style="background: #fffbeb; border-color: #fef3c7 !important;">
+            <h6 class="fw-bold text-dark fs-7 mb-2 d-flex align-items-center gap-1.5 text-warning-emphasis">
+              <span>💡</span>
+              <span>ଗ୍ରାହକଙ୍କ ପାଇଁ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ପରାମର୍ଶ (Customer Advisory):</span>
+            </h6>
+            <ul class="list-unstyled fs-8 text-dark mb-0 d-flex flex-column gap-2 ps-1">
+              <li class="d-flex align-items-start gap-2">
+                <span class="text-success fs-7">✔️</span>
+                <div>
+                  <strong>କେବଳ ଜରୁରୀ ଲୋଡ୍ ବ୍ୟବହାର କରନ୍ତୁ:</strong> ବିଦ୍ୟୁତ୍ କାଟ (Power Cut) ସମୟରେ କେବଳ ଲାଇଟ୍, ଫ୍ୟାନ୍, ଟିଭି, ଫ୍ରିଜ୍ ଏବଂ ୱାଇ-ଫାଇ ରାଉଟର୍ ଭଳି ଜରୁରୀ ଉପକରଣ (${backupWatts} W ମଧ୍ୟରେ) ଚଳାଇଲେ ଆପଣଙ୍କୁ ପୂର୍ଣ୍ଣ <strong>${backupHrs} ଘଣ୍ଟା</strong> ବ୍ୟାକଅପ୍ ମିଳିବ।
+                </div>
+              </li>
+              <li class="d-flex align-items-start gap-2">
+                <span class="text-danger fs-7">⚠️</span>
+                <div>
+                  <strong>ଭାରୀ ଯନ୍ତ୍ରାଂଶ (Heavy Appliances) ବନ୍ଦ ରଖନ୍ତୁ:</strong> ପାୱାରକଟ୍ ସମୟରେ AC (ଏୟାର କଣ୍ଡିସନର), ଗିଜର କିମ୍ବା ପାଣି ମୋଟର ଭଳି ଭାରୀ ଲୋଡ୍ ଚଳାଇଲେ ବ୍ୟାଟେରୀ ବହୁତ ଶୀଘ୍ର ଡିସଚାର୍ଜ (Drain) ହୋଇଯିବ ଏବଂ ବ୍ୟାକଅପ୍ ସମୟ କମିଯିବ।
+                </div>
+              </li>
+              <li class="d-flex align-items-start gap-2">
+                <span class="text-primary fs-7">☀️</span>
+                <div>
+                  <strong>ଦିନବେଳା ସୌର ଶକ୍ତିର ଲାଭ:</strong> ସୋଲାର୍ ସିଷ୍ଟମରେ ଦିନବେଳା ସୂର୍ଯ୍ୟ କିରଣରୁ ଘରୋଇ ଲୋଡ୍ ଚାଲିବା ସହିତ ବ୍ୟାଟେରୀ ସମ୍ପୂର୍ଣ୍ଣ ଚାର୍ଜ ହୋଇଯାଏ, ଯାହାଦ୍ୱାରା ରାତିରେ ବିଦ୍ୟୁତ୍ କଟିଲେ ପୂର୍ଣ୍ଣ ${backupHrs} ଘଣ୍ଟାର ବ୍ୟାକଅପ୍ ମିଳିଥାଏ।
+                </div>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    `;
   }
 
   function copySummary() {
