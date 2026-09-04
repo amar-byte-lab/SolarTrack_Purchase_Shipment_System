@@ -157,7 +157,7 @@
                     </div>
 
                     <!-- 3. Customer Sanctioned Load -->
-                    <div class="col-md-3 col-6 sec-solar-param-field">
+                    <div class="col-md-4 col-6 sec-solar-param-field">
                       <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selSanctionedLoad">
                         Sanctioned Load
                       </label>
@@ -179,19 +179,8 @@
                       </div>
                     </div>
 
-                    <!-- 4. Monthly Billing Units -->
-                    <div class="col-md-3 col-6 sec-solar-param-field" id="wrapMonthlyUnits">
-                      <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtMonthlyUnits">
-                        Monthly Units
-                      </label>
-                      <div class="input-group shadow-2xs">
-                        <input type="number" min="0" class="form-control fw-semibold fs-8" id="txtMonthlyUnits" 
-                          placeholder="e.g. 300" value="300" style="height: 38px;">
-                      </div>
-                    </div>
-
-                    <!-- 5. Total Estimated Investment (₹) -->
-                    <div class="col-md-3 col-6 sec-solar-param-field" id="wrapRecoverySpend">
+                    <!-- 4. Total Estimated Investment (₹) -->
+                    <div class="col-md-4 col-6 sec-solar-param-field" id="wrapRecoverySpend">
                       <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtRecoverySpend">
                         Investment (₹)
                       </label>
@@ -201,8 +190,8 @@
                       </div>
                     </div>
 
-                    <!-- 6. Payment / Financing -->
-                    <div class="col-md-3 col-6 sec-solar-param-field" id="wrapRecoveryFinance">
+                    <!-- 5. Payment / Financing -->
+                    <div class="col-md-4 col-12 sec-solar-param-field" id="wrapRecoveryFinance">
                       <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoveryFinanceType">
                         Financing
                       </label>
@@ -231,20 +220,86 @@
                   </div>
                 </div>
 
-                <!-- Battery Backup Duration (Only for Without Solar, Hybrid, Off-Grid. NEVER for On-Grid) -->
-                <div class="mt-3 p-3 bg-light rounded-3 border" id="secBatteryBackupDetails" style="display:none;">
-                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div>
-                      <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtBackupHours">
-                        🔋 Required Battery Backup Duration
-                      </label>
-                      <div class="fs-9 text-muted">Hours of uninterrupted power supply during grid outages</div>
-                    </div>
-                    <div class="input-group shadow-2xs" style="width: 140px;">
-                      <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold fs-7" id="txtBackupHours" onchange="SizingUI.onBackupHoursChange(this.value)" style="height: 38px;">
-                      <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Hours</span>
+                <!-- Sizing Calculation Basis (Monthly Units, Configured Appliances Load, Backup Duration) -->
+                <div class="mt-3 p-3.5 bg-light rounded-3 border" id="secEnergyCalculationBasis">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                    <label class="form-label fw-bold text-dark fs-8 mb-0">
+                      ⚡ Sizing Calculation Basis
+                    </label>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 fw-semibold" id="lblBasisBadge">
+                      Monthly Units
+                    </span>
+                  </div>
+
+                  <!-- 3 Radio Buttons -->
+                  <div class="btn-group w-100 shadow-2xs" role="group" aria-label="Sizing Calculation Basis">
+                    <!-- 1. Monthly Units -->
+                    <input type="radio" class="btn-check" name="radEnergyBasis" id="radBasisMonthlyUnits" value="monthly_units" checked onchange="SizingUI.onEnergyBasisChange('monthly_units')">
+                    <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisMonthlyUnits" id="lblRadBasisMonthlyUnits" title="Calculate sizing based on Monthly Units consumption">
+                      Monthly Units
+                    </label>
+
+                    <!-- 2. Configured Appliances Load -->
+                    <input type="radio" class="btn-check" name="radEnergyBasis" id="radBasisApplianceLoad" value="appliance_load" onchange="SizingUI.onEnergyBasisChange('appliance_load')">
+                    <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisApplianceLoad" id="lblRadBasisApplianceLoad" title="Calculate sizing based on 24-hr daily schedule & load of configured appliances">
+                      Configured Appliances Load
+                    </label>
+
+                    <!-- 3. Backup Duration (Only for Off-Grid, Hybrid, Without-Solar; Hidden for On-Grid) -->
+                    <input type="radio" class="btn-check" name="radEnergyBasis" id="radBasisBackupDuration" value="backup_duration" onchange="SizingUI.onEnergyBasisChange('backup_duration')">
+                    <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisBackupDuration" id="lblRadBasisBackupDuration" title="Size battery & energy for fixed backup hours (overrides appliance hours)">
+                      Backup Duration
+                    </label>
+                  </div>
+
+                  <!-- Dynamic Sub-panel for Monthly Units -->
+                  <div id="wrapBasisMonthlyUnitsInputs" class="pt-2.5 mt-2 border-top">
+                    <div class="row g-2 align-items-center">
+                      <div class="col-sm-6 col-12">
+                        <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtMonthlyUnits">Monthly Billing Units</label>
+                        <div class="input-group shadow-2xs">
+                          <input type="number" min="0" class="form-control fw-semibold fs-8" id="txtMonthlyUnits" 
+                            placeholder="e.g. 300" value="300" style="height: 38px;">
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  <!-- Dynamic Sub-panel for Configured Appliances Load -->
+                  <div id="wrapBasisApplianceLoadInputs" class="pt-2.5 mt-2 border-top" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 bg-white rounded-2 border">
+                      <div class="fs-8 text-secondary">
+                        <span class="fw-bold text-dark">Configured Appliances Schedule:</span> 
+                        Daily energy and battery bank are sized directly from each appliance's individual operating hours.
+                      </div>
+                      <button type="button" class="btn btn-xs btn-outline-primary fw-bold text-nowrap" onclick="SizingUI.openApplianceModal()">
+                        ⚙️ View Appliance Hours
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Dynamic Sub-panel for Backup Duration -->
+                  <div id="wrapBasisBackupDurationInputs" class="pt-2.5 mt-2 border-top" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                      <div>
+                        <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtBackupHours">
+                          Required Battery Backup Duration
+                        </label>
+                        <div class="fs-9 text-muted">Continuous hours during power cuts (overrides appliance hours to this value)</div>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="input-group shadow-2xs" style="width: 130px;">
+                          <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold fs-7" id="txtBackupHours" onchange="SizingUI.onBackupHoursChange(this.value)" oninput="SizingUI.onBackupHoursChange(this.value)" style="height: 38px;">
+                          <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Hours</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold text-nowrap fs-8 px-2.5 d-inline-flex align-items-center gap-1" style="height: 38px;" onclick="SizingUI.openApplianceModal()" title="View and verify appliance hours">
+                          <span>⚙️</span>
+                          <span>View Appliance Hours</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
 
               </div>
@@ -262,7 +317,6 @@
                   </div>
                   <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-sm btn-primary fw-bold fs-8 px-3 py-1.5 shadow-2xs d-inline-flex align-items-center gap-1.5" onclick="SizingUI.openApplianceModal()">
-                      <span>⚙️</span>
                       <span>Configure Appliances</span>
                     </button>
                   </div>
@@ -287,10 +341,6 @@
                     <!-- Rendered dynamically -->
                   </div>
                 </div>
-              </div>
-
-              <div class="mt-3 pt-2 border-top d-flex align-items-center justify-content-between text-muted fs-8">
-                <span>💡 Click "Configure Appliances" to adjust wattage & hours.</span>
               </div>
             </div>
           </div>
@@ -335,7 +385,7 @@
       <div class="modal-content">
         <div class="modal-header bg-light border-bottom py-3">
           <div>
-            <h5 class="modal-title fw-bold text-dark fs-6 mb-0">⚡ Configure Daily Usage</h5>
+            <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Configure Daily Usage</h5>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -350,7 +400,7 @@
             <table class="table table-hover align-middle mb-0 appliance-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 28px;" class="text-center p-1" title="Select Appliance">#</th>
+                  <th style="width: 28px;" class="text-center p-1" title="Select Appliance"></th>
                   <th style="min-width: 105px;" class="p-1">Appliance</th>
                   <th style="width: 44px;" class="text-center p-1">Qty</th>
                   <th style="width: 74px;" class="text-center p-1">Watt</th>

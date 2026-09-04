@@ -48,11 +48,17 @@ const SizingCalc = (() => {
 
     const rawAppliances = (input && input.appliances) || [];
     const backupHours = Math.max(0.5, Number(input.backupHours) || 4);
+    const energyCalculationBasis = input.energyCalculationBasis || params.energyCalculationBasis || 'monthly_units';
+    const isApplianceScheduleBasis = energyCalculationBasis === 'appliance_load' || energyCalculationBasis === 'appliance_schedule';
+    const isBackupDurationBasis = energyCalculationBasis === 'backup_duration';
+    const isMonthlyUnitsBasis = energyCalculationBasis === 'monthly_units';
 
     // 1. Audit & Sanitize Appliance Inputs
     let connectedLoadW = 0;
     let backupLoadW = 0;
     let estimatedDailyKwh = 0;
+    let totalApplianceDailyWh = 0;
+    let backupApplianceDailyWh = 0;
     const motorSurgeDeltas = [];
 
     const acWarnings = [];
@@ -109,7 +115,12 @@ const SizingCalc = (() => {
       }
 
       const hours = Math.max(0.1, Number(app.hours || app.defaultHours) || 4);
-      estimatedDailyKwh += (totalAppWatts * hours) / 1000;
+      const appDailyWh = totalAppWatts * hours;
+      totalApplianceDailyWh += appDailyWh;
+      if (isBackup) {
+        backupApplianceDailyWh += appDailyWh;
+      }
+      estimatedDailyKwh += appDailyWh / 1000;
 
       sanitizedAppliances.push({
         ...app,
@@ -132,13 +143,24 @@ const SizingCalc = (() => {
 
     // Estimate daily battery recharge demand for Off-Grid / autonomous systems
     const activeBackupW = backupLoadW > 0 ? backupLoadW : connectedLoadW;
-    const estBackupEnergyWh = activeBackupW * backupHours;
-    const estBatteryRechargeKwh = estBackupEnergyWh / (0.88 * 1000); // 88% battery roundtrip charging efficiency
+    let targetBackupEnergyWh = 0;
+    let effectiveBackupHours = backupHours;
+
+    if (isApplianceScheduleBasis) {
+      targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
+      effectiveBackupHours = Math.round((targetBackupEnergyWh / Math.max(1, activeBackupW)) * 10) / 10;
+    } else {
+      targetBackupEnergyWh = activeBackupW * backupHours;
+      effectiveBackupHours = backupHours;
+    }
+
+    const estBatteryRechargeKwh = targetBackupEnergyWh / (0.88 * 1000); // 88% battery roundtrip charging efficiency
 
     let solarResult = null;
     if (sysMeta.requiresSolar) {
       solarResult = calculateSolar({
         systemType: sysTypeKey,
+        energyCalculationBasis,
         monthlyUnits: Number(input.monthlyUnits) || 0,
         dailyUsageKwh: Number(input.dailyUsageKwh) || estimatedDailyKwh,
         batteryRechargeKwh: estBatteryRechargeKwh,
@@ -237,7 +259,9 @@ const SizingCalc = (() => {
 
       batteryLithium = selectBattery({
         backupLoadW: activeBackupW,
-        backupHours: backupHours || 4,
+        backupHours: effectiveBackupHours,
+        targetBackupEnergyWh,
+        energyCalculationBasis,
         inverterBatteryVoltage: inverterMatch.batteryVoltage,
         inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
         batteryType: 'lithium',
@@ -250,7 +274,9 @@ const SizingCalc = (() => {
 
       batteryTubular = selectBattery({
         backupLoadW: activeBackupW,
-        backupHours: backupHours || 4,
+        backupHours: effectiveBackupHours,
+        targetBackupEnergyWh,
+        energyCalculationBasis,
         inverterBatteryVoltage: inverterMatch.batteryVoltage,
         inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
         batteryType: 'tubular',
@@ -263,7 +289,9 @@ const SizingCalc = (() => {
 
       batteryFlatPlate = selectBattery({
         backupLoadW: activeBackupW,
-        backupHours: backupHours || 4,
+        backupHours: effectiveBackupHours,
+        targetBackupEnergyWh,
+        energyCalculationBasis,
         inverterBatteryVoltage: inverterMatch.batteryVoltage,
         inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
         batteryType: 'flat-plate',
@@ -302,7 +330,12 @@ const SizingCalc = (() => {
       sanctionedLoadKw,
       connectedLoadW,
       backupLoadW,
-      backupHours,
+      backupHours: effectiveBackupHours,
+      requestedBackupHours: backupHours,
+      energyCalculationBasis,
+      totalApplianceDailyWh: Math.round(totalApplianceDailyWh),
+      backupApplianceDailyWh: Math.round(backupApplianceDailyWh),
+      targetBackupEnergyWh: Math.round(targetBackupEnergyWh),
       safetyMarginPct,
       requiredContinuousW,
       requiredPeakSurgeW,
@@ -321,6 +354,7 @@ const SizingCalc = (() => {
         safetyMarginW: Math.round(baseRunningLoadW * (safetyMarginPct / 100)),
         requiredContinuousW,
         requiredPeakSurgeW,
+        energyCalculationBasis,
         inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
         lithiumDoDPct: Number(params.lithiumDoDPct) || 90,
         tubularDoDPct: Number(params.tubularDoDPct) || 75,
@@ -590,12 +624,15 @@ const SizingCalc = (() => {
 
   /**
    * Calculate Battery Sizing & Configuration
-   * Strictly based on: Backup Energy = Connected Load (kW) × Backup Hours
+   * - Mode A (Backup Duration): Backup Energy = Backup Load (kW) × Backup Hours
+   * - Mode B (Appliance Schedule): Backup Energy = Sum of Daily Wh for all configured Backup Appliances
    * Required Battery kWh = Backup Energy / (Usable DoD × Inverter Efficiency)
    */
   function selectBattery({
     backupLoadW,
     backupHours,
+    targetBackupEnergyWh,
+    energyCalculationBasis = 'backup_duration',
     inverterBatteryVoltage,
     inverterEfficiencyPct,
     batteryType,
@@ -621,11 +658,20 @@ const SizingCalc = (() => {
       dod = 0.75;
     }
 
-    // 1. Backup Energy (kWh) = Connected Load (kW) × Backup Hours
+    // 1. Calculate Backup Energy (kWh & Wh)
     const loadKw = (Math.max(10, backupLoadW || 500)) / 1000;
-    const targetHours = Math.max(0.5, Number(backupHours) || 4);
-    const backupEnergyKwh = Math.round((loadKw * targetHours) * 100) / 100;
-    const backupEnergyWh = Math.round(backupEnergyKwh * 1000);
+    let backupEnergyWh = 0;
+    let backupEnergyKwh = 0;
+    let targetHours = Math.max(0.5, Number(backupHours) || 4);
+
+    if (targetBackupEnergyWh && targetBackupEnergyWh > 0) {
+      backupEnergyWh = Math.round(targetBackupEnergyWh);
+      backupEnergyKwh = Math.round((backupEnergyWh / 1000) * 100) / 100;
+      targetHours = Math.round((backupEnergyWh / (loadKw * 1000)) * 10) / 10;
+    } else {
+      backupEnergyKwh = Math.round((loadKw * targetHours) * 100) / 100;
+      backupEnergyWh = Math.round(backupEnergyKwh * 1000);
+    }
 
     // 2. Required Nominal Battery Capacity (kWh) = Backup Energy ÷ (Inverter Efficiency × Usable DoD)
     const requiredBatteryKwh = Math.round((backupEnergyKwh / (eff * dod)) * 100) / 100;
@@ -708,6 +754,7 @@ const SizingCalc = (() => {
     const dischargeCheckOk = dischargeCapA >= contDischargeCurrentA;
 
     return {
+      energyCalculationBasis,
       backupEnergyWh,
       backupEnergyKwh,
       requiredBatteryWh,
@@ -751,6 +798,7 @@ const SizingCalc = (() => {
    */
   function calculateSolar({
     systemType,
+    energyCalculationBasis = 'monthly_units',
     monthlyUnits,
     dailyUsageKwh,
     batteryRechargeKwh = 0,
@@ -765,18 +813,26 @@ const SizingCalc = (() => {
   }) {
     let dailyDemandKwh = 0;
 
-    if (systemType === 'on-grid') {
+    if (energyCalculationBasis === 'monthly_units') {
       const units = Number(monthlyUnits) || 300;
       dailyDemandKwh = units / 30;
-    } else if (systemType === 'off-grid') {
-      // Off-Grid is sized strictly from local load energy + battery recharging demand
+      if (systemType === 'off-grid') {
+        const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
+        dailyDemandKwh = Math.max(dailyDemandKwh, batRecharge);
+      }
+    } else if (energyCalculationBasis === 'appliance_load' || energyCalculationBasis === 'appliance_schedule') {
       const applianceDailyKwh = Math.max(0.5, Number(dailyUsageKwh) || 5.0);
-      const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
-      dailyDemandKwh = applianceDailyKwh + batRecharge;
+      if (systemType === 'on-grid') {
+        dailyDemandKwh = applianceDailyKwh;
+      } else {
+        const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
+        dailyDemandKwh = applianceDailyKwh + batRecharge;
+      }
     } else {
-      // For Hybrid: Use monthly units if provided, else daily appliances + battery recharge
-      if (Number(monthlyUnits) > 0) {
-        dailyDemandKwh = Number(monthlyUnits) / 30;
+      // backup_duration
+      if (systemType === 'on-grid') {
+        const units = Number(monthlyUnits) || 300;
+        dailyDemandKwh = units / 30;
       } else {
         const applianceDailyKwh = Math.max(0.5, Number(dailyUsageKwh) || 5.0);
         const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);

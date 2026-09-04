@@ -25,7 +25,8 @@ const SizingDB = (() => {
     acInverterSurgeFactor: 1.5,
     pumpSurgeFactor: 3.5,
     preferredBatteryType: 'lithium', // 'lithium', 'tubular', or 'flat-plate'
-    selectedDiscom: 'odisha_oerc'
+    selectedDiscom: 'odisha_oerc',
+    energyCalculationBasis: 'backup_duration' // 'backup_duration' or 'appliance_schedule'
   };
 
   const TARIFF_SCHEDULES = {
