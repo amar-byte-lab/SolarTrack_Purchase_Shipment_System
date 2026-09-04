@@ -233,9 +233,6 @@
                     <label class="form-label fw-bold text-dark fs-8 mb-0">
                       Sizing Calculation Basis
                     </label>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 fw-semibold" id="lblBasisBadge">
-                      Monthly Units
-                    </span>
                   </div>
 
                   <!-- 3 Radio Buttons -->
@@ -249,7 +246,7 @@
                     <!-- 2. Configured Appliances Load -->
                     <input type="radio" class="btn-check" name="radEnergyBasis" id="radBasisApplianceLoad" value="appliance_load" onchange="SizingUI.onEnergyBasisChange('appliance_load')">
                     <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisApplianceLoad" id="lblRadBasisApplianceLoad" title="Calculate sizing based on 24-hr daily schedule & load of configured appliances">
-                      Configured Appliances Load
+                      Appliances Load
                     </label>
 
                     <!-- 3. Backup Duration (Only for Off-Grid, Hybrid, Without-Solar; Hidden for On-Grid) -->
@@ -283,7 +280,7 @@
                   <div id="wrapBasisApplianceLoadInputs" class="pt-2.5 mt-2 border-top" style="display:none;">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 bg-white rounded-2 border">
                       <button type="button" class="btn btn-xs btn-outline-primary fw-bold text-nowrap" onclick="SizingUI.openApplianceModal()">
-                        ⚙️ View Appliance Hours
+                        Set Load & Hours
                       </button>
                     </div>
                   </div>
@@ -301,7 +298,7 @@
                           <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold fs-7" id="txtBackupHours" onchange="SizingUI.onBackupHoursChange(this.value)" oninput="SizingUI.onBackupHoursChange(this.value)" style="height: 38px;">
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-primary fw-bold text-nowrap" onclick="SizingUI.openApplianceModal()">
-                          ⚙️ View Appliance Hours
+                          Set Load & Hours
                         </button>
                       </div>
                     </div>
@@ -347,7 +344,6 @@
             <!-- Section Header with Annual Return Badge in 1 single line -->
             <div class="d-flex align-items-center justify-content-between flex-nowrap gap-2 mb-2.5 pb-2 border-bottom w-100">
               <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5 text-nowrap" style="font-size: clamp(0.85rem, 3.2vw, 1rem);">
-                <span>💰</span>
                 <span>Investment & Payback</span>
               </h5>
               <span class="badge bg-success-subtle text-success fw-bold text-nowrap flex-shrink-0" id="badgeRecoveryAnnualRoi" style="font-size: clamp(0.7rem, 2.5vw, 0.8rem); padding: 4px 8px;">

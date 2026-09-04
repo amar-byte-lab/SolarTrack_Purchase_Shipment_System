@@ -307,19 +307,6 @@ const UI = (() => {
       </div>
     ` : '';
 
-    const notificationBell = (user && user.role === 'admin') ? `
-      <div class="position-relative me-2 no-print" id="topbarNotificationContainer">
-        <button class="btn btn-sm btn-outline-secondary p-1 position-relative" id="btnNotificationBell" title="Notifications" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
-          🔔
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifBadgeCount" style="display: none; font-size: 0.65rem; padding: 0.25em 0.5em;">0</span>
-        </button>
-        <div class="dropdown-menu dropdown-menu-end shadow p-2" id="notifDropdownMenu" style="display: none; position: absolute; right: 0; top: 38px; width: 280px; max-height: 350px; overflow-y: auto; z-index: 1050; font-size: 0.75rem; background: #fff; border: 1px solid #ddd; border-radius: 8px;">
-          <div class="text-muted text-center py-2" id="notifDropdownEmpty">No new notifications</div>
-          <div id="notifDropdownList"></div>
-        </div>
-      </div>
-    ` : '';
-
     el.innerHTML = `
       <div class="w-100 d-flex flex-column gap-1">
         <!-- Row 1: Top Bar Controls (Menu Toggle, User Login/Logout, Print & Actions) -->
@@ -330,10 +317,6 @@ const UI = (() => {
             </button>
           </div>
           <div class="topbar-actions d-flex align-items-center gap-1 flex-wrap justify-content-end no-print flex-shrink-0">
-            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1 text-nowrap rounded-2 shadow-sm no-print no-screenshot" id="btnTopbarScreenshot" title="Take Screenshot (Alt+S)" onclick="if(typeof Screenshot!=='undefined') Screenshot.takeScreenshot();">
-              📸 <span class="d-none d-sm-inline fw-semibold">Screenshot</span>
-            </button>
-            ${notificationBell}
             ${userBadge}
             ${actionsHtml || ''}
           </div>
@@ -359,100 +342,6 @@ const UI = (() => {
         toggleMobileSidebar();
       });
     }
-
-    if (user && user.role === 'admin') {
-      initTopbarNotifications();
-    }
-  }
-
-  function initTopbarNotifications() {
-    const bellBtn = document.getElementById('btnNotificationBell');
-    const dropdown = document.getElementById('notifDropdownMenu');
-    if (!bellBtn || !dropdown) return;
-
-    async function loadNotifications() {
-      try {
-        const res = await fetch('/api/notifications');
-        if (!res.ok) return;
-        const data = await res.json();
-        const notifications = data.notifications || [];
-        const unread = notifications.filter(n => n.status === 'unread');
-
-        const badge = document.getElementById('notifBadgeCount');
-        if (unread.length > 0) {
-          badge.textContent = unread.length;
-          badge.style.display = 'inline-block';
-        } else {
-          badge.style.display = 'none';
-        }
-
-        const listEl = document.getElementById('notifDropdownList');
-        const emptyEl = document.getElementById('notifDropdownEmpty');
-
-        if (notifications.length === 0) {
-          listEl.innerHTML = '';
-          emptyEl.style.display = 'block';
-        } else {
-          emptyEl.style.display = 'none';
-          listEl.innerHTML = notifications.map(n => {
-            const isUnread = n.status === 'unread';
-            return `
-              <div class="border-bottom p-2 ${isUnread ? 'bg-light fw-semibold text-dark' : 'text-secondary'}" style="border-radius: 4px; margin-bottom: 4px;">
-                <div style="line-height: 1.25;">${n.message}</div>
-                <div class="text-muted mb-1" style="font-size: 0.65rem;">${fmtDate(n.created_at)}</div>
-                ${isUnread ? `
-                  <div class="d-flex gap-1 mt-1">
-                    <button class="btn btn-xs btn-success px-2 py-0.5 text-white" onclick="resolveNotif('${n.id}', 'approve')" style="font-size: 0.65rem; border: none; border-radius: 3px;">Approve</button>
-                    <button class="btn btn-xs btn-danger px-2 py-0.5 text-white" onclick="resolveNotif('${n.id}', 'reject')" style="font-size: 0.65rem; border: none; border-radius: 3px;">Reject</button>
-                  </div>
-                ` : '<span class="badge bg-secondary" style="font-size: 0.6rem;">Resolved</span>'}
-               </div>
-            `;
-          }).join('');
-        }
-      } catch (err) {
-        console.error('Error fetching notifications:', err);
-      }
-    }
-
-    window.resolveNotif = async function(id, action) {
-      try {
-        const res = await fetch('/api/notifications/resolve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, action })
-        });
-        if (res.ok) {
-          toast(`User registration request ${action}d successfully.`, 'success');
-          loadNotifications();
-          if (window.location.pathname.includes('settings.html') && typeof loadAuthSettings === 'function') {
-            loadAuthSettings();
-          }
-        } else {
-          toast('Failed to resolve request.', 'danger');
-        }
-      } catch (e) {
-        toast('Network error.', 'danger');
-      }
-    };
-
-    bellBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = dropdown.style.display === 'none';
-      dropdown.style.display = isHidden ? 'block' : 'none';
-      if (isHidden) {
-        loadNotifications();
-      }
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!dropdown.contains(e.target) && e.target !== bellBtn) {
-        dropdown.style.display = 'none';
-      }
-    });
-
-    loadNotifications();
-    setInterval(loadNotifications, 30000);
   }
 
   return { icon, renderSidebar, refreshDbStatusBadge, renderTopbar, toast, confirmDialog, showLoading, showTopProgress, money, fmtDate, todayISO };
