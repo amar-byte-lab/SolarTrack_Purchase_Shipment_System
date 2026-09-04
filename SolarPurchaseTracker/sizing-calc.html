@@ -274,7 +274,6 @@
                         <div class="input-group shadow-2xs">
                           <input type="number" min="0" class="form-control fw-semibold fs-8" id="txtMonthlyUnits" 
                             placeholder="e.g. 300" value="300" style="height: 38px;">
-                          <span class="input-group-text bg-white text-muted fs-8">Units/mo</span>
                         </div>
                       </div>
                     </div>
@@ -294,14 +293,12 @@
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                       <div>
                         <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtBackupHours">
-                          Required Battery Backup Duration
+                          Backup Duration in Hours
                         </label>
-                        <div class="fs-9 text-muted">Continuous hours during power cuts (overrides appliance hours to this value)</div>
                       </div>
                       <div class="d-flex align-items-center gap-2">
                         <div class="input-group shadow-2xs" style="width: 130px;">
                           <input type="number" min="0.5" max="24" step="0.5" value="4" class="form-control form-control-sm text-center fw-bold fs-7" id="txtBackupHours" onchange="SizingUI.onBackupHoursChange(this.value)" oninput="SizingUI.onBackupHoursChange(this.value)" style="height: 38px;">
-                          <span class="input-group-text bg-white fw-semibold text-secondary fs-8">Hours</span>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-primary fw-bold text-nowrap" onclick="SizingUI.openApplianceModal()">
                           ⚙️ View Appliance Hours

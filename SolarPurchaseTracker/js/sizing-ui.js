@@ -349,13 +349,12 @@ const SizingUI = (() => {
     let dailyKwh = 0;
     const basis = state.energyCalculationBasis || 'monthly_units';
 
-    if (calcResult && calcResult.solar && typeof calcResult.solar.dailyDemandKwh === 'number') {
-      dailyKwh = calcResult.solar.dailyDemandKwh;
-    } else if (basis === 'monthly_units') {
+    if (basis === 'monthly_units') {
       const txt = document.getElementById('txtMonthlyUnits');
       const units = Number(state.monthlyUnits !== '' && state.monthlyUnits !== undefined ? state.monthlyUnits : (txt ? txt.value : 300)) || 300;
       dailyKwh = units / 30;
-    } else if (basis === 'appliance_load' || basis === 'appliance_schedule') {
+    } else {
+      // appliance_load, appliance_schedule, backup_duration: Exactly equals Total Daily Energy
       let totalDailyWh = 0;
       state.appliances.forEach(app => {
         if (app.checked && Number(app.defaultQty) > 0) {
@@ -363,16 +362,6 @@ const SizingUI = (() => {
         }
       });
       dailyKwh = totalDailyWh / 1000;
-    } else {
-      // backup_duration
-      let backupWh = 0;
-      const hours = Number(state.backupHours) || 4;
-      state.appliances.forEach(app => {
-        if (app.checked && app.isBackup !== false && Number(app.defaultQty) > 0) {
-          backupWh += (Number(app.watts) || 0) * Number(app.defaultQty) * (Number(app.defaultHours) || hours);
-        }
-      });
-      dailyKwh = backupWh / 1000;
     }
 
     const sunHours = 5.0;

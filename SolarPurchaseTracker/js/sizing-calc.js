@@ -48,7 +48,8 @@ const SizingCalc = (() => {
 
     const rawAppliances = (input && input.appliances) || [];
     const backupHours = Math.max(0.5, Number(input.backupHours) || 4);
-    const energyCalculationBasis = input.energyCalculationBasis || params.energyCalculationBasis || 'monthly_units';
+    const defaultBasis = sysTypeKey === 'on-grid' ? 'monthly_units' : (params.energyCalculationBasis || 'backup_duration');
+    const energyCalculationBasis = input.energyCalculationBasis || defaultBasis;
     const isApplianceScheduleBasis = energyCalculationBasis === 'appliance_load' || energyCalculationBasis === 'appliance_schedule';
     const isBackupDurationBasis = energyCalculationBasis === 'backup_duration';
     const isMonthlyUnitsBasis = energyCalculationBasis === 'monthly_units';
@@ -333,6 +334,8 @@ const SizingCalc = (() => {
       backupHours: effectiveBackupHours,
       requestedBackupHours: backupHours,
       energyCalculationBasis,
+      dailyEnergyWh: Math.round(totalApplianceDailyWh),
+      dailyEnergyKwh: Math.round((totalApplianceDailyWh / 1000) * 100) / 100,
       totalApplianceDailyWh: Math.round(totalApplianceDailyWh),
       backupApplianceDailyWh: Math.round(backupApplianceDailyWh),
       targetBackupEnergyWh: Math.round(targetBackupEnergyWh),
@@ -816,28 +819,9 @@ const SizingCalc = (() => {
     if (energyCalculationBasis === 'monthly_units') {
       const units = Number(monthlyUnits) || 300;
       dailyDemandKwh = units / 30;
-      if (systemType === 'off-grid') {
-        const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
-        dailyDemandKwh = Math.max(dailyDemandKwh, batRecharge);
-      }
-    } else if (energyCalculationBasis === 'appliance_load' || energyCalculationBasis === 'appliance_schedule') {
-      const applianceDailyKwh = Math.max(0.5, Number(dailyUsageKwh) || 5.0);
-      if (systemType === 'on-grid') {
-        dailyDemandKwh = applianceDailyKwh;
-      } else {
-        const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
-        dailyDemandKwh = applianceDailyKwh + batRecharge;
-      }
     } else {
-      // backup_duration
-      if (systemType === 'on-grid') {
-        const units = Number(monthlyUnits) || 300;
-        dailyDemandKwh = units / 30;
-      } else {
-        const applianceDailyKwh = Math.max(0.5, Number(dailyUsageKwh) || 5.0);
-        const batRecharge = Math.max(0, Number(batteryRechargeKwh) || 0);
-        dailyDemandKwh = applianceDailyKwh + batRecharge;
-      }
+      // appliance_load, appliance_schedule, backup_duration: Daily demand is customer's total daily energy
+      dailyDemandKwh = Math.max(0.1, Number(dailyUsageKwh) || 0);
     }
 
     const sunHours = Math.max(1, Number(peakSunHours) || 5.0);
