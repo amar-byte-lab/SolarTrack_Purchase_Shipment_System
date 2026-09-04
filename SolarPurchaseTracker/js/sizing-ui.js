@@ -400,16 +400,23 @@ const SizingUI = (() => {
       }
     });
 
-    const lblLoad = document.getElementById('lblTotalConnectedLoad');
-    if (lblLoad) {
-      lblLoad.textContent = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
-    }
+    const loadText = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
+    const kwhVal = (totalDailyWh / 1000).toFixed(2);
+    const demandText = `${kwhVal} kWh / day (${Math.round(totalDailyWh).toLocaleString()} Wh)`;
 
+    const lblAppLoad = document.getElementById('lblApplianceBasisConnectedLoad');
+    if (lblAppLoad) lblAppLoad.textContent = loadText;
+    const lblBackupLoad = document.getElementById('lblBackupBasisConnectedLoad');
+    if (lblBackupLoad) lblBackupLoad.textContent = loadText;
+    const lblLoad = document.getElementById('lblTotalConnectedLoad');
+    if (lblLoad) lblLoad.textContent = loadText;
+
+    const lblAppDemand = document.getElementById('lblApplianceBasisDailyDemand');
+    if (lblAppDemand) lblAppDemand.textContent = demandText;
+    const lblBackupDemand = document.getElementById('lblBackupBasisDailyDemand');
+    if (lblBackupDemand) lblBackupDemand.textContent = demandText;
     const lblEnergy = document.getElementById('lblTotalCalculatedEnergy');
-    if (lblEnergy) {
-      const kwh = (totalDailyWh / 1000).toFixed(2);
-      lblEnergy.textContent = `${kwh} kWh / day (${Math.round(totalDailyWh).toLocaleString()} Wh)`;
-    }
+    if (lblEnergy) lblEnergy.textContent = demandText;
 
     const badgesContainer = document.getElementById('applianceSummaryBadges');
     if (badgesContainer) {
