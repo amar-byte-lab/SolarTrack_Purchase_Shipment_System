@@ -370,6 +370,9 @@ const SizingUI = (() => {
     const panelCount = Math.ceil((targetKwp * 1000) / 550);
     const actualKwp = ((panelCount * 550) / 1000).toFixed(2);
 
+    const lblMonthlyDaily = document.getElementById('lblMonthlyBasisDailyDemand');
+    if (lblMonthlyDaily) lblMonthlyDaily.textContent = `${Number(dailyKwh).toFixed(2)} kWh / day`;
+
     const lblDaily = document.getElementById('lblOnGridDailyDemand');
     if (lblDaily) lblDaily.textContent = `${Number(dailyKwh).toFixed(2)} kWh / day`;
     const lblKwp = document.getElementById('lblOnGridTargetKwp');
@@ -404,7 +407,8 @@ const SizingUI = (() => {
 
     const lblEnergy = document.getElementById('lblTotalCalculatedEnergy');
     if (lblEnergy) {
-      lblEnergy.textContent = `${Math.round(totalDailyWh).toLocaleString()} Wh / day`;
+      const kwh = (totalDailyWh / 1000).toFixed(2);
+      lblEnergy.textContent = `${kwh} kWh / day (${Math.round(totalDailyWh).toLocaleString()} Wh)`;
     }
 
     const badgesContainer = document.getElementById('applianceSummaryBadges');

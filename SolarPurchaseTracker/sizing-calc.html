@@ -210,13 +210,6 @@
                       </div>
                     </div>
 
-                    <!-- Daily Demand: Simple Highlighted Line -->
-                    <div class="col-12 mt-1 pt-1 sec-solar-param-field" id="wrapDailyDemand">
-                      <div class="fs-8 text-secondary">
-                        ⚡ Daily Demand: <strong class="text-primary fw-bold" id="lblOnGridDailyDemand">10.00 kWh / day</strong>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
 
@@ -274,6 +267,13 @@
                         <div class="input-group shadow-2xs">
                           <input type="number" min="0" class="form-control fw-semibold fs-8" id="txtMonthlyUnits" 
                             placeholder="e.g. 300" value="300" style="height: 38px;">
+                          <span class="input-group-text bg-white text-muted fs-8">Units/mo</span>
+                        </div>
+                      </div>
+                      <div class="col-sm-6 col-12">
+                        <label class="form-label fw-semibold text-secondary fs-8 mb-1">⚡ Daily Demand</label>
+                        <div class="p-2 bg-white rounded-2 border shadow-2xs d-flex align-items-center" style="height: 38px;">
+                          <strong class="text-primary fw-bold fs-7" id="lblMonthlyBasisDailyDemand">10.00 kWh / day</strong>
                         </div>
                       </div>
                     </div>
@@ -308,7 +308,7 @@
                   </div>
                 </div>
 
-                <!-- Total Connected Load & Total Daily Energy Box -->
+                <!-- Total Connected Load & Daily Demand Box (Shown for Configured Appliances Load & Backup Duration) -->
                 <div class="p-3 bg-light rounded-3 mb-3 border" id="wrapConnectedLoadEnergyStats">
                   <div class="row g-2 text-center">
                     <div class="col-6 border-end">
@@ -316,8 +316,8 @@
                       <strong class="fs-6 text-dark" id="lblTotalConnectedLoad">0 W (0.00 kW)</strong>
                     </div>
                     <div class="col-6">
-                      <span class="text-muted fs-8 fw-semibold d-block mb-1">Total Daily Energy</span>
-                      <strong class="fs-6 text-primary" id="lblTotalCalculatedEnergy">0 Wh / day</strong>
+                      <span class="text-muted fs-8 fw-semibold d-block mb-1">Daily Demand</span>
+                      <strong class="fs-6 text-primary" id="lblTotalCalculatedEnergy">0 Wh / day (0.00 kWh)</strong>
                     </div>
                   </div>
                 </div>
