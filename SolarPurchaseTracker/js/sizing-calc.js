@@ -143,11 +143,27 @@ const SizingCalc = (() => {
     const SINGLE_PHASE_MAX_LIMIT_KW = 5.0;
 
     // Estimate daily battery recharge demand for Off-Grid / autonomous systems
-    const activeBackupW = backupLoadW > 0 ? backupLoadW : connectedLoadW;
+    const activeBackupW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 500);
     let targetBackupEnergyWh = 0;
     let effectiveBackupHours = backupHours;
 
-    if (isApplianceScheduleBasis) {
+    const monthlyUnitsVal = Number(input.monthlyUnits) || 0;
+    const dailyDemandFromMonthlyUnits = monthlyUnitsVal > 0 ? (monthlyUnitsVal / 30) : 0;
+
+    if (isMonthlyUnitsBasis) {
+      if (sysTypeKey === 'off-grid') {
+        // Off-Grid 24-hr autonomous continuous operation:
+        // Daytime peak solar (~7h: 9AM-4PM) powers load directly (~29.2% of daily energy).
+        // Night/Non-solar hours (~17h: 4PM-9AM) must be powered 100% by the Battery Bank (17/24 = 70.83% of daily energy).
+        const dailyKwh = dailyDemandFromMonthlyUnits > 0 ? dailyDemandFromMonthlyUnits : (estimatedDailyKwh || 10);
+        targetBackupEnergyWh = Math.round(dailyKwh * 1000 * (17 / 24));
+        effectiveBackupHours = 17;
+      } else {
+        // For Hybrid & Without Solar in monthly units mode: size for essential backup load * backup hours
+        targetBackupEnergyWh = activeBackupW * backupHours;
+        effectiveBackupHours = backupHours;
+      }
+    } else if (isApplianceScheduleBasis) {
       targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
       effectiveBackupHours = Math.round((targetBackupEnergyWh / Math.max(1, activeBackupW)) * 10) / 10;
     } else {
@@ -824,6 +840,15 @@ const SizingCalc = (() => {
       dailyDemandKwh = Math.max(0.1, Number(dailyUsageKwh) || 0);
     }
 
+    // For Off-Grid Solar, Solar PV must generate enough energy during daylight hours (~7h) to power daytime loads
+    // AND fully recharge the battery bank (accounting for ~88% roundtrip charging efficiency)
+    let totalSolarDailyTargetKwh = dailyDemandKwh;
+    if (systemType === 'off-grid') {
+      const daytimeDirectKwh = dailyDemandKwh * (7 / 24);
+      const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : ((dailyDemandKwh * (17 / 24)) / 0.88);
+      totalSolarDailyTargetKwh = daytimeDirectKwh + batteryChargeNeedKwh;
+    }
+
     const sunHours = Math.max(1, Number(peakSunHours) || 5.0);
     
     // Detailed system losses computation:
@@ -840,7 +865,7 @@ const SizingCalc = (() => {
     const totalLossPct = Math.round((1 - prEff) * 100);
 
     // Required Solar kWp for daily energy demand
-    const requiredSolarKwp = dailyDemandKwh / (sunHours * prEff);
+    const requiredSolarKwp = totalSolarDailyTargetKwh / (sunHours * prEff);
 
     // Standard 550Wp Mono PERC Half-Cut Panels
     const panelWatts = 550;

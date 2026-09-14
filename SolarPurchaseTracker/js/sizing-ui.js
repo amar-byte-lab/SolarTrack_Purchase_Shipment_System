@@ -245,6 +245,29 @@ const SizingUI = (() => {
       el.style.display = showSolarParams ? '' : 'none';
     });
 
+    // Cost Recovery / Solar Payback Container (Hidden for without-solar, shown for solar systems)
+    const secCostRecovery = document.getElementById('secCostRecoveryContainer');
+    if (secCostRecovery) {
+      secCostRecovery.style.display = showSolarParams ? '' : 'none';
+    }
+
+    // Monthly Units Radio Button & Label (Hidden for Without-Solar because there is no solar generation)
+    const radMonthly = document.getElementById('radBasisMonthlyUnits');
+    const lblRadMonthly = document.getElementById('lblRadBasisMonthlyUnits');
+    if (radMonthly && lblRadMonthly) {
+      if (isWithoutSolar) {
+        radMonthly.style.display = 'none';
+        lblRadMonthly.style.display = 'none';
+        if (state.energyCalculationBasis === 'monthly_units') {
+          state.energyCalculationBasis = 'backup_duration';
+          applyBackupHoursOverrideOrReset();
+        }
+      } else {
+        radMonthly.style.display = '';
+        lblRadMonthly.style.display = '';
+      }
+    }
+
     // Backup Duration Radio Button & Label (Hidden for On-Grid, Shown for without-solar, hybrid, off-grid)
     const radDuration = document.getElementById('radBasisBackupDuration');
     const lblRadDuration = document.getElementById('lblRadBasisBackupDuration');
@@ -366,7 +389,11 @@ const SizingUI = (() => {
 
     const sunHours = 5.0;
     const pr = 0.78;
-    const targetKwp = (dailyKwh / (sunHours * pr)).toFixed(2);
+    let solarTargetKwh = dailyKwh;
+    if (state.systemType === 'off-grid') {
+      solarTargetKwh = (dailyKwh * (7 / 24)) + ((dailyKwh * (17 / 24)) / 0.88);
+    }
+    const targetKwp = (solarTargetKwh / (sunHours * pr)).toFixed(2);
     const panelCount = Math.ceil((targetKwp * 1000) / 550);
     const actualKwp = ((panelCount * 550) / 1000).toFixed(2);
 
@@ -1243,15 +1270,32 @@ const SizingUI = (() => {
     if (isScheduleBasis) {
       basisBadgeLabel = 'Configured Appliances Load Basis';
     } else if (isMonthlyBasis) {
-      basisBadgeLabel = 'Monthly Units Basis';
+      basisBadgeLabel = res.systemType === 'off-grid' ? 'Off-Grid 24-Hr Continuous Basis' : 'Monthly Units Basis';
     }
 
+    const dailyUnitsNum = (Number(res.monthlyUnits || 300)/30).toFixed(2);
     let formulaDescription = `ଜରୁରୀ ଲୋଡ୍ (${backupKw} kW) × ନିର୍ଦ୍ଦିଷ୍ଟ ବ୍ୟାକଅପ୍ ସମୟ (${backupHrs} ଘଣ୍ଟା) = <strong>${backupKwh} kWh (ୟୁନିଟ୍)</strong>`;
     if (isScheduleBasis) {
       formulaDescription = `Step 2 ରେ କନଫିଗର୍ ହୋଇଥିବା ଜରୁରୀ ଉପକରଣର ଦୈନିକ ଚାଲିବା ସମୟ (Hours) ର ସମଷ୍ଟି = <strong>${backupKwh} kWh (${targetEnergyWh} Wh / ୟୁନିଟ୍)</strong>`;
     } else if (isMonthlyBasis) {
-      formulaDescription = `ଦୈନିକ ବିଦ୍ୟୁତ୍ ବ୍ୟବହାର (${(Number(res.monthlyUnits || 300)/30).toFixed(2)} kWh) + ଜରୁରୀ ବ୍ୟାକଅପ୍ (${backupKw} kW × ${backupHrs} ଘଣ୍ଟା = ${backupKwh} kWh)`;
+      if (res.systemType === 'off-grid') {
+        formulaDescription = `୨୪ ଘଣ୍ଟା ଅଫ୍-ଗ୍ରୀଡ୍ ସିଷ୍ଟମରେ ଦୈନିକ ${dailyUnitsNum} ୟୁନିଟ୍ ବ୍ୟବହାର ପାଇଁ, ରାତି/ଅଣ-ସୌର ସମୟ (~୧୭ ଘଣ୍ଟା) ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ = <strong>${backupKwh} kWh (${targetEnergyWh} Wh)</strong>`;
+      } else {
+        formulaDescription = `ଦୈନିକ ବିଦ୍ୟୁତ୍ ବ୍ୟବହାର (${dailyUnitsNum} kWh) + ଜରୁରୀ ବ୍ୟାକଅପ୍ (${backupKw} kW × ${backupHrs} ଘଣ୍ଟା = ${backupKwh} kWh)`;
+      }
     }
+
+    const backupSubText = (res.systemType === 'off-grid' && isMonthlyBasis) 
+      ? 'ରାତି ଓ ଅଣ-ସୌର ସମୟ (~17 ଘଣ୍ଟା)' 
+      : 'ପାୱାରକଟ୍ ସମୟରେ ଚାଲିବା ଲୋଡ୍';
+
+    const backupDurationSubText = (res.systemType === 'off-grid' && isMonthlyBasis)
+      ? 'ରାତି ଅବଧି (~୧୭ ଘଣ୍ଟା ସମ୍ପୂର୍ଣ୍ଣ ବ୍ୟାକଅପ୍)'
+      : (isScheduleBasis ? 'ଉପକରଣର ଦୈନିକ ସମୟ' : 'ନିରବଚ୍ଛିନ୍ନ ବିଦ୍ୟୁତ୍ ଯୋଗାଣ');
+
+    const batExplanationText = (res.systemType === 'off-grid' && isMonthlyBasis)
+      ? `୨୪ ଘଣ୍ଟା ଅଫ୍-ଗ୍ରୀଡ୍ ${dailyUnitsNum} ୟୁନିଟ୍ ଲୋଡ୍ ଚଳାଇବା ପାଇଁ ଆପଣଙ୍କୁ <strong>${activeBat.systemVoltage}V ${activeBat.systemBankAh}Ah (${activeBat.totalInstalledKwh} kWh)</strong> ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ପ୍ରସ୍ତାବ ଦିଆଯାଇଛି, ଯାହାକି ରାତି ଓ ସକାଳର ୧୭ ଘଣ୍ଟା (~${activeBat.actualBackupHours} ଘଣ୍ଟା) ନିରବଚ୍ଛିନ୍ନ ବିଦ୍ୟୁତ୍ ଯୋଗାଇବ। ଦିନବେଳା ସୋଲାର ପ୍ୟାନେଲ୍ ଏହାକୁ ପୁନର୍ବାର ସମ୍ପୂର୍ଣ୍ଣ ଚାର୍ଜ କରିଦେବ।`
+      : `ବ୍ୟାଟେରୀର ଡିସଚାର୍ଜ ଦକ୍ଷତା (DoD) ଏବଂ ଇନଭର୍ଟର କନଭର୍ସନ ଲସ୍ (Loss) କୁ ହିସାବ କରି ଆପଣଙ୍କୁ <strong>${activeBat.systemVoltage}V ${activeBat.systemBankAh}Ah (${activeBat.totalInstalledKwh} kWh)</strong> ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ପ୍ରସ୍ତାବ ଦିଆଯାଇଛି, ଯାହାକି <strong>${backupWatts} Watts</strong> ଲୋଡ୍ କୁ ସମ୍ପୂର୍ଣ୍ଣ <strong>~${activeBat.actualBackupHours} ଘଣ୍ଟା</strong> ପର୍ଯ୍ୟନ୍ତ ନିରବଚ୍ଛିନ୍ନ ଶକ୍ତି ଯୋଗାଇବ।`;
 
     return `
       <div class="col-12 mt-2">
@@ -1286,7 +1330,7 @@ const SizingUI = (() => {
               <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs" style="background: #eff6ff; border-color: #bfdbfe !important;">
                 <span class="text-primary fs-8 fw-semibold d-block mb-1">ଜରୁରୀ ବ୍ୟାକଅପ୍ ଲୋଡ୍</span>
                 <span class="fs-5 fw-extrabold text-primary">${backupWatts} W</span>
-                <span class="fs-9 text-primary d-block mt-0.5">ପାୱାରକଟ୍ ସମୟରେ ଚାଲିବା ଲୋଡ୍ (${backupKw} kW)</span>
+                <span class="fs-9 text-primary d-block mt-0.5">${backupSubText} (${backupKw} kW)</span>
               </div>
             </div>
             <!-- 3. Target Backup Duration -->
@@ -1294,7 +1338,7 @@ const SizingUI = (() => {
               <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
                 <span class="text-success fs-8 fw-semibold d-block mb-1">${isScheduleBasis ? 'ଦୈନିକ ଚାଲିବା ସମୟ' : 'ଆବଶ୍ୟକୀୟ ବ୍ୟାକଅପ୍'}</span>
                 <span class="fs-5 fw-extrabold text-success">~${backupHrs} ଘଣ୍ଟା</span>
-                <span class="fs-9 text-success d-block mt-0.5">${isScheduleBasis ? 'ଉପକରଣର ଦୈନିକ ସମୟ' : 'ନିରବଚ୍ଛିନ୍ନ ବିଦ୍ୟୁତ୍ ଯୋଗାଣ'}</span>
+                <span class="fs-9 text-success d-block mt-0.5">${backupDurationSubText}</span>
               </div>
             </div>
             <!-- 4. Required Energy -->
@@ -1314,14 +1358,14 @@ const SizingUI = (() => {
             </h6>
             <div class="fs-8 text-secondary lh-base">
               <div class="mb-2">
-                <strong>୧. Energy Formula (${isScheduleBasis ? '24-Hr Appliance Schedule Mode' : 'Backup Duration Mode'}):</strong><br>
+                <strong>୧. Energy Formula (${isScheduleBasis ? '24-Hr Appliance Schedule Mode' : (res.systemType === 'off-grid' && isMonthlyBasis ? 'Off-Grid 24-Hr Cycle Mode' : 'Backup Duration Mode')}):</strong><br>
                 <div class="my-1.5 p-2 bg-light rounded border text-dark fs-8">
                   <code>ଆବଶ୍ୟକୀୟ ଶକ୍ତି (kWh) = ${formulaDescription}</code>
                 </div>
               </div>
               <div>
                 <strong>୨. Battery Selection (${batChemistryLabel}):</strong><br>
-                ବ୍ୟାଟେରୀର ଡିସଚାର୍ଜ ଦକ୍ଷତା (DoD) ଏବଂ ଇନଭର୍ଟର କନଭର୍ସନ ଲସ୍ (Loss) କୁ ହିସାବ କରି ଆପଣଙ୍କୁ <strong>${activeBat.systemVoltage}V ${activeBat.systemBankAh}Ah (${activeBat.totalInstalledKwh} kWh)</strong> ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ପ୍ରସ୍ତାବ ଦିଆଯାଇଛି, ଯାହାକି <strong>${backupWatts} Watts</strong> ଲୋଡ୍ କୁ ସମ୍ପୂର୍ଣ୍ଣ <strong>~${activeBat.actualBackupHours} ଘଣ୍ଟା</strong> ପର୍ଯ୍ୟନ୍ତ ନିରବଚ୍ଛିନ୍ନ ଶକ୍ତି ଯୋଗାଇବ।
+                ${batExplanationText}
               </div>
             </div>
           </div>
