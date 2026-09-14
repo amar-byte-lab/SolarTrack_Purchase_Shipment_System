@@ -19,7 +19,6 @@ window.onDbReady = function () {
   }
 
   UI.renderTopbar(`Shipment ${s.ShipmentNo}`, `Full purchase, transportation & GST cost breakdown`, `
-    <button class="btn btn-outline-secondary" id="btnPrint">🖨 Print</button>
     <button class="btn btn-outline-secondary" id="btnExportExcel">⬇ Export Excel</button>
     <button class="btn btn-outline-secondary" id="btnExportPDF">⬇ Export PDF</button>
     <a class="btn btn-primary" href="shipment.html">← Back</a>
@@ -91,7 +90,6 @@ window.onDbReady = function () {
     </div>
   `;
 
-  document.getElementById('btnPrint').addEventListener('click', () => window.print());
   document.getElementById('btnExportExcel').addEventListener('click', () => {
     const rows = result.lines.map(l => ({
       Item: l.ItemName, Category: l.Category, Qty: l.Quantity, Unit: l.Unit, Rate: l.PurchaseRate,

@@ -184,16 +184,22 @@ body.installments-page .page-body {
   z-index: 15;
 }
 
-.table-installments tfoot tr.add-row-sticky {
-  position: sticky;
-  bottom: 37px;
-  z-index: 14;
-}
-
 .table-installments tfoot tr.grand-total {
   position: sticky;
   bottom: 0;
   z-index: 15;
+}
+
+.table-installments tfoot tr.grand-total td {
+  position: sticky;
+  bottom: 0;
+  z-index: 15;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  font-weight: 700;
+  border-top: 2px solid #cbd5e1 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .st-card.mb-3 {
@@ -212,7 +218,8 @@ body.installments-page .page-body {
 }
 .table-responsive-main {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
   position: relative;
 }
 .table-installments thead th {
@@ -284,33 +291,68 @@ body.installments-page .page-body {
   word-break: break-word;
 }
 
-/* Mobile View Responsiveness & Scrollable Search/Filters */
+/* Mobile View Responsiveness & Layout Fixes */
 @media (max-width: 768px) {
   html.installments-page, body.installments-page, body.installments-page .app-shell {
-    height: auto !important;
-    min-height: 100vh;
-    overflow: auto !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0;
+    overflow: hidden !important;
   }
 
   body.installments-page .main-content {
-    height: auto !important;
-    min-height: 100vh;
-    overflow: visible !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
   }
 
   body.installments-page .page-body {
-    overflow: visible !important;
-    height: auto !important;
-    padding: 10px 12px !important;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden !important;
+    padding: 8px 10px !important;
+    gap: 8px !important;
   }
 
   #searchCollapse.show, #searchCollapse.collapsing {
-    max-height: 23vh !important;
+    max-height: 35vh !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
     padding-right: 4px;
     margin-bottom: 8px;
+  }
+
+  /* Topbar buttons mobile compatibility */
+  .topbar-actions {
+    gap: 6px !important;
+  }
+
+  .topbar-actions .btn {
+    font-size: 0.78rem !important;
+    padding: 4px 8px !important;
+    white-space: nowrap;
+  }
+
+  /* Modal responsiveness on mobile screens */
+  #customerModal .modal-dialog,
+  #importPreviewModal .modal-dialog,
+  #customerDetailsModal .modal-dialog,
+  #transactionModal .modal-dialog,
+  #commissionModal .modal-dialog {
+    margin: 0.5rem !important;
+    max-width: calc(100% - 1rem) !important;
+  }
+
+  #customerModal .modal-body,
+  #importPreviewModal .modal-body {
+    max-height: calc(100dvh - 120px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

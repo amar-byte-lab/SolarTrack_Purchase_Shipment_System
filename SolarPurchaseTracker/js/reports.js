@@ -6,10 +6,9 @@ let lastReport = { columns: [], rows: [], title: '' };
 
 window.onDbReady = function () {
   UI.renderSidebar('reports.html');
-  UI.renderTopbar('Reports', 'Generate, print and export purchase & cost reports');
+  UI.renderTopbar('Reports', 'Generate and export purchase & cost reports');
 
   document.getElementById('btnRun').addEventListener('click', runReport);
-  document.getElementById('btnPrint').addEventListener('click', () => window.print());
   document.getElementById('btnExcel').addEventListener('click', () => {
     if (!lastReport.rows.length) { UI.toast('Generate a report first.', 'warning'); return; }
     const objRows = lastReport.rows.map(r => Object.fromEntries(lastReport.columns.map((c, i) => [c, r[i]])));

@@ -58,7 +58,7 @@
         </div>
       </div>
 
-      <!-- Tabs for Buy / Sell / Price History Log & Add Price Record Button -->
+      <!-- Tabs for Buy / Sell Shipments -->
       <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
         <div class="overflow-x-auto pb-1" style="-webkit-overflow-scrolling: touch; scrollbar-width: thin; max-width: 100%;">
           <ul class="nav nav-pills flex-nowrap text-nowrap" id="shipmentTypeTabs" style="display: flex; flex-wrap: nowrap;">
@@ -68,12 +68,12 @@
             <li class="nav-item ms-2">
               <button class="nav-link fw-bold py-1 px-3" data-type="Sell" id="tabSell" style="font-size: 0.85rem; white-space: nowrap;">📤 Sell Shipments</button>
             </li>
-            <li class="nav-item ms-2">
+            <li class="nav-item ms-2" style="display: none !important;">
               <button class="nav-link fw-bold py-1 px-3" data-type="PriceHistory" id="tabPriceHistory" style="font-size: 0.85rem; white-space: nowrap;">📜 Price History Log</button>
             </li>
           </ul>
         </div>
-        <button class="btn btn-sm btn-outline-primary fw-bold px-3 d-flex align-items-center gap-1 shadow-sm text-nowrap" id="btnTogglePriceHistory" onclick="togglePriceHistoryPopup('add')" style="font-size: 0.85rem; border-radius: 8px;">
+        <button class="btn btn-sm btn-outline-primary fw-bold px-3 d-flex align-items-center gap-1 shadow-sm text-nowrap" id="btnTogglePriceHistory" onclick="togglePriceHistoryPopup('add')" style="font-size: 0.85rem; border-radius: 8px; display: none !important;">
           ➕ Add Price Record
         </button>
       </div>

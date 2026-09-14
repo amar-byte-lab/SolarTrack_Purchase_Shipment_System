@@ -95,26 +95,29 @@ window.onDbReady = function () {
   updateWorkspaceVisibility();
 
   // Print bind
-  document.getElementById('btnPrintOffer').addEventListener('click', () => {
-    const custName = document.getElementById('qCustName').value.trim();
-    if (!custName) {
-      UI.toast('Please enter the customer name before printing.', 'warning');
-      
-      // Auto-expand address section so they can see and edit customer details easily
-      const collapseAddr = document.getElementById('collapseAddresses');
-      const iconAddr = document.getElementById('iconAddresses');
-      if (collapseAddr && collapseAddr.style.display === 'none') {
-        collapseAddr.style.display = 'block';
-        if (iconAddr) iconAddr.textContent = '▲';
+  const btnPrintOffer = document.getElementById('btnPrintOffer');
+  if (btnPrintOffer) {
+    btnPrintOffer.addEventListener('click', () => {
+      const custName = document.getElementById('qCustName').value.trim();
+      if (!custName) {
+        UI.toast('Please enter the customer name before printing.', 'warning');
+        
+        // Auto-expand address section so they can see and edit customer details easily
+        const collapseAddr = document.getElementById('collapseAddresses');
+        const iconAddr = document.getElementById('iconAddresses');
+        if (collapseAddr && collapseAddr.style.display === 'none') {
+          collapseAddr.style.display = 'block';
+          if (iconAddr) iconAddr.textContent = '▲';
+        }
+        
+        document.getElementById('qCustName').focus();
+        return;
       }
-      
-      document.getElementById('qCustName').focus();
-      return;
-    }
-    syncPrintLabels();
-    renderPaginatedPrintView();
-    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-  });
+      syncPrintLabels();
+      renderPaginatedPrintView();
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+    });
+  }
 };
 
 window.toggleOfferSection = function(collapseId, iconId) {

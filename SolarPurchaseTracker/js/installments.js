@@ -50,8 +50,12 @@ window.onDbReady = function () {
   }
 
   const buttonsHtml = isAdmin ? `
-    <button class="btn btn-outline-secondary" id="btnPrintList">🖨 Print</button>
-    <button class="btn btn-primary ms-2" id="btnImportCustomer">📥 Import Customer</button>
+    <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-2" id="btnAddNewCustomer" title="Add New Customer">
+      <span>➕</span> <span>Add Customer</span>
+    </button>
+    <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm bg-white text-nowrap rounded-2" id="btnImportCustomer" title="Import Customers from Excel">
+      <span>📥</span> <span>Import Customer</span>
+    </button>
     <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat" style="display: none;">📁 Download format</button>
     <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
   ` : '';
@@ -59,9 +63,11 @@ window.onDbReady = function () {
   UI.renderSidebar('installments.html');
   UI.renderTopbar('Customer', 'Manage client installment payments, customer sales, and agent commissions', buttonsHtml);
 
-  const btnPrint = document.getElementById('btnPrintList');
-  if (btnPrint) {
-    btnPrint.addEventListener('click', () => window.print());
+  const btnAddNewCustomer = document.getElementById('btnAddNewCustomer');
+  if (btnAddNewCustomer) {
+    btnAddNewCustomer.addEventListener('click', () => {
+      openCustomerModal();
+    });
   }
 
   // Excel Import element event listeners
@@ -969,15 +975,10 @@ function renderList() {
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
 
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found.${isAdmin ? ' Click "+" at the bottom to add one.' : ''}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
     const tfoot = document.querySelector('#installmentsTable tfoot');
     if (tfoot) {
       tfoot.innerHTML = `
-        ${isAdmin ? `
-        <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
-          <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="${isAdmin ? '4' : '3'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
-        </tr>` : ''}
         <tr class="grand-total" style="height:37px;">
           <td class="text-center">0</td>
           <td colspan="2">GRAND TOTAL</td>
@@ -1153,7 +1154,7 @@ function renderList() {
       function renderPill(targetAmt, paidAmt, onclickAttr) {
         const diff = targetAmt - paidAmt;
         if (Math.abs(diff) < 0.01) {
-          return `<button type="button" class="btn inst-status-pill inst-status-settled no-print" onclick="${onclickAttr}" title="Click to view payment history">✓ Settled</button>`;
+          return '';
         } else if (diff > 0) {
           return `<button type="button" class="btn inst-status-pill inst-status-pending no-print" onclick="${onclickAttr}" title="Click to view payment history">💳 Pending ₹${diff.toLocaleString('en-IN')}</button>`;
         } else {
@@ -1225,23 +1226,11 @@ function renderList() {
     }
   }).join('');
 
-  // Set GRAND TOTAL and sticky add row in tfoot
+  // Set GRAND TOTAL in tfoot
   const activeCount = rows.filter(r => r.Status !== 'Deactive').length;
   const tfoot = document.querySelector('#installmentsTable tfoot');
   if (tfoot) {
-    let tfootHTML = '';
-    
-    // Add row is rendered inside tfoot sitting on top of grand total (using bottom: 37px offset)
-    if (!isAddingNew && isAdmin) {
-      tfootHTML += `
-        <tr class="add-row-sticky no-print" onclick="openCustomerModal()" style="cursor:pointer; height:37px;">
-          <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="${isAdmin ? '4' : '3'}" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new customer installment record...</td>
-        </tr>
-      `;
-    }
-    
-    tfootHTML += `
+    let tfootHTML = `
       <tr class="grand-total" style="height:37px;">
         <td class="text-center align-middle">${isAddingNew ? activeCount - 1 : activeCount}</td>
         <td>
@@ -1280,19 +1269,6 @@ function renderList() {
       </tr>
     `;
     tfoot.innerHTML = tfootHTML;
-
-    // Adjust sticky bottom of add-row-sticky row based on grand-total row height
-    setTimeout(() => {
-      const grandTotalRow = tfoot.querySelector('tr.grand-total');
-      const addRowSticky = tfoot.querySelector('tr.add-row-sticky');
-      if (grandTotalRow && addRowSticky) {
-        const grandTotalHeight = grandTotalRow.offsetHeight;
-        const tds = addRowSticky.querySelectorAll('td');
-        tds.forEach(td => {
-          td.style.bottom = grandTotalHeight + 'px';
-        });
-      }
-    }, 50);
   }
 
   // Bind dynamic inputs calculation listeners for active editing row

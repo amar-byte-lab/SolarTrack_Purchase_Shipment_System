@@ -21,11 +21,7 @@ const LS_KEY = 'shipColColors';
 
 window.onDbReady = function () {
     UI.renderSidebar('shipment.html');
-    UI.renderTopbar('Shipments', 'All purchase shipments and their cost breakdown', `
-    <button class="btn btn-outline-secondary" id="btnPrintList">🖨 Print</button>
-  `);
-
-    document.getElementById('btnPrintList').addEventListener('click', () => window.print());
+    UI.renderTopbar('Shipments', 'All purchase shipments and their cost breakdown', '');
 
     // Tabs for Buy / Sell / PriceHistory
     const tabBuy = document.getElementById('tabBuy');
@@ -402,9 +398,9 @@ function renderList() {
 
             const tUnit = l.Quantity > 0 ? (l.TransportShare / l.Quantity) : 0;
             const mspNum = Calc.round2((Number(l.PurchaseRate) || 0) + tUnit);
-            const mspText = mspNum > 0 ? ` <span class="text-success font-monospace ms-1" style="font-size:0.78rem; font-weight:600;">{MSP/Unit:${UI.money(mspNum)}}</span>` : '';
+            const mspInfo = mspNum > 0 ? `: <span class="text-success font-monospace" style="font-size:0.78rem; font-weight:600;">${UI.money(mspNum)}/Unit</span>` : '';
 
-            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix})${mspText}</div>`;
+            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix}${mspInfo})</div>`;
         }).join('') || '<span class="text-muted">—</span>'}
         </td>
         <td class="col-total text-end fw-bold font-monospace">
