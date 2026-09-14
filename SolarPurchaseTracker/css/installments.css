@@ -354,6 +354,104 @@ body.installments-page .page-body {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
+
+  /* Compact & Well-Aligned Table Typography for Mobile */
+  .table-installments th {
+    font-size: 0.68rem !important;
+    padding: 5px 6px !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  .table-installments td {
+    padding: 4px 6px !important;
+    font-size: 0.74rem !important;
+  }
+
+  .table-installments td:first-child,
+  .table-installments th:first-child {
+    padding: 4px 3px !important;
+    font-size: 0.70rem !important;
+    min-width: 26px !important;
+  }
+
+  .erp-customer-cell, .erp-partner-cell {
+    gap: 1px !important;
+  }
+
+  .erp-name-row, .erp-meta-row {
+    gap: 3px !important;
+  }
+
+  .erp-cust-name {
+    font-size: 0.75rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .erp-partner-name {
+    font-size: 0.74rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .erp-meta-text {
+    font-size: 0.65rem !important;
+    padding: 0px 4px !important;
+    line-height: 1.2 !important;
+    border-radius: 2px !important;
+  }
+
+  .erp-meta-tag {
+    font-size: 0.64rem !important;
+    padding: 0px 4px !important;
+    line-height: 1.2 !important;
+    border-radius: 2px !important;
+  }
+
+  .erp-price-text {
+    font-size: 0.70rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .erp-status-pending,
+  .erp-status-advance {
+    font-size: 0.70rem !important;
+    line-height: 1.2 !important;
+    margin-left: 2px !important;
+  }
+
+  .erp-expense-cell {
+    min-width: 80px !important;
+    gap: 1px !important;
+  }
+
+  .erp-expense-cell .fs-8 {
+    font-size: 0.68rem !important;
+  }
+
+  .erp-btn-action {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .erp-btn-action svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Compact Grand Total Footer for Mobile */
+  .table-installments tr.grand-total td {
+    padding: 4px 6px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .erp-grand-total span,
+  .erp-grand-total div {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .erp-grand-total .fw-bold {
+    font-size: 0.70rem !important;
+  }
 }
 
 @media print {

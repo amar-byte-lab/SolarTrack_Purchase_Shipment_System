@@ -1178,7 +1178,7 @@ function renderList() {
                 ${netMeterBadgeHtml}
               </div>
               <div class="erp-meta-row">
-                <span class="erp-price-text">Price: ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                <span class="erp-price-text"> ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 ${custPillHtml}
               </div>
             </div>
@@ -1191,7 +1191,7 @@ function renderList() {
                 </a>
               </div>
               <div class="erp-meta-row">
-                <span class="erp-price-text">Cost: ₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                <span class="erp-price-text">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 ${vendorPillHtml}
               </div>
             </div>
@@ -1233,21 +1233,16 @@ function renderList() {
     let tfootHTML = `
       <tr class="grand-total erp-grand-total">
         <td class="text-center align-middle fs-8">${isAddingNew ? activeCount - 1 : activeCount}</td>
-        <td class="align-middle">
+        <td class="align-middle fs-8 font-monospace">
           <div class="d-flex flex-column gap-0.5">
-            <div class="d-flex align-items-center gap-2">
-              <span class="fw-bold text-dark fs-8">GRAND TOTAL</span>
-              <span class="erp-status-pending fs-8">Pending: ${fmtGrandTotal(sumPrice - sumTotal)}</span>
-            </div>
-            <div class="text-secondary fs-8 font-monospace">
-              Price: <span class="text-dark fw-semibold">${fmtGrandTotal(sumPrice)}</span> <span class="text-muted ms-1">(Paid: ${fmtGrandTotal(sumTotal)})</span>
-            </div>
+            <div class="text-dark fw-bold">${fmtGrandTotal(sumPrice)}</div>
+            <div class="text-secondary">Paid: <span class="text-dark fw-semibold">${fmtGrandTotal(sumTotal)}</span></div>
+            <div class="erp-status-pending">Pending: ${fmtGrandTotal(sumPrice - sumTotal)}</div>
           </div>
         </td>
         <td class="align-middle fs-8 font-monospace">
           <div class="d-flex flex-column gap-0.5">
-            <div><span class="text-secondary">Comm:</span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumComm)}</span> <span class="text-muted ms-1">(Pending: ${fmtGrandTotal(sumComm - sumCommPaid)})</span></div>
-            <div><span class="text-secondary">Part:</span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumPartnerPrice)}</span> <span class="text-muted ms-1">(Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)})</span></div>
+            <div><span class="text-secondary"></span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumPartnerPrice)}</span> <span class="text-muted ms-1">(Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)})</span></div>
           </div>
         </td>
         <td class="align-middle admin-only-column fs-8 font-monospace">
