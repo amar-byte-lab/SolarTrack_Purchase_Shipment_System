@@ -273,13 +273,11 @@ function renderGrid() {
       <td style="text-align:center;color:#8592a0;font-size:.78rem;">${idx + 1}</td>
       <td class="bw-col-name">
         <span style="cursor:pointer;color:var(--st-primary);font-weight:600;"
-              onclick="openTxnModal(${b.BorrowerID})" title="View transactions">
+              onclick="openTxnModal(${b.BorrowerID})" title="Click to view transactions">
           ${esc(b.Name)}
         </span>
         ${isActive
-          ? `<button class="btn-txn-inline" onclick="openTxnModal(${b.BorrowerID})" title="Add Transaction">
-               +Txn${txnCount > 0 ? ` <sup style="opacity:.7;">${txnCount}</sup>` : ''}
-             </button>${outBadge}`
+          ? `${outBadge}`
           : `<span style="font-size:.68rem;color:#6b7885;margin-left:6px;">[Closed]</span>${outBadge}`
         }
       </td>
@@ -288,9 +286,9 @@ function renderGrid() {
           title="${esc(b.Address || '')}">${esc(b.Address || '—')}</td>
       <td style="text-align:center;white-space:nowrap;">
         ${isActive
-          ? `<button class="btn-deact" onclick="confirmDeactivate(${b.BorrowerID})">Deactivate</button>`
-          : `<button class="btn-reactivate" onclick="reactivateBorrower(${b.BorrowerID})">Reactivate</button>
-             <button class="btn-deact ms-1" style="background:#c0392b; border-color:#c0392b; color:#fff;" onclick="removeBorrower(${b.BorrowerID})">Remove</button>`
+          ? `<button class="btn erp-btn-action text-danger" onclick="confirmDeactivate(${b.BorrowerID})" title="Deactivate">${UI.icon('trash', 14)}</button>`
+          : `<button class="btn erp-btn-action text-success" onclick="reactivateBorrower(${b.BorrowerID})" title="Reactivate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+             <button class="btn erp-btn-action text-danger ms-1" onclick="removeBorrower(${b.BorrowerID})" title="Remove">${UI.icon('trash', 14)}</button>`
         }
       </td>
     </tr>`;
@@ -419,10 +417,18 @@ window.openTxnModal = async function(bid) {
   btn.textContent  = '✚';
   hint.textContent = isActive ? 'Tap ✚ to add a transaction…' : `"${borrower.Name}" is closed`;
 
-  await loadTxnsFor(bid);
+  // Render instantly from local cache & show modal immediately (zero delay)
   renderTxnHistory(bid);
   updateModalBalance(bid);
   _txnModal.show();
+
+  // Refresh fresh transactions in background
+  loadTxnsFor(bid).then(() => {
+    if (_activeBid === bid) {
+      renderTxnHistory(bid);
+      updateModalBalance(bid);
+    }
+  }).catch(() => {});
 };
 
 function updateModalBalance(bid) {
