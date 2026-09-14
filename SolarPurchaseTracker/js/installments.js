@@ -1154,9 +1154,9 @@ function renderList() {
         if (Math.abs(diff) < 0.01) {
           return '';
         } else if (diff > 0) {
-          return `<span class="erp-status-pending cursor-pointer no-print ms-1.5" onclick="${onclickAttr}" title="Click to view payment history">Pending: ₹${diff.toLocaleString('en-IN')}</span>`;
+          return `<span class="erp-status-pending cursor-pointer no-print ms-1 d-inline-flex align-items-center gap-0.5" onclick="${onclickAttr}" title="Pending: ₹${diff.toLocaleString('en-IN')} (Click to view payment history)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>₹${diff.toLocaleString('en-IN')}</span>`;
         } else {
-          return `<span class="erp-status-advance cursor-pointer no-print ms-1.5" onclick="${onclickAttr}" title="Click to view payment history">Advance: +₹${Math.abs(diff).toLocaleString('en-IN')}</span>`;
+          return `<span class="erp-status-advance cursor-pointer no-print ms-1 d-inline-flex align-items-center gap-0.5" onclick="${onclickAttr}" title="Advance: +₹${Math.abs(diff).toLocaleString('en-IN')} (Click to view payment history)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>+₹${Math.abs(diff).toLocaleString('en-IN')}</span>`;
         }
       }
 
@@ -1178,7 +1178,7 @@ function renderList() {
                 ${netMeterBadgeHtml}
               </div>
               <div class="erp-meta-row">
-                <span class="erp-price-text"> ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                <span class="erp-price-text">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 ${custPillHtml}
               </div>
             </div>
@@ -1236,13 +1236,25 @@ function renderList() {
         <td class="align-middle fs-8 font-monospace">
           <div class="d-flex flex-column gap-0.5">
             <div class="text-dark fw-bold">${fmtGrandTotal(sumPrice)}</div>
-            <div class="text-secondary">Paid: <span class="text-dark fw-semibold">${fmtGrandTotal(sumTotal)}</span></div>
-            <div class="erp-status-pending">Pending: ${fmtGrandTotal(sumPrice - sumTotal)}</div>
+            <div class="text-success d-inline-flex align-items-center gap-1" title="Paid: ${fmtGrandTotal(sumTotal)}">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="text-dark fw-semibold">${fmtGrandTotal(sumTotal)}</span>
+            </div>
+            <div class="erp-status-pending d-inline-flex align-items-center gap-1" title="Pending: ${fmtGrandTotal(sumPrice - sumTotal)}">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>${fmtGrandTotal(sumPrice - sumTotal)}</span>
+            </div>
           </div>
         </td>
         <td class="align-middle fs-8 font-monospace">
           <div class="d-flex flex-column gap-0.5">
-            <div><span class="text-secondary"></span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumPartnerPrice)}</span> <span class="text-muted ms-1">(Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)})</span></div>
+            <div class="d-flex align-items-center gap-1">
+              <span class="fw-semibold text-dark">${fmtGrandTotal(sumPartnerPrice)}</span>
+              <span class="erp-status-pending d-inline-flex align-items-center gap-0.5 ms-1" title="Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)}</span>
+              </span>
+            </div>
           </div>
         </td>
         <td class="align-middle admin-only-column fs-8 font-monospace">
