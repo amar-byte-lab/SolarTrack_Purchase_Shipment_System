@@ -11,14 +11,14 @@ window.onDbReady = function () {
   const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
 
   if (!s) {
-    UI.renderTopbar('Shipment Not Found', '');
+    UI.renderTopbar('Shipment Not Found');
     document.getElementById('detailsBody').innerHTML = `
       <div class="empty-state">Shipment "${shipmentNo || ''}" was not found.
         <br><a href="shipment.html" class="btn btn-sm btn-outline-primary mt-2">Back to Shipments</a></div>`;
     return;
   }
 
-  UI.renderTopbar(`Shipment ${s.ShipmentNo}`, `Full purchase, transportation & GST cost breakdown`, `
+  UI.renderTopbar(`Shipment ${s.ShipmentNo}`, `
     <button class="btn btn-outline-secondary btn-sm" id="btnExportExcel">${UI.icon('download', 14)} Export Excel</button>
     <button class="btn btn-outline-secondary btn-sm" id="btnExportPDF">${UI.icon('download', 14)} Export PDF</button>
     <a class="btn btn-outline-secondary btn-sm" href="shipment.html">Back to Shipments</a>

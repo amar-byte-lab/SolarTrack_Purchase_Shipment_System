@@ -21,7 +21,7 @@ const LS_KEY = 'shipColColors';
 
 window.onDbReady = function () {
     UI.renderSidebar('shipment.html');
-    UI.renderTopbar('Shipments', 'All purchase shipments and their cost breakdown', '');
+    UI.renderTopbar('Shipments');
 
     // Tabs for Buy / Sell / PriceHistory
     const tabBuy = document.getElementById('tabBuy');
@@ -385,8 +385,8 @@ function renderList() {
         const actionButtons = isDeleted
             ? `<button class="btn btn-xs btn-outline-success font-monospace" onclick="restoreShipment('${r.ShipmentNo}')" title="Restore Shipment">Restore</button>`
             : `
-        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="editRow('${r.ShipmentNo}')" title="Edit Shipment">${UI.icon('pencil', 13)}</button>
-        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteShipment('${r.ShipmentNo}')" title="Delete Shipment">${UI.icon('trash', 13)}</button>
+        <button class="btn erp-btn-action text-primary" onclick="editRow('${r.ShipmentNo}')" title="Edit Shipment">${UI.icon('pencil', 14)}</button>
+        <button class="btn erp-btn-action text-danger ms-1" onclick="deleteShipment('${r.ShipmentNo}')" title="Delete Shipment">${UI.icon('trash', 14)}</button>
       `;
 
         html.push(`
@@ -2689,8 +2689,8 @@ window.renderPriceHistoryList = function () {
               <h6 class="fw-bold text-dark fs-7 mb-0 text-truncate" title="${b.noteName || 'Price Record Note'}">📌 ${b.noteName || 'Price Record Note'}</h6>
             </div>
             <div class="d-flex align-items-center gap-1" onclick="event.stopPropagation()">
-              <button type="button" class="btn btn-xs btn-outline-primary p-1 lh-1 rounded-circle" onclick="openEditPriceRecordModal('${b.batchKey}')" title="Edit this record" style="width:24px; height:24px;">✏️</button>
-              <button type="button" class="btn btn-xs btn-outline-danger p-1 lh-1 rounded-circle" onclick="deletePriceRecordBatch('${b.batchKey}')" title="Delete this record" style="width:24px; height:24px;">🗑️</button>
+              <button type="button" class="btn erp-btn-action text-primary" onclick="openEditPriceRecordModal('${b.batchKey}')" title="Edit this record">${UI.icon('pencil', 14)}</button>
+              <button type="button" class="btn erp-btn-action text-danger" onclick="deletePriceRecordBatch('${b.batchKey}')" title="Delete this record">${UI.icon('trash', 14)}</button>
             </div>
           </div>
 

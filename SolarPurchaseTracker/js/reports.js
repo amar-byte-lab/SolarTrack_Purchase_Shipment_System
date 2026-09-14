@@ -6,7 +6,7 @@ let lastReport = { columns: [], rows: [], title: '' };
 
 window.onDbReady = function () {
   UI.renderSidebar('reports.html');
-  UI.renderTopbar('Reports', 'Generate and export purchase & cost reports');
+  UI.renderTopbar('Reports');
 
   document.getElementById('btnRun').addEventListener('click', runReport);
   document.getElementById('btnExcel').addEventListener('click', () => {

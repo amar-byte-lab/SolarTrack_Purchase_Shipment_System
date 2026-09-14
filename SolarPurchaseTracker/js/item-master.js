@@ -72,7 +72,7 @@ function updateTopbarActions() {
     `;
   }
 
-  UI.renderTopbar('Products', 'Manage master lists of items, packages, and composite product sets', actionsHtml);
+  UI.renderTopbar('Products', actionsHtml);
 
   // Re-bind listeners for dynamic topbar buttons
   if (activeTab === 'items') {
@@ -109,8 +109,8 @@ function render() {
       <td>${i.GSTPercent !== '' ? i.GSTPercent + '%' : '-'}</td>
       <td><span class="chip ${i.Status === 'Active' ? 'chip-green' : 'chip-gray'}">${i.Status || 'Active'}</span></td>
       <td class="no-print">
-        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick='openModal(${JSON.stringify(i.ItemName)})' title="Edit">${UI.icon('pencil', 13)}</button>
-        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick='deleteItem(${JSON.stringify(i.ItemName)})' title="Delete">${UI.icon('trash', 13)}</button>
+        <button class="btn erp-btn-action text-primary" onclick='openModal(${JSON.stringify(i.ItemName)})' title="Edit">${UI.icon('pencil', 14)}</button>
+        <button class="btn erp-btn-action text-danger ms-1" onclick='deleteItem(${JSON.stringify(i.ItemName)})' title="Delete">${UI.icon('trash', 14)}</button>
       </td>
     </tr>
   `).join('');
@@ -237,8 +237,8 @@ function renderProducts() {
           <div class="d-flex flex-wrap gap-1 align-items-center">${itemsListText}</div>
         </td>
         <td class="no-print">
-          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick='openProductModal(${escapedName})' title="Edit Product Set">${UI.icon('pencil', 13)}</button>
-          <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick='deleteProduct(${escapedName})' title="Delete Product Set">${UI.icon('trash', 13)}</button>
+          <button class="btn erp-btn-action text-primary" onclick='openProductModal(${escapedName})' title="Edit Product Set">${UI.icon('pencil', 14)}</button>
+          <button class="btn erp-btn-action text-danger ms-1" onclick='deleteProduct(${escapedName})' title="Delete Product Set">${UI.icon('trash', 14)}</button>
         </td>
       </tr>
     `;

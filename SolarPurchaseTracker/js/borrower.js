@@ -28,11 +28,7 @@ const LS_KEY = 'borrowerColColors';
 // ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   UI.renderSidebar('borrower.html');
-  UI.renderTopbar(
-    'Borrower Ledger',
-    'Personal credit & debit tracker',
-    ''
-  );
+  UI.renderTopbar('Borrower Ledger');
 
   _txnModal = new bootstrap.Modal(document.getElementById('txnModal'), { keyboard: true });
 

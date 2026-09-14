@@ -19,7 +19,7 @@ const activeAdjustments = {
 
 window.onDbReady = function () {
   UI.renderSidebar('offer.html');
-  UI.renderTopbar('Offer Generator', 'Create customized solar quotation offers for clients', '');
+  UI.renderTopbar('Offer Generator');
 
   const allProducts = DB.getAll('products');
   const emptyState = document.getElementById('emptyState');

@@ -73,7 +73,7 @@ const SizingUI = (() => {
 
   function init() {
     UI.renderSidebar('sizing-calc.html');
-    UI.renderTopbar('Sizing Calculator', 'Solar, Inverter & Battery Capacity Calculator', '');
+    UI.renderTopbar('Sizing Calculator');
 
     const txtUnits = document.getElementById('txtMonthlyUnits');
     if (txtUnits && txtUnits.value) {

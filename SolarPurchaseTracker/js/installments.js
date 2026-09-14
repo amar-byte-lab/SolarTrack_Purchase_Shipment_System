@@ -63,7 +63,7 @@ window.onDbReady = function () {
   ` : '';
 
   UI.renderSidebar('installments.html');
-  UI.renderTopbar('Customer', 'Manage client installment payments, customer sales, and agent commissions', buttonsHtml);
+  UI.renderTopbar('Customer', buttonsHtml);
 
   const btnAddNewCustomer = document.getElementById('btnAddNewCustomer');
   if (btnAddNewCustomer) {
@@ -1209,23 +1209,17 @@ function renderList() {
             </div>
           </td>
           <td class="no-print text-center align-middle">
-            <div class="d-flex gap-1 justify-content-center">
               ${isDeactive ? `
-                <button class="btn btn-sm erp-btn-action text-success" onclick="restoreRow(${r.SlNo})" title="Restore Row">
+                <button class="btn erp-btn-action text-success" onclick="restoreRow(${r.SlNo})" title="Restore Row">
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 </button>
-                <button class="btn btn-sm erp-btn-action text-danger" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">
+                <button class="btn erp-btn-action text-danger ms-1" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               ` : `
-                <button class="btn btn-sm erp-btn-action text-primary" onclick="editRow(${r.SlNo})" title="Edit Row">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                </button>
-                <button class="btn btn-sm erp-btn-action text-danger" onclick="deleteRow(${r.SlNo})" title="Deactivate Row">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
+                <button class="btn erp-btn-action text-primary" onclick="editRow(${r.SlNo})" title="Edit Row">${UI.icon('pencil', 14)}</button>
+                <button class="btn erp-btn-action text-danger ms-1" onclick="deleteRow(${r.SlNo})" title="Deactivate Row">${UI.icon('trash', 14)}</button>
               `}
-            </div>
           </td>
         </tr>
       `;

@@ -4,7 +4,7 @@
 
 window.onDbReady = function () {
   UI.renderSidebar('dashboard.html');
-  UI.renderTopbar('Dashboard', 'Overview of your solar purchase & shipment activity');
+  UI.renderTopbar('Dashboard');
   render();
 };
 

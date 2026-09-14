@@ -21,7 +21,7 @@ let _rolesList = [];
 
 window.onDbReady = function () {
   UI.renderSidebar('settings.html');
-  UI.renderTopbar('Settings', 'Company preferences and database connection', '');
+  UI.renderTopbar('Settings');
 
   // Form load
   loadSettingsForm();
@@ -275,8 +275,8 @@ function renderAddressesList() {
       return `
         <div class="d-flex align-items-center gap-2 bg-white border rounded p-1 mb-1" style="font-size:0.78rem;">
           <span class="text-dark fw-semibold text-start flex-grow-1 ps-2 truncate-addr" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">${addr}</span>
-          <button type="button" class="btn btn-xs btn-outline-primary border-0 text-primary p-1 ms-1" onclick="editAddressRow(${index})" style="flex-shrink:0;" title="Edit Address">${UI.icon('pencil', 14)}</button>
-          <button type="button" class="btn btn-xs btn-outline-danger border-0 text-danger p-1" onclick="deleteAddress(${index})" style="flex-shrink:0;" title="Delete Address">${UI.icon('trash', 14)}</button>
+          <button type="button" class="btn erp-btn-action text-primary" onclick="editAddressRow(${index})" title="Edit Address">${UI.icon('pencil', 14)}</button>
+          <button type="button" class="btn erp-btn-action text-danger" onclick="deleteAddress(${index})" title="Delete Address">${UI.icon('trash', 14)}</button>
         </div>
       `;
     }
@@ -377,8 +377,8 @@ function renderSubsidiesList() {
             <span class="text-secondary small font-monospace">State: ₹${Number(sub.state).toLocaleString('en-IN')} | Central: ₹${Number(sub.central).toLocaleString('en-IN')}</span>
           </div>
           <div class="d-flex gap-1 align-items-center">
-            <button type="button" class="btn btn-xs btn-outline-primary border-0 text-primary p-1" onclick="editSubsidyRow(${index})" title="Edit Subsidy">${UI.icon('pencil', 14)}</button>
-            <button type="button" class="btn btn-xs btn-outline-danger border-0 text-danger p-1" onclick="deleteSubsidyRow(${index})" title="Delete Subsidy">${UI.icon('trash', 14)}</button>
+            <button type="button" class="btn erp-btn-action text-primary" onclick="editSubsidyRow(${index})" title="Edit Subsidy">${UI.icon('pencil', 14)}</button>
+            <button type="button" class="btn erp-btn-action text-danger" onclick="deleteSubsidyRow(${index})" title="Delete Subsidy">${UI.icon('trash', 14)}</button>
           </div>
         </div>
       `;
@@ -576,8 +576,8 @@ function renderUsersList() {
         <td>${statusBadge}</td>
         <td class="text-center">
           ${quickActions}
-          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5 ${statusVal === 'Pending' ? 'ms-1' : ''}" onclick="openEditUserModal('${u.userid}')" title="Edit User">${UI.icon('pencil', 14)}</button>
-          ${isCurrentAdmin ? '' : `<button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 ms-1" onclick="deleteUser('${u.userid}')" title="Delete User">${UI.icon('trash', 14)}</button>`}
+          <button type="button" class="btn erp-btn-action text-primary ${statusVal === 'Pending' ? 'ms-1' : ''}" onclick="openEditUserModal('${u.userid}')" title="Edit User">${UI.icon('pencil', 14)}</button>
+          ${isCurrentAdmin ? '' : `<button type="button" class="btn erp-btn-action text-danger ms-1" onclick="deleteUser('${u.userid}')" title="Delete User">${UI.icon('trash', 14)}</button>`}
         </td>
       </tr>
     `;

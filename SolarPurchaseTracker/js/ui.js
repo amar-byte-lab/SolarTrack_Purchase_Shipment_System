@@ -34,7 +34,8 @@ const UI = (() => {
     search: `<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.75" fill="none"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="1.75"/>`,
     filter: `<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
     plus: `<line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
-    edit: `<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
+    edit: `<path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    pencil: `<path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
     trash: `<polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.75" fill="none"/>`
   };
 
@@ -255,9 +256,16 @@ const UI = (() => {
     return new Date().toISOString().slice(0, 10);
   }
 
-  function renderTopbar(title, subtitle, actionsHtml) {
+  function renderTopbar(title, subtitleOrActions, actionsHtml) {
     const el = document.getElementById('topbar');
     if (!el) return;
+
+    let actions = actionsHtml;
+    if (typeof subtitleOrActions === 'string') {
+      if (subtitleOrActions.includes('<') || subtitleOrActions.includes('btn') || subtitleOrActions.includes('id=')) {
+        actions = subtitleOrActions;
+      }
+    }
 
     const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
     const userRole = user ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : '';
@@ -279,16 +287,13 @@ const UI = (() => {
           <button class="btn btn-sm btn-outline-secondary px-2 py-1 flex-shrink-0 d-lg-none" id="btnMenuToggle" title="Toggle Menu">
             ☰ <span class="d-none d-sm-inline ms-1 fw-semibold">Menu</span>
           </button>
-          <div class="d-flex flex-column">
-            ${title ? `<h1 class="topbar-title m-0" style="font-size:1.15rem; font-weight:600; color:var(--st-text-main); line-height:1.2;">${title}</h1>` : ''}
-            ${subtitle ? `<div class="topbar-subtitle text-muted mt-0.5 fs-8" style="font-size:0.78rem;">${subtitle}</div>` : ''}
-          </div>
+          ${title ? `<h1 class="topbar-title m-0" style="font-size:1.1rem; font-weight:600; color:var(--st-text-main); line-height:1.2;">${title}</h1>` : ''}
         </div>
 
         <div class="topbar-actions d-flex align-items-center gap-2 flex-wrap justify-content-end no-print flex-shrink-0 ms-auto">
           ${userAccountHtml}
-          ${user && actionsHtml ? '<span class="vr d-none d-md-inline my-1 text-muted" style="opacity:0.25; height: 18px;"></span>' : ''}
-          ${actionsHtml || ''}
+          ${user && actions ? '<span class="vr d-none d-md-inline my-1 text-muted" style="opacity:0.25; height: 18px;"></span>' : ''}
+          ${actions || ''}
         </div>
       </div>
     `;

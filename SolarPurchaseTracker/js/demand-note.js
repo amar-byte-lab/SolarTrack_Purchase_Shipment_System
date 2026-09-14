@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.onDbReady = function () {
   UI.renderSidebar('demand-note.html');
-  UI.renderTopbar('Demand Note Generate', 'Batch generate demand note Excel sheet from NetMeter PDF documents', '');
+  UI.renderTopbar('Demand Note Generator');
 
   initFileUploadEvents();
 };
