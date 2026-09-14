@@ -3,33 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agreement Generate — Solar Purchase Tracker</title>
+  <title>Agreement Generator — Solar Purchase Tracker</title>
   <link rel="stylesheet" href="assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/auth.js"></script>
   <style>
     .customer-list-item {
       cursor: pointer;
-      transition: all 0.15s ease-in-out;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
       border-left: 3px solid transparent;
+      padding: 0.5rem 0.65rem;
+      border-bottom: 1px solid var(--st-gray-100, #f1f5f9);
+    }
+    .customer-list-item:last-child {
+      border-bottom: none;
     }
     .customer-list-item:hover {
-      background-color: var(--st-gray-100, #f8f9fa);
-      border-left-color: var(--st-blue-500, #3b82f6);
+      background-color: var(--st-gray-50, #f8fafc);
+      border-left-color: var(--st-primary, #4338ca);
     }
     .customer-list-item.active {
-      background-color: rgba(59, 130, 246, 0.08);
-      border-left-color: var(--st-blue-700, #1d4ed8);
+      background-color: rgba(67, 56, 202, 0.07);
+      border-left-color: var(--st-primary, #4338ca);
       font-weight: 600;
     }
     .customer-scroll-list {
-      max-height: 280px;
+      max-height: 320px;
       min-height: 220px;
       overflow-y: auto;
+      border: 1px solid var(--st-gray-200, #e2e8f0);
+      background: #fff;
     }
     @media (max-width: 767.98px) {
       .customer-scroll-list {
-        max-height: 220px;
+        max-height: 240px;
         min-height: 180px;
       }
     }
@@ -54,15 +61,17 @@
             <div class="st-card h-100 p-3">
               
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold text-dark mb-0 fs-7">Select Customer</h6>
-                <span class="badge bg-secondary-subtle text-secondary fs-8" id="customerCountBadge">0 Customers</span>
+                <span class="st-card-title">Select Customer</span>
+                <span class="erp-tag" id="customerCountBadge" style="cursor: default;">0 Customers</span>
               </div>
 
               <!-- Search Input Box & District Badges -->
               <div class="mb-2">
                 <div class="input-group input-group-sm mb-2">
-                  <span class="input-group-text bg-white border-end-0 text-muted">Search</span>
-                  <input type="text" id="custSearchInput" class="form-control border-start-0 ps-0" placeholder="Customer name, district or consumer no..." oninput="onAgreementSearchInput()">
+                  <span class="input-group-text bg-white border-end-0 text-muted">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </span>
+                  <input type="text" id="custSearchInput" class="form-control border-start-0 ps-1" placeholder="Search customer, district, consumer no..." oninput="onAgreementSearchInput()">
                 </div>
                 <!-- District Stats Badges (Total & District Badges) -->
                 <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center p-1.5 bg-light rounded border mb-2" style="font-size: 0.75rem; max-height: 100px; overflow-y: auto;">
@@ -71,7 +80,7 @@
               </div>
 
               <!-- Scrollable Customer List -->
-              <div class="customer-scroll-list border rounded p-1" id="customerListContainer">
+              <div class="customer-scroll-list rounded" id="customerListContainer">
                 <div class="text-center text-muted py-4 fs-8">Loading customer list...</div>
               </div>
 
@@ -80,43 +89,44 @@
 
           <!-- Right Column: Agreement Details & Export -->
           <div class="col-lg-7 col-xl-8">
-            <div class="st-card h-100 p-3 p-md-4">
+            <div class="st-card h-100 p-3 p-md-3.5">
               
-              <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                <h6 class="fw-bold text-dark mb-0 fs-7">Agreement Fields (Editable)</h6>
-                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fs-8">Auto-Filled from Selection</span>
+              <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <span class="st-card-title">Agreement Fields</span>
+                <span class="erp-tag" style="cursor: default; font-size: 0.72rem;">Auto-Filled from Selection</span>
               </div>
               <form id="agreementForm" onsubmit="event.preventDefault(); generateAgreementDocx();">
                 
                 <!-- Field 1: Customer Name -->
                 <div class="mb-3">
-                  <label for="agrName" class="form-label fw-bold fs-7 text-dark">
-                    1. Customer Name </span> <span class="text-danger">*</span>
+                  <label for="agrName" class="form-label fw-bold text-dark mb-1" style="font-size: 0.8125rem;">
+                    1. Customer Name <span class="text-danger">*</span>
                   </label>
-                  <input type="text" id="agrName" class="form-control form-control-lg fw-semibold" placeholder="e.g. Amar Mohanty" readonly>
+                  <input type="text" id="agrName" class="form-control form-control-sm fw-semibold" placeholder="e.g. Amar Mohanty" readonly>
                 </div>
 
                 <!-- Field 2: Consumer Number -->
                 <div class="mb-3">
-                  <label for="agrConsumerNo" class="form-label fw-bold fs-7 text-dark">
-                    2. Consumer Number </span> <span class="text-danger">*</span>
+                  <label for="agrConsumerNo" class="form-label fw-bold text-dark mb-1" style="font-size: 0.8125rem;">
+                    2. Consumer Number <span class="text-danger">*</span>
                   </label>
-                  <input type="text" id="agrConsumerNo" class="form-control form-control-lg fw-semibold" placeholder="e.g. 751000123456" readonly>
+                  <input type="text" id="agrConsumerNo" class="form-control form-control-sm fw-semibold" placeholder="e.g. 751000123456" readonly>
                 </div>
 
                 <!-- Field 3: Full Address (UPPERCASE) -->
                 <div class="mb-4">
-                  <label for="agrAddress" class="form-label fw-bold fs-7 text-dark">
-                    3. Full Address </span> <span class="text-danger">*</span>
+                  <label for="agrAddress" class="form-label fw-bold text-dark mb-1" style="font-size: 0.8125rem;">
+                    3. Full Address <span class="text-danger">*</span>
                   </label>
-                  <textarea id="agrAddress" class="form-control fw-semibold text-uppercase" rows="4" placeholder="e.g. AT/PO KESINGA, DISTRICT: KALAHANDI, STATE: ODISHA, PIN: 766012" required></textarea>
+                  <textarea id="agrAddress" class="form-control form-control-sm fw-semibold text-uppercase" rows="4" placeholder="e.g. AT/PO KESINGA, DISTRICT: KALAHANDI, STATE: ODISHA, PIN: 766012" required></textarea>
                 </div>
 
                 <!-- Action Button -->
                 <div class="pt-2 border-top d-flex justify-content-end align-items-center gap-2">
                   <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="resetAgreementForm()">Reset Form</button>
-                  <button type="submit" id="btnGenerateAgreement" class="btn btn-success fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-2">
-                    <span>📄 Generate Agreement (.docx)</span>
+                  <button type="submit" id="btnGenerateAgreement" class="btn btn-primary btn-sm px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                    <span>Generate Agreement (.docx)</span>
                   </button>
                 </div>
 

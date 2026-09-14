@@ -36,7 +36,9 @@ const UI = (() => {
     plus: `<line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
     edit: `<path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
     pencil: `<path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
-    trash: `<polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.75" fill="none"/>`
+    trash: `<polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
+    'chevron-right': `<polyline points="9 18 15 12 9 6" stroke="currentColor" stroke-width="2" fill="none"/>`,
+    'file-text': `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.75" fill="none"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.75" fill="none"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.75"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.75"/><line x1="10" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.75"/>`
   };
 
   function icon(name, size = 18) {

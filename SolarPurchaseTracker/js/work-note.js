@@ -221,37 +221,19 @@ function updateDistrictStats() {
       return a.localeCompare(b);
     });
 
-  const badgeStyles = [
-    'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
-    'bg-success-subtle text-success-emphasis border border-success-subtle',
-    'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
-    'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
-    'bg-info-subtle text-info-emphasis border border-info-subtle',
-    'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
-  ];
-
   const isTotalActive = selectedDistricts.length === 0;
-  const totalBadgeClass = isTotalActive
-    ? 'bg-dark text-white border border-2 border-success shadow-sm fw-bold'
-    : 'bg-success-subtle text-success-emphasis border border-success-subtle';
+  const totalBadge = `<button type="button" onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="erp-tag ${isTotalActive ? 'active' : ''}" title="Show all districts">Total: ${totalCount}</button>`;
 
-  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="badge rounded-pill ${totalBadgeClass} px-1.5 py-0.5 wn-district-badge" style="cursor: pointer; transition: all 0.15s ease;" title="Click to clear filter and show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
-
-  const districtBadges = sortedDistricts.map((dist, index) => {
+  const districtBadges = sortedDistricts.map((dist) => {
     const count = counts[dist];
     const targetDist = dist === 'No District' ? '(No District)' : dist;
     const isSelected = selectedDistricts.includes(targetDist);
-    const style = badgeStyles[index % badgeStyles.length];
-
     const safeDist = dist.replace(/'/g, "\\'");
-    if (isSelected) {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-primary text-white border border-2 border-dark shadow-sm px-1.5 py-0.5 wn-district-badge" style="font-weight: 700 !important; cursor: pointer; transition: all 0.15s ease;" title="Selected filter. Click to toggle off.">✓ ${dist}: ${count}</span>`;
-    } else {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill ${style} px-1.5 py-0.5 wn-district-badge" style="cursor: pointer; opacity: 0.85; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
-    }
-  });
 
-  container.innerHTML = [totalBadge, ...districtBadges].join(' ');
+    return `<button type="button" onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="erp-tag ${isSelected ? 'active' : ''}" title="Filter by ${dist}">${dist} (${count})</button>`;
+  }).join(' ');
+
+  container.innerHTML = totalBadge + ' ' + districtBadges;
 }
 
 function getFilteredCustomers() {
@@ -413,28 +395,28 @@ function renderBadgesContainer() {
   const presetHtml = PRESET_BADGES.map(badge => {
     const isSelected = selectedBadges.some(b => b.key === badge.key);
     return `
-      <span class="badge-toggle ${isSelected ? 'active' : ''}" onclick="toggleBadge('${badge.key}')">
+      <button type="button" class="badge-toggle ${isSelected ? 'active' : ''}" onclick="toggleBadge('${badge.key}')">
         <span>${badge.label}</span>
         <span class="ms-1 fw-bold">${isSelected ? '✓' : '+'}</span>
-      </span>
+      </button>
     `;
   }).join('');
 
   const customBadgesHtml = selectedBadges.filter(b => b.type && b.type.startsWith('custom')).map(badge => {
     return `
-      <span class="badge-toggle active" onclick="removeCustomBadge('${badge.key}')" title="Click to remove column">
-        <span>${badge.label} (${badge.type === 'custom_date' ? '📅 Date' : '✏️ Text'})</span>
+      <button type="button" class="badge-toggle active" onclick="removeCustomBadge('${badge.key}')" title="Click to remove column">
+        <span>${badge.label} (${badge.type === 'custom_date' ? 'Date' : 'Text'})</span>
         <span class="ms-1 text-danger fw-bold">✕</span>
-      </span>
+      </button>
     `;
   }).join('');
 
   const actionButtonsHtml = `
-    <button class="badge-toggle badge-toggle-custom" onclick="openAddCustomColModal('custom_text')">
-      <span>➕ Custom Text</span>
+    <button type="button" class="badge-toggle badge-toggle-custom" onclick="openAddCustomColModal('custom_text')">
+      <span>+ Custom Text</span>
     </button>
-    <button class="badge-toggle badge-toggle-custom" onclick="openAddCustomColModal('custom_date')">
-      <span>📅 Custom Date</span>
+    <button type="button" class="badge-toggle badge-toggle-custom" onclick="openAddCustomColModal('custom_date')">
+      <span>+ Custom Date</span>
     </button>
   `;
 
@@ -717,7 +699,7 @@ window.resetWorkNoteEditor = function() {
   if (cancelBtn) cancelBtn.style.display = 'none';
 
   const saveBtn = document.getElementById('btnSaveWorkNote');
-  if (saveBtn) saveBtn.textContent = '💾 Save Work Note';
+  if (saveBtn) saveBtn.textContent = 'Save Work Note';
 
   selectedBadges = [
     { key: 'CommittedBrand', label: 'Brand', type: 'preset' }
@@ -758,15 +740,7 @@ function renderSavedNotesList() {
     return;
   }
 
-  const colorClasses = [
-    'keep-card-yellow',
-    'keep-card-blue',
-    'keep-card-green',
-    'keep-card-purple',
-    'keep-card-orange'
-  ];
-
-  container.innerHTML = notes.map((n, idx) => {
+  container.innerHTML = notes.map((n) => {
     const noteID = getNoteVal(n, 'NoteID');
     const noteTitle = getNoteVal(n, 'NoteTitle') || 'Untitled Note';
     const commonNote = getNoteVal(n, 'CommonNote') || '';
@@ -787,38 +761,36 @@ function renderSavedNotesList() {
     const moreCustCount = custNames.length > 3 ? custNames.length - 3 : 0;
     const badgeLabels = badges.map(b => b.label || b.key).filter(Boolean).slice(0, 3).join(', ');
 
-    const colorClass = colorClasses[idx % colorClasses.length];
-
     return `
       <div class="col-12 col-md-6 col-lg-4 d-flex align-items-stretch mb-2">
-        <div class="saved-note-card ${colorClass} w-100 p-2.5 shadow-sm cursor-pointer d-flex flex-column justify-content-between" onclick="viewSavedNoteModal('${noteID}')">
+        <div class="saved-note-card w-100 p-2.5 cursor-pointer d-flex flex-column justify-content-between" onclick="viewSavedNoteModal('${noteID}')">
           <div>
             <!-- Card Header -->
             <div class="d-flex align-items-start justify-content-between gap-1 mb-1.5">
               <h6 class="fw-bold text-dark mb-0 text-truncate flex-grow-1" style="font-size: 0.88rem;" title="${noteTitle}">
-                📌 ${noteTitle}
+                ${noteTitle}
               </h6>
               <div class="d-flex align-items-center gap-1 flex-shrink-0" onclick="event.stopPropagation();">
-                <button class="btn btn-xs btn-light border py-0 px-1.5 rounded-pill shadow-2xs hover-shadow wn-text-sm" onclick="viewSavedNoteModal('${noteID}')" title="View / Edit Work Note">
-                  ✏️
+                <button class="erp-btn-action text-primary" onclick="viewSavedNoteModal('${noteID}')" title="Edit Work Note">
+                  ${UI.icon('pencil', 13)}
                 </button>
-                <button class="btn btn-xs btn-outline-danger py-0 px-1.5 rounded-pill wn-text-sm" onclick="deleteSavedNoteDirect('${noteID}')" title="Delete Work Note">
-                  🗑️
+                <button class="erp-btn-action text-danger" onclick="deleteSavedNoteDirect('${noteID}')" title="Delete Work Note">
+                  ${UI.icon('trash', 13)}
                 </button>
               </div>
             </div>
 
             <!-- Common Note / Remarks Preview -->
             ${commonNote ? `
-              <div class="p-1.5 rounded mb-1.5 text-secondary" style="font-size: 0.78rem; background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.06); max-height: 55px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                📝 ${commonNote}
+              <div class="p-1.5 rounded mb-1.5 text-secondary" style="font-size: 0.78rem; background: var(--st-gray-50, #f8fafc); border: 1px solid var(--st-gray-200, #e2e8f0); max-height: 55px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                ${commonNote}
               </div>
             ` : ''}
 
             <!-- Customers Preview -->
             ${custCount > 0 ? `
               <div class="mb-1.5" style="font-size: 0.76rem; color: #334155;">
-                <span class="fw-bold text-dark">👥 Customers:</span>
+                <span class="fw-semibold text-dark">Customers:</span>
                 <span class="text-secondary">${custPreview}${moreCustCount > 0 ? ` <span class="fw-semibold text-primary">+${moreCustCount} more</span>` : ''}</span>
               </div>
             ` : ''}
@@ -827,10 +799,10 @@ function renderSavedNotesList() {
           <!-- Footer Metadata Badges & Date -->
           <div class="pt-1.5 border-top border-light-subtle d-flex align-items-center justify-content-between flex-wrap gap-1" style="font-size: 0.72rem;">
             <div class="d-flex align-items-center gap-1 flex-wrap">
-              <span class="badge bg-white text-dark border px-1.5 py-0.5 rounded-pill shadow-2xs">👥 ${custCount} rows</span>
-              ${badgeLabels ? `<span class="badge bg-white text-secondary border px-1.5 py-0.5 rounded-pill shadow-2xs">🏷️ ${badgeLabels}</span>` : ''}
+              <span class="erp-tag" style="padding: 2px 6px; font-size: 0.72rem; cursor: default;">${custCount} rows</span>
+              ${badgeLabels ? `<span class="erp-tag" style="padding: 2px 6px; font-size: 0.72rem; cursor: default;">${badgeLabels}</span>` : ''}
             </div>
-            <span class="text-muted fw-semibold ms-auto">📅 ${dateStr}</span>
+            <span class="text-muted fw-normal ms-auto">${dateStr}</span>
           </div>
 
         </div>
@@ -869,7 +841,7 @@ window.viewSavedNoteModal = function(noteID) {
   const commonNote = getNoteVal(note, 'CommonNote');
   const createdAt = getNoteVal(note, 'CreatedAt');
 
-  document.getElementById('viewNoteModalTitle').textContent = `📝 Edit Work Note`;
+  document.getElementById('viewNoteModalTitle').textContent = 'Edit Work Note';
   document.getElementById('viewNoteModalMeta').textContent = `Created: ${formatNoteDate(createdAt)} | ${custData.length} Customers`;
 
   // Pre-fill modal cell values from saved JSON snapshot
@@ -892,11 +864,11 @@ window.viewSavedNoteModal = function(noteID) {
     bodyEl.innerHTML = `
       <div class="row g-2 mb-2">
         <div class="col-12 col-md-6">
-          <label class="form-label fw-bold text-dark mb-0 wn-text-sm">📌 Note Title *</label>
+          <label class="form-label fw-bold text-dark mb-0 wn-text-sm">Note Title *</label>
           <input type="text" class="form-control input-sm-compact" id="modalNoteTitle" value="${String(title).replace(/"/g, '&quot;')}">
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label fw-bold text-dark mb-0 wn-text-sm">💬 Common Remarks</label>
+          <label class="form-label fw-bold text-dark mb-0 wn-text-sm">Common Remarks</label>
           <input type="text" class="form-control input-sm-compact" id="modalCommonNote" value="${String(commonNote || '').replace(/"/g, '&quot;')}" placeholder="Optional batch instructions...">
         </div>
       </div>

@@ -9,224 +9,79 @@
 <link rel="stylesheet" href="css/installments.css">
 <script src="js/auth.js"></script>
 <style>
-  /* Matching Typography & Sizing with installments.html */
-  .badge-toggle {
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.15s ease;
-    font-size: 0.82rem;
-    padding: 3px 10px;
-    border-radius: 12px;
-    border: 1px solid #cbd5e1;
-    background-color: #f8fafc;
-    color: #334155;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .badge-toggle:hover {
-    border-color: #6366f1;
-    color: #4f46e5;
-    background-color: #eef2ff;
-  }
-  .badge-toggle.active {
-    background-color: #4f46e5;
-    color: #ffffff;
-    border-color: #4f46e5;
-    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.2);
-  }
-  .badge-toggle-custom {
-    border-style: dashed;
-    border-color: #0284c7;
-    color: #0284c7;
-    background-color: #f0f9ff;
-  }
-  .badge-toggle-custom:hover {
-    background-color: #e0f2fe;
-  }
-  .keep-note-box {
-    background-color: #fefce8;
-    border: 1px dashed #fde047;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 0.85rem;
-  }
-  .editable-cell-input {
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    padding: 3px 6px;
-    font-size: 0.85rem;
-    width: 100%;
-    min-width: 75px;
-    height: 28px;
-    background-color: #ffffff;
-  }
-  .editable-cell-input:focus {
-    border-color: #4f46e5;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-  }
-  .saved-note-card {
-    border-radius: 10px !important;
-    transition: all 0.2s ease-in-out;
-    position: relative;
-  }
-  .saved-note-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  }
-  .keep-card-yellow {
-    background-color: #fefce8 !important;
-    border: 1px solid #fde047 !important;
-  }
-  .keep-card-yellow:hover {
-    border-color: #eab308 !important;
-  }
-  .keep-card-blue {
-    background-color: #f0f9ff !important;
-    border: 1px solid #bae6fd !important;
-  }
-  .keep-card-blue:hover {
-    border-color: #0284c7 !important;
-  }
-  .keep-card-green {
-    background-color: #f0fdf4 !important;
-    border: 1px solid #bbf7d0 !important;
-  }
-  .keep-card-green:hover {
-    border-color: #16a34a !important;
-  }
-  .keep-card-purple {
-    background-color: #faf5ff !important;
-    border: 1px solid #e9d5ff !important;
-  }
-  .keep-card-purple:hover {
-    border-color: #9333ea !important;
-  }
-  .keep-card-orange {
-    background-color: #fff7ed !important;
-    border: 1px solid #fed7aa !important;
-  }
-  .keep-card-orange:hover {
-    border-color: #ea580c !important;
-  }
   .cust-list-container {
     max-height: 160px;
     overflow-y: auto;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 3px 6px;
+    border: 1px solid var(--st-border);
+    border-radius: var(--st-radius);
+    padding: 4px 8px;
     background: #ffffff;
-  }
-  .hover-bg:hover {
-    background-color: #f8fafc;
   }
   .cust-item-row {
     min-height: 28px;
+    border-radius: var(--st-radius);
+    transition: background-color 0.12s ease;
+  }
+  .cust-item-row:hover {
+    background-color: var(--st-surface-hover);
   }
 
-  .st-card-compact {
+  .editable-cell-input {
+    border: 1px solid var(--st-border);
+    border-radius: var(--st-radius);
+    padding: 3px 6px;
+    font-size: 0.8rem;
+    width: 100%;
+    min-width: 70px;
+    height: 26px;
+    background-color: #ffffff;
+    transition: border-color 0.12s ease;
+  }
+  .editable-cell-input:focus {
+    border-color: var(--st-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.15);
+  }
+
+  .saved-note-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 8px;
+    border: 1px solid var(--st-border);
+    border-radius: var(--st-card-radius);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    padding: 12px 14px;
+    position: relative;
+  }
+  .saved-note-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: var(--st-shadow-sm);
   }
 
-  /* Form controls matching installments.html */
-  .form-label-compact {
-    font-size: 0.80rem;
-    font-weight: 700;
-    margin-bottom: 3px;
-    color: #475569;
-  }
-  .input-sm-compact {
-    font-size: 0.85rem;
-    padding: 3px 8px;
-    height: 30px;
-  }
-
-  /* Responsive helper classes matching installments.html */
-  .wn-text-sm { font-size: 0.82rem; }
-  .wn-text-base { font-size: 0.85rem; }
-  .wn-cust-name { font-size: 0.85rem; font-weight: 600; }
-  .wn-district-badge { font-size: 0.78rem; }
-
-  /* Ultra-Compact Work Note Table & Modal Table Styles */
+  /* Table styling */
   #workNoteTable, #modalWorkNoteTable {
-    font-size: 0.68rem !important;
+    font-size: 0.78rem;
     border-collapse: separate;
     border-spacing: 0;
   }
   #workNoteTable th, #modalWorkNoteTable th {
-    font-size: 0.65rem !important;
-    font-weight: 700;
-    padding: 2px 4px !important;
-    background-color: #f8fafc !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    color: #334155;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 6px 8px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--st-border);
+    color: var(--st-text-secondary);
     white-space: nowrap;
   }
   #workNoteTable td, #modalWorkNoteTable td {
-    padding: 1px 3px !important;
-    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--st-border);
+    vertical-align: middle;
   }
   #workNoteTable .editable-cell-input, #modalWorkNoteTable .editable-cell-input {
-    font-size: 0.68rem !important;
-    height: 20px !important;
-    padding: 1px 3px !important;
-    min-width: 60px;
-  }
-  #workNoteTable .wn-cust-name, #modalWorkNoteTable .wn-cust-name {
-    font-size: 0.68rem !important;
-    font-weight: 600;
-  }
-
-  /* Mobile Responsive Tweaks (< 768px) */
-  @media (max-width: 767.98px) {
-    .page-body {
-      padding: 6px !important;
-    }
-    .st-card-compact {
-      padding: 6px 8px !important;
-      margin-bottom: 6px !important;
-    }
-    .badge-toggle {
-      font-size: 0.75rem;
-      padding: 2px 8px;
-    }
-    .editable-cell-input {
-      font-size: 0.78rem;
-      height: 25px;
-      padding: 2px 4px;
-    }
-    .form-label-compact {
-      font-size: 0.75rem;
-    }
-    .input-sm-compact {
-      font-size: 0.78rem;
-      height: 26px;
-    }
-    .wn-text-sm { font-size: 0.75rem; }
-    .wn-text-base { font-size: 0.78rem; }
-    .wn-cust-name { font-size: 0.78rem; font-weight: 600; }
-    .wn-district-badge { font-size: 0.72rem; }
-    #workNoteTable {
-      font-size: 0.78rem;
-    }
-    #workNoteTable th {
-      font-size: 0.70rem;
-      padding: 4px 6px !important;
-    }
-    #workNoteTable td {
-      padding: 3px 6px !important;
-    }
-  }
-  /* Section Header matching installments.html */
-  .wn-section-header {
-    font-size: 0.85rem !important;
-    font-weight: 700;
-    color: #1e1b4b;
+    font-size: 0.78rem;
+    height: 24px;
+    padding: 2px 5px;
   }
 </style>
 </head>
@@ -239,137 +94,142 @@
     <div class="topbar" id="topbar"></div>
 
     <div class="page-body">
-      <!-- 1. Search & Filter Bar -->
-      <div class="st-card-compact no-print">
-        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-          <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
-            <span class="wn-section-header">Search &amp; Filters</span>
-            <span class="text-muted wn-text-sm" id="searchCollapseIndicator">▼ Show</span>
+      <!-- 1. Search & Filter Toolbar -->
+      <div class="erp-toolbar no-print">
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+          <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="true" aria-controls="searchCollapse">
+            <span class="fw-bold text-dark fs-7">Search &amp; Filters</span>
+            <span class="text-muted small" id="searchCollapseIndicator">▲ Hide</span>
           </div>
-          <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center ms-auto" style="font-size: 0.62rem;"></div>
+          <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center ms-auto"></div>
         </div>
-        <div class="collapse" id="searchCollapse">
+        <div class="collapse show" id="searchCollapse">
           <div class="pt-1">
-            <div class="row g-1 align-items-end">
-              <div class="col-12 col-sm-6 col-md-2">
-                <label class="form-label-compact">Search</label>
-                <input type="text" class="form-control input-sm-compact" id="fSearch" placeholder="Name, Mobile, Brand...">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label text-muted small fw-semibold mb-1">Search</label>
+                <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="Name, Mobile, Consumer No...">
               </div>
               <div class="col-12 col-sm-6 col-md-2">
-                <label class="form-label-compact">Partner</label>
+                <label class="form-label text-muted small fw-semibold mb-1">Partner</label>
                 <div class="dropdown">
-                  <button class="btn btn-outline-secondary input-sm-compact w-100 dropdown-toggle text-start text-truncate py-0" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                  <button class="btn btn-outline-secondary btn-sm w-100 dropdown-toggle text-start text-truncate" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                     All Partners
                   </button>
-                  <div class="dropdown-menu p-1" id="partnerMultiselectMenu" style="max-height: 160px; overflow-y: auto; min-width: 160px; font-size:0.68rem;">
+                  <div class="dropdown-menu p-2" id="partnerMultiselectMenu" style="max-height: 180px; overflow-y: auto; min-width: 180px; font-size: 0.8rem;">
                     <!-- Checkboxes injected by js -->
                   </div>
                 </div>
               </div>
               <div class="col-12 col-sm-6 col-md-2">
-                <label class="form-label-compact">Date Type</label>
-                <select class="form-select input-sm-compact" id="fDateType">
+                <label class="form-label text-muted small fw-semibold mb-1">Date Type</label>
+                <select class="form-select form-select-sm" id="fDateType">
                   <option value="LoginDate" selected>Login Date</option>
                   <option value="InstallationDate">Installation Date</option>
                   <option value="CommissioningDate">Commissioning Date</option>
                 </select>
               </div>
               <div class="col-6 col-sm-3 col-md-2">
-                <label class="form-label-compact">From Date</label>
-                <input type="date" class="form-control input-sm-compact" id="fLoginFrom">
+                <label class="form-label text-muted small fw-semibold mb-1">From Date</label>
+                <input type="date" class="form-control form-control-sm" id="fLoginFrom">
               </div>
               <div class="col-6 col-sm-3 col-md-2">
-                <label class="form-label-compact">To Date</label>
-                <input type="date" class="form-control input-sm-compact" id="fLoginTo">
+                <label class="form-label text-muted small fw-semibold mb-1">To Date</label>
+                <input type="date" class="form-control form-control-sm" id="fLoginTo">
               </div>
               <div class="col-auto d-flex align-items-center mb-1">
                 <div class="form-check mb-0">
-                  <input class="form-check-input" type="checkbox" id="chkShowDeactive" style="width: 12px; height: 12px;">
-                  <label class="form-check-label fw-semibold text-secondary ms-1 wn-text-sm" for="chkShowDeactive">Show Deactive</label>
+                  <input class="form-check-input" type="checkbox" id="chkShowDeactive">
+                  <label class="form-check-label text-secondary small fw-semibold ms-1" for="chkShowDeactive">Show Deactive</label>
                 </div>
               </div>
               <div class="col-auto">
-                <button class="btn btn-outline-secondary input-sm-compact py-0" id="btnClearFilters">Clear</button>
+                <button class="btn btn-outline-secondary btn-sm" id="btnClearFilters">Clear</button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 2. Customer Selection Section -->
-      <div class="st-card-compact">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="wn-section-header">Select Customers</span>
-          <div class="d-flex align-items-center gap-1 mb-0">
-            <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="chkSelectAllCustomers" style="width: 12px; height: 12px;">
-            <label class="form-check-label fw-bold text-primary ms-1 cursor-pointer wn-text-sm" for="chkSelectAllCustomers" id="lblSelectAll">Select All</label>
+      <div class="row g-3">
+        <!-- Left Column: Customer Selection & Columns -->
+        <div class="col-lg-5 col-xl-4">
+          <!-- 2. Customer Selection Section -->
+          <div class="st-card mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+              <span class="fw-bold text-dark fs-7">Select Customers</span>
+              <div class="d-flex align-items-center gap-1">
+                <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="chkSelectAllCustomers">
+                <label class="form-check-label fw-semibold text-primary ms-1 cursor-pointer small" for="chkSelectAllCustomers" id="lblSelectAll">Select All</label>
+              </div>
+            </div>
+            <div class="cust-list-container" id="customerSelectionContainer">
+              <!-- Checkbox list injected dynamically -->
+            </div>
+            <div class="text-secondary mt-1 fw-semibold small" id="selectedCustomerCountLabel">0 selected</div>
           </div>
-        </div>
-        <div class="cust-list-container" id="customerSelectionContainer">
-          <!-- Checkbox list injected dynamically -->
-        </div>
-        <div class="text-secondary mt-1 fw-semibold wn-text-sm" id="selectedCustomerCountLabel">0 selected</div>
-      </div>
 
-      <!-- 3. Badges Selection Section -->
-      <div class="st-card-compact">
-        <div class="wn-section-header mb-1">Select Columns</div>
-        <div class="d-flex flex-wrap gap-1" id="badgesContainer">
-          <!-- Badges injected dynamically by JS -->
-        </div>
-      </div>
-
-      <!-- 4. Dynamic Work Note Table Builder -->
-      <div class="st-card-compact" id="tableCard" style="display:none;">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="wn-section-header">Work Note Table</span>
-          <span class="text-secondary fw-bold wn-text-sm" id="tableRowCountLabel">0 rows</span>
-        </div>
-        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-          <table class="table table-borderless table-hover align-middle mb-0" id="workNoteTable">
-            <thead>
-              <tr id="workNoteTheadRow">
-                <!-- Headers injected dynamically -->
-              </tr>
-            </thead>
-            <tbody id="workNoteTbody">
-              <!-- Rows injected dynamically -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 5. Note Title & Common Remarks -->
-      <div class="st-card-compact">
-        <div class="row g-1">
-          <div class="col-12">
-            <label class="form-label-compact">Work Note Title *</label>
-            <input type="text" class="form-control input-sm-compact" id="txtNoteTitle" placeholder="e.g. August Net Metering Sheet...">
-            <input type="hidden" id="txtNoteID">
-          </div>
-          <div class="col-12">
-            <div class="keep-note-box">
-              <label class="form-label-compact text-warning-emphasis mb-0.5">Common Remarks</label>
-              <textarea class="form-control border-0 bg-transparent shadow-none wn-text-sm" id="txtCommonNote" rows="2" placeholder="Enter batch remarks or instructions..."></textarea>
+          <!-- 3. Badges Selection Section -->
+          <div class="st-card mb-3">
+            <div class="fw-bold text-dark fs-7 mb-2 pb-1 border-bottom">Select Columns</div>
+            <div class="d-flex flex-wrap gap-1.5" id="badgesContainer">
+              <!-- Badges injected dynamically by JS -->
             </div>
           </div>
-          <div class="col-12 d-flex justify-content-end gap-1 pt-1">
-            <button class="btn btn-secondary btn-sm input-sm-compact py-0" id="btnCancelEdit" style="display:none;" onclick="resetWorkNoteEditor()">Cancel</button>
-            <button class="btn btn-primary btn-sm input-sm-compact py-0 px-2 fw-semibold" id="btnSaveWorkNote">Save Work Note</button>
-          </div>
-        </div>
-      </div>
 
-      <!-- 6. Saved Work Notes List -->
-      <div class="st-card-compact">
-        <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
-          <span class="wn-section-header">Saved Notes</span>
-          <div style="width: 100%; max-width: 150px;">
-            <input type="text" class="form-control input-sm-compact" id="fSavedNoteSearch" placeholder="Search saved notes...">
+          <!-- 4. Note Title & Common Remarks -->
+          <div class="st-card">
+            <div class="fw-bold text-dark fs-7 mb-2 pb-1 border-bottom">Work Note Details</div>
+            <div class="mb-2">
+              <label class="form-label text-muted small fw-semibold mb-1">Work Note Title *</label>
+              <input type="text" class="form-control form-control-sm" id="txtNoteTitle" placeholder="e.g. August Net Metering Sheet">
+              <input type="hidden" id="txtNoteID">
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small fw-semibold mb-1">Common Remarks</label>
+              <textarea class="form-control form-control-sm" id="txtCommonNote" rows="2" placeholder="Enter batch remarks or instructions..."></textarea>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-outline-secondary btn-sm" id="btnCancelEdit" style="display:none;" onclick="resetWorkNoteEditor()">Cancel</button>
+              <button class="btn btn-primary btn-sm px-3 fw-semibold" id="btnSaveWorkNote">Save Work Note</button>
+            </div>
           </div>
         </div>
-        <div class="row g-1" id="savedNotesContainer">
-          <!-- Saved notes cards injected dynamically -->
+
+        <!-- Right Column: Dynamic Table & Saved Notes -->
+        <div class="col-lg-7 col-xl-8">
+          <!-- 5. Dynamic Work Note Table Builder -->
+          <div class="st-card mb-3" id="tableCard" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+              <span class="fw-bold text-dark fs-7">Work Note Table</span>
+              <span class="text-secondary fw-semibold small" id="tableRowCountLabel">0 rows</span>
+            </div>
+            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+              <table class="table table-hover align-middle mb-0" id="workNoteTable">
+                <thead>
+                  <tr id="workNoteTheadRow">
+                    <!-- Headers injected dynamically -->
+                  </tr>
+                </thead>
+                <tbody id="workNoteTbody">
+                  <!-- Rows injected dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 6. Saved Work Notes List -->
+          <div class="st-card">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom flex-wrap gap-2">
+              <span class="fw-bold text-dark fs-7">Saved Work Notes</span>
+              <div style="width: 100%; max-width: 220px;">
+                <input type="text" class="form-control form-control-sm" id="fSavedNoteSearch" placeholder="Search saved notes...">
+              </div>
+            </div>
+            <div class="row g-2" id="savedNotesContainer">
+              <!-- Saved notes cards injected dynamically -->
+            </div>
+          </div>
         </div>
       </div>
 
@@ -381,18 +241,18 @@
 <div class="modal fade" id="customColumnModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
-      <div class="modal-header py-1 px-2">
-        <h6 class="modal-title fw-bold" id="customColModalTitle" style="font-size: 0.72rem;">Add Custom Column</h6>
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold" id="customColModalTitle">Add Custom Column</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-2">
-        <label class="form-label text-secondary mb-1" style="font-size: 0.68rem;">Column Title *</label>
-        <input type="text" class="form-control input-sm-compact" id="txtCustomColName" placeholder="e.g. Inspection Date...">
+      <div class="modal-body">
+        <label class="form-label text-muted small fw-semibold mb-1">Column Title *</label>
+        <input type="text" class="form-control form-control-sm" id="txtCustomColName" placeholder="e.g. Inspection Date">
         <input type="hidden" id="hdnCustomColType" value="text">
       </div>
-      <div class="modal-footer py-1 px-2">
-        <button type="button" class="btn btn-xs btn-secondary py-0" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-xs btn-primary py-0" id="btnConfirmAddCustomCol">Add Column</button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnConfirmAddCustomCol">Add Column</button>
       </div>
     </div>
   </div>
@@ -402,18 +262,18 @@
 <div class="modal fade" id="viewNoteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header py-1.5 bg-light">
-        <h6 class="modal-title fw-bold text-primary" id="viewNoteModalTitle" style="font-size: 0.75rem;">Work Note Details</h6>
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold text-primary" id="viewNoteModalTitle">Work Note Details</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-2" id="viewNoteModalBody">
+      <div class="modal-body" id="viewNoteModalBody">
         <!-- Injected dynamically -->
       </div>
-      <div class="modal-footer py-1 bg-light d-flex justify-content-between flex-wrap gap-1">
-        <span class="text-secondary" id="viewNoteModalMeta" style="font-size: 0.68rem;"></span>
-        <div>
-          <button type="button" class="btn btn-xs btn-secondary me-1 py-0" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-xs btn-primary fw-semibold py-0" id="btnUpdateSavedNoteFromModal">Save Changes</button>
+      <div class="modal-footer d-flex justify-content-between flex-wrap gap-2">
+        <span class="text-secondary small" id="viewNoteModalMeta"></span>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnUpdateSavedNoteFromModal">Save Changes</button>
         </div>
       </div>
     </div>

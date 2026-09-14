@@ -499,13 +499,80 @@ a:hover {
   background-color: var(--st-surface-hover);
 }
 
-/* ---------------- Standard ERP Toolbar ---------------- */
+/* ---------------- Standard ERP Toolbar & Filter Tags ---------------- */
 .erp-toolbar {
   background: #ffffff;
   border: 1px solid var(--st-border);
   border-radius: var(--st-card-radius);
   padding: 8px 12px;
   margin-bottom: 10px;
+}
+
+.erp-tag {
+  font-size: 0.73rem;
+  padding: 3px 8px;
+  border-radius: var(--st-radius);
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid var(--st-border);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  font-weight: 500;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  user-select: none;
+  text-decoration: none;
+}
+.erp-tag:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+.erp-tag.active {
+  background: var(--st-primary);
+  color: #ffffff;
+  border-color: var(--st-primary-hover);
+  font-weight: 600;
+}
+
+.badge-toggle {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.12s ease;
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: var(--st-radius);
+  border: 1px solid var(--st-border);
+  background-color: #f8fafc;
+  color: var(--st-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+.badge-toggle:hover {
+  border-color: #c7d2fe;
+  color: var(--st-primary);
+  background-color: #f5f3ff;
+}
+.badge-toggle.active {
+  background-color: var(--st-primary);
+  color: #ffffff;
+  border-color: var(--st-primary);
+  font-weight: 600;
+}
+.badge-toggle-custom {
+  border-style: dashed;
+  border-color: #cbd5e1;
+  color: var(--st-text-secondary);
+  background-color: #ffffff;
+}
+.badge-toggle-custom:hover {
+  border-color: var(--st-primary);
+  color: var(--st-primary);
+  background-color: #f5f3ff;
 }
 
 /* ---------------- Modals ---------------- */

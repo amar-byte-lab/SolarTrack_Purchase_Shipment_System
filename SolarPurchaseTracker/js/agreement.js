@@ -66,34 +66,16 @@ function updateDistrictStats() {
       return a.localeCompare(b);
     });
 
-  const badgeStyles = [
-    'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
-    'bg-success-subtle text-success-emphasis border border-success-subtle',
-    'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
-    'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
-    'bg-info-subtle text-info-emphasis border border-info-subtle',
-    'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
-  ];
-
   const isTotalActive = selectedDistrict === 'ALL';
-  const totalBadgeClass = isTotalActive
-    ? 'bg-dark text-white border border-2 border-success shadow-sm fw-bold'
-    : 'bg-success-subtle text-success-emphasis border border-success-subtle';
+  const totalBadge = `<button type="button" onclick="window.toggleDistrictBadgeFilter('ALL')" class="erp-tag ${isTotalActive ? 'active' : ''}" title="Show all districts">Total: ${totalCount}</button>`;
 
-  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL')" class="badge rounded-pill ${totalBadgeClass} px-2.5 py-1 fs-8" style="font-size: 0.74rem !important; font-weight: ${isTotalActive ? '700' : '500'}; cursor: pointer; transition: all 0.15s ease; ${isTotalActive ? 'box-shadow: 0 2px 5px rgba(0,0,0,0.25); transform: scale(1.05);' : 'opacity: 0.85;'}" title="Show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
-
-  const districtBadges = sortedDistricts.map((dist, index) => {
+  const districtBadges = sortedDistricts.map((dist) => {
     const count = counts[dist];
     const targetDist = dist === 'No District' ? '(No District)' : dist;
     const isSelected = selectedDistrict === targetDist;
-    const style = badgeStyles[index % badgeStyles.length];
-
     const safeDist = targetDist.replace(/'/g, "\\'");
-    if (isSelected) {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}')" class="badge rounded-pill bg-primary text-white border border-2 border-dark shadow-sm px-2.5 py-1 fs-8" style="font-size: 0.76rem !important; font-weight: 700 !important; cursor: pointer; box-shadow: 0 2px 6px rgba(13, 110, 253, 0.4); transform: scale(1.05); transition: all 0.15s ease;" title="Selected filter. Click to reset.">✓ ${dist}: ${count}</span>`;
-    } else {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}')" class="badge rounded-pill ${style} px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500; cursor: pointer; opacity: 0.85; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
-    }
+
+    return `<button type="button" onclick="window.toggleDistrictBadgeFilter('${safeDist}')" class="erp-tag ${isSelected ? 'active' : ''}" title="Filter by ${dist}">${dist} (${count})</button>`;
   }).join(' ');
 
   container.innerHTML = totalBadge + ' ' + districtBadges;
@@ -153,13 +135,13 @@ function renderCustomerDirectory(filter = '') {
     const activeClass = isActive ? 'active' : '';
 
     return `
-      <div class="customer-list-item p-2 mb-1 rounded d-flex justify-content-between align-items-center ${activeClass}" 
+      <div class="customer-list-item d-flex justify-content-between align-items-center ${activeClass}" 
            onclick="selectCustomerForAgreement(${r.SlNo})">
         <div class="d-flex flex-column text-truncate pe-2">
           <span class="text-dark fs-7 text-truncate">${r.Name || 'Unnamed'}<span class="text-muted font-monospace fs-8">${distStr}</span></span>
           <small class="text-muted fs-8">Consumer No: ${r.ConsumerNo || '—'}</small>
         </div>
-        <span class="fs-7 text-secondary">➔</span>
+        <span class="text-muted d-flex align-items-center">${UI.icon('chevron-right', 13)}</span>
       </div>
     `;
   }).join('');
