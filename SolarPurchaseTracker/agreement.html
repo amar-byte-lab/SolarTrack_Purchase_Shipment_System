@@ -54,15 +54,15 @@
             <div class="st-card h-100 p-3">
               
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold text-dark mb-0 fs-7">👥 Select Customer</h6>
+                <h6 class="fw-bold text-dark mb-0 fs-7">Select Customer</h6>
                 <span class="badge bg-secondary-subtle text-secondary fs-8" id="customerCountBadge">0 Customers</span>
               </div>
 
               <!-- Search Input Box & District Badges -->
               <div class="mb-2">
                 <div class="input-group input-group-sm mb-2">
-                  <span class="input-group-text bg-white border-end-0 text-muted">🔍</span>
-                  <input type="text" id="custSearchInput" class="form-control border-start-0 ps-0" placeholder="Search customer name, district or consumer no..." oninput="onAgreementSearchInput()">
+                  <span class="input-group-text bg-white border-end-0 text-muted">Search</span>
+                  <input type="text" id="custSearchInput" class="form-control border-start-0 ps-0" placeholder="Customer name, district or consumer no..." oninput="onAgreementSearchInput()">
                 </div>
                 <!-- District Stats Badges (Total & District Badges) -->
                 <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center p-1.5 bg-light rounded border mb-2" style="font-size: 0.75rem; max-height: 100px; overflow-y: auto;">
@@ -83,7 +83,7 @@
             <div class="st-card h-100 p-3 p-md-4">
               
               <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                <h6 class="fw-bold text-dark mb-0 fs-7">📝 Agreement Fields (Editable)</h6>
+                <h6 class="fw-bold text-dark mb-0 fs-7">Agreement Fields (Editable)</h6>
                 <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fs-8">Auto-Filled from Selection</span>
               </div>
               <form id="agreementForm" onsubmit="event.preventDefault(); generateAgreementDocx();">

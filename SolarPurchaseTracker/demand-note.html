@@ -81,19 +81,19 @@
         <!-- Upload & Action Section -->
         <div class="row g-3 mb-3">
           <div class="col-lg-7 col-12">
-            <div class="st-card p-3 h-100 bg-white border-0 shadow-sm">
+            <div class="st-card p-3 h-100 bg-white border shadow-xs">
               <div class="pdf-drop-zone" id="pdfDropZone">
-                <div class="fs-1 mb-2">📥</div>
-                <h6 class="fw-bold text-primary mb-1">Upload or Drag & Drop NetMeter PDF Documents</h6>
+                <div class="text-primary mb-2">${UI ? '' : ''}</div>
+                <h6 class="fw-bold text-primary mb-1">Upload NetMeter PDF Documents</h6>
                 <p class="text-muted fs-8 mb-2">Select single or multiple NetMeter PDF application files to extract details</p>
-                <button type="button" class="btn btn-sm btn-primary px-3 py-1 fw-semibold" id="btnBrowseFiles" onclick="document.getElementById('pdfFileInput').click();">📂 Browse PDF Files</button>
+                <button type="button" class="btn btn-sm btn-primary px-3 py-1 fw-medium" id="btnBrowseFiles" onclick="document.getElementById('pdfFileInput').click();">Browse PDF Files</button>
               </div>
               <input type="file" id="pdfFileInput" accept=".pdf,application/pdf" multiple style="display: none;">
             </div>
           </div>
 
           <div class="col-lg-5 col-12">
-            <div class="st-card p-3 h-100 bg-white border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="st-card p-3 h-100 bg-white border shadow-xs d-flex flex-column justify-content-between">
               <div>
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h6 class="fw-bold text-secondary mb-0 fs-7">Selected Files (<span id="fileCountBadge">0</span>)</h6>
@@ -104,8 +104,8 @@
                 </div>
               </div>
               <div class="pt-2 mt-2 border-top d-flex gap-2">
-                <button type="button" class="btn btn-primary w-100 fw-bold" id="btnProcessPdfs" disabled>
-                  ⚡ Parse PDFs & Generate Preview
+                <button type="button" class="btn btn-primary w-100 fw-semibold" id="btnProcessPdfs" disabled>
+                  Parse PDFs &amp; Generate Preview
                 </button>
               </div>
             </div>
@@ -113,15 +113,15 @@
         </div>
 
         <!-- Parsed Data Preview Table Card -->
-        <div class="st-card p-3 bg-white border-0 shadow-sm mb-4" id="previewCard" style="display: none;">
+        <div class="st-card p-3 bg-white border shadow-xs mb-4" id="previewCard" style="display: none;">
           <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <div>
-              <h6 class="fw-bold text-primary mb-0 fs-7">📋 Demand Note Data Preview (<span id="parsedRowCount">0</span> rows)</h6>
+              <h6 class="fw-bold text-primary mb-0 fs-7">Demand Note Data Preview (<span id="parsedRowCount">0</span> rows)</h6>
               <span class="text-muted fs-8">Review or edit details below before downloading Excel</span>
             </div>
             <div class="d-flex gap-2">
-              <button type="button" class="btn btn-success fw-bold px-3" id="btnExportExcel">
-                📊 Download Excel Sheet (.xlsx)
+              <button type="button" class="btn btn-success fw-semibold px-3" id="btnExportExcel">
+                Download Excel Sheet (.xlsx)
               </button>
             </div>
           </div>

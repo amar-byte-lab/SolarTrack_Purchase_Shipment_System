@@ -254,8 +254,8 @@ function renderGrid() {
         <td class="bw-col-address" style="display:none;"></td>
         <td class="no-print text-center" style="vertical-align:middle;">
           <div class="d-flex gap-1 justify-content-center">
-            <button class="btn btn-sm btn-success py-0 px-2" onclick="saveBorrower()" title="Save">💾</button>
-            <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="cancelInlineBorrower()" title="Cancel">✕</button>
+            <button class="btn btn-sm btn-primary py-0 px-2" onclick="saveBorrower()" title="Save">Save</button>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="cancelInlineBorrower()" title="Cancel">Cancel</button>
           </div>
         </td>
       </tr>`;
@@ -276,7 +276,7 @@ function renderGrid() {
     <tr class="${isActive ? '' : 'bw-closed'}" data-bid="${b.BorrowerID}">
       <td style="text-align:center;color:#8592a0;font-size:.78rem;">${idx + 1}</td>
       <td class="bw-col-name">
-        <span style="cursor:pointer;color:var(--st-blue-700);font-weight:600;"
+        <span style="cursor:pointer;color:var(--st-primary);font-weight:600;"
               onclick="openTxnModal(${b.BorrowerID})" title="View transactions">
           ${esc(b.Name)}
         </span>
@@ -301,12 +301,12 @@ function renderGrid() {
   });
   tbody.innerHTML = html;
 
-  // ── Sticky green add-row in tfoot (installments style) ──────────────
+  // ── Sticky add-row in tfoot ──────────────
   if (!isAddingNew) {
     tfoot.innerHTML = `
     <tr class="add-row-sticky no-print" onclick="addInlineBorrowerRow()" style="cursor:pointer; height:37px;">
-      <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-      <td colspan="4" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new borrower...</td>
+      <td class="text-center text-primary fw-bold fs-5" style="background:#f1f5f9;">+</td>
+      <td colspan="4" class="text-primary fw-semibold" style="background:#f1f5f9;">Add a new borrower...</td>
     </tr>`;
   } else {
     tfoot.innerHTML = '';

@@ -85,7 +85,7 @@ body.offer-page .page-body {
 /* Compact input cells */
 .table-quote input {
   border: 1px solid var(--st-border);
-  border-radius: 6px;
+  border-radius: var(--st-radius);
   padding: 6px 10px;
   font-size: 0.84rem;
   width: 100%;
@@ -97,7 +97,7 @@ body.offer-page .page-body {
 .table-quote input:focus {
   border-color: var(--st-primary);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.15);
 }
 
 .table-quote input[type="number"] {

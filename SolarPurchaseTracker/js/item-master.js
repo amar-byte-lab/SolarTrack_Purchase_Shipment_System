@@ -109,8 +109,8 @@ function render() {
       <td>${i.GSTPercent !== '' ? i.GSTPercent + '%' : '-'}</td>
       <td><span class="chip ${i.Status === 'Active' ? 'chip-green' : 'chip-gray'}">${i.Status || 'Active'}</span></td>
       <td class="no-print">
-        <button class="btn btn-sm btn-outline-secondary" onclick='openModal(${JSON.stringify(i.ItemName)})'>✎</button>
-        <button class="btn btn-sm btn-outline-danger" onclick='deleteItem(${JSON.stringify(i.ItemName)})'>🗑</button>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick='openModal(${JSON.stringify(i.ItemName)})' title="Edit">${UI.icon('pencil', 13)}</button>
+        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick='deleteItem(${JSON.stringify(i.ItemName)})' title="Delete">${UI.icon('trash', 13)}</button>
       </td>
     </tr>
   `).join('');
@@ -149,17 +149,20 @@ window.openModal = function (itemName) {
   itemModal.show();
 };
 
-async function saveItem() {
+window.saveItem = async function () {
   const origName = document.getElementById('mOrigName').value;
   const row = {
     ItemName: document.getElementById('mItemName').value.trim(),
     Category: document.getElementById('mCategory').value.trim(),
     Unit: document.getElementById('mUnit').value.trim(),
     HSNCode: document.getElementById('mHSN').value.trim(),
-    GSTPercent: document.getElementById('mGST').value,
+    GSTPercent: document.getElementById('mGST').value !== '' ? Number(document.getElementById('mGST').value) : '',
     Status: document.getElementById('mStatus').value,
   };
-  const errors = Validate.run([[Validate.required, row.ItemName, 'Item Name']]);
+  const errors = Validate.run([
+    [Validate.required, row.ItemName, 'Item Name'],
+    [Validate.gstPercent, row.GSTPercent, 'GST %'],
+  ]);
   if (errors.length) { UI.toast(errors[0], 'danger'); return; }
 
   UI.showLoading(true);
@@ -178,13 +181,13 @@ async function saveItem() {
   itemModal.hide();
   UI.toast('Item saved.', 'success');
   render();
-}
+};
 
 window.deleteItem = async function (itemName) {
   const ok = await UI.confirmDialog(`Delete item "${itemName}" from the master list? Existing shipment records are not affected.`, 'Delete Item');
   if (!ok) return;
   UI.showLoading(true);
-  await DB.remove('items', i => i.ItemName === itemName);
+  await DB.delete('items', i => i.ItemName === itemName);
   UI.showLoading(false);
   UI.toast('Item deleted.', 'warning');
   render();
@@ -195,7 +198,7 @@ window.deleteItem = async function (itemName) {
 function renderProducts() {
   const products = DB.getAll('products');
   const itemsMap = DB.getAll('product_items');
-  const tbody = document.getElementById('productsTbody');
+  const tbody = document.querySelector('#productsTbody');
   if (!tbody) return;
 
   if (!products.length) {
@@ -234,8 +237,8 @@ function renderProducts() {
           <div class="d-flex flex-wrap gap-1 align-items-center">${itemsListText}</div>
         </td>
         <td class="no-print">
-          <button class="btn btn-sm btn-outline-secondary" onclick='openProductModal(${escapedName})' title="Edit Product Set">✎</button>
-          <button class="btn btn-sm btn-outline-danger" onclick='deleteProduct(${escapedName})' title="Delete Product Set">🗑</button>
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick='openProductModal(${escapedName})' title="Edit Product Set">${UI.icon('pencil', 13)}</button>
+          <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick='deleteProduct(${escapedName})' title="Delete Product Set">${UI.icon('trash', 13)}</button>
         </td>
       </tr>
     `;

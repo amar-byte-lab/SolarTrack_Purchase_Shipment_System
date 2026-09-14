@@ -368,14 +368,14 @@ function renderList() {
 
         const docNames = r.Documents ? r.Documents.split(',').filter(Boolean) : [];
         const docsButton = docNames.length
-            ? `<button class="btn btn-xs btn-outline-primary ms-2 py-0 px-2 font-monospace" onclick="showDocsModal('${r.ShipmentNo}')" style="font-size:0.68rem;">📄 Docs (${docNames.length})</button>`
+            ? `<button class="btn btn-xs btn-outline-primary ms-2 py-0 px-2 font-monospace" onclick="showDocsModal('${r.ShipmentNo}')" style="font-size:0.68rem;">Docs (${docNames.length})</button>`
             : '';
 
         const remarks = DB.getAll('shipment_remarks').filter(n => n.ShipmentNo === r.ShipmentNo);
         const remarksCount = remarks.length;
         const notesButton = `
-      <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative ms-2" onclick="showShipmentNotes('${r.ShipmentNo}')" title="Shipment Notes (${remarksCount} added)" style="font-size: 0.95rem; line-height: 1; vertical-align: middle;">
-        📝
+      <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative ms-2" onclick="showShipmentNotes('${r.ShipmentNo}')" title="Shipment Notes (${remarksCount} added)" style="line-height: 1; vertical-align: middle;">
+        ${UI.icon('file-text', 14)}
         ${remarksCount > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.55rem; padding: 2px 4px; border: 1px solid #fff;">${remarksCount}</span>` : ''}
       </button>
     `;
@@ -383,10 +383,10 @@ function renderList() {
         const rowStyle = isDeleted ? `style="background-color: #f8d7da !important; opacity: 0.75;"` : '';
 
         const actionButtons = isDeleted
-            ? `<button class="btn btn-xs btn-outline-success font-monospace" onclick="restoreShipment('${r.ShipmentNo}')" title="Restore Shipment">↺ Restore</button>`
+            ? `<button class="btn btn-xs btn-outline-success font-monospace" onclick="restoreShipment('${r.ShipmentNo}')" title="Restore Shipment">Restore</button>`
             : `
-        <button class="btn btn-sm btn-outline-secondary" onclick="editRow('${r.ShipmentNo}')" title="Edit">✎</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteShipment('${r.ShipmentNo}')" title="Soft Delete">🗑</button>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="editRow('${r.ShipmentNo}')" title="Edit Shipment">${UI.icon('pencil', 13)}</button>
+        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteShipment('${r.ShipmentNo}')" title="Delete Shipment">${UI.icon('trash', 13)}</button>
       `;
 
         html.push(`
@@ -430,8 +430,8 @@ function renderList() {
         // 1. Sticky Add Row (always visible in table!)
         tfootHTML += `
       <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
-        <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-        <td colspan="3" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
+        <td class="text-center text-primary fw-bold fs-5" style="background:#f1f5f9;">+</td>
+        <td colspan="3" class="text-primary fw-semibold" style="background:#f1f5f9;">Add a new shipment record...</td>
       </tr>
     `;
 

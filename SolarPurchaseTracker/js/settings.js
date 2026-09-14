@@ -262,17 +262,21 @@ function renderAddressesList() {
     if (isEditing) {
       return `
         <div class="d-flex align-items-center gap-2 bg-light border border-primary rounded p-1 mb-1" style="font-size:0.78rem;">
-          <input type="text" class="form-control form-control-sm border-0 p-1 text-dark fw-bold flex-grow-1 bg-white" id="editAddressInput_${index}" value="${editingAddressValue}" placeholder="Enter office address" onkeydown="if(event.key === 'Enter') saveAddressRow(${index}); else if(event.key === 'Escape') cancelAddressRow();">
-          <button type="button" class="btn btn-xs btn-outline-success border-0 text-success p-1 ms-1" onclick="saveAddressRow(${index})" style="flex-shrink:0;" title="Save Address">✔️</button>
-          <button type="button" class="btn btn-xs btn-outline-secondary border-0 text-secondary p-1" onclick="cancelAddressRow()" style="flex-shrink:0;" title="Cancel">❌</button>
+          <input type="text" class="form-control form-control-sm border-0 p-1 text-dark fw-semibold flex-grow-1 bg-white" id="editAddressInput_${index}" value="${editingAddressValue}" placeholder="Enter office address" onkeydown="if(event.key === 'Enter') saveAddressRow(${index}); else if(event.key === 'Escape') cancelAddressRow();">
+          <button type="button" class="btn btn-xs btn-outline-success border-0 text-success p-1 ms-1" onclick="saveAddressRow(${index})" style="flex-shrink:0;" title="Save Address">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-secondary border-0 text-secondary p-1" onclick="cancelAddressRow()" style="flex-shrink:0;" title="Cancel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       `;
     } else {
       return `
         <div class="d-flex align-items-center gap-2 bg-white border rounded p-1 mb-1" style="font-size:0.78rem;">
           <span class="text-dark fw-semibold text-start flex-grow-1 ps-2 truncate-addr" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">${addr}</span>
-          <button type="button" class="btn btn-xs btn-outline-primary border-0 text-primary p-1 ms-1" onclick="editAddressRow(${index})" style="flex-shrink:0;" title="Edit Address">✏️</button>
-          <button type="button" class="btn btn-xs btn-outline-danger border-0 text-danger p-1" onclick="deleteAddress(${index})" style="flex-shrink:0;" title="Delete Address">🗑️</button>
+          <button type="button" class="btn btn-xs btn-outline-primary border-0 text-primary p-1 ms-1" onclick="editAddressRow(${index})" style="flex-shrink:0;" title="Edit Address">${UI.icon('pencil', 14)}</button>
+          <button type="button" class="btn btn-xs btn-outline-danger border-0 text-danger p-1" onclick="deleteAddress(${index})" style="flex-shrink:0;" title="Delete Address">${UI.icon('trash', 14)}</button>
         </div>
       `;
     }
@@ -357,8 +361,12 @@ function renderSubsidiesList() {
           <input type="number" step="any" class="form-control form-control-sm p-1 text-center bg-white" id="editSubKW_${index}" value="${editingSubsidyKW}" placeholder="KW" style="width: 60px;">
           <input type="number" class="form-control form-control-sm p-1 text-end bg-white" id="editSubState_${index}" value="${editingSubsidyState}" placeholder="State ₹" style="width: 90px;">
           <input type="number" class="form-control form-control-sm p-1 text-end bg-white" id="editSubCentral_${index}" value="${editingSubsidyCentral}" placeholder="Central ₹" style="width: 90px;">
-          <button type="button" class="btn btn-xs btn-outline-success border-0 text-success p-1 ms-1" onclick="saveSubsidyRow(${index})" style="flex-shrink:0;">✔️</button>
-          <button type="button" class="btn btn-xs btn-outline-secondary border-0 text-secondary p-1" onclick="cancelSubsidyRow()" style="flex-shrink:0;">❌</button>
+          <button type="button" class="btn btn-xs btn-outline-success border-0 text-success p-1 ms-1" onclick="saveSubsidyRow(${index})" style="flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-secondary border-0 text-secondary p-1" onclick="cancelSubsidyRow()" style="flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       `;
     } else {
@@ -369,8 +377,8 @@ function renderSubsidiesList() {
             <span class="text-secondary small font-monospace">State: ₹${Number(sub.state).toLocaleString('en-IN')} | Central: ₹${Number(sub.central).toLocaleString('en-IN')}</span>
           </div>
           <div class="d-flex gap-1 align-items-center">
-            <button type="button" class="btn btn-xs btn-outline-primary border-0 text-primary p-1" onclick="editSubsidyRow(${index})" title="Edit Subsidy">✏️</button>
-            <button type="button" class="btn btn-xs btn-outline-danger border-0 text-danger p-1" onclick="deleteSubsidyRow(${index})" title="Delete Subsidy">🗑️</button>
+            <button type="button" class="btn btn-xs btn-outline-primary border-0 text-primary p-1" onclick="editSubsidyRow(${index})" title="Edit Subsidy">${UI.icon('pencil', 14)}</button>
+            <button type="button" class="btn btn-xs btn-outline-danger border-0 text-danger p-1" onclick="deleteSubsidyRow(${index})" title="Delete Subsidy">${UI.icon('trash', 14)}</button>
           </div>
         </div>
       `;
@@ -568,8 +576,8 @@ function renderUsersList() {
         <td>${statusBadge}</td>
         <td class="text-center">
           ${quickActions}
-          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5 ${statusVal === 'Pending' ? 'ms-1' : ''}" onclick="openEditUserModal('${u.userid}')">✏️</button>
-          ${isCurrentAdmin ? '' : `<button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 ms-1" onclick="deleteUser('${u.userid}')">🗑️</button>`}
+          <button type="button" class="btn btn-xs btn-outline-primary px-2 py-0.5 ${statusVal === 'Pending' ? 'ms-1' : ''}" onclick="openEditUserModal('${u.userid}')" title="Edit User">${UI.icon('pencil', 14)}</button>
+          ${isCurrentAdmin ? '' : `<button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 ms-1" onclick="deleteUser('${u.userid}')" title="Delete User">${UI.icon('trash', 14)}</button>`}
         </td>
       </tr>
     `;
@@ -624,7 +632,7 @@ function renderRolesList() {
       <div class="list-group-item d-flex align-items-center justify-content-between p-2">
         <span class="font-monospace fw-semibold">${r}</span>
         ${isDefault ? '<span class="badge bg-secondary">System Default</span>' : `
-          <button type="button" class="btn btn-xs btn-outline-danger border-0 p-1" onclick="deleteRole('${r}')" title="Delete Role">🗑️</button>
+          <button type="button" class="btn btn-xs btn-outline-danger border-0 p-1" onclick="deleteRole('${r}')" title="Delete Role">${UI.icon('trash', 14)}</button>
         `}
       </div>
     `;

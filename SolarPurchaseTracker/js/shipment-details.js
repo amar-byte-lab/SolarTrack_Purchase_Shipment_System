@@ -14,14 +14,14 @@ window.onDbReady = function () {
     UI.renderTopbar('Shipment Not Found', '');
     document.getElementById('detailsBody').innerHTML = `
       <div class="empty-state">Shipment "${shipmentNo || ''}" was not found.
-        <br><a href="shipment.html">← Back to Shipments</a></div>`;
+        <br><a href="shipment.html" class="btn btn-sm btn-outline-primary mt-2">Back to Shipments</a></div>`;
     return;
   }
 
   UI.renderTopbar(`Shipment ${s.ShipmentNo}`, `Full purchase, transportation & GST cost breakdown`, `
-    <button class="btn btn-outline-secondary" id="btnExportExcel">⬇ Export Excel</button>
-    <button class="btn btn-outline-secondary" id="btnExportPDF">⬇ Export PDF</button>
-    <a class="btn btn-primary" href="shipment.html">← Back</a>
+    <button class="btn btn-outline-secondary btn-sm" id="btnExportExcel">${UI.icon('download', 14)} Export Excel</button>
+    <button class="btn btn-outline-secondary btn-sm" id="btnExportPDF">${UI.icon('download', 14)} Export PDF</button>
+    <a class="btn btn-outline-secondary btn-sm" href="shipment.html">Back to Shipments</a>
   `);
 
   const materials = DB.getAll('materials').filter(m => m.ShipmentNo === shipmentNo);
@@ -29,11 +29,11 @@ window.onDbReady = function () {
 
   document.getElementById('detailsBody').innerHTML = `
     <div class="section-title mt-0">Shipment Information</div>
-    <div class="st-card">
+    <div class="st-card mb-3">
       <div class="row g-3">
-        ${infoField('Shipment Number', s.ShipmentNo)}
+        ${infoField('Shipment Number', `<span class="font-monospace text-primary fw-bold">${s.ShipmentNo}</span>`)}
         ${infoField('Purchase Date', UI.fmtDate(s.PurchaseDate))}
-        ${infoField('Vendor Name', s.VendorName)}
+        ${infoField('Vendor Name', s.VendorName || '-')}
         ${infoField('Vehicle Number', s.VehicleNumber || '-')}
         ${infoField('Invoice Number', s.InvoiceNumber || '-')}
         ${infoField('GST Percentage', (s.GSTPercentage || 0) + '%')}
@@ -42,39 +42,48 @@ window.onDbReady = function () {
     </div>
 
     <div class="section-title">Material List &amp; Final Cost Breakdown</div>
-    <div class="st-card p-0">
+    <div class="st-card p-0 mb-3">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead><tr>
-            <th>Item</th><th>Category</th><th>Qty</th><th>Unit</th><th>Rate</th>
-            <th>GST %</th><th>Rate with GST</th>
-            <th>Purchase Value</th><th>Transport Share</th><th>GST Share</th><th>Final Cost</th><th>Cost/Unit</th>
+            <th>Item</th>
+            <th>Category</th>
+            <th class="text-end">Qty</th>
+            <th>Unit</th>
+            <th class="text-end">Rate</th>
+            <th class="text-end">GST %</th>
+            <th class="text-end">Rate with GST</th>
+            <th class="text-end">Purchase Value</th>
+            <th class="text-end">Transport Share</th>
+            <th class="text-end">GST Share</th>
+            <th class="text-end">Final Cost</th>
+            <th class="text-end">Cost/Unit</th>
           </tr></thead>
           <tbody>
             ${result.lines.map(l => `
               <tr>
                 <td class="fw-semibold">${l.ItemName}</td>
-                <td>${l.Category || '-'}</td>
-                <td>${l.Quantity}</td>
+                <td class="text-secondary">${l.Category || '-'}</td>
+                <td class="text-end font-monospace">${l.Quantity}</td>
                 <td>${l.Unit || '-'}</td>
-                <td>${UI.money(l.PurchaseRate)}</td>
-                <td>${l.GSTPercentage !== undefined ? l.GSTPercentage + '%' : '-'}</td>
-                <td>${UI.money(l.PurchaseRate * (1 + (l.GSTPercentage || 0) / 100))}</td>
-                <td>${UI.money(l.PurchaseValue)}</td>
-                <td>${UI.money(l.TransportShare)}</td>
-                <td>${UI.money(l.GSTShare)}</td>
-                <td class="fw-bold">${UI.money(l.FinalCost)}</td>
-                <td>${UI.money(l.CostPerUnit)}</td>
+                <td class="text-end font-monospace">${UI.money(l.PurchaseRate)}</td>
+                <td class="text-end font-monospace">${l.GSTPercentage !== undefined ? l.GSTPercentage + '%' : '-'}</td>
+                <td class="text-end font-monospace">${UI.money(l.PurchaseRate * (1 + (l.GSTPercentage || 0) / 100))}</td>
+                <td class="text-end font-monospace">${UI.money(l.PurchaseValue)}</td>
+                <td class="text-end font-monospace">${UI.money(l.TransportShare)}</td>
+                <td class="text-end font-monospace">${UI.money(l.GSTShare)}</td>
+                <td class="text-end font-monospace fw-bold">${UI.money(l.FinalCost)}</td>
+                <td class="text-end font-monospace fw-semibold text-primary">${UI.money(l.CostPerUnit)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
-            <tr class="fw-bold" style="background:var(--st-blue-100)">
-              <td colspan="7" class="text-end">Totals</td>
-              <td>${UI.money(result.purchaseTotal)}</td>
-              <td>${UI.money(result.transport)}</td>
-              <td>${UI.money(result.gstAmount)}</td>
-              <td>${UI.money(result.grandTotal)}</td>
+            <tr class="fw-bold" style="background:#f8fafc; border-top: 2px solid var(--st-border);">
+              <td colspan="7" class="text-end text-uppercase" style="font-size:0.75rem; letter-spacing:0.04em;">Totals</td>
+              <td class="text-end font-monospace">${UI.money(result.purchaseTotal)}</td>
+              <td class="text-end font-monospace">${UI.money(result.transport)}</td>
+              <td class="text-end font-monospace">${UI.money(result.gstAmount)}</td>
+              <td class="text-end font-monospace text-primary fs-6">${UI.money(result.grandTotal)}</td>
               <td></td>
             </tr>
           </tfoot>
@@ -82,11 +91,11 @@ window.onDbReady = function () {
       </div>
     </div>
 
-    <div class="row g-3 mt-1">
+    <div class="row g-3">
       <div class="col-md-3">${kpi('Purchase Cost', UI.money(result.purchaseTotal))}</div>
       <div class="col-md-3">${kpi('Transportation', UI.money(result.transport))}</div>
       <div class="col-md-3">${kpi('GST Amount', UI.money(result.gstAmount))}</div>
-      <div class="col-md-3">${kpi('Grand Total', UI.money(result.grandTotal))}</div>
+      <div class="col-md-3">${kpi('Grand Total', UI.money(result.grandTotal), true)}</div>
     </div>
   `;
 
@@ -110,10 +119,11 @@ window.onDbReady = function () {
 function infoField(label, value, colWidth = 3) {
   return `<div class="col-md-${colWidth}">
     <div class="kpi-label">${label}</div>
-    <div class="fw-semibold">${value}</div>
+    <div class="fw-medium text-dark mt-1">${value}</div>
   </div>`;
 }
 
-function kpi(label, value) {
-  return `<div class="st-card kpi-card"><div><div class="kpi-value">${value}</div><div class="kpi-label">${label}</div></div></div>`;
+function kpi(label, value, isPrimary = false) {
+  return `<div class="kpi-card ${isPrimary ? 'border-primary' : ''}"><div><div class="kpi-value ${isPrimary ? 'text-primary' : ''}">${value}</div><div class="kpi-label">${label}</div></div></div>`;
 }
+

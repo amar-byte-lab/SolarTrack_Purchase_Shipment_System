@@ -63,20 +63,20 @@
       </div>
 
       <!-- Filter + Color Customizer Bar -->
-      <div class="bw-filter-bar py-2 px-3 mb-2" style="background:#fff; border-radius:10px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <div class="bw-filter-bar py-2 px-3 mb-2" style="background:#fff; border-radius:4px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
         <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse" style="cursor:pointer;">
-          <span class="fw-bold text-primary-emphasis" style="font-size:0.82rem;"><span class="me-1">🔍</span>Search & Filters</span>
+          <span class="fw-semibold text-secondary" style="font-size:0.82rem;">Search &amp; Filters</span>
           <span class="fs-7 text-muted" id="searchCollapseIndicator">▼ Show</span>
         </div>
         <div class="collapse" id="searchCollapse">
           <div class="pt-3">
             <div class="row g-2 align-items-end">
               <div class="col-md-4">
-                <label class="form-label fw-bold" style="font-size:.78rem;">Search</label>
-                <input type="text" class="form-control" id="bwSearchInput" placeholder="Name, Mobile, Address…" autocomplete="off">
+                <label class="form-label" style="font-size:.78rem;">Search</label>
+                <input type="text" class="form-control form-control-sm" id="bwSearchInput" placeholder="Name, Mobile, Address…" autocomplete="off">
               </div>
               <div class="col-md-auto d-flex align-items-end gap-2">
-                <span class="fw-bold" style="font-size:.78rem;white-space:nowrap;">🎨 Column Color:</span>
+                <span style="font-size:.78rem;white-space:nowrap;">Column Color:</span>
               </div>
               <div class="col-md-3">
                 <div class="dropdown">
@@ -143,8 +143,8 @@
           <div style="font-size:.72rem;color:rgba(255,255,255,.7);margin-top:2px;" id="txnBorrowerSub"></div>
         </div>
         <div class="d-flex align-items-center gap-1 ms-auto">
-          <button class="btn btn-sm btn-outline-light py-1 px-2" id="btnPrintTxn" title="Print Transaction History" style="border-color: rgba(255,255,255,0.3); font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.08); color: #fff;">🖨 Print</button>
-          <button class="btn btn-sm btn-success py-1 px-2" id="btnShareWhatsapp" title="Send to WhatsApp" style="font-size: 0.72rem; border-radius: 4px; background: #25D366; border-color: #25D366; color: #fff;"><i class="bi bi-whatsapp me-1"></i>WhatsApp</button>
+          <button class="btn btn-sm btn-outline-light py-1 px-2" id="btnPrintTxn" title="Print Transaction History" style="border-color: rgba(255,255,255,0.3); font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.08); color: #fff;">Print</button>
+          <button class="btn btn-sm btn-success py-1 px-2" id="btnShareWhatsapp" title="Send to WhatsApp" style="font-size: 0.72rem; border-radius: 4px; background: #25D366; border-color: #25D366; color: #fff;">WhatsApp</button>
           <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
       </div>
@@ -155,26 +155,23 @@
           <!-- Chat history (full width) -->
           <div class="chat-bg" id="txnHistoryPane">
             <div class="txn-empty" id="txnEmptyState">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="#c9bbaa" viewBox="0 0 16 16">
-                <path d="M0 3a2 2 0 0 1 2-2h13.5a.5.5 0 0 1 0 1H15v2a1 1 0 0 1 1 1v8.5a1.5 1.5 0 0 1-1.5 1.5h-12A2.5 2.5 0 0 1 0 12.5V3zm1 1.732V12.5A1.5 1.5 0 0 0 2.5 14h12a.5.5 0 0 0 .5-.5V5H2a1.993 1.993 0 0 1-1-.268zM1 3a1 1 0 0 0 1 1h12V2H2a1 1 0 0 0-1 1z"/>
-              </svg>
               <span style="font-size:.82rem;">No transactions yet</span>
-              <span style="font-size:.7rem;color:#b8a898;">Tap ✚ below to add one</span>
+              <span style="font-size:.7rem;color:#b8a898;">Click + below to add one</span>
             </div>
             <div id="txnList"></div>
           </div>
 
           <!-- Compose bar (always visible, like WhatsApp bottom bar) -->
           <div class="compose-bar">
-            <span class="compose-hint" id="composeHint">Tap ✚ to add a transaction…</span>
+            <span class="compose-hint" id="composeHint">Add a transaction…</span>
             <button class="btn-deact" id="btnModalDeact" style="font-size:.72rem;padding:5px 10px;">
-              🔒 Deactivate
+              Deactivate
             </button>
             <button class="btn-deact" id="btnModalRemove" style="font-size:.72rem;padding:5px 10px;background:#c0392b;border-color:#c0392b;color:#fff;display:none;">
-              🗑️ Remove
+              Remove
             </button>
             <button class="btn-open-form" id="btnToggleForm" title="New Transaction" aria-label="Add transaction">
-              ✚
+              +
             </button>
           </div>
 
@@ -196,15 +193,9 @@
               </div>
               <div class="bw-compact-right">
                 <button type="button" class="btn-txn-icon btn-received" id="btnSaveReceived" title="Received (Debit)" aria-label="Received (Debit)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/>
-                  </svg>
                   <span class="btn-icon-sublabel">Received</span>
                 </button>
                 <button type="button" class="btn-txn-icon btn-given" id="btnSaveGiven" title="Given (Credit)" aria-label="Given (Credit)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M8 15a.5.5 0 0 1-.5-.5V2.707L4.354 5.854a.5.5 0 1 1-.708-.708l4-4a.5.5 0 0 1 .708 0l4 4a.5.5 0 0 1-.708.708L8.5 2.707V14.5A.5.5 0 0 1 8 15z"/>
-                  </svg>
                   <span class="btn-icon-sublabel">Given</span>
                 </button>
               </div>
@@ -220,10 +211,10 @@
 <!-- ══ WhatsApp Share Modal ══════════════════════════════════════════════════ -->
 <div class="modal fade" id="whatsappShareModal" tabindex="-1" aria-labelledby="waShareModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, #25D366, #128C7E); border-radius:14px 14px 0 0;">
-        <h6 class="modal-title fw-bold fs-7" id="waShareModalLabel"><i class="bi bi-whatsapp me-2"></i>Send Statement via WhatsApp</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-bold fs-7" id="waShareModalLabel">Send Statement via WhatsApp</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 bg-light d-flex flex-column gap-3">
         <div class="row g-2">
@@ -246,7 +237,7 @@
       </div>
       <div class="modal-footer bg-light border-top py-2">
         <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-sm btn-success px-4" id="btnSendWhatsappConfirm" style="background: #25D366; border-color: #25D366;">Open WhatsApp</button>
+        <button type="button" class="btn btn-sm btn-success px-4" id="btnSendWhatsappConfirm">Open WhatsApp</button>
       </div>
     </div>
   </div>

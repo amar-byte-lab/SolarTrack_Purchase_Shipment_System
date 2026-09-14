@@ -24,28 +24,15 @@
         <div id="emptyState" class="empty-state st-card no-print"
           style="display:none; text-align: center; padding: 40px 20px;">
           <div class="fs-5 fw-bold text-secondary mb-2">Create Product set in the "Products" page.</div>
-          <a href="item-master.html" class="btn btn-sm btn-accent fw-semibold mt-2">📦 Go to Products Page</a>
+          <a href="item-master.html" class="btn btn-sm btn-primary fw-medium mt-2">Go to Products Page</a>
         </div>
 
         <!-- Main Quotation Container -->
         <div id="offerContainer" class="quote-container" style="display:none;">
 
-          <!-- Corporate Quotation Header (Screen view only) -->
-          <!-- <div class="row g-2 mb-4 pb-3 border-bottom align-items-center no-print quote-header-row">
-            <div class="col-md-6 quote-header-logo-col text-start d-flex align-items-center justify-content-start">
-              <img id="qCompanyLogo" src="assets/sampleFiles/CompanyLogo.jpeg" alt="Logo" class="border rounded p-1 bg-white img-fluid"
-                style="max-height: 110px; max-width: 260px; object-fit: contain;">
-            </div>
-            <div class="col-md-6 quote-header-info-col text-end">
-              <div class="text-muted fs-8 font-monospace q-contact-info" id="lblCompanyEmail">Email: -</div>
-              <div class="text-muted fs-8 font-monospace q-contact-info" id="lblCompanyPhone">Mob: -</div>
-              <div class="text-muted fs-8 font-monospace q-contact-info" id="lblCompanyGST">GSTIN: -</div>
-            </div>
-          </div> -->
-
           <!-- Product Sets Selection Section (Collapsible checkbox list taking 40% height scrollable) -->
-          <div class="st-card p-3 mb-4 bg-light border-0 no-print" style="border: 1px dashed #ced4da !important;">
-            <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2">📦 Select Product Sets to include in Offer
+          <div class="st-card p-3 mb-4 bg-light border-0 no-print" style="border: 1px solid var(--st-border) !important;">
+            <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2">Select Product Sets to include in Offer
             </h6>
             <div id="productSetsSelectContainer" class="d-flex flex-column gap-2"
               style="max-height: 180px; overflow-y: auto; padding: 2px;">
@@ -65,7 +52,7 @@
             <div class="st-card p-0 mb-4 bg-light border-0 no-print">
               <div class="d-flex justify-content-between align-items-center p-3" style="cursor: pointer;"
                 onclick="toggleOfferSection('collapseAddresses', 'iconAddresses')">
-                <h6 class="fw-bold text-primary mb-0 fs-7">👥 Registered Seller & Client Details</h6>
+                <h6 class="fw-bold text-primary mb-0 fs-7">Registered Seller &amp; Client Details</h6>
                 <span id="iconAddresses" class="text-muted fs-8">▼</span>
               </div>
               <div id="collapseAddresses" style="display: none; padding: 0 15px 15px 15px;">

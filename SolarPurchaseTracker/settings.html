@@ -119,8 +119,12 @@
             </div>
           </div>
           <div class="st-card mt-3">
-            <div class="section-title mt-0">Backup</div>
-            <button class="btn btn-outline-primary ms-2" id="btnExportInserts">🔌 Download SQL Inserts</button>
+            <div class="section-title mt-0 text-primary">Data Backup & Export</div>
+            <p class="text-muted small fs-8">Export all current database tables and relational schemas as SQL insert statements.</p>
+            <button class="btn btn-outline-secondary" id="btnExportInserts">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download SQL Inserts
+            </button>
           </div>
         </div>
       </div>
@@ -130,18 +134,18 @@
         <div class="col-12">
           <div class="st-card">
             <div class="section-title mt-0 text-primary d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <span>👤 User & Role Management</span>
+              <span>User & Role Management</span>
               <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary" id="btnManageRolesModal">
-                  📋 Manage Roles
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnManageRolesModal">
+                  Manage Roles
                 </button>
                 <button type="button" class="btn btn-sm btn-primary" id="btnAddNewUser">
-                  ➕ Add New User
+                  Add New User
                 </button>
               </div>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-striped align-middle fs-8" id="usersTable">
+              <table class="table table-sm table-hover align-middle fs-8" id="usersTable">
                 <thead>
                   <tr>
                     <th>User ID</th>
@@ -165,8 +169,8 @@
 
       <!-- Save button at the very bottom of settings page -->
       <div class="mt-4 pt-3 border-top text-center no-print">
-        <button class="btn btn-primary btn-lg px-5 fw-bold shadow-sm" id="btnSaveSettings" style="min-width: 280px; letter-spacing: 0.5px;">
-          💾 Save Profile & Settings
+        <button class="btn btn-primary px-5 fw-semibold" id="btnSaveSettings" style="min-width: 240px;">
+          Save Profile & Settings
         </button>
       </div>
 

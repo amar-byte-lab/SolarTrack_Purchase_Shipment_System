@@ -243,7 +243,7 @@
       <div class="st-card-compact no-print">
         <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
           <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
-            <span class="wn-section-header">🔍 Search & Filters</span>
+            <span class="wn-section-header">Search &amp; Filters</span>
             <span class="text-muted wn-text-sm" id="searchCollapseIndicator">▼ Show</span>
           </div>
           <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center ms-auto" style="font-size: 0.62rem;"></div>
@@ -299,7 +299,7 @@
       <!-- 2. Customer Selection Section -->
       <div class="st-card-compact">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="wn-section-header">👥 Select Customers</span>
+          <span class="wn-section-header">Select Customers</span>
           <div class="d-flex align-items-center gap-1 mb-0">
             <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="chkSelectAllCustomers" style="width: 12px; height: 12px;">
             <label class="form-check-label fw-bold text-primary ms-1 cursor-pointer wn-text-sm" for="chkSelectAllCustomers" id="lblSelectAll">Select All</label>
@@ -313,7 +313,7 @@
 
       <!-- 3. Badges Selection Section -->
       <div class="st-card-compact">
-        <div class="wn-section-header mb-1">🏷️ Select Columns</div>
+        <div class="wn-section-header mb-1">Select Columns</div>
         <div class="d-flex flex-wrap gap-1" id="badgesContainer">
           <!-- Badges injected dynamically by JS -->
         </div>
@@ -322,7 +322,7 @@
       <!-- 4. Dynamic Work Note Table Builder -->
       <div class="st-card-compact" id="tableCard" style="display:none;">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="wn-section-header">📊 Work Note Table</span>
+          <span class="wn-section-header">Work Note Table</span>
           <span class="text-secondary fw-bold wn-text-sm" id="tableRowCountLabel">0 rows</span>
         </div>
         <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
@@ -343,19 +343,19 @@
       <div class="st-card-compact">
         <div class="row g-1">
           <div class="col-12">
-            <label class="form-label-compact">📌 Work Note Title *</label>
+            <label class="form-label-compact">Work Note Title *</label>
             <input type="text" class="form-control input-sm-compact" id="txtNoteTitle" placeholder="e.g. August Net Metering Sheet...">
             <input type="hidden" id="txtNoteID">
           </div>
           <div class="col-12">
             <div class="keep-note-box">
-              <label class="form-label-compact text-warning-emphasis mb-0.5">📝 Common Remarks</label>
+              <label class="form-label-compact text-warning-emphasis mb-0.5">Common Remarks</label>
               <textarea class="form-control border-0 bg-transparent shadow-none wn-text-sm" id="txtCommonNote" rows="2" placeholder="Enter batch remarks or instructions..."></textarea>
             </div>
           </div>
           <div class="col-12 d-flex justify-content-end gap-1 pt-1">
             <button class="btn btn-secondary btn-sm input-sm-compact py-0" id="btnCancelEdit" style="display:none;" onclick="resetWorkNoteEditor()">Cancel</button>
-            <button class="btn btn-primary btn-sm input-sm-compact py-0 px-2 fw-bold" id="btnSaveWorkNote">💾 Save Work Note</button>
+            <button class="btn btn-primary btn-sm input-sm-compact py-0 px-2 fw-semibold" id="btnSaveWorkNote">Save Work Note</button>
           </div>
         </div>
       </div>
@@ -363,7 +363,7 @@
       <!-- 6. Saved Work Notes List -->
       <div class="st-card-compact">
         <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
-          <span class="wn-section-header">📚 Saved Notes</span>
+          <span class="wn-section-header">Saved Notes</span>
           <div style="width: 100%; max-width: 150px;">
             <input type="text" class="form-control input-sm-compact" id="fSavedNoteSearch" placeholder="Search saved notes...">
           </div>
@@ -413,7 +413,7 @@
         <span class="text-secondary" id="viewNoteModalMeta" style="font-size: 0.68rem;"></span>
         <div>
           <button type="button" class="btn btn-xs btn-secondary me-1 py-0" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-xs btn-primary fw-bold py-0" id="btnUpdateSavedNoteFromModal">💾 Save Changes</button>
+          <button type="button" class="btn btn-xs btn-primary fw-semibold py-0" id="btnUpdateSavedNoteFromModal">Save Changes</button>
         </div>
       </div>
     </div>

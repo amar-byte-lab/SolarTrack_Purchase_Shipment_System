@@ -9,7 +9,7 @@ let authRoles = [];
 window.onDbReady = async function () {
   UI.renderSidebar('vendor-master.html');
   UI.renderTopbar('Vendor Master', 'Master list of all suppliers/vendors', `
-    <button class="btn btn-outline-secondary" id="btnExport">⬇ Export Excel</button>
+    <button class="btn btn-outline-secondary btn-sm" id="btnExport">${UI.icon('download', 14)} Export Excel</button>
   `);
   vendorModal = new bootstrap.Modal(document.getElementById('vendorModal'));
 
@@ -84,8 +84,8 @@ function render() {
         <td>${v.Address || '-'}</td>
         <td class="no-print">
           <div class="d-flex gap-1 align-items-center">
-            <button class="btn btn-sm btn-outline-secondary" onclick='openModal(${JSON.stringify(v.VendorName)})' title="Edit">✎</button>
-            <button class="btn btn-sm btn-outline-danger" onclick='deleteVendor(${JSON.stringify(v.VendorName)})' title="Delete">🗑</button>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick='openModal(${JSON.stringify(v.VendorName)})' title="Edit">${UI.icon('pencil', 13)}</button>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick='deleteVendor(${JSON.stringify(v.VendorName)})' title="Delete">${UI.icon('trash', 13)}</button>
             ${dropdownHtml}
           </div>
         </td>

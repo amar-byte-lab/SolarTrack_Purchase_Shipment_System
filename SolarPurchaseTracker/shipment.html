@@ -22,7 +22,7 @@
 
       <div class="st-card mb-3 py-2 px-3">
         <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse" style="cursor:pointer;">
-          <span class="fw-bold text-primary-emphasis" style="font-size:0.82rem;"><span class="me-1">🔍</span>Search & Filters</span>
+          <span class="fw-semibold text-secondary" style="font-size:0.82rem;">Search &amp; Filters</span>
           <span class="fs-7 text-muted" id="searchCollapseIndicator">▼ Show</span>
         </div>
         <div class="collapse" id="searchCollapse">
@@ -30,22 +30,22 @@
             <div class="row g-2 align-items-end">
               <div class="col-md-3 col-6">
                 <label class="form-label">Search</label>
-                <input type="text" class="form-control" id="fSearch" placeholder="Vendor, Invoice, Vehicle...">
+                <input type="text" class="form-control form-control-sm" id="fSearch" placeholder="Vendor, Invoice, Vehicle...">
               </div>
               <div class="col-md-2 col-6">
                 <label class="form-label">From Date</label>
-                <input type="date" class="form-control" id="fFrom">
+                <input type="date" class="form-control form-control-sm" id="fFrom">
               </div>
               <div class="col-md-2 col-6">
                 <label class="form-label">To Date</label>
-                <input type="date" class="form-control" id="fTo">
+                <input type="date" class="form-control form-control-sm" id="fTo">
               </div>
               <div class="col-md-3 col-6">
                 <label class="form-label">Vendor</label>
-                <select class="form-select" id="fVendor"><option value="">All Vendors</option></select>
+                <select class="form-select form-select-sm" id="fVendor"><option value="">All Vendors</option></select>
               </div>
               <div class="col-md-2 col-12 d-flex flex-column justify-content-end">
-                <button class="btn btn-outline-secondary w-100" id="btnClearFilters">Clear Filters</button>
+                <button class="btn btn-sm btn-outline-secondary w-100" id="btnClearFilters">Clear Filters</button>
               </div>
               <div class="col-md-auto col-12 d-flex align-items-end mb-1">
                 <div class="form-check mb-1">
@@ -63,18 +63,18 @@
         <div class="overflow-x-auto pb-1" style="-webkit-overflow-scrolling: touch; scrollbar-width: thin; max-width: 100%;">
           <ul class="nav nav-pills flex-nowrap text-nowrap" id="shipmentTypeTabs" style="display: flex; flex-wrap: nowrap;">
             <li class="nav-item">
-              <button class="nav-link active fw-bold py-1 px-3" data-type="Buy" id="tabBuy" style="font-size: 0.85rem; white-space: nowrap;">📥 Buy Shipments</button>
+              <button class="nav-link active py-1 px-3" data-type="Buy" id="tabBuy">Buy Shipments</button>
             </li>
             <li class="nav-item ms-2">
-              <button class="nav-link fw-bold py-1 px-3" data-type="Sell" id="tabSell" style="font-size: 0.85rem; white-space: nowrap;">📤 Sell Shipments</button>
+              <button class="nav-link py-1 px-3" data-type="Sell" id="tabSell">Sell Shipments</button>
             </li>
             <li class="nav-item ms-2" style="display: none !important;">
-              <button class="nav-link fw-bold py-1 px-3" data-type="PriceHistory" id="tabPriceHistory" style="font-size: 0.85rem; white-space: nowrap;">📜 Price History Log</button>
+              <button class="nav-link py-1 px-3" data-type="PriceHistory" id="tabPriceHistory">Price History Log</button>
             </li>
           </ul>
         </div>
-        <button class="btn btn-sm btn-outline-primary fw-bold px-3 d-flex align-items-center gap-1 shadow-sm text-nowrap" id="btnTogglePriceHistory" onclick="togglePriceHistoryPopup('add')" style="font-size: 0.85rem; border-radius: 8px; display: none !important;">
-          ➕ Add Price Record
+        <button class="btn btn-sm btn-outline-primary fw-medium px-3 d-flex align-items-center gap-1 shadow-sm text-nowrap" id="btnTogglePriceHistory" onclick="togglePriceHistoryPopup('add')" style="display: none !important;">
+          Add Price Record
         </button>
       </div>
 
@@ -123,10 +123,10 @@
 <!-- ══ Documents Modal ════════════════════════════════════════════════════ -->
 <div class="modal fade" id="docsModal" tabindex="-1" aria-labelledby="docsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:12px;">
-      <div class="modal-header bg-primary text-white py-2.5 px-3">
+    <div class="modal-content">
+      <div class="modal-header py-2.5 px-3">
         <h6 class="modal-title fs-7 fw-bold" id="docsModalLabel">Shipment Documents</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 bg-light">
         <div id="docsListModalContainer" class="d-flex flex-column gap-2"></div>
@@ -163,15 +163,15 @@
 
           <!-- Compose bar (always visible at bottom) -->
           <div class="compose-bar" id="payComposeBar">
-            <span class="compose-hint" id="payComposeHint">Tap ✚ to add a payment entry…</span>
+            <span class="compose-hint" id="payComposeHint">Add a payment entry…</span>
             <button class="btn-open-form" id="btnTogglePayForm" title="Add Payment Entry" aria-label="Add payment">
-              ✚
+              +
             </button>
           </div>
 
           <!-- Slide-up form drawer -->
           <div class="txn-form-drawer" id="payFormDrawer">
-            <h6 class="fw-bold mb-2 text-primary fs-7" id="payDrawerHeading">➕ Add Payment Record</h6>
+            <h6 class="fw-bold mb-2 text-primary fs-7" id="payDrawerHeading">Add Payment Record</h6>
 
             <div class="row g-2 mb-2">
               <div class="col-6">
@@ -190,8 +190,8 @@
             </div>
 
             <div class="d-flex gap-2 mt-3">
-              <button class="btn btn-sm btn-primary flex-grow-1 fw-bold py-2" id="btnSavePaymentEntry">💾 Save Payment</button>
-              <button class="btn btn-sm btn-outline-success fw-bold py-2 px-3" id="btnFullSettlePay">✓ Pay Full Due</button>
+              <button class="btn btn-sm btn-primary flex-grow-1 fw-bold py-2" id="btnSavePaymentEntry">Save Payment</button>
+              <button class="btn btn-sm btn-outline-success fw-bold py-2 px-3" id="btnFullSettlePay">Pay Full Due</button>
             </div>
           </div>
 
@@ -205,10 +205,10 @@
 <!-- ══ Shipment Add/Edit Form Modal ══════════════════════════════════════ -->
 <div class="modal fade" id="shipmentFormModal" tabindex="-1" aria-labelledby="shipFormModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-primary text-white py-2.5 px-3">
+    <div class="modal-content">
+      <div class="modal-header py-2.5 px-3">
         <h5 class="modal-title fw-bold fs-6" id="shipFormModalLabel">Shipment Record</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="cancelInline()"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="cancelInline()"></button>
       </div>
       <div class="modal-body p-4 bg-light">
         <div class="row g-3">
@@ -234,7 +234,7 @@
           </div>
           
           <div class="col-12"><hr class="my-1 opacity-25"></div>
-          <div class="col-12"><h6 class="fw-bold mb-0 text-primary fs-7">Logistics & Financials</h6></div>
+          <div class="col-12"><h6 class="fw-bold mb-0 text-primary fs-7">Logistics &amp; Financials</h6></div>
           
           <div class="col-md">
             <label class="form-label fs-7 mb-0">Vehicle Number</label>
@@ -244,12 +244,6 @@
             <label class="form-label fs-7 mb-0">Invoice Number</label>
             <input type="text" class="form-control form-control-sm" id="editInvoiceNumber" autocomplete="off">
           </div>
-          <!-- Commented out old Remarks field to move it to the bottom as Note
-          <div class="col-md-6 col-12">
-            <label class="form-label fs-7 mb-0">Remarks</label>
-            <input type="text" class="form-control form-control-sm" id="editRemarks" autocomplete="off">
-          </div>
-          -->
           <div class="col-md-3">
             <label class="form-label fs-7 mb-0">Transport Cost (₹)</label>
             <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0" autocomplete="off">
@@ -266,7 +260,7 @@
           <div class="col-12"><hr class="my-1 opacity-25"></div>
           <div class="col-12 d-flex justify-content-between align-items-center">
             <h6 class="fw-bold mb-0 text-primary fs-7">Materials List</h6>
-            <button type="button" class="btn btn-xs btn-accent py-1 px-3" onclick="addMaterialRowInline()">+ Add Item</button>
+            <button type="button" class="btn btn-xs btn-outline-primary py-1 px-3" onclick="addMaterialRowInline()">+ Add Item</button>
           </div>
           
           <div class="col-12">
@@ -311,20 +305,11 @@
             </div>
           </div>
 
-          <!-- Commented out Attached Documents Feature
-          <div class="col-12 mt-2">
-            <h6 class="fw-bold mb-1 text-primary fs-7">Attached Documents</h6>
-            <input type="file" class="form-control form-control-sm" id="editUploadedDocs" multiple>
-            <div id="editUploadedDocsList" class="d-flex flex-wrap gap-1 p-2 border rounded bg-white mt-1" style="min-height: 50px; max-height: 100px; overflow-y: auto;">
-              <!- - Documents list - ->
-            </div>
-          </div>
-          -->
           <div class="col-12 mt-2">
             <div class="keep-note-card">
               <div class="keep-note-header d-flex align-items-center justify-content-between mb-1">
-                <span class="keep-note-title d-flex align-items-center gap-1.5 fw-bold"><span class="fs-6">📌</span> Keep Note</span>
-                <span class="keep-note-tag fs-8">Shipment Remarks</span>
+                <span class="keep-note-title d-flex align-items-center gap-1.5 fw-bold">Shipment Remarks</span>
+                <span class="keep-note-tag fs-8">Internal Note</span>
               </div>
               <textarea class="keep-note-textarea" id="editRemarks" placeholder="Take a note..." autocomplete="off"></textarea>
             </div>
@@ -333,7 +318,7 @@
       </div>
       <div class="modal-footer bg-light border-top py-2">
         <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal" onclick="cancelInline()">Cancel</button>
-        <button type="button" class="btn btn-sm btn-success px-4" id="btnSaveShipment">Save Shipment</button>
+        <button type="button" class="btn btn-sm btn-primary px-4" id="btnSaveShipment">Save Shipment</button>
       </div>
     </div>
   </div>
@@ -342,10 +327,10 @@
 <!-- ══ Shipment Notes Modal ════════════════════════════════ -->
 <div class="modal fade" id="shipmentNotesModal" tabindex="-1" aria-labelledby="shipNotesModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+    <div class="modal-content">
+      <div class="modal-header py-2">
         <h6 class="modal-title fw-bold fs-7" id="shipNotesModalLabel">Shipment Notes</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
         
@@ -359,7 +344,7 @@
 
         <!-- Add Note Form -->
         <div class="border rounded p-3 bg-white shadow-sm">
-          <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Note / Remark</div>
+          <div class="fw-bold text-primary fs-8 mb-2">Add New Remark</div>
           <input type="hidden" id="shipNoteNo">
           
           <div class="mb-3">
@@ -368,7 +353,7 @@
           </div>
           
           <div class="text-end">
-            <button type="button" class="btn btn-sm btn-accent py-1 px-4 fs-8 fw-semibold" id="btnSaveShipNote">Save Note</button>
+            <button type="button" class="btn btn-sm btn-primary py-1 px-4 fs-8 fw-semibold" id="btnSaveShipNote">Save Note</button>
           </div>
         </div>
 
@@ -383,10 +368,10 @@
 <!-- ══ Item Price Breakdown Modal ════════════════════════════════ -->
 <div class="modal fade" id="itemBreakupModal" tabindex="-1" aria-labelledby="itemBreakupModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
+    <div class="modal-content">
+      <div class="modal-header py-2">
         <h6 class="modal-title fw-bold fs-7" id="itemBreakupModalLabel">Item Cost Breakdown</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 bg-light" id="itemBreakupModalBody">
         <!-- Breakdown cards injected dynamically by JS -->
@@ -399,13 +384,11 @@
 </div>
 
 <!-- ══ Floating Draggable Price History & Tracker Popup ══════════════════ -->
-<div class="draggable-popup-card shadow-lg" id="priceHistoryPopup" style="display:none; position:fixed; top:40px; right:20px; width:760px; max-width:96vw; z-index:1060; background:#fff; border-radius:14px; border:1px solid #cbd5e1; box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;">
+<div class="draggable-popup-card shadow-lg" id="priceHistoryPopup" style="display:none; position:fixed; top:40px; right:20px; width:760px; max-width:96vw; z-index:1060; background:#fff; border-radius:4px; border:1px solid #cbd5e1;">
   <!-- Draggable Header -->
-  <div class="popup-header bg-primary text-white py-1.5 px-3 d-flex justify-content-between align-items-center" id="priceHistoryHeader" style="cursor:move; border-radius:13px 13px 0 0; user-select:none;">
+  <div class="popup-header bg-primary text-white py-1.5 px-3 d-flex justify-content-between align-items-center" id="priceHistoryHeader" style="cursor:move; user-select:none;">
     <div class="d-flex align-items-center gap-2">
-      <span class="fs-6">➕</span>
       <h6 class="mb-0 fw-bold fs-7">Add Price Record</h6>
-      <span class="badge bg-white text-primary fs-8 ms-1">Movable</span>
     </div>
     <button type="button" class="btn-close btn-close-white btn-sm" onclick="togglePriceHistoryPopup(false)" aria-label="Close"></button>
   </div>

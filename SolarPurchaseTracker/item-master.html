@@ -19,10 +19,10 @@
       <!-- Nav Pills -->
       <ul class="nav nav-pills mb-3 gap-2 border-bottom pb-2" id="itemMasterTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active px-4 py-2 fw-semibold" id="products-tab" data-bs-toggle="pill" data-bs-target="#products-pane" type="button" role="tab" style="font-size:0.85rem; border-radius:8px;">Product Sets</button>
+          <button class="nav-link active px-3 py-1 fw-medium" id="products-tab" data-bs-toggle="pill" data-bs-target="#products-pane" type="button" role="tab">Product Sets</button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link px-4 py-2 fw-semibold" id="items-tab" data-bs-toggle="pill" data-bs-target="#items-pane" type="button" role="tab" style="font-size:0.85rem; border-radius:8px;">Items List</button>
+          <button class="nav-link px-3 py-1 fw-medium" id="items-tab" data-bs-toggle="pill" data-bs-target="#items-pane" type="button" role="tab">Items List</button>
         </li>
       </ul>
 
@@ -44,9 +44,9 @@
                 </thead>
                 <tbody id="productsTbody"></tbody>
                 <tfoot class="no-print">
-                  <tr class="add-row-sticky text-success" id="btnAddProductRow" style="cursor: pointer;">
-                    <td class="text-center fw-bold" style="font-size: 1.1rem; width: 45px;">+</td>
-                    <td colspan="4" class="fw-semibold text-success">
+                  <tr class="add-row-sticky" id="btnAddProductRow" style="cursor: pointer;">
+                    <td class="text-center fw-bold text-primary fs-5" style="background:#f1f5f9; width: 45px;">+</td>
+                    <td colspan="4" class="fw-semibold text-primary" style="background:#f1f5f9;">
                       Add a new product set...
                     </td>
                   </tr>
@@ -59,7 +59,7 @@
         <!-- Tab 2: Items List -->
         <div class="tab-pane fade" id="items-pane" role="tabpanel" aria-labelledby="items-tab">
           <div class="d-flex mb-3">
-            <input type="text" class="form-control w-auto flex-grow-1" id="fSearch" placeholder="Search by item name, category, HSN code...">
+            <input type="text" class="form-control form-control-sm w-auto flex-grow-1" id="fSearch" placeholder="Search by item name, category, HSN code...">
           </div>
           <div class="st-card p-0 overflow-hidden">
             <div class="table-responsive">
@@ -69,9 +69,9 @@
                 </tr></thead>
                 <tbody></tbody>
                 <tfoot class="no-print">
-                  <tr class="add-row-sticky text-success" id="btnAddItemRow" style="cursor: pointer;">
-                    <td class="text-center fw-bold" style="font-size: 1.1rem; width: 45px;">+</td>
-                    <td colspan="6" class="fw-semibold text-success">
+                  <tr class="add-row-sticky" id="btnAddItemRow" style="cursor: pointer;">
+                    <td class="text-center fw-bold text-primary fs-5" style="background:#f1f5f9; width: 45px;">+</td>
+                    <td colspan="6" class="fw-semibold text-primary" style="background:#f1f5f9;">
                       Add a new item record...
                     </td>
                   </tr>
@@ -91,18 +91,18 @@
       <div class="modal-header"><h5 class="modal-title" id="itemModalTitle">New Item</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
         <input type="hidden" id="mOrigName">
-        <div class="mb-2"><label class="form-label">Item Name *</label><input class="form-control" id="mItemName"></div>
-        <div class="mb-2"><label class="form-label">Category</label><input class="form-control" id="mCategory"></div>
-        <div class="mb-2"><label class="form-label">Unit</label><input class="form-control" id="mUnit" placeholder="Pcs / Bag / Meter..."></div>
-        <div class="mb-2"><label class="form-label">HSN Code</label><input class="form-control" id="mHSN"></div>
-        <div class="mb-2"><label class="form-label">GST %</label><input type="number" min="0" max="100" class="form-control" id="mGST"></div>
+        <div class="mb-2"><label class="form-label">Item Name *</label><input class="form-control form-control-sm" id="mItemName"></div>
+        <div class="mb-2"><label class="form-label">Category</label><input class="form-control form-control-sm" id="mCategory"></div>
+        <div class="mb-2"><label class="form-label">Unit</label><input class="form-control form-control-sm" id="mUnit" placeholder="Pcs / Bag / Meter..."></div>
+        <div class="mb-2"><label class="form-label">HSN Code</label><input class="form-control form-control-sm" id="mHSN"></div>
+        <div class="mb-2"><label class="form-label">GST %</label><input type="number" min="0" max="100" class="form-control form-control-sm" id="mGST"></div>
         <div class="mb-2"><label class="form-label">Status</label>
-          <select class="form-select" id="mStatus"><option>Active</option><option>Inactive</option></select>
+          <select class="form-select form-select-sm" id="mStatus"><option>Active</option><option>Inactive</option></select>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-primary" id="btnSaveItem">Save</button>
+        <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-sm btn-primary" id="btnSaveItem">Save</button>
       </div>
     </div>
   </div>
@@ -111,10 +111,10 @@
 <!-- ══ Product Set Add/Edit Modal ════════════════════════════════ -->
 <div class="modal fade" id="productModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-md modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-primary text-white py-2.5 px-3">
+    <div class="modal-content">
+      <div class="modal-header py-2.5 px-3">
         <h5 class="modal-title fw-bold fs-6" id="productModalTitle">New Product Set</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 bg-light">
         <input type="hidden" id="pOrigName">
