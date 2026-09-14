@@ -50,13 +50,15 @@ window.onDbReady = function () {
   }
 
   const buttonsHtml = isAdmin ? `
-    <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-2" id="btnAddNewCustomer" title="Add New Customer">
-      <span>➕</span> <span>Add Customer</span>
+    <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-1" id="btnAddNewCustomer" title="Add New Customer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>Add Customer</span>
     </button>
-    <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm bg-white text-nowrap rounded-2" id="btnImportCustomer" title="Import Customers from Excel">
-      <span>📥</span> <span>Import Customer</span>
+    <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm bg-white text-nowrap rounded-1" id="btnImportCustomer" title="Import Customers from Excel">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <span>Import Customer</span>
     </button>
-    <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat" style="display: none;">📁 Download format</button>
+    <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat" style="display: none;">Download format</button>
     <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
   ` : '';
 
@@ -716,11 +718,7 @@ function updateDistrictStats() {
   ];
 
   const isTotalActive = selectedDistricts.length === 0;
-  const totalBadgeClass = isTotalActive
-    ? 'bg-dark text-white border border-dark fw-bold'
-    : 'bg-light text-secondary border border-secondary-subtle';
-
-  const totalBadge = `<span onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="badge rounded-pill ${totalBadgeClass} px-2.5 py-1 fs-8" style="font-size: 0.73rem !important; font-weight: ${isTotalActive ? '700' : '500'}; cursor: pointer; transition: all 0.15s ease;" title="Click to clear filter and show all districts">${isTotalActive ? '✓ ' : ''}Total: ${totalCount}</span>`;
+  const totalBadge = `<button type="button" onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="erp-tag ${isTotalActive ? 'active' : ''}" title="Show all districts">Total: ${totalCount}</button>`;
 
   const districtBadges = sortedDistricts.map((dist) => {
     const count = counts[dist];
@@ -728,11 +726,7 @@ function updateDistrictStats() {
     const isSelected = selectedDistricts.includes(targetDist);
     const safeDist = dist.replace(/'/g, "\\'");
 
-    if (isSelected) {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-primary text-white border border-primary px-2.5 py-1 fs-8" style="font-size: 0.73rem !important; font-weight: 600 !important; cursor: pointer; transition: all 0.15s ease;" title="Selected filter. Click to toggle off.">✓ ${dist}: ${count}</span>`;
-    } else {
-      return `<span onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="badge rounded-pill bg-light text-secondary border border-secondary-subtle px-2 py-0.5 fs-8" style="font-size: 0.72rem !important; font-weight: 500; cursor: pointer; transition: all 0.15s ease;" title="Click to filter by ${dist}">${dist}: ${count}</span>`;
-    }
+    return `<button type="button" onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="erp-tag ${isSelected ? 'active' : ''}" title="Filter by ${dist}">${dist} (${count})</button>`;
   }).join(' ');
 
   container.innerHTML = totalBadge + ' ' + districtBadges;
@@ -1106,8 +1100,12 @@ function renderList() {
           </td>
           <td class="no-print text-center align-middle">
             <div class="d-flex gap-1 justify-content-center">
-              <button class="btn btn-sm btn-success py-0 px-2" onclick="saveInline(${r.SlNo})" title="Save">💾</button>
-              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="cancelInline()" title="Cancel">✕</button>
+              <button class="btn btn-sm btn-success py-0.5 px-2 d-inline-flex align-items-center" onclick="saveInline(${r.SlNo})" title="Save">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary py-0.5 px-2 d-inline-flex align-items-center" onclick="cancelInline()" title="Cancel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
           </td>
         </tr>
@@ -1129,14 +1127,14 @@ function renderList() {
         const commDelayVal = calculateDelay(r.InstallationDate);
         if (commDelayVal) {
           delayBadgeHtml = `
-            <span class="badge bg-light text-secondary border border-secondary-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.62rem; padding:1px 4px; font-weight:500; cursor:pointer;">Comm. Delay ${commDelayVal}</span>
+            <span class="erp-meta-text cursor-pointer" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click for timestamp details">Comm. Delay: ${commDelayVal}</span>
           `;
         }
       } else if (hasLoginDate) {
         const instDelayVal = calculateDelay(r.LoginDate);
         if (instDelayVal) {
           delayBadgeHtml = `
-            <span class="badge bg-light text-secondary border border-secondary-subtle text-decoration-none ms-1" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click to view Timestamp details" style="font-size:0.62rem; padding:1px 4px; font-weight:500; cursor:pointer;">Inst. Delay ${instDelayVal}</span>
+            <span class="erp-meta-text cursor-pointer" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click for timestamp details">Inst. Delay: ${instDelayVal}</span>
           `;
         }
       }
@@ -1147,77 +1145,85 @@ function renderList() {
       let netMeterBadgeHtml = '';
       if (isNetMeterPaid) {
         netMeterBadgeHtml = `
-          <span class="badge bg-light text-success border border-success-subtle rounded-pill px-2 py-0.5 ms-1" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}" style="font-size:0.64rem; font-weight:600; vertical-align: middle;">⚡ Meter ₹${netMeterAmt.toLocaleString('en-IN')}</span>
+          <span class="erp-meta-tag" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}">Meter: ₹${netMeterAmt.toLocaleString('en-IN')}</span>
         `;
       }
 
-      function renderPill(targetAmt, paidAmt, onclickAttr) {
+      function renderDiffText(targetAmt, paidAmt, onclickAttr) {
         const diff = targetAmt - paidAmt;
         if (Math.abs(diff) < 0.01) {
           return '';
         } else if (diff > 0) {
-          return `<button type="button" class="btn inst-status-pill inst-status-pending no-print" onclick="${onclickAttr}" title="Click to view payment history">💳 Pending ₹${diff.toLocaleString('en-IN')}</button>`;
+          return `<span class="erp-status-pending cursor-pointer no-print ms-1.5" onclick="${onclickAttr}" title="Click to view payment history">Pending: ₹${diff.toLocaleString('en-IN')}</span>`;
         } else {
-          return `<button type="button" class="btn inst-status-pill inst-status-surplus no-print" onclick="${onclickAttr}" title="Click to view payment history">+₹${Math.abs(diff).toLocaleString('en-IN')} Advance</button>`;
+          return `<span class="erp-status-advance cursor-pointer no-print ms-1.5" onclick="${onclickAttr}" title="Click to view payment history">Advance: +₹${Math.abs(diff).toLocaleString('en-IN')}</span>`;
         }
       }
 
-      const custPillHtml = renderPill(price, total, `showTransactionHistory(${r.SlNo}, 'Customer')`);
-      const vendorPillHtml = renderPill(price - partnerPrice, vPaid, `showTransactionHistory(${r.SlNo}, 'Vendor')`);
+      const custPillHtml = renderDiffText(price, total, `showTransactionHistory(${r.SlNo}, 'Customer')`);
+      const vendorPillHtml = renderDiffText(price - partnerPrice, vPaid, `showTransactionHistory(${r.SlNo}, 'Vendor')`);
       const profit = partnerPrice - comm - vPrice;
       const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
 
       return `
         <tr class="${rowClass}">
-          <td class="text-center fw-bold text-secondary align-middle" style="font-size:0.85rem;">${r.SlNo}</td>
-          <td>
-            <div class="inst-card-block">
-              <div class="inst-row-header">
-                <a href="#" class="inst-customer-name" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
+          <td class="text-center fw-semibold text-secondary align-middle fs-8">${r.SlNo}</td>
+          <td class="align-middle">
+            <div class="erp-customer-cell">
+              <div class="erp-name-row">
+                <a href="#" class="erp-cust-name" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
                   ${r.Name || ''}
                 </a>
                 ${delayBadgeHtml}
                 ${netMeterBadgeHtml}
               </div>
-              <div class="inst-chip-bar">
-                <span class="inst-amount-label">Price: ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+              <div class="erp-meta-row">
+                <span class="erp-price-text">Price: ₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 ${custPillHtml}
               </div>
             </div>
           </td>
-          <td class="col-Partner">
-            <div class="inst-card-block">
-              <div class="inst-row-header">
-                <a href="#" class="inst-partner-name" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
+          <td class="col-Partner align-middle">
+            <div class="erp-partner-cell">
+              <div class="erp-name-row">
+                <a href="#" class="erp-partner-name" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
                   ${r.BrokerName || '—'}
                 </a>
               </div>
-              <div class="inst-chip-bar">
-                <span class="inst-amount-label">Cost: ₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+              <div class="erp-meta-row">
+                <span class="erp-price-text">Cost: ₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                 ${vendorPillHtml}
               </div>
             </div>
           </td>
-          <td class="col-price font-monospace align-middle">
-            <div class="inst-finance-box">
-              <div class="inst-finance-row">
-                <span class="text-secondary fw-normal">Exp:</span> 
-                <span class="fw-semibold text-dark">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+          <td class="col-price align-middle font-monospace">
+            <div class="erp-expense-cell">
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <span class="text-secondary fs-8">Exp:</span>
+                <span class="fw-semibold text-dark fs-8">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
               </div>
-              <div class="inst-finance-row border-top pt-1">
-                <span class="text-secondary fw-normal">Profit:</span> 
-                <span class="${profitColorClass}">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+              <div class="d-flex justify-content-between align-items-center gap-2 border-top pt-0.5 mt-0.5">
+                <span class="text-secondary fs-8">Profit:</span>
+                <span class="${profitColorClass} fs-8">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
               </div>
             </div>
           </td>
           <td class="no-print text-center align-middle">
             <div class="d-flex gap-1 justify-content-center">
               ${isDeactive ? `
-                <button class="btn btn-sm btn-light border text-success inst-act-btn" onclick="restoreRow(${r.SlNo})" title="Restore Row">↻</button>
-                <button class="btn btn-sm btn-light border text-danger inst-act-btn" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">✕</button>
+                <button class="btn btn-sm erp-btn-action text-success" onclick="restoreRow(${r.SlNo})" title="Restore Row">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+                <button class="btn btn-sm erp-btn-action text-danger" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               ` : `
-                <button class="btn btn-sm btn-light border text-primary inst-act-btn" onclick="editRow(${r.SlNo})" title="Edit Row">✎</button>
-                <button class="btn btn-sm btn-light border text-danger inst-act-btn" onclick="deleteRow(${r.SlNo})" title="Deactivate Row">🗑</button>
+                <button class="btn btn-sm erp-btn-action text-primary" onclick="editRow(${r.SlNo})" title="Edit Row">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button class="btn btn-sm erp-btn-action text-danger" onclick="deleteRow(${r.SlNo})" title="Deactivate Row">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
               `}
             </div>
           </td>
@@ -1231,37 +1237,32 @@ function renderList() {
   const tfoot = document.querySelector('#installmentsTable tfoot');
   if (tfoot) {
     let tfootHTML = `
-      <tr class="grand-total" style="height:37px;">
-        <td class="text-center align-middle">${isAddingNew ? activeCount - 1 : activeCount}</td>
-        <td>
-          <div class="d-flex flex-column align-items-start">
-            <span class="fw-semibold text-secondary">GRAND TOTAL <span style="font-size:0.72rem; font-weight:normal;" class="text-muted">(Pending: ${fmtGrandTotal(sumPrice - sumTotal)})</span></span>
-            <div class="fw-bold font-monospace text-dark mt-1" style="font-size:0.72rem;">
-              c.price: ${fmtGrandTotal(sumPrice)} <span class="text-muted fw-normal">(Paid: ${fmtGrandTotal(sumTotal)})</span>
+      <tr class="grand-total erp-grand-total">
+        <td class="text-center align-middle fs-8">${isAddingNew ? activeCount - 1 : activeCount}</td>
+        <td class="align-middle">
+          <div class="d-flex flex-column gap-0.5">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-dark fs-8">GRAND TOTAL</span>
+              <span class="erp-status-pending fs-8">Pending: ${fmtGrandTotal(sumPrice - sumTotal)}</span>
+            </div>
+            <div class="text-secondary fs-8 font-monospace">
+              Price: <span class="text-dark fw-semibold">${fmtGrandTotal(sumPrice)}</span> <span class="text-muted ms-1">(Paid: ${fmtGrandTotal(sumTotal)})</span>
             </div>
           </div>
         </td>
-        <td class="text-end fw-bold font-monospace align-middle" style="font-size:0.72rem;">
-          <div class="d-flex flex-column align-items-start">
-            <div>Comm: ${fmtGrandTotal(sumComm)} <span class="text-muted fw-normal" style="font-size:0.68rem;">(Pending: ${fmtGrandTotal(sumComm - sumCommPaid)})</span></div>
-            <div>Part: ${fmtGrandTotal(sumPartnerPrice)} <span class="text-muted fw-normal" style="font-size:0.68rem;">(Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)})</span></div>
+        <td class="align-middle fs-8 font-monospace">
+          <div class="d-flex flex-column gap-0.5">
+            <div><span class="text-secondary">Comm:</span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumComm)}</span> <span class="text-muted ms-1">(Pending: ${fmtGrandTotal(sumComm - sumCommPaid)})</span></div>
+            <div><span class="text-secondary">Part:</span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumPartnerPrice)}</span> <span class="text-muted ms-1">(Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)})</span></div>
           </div>
         </td>
-        <td class="text-start fw-bold font-monospace align-middle admin-only-column" style="font-size:0.72rem;">
-          <div class="d-flex flex-column align-items-start px-1" style="gap: 2px;">
-            <div>
-              <span class="text-secondary fw-normal">Exp.:</span> 
-              <span class="text-dark">${fmtGrandTotal(sumVendorPrice)}</span>
-            </div>
+        <td class="align-middle admin-only-column fs-8 font-monospace">
+          <div class="d-flex flex-column gap-0.5">
+            <div><span class="text-secondary">Exp:</span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumVendorPrice)}</span></div>
             ${(() => {
               const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
               const profitColorClass = totalProfit >= 0 ? 'text-success' : 'text-danger';
-              return `
-                <div>
-                  <span class="text-secondary fw-normal">Profit:</span> 
-                  <span class="${profitColorClass}">${fmtGrandTotal(totalProfit)}</span>
-                </div>
-              `;
+              return `<div><span class="text-secondary">Profit:</span> <span class="${profitColorClass} fw-bold">${fmtGrandTotal(totalProfit)}</span></div>`;
             })()}
           </div>
         </td>
@@ -1917,9 +1918,9 @@ function renderCustomerPopupNotes(slNo) {
           formattedDate = t.CreatedAt;
         }
         return `
-          <div class="card border-0 shadow-sm p-2.5 position-relative" style="background-color: #fff9c4; border-left: 4px solid #fbc02d !important; border-radius: 8px;">
+          <div class="card border-0 shadow-sm p-2.5 position-relative" style="background-color: #fefce8; border-left: 3px solid #ca8a04 !important; border-radius: 4px;">
             <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="fw-semibold text-secondary" style="font-size: 0.7rem;">📌 Note • ${formattedDate}</span>
+              <span class="fw-semibold text-secondary" style="font-size: 0.7rem;">Note • ${formattedDate}</span>
               <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none fw-bold" onclick="deleteCustomerPopupNote('${t.RemarkID}')" title="Delete Note" style="font-size: 0.8rem; line-height: 1;">✕</button>
             </div>
             <div class="text-dark fw-medium fs-7" style="white-space: pre-wrap; word-break: break-word;">${t.Remark}</div>
@@ -2653,10 +2654,10 @@ function renderImportPreviewModal() {
   if (badgesContainer) {
     const newCount = parsedCustomers.filter(c => !c.IsDuplicate).length;
     badgesContainer.innerHTML = `
-      <span class="badge bg-success px-2.5 py-1 fs-8">🆕 New Customers: ${newCount}</span>
-      <span class="badge bg-warning text-dark px-2.5 py-1 fs-8">⚡ Data Differences: ${parsedConflictingCustomers.length}</span>
-      <span class="badge bg-secondary px-2.5 py-1 fs-8">✓ Identical (Skipped): ${parsedIdenticalCount}</span>
-      <span class="badge bg-danger px-2.5 py-1 fs-8">⚠️ Missing in Excel: ${parsedMissingCustomers.length}</span>
+      <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2 py-0.5 fs-8">New Customers: ${newCount}</span>
+      <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 fs-8">Data Differences: ${parsedConflictingCustomers.length}</span>
+      <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-0.5 fs-8">Identical (Skipped): ${parsedIdenticalCount}</span>
+      <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle px-2 py-0.5 fs-8">Missing in Excel: ${parsedMissingCustomers.length}</span>
     `;
   }
 
@@ -2676,20 +2677,20 @@ function renderImportPreviewModal() {
         const fmtVal = (diff, val) => diff ? `<mark class="bg-warning text-dark px-1.5 py-0.5 rounded font-monospace fw-bold">${escapeHtml(val || '—')}</mark>` : escapeHtml(val || '—');
 
         return `
-          <div class="card border shadow-sm p-2.5 bg-white rounded-3">
+          <div class="card border shadow-sm p-2.5 bg-white rounded-1">
             <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
-              <span class="fw-bold text-dark fs-7">👤 ${escapeHtml(item.Name)} <small class="text-muted font-monospace">(Sl. #${item.SlNo})</small></span>
-              <span class="badge bg-warning text-dark fs-8">Difference Detected</span>
+              <span class="fw-bold text-dark fs-7">${escapeHtml(item.Name)} <small class="text-muted font-monospace">(Sl. #${item.SlNo})</small></span>
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-8">Difference Detected</span>
             </div>
             
             <div class="row g-2">
               <!-- Option A: Current Excel Data -->
               <div class="col-md-6">
-                <div class="border rounded p-2.5 h-100 ${isExcel ? 'border-primary bg-primary-subtle bg-opacity-10 shadow-sm' : 'bg-light'}" style="font-size: 0.82rem;">
+                <div class="border rounded-1 p-2.5 h-100 ${isExcel ? 'border-primary bg-primary-subtle bg-opacity-10 shadow-sm' : 'bg-light'}" style="font-size: 0.82rem;">
                   <div class="form-check mb-1">
                     <input class="form-check-input" type="radio" name="conflictChoice_${idx}" id="choiceExcel_${idx}" value="EXCEL" ${isExcel ? 'checked' : ''} onchange="window.setConflictChoice(${idx}, 'EXCEL')">
                     <label class="form-check-label fw-bold text-primary" for="choiceExcel_${idx}">
-                      📥 Save Current Excel Data (Overwrite)
+                      Save Current Excel Data (Overwrite)
                     </label>
                   </div>
                   <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2" style="font-size:0.78rem;">
@@ -2703,7 +2704,7 @@ function renderImportPreviewModal() {
 
               <!-- Option B: Previous Grid Data -->
               <div class="col-md-6">
-                <div class="border rounded p-2.5 h-100 ${isGrid ? 'border-secondary bg-secondary-subtle bg-opacity-10 shadow-sm' : 'bg-light'}" style="font-size: 0.82rem;">
+                <div class="border rounded-1 p-2.5 h-100 ${isGrid ? 'border-secondary bg-secondary-subtle bg-opacity-10 shadow-sm' : 'bg-light'}" style="font-size: 0.82rem;">
                   <div class="form-check mb-1">
                     <input class="form-check-input" type="radio" name="conflictChoice_${idx}" id="choiceGrid_${idx}" value="GRID" ${isGrid ? 'checked' : ''} onchange="window.setConflictChoice(${idx}, 'GRID')">
                     <label class="form-check-label fw-bold text-secondary" for="choiceGrid_${idx}">

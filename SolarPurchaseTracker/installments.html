@@ -18,57 +18,60 @@
     <div class="topbar" id="topbar"></div>
 
     <div class="page-body">
-      <!-- Search & Filters -->
-      <div class="st-card mb-3 no-print py-2 px-3">
+      <!-- Search & Filters Toolbar -->
+      <div class="st-card erp-toolbar mb-2.5 no-print py-2 px-3">
         <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-          <div class="d-flex align-items-center gap-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse" style="cursor:pointer;">
-            <span class="fw-bold text-primary-emphasis" style="font-size:0.85rem;"><span class="me-1">🔍</span>Search & Filters</span>
-            <span class="fs-7 text-muted" id="searchCollapseIndicator">▼ Show</span>
+          <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 460px;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input type="text" class="form-control border-start-0 ps-1" id="fSearch" placeholder="Search customer, mobile, address, brand..." style="font-size:0.83rem;">
+            </div>
           </div>
-          <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center ms-auto" style="font-size: 0.75rem;"></div>
+          <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span>Filters</span>
+              <span class="text-muted fs-8" id="searchCollapseIndicator">▾</span>
+            </button>
+            <button class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-2 fs-8" id="btnClearFilters">Clear</button>
+            <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center" style="font-size: 0.75rem;"></div>
+          </div>
         </div>
-        <div class="collapse" id="searchCollapse">
-          <div class="pt-3">
-            <div class="row g-2 align-items-end">
-              <div class="col-md-2">
-                <label class="form-label fw-bold">Search</label>
-                <input type="text" class="form-control" id="fSearch" placeholder="Name, Address, Mobile, Brand...">
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">Partner</label>
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary w-100 dropdown-toggle text-start text-truncate" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="background:#fff; font-size:0.85rem; padding: 6px 10px;">
-                    All Partners
-                  </button>
-                  <div class="dropdown-menu p-3" id="partnerMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.85rem;">
-                    <!-- Checkboxes injected by js -->
-                  </div>
+        <div class="collapse border-top mt-2 pt-2" id="searchCollapse">
+          <div class="row g-2 align-items-end pt-1">
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">Partner</label>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="padding: 5px 8px;">
+                  All Partners
+                </button>
+                <div class="dropdown-menu p-3" id="partnerMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.82rem;">
+                  <!-- Checkboxes injected by js -->
                 </div>
               </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">Filter Date Type</label>
-                <select class="form-select" id="fDateType">
-                  <option value="LoginDate" selected>Login Date</option>
-                  <option value="InstallationDate">Installation Date</option>
-                  <option value="CommissioningDate">Commissioning Date</option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">From Date</label>
-                <input type="date" class="form-control" id="fLoginFrom">
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">To Date</label>
-                <input type="date" class="form-control" id="fLoginTo">
-              </div>
-              <div class="col-md-auto d-flex align-items-center mb-1">
-                <div class="form-check mb-1">
-                  <input class="form-check-input" type="checkbox" id="chkShowDeactive">
-                  <label class="form-check-label fs-7 fw-semibold text-secondary" for="chkShowDeactive">Show Deactive</label>
-                </div>
-              </div>
-              <div class="col-md-auto">
-                <button class="btn btn-outline-secondary" id="btnClearFilters">Clear Filters</button>
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">Date Type</label>
+              <select class="form-select form-select-sm fs-8" id="fDateType">
+                <option value="LoginDate" selected>Login Date</option>
+                <option value="InstallationDate">Installation Date</option>
+                <option value="CommissioningDate">Commissioning Date</option>
+              </select>
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">From Date</label>
+              <input type="date" class="form-control form-control-sm fs-8" id="fLoginFrom">
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">To Date</label>
+              <input type="date" class="form-control form-control-sm fs-8" id="fLoginTo">
+            </div>
+            <div class="col-md-auto col-6 d-flex align-items-center mb-1">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="chkShowDeactive">
+                <label class="form-check-label fs-8 text-secondary" for="chkShowDeactive">Show Deactive</label>
               </div>
             </div>
           </div>
@@ -81,11 +84,11 @@
           <table class="table table-hover table-installments mb-0" id="installmentsTable">
             <thead>
               <tr>
-                <th class="text-center" style="width: 50px;">Sl.</th>
+                <th class="text-center" style="width: 45px;">Sl.</th>
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
                 <th>Partner</th>
-                <th class="col-price admin-only-column">Total expense</th>
-                <th class="no-print">Actions</th>
+                <th class="col-price admin-only-column">Total Expense</th>
+                <th class="no-print" style="width: 90px; text-align: center;">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -103,12 +106,12 @@
         <div class="col-lg-6">
           <div class="st-card">
             <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#brandSummaryCollapse" aria-expanded="false" aria-controls="brandSummaryCollapse" style="cursor:pointer;">
-              <h6 class="mb-0 fw-bold text-primary-emphasis"><span class="me-2">🏷️</span>Brand-wise Sales Summary</h6>
-              <span class="fs-7 text-muted" id="brandSummaryCollapseIndicator">▼ Show</span>
+              <h6 class="mb-0 fw-semibold text-dark fs-7">Brand-wise Sales Summary</h6>
+              <span class="fs-8 text-muted" id="brandSummaryCollapseIndicator">▾</span>
             </div>
             <div class="collapse" id="brandSummaryCollapse">
-              <div class="pt-3 table-responsive" style="max-height: 250px; overflow-y: auto;">
-                <table class="table table-sm table-hover align-middle mb-0" id="brandSummaryTable" style="font-size:0.85rem;">
+              <div class="pt-2 table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" id="brandSummaryTable" style="font-size:0.83rem;">
                   <thead>
                     <tr class="table-light">
                       <th>Brand</th>
@@ -126,12 +129,12 @@
         <div class="col-lg-6">
           <div class="st-card">
             <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#districtSummaryCollapse" aria-expanded="false" aria-controls="districtSummaryCollapse" style="cursor:pointer;">
-              <h6 class="mb-0 fw-bold text-primary-emphasis"><span class="me-2">📍</span>District-wise Sales Summary</h6>
-              <span class="fs-7 text-muted" id="districtSummaryCollapseIndicator">▼ Show</span>
+              <h6 class="mb-0 fw-semibold text-dark fs-7">District-wise Sales Summary</h6>
+              <span class="fs-8 text-muted" id="districtSummaryCollapseIndicator">▾</span>
             </div>
             <div class="collapse" id="districtSummaryCollapse">
-              <div class="pt-3 table-responsive" style="max-height: 250px; overflow-y: auto;">
-                <table class="table table-sm table-hover align-middle mb-0" id="districtSummaryTable" style="font-size:0.85rem;">
+              <div class="pt-2 table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" id="districtSummaryTable" style="font-size:0.83rem;">
                   <thead>
                     <tr class="table-light">
                       <th>District</th>
@@ -154,36 +157,36 @@
 <!-- ══ Transaction History & Editing Modal ════════════════════════════════ -->
 <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="txnModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-primary text-white py-2" style="border-radius:14px 14px 0 0;">
-        <h6 class="modal-title fw-bold fs-7" id="txnModalLabel">Installment Transactions</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="txnModalLabel">Installment Transactions</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-3 bg-light">
-        <!-- History Feed (Chat Style) -->
-        <div class="fw-bold text-secondary fs-8 mb-2">Payment History</div>
-        <div id="txnHistoryFeed" class="d-flex flex-column gap-2 mb-3 overflow-y-auto" style="max-height: 200px; padding: 2px;">
+      <div class="modal-body p-3">
+        <!-- History Feed -->
+        <div class="fw-semibold text-secondary fs-8 mb-1.5">Payment History</div>
+        <div id="txnHistoryFeed" class="d-flex flex-column gap-1.5 mb-3 overflow-y-auto" style="max-height: 200px; padding: 1px;">
           <!-- Transactions will be loaded dynamically here -->
         </div>
 
         <!-- Add Payment Section -->
-        <div class="border rounded p-2 bg-white shadow-sm">
-          <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Payment</div>
+        <div class="border rounded-1 p-2.5 bg-light">
+          <div class="fw-semibold text-dark fs-8 mb-2">Add New Payment</div>
           <input type="hidden" id="txnSlNo">
           <input type="hidden" id="txnType">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fs-8 text-secondary mb-1">Payment Date</label>
-              <input type="date" class="form-control form-control-sm" id="newTxnDate">
+              <input type="date" class="form-control form-control-sm fs-8" id="newTxnDate">
             </div>
             <div class="col-6">
               <label class="form-label fs-8 text-secondary mb-1">Amount (₹) *</label>
-              <input type="number" step="0.01" class="form-control form-control-sm text-end" id="newTxnAmount" placeholder="0.00">
+              <input type="number" step="0.01" class="form-control form-control-sm text-end fs-8" id="newTxnAmount" placeholder="0.00">
             </div>
           </div>
           <div class="mb-2">
             <label class="form-label fs-8 text-secondary mb-1">Remark</label>
-            <input type="text" class="form-control form-control-sm" id="newTxnRemark" placeholder="e.g. 1st installment, Cash, Cheque No...">
+            <input type="text" class="form-control form-control-sm fs-8" id="newTxnRemark" placeholder="e.g. 1st installment, Cash, Cheque No...">
           </div>
           <div class="text-end">
             <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8" id="btnAddTxn">Add Payment</button>
@@ -192,17 +195,17 @@
 
         <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
           <div>
-            <span class="fw-bold text-primary fs-7 me-1">Total Paid:</span>
-            <span class="fw-bold text-primary font-monospace fs-6" id="lblTxnTotal">₹0.00</span>
+            <span class="fw-semibold text-secondary fs-8 me-1">Total Paid:</span>
+            <span class="fw-bold text-dark font-monospace fs-7" id="lblTxnTotal">₹0.00</span>
           </div>
           <div>
-            <span class="fw-bold text-danger fs-7 me-1">Pending:</span>
-            <span class="fw-bold text-danger font-monospace fs-6" id="lblTxnPending">₹0.00</span>
+            <span class="fw-semibold text-secondary fs-8 me-1">Pending:</span>
+            <span class="fw-bold font-monospace fs-7" id="lblTxnPending">₹0.00</span>
           </div>
         </div>
       </div>
-      <div class="modal-footer bg-light border-top py-1">
-        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      <div class="modal-footer bg-light border-top py-1.5 px-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -211,48 +214,48 @@
 <!-- ══ Commission History & Editing Modal ════════════════════════════════ -->
 <div class="modal fade" id="commissionModal" tabindex="-1" aria-labelledby="commModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-success text-white py-2" style="border-radius:14px 14px 0 0;">
-        <h6 class="modal-title fw-bold fs-7" id="commModalLabel">Partner Commission Payments</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="commModalLabel">Partner Commission Payments</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-3 bg-light">
-        <!-- History Feed (Chat Style) -->
-        <div class="fw-bold text-secondary fs-8 mb-2">Payment History</div>
-        <div id="commHistoryFeed" class="d-flex flex-column gap-2 mb-3 overflow-y-auto" style="max-height: 200px; padding: 2px;">
+      <div class="modal-body p-3">
+        <!-- History Feed -->
+        <div class="fw-semibold text-secondary fs-8 mb-1.5">Payment History</div>
+        <div id="commHistoryFeed" class="d-flex flex-column gap-1.5 mb-3 overflow-y-auto" style="max-height: 200px; padding: 1px;">
           <!-- Transactions will be loaded dynamically here -->
         </div>
 
         <!-- Add Payment Section -->
-        <div class="border rounded p-2 bg-white shadow-sm">
-          <div class="fw-bold text-success fs-8 mb-2">➕ Add New Payment</div>
+        <div class="border rounded-1 p-2.5 bg-light">
+          <div class="fw-semibold text-dark fs-8 mb-2">Add New Payment</div>
           <input type="hidden" id="commTxnSlNo">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fs-8 text-secondary mb-1">Payment Date</label>
-              <input type="date" class="form-control form-control-sm" id="newCommTxnDate">
+              <input type="date" class="form-control form-control-sm fs-8" id="newCommTxnDate">
             </div>
             <div class="col-6">
               <label class="form-label fs-8 text-secondary mb-1">Amount (₹) *</label>
-              <input type="number" step="0.01" class="form-control form-control-sm text-end" id="newCommTxnAmount" placeholder="0.00">
+              <input type="number" step="0.01" class="form-control form-control-sm text-end fs-8" id="newCommTxnAmount" placeholder="0.00">
             </div>
           </div>
           <div class="mb-2">
             <label class="form-label fs-8 text-secondary mb-1">Remark</label>
-            <input type="text" class="form-control form-control-sm" id="newCommTxnRemark" placeholder="e.g. Part payment, Cash, Cheque No...">
+            <input type="text" class="form-control form-control-sm fs-8" id="newCommTxnRemark" placeholder="e.g. Part payment, Cash, Cheque No...">
           </div>
           <div class="text-end">
-            <button type="button" class="btn btn-sm btn-success py-1 px-3 fs-8" id="btnAddCommTxn">Add Payment</button>
+            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8" id="btnAddCommTxn">Add Payment</button>
           </div>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-          <span class="fw-bold text-success fs-7">Total Paid:</span>
-          <span class="fw-bold text-success font-monospace fs-6" id="lblCommTxnTotal">₹0.00</span>
+          <span class="fw-semibold text-secondary fs-8">Total Paid:</span>
+          <span class="fw-bold text-success font-monospace fs-7" id="lblCommTxnTotal">₹0.00</span>
         </div>
       </div>
-      <div class="modal-footer bg-light border-top py-1">
-        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      <div class="modal-footer bg-light border-top py-1.5 px-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -261,13 +264,13 @@
   <!-- Customer Details Modal -->
   <div class="modal fade" id="customerDetailsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-        <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
-          <h6 class="modal-title fw-bold fs-7" id="customerDetailsModalTitle">Customer Details</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content border shadow-sm rounded-2">
+        <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+          <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="customerDetailsModalTitle">Customer Details</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
-          <div class="card border-0 shadow-sm rounded-3 p-3">
+        <div class="modal-body p-3 d-flex flex-column gap-2.5" style="max-height: 80vh; overflow-y: auto;">
+          <div class="card border rounded-1 p-3 bg-white">
             <div class="d-flex flex-column gap-2" style="font-size: 0.82rem;">
               <div>
                 <span class="text-secondary d-block fs-8 mb-0.5">Consumer No</span>
@@ -292,28 +295,27 @@
           </div>
           
           <div>
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="text-secondary fs-8 fw-bold">📝 Notes & Remarks</span>
-              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-8">Editable Field</span>
+            <div class="d-flex justify-content-between align-items-center mb-1.5">
+              <span class="text-secondary fs-8 fw-semibold">Notes & Remarks</span>
             </div>
             
-            <!-- Google Keep Style Note Input Card -->
-            <div class="card border-warning border-opacity-50 shadow-sm rounded-3 mb-3" style="background-color: #fffde7;">
-              <textarea class="form-control border-0 bg-transparent shadow-none p-2 fs-7" id="detNewNoteText" rows="2" placeholder="✍️ Take a note / add customer remark..." style="resize: vertical;"></textarea>
-              <div class="d-flex justify-content-between align-items-center px-2 py-1.5 border-top border-warning border-opacity-25" style="background-color: rgba(255, 249, 196, 0.6);">
-                <span class="text-muted fs-8">Save notes directly to customer record</span>
-                <button type="button" class="btn btn-warning btn-sm fw-bold text-dark px-3 py-1 shadow-sm fs-8" onclick="saveCustomerPopupNote()">📌 Save Note</button>
+            <!-- Note Input Card -->
+            <div class="card border rounded-1 mb-2.5 bg-white">
+              <textarea class="form-control border-0 shadow-none p-2 fs-8" id="detNewNoteText" rows="2" placeholder="Add customer note or remark..." style="resize: vertical;"></textarea>
+              <div class="d-flex justify-content-between align-items-center px-2 py-1.5 border-top bg-light">
+                <span class="text-muted fs-8">Save note to record</span>
+                <button type="button" class="btn btn-primary btn-sm px-3 py-0.5 fs-8" onclick="saveCustomerPopupNote()">Save Note</button>
               </div>
             </div>
 
-            <!-- Google Keep Cards List -->
-            <div id="detNotesList" class="d-flex flex-column gap-2" style="max-height: 250px; overflow-y: auto;">
+            <!-- Notes List -->
+            <div id="detNotesList" class="d-flex flex-column gap-1.5" style="max-height: 250px; overflow-y: auto;">
               <!-- Dynamic Notes -->
             </div>
           </div>
         </div>
-        <div class="modal-footer bg-light border-top py-1">
-          <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+        <div class="modal-footer bg-light border-top py-1.5 px-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -322,13 +324,13 @@
   <!-- Partner Details Modal -->
   <div class="modal fade" id="partnerDetailsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-        <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
-          <h6 class="modal-title fw-bold fs-7" id="partnerDetailsModalTitle">Partner Details</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content border shadow-sm rounded-2">
+        <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+          <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="partnerDetailsModalTitle">Partner Details</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
-          <div class="card border-0 shadow-sm rounded-3 p-3">
+        <div class="modal-body p-3 d-flex flex-column gap-2.5" style="max-height: 80vh; overflow-y: auto;">
+          <div class="card border rounded-1 p-3 bg-white">
             <div class="d-flex flex-column gap-2" style="font-size: 0.82rem;">
               <div>
                 <span class="text-secondary d-block fs-8 mb-0.5">Phone Number</span>
@@ -337,8 +339,8 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer bg-light border-top py-1">
-          <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+        <div class="modal-footer bg-light border-top py-1.5 px-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -347,45 +349,45 @@
   <!-- Timestamp Details Modal -->
   <div class="modal fade" id="timestampDetailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-        <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
-          <h6 class="modal-title fw-bold fs-7" id="tsModalTitle">Timestamp Details</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content border shadow-sm rounded-2">
+        <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+          <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="tsModalTitle">Timestamp Details</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-3 bg-light d-flex flex-column gap-3">
-          <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
-            <div class="d-flex flex-column gap-2" style="font-size: 0.85rem;">
+        <div class="modal-body p-3 d-flex flex-column gap-2.5">
+          <div class="card border rounded-1 p-3 bg-white">
+            <div class="d-flex flex-column gap-2" style="font-size: 0.83rem;">
               <!-- Login Date -->
-              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border">
+              <div class="d-flex justify-content-between align-items-center p-2 rounded-1 bg-light border">
                 <div>
-                  <span class="fw-bold text-secondary d-block fs-8 mb-0.5">🗓 Login Date</span>
-                  <span class="fw-semibold text-dark fs-7 font-monospace" id="tsModalLoginDate">—</span>
+                  <span class="fw-semibold text-secondary d-block fs-8 mb-0.5">Login Date</span>
+                  <span class="fw-semibold text-dark fs-8 font-monospace" id="tsModalLoginDate">—</span>
                 </div>
-                <span class="badge bg-primary-subtle text-primary-emphasis font-monospace" id="tsModalLoginDelay">—</span>
+                <span class="badge bg-primary-subtle text-primary-emphasis font-monospace fs-8" id="tsModalLoginDelay">—</span>
               </div>
               
               <!-- Installation Date -->
-              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border">
+              <div class="d-flex justify-content-between align-items-center p-2 rounded-1 bg-light border">
                 <div>
-                  <span class="fw-bold text-secondary d-block fs-8 mb-0.5">🛠 Installation Date</span>
-                  <span class="fw-semibold text-dark fs-7 font-monospace" id="tsModalInstDate">—</span>
+                  <span class="fw-semibold text-secondary d-block fs-8 mb-0.5">Installation Date</span>
+                  <span class="fw-semibold text-dark fs-8 font-monospace" id="tsModalInstDate">—</span>
                 </div>
-                <span class="badge bg-info-subtle text-info-emphasis font-monospace" id="tsModalInstDelay">—</span>
+                <span class="badge bg-info-subtle text-info-emphasis font-monospace fs-8" id="tsModalInstDelay">—</span>
               </div>
               
               <!-- Commissioning Date -->
-              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border">
+              <div class="d-flex justify-content-between align-items-center p-2 rounded-1 bg-light border">
                 <div>
-                  <span class="fw-bold text-secondary d-block fs-8 mb-0.5">⚡ Commissioning Date</span>
-                  <span class="fw-semibold text-dark fs-7 font-monospace" id="tsModalCommDate">—</span>
+                  <span class="fw-semibold text-secondary d-block fs-8 mb-0.5">Commissioning Date</span>
+                  <span class="fw-semibold text-dark fs-8 font-monospace" id="tsModalCommDate">—</span>
                 </div>
-                <span class="badge bg-success-subtle text-success-emphasis font-monospace" id="tsModalCommDelay">—</span>
+                <span class="badge bg-success-subtle text-success-emphasis font-monospace fs-8" id="tsModalCommDelay">—</span>
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer bg-light border-top py-1">
-          <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+        <div class="modal-footer bg-light border-top py-1.5 px-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -394,47 +396,47 @@
 <!-- ══ Notes & Remarks Modal ════════════════════════════════ -->
 <div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header text-white py-2" style="background: linear-gradient(135deg, var(--st-blue-900), var(--st-blue-700)); border-radius:14px 14px 0 0;">
-        <h6 class="modal-title fw-bold fs-7" id="notesModalLabel">Notes & Remarks</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="notesModalLabel">Notes & Remarks</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-3 bg-light d-flex flex-column gap-3" style="max-height: 80vh; overflow-y: auto;">
+      <div class="modal-body p-3 d-flex flex-column gap-2.5" style="max-height: 80vh; overflow-y: auto;">
         
         <!-- Notes History Feed -->
         <div>
-          <div class="fw-bold text-secondary fs-8 mb-2">Remarks History</div>
-          <div id="notesHistoryFeed" class="d-flex flex-column overflow-y-auto" style="max-height: 220px; padding: 2px;">
+          <div class="fw-semibold text-secondary fs-8 mb-1.5">Remarks History</div>
+          <div id="notesHistoryFeed" class="d-flex flex-column overflow-y-auto" style="max-height: 220px; padding: 1px;">
             <!-- Notes injected dynamically by installments.js -->
           </div>
         </div>
 
         <!-- Add Note Form -->
-        <div class="border rounded p-3 bg-white shadow-sm">
-          <div class="fw-bold text-primary fs-8 mb-2">➕ Add New Note / Remark</div>
+        <div class="border rounded-1 p-2.5 bg-light">
+          <div class="fw-semibold text-dark fs-8 mb-2">Add New Note / Remark</div>
           <input type="hidden" id="noteSlNo">
           
           <div class="mb-2" id="divNoteTypeWrapper" style="display: none;">
             <label class="form-label fs-8 text-secondary mb-1" for="newNoteType">Remark Type *</label>
-            <select id="newNoteType" class="form-select form-select-sm">
+            <select id="newNoteType" class="form-select form-select-sm fs-8">
               <option value="Customer">Customer Specific Remark</option>
               <option value="Partner">Partner Specific Remark</option>
             </select>
           </div>
           
-          <div class="mb-3">
+          <div class="mb-2">
             <label class="form-label fs-8 text-secondary mb-1" for="newNoteText">Remark *</label>
-            <textarea class="form-control form-control-sm" id="newNoteText" rows="3" placeholder="Enter specific customer or Partner remarks here..."></textarea>
+            <textarea class="form-control form-control-sm fs-8" id="newNoteText" rows="3" placeholder="Enter customer or partner remarks..."></textarea>
           </div>
           
           <div class="text-end">
-            <button type="button" class="btn btn-sm btn-accent py-1 px-4 fs-8 fw-semibold" id="btnAddNote">Save Note</button>
+            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8" id="btnAddNote">Save Note</button>
           </div>
         </div>
 
       </div>
-      <div class="modal-footer bg-light border-top py-1">
-        <button type="button" class="btn btn-xs btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      <div class="modal-footer bg-light border-top py-1.5 px-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -443,71 +445,71 @@
 <!-- ══ Mobile-Friendly Customer Add/Edit Modal ════════════════════════════════ -->
 <div class="modal fade" id="customerModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-dark text-white py-2" style="border-radius:14px 14px 0 0;">
-        <h5 class="modal-title fw-bold fs-6" id="customerModalTitle">Add New Customer Record</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <h5 class="modal-title fw-bold fs-6 text-dark mb-0" id="customerModalTitle">Customer Record</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-3 bg-light">
+      <div class="modal-body p-3">
         <form id="customerForm">
           <input type="hidden" id="cSlNo">
           <div class="row g-3">
             <!-- Left Column: General & Contact Info -->
             <div class="col-md-6 col-12 border-end-md modal-left-column">
               <div class="row g-2">
-                <div class="col-6 mb-2">
+                <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Customer Name *</label>
-                  <input type="text" class="form-control form-control-sm" id="cName" placeholder="Enter full name" required>
+                  <input type="text" class="form-control form-control-sm fs-8" id="cName" placeholder="Full name" required>
                 </div>
-                <div class="col-6 mb-2">
+                <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Consumer No.</label>
-                  <input type="text" class="form-control form-control-sm" id="cConsumerNo" placeholder="Enter Consumer No">
+                  <input type="text" class="form-control form-control-sm fs-8" id="cConsumerNo" placeholder="Consumer No">
                 </div>
-                <div class="col-6 mb-2">
-                  <label class="form-label fs-8 text-secondary mb-1">Mobile / Phone Number</label>
-                  <input type="text" class="form-control form-control-sm" id="cMobile" placeholder="Enter mobile number">
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
+                  <input type="text" class="form-control form-control-sm fs-8" id="cMobile" placeholder="Mobile number">
                 </div>
-                <div class="col-6 mb-2">
+                <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Brand / System</label>
-                  <input type="text" class="form-control form-control-sm" id="cBrand" list="brandList" placeholder="Enter brand name">
+                  <input type="text" class="form-control form-control-sm fs-8" id="cBrand" list="brandList" placeholder="Brand name">
                 </div>
-                <div class="col-12 mb-2">
+                <div class="col-12 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Address / Location</label>
-                  <input type="text" class="form-control form-control-sm" id="cAddress" placeholder="Enter Village/Po/Ps/Locality">
+                  <input type="text" class="form-control form-control-sm fs-8" id="cAddress" placeholder="Village / Locality">
                 </div>
-                <div class="col-md-5 col-12 mb-2">
+                <div class="col-md-5 col-12 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">District</label>
-                  <select class="form-select form-select-sm" id="cDistrict">
+                  <select class="form-select form-select-sm fs-8" id="cDistrict">
                     <option value="">-- Select District --</option>
                   </select>
                 </div>
-                <div class="col-md-4 col-6 mb-2">
+                <div class="col-md-4 col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Pin Code</label>
-                  <input type="text" class="form-control form-control-sm" id="cPinCode" placeholder="Pin Code">
+                  <input type="text" class="form-control form-control-sm fs-8" id="cPinCode" placeholder="Pin Code">
                 </div>
-                <div class="col-md-3 col-6 mb-2">
+                <div class="col-md-3 col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">State</label>
-                  <input type="text" class="form-control form-control-sm bg-light" id="cState" value="Odisha" readonly>
+                  <input type="text" class="form-control form-control-sm fs-8 bg-light" id="cState" value="Odisha" readonly>
                 </div>
-                <div class="col-md-4 col-12 mb-2">
+                <div class="col-md-4 col-12 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Login Date</label>
-                  <input type="date" class="form-control form-control-sm" id="cLoginDate">
+                  <input type="date" class="form-control form-control-sm fs-8" id="cLoginDate">
                 </div>
-                <div class="col-md-4 col-6 mb-2">
+                <div class="col-md-4 col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Installation Date</label>
-                  <input type="date" class="form-control form-control-sm" id="cInstallationDate">
+                  <input type="date" class="form-control form-control-sm fs-8" id="cInstallationDate">
                 </div>
-                <div class="col-md-4 col-6 mb-2">
+                <div class="col-md-4 col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Comm. Date</label>
-                  <input type="date" class="form-control form-control-sm" id="cCommissioningDate">
+                  <input type="date" class="form-control form-control-sm fs-8" id="cCommissioningDate">
                 </div>
-                <div class="col-6 mb-2">
-                  <label class="form-label fs-8 text-secondary mb-1">Partner / Agent Name</label>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Partner Name</label>
                   <div class="dropdown">
-                    <input type="text" class="form-control form-control-sm" id="cBrokerName" placeholder="Partner/Agent Name" autocomplete="off">
+                    <input type="text" class="form-control form-control-sm fs-8" id="cBrokerName" placeholder="Partner name" autocomplete="off">
                   </div>
                 </div>
-                <div class="col-6 mb-2">
+                <div class="col-6 mb-1.5">
                   <div class="d-flex justify-content-between align-items-center mb-1">
                     <label class="form-label fs-8 text-secondary mb-0">Net Meter (₹)</label>
                     <div class="form-check mb-0 d-flex align-items-center gap-1">
@@ -515,61 +517,61 @@
                       <label class="form-check-label fs-8 text-secondary" for="cNetMeterPaid">Paid</label>
                     </div>
                   </div>
-                  <input type="number" step="any" min="0" class="form-control form-control-sm" id="cNetMeterPayment" placeholder="0.00">
+                  <input type="number" step="any" min="0" class="form-control form-control-sm fs-8" id="cNetMeterPayment" placeholder="0.00">
                 </div>
               </div>
             </div>
 
             <!-- Right Column: Pricing & Expense Info -->
             <div class="col-md-6 col-12 admin-only-column">
-              <div class="card border-0 shadow-sm p-3 bg-white" style="border-radius: 10px;">
-                <div class="fw-bold text-primary fs-7 mb-3 pb-1 border-bottom">💰 Pricing & Expenses</div>
+              <div class="card border rounded-1 p-3 bg-light">
+                <div class="fw-semibold text-dark fs-7 mb-2.5 pb-1 border-bottom">Pricing & Expenses</div>
                 <div class="row g-2">
-                  <div class="col-6 mb-2">
+                  <div class="col-6 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1">Customer Price (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm" id="cPrice" placeholder="0.00">
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8" id="cPrice" placeholder="0.00">
                   </div>
-                  <div class="col-6 mb-2 admin-only-column">
+                  <div class="col-6 mb-1.5 admin-only-column">
                     <label class="form-label fs-8 text-secondary mb-1">Partner Price (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cPartnerPrice" placeholder="0.00">
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cPartnerPrice" placeholder="0.00">
                   </div>
-                  <div class="col-md-4 col-6 mb-2">
+                  <div class="col-md-4 col-6 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1">Material (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cMaterialCost" placeholder="0.00">
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cMaterialCost" placeholder="0.00">
                   </div>
-                  <div class="col-md-4 col-6 mb-2">
+                  <div class="col-md-4 col-6 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1">Transport (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cTransportCost" placeholder="0.00">
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cTransportCost" placeholder="0.00">
                   </div>
-                  <div class="col-md-4 col-12 mb-2">
+                  <div class="col-md-4 col-12 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1">Other (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cOtherCost" placeholder="0.00">
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cOtherCost" placeholder="0.00">
                   </div>
 
-                  <div class="col-6 mb-2">
+                  <div class="col-6 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1">Installation Cost (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm expense-calc-modal" id="cInstallationCost" placeholder="0.00">
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cInstallationCost" placeholder="0.00">
                   </div>
-                  <div class="col-6 mb-2">
+                  <div class="col-6 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1">GST (%)</label>
                     <div class="input-group input-group-sm">
-                      <input type="number" step="any" min="0" class="form-control expense-calc-modal" id="cGSTPercentage" placeholder="GST %">
-                      <span class="input-group-text bg-light text-dark fw-bold" id="lblGSTAmount" style="font-size: 0.72rem; padding: 2px 4px;">₹0.00</span>
+                      <input type="number" step="any" min="0" class="form-control fs-8 expense-calc-modal" id="cGSTPercentage" placeholder="GST %">
+                      <span class="input-group-text bg-white text-dark fw-semibold fs-8" id="lblGSTAmount" style="padding: 2px 4px;">₹0.00</span>
                     </div>
                   </div>
 
-                  <div class="col-6 mb-2">
+                  <div class="col-6 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Total Expense (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm bg-light fw-bold text-dark" id="cVendorPrice" placeholder="0.00" readonly>
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white fw-semibold text-dark" id="cVendorPrice" placeholder="0.00" readonly>
                   </div>
-                  <div class="col-6 mb-2">
+                  <div class="col-6 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Profit (₹)</label>
-                    <input type="number" step="any" class="form-control form-control-sm bg-light fw-bold" id="cProfit" placeholder="0.00" readonly>
+                    <input type="number" step="any" class="form-control form-control-sm fs-8 bg-white fw-semibold" id="cProfit" placeholder="0.00" readonly>
                   </div>
 
-                  <div class="col-12 mb-2">
+                  <div class="col-12 mb-1.5">
                     <label class="form-label fs-8 text-secondary mb-1">Commission Amount (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm" id="cCommission" placeholder="0.00">
+                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8" id="cCommission" placeholder="0.00">
                   </div>
                 </div>
               </div>
@@ -577,9 +579,9 @@
           </div>
         </form>
       </div>
-      <div class="modal-footer bg-light border-top py-2">
-        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-sm btn-success px-4 fw-semibold" id="btnSaveCustomer">Save Customer</button>
+      <div class="modal-footer bg-light border-top py-2 px-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary px-4 fs-8 fw-semibold" id="btnSaveCustomer">Save Customer</button>
       </div>
     </div>
   </div>
@@ -588,39 +590,38 @@
 <!-- ══ Excel Import Preview Modal ════════════════════════════════ -->
 <div class="modal fade" id="importPreviewModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-      <div class="modal-header bg-primary text-white py-2" style="border-radius:14px 14px 0 0;">
-        <h6 class="modal-title fw-bold fs-6">📥 Import Preview & Verification</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <h6 class="modal-title fw-bold fs-6 text-dark mb-0">Import Preview & Verification</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-3 bg-light">
+      <div class="modal-body p-3">
         <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom pb-2">
           <div>
-            <span class="text-muted fs-8 d-block">Compare client details, analyze data differences between saved Grid Data & Excel Data before saving.</span>
-            <div id="importSummaryBadges" class="d-flex flex-wrap gap-2 mt-1">
+            <span class="text-muted fs-8 d-block">Compare client details and analyze data differences before saving.</span>
+            <div id="importSummaryBadges" class="d-flex flex-wrap gap-1.5 mt-1.5">
               <!-- Injected dynamically by JS -->
             </div>
           </div>
-          <button type="button" class="btn btn-sm btn-outline-dark py-1 px-3 fs-8 fw-semibold" id="btnDownloadTxt">
-            📄 Download Report (.txt)
+          <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 fs-8 fw-medium" id="btnDownloadTxt">
+            Download Report (.txt)
           </button>
         </div>
         
         <!-- Section 1: Data Differences & Conflict Comparison (Grid vs Excel) -->
         <div id="conflictSection" class="mb-4">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="fw-bold text-warning-emphasis mb-0 fs-7">
-              <span class="me-1">⚡</span>Existing Customers with Data Differences (Grid Data vs Excel Data)
+            <h6 class="fw-semibold text-dark mb-0 fs-7">
+              Existing Customers with Data Differences
             </h6>
             <div class="d-flex gap-2">
-              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-8 fw-semibold" onclick="window.bulkSelectConflictChoice('EXCEL')">Select All Excel Data</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2 fs-8 fw-semibold" onclick="window.bulkSelectConflictChoice('GRID')">Select All Grid Data</button>
+              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-8" onclick="window.bulkSelectConflictChoice('EXCEL')">Select All Excel Data</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2 fs-8" onclick="window.bulkSelectConflictChoice('GRID')">Select All Grid Data</button>
             </div>
           </div>
           
           <div class="alert alert-warning py-1.5 px-3 fs-8 mb-2 d-flex align-items-center gap-2">
-            <span>💡</span>
-            <span>Check or select which version to save against the Consumer Name. Highlighted fields show differences between previously saved Grid data and current Excel data.</span>
+            <span>Check or select which version to save. Highlighted fields show differences between previously saved data and Excel file.</span>
           </div>
 
           <div id="conflictContainer" class="d-flex flex-column gap-2" style="max-height: 380px; overflow-y: auto;">
@@ -630,10 +631,10 @@
 
         <!-- Section 2: New Customers to Add -->
         <div id="newCustomersSection" class="mb-3">
-          <h6 class="fw-bold mb-2 text-success-emphasis fs-7"><span class="me-1">🆕</span>New Customers to Add</h6>
-          <div class="table-responsive bg-white rounded shadow-sm border mb-2" style="max-height: 280px; overflow-y: auto;">
-            <table class="table table-sm table-hover align-middle mb-0" id="importPreviewTable" style="font-size:0.85rem;">
-              <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+          <h6 class="fw-semibold mb-2 text-dark fs-7">New Customers to Add</h6>
+          <div class="table-responsive bg-white rounded-1 border mb-2" style="max-height: 280px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0" id="importPreviewTable" style="font-size:0.83rem;">
+              <thead class="table-light" style="position: sticky; top: 0; z-index: 10;">
                 <tr>
                   <th class="text-center" style="width: 40px;">
                     <input type="checkbox" id="chkSelectAllImport" checked>
@@ -643,7 +644,7 @@
                   <th>Consumer No</th>
                   <th>Mobile Number</th>
                   <th>District</th>
-                  <th>Broker / Partner Name</th>
+                  <th>Partner Name</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -656,17 +657,17 @@
         
         <!-- Section 3: Missing in Excel Section -->
         <div id="missingCustomersSection">
-          <h6 class="fw-bold mt-3 mb-2 text-danger-emphasis fs-7"><span class="me-1">⚠️</span>Grid Records Missing in Excel File</h6>
-          <div class="table-responsive bg-white rounded shadow-sm border mb-2" style="min-height: 80px; max-height: 200px; overflow-y: auto;">
-            <table class="table table-sm table-hover align-middle mb-0" id="missingPreviewTable" style="font-size:0.85rem;">
-              <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+          <h6 class="fw-semibold mt-3 mb-2 text-secondary fs-7">Grid Records Missing in Excel File</h6>
+          <div class="table-responsive bg-white rounded-1 border mb-2" style="min-height: 80px; max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0" id="missingPreviewTable" style="font-size:0.83rem;">
+              <thead class="table-light" style="position: sticky; top: 0; z-index: 10;">
                 <tr>
                   <th class="text-center" style="width: 50px;">Sl.</th>
                   <th>Consumer Name</th>
                   <th>Consumer No</th>
                   <th>Mobile Number</th>
                   <th>District</th>
-                  <th>Broker / Partner Name</th>
+                  <th>Partner Name</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -678,12 +679,12 @@
         </div>
 
         <div class="fs-8 text-secondary mt-2">
-          * Selected customer records (new entries and chosen grid/excel versions) will be saved directly to the database. Identical existing records are auto-skipped.
+          * Selected customer records will be saved directly to the database. Identical existing records are auto-skipped.
         </div>
       </div>
-      <div class="modal-footer bg-light border-top py-2">
-        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-sm btn-success px-4 fw-semibold" id="btnSaveImportedCustomers">Save to Database</button>
+      <div class="modal-footer bg-light border-top py-2 px-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary px-4 fs-8 fw-semibold" id="btnSaveImportedCustomers">Save to Database</button>
       </div>
     </div>
   </div>
