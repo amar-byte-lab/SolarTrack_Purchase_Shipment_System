@@ -639,7 +639,8 @@ const server = http.createServer(async (req, res) => {
 
       if (pathname === '/api/borrower-txns') {
         const bid = parsedUrl.searchParams.get('borrowerID');
-        const data = await db.getBorrowerTxns(bid);
+        const userId = parsedUrl.searchParams.get('userId') || '';
+        const data = await db.getBorrowerTxns(bid, userId);
         const dbDuration = (performance.now() - dbStartTime).toFixed(2);
         sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify(data)), 'no-cache, no-store');
         console.log(`[API] GET /api/borrower-txns | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);

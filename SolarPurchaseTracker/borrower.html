@@ -21,107 +21,64 @@
 
     <div class="page-body">
 
-      <!-- KPI Strip -->
-      <div class="bw-kpi-strip" id="bwKpiStrip">
-        <div class="bw-kpi">
-          <div class="bw-kpi-icon green">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/>
-              <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
-            </svg>
-          </div>
-          <div><div class="bw-kpi-val" id="kpiTotalLent">₹0</div><div class="bw-kpi-lbl">Total Given</div></div>
-        </div>
-        <div class="bw-kpi">
-          <div class="bw-kpi-icon orange">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-            </svg>
-          </div>
-          <div><div class="bw-kpi-val" id="kpiTotalReceived">₹0</div><div class="bw-kpi-lbl">Total Received</div></div>
-        </div>
-        <div class="bw-kpi">
-          <div class="bw-kpi-icon blue">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M0 3a2 2 0 0 1 2-2h13.5a.5.5 0 0 1 0 1H15v2a1 1 0 0 1 1 1v8.5a1.5 1.5 0 0 1-1.5 1.5h-12A2.5 2.5 0 0 1 0 12.5V3zm1 1.732V12.5A1.5 1.5 0 0 0 2.5 14h12a.5.5 0 0 0 .5-.5V5H2a1.993 1.993 0 0 1-1-.268zM1 3a1 1 0 0 0 1 1h12V2H2a1 1 0 0 0-1 1z"/>
-            </svg>
-          </div>
+      <!-- Khatabook Style Net Balance Banner -->
+      <div class="kb-banner-card mb-3">
+        <div class="d-flex align-items-center justify-content-between">
           <div>
-            <div class="bw-kpi-val" id="kpiNetOutstanding">₹0</div>
-            <div class="bw-kpi-lbl">Net Outstanding</div>
-          </div>
-        </div>
-        <div class="bw-kpi">
-          <div class="bw-kpi-icon blue">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7Zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216ZM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>
-            </svg>
-          </div>
-          <div><div class="bw-kpi-val" id="kpiActiveBorrowers">0</div><div class="bw-kpi-lbl">Active Borrowers</div></div>
-        </div>
-      </div>
-
-      <!-- Filter + Color Customizer Bar -->
-      <div class="bw-filter-bar py-2 px-3 mb-2" style="background:#fff; border-radius:4px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-        <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse" style="cursor:pointer;">
-          <span class="fw-semibold text-secondary" style="font-size:0.82rem;">Search &amp; Filters</span>
-          <span class="fs-7 text-muted" id="searchCollapseIndicator">▼ Show</span>
-        </div>
-        <div class="collapse" id="searchCollapse">
-          <div class="pt-3">
-            <div class="row g-2 align-items-end">
-              <div class="col-md-4">
-                <label class="form-label" style="font-size:.78rem;">Search</label>
-                <input type="text" class="form-control form-control-sm" id="bwSearchInput" placeholder="Name, Mobile, Address…" autocomplete="off">
-              </div>
-              <div class="col-md-auto d-flex align-items-end gap-2">
-                <span style="font-size:.78rem;white-space:nowrap;">Column Color:</span>
-              </div>
-              <div class="col-md-3">
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100 text-start text-truncate"
-                          type="button" id="btnColPicker" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                          style="font-size:.78rem;padding:4px 10px;background:#fff;">Select Columns</button>
-                  <div class="dropdown-menu p-3" id="ccColMenu" style="max-height:220px;overflow-y:auto;min-width:200px;font-size:.78rem;"></div>
-                </div>
-              </div>
-              <div class="col-md-auto d-flex align-items-center gap-2">
-                <input type="color" class="form-control form-control-color border" id="ccColorPicker"
-                       value="#ffff00" title="Pick color" style="width:36px;height:30px;padding:2px;">
-                <button class="btn btn-sm btn-outline-secondary" id="btnResetColors" style="font-size:.74rem;">Reset</button>
-              </div>
-              <div class="col-md-auto ms-auto d-flex align-items-end gap-1">
-                <span style="font-size:.75rem;color:#8592a0;" id="bwRowCount"></span>
-              </div>
+            <div class="kb-banner-title">Net Balance</div>
+            <div class="kb-banner-sub">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span id="kpiActiveAccounts">0</span> Accounts
             </div>
           </div>
+          <div class="text-end">
+            <div class="d-flex align-items-center justify-content-end gap-2">
+              <span class="kb-eye-btn" id="btnToggleBalanceMask" title="Toggle balance mask" onclick="toggleBalanceMask()">
+                <svg id="svgEyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
+              <span class="kb-net-amount" id="kpiNetOutstanding">₹0</span>
+            </div>
+            <div class="kb-net-direction" id="kpiNetDirection">Settled</div>
+          </div>
         </div>
       </div>
 
-      <!-- Table Card -->
-      <div class="bw-table-card">
-        <!-- Keyboard hint -->
-        <div class="bw-kbd-hint">
-          Click row to select &nbsp;·&nbsp; <kbd>Ctrl</kbd>+Click multi-select &nbsp;·&nbsp;
-          Last row → <kbd>Tab</kbd>/<kbd>Enter</kbd> to save &nbsp;·&nbsp; <kbd>Esc</kbd> to cancel
+      <!-- Search & Filter Bar -->
+      <div class="kb-search-container mb-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input type="text" class="form-control border-start-0 ps-1" id="bwSearchInput" placeholder="Search customer / borrower by name, mobile…" autocomplete="off">
+          <button class="btn btn-outline-secondary dropdown-toggle bg-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="btnFilterDropdown">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></polygon></svg>
+            <span id="lblFilterStatus">All</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size:0.82rem;">
+            <li><a class="dropdown-item active" href="javascript:void(0)" onclick="setFilterStatus('all')">All Accounts</a></li>
+            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setFilterStatus('due')">Due / You Get</a></li>
+            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setFilterStatus('advance')">Advance / You Give</a></li>
+            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setFilterStatus('settled')">Settled</a></li>
+          </ul>
         </div>
+      </div>
 
-        <div class="bw-table-scroll" id="bwTableScroll">
-          <table class="bw-table" id="bwTable">
-            <thead>
-              <tr>
-                <th style="width:38px">#</th>
-                <th class="bw-col-name" style="min-width:260px;text-align:left;">Name</th>
-                <th class="bw-col-mobile" style="display:none;min-width:120px;">Mobile</th>
-                <th class="bw-col-address" style="display:none;min-width:190px;text-align:left;">Address</th>
-                <th style="width:70px;text-align:center;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="bwTbody"></tbody>
-            <tfoot id="bwTfoot"></tfoot>
-          </table>
+      <!-- Khatabook Style Customer List Card -->
+      <div class="kb-list-card">
+        <div class="kb-account-list" id="bwAccountList">
+          <div class="text-center py-5 text-muted" id="bwEmptyState" style="display:none;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-2 opacity-50"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <div class="fs-7">No customers or borrowers found</div>
+          </div>
         </div>
+      </div>
+
+      <!-- Floating "+ Add Customer" Pill Button -->
+      <div class="kb-floating-actions">
+        <button class="btn kb-btn-float" onclick="addInlineBorrowerRow()" title="Add Customer / Borrower">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <span>Add Customer</span>
+        </button>
       </div>
 
     </div><!-- /page-body -->
@@ -179,9 +136,11 @@
               </div>
               <div class="bw-compact-right">
                 <button type="button" class="btn-txn-icon btn-received" id="btnSaveReceived" title="Received (Debit)" aria-label="Received (Debit)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
                   <span class="btn-icon-sublabel">Received</span>
                 </button>
                 <button type="button" class="btn-txn-icon btn-given" id="btnSaveGiven" title="Given (Credit)" aria-label="Given (Credit)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
                   <span class="btn-icon-sublabel">Given</span>
                 </button>
               </div>
@@ -232,12 +191,10 @@
 <!-- Scripts -->
 <script src="assets/js/bootstrap.bundle.min.js" defer></script>
 <script src="assets/js/xlsx.full.min.js" defer></script>
-<script src="js/db.js" defer></script>
 <script src="js/calc.js" defer></script>
 <script src="js/validation.js" defer></script>
 <script src="js/utils.js" defer></script>
 <script src="js/ui.js" defer></script>
-<script src="js/connect.js" defer></script>
 <script src="js/jspdf.umd.min.js" defer></script>
 <script src="js/borrower.js" defer></script>
 </body>

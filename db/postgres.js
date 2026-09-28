@@ -183,19 +183,19 @@ async function replaceTable(tableName, rows) {
 async function getBorrowerList(userId) {
   try {
     const uid = (userId || '').trim().toLowerCase();
-    const { data, error } = await supabase.from('borrowers').select('*');
+    if (!uid) return []; // Unauthenticated or no userId -> return empty
+
+    const { data, error } = await supabase.from('borrowers').select('*').order('BorrowerID', { ascending: true });
     if (error) {
       console.error('[Postgres] getBorrowerList error:', error.message);
       return [];
     }
     if (!data || !Array.isArray(data)) return [];
 
-    if (!uid) return data;
-
-    // Return user-specific borrowers (or legacy rows with no CreatedBy)
+    // Strictly return ONLY records created by this specific user
     return data.filter(b => {
       const creator = (b.CreatedBy || b.createdby || '').trim().toLowerCase();
-      return !creator || creator === uid;
+      return creator === uid;
     });
   } catch (err) {
     console.error('[Postgres] getBorrowerList exception:', err.message);
@@ -203,10 +203,42 @@ async function getBorrowerList(userId) {
   }
 }
 
-async function getBorrowerTxns(borrowerID) {
+async function getBorrowerTxns(borrowerID, userId) {
   try {
+    const uid = (userId || '').trim().toLowerCase();
+    if (!uid) return []; // Unauthenticated -> return empty
+
+    // Fetch only borrowers created by this user
+    const { data: userBorrowers, error: bErr } = await supabase.from('borrowers').select('BorrowerID').ilike('CreatedBy', uid);
+    if (bErr || !userBorrowers || userBorrowers.length === 0) return [];
+
+    const allowedBids = userBorrowers.map(b => b.BorrowerID);
+
+    if (!borrowerID) {
+      // Return txns strictly belonging to this user's borrowers
+      const { data, error } = await supabase
+        .from('borrower_txns')
+        .select('*')
+        .in('BorrowerID', allowedBids)
+        .order('TxnDate', { ascending: true });
+      if (error) {
+        console.error('[Postgres] getBorrowerTxns error:', error.message);
+        return [];
+      }
+      return data || [];
+    }
+
     const id = parseInt(borrowerID, 10) || borrowerID;
-    const { data, error } = await supabase.from('borrower_txns').select('*').eq('BorrowerID', id);
+    if (!allowedBids.includes(id)) {
+      // Transaction does not belong to this user's borrower
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('borrower_txns')
+      .select('*')
+      .eq('BorrowerID', id)
+      .order('TxnDate', { ascending: true });
     if (error) {
       console.error('[Postgres] getBorrowerTxns error:', error.message);
       return [];

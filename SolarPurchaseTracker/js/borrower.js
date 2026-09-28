@@ -13,23 +13,19 @@ let _activeBid      = null;
 let _txnModal       = null;
 let _waShareModal   = null;
 let _searchQuery    = '';
-let _selectedCols   = [];   // columns checked for color coding
-let isAddingNew     = false; // whether we are inline adding a borrower
+let _filterStatus   = 'all';
+let _isMasked       = false;
+let isAddingNew     = false;
 
-// Colorable columns definition (matches bw-table thead class names)
-const BW_COLORABLE_COLS = [
-  { key: 'bw-col-name',    label: 'Name' },
-  { key: 'bw-col-mobile',  label: 'Mobile' },
-  { key: 'bw-col-address', label: 'Address' },
+const AVATAR_COLORS = [
+  '#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6',
+  '#3b82f6', '#10b981', '#f43f5e', '#06b6d4', '#84cc16'
 ];
-
-const LS_KEY = 'borrowerColColors';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-  const isAdmin = currentUser ? (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') : true;
 
-  const buttonsHtml = isAdmin ? `
+  const buttonsHtml = currentUser ? `
     <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-1" id="btnAddNewBorrower" title="Add New Borrower">
       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       <span>Add Borrower</span>
@@ -49,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   _txnModal = new bootstrap.Modal(document.getElementById('txnModal'), { keyboard: true });
 
   // Search
-  document.getElementById('bwSearchInput').addEventListener('input', e => {
+  document.getElementById('bwSearchInput')?.addEventListener('input', e => {
     _searchQuery = e.target.value.trim().toLowerCase();
     renderGrid();
   });
@@ -73,60 +69,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('txnInputAmount')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveTxn('Credit'); });
   document.getElementById('txnInputRemarks')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveTxn('Credit'); });
 
-  document.getElementById('txnInputDate').value = todayISO();
+  const dateInput = document.getElementById('txnInputDate');
+  if (dateInput) dateInput.value = todayISO();
 
+  // 1. Instant paint from session cache (0ms)
+  loadFromLocalCache();
 
-
-  // ── Row selection (like installments: click / Ctrl+click) ──────────────
-  document.getElementById('bwTable').addEventListener('click', e => {
-    const tr = e.target.closest('tbody tr');
-    if (!tr) return;
-    // Skip clicks on buttons or inputs
-    if (e.target.closest('button') || e.target.closest('input')) return;
-
-    const isCtrl = e.ctrlKey || e.metaKey;
-    const tbody  = document.querySelector('#bwTbody');
-    if (isCtrl) {
-      tr.classList.toggle('selected-row');
-    } else {
-      tbody.querySelectorAll('tr').forEach(r => { if (r !== tr) r.classList.remove('selected-row'); });
-      tr.classList.toggle('selected-row');
-    }
-  });
-
-  // ── Column Color Customizer ─────────────────────────────────────────────
-  populateColorCheckboxes();
-  applyColumnColors();
-
-  document.getElementById('ccColorPicker').addEventListener('input', e => {
-    if (_selectedCols.length === 0) { UI.toast('Select at least one column first', 'warning'); return; }
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-    _selectedCols.forEach(k => { saved[k] = e.target.value; });
-    localStorage.setItem(LS_KEY, JSON.stringify(saved));
-    applyColumnColors();
-  });
-
-  document.getElementById('btnResetColors').addEventListener('click', () => {
-    localStorage.removeItem(LS_KEY);
-    applyColumnColors();
-    updateColorPickerValue();
-    UI.toast('Column colors reset', 'info');
-  });
-
-  const collapseEl = document.getElementById('searchCollapse');
-  if (collapseEl) {
-    collapseEl.addEventListener('shown.bs.collapse', () => {
-      document.getElementById('searchCollapseIndicator').textContent = '▲ Hide';
-    });
-    collapseEl.addEventListener('hidden.bs.collapse', () => {
-      document.getElementById('searchCollapseIndicator').textContent = '▼ Show';
-    });
-  }
-
-  // Wait for DB → load
-  await waitForDB();
-  await loadBorrowers();
+  // 2. Fetch fresh data in parallel in background
+  loadBorrowers();
 });
+
+// ── Cache Keys ─────────────────────────────────────────────────────────────
+const CACHE_KEY_BORROWERS = 'st_borrowers_cache';
+const CACHE_KEY_TXNS      = 'st_borrower_txns_cache';
+
+function loadFromLocalCache() {
+  try {
+    const bRaw = sessionStorage.getItem(CACHE_KEY_BORROWERS);
+    const tRaw = sessionStorage.getItem(CACHE_KEY_TXNS);
+    if (bRaw) _borrowers = JSON.parse(bRaw) || [];
+    if (tRaw) _txnCache  = JSON.parse(tRaw) || {};
+    if (_borrowers.length > 0) {
+      renderKPIs();
+      renderGrid();
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function saveToLocalCache() {
+  try {
+    sessionStorage.setItem(CACHE_KEY_BORROWERS, JSON.stringify(_borrowers));
+    sessionStorage.setItem(CACHE_KEY_TXNS, JSON.stringify(_txnCache));
+  } catch (e) {}
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function todayISO() { return new Date().toISOString().slice(0, 10); }
@@ -143,21 +120,34 @@ function fmtDate(d) {
   return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function waitForDB() {
-  return new Promise(resolve => {
-    if (DB.isReady()) { resolve(); return; }
-    const p = setInterval(() => { if (DB.isReady()) { clearInterval(p); resolve(); } }, 80);
-  });
-}
-
 function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function getAvatarColor(name) {
+  let hash = 0;
+  for (let i = 0; i < (name || '').length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+// ── Synchronous In-Memory Transaction Lookup (0ms) ──────────────────────────
+function getBorrowerTxns(bid) {
+  if (bid == null) return [];
+  const raw = _txnCache[bid];
+  if (raw && Array.isArray(raw)) return raw;
+  const str = _txnCache[String(bid)];
+  if (str && Array.isArray(str)) return str;
+  const num = _txnCache[Number(bid)];
+  if (num && Array.isArray(num)) return num;
+  return [];
+}
+
 // ── Net balance ─────────────────────────────────────────────────────────
 function netBalance(bid) {
-  const txns = _txnCache[bid] || [];
+  const txns = getBorrowerTxns(bid);
   let credit = 0, debit = 0;
   txns.forEach(t => {
     if (t.Type === 'Credit') credit += Number(t.Amount) || 0;
@@ -168,154 +158,254 @@ function netBalance(bid) {
 
 // ── Load borrowers ─────────────────────────────────────────────────────
 async function loadBorrowers() {
-  UI.showLoading(true);
+  const hasCache = _borrowers.length > 0;
+  if (!hasCache) UI.showLoading(true);
   try {
     const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
     const userId = currentUser ? (currentUser.userid || currentUser.username) : '';
-    const r = await fetch(`/api/borrower-list?userId=${encodeURIComponent(userId)}`);
-    _borrowers = r.ok ? await r.json() : [];
-    await Promise.all(_borrowers.map(b => loadTxnsFor(b.BorrowerID)));
+
+    // Fetch borrowers & all transactions in parallel with strict user scoping (only 2 network requests total)
+    const [rB, rT] = await Promise.all([
+      fetch(`/api/borrower-list?userId=${encodeURIComponent(userId)}`),
+      fetch(`/api/borrower-txns?userId=${encodeURIComponent(userId)}`)
+    ]);
+
+    _borrowers = rB.ok ? await rB.json() : [];
+    const allTxns = rT.ok ? await rT.json() : [];
+
+    _txnCache = {};
+    if (Array.isArray(allTxns)) {
+      allTxns.forEach(t => {
+        const rawBid = t.BorrowerID;
+        const strBid = String(rawBid);
+        const numBid = Number(rawBid);
+        if (!_txnCache[rawBid]) _txnCache[rawBid] = [];
+        _txnCache[rawBid].push(t);
+        if (!_txnCache[strBid]) _txnCache[strBid] = _txnCache[rawBid];
+        if (!isNaN(numBid) && !_txnCache[numBid]) _txnCache[numBid] = _txnCache[rawBid];
+      });
+
+      // Sort transactions chronologically
+      Object.keys(_txnCache).forEach(k => {
+        _txnCache[k].sort((a, b) => (a.TxnDate || '').localeCompare(b.TxnDate || '') || (a.TxnID || 0) - (b.TxnID || 0));
+      });
+    }
+
+    saveToLocalCache();
     renderKPIs();
     renderGrid();
   } catch (e) {
-    UI.toast('Failed to load: ' + e.message, 'danger');
+    if (!hasCache) UI.toast('Failed to load: ' + e.message, 'danger');
   } finally {
-    UI.showLoading(false);
+    if (!hasCache) UI.showLoading(false);
   }
 }
 
 async function loadTxnsFor(bid) {
   try {
-    const r = await fetch(`/api/borrower-txns?borrowerID=${bid}`);
-    _txnCache[bid] = r.ok ? await r.json() : [];
-  } catch { _txnCache[bid] = []; }
+    const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const userId = currentUser ? (currentUser.userid || currentUser.username) : '';
+    const r = await fetch(`/api/borrower-txns?borrowerID=${bid}&userId=${encodeURIComponent(userId)}`);
+    const txns = r.ok ? await r.json() : [];
+    const strBid = String(bid);
+    const numBid = Number(bid);
+    _txnCache[bid] = txns;
+    _txnCache[strBid] = txns;
+    if (!isNaN(numBid)) _txnCache[numBid] = txns;
+    saveToLocalCache();
+    return txns;
+  } catch {
+    return getBorrowerTxns(bid);
+  }
 }
 
-// ── KPI Strip ──────────────────────────────────────────────────────────
+// ── Khatabook Banner KPI Strip ─────────────────────────────────────────
 function renderKPIs() {
-  let totalCredit = 0, totalDebit = 0, active = 0;
+  let totalCredit = 0, totalDebit = 0, activeCount = 0;
   _borrowers.forEach(b => {
     const { credit, debit } = netBalance(b.BorrowerID);
     totalCredit += credit; totalDebit += debit;
-    if (b.Status === 'Active') active++;
+    if (b.Status === 'Active') activeCount++;
   });
   const net = totalCredit - totalDebit;
-  document.getElementById('kpiTotalLent').textContent     = money(totalCredit);
-  document.getElementById('kpiTotalReceived').textContent = money(totalDebit);
-  document.getElementById('kpiActiveBorrowers').textContent = active;
+
+  const countEl = document.getElementById('kpiActiveAccounts');
+  if (countEl) countEl.textContent = activeCount;
+
   const netEl = document.getElementById('kpiNetOutstanding');
-  if (net > 0)       { netEl.textContent = '−' + money(net);          netEl.style.color = '#c0392b'; }
-  else if (net < 0)  { netEl.textContent = '+' + money(Math.abs(net)); netEl.style.color = '#1e8a4c'; }
-  else               { netEl.textContent = money(0);                   netEl.style.color = ''; }
-}
+  const dirEl = document.getElementById('kpiNetDirection');
 
-// ── Render Grid ────────────────────────────────────────────────────────
-function renderGrid() {
-  const tbody = document.getElementById('bwTbody');
-  const tfoot = document.getElementById('bwTfoot');
-  const q = _searchQuery;
-
-  const filtered = _borrowers.filter(b =>
-    !q || b.Name.toLowerCase().includes(q) ||
-    (b.Mobile || '').toLowerCase().includes(q) ||
-    (b.Address || '').toLowerCase().includes(q)
-  );
-
-  // If currently adding, append a dummy input row object
-  if (isAddingNew) {
-    filtered.push({
-      BorrowerID: 'TEMP_NEW',
-      Name: '',
-      Mobile: '',
-      Address: '',
-      Status: 'Active',
-      _isTemp: true
-    });
+  if (_isMasked) {
+    if (netEl) { netEl.textContent = '••••••'; netEl.className = 'kb-net-amount settled'; }
+    if (dirEl) { dirEl.textContent = 'Net Balance'; dirEl.style.color = 'rgba(255,255,255,0.7)'; }
+    return;
   }
 
-  document.getElementById('bwRowCount').textContent =
-    `${_borrowers.length} borrower${_borrowers.length !== 1 ? 's' : ''}`;
+  if (net > 0.01) {
+    if (netEl) { netEl.textContent = '₹' + Math.round(net).toLocaleString('en-IN'); netEl.className = 'kb-net-amount due'; }
+    if (dirEl) { dirEl.textContent = 'You Get'; dirEl.style.color = '#ff5722'; }
+  } else if (net < -0.01) {
+    const absNet = Math.abs(net);
+    if (netEl) { netEl.textContent = '₹' + Math.round(absNet).toLocaleString('en-IN'); netEl.className = 'kb-net-amount advance'; }
+    if (dirEl) { dirEl.textContent = 'You Give'; dirEl.style.color = '#22c55e'; }
+  } else {
+    if (netEl) { netEl.textContent = '₹0'; netEl.className = 'kb-net-amount settled'; }
+    if (dirEl) { dirEl.textContent = 'Settled'; dirEl.style.color = '#94a3b8'; }
+  }
+}
+
+window.toggleBalanceMask = function() {
+  _isMasked = !_isMasked;
+  const eye = document.getElementById('svgEyeIcon');
+  if (eye) {
+    eye.innerHTML = _isMasked
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+  renderKPIs();
+};
+
+window.setFilterStatus = function(status) {
+  _filterStatus = status;
+  const labelMap = { all: 'All', due: 'Due', advance: 'Advance', settled: 'Settled' };
+  const lbl = document.getElementById('lblFilterStatus');
+  if (lbl) lbl.textContent = labelMap[status] || 'All';
+  document.querySelectorAll('#btnFilterDropdown + .dropdown-menu .dropdown-item').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${status}'`));
+  });
+  renderGrid();
+};
+
+function getLastTxnSummary(b) {
+  const bId = b.BorrowerID != null ? b.BorrowerID : b.borrowerid;
+  const txns = getBorrowerTxns(bId);
+  if (txns.length === 0) {
+    const dateVal = b.CreatedAt || b.createdat;
+    const dateStr = dateVal ? fmtDate(dateVal) : '';
+    return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Added ${dateStr ? 'on ' + dateStr : 'recently'}`;
+  }
+  const lastTxn = txns[txns.length - 1];
+  const typeLabel = (lastTxn.Type || lastTxn.type) === 'Credit' ? 'Given' : 'Received';
+  const amtFormatted = money(lastTxn.Amount || lastTxn.amount);
+  const dateFormatted = fmtDate(lastTxn.TxnDate || lastTxn.txndate);
+  const isToday = (lastTxn.TxnDate || lastTxn.txndate) === todayISO();
+  const timeLabel = isToday ? 'Today' : dateFormatted;
+
+  return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" class="me-1"><polyline points="20 6 9 17 4 12"/></svg>${amtFormatted} ${typeLabel} on ${timeLabel}`;
+}
+
+// ── Render Khatabook Account List ──────────────────────────────────────
+function renderGrid() {
+  const container = document.getElementById('bwAccountList');
+  if (!container) return;
+
+  const q = _searchQuery;
+  const filtered = _borrowers.filter(b => {
+    const name = (b.Name || b.name || '').trim();
+    const mobile = (b.Mobile || b.mobile || '').trim();
+    const address = (b.Address || b.address || '').trim();
+    const matchSearch = !q ||
+      name.toLowerCase().includes(q) ||
+      mobile.toLowerCase().includes(q) ||
+      address.toLowerCase().includes(q);
+    if (!matchSearch) return false;
+
+    const bId = b.BorrowerID != null ? b.BorrowerID : b.borrowerid;
+    if (_filterStatus === 'all') return true;
+    const { net } = netBalance(bId);
+    if (_filterStatus === 'due') return net > 0.01;
+    if (_filterStatus === 'advance') return net < -0.01;
+    if (_filterStatus === 'settled') return Math.abs(net) <= 0.01;
+    return true;
+  });
 
   let html = '';
-  filtered.forEach((b, idx) => {
-    if (b._isTemp) {
-      // Renders edit row matching installments edit style
-      html += `
-      <tr class="table-warning">
-        <td style="text-align:center;color:#8592a0;font-size:.78rem;font-weight:600;vertical-align:middle;">*</td>
-        <td class="bw-col-name">
-          <input type="text" id="addName" placeholder="Name *"
-                 autocomplete="off" maxlength="100"
-                 onkeydown="handleAddRowKey(event,'addName')">
-        </td>
-        <td class="bw-col-mobile" style="display:none;"></td>
-        <td class="bw-col-address" style="display:none;"></td>
-        <td class="no-print text-center" style="vertical-align:middle;">
-          <div class="d-flex gap-1 justify-content-center">
-            <button class="btn btn-sm btn-primary py-0 px-2" onclick="saveBorrower()" title="Save">Save</button>
-            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="cancelInlineBorrower()" title="Cancel">Cancel</button>
-          </div>
-        </td>
-      </tr>`;
-      return;
+
+  // Inline add new customer row if triggered
+  if (isAddingNew) {
+    html += `
+    <div class="kb-inline-add-row">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <strong class="fs-7 text-dark">Add New Customer</strong>
+      </div>
+      <div class="row g-2 align-items-center">
+        <div class="col-12 col-md-4">
+          <input type="text" class="form-control form-control-sm" id="addName" placeholder="Customer Name *" autocomplete="off" maxlength="100" onkeydown="handleAddRowKey(event,'addName')">
+        </div>
+        <div class="col-6 col-md-3">
+          <input type="tel" class="form-control form-control-sm" id="addMobile" placeholder="Mobile (optional)" autocomplete="off" maxlength="20" onkeydown="handleAddRowKey(event,'addMobile')">
+        </div>
+        <div class="col-6 col-md-3">
+          <input type="text" class="form-control form-control-sm" id="addAddress" placeholder="Address (optional)" autocomplete="off" maxlength="200" onkeydown="handleAddRowKey(event,'addAddress')">
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button class="btn btn-sm btn-primary flex-fill" onclick="saveBorrower()">Save</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="cancelInlineBorrower()">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if (filtered.length === 0 && !isAddingNew) {
+    html += `
+      <div class="text-center py-5 text-muted" id="bwEmptyState">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-2 opacity-50"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <div class="fs-7">No customers or borrowers found</div>
+      </div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  filtered.forEach(b => {
+    const bId = b.BorrowerID != null ? b.BorrowerID : b.borrowerid;
+    const bName = b.Name || b.name || 'Unnamed';
+    const bStatus = b.Status || b.status || 'Active';
+    const { net } = netBalance(bId);
+    const isActive = bStatus === 'Active';
+    const initial = (bName || '?').trim().charAt(0).toUpperCase();
+    const avatarBg = getAvatarColor(bName);
+
+    let amountClass = 'settled';
+    let statusLabel = 'Settled';
+    let amountText = '₹0';
+
+    if (net > 0.01) {
+      amountClass = 'due';
+      statusLabel = 'Due';
+      amountText = '₹' + Math.round(net).toLocaleString('en-IN');
+    } else if (net < -0.01) {
+      amountClass = 'advance';
+      statusLabel = 'Advance';
+      amountText = '₹' + Math.round(Math.abs(net)).toLocaleString('en-IN');
     }
 
-    const { net } = netBalance(b.BorrowerID);
-    const isActive = b.Status === 'Active';
-    const txnCount = (_txnCache[b.BorrowerID] || []).length;
-
-    let outBadge;
-    if (net > 0)      outBadge = `<span class="bw-out neg" style="margin-left:5px;font-size:.7rem;padding:1px 7px;">−${money(net)}</span>`;
-    else if (net < 0) outBadge = `<span class="bw-out pos" style="margin-left:5px;font-size:.7rem;padding:1px 7px;">+${money(Math.abs(net))}</span>`;
-    else if (txnCount > 0) outBadge = `<span class="bw-out zero" style="margin-left:5px;font-size:.7rem;padding:1px 7px;">Settled</span>`;
-    else outBadge = '';
-
     html += `
-    <tr class="${isActive ? '' : 'bw-closed'}" data-bid="${b.BorrowerID}">
-      <td style="text-align:center;color:#8592a0;font-size:.78rem;">${idx + 1}</td>
-      <td class="bw-col-name">
-        <span style="cursor:pointer;color:var(--st-primary);font-weight:600;"
-              onclick="openTxnModal(${b.BorrowerID})" title="Click to view transactions">
-          ${esc(b.Name)}
-        </span>
-        ${isActive
-          ? `${outBadge}`
-          : `<span style="font-size:.68rem;color:#6b7885;margin-left:6px;">[Closed]</span>${outBadge}`
-        }
-      </td>
-      <td class="bw-col-mobile" style="display:none;color:#46586b;">${esc(b.Mobile || '—')}</td>
-      <td class="bw-col-address" style="display:none;color:#46586b;max-width:200px;overflow:hidden;text-overflow:ellipsis;"
-          title="${esc(b.Address || '')}">${esc(b.Address || '—')}</td>
-      <td style="text-align:center;white-space:nowrap;">
-        ${isActive
-          ? `<button class="btn erp-btn-action text-danger" onclick="confirmDeactivate(${b.BorrowerID})" title="Deactivate">${UI.icon('trash', 14)}</button>`
-          : `<button class="btn erp-btn-action text-success" onclick="reactivateBorrower(${b.BorrowerID})" title="Reactivate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-             <button class="btn erp-btn-action text-danger ms-1" onclick="removeBorrower(${b.BorrowerID})" title="Remove">${UI.icon('trash', 14)}</button>`
-        }
-      </td>
-    </tr>`;
+    <div class="kb-account-item ${isActive ? '' : 'bw-closed'}" onclick="openTxnModal(${bId})">
+      <div class="kb-avatar" style="background-color: ${avatarBg}">${initial}</div>
+      <div class="kb-info">
+        <div class="kb-name">
+          ${esc(bName)}
+          ${isActive ? '' : '<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Closed</span>'}
+        </div>
+        <div class="kb-sub">${getLastTxnSummary(b)}</div>
+      </div>
+      <div class="kb-bal">
+        <div class="kb-amount ${amountClass}">${amountText}</div>
+        <div class="kb-status-label ${amountClass}">${statusLabel}</div>
+      </div>
+    </div>`;
   });
-  tbody.innerHTML = html;
 
-  // ── tfoot is kept empty (Add Borrower is now in topbar) ──────────────
-  if (tfoot) tfoot.innerHTML = '';
-
-  // Re-apply column colors after re-render
-  applyColumnColors();
+  container.innerHTML = html;
 }
 
 // ── Add Row keyboard nav ────────────────────────────────────────────────
 function addInlineBorrowerRow() {
   isAddingNew = true;
   renderGrid();
-  // Scroll to bottom of table if necessary, then focus name
-  const tblScroll = document.getElementById('bwTableScroll');
-  if (tblScroll) {
-    tblScroll.scrollTop = tblScroll.scrollHeight;
-  }
   setTimeout(() => {
     document.getElementById('addName')?.focus();
-  }, 100);
+  }, 80);
 }
 
 function cancelInlineBorrower() {
@@ -358,17 +448,19 @@ async function saveBorrower() {
 
     _borrowers.push({ BorrowerID: data.BorrowerID, Name: name, Mobile: mobile, Address: address, Status: 'Active', CreatedBy: userId, CreatedAt: new Date().toISOString() });
     _txnCache[data.BorrowerID] = [];
+    _txnCache[String(data.BorrowerID)] = [];
+    saveToLocalCache();
     isAddingNew = false;
     renderKPIs(); renderGrid();
     UI.toast(`✓ "${name}" added`, 'success');
   } catch (e) { UI.toast('Error: ' + e.message, 'danger'); }
 }
 
-// ── Transaction Modal ───────────────────────────────────────────────────
-window.openTxnModal = async function(bid) {
-  const borrower = _borrowers.find(b => b.BorrowerID === bid);
+// ── Transaction Modal (Instant 0ms synchronous render) ──────────────────
+window.openTxnModal = function(bid) {
+  const borrower = _borrowers.find(b => String(b.BorrowerID) === String(bid) || b.BorrowerID == bid);
   if (!borrower) return;
-  _activeBid = bid;
+  _activeBid = borrower.BorrowerID;
 
   document.getElementById('txnBorrowerName').textContent = borrower.Name;
   const subEl = document.getElementById('txnBorrowerSub');
@@ -384,10 +476,10 @@ window.openTxnModal = async function(bid) {
     deactBtn.textContent = isActive ? '🔒 Deactivate' : '🔓 Reactivate';
   }
 
-  // Show/hide remove button
+  // Show/hide remove button: Can remove closed borrowers
   const removeBtn = document.getElementById('btnModalRemove');
   if (removeBtn) {
-    removeBtn.style.display = isActive ? 'none' : 'inline-block';
+    removeBtn.style.display = !isActive ? 'inline-block' : 'none';
   }
 
   // Disable form fields for closed borrowers
@@ -399,42 +491,43 @@ window.openTxnModal = async function(bid) {
   const btnGiven    = document.getElementById('btnSaveGiven');
   if (btnReceived) btnReceived.disabled = !isActive;
   if (btnGiven)    btnGiven.disabled    = !isActive;
+
   // Reset form
   document.getElementById('txnInputDate').value    = todayISO();
   document.getElementById('txnInputAmount').value  = '';
   document.getElementById('txnInputRemarks').value = '';
 
-  // Render instantly from local cache & show modal immediately (zero delay)
-  renderTxnHistory(bid);
-  updateModalBalance(bid);
+  // Render IMMEDIATELY from memory cache (0ms instant!)
+  renderTxnHistory(_activeBid);
+  updateModalBalance(_activeBid);
   _txnModal.show();
-
-  // Refresh fresh transactions in background
-  loadTxnsFor(bid).then(() => {
-    if (_activeBid === bid) {
-      renderTxnHistory(bid);
-      updateModalBalance(bid);
-    }
-  }).catch(() => {});
+  setTimeout(() => {
+    const pane = document.getElementById('txnHistoryPane');
+    if (pane) pane.scrollTop = pane.scrollHeight;
+  }, 60);
 };
 
 function updateModalBalance(bid) {
   const { net } = netBalance(bid);
   const balEl = document.getElementById('txnModalBal');
-  if (net > 0)      { balEl.textContent = '−' + money(net) + ' outstanding'; balEl.className = 'bw-modal-bal negative'; }
-  else if (net < 0) { balEl.textContent = '+' + money(Math.abs(net)) + ' surplus'; balEl.className = 'bw-modal-bal positive'; }
-  else              { balEl.textContent = '✓ Settled'; balEl.className = 'bw-modal-bal zero'; }
+  if (!balEl) return;
+  if (net > 0.01)      { balEl.textContent = '−' + money(net) + ' outstanding'; balEl.className = 'bw-modal-bal negative'; }
+  else if (net < -0.01) { balEl.textContent = '+' + money(Math.abs(net)) + ' surplus'; balEl.className = 'bw-modal-bal positive'; }
+  else                  { balEl.textContent = '✓ Settled'; balEl.className = 'bw-modal-bal zero'; }
 }
 
 function renderTxnHistory(bid) {
-  const txns    = _txnCache[bid] || [];
+  const txns    = getBorrowerTxns(bid);
   const listEl  = document.getElementById('txnList');
   const emptyEl = document.getElementById('txnEmptyState');
+  if (!listEl) return;
 
   if (txns.length === 0) {
-    emptyEl.style.display = 'flex'; listEl.innerHTML = ''; return;
+    if (emptyEl) emptyEl.style.display = 'flex';
+    listEl.innerHTML = '';
+    return;
   }
-  emptyEl.style.display = 'none';
+  if (emptyEl) emptyEl.style.display = 'none';
 
   let lastDate = null, html = '';
   txns.forEach(t => {
@@ -496,6 +589,7 @@ async function saveTxn(forcedType) {
     document.getElementById('txnInputRemarks').value = '';
     document.getElementById('txnInputDate').value    = todayISO();
 
+    saveToLocalCache();
     renderTxnHistory(_activeBid); updateModalBalance(_activeBid);
     renderGrid(); renderKPIs();
     document.getElementById('txnHistoryPane').scrollTop = 99999;
@@ -518,6 +612,7 @@ window.deleteTxn = async function(txnId, bid) {
       throw new Error(errData.error || 'Failed to delete transaction');
     }
     _txnCache[bid] = (_txnCache[bid] || []).filter(t => t.TxnID !== txnId);
+    saveToLocalCache();
     renderTxnHistory(bid); updateModalBalance(bid); renderGrid(); renderKPIs();
     UI.toast('Transaction deleted', 'info');
   } catch (e) { UI.toast('Error: ' + e.message, 'danger'); }
@@ -579,6 +674,7 @@ async function resetAllTxns() {
     _txnCache[_activeBid].sort((a, b) => a.TxnDate.localeCompare(b.TxnDate) || a.TxnID - b.TxnID);
 
     // Refresh UI
+    saveToLocalCache();
     renderTxnHistory(_activeBid);
     updateModalBalance(_activeBid);
     renderGrid();
@@ -613,6 +709,7 @@ async function toggleBorrowerStatus() {
       body: JSON.stringify({ BorrowerID: _activeBid, Status: newStatus })
     });
     borrower.Status = newStatus;
+    saveToLocalCache();
     _txnModal.hide();
     renderGrid(); renderKPIs();
     UI.toast(`"${borrower.Name}" → ${newStatus}`, 'info');
@@ -632,6 +729,7 @@ window.confirmDeactivate = async function(bid) {
   try {
     await fetch('/api/borrower-close', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ BorrowerID: bid, Status: 'Closed' }) });
     borrower.Status = 'Closed';
+    saveToLocalCache();
     renderGrid(); renderKPIs();
     UI.toast(`"${borrower.Name}" deactivated`, 'info');
   } catch (e) { UI.toast(e.message, 'danger'); }
@@ -645,6 +743,7 @@ window.reactivateBorrower = async function(bid) {
   try {
     await fetch('/api/borrower-close', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ BorrowerID: bid, Status: 'Active' }) });
     borrower.Status = 'Active';
+    saveToLocalCache();
     renderGrid(); renderKPIs();
     UI.toast(`"${borrower.Name}" reactivated`, 'success');
   } catch (e) { UI.toast(e.message, 'danger'); }
@@ -854,10 +953,7 @@ async function shareActiveBorrowerWhatsapp() {
 
   // Pre-populate WhatsApp share modal with logged in user's number
   const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-  let defaultFromMobile = ''; // Default for Amar/Admin
-  if (currentUser && currentUser.mobile) {
-    defaultFromMobile = currentUser.mobile;
-  }
+  let defaultFromMobile = (currentUser && currentUser.mobile) ? currentUser.mobile : '';
   
   document.getElementById('waFromMobile').value = localStorage.getItem('whatsapp_from_mobile') || defaultFromMobile;
   document.getElementById('waToMobile').value = borrower.Mobile || '';
@@ -934,7 +1030,7 @@ async function sendWhatsappConfirmed() {
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(30, 41, 59);
-      const ownerName = (typeof Auth !== 'undefined' ? Auth.getUser()?.username : 'Amar') || 'Amar';
+      const ownerName = (typeof Auth !== 'undefined' ? Auth.getUser()?.username : '') || 'Ledger Statement';
       doc.text(ownerName, 20, 21);
 
       doc.setFont('Helvetica', 'normal');
@@ -1175,6 +1271,7 @@ window.removeBorrower = async function(bid) {
 
     _borrowers = _borrowers.filter(b => b.BorrowerID !== bid);
     delete _txnCache[bid];
+    saveToLocalCache();
 
     renderGrid(); renderKPIs();
     UI.toast(`🗑️ "${borrower.Name}" deleted permanently`, 'danger');
