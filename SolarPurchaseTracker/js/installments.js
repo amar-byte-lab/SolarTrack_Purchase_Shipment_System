@@ -1116,27 +1116,12 @@ function renderList() {
       const hasInstDate = Boolean(r.InstallationDate && String(r.InstallationDate).trim() !== '');
       const hasLoginDate = Boolean(r.LoginDate && String(r.LoginDate).trim() !== '');
 
-      let delayBadgeHtml = '';
       let rowClass = '';
 
       if (isDeactive) {
         rowClass = 'deactive-row';
       } else if (isCommissioned) {
         rowClass = 'comm-completed-row';
-      } else if (hasInstDate) {
-        const commDelayVal = calculateDelay(r.InstallationDate);
-        if (commDelayVal) {
-          delayBadgeHtml = `
-            <span class="erp-meta-text cursor-pointer" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click for timestamp details">Comm. Delay: ${commDelayVal}</span>
-          `;
-        }
-      } else if (hasLoginDate) {
-        const instDelayVal = calculateDelay(r.LoginDate);
-        if (instDelayVal) {
-          delayBadgeHtml = `
-            <span class="erp-meta-text cursor-pointer" onclick="showTimestampDetailsPopup(${r.SlNo}); return false;" title="Click for timestamp details">Inst. Delay: ${instDelayVal}</span>
-          `;
-        }
       }
 
       const isNetMeterPaid = (r.NetMeterPaid != null) ? (r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1) : !!(expenses && expenses.net_meter_paid);
@@ -1174,7 +1159,6 @@ function renderList() {
                 <a href="#" class="erp-cust-name" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
                   ${r.Name || ''}
                 </a>
-                ${delayBadgeHtml}
                 ${netMeterBadgeHtml}
               </div>
               <div class="erp-meta-row">

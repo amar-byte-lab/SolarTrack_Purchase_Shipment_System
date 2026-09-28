@@ -125,10 +125,19 @@
   }
 }
 
-/* ══ Compact Transaction Drawer Form ══════════════════════════════════════ */
-.txn-form-drawer.open {
-  max-height: 180px !important;
+/* ══ Compact Transaction Form (Permanently Open) ══════════════════════════════════════ */
+.txn-form-drawer {
+  max-height: none !important;
+  height: auto !important;
   padding: 12px 16px !important;
+  display: block !important;
+  border-top: 1px solid var(--st-border) !important;
+  background: #ffffff !important;
+}
+
+.chat-bg {
+  max-height: 340px;
+  overflow-y: auto;
 }
 
 .bw-compact-form-wrap {
@@ -217,5 +226,120 @@
   letter-spacing: 0.3px;
   text-transform: uppercase;
   line-height: 1;
+}
+
+/* ══ Circular WhatsApp Share Button & Header ═════════════════════════════ */
+#btnShareWhatsapp {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #25D366 !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+#btnShareWhatsapp:hover {
+  background: #20ba59 !important;
+  transform: scale(1.08);
+}
+
+#txnModal .modal-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--st-border) !important;
+  padding: 10px 14px !important;
+}
+
+#txnModal .modal-header .bw-modal-bal {
+  margin-left: 0 !important;
+  white-space: nowrap !important;
+  font-size: 0.75rem !important;
+  flex-shrink: 0 !important;
+}
+
+/* ══ Mobile Responsiveness for Transaction Modal ══════════════════════════ */
+@media (max-width: 576px) {
+  #txnModal .modal-dialog {
+    margin: 8px auto !important;
+    max-width: calc(100vw - 16px) !important;
+    height: calc(100dvh - 16px) !important;
+    display: flex;
+    align-items: center;
+  }
+
+  #txnModal .modal-content {
+    max-height: calc(100dvh - 16px) !important;
+    height: 100% !important;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  #txnModal .modal-header {
+    padding: 8px 12px !important;
+  }
+
+  #txnModal .modal-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #txnModal .txn-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #txnModal .chat-bg {
+    flex: 1;
+    min-height: 0;
+    max-height: none !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 8px !important;
+  }
+
+  #txnModal .txn-form-drawer {
+    flex-shrink: 0;
+    padding: 8px 10px !important;
+  }
+
+  .bw-compact-form-wrap {
+    gap: 8px !important;
+  }
+
+  .bw-compact-left .form-control {
+    font-size: 0.78rem !important;
+    padding: 4px 6px !important;
+  }
+
+  .bw-compact-left textarea.form-control {
+    min-height: 44px !important;
+    height: 44px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .btn-txn-icon {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 8px !important;
+  }
+
+  .btn-icon-sublabel {
+    font-size: 0.58rem !important;
+  }
 }
 

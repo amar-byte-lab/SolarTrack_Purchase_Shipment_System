@@ -293,9 +293,9 @@ const UI = (() => {
         </div>
 
         <div class="topbar-actions d-flex align-items-center gap-2 flex-wrap justify-content-end no-print flex-shrink-0 ms-auto">
-          ${userAccountHtml}
-          ${user && actions ? '<span class="vr d-none d-md-inline my-1 text-muted" style="opacity:0.25; height: 18px;"></span>' : ''}
           ${actions || ''}
+          ${user && actions ? '<span class="vr d-none d-md-inline my-1 text-muted" style="opacity:0.25; height: 18px;"></span>' : ''}
+          ${userAccountHtml}
         </div>
       </div>
     `;

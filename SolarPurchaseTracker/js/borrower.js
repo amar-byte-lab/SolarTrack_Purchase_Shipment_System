@@ -25,10 +25,26 @@ const BW_COLORABLE_COLS = [
 
 const LS_KEY = 'borrowerColColors';
 
-// ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  const isAdmin = currentUser ? (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') : true;
+
+  const buttonsHtml = isAdmin ? `
+    <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-1" id="btnAddNewBorrower" title="Add New Borrower">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>Add Borrower</span>
+    </button>
+  ` : '';
+
   UI.renderSidebar('borrower.html');
-  UI.renderTopbar('Borrower Ledger');
+  UI.renderTopbar('Borrower Ledger', buttonsHtml);
+
+  const btnAddNewBorrower = document.getElementById('btnAddNewBorrower');
+  if (btnAddNewBorrower) {
+    btnAddNewBorrower.addEventListener('click', () => {
+      addInlineBorrowerRow();
+    });
+  }
 
   _txnModal = new bootstrap.Modal(document.getElementById('txnModal'), { keyboard: true });
 
@@ -41,9 +57,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Txn form buttons
   document.getElementById('btnSaveReceived')?.addEventListener('click', () => saveTxn('Debit'));
   document.getElementById('btnSaveGiven')?.addEventListener('click', () => saveTxn('Credit'));
-  document.getElementById('btnModalDeact').addEventListener('click', toggleBorrowerStatus);
-  document.getElementById('btnModalRemove').addEventListener('click', removeActiveBorrower);
-  document.getElementById('btnPrintTxn').addEventListener('click', printActiveBorrowerTxns);
+  document.getElementById('btnModalDeact')?.addEventListener('click', toggleBorrowerStatus);
+  document.getElementById('btnModalRemove')?.addEventListener('click', removeActiveBorrower);
+  document.getElementById('btnPrintTxn')?.addEventListener('click', printActiveBorrowerTxns);
   const btnShareWhatsapp = document.getElementById('btnShareWhatsapp');
   if (btnShareWhatsapp) {
     btnShareWhatsapp.addEventListener('click', shareActiveBorrowerWhatsapp);
@@ -52,20 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnSendWhatsappConfirm) {
     btnSendWhatsappConfirm.addEventListener('click', sendWhatsappConfirmed);
   }
-
-  // Toggle form drawer (WhatsApp-style slide up)
-  document.getElementById('btnToggleForm').addEventListener('click', () => {
-    const drawer  = document.getElementById('txnFormDrawer');
-    const btn     = document.getElementById('btnToggleForm');
-    const hint    = document.getElementById('composeHint');
-    const isOpen  = drawer.classList.toggle('open');
-    btn.classList.toggle('active', isOpen);
-    btn.textContent = isOpen ? '✕' : '✚';
-    hint.textContent = isOpen ? 'Fill details & tap Received or Given…' : 'Tap ✚ to add a transaction…';
-    if (isOpen) {
-      setTimeout(() => document.getElementById('txnInputAmount')?.focus(), 350);
-    }
-  });
 
   // Enter on amount/remarks saves default Credit
   document.getElementById('txnInputAmount')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveTxn('Credit'); });
@@ -295,16 +297,8 @@ function renderGrid() {
   });
   tbody.innerHTML = html;
 
-  // ── Sticky add-row in tfoot ──────────────
-  if (!isAddingNew) {
-    tfoot.innerHTML = `
-    <tr class="add-row-sticky no-print" onclick="addInlineBorrowerRow()" style="cursor:pointer; height:37px;">
-      <td class="text-center text-primary fw-bold fs-5" style="background:#f1f5f9;">+</td>
-      <td colspan="4" class="text-primary fw-semibold" style="background:#f1f5f9;">Add a new borrower...</td>
-    </tr>`;
-  } else {
-    tfoot.innerHTML = '';
-  }
+  // ── tfoot is kept empty (Add Borrower is now in topbar) ──────────────
+  if (tfoot) tfoot.innerHTML = '';
 
   // Re-apply column colors after re-render
   applyColumnColors();
@@ -377,14 +371,18 @@ window.openTxnModal = async function(bid) {
   _activeBid = bid;
 
   document.getElementById('txnBorrowerName').textContent = borrower.Name;
-  document.getElementById('txnBorrowerSub').textContent =
-    [borrower.Mobile, borrower.Address].filter(Boolean).join(' · ') || '';
+  const subEl = document.getElementById('txnBorrowerSub');
+  if (subEl) {
+    subEl.textContent = [borrower.Mobile, borrower.Address].filter(Boolean).join(' · ') || '';
+  }
 
   const isActive = borrower.Status === 'Active';
 
   // Update deactivate button text
   const deactBtn = document.getElementById('btnModalDeact');
-  deactBtn.textContent = isActive ? '🔒 Deactivate' : '🔓 Reactivate';
+  if (deactBtn) {
+    deactBtn.textContent = isActive ? '🔒 Deactivate' : '🔓 Reactivate';
+  }
 
   // Show/hide remove button
   const removeBtn = document.getElementById('btnModalRemove');
@@ -401,21 +399,10 @@ window.openTxnModal = async function(bid) {
   const btnGiven    = document.getElementById('btnSaveGiven');
   if (btnReceived) btnReceived.disabled = !isActive;
   if (btnGiven)    btnGiven.disabled    = !isActive;
-  document.getElementById('btnToggleForm').disabled = !isActive;
-  document.getElementById('btnToggleForm').style.opacity = isActive ? '1' : '0.4';
-
-  // Reset form and close drawer
+  // Reset form
   document.getElementById('txnInputDate').value    = todayISO();
   document.getElementById('txnInputAmount').value  = '';
   document.getElementById('txnInputRemarks').value = '';
-  
-  const drawer = document.getElementById('txnFormDrawer');
-  const btn    = document.getElementById('btnToggleForm');
-  const hint   = document.getElementById('composeHint');
-  drawer.classList.remove('open');
-  btn.classList.remove('active');
-  btn.textContent  = '✚';
-  hint.textContent = isActive ? 'Tap ✚ to add a transaction…' : `"${borrower.Name}" is closed`;
 
   // Render instantly from local cache & show modal immediately (zero delay)
   renderTxnHistory(bid);
@@ -596,15 +583,6 @@ async function resetAllTxns() {
     updateModalBalance(_activeBid);
     renderGrid();
     renderKPIs();
-
-    // Close the form drawer after reset
-    const drawer = document.getElementById('txnFormDrawer');
-    const btn    = document.getElementById('btnToggleForm');
-    const hint   = document.getElementById('composeHint');
-    if (drawer) drawer.classList.remove('open');
-    if (btn) btn.classList.remove('active');
-    if (btn) btn.textContent = '✚';
-    if (hint) hint.textContent = 'Tap ✚ to add a transaction…';
 
     UI.toast(`✓ Settle transaction added for "${borrower.Name}"`, 'success');
   } catch (e) {

@@ -15,7 +15,6 @@ let selectedColorCols = [];
 const COLORABLE_COLS = [
     { key: 'col-date', label: 'Date', default: '#ffffff' },
     { key: 'col-qty', label: 'Item (Qty)', default: '#ffffff' },
-    { key: 'col-total', label: 'Grand Total', default: '#ffffff' },
 ];
 const LS_KEY = 'shipColColors';
 
@@ -319,7 +318,7 @@ function renderList() {
 
     const tbody = document.querySelector('#shipTable tbody');
     if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="4" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
         const tfoot = document.querySelector('#shipTable tfoot');
         if (tfoot) {
             tfoot.innerHTML = '';
@@ -372,25 +371,13 @@ function renderList() {
         }
 
         // Normal display row
-        const typeBadge = shipmentType === 'Buy'
-            ? `<span class="badge bg-success-subtle text-success fs-7 border border-success-subtle">Buy</span>`
-            : `<span class="badge bg-primary-subtle text-primary fs-7 border border-primary-subtle">Sell</span>`;
-
+        const typeLabel = (shipmentType === 'Sell' ? 'Sell' : 'Buy');
         const statusBadge = isDeleted ? `<span class="badge bg-danger ms-1">Deleted</span>` : '';
 
         const docNames = r.Documents ? r.Documents.split(',').filter(Boolean) : [];
         const docsButton = docNames.length
             ? `<button class="btn btn-xs btn-outline-primary ms-2 py-0 px-2 font-monospace" onclick="showDocsModal('${r.ShipmentNo}')" style="font-size:0.68rem;">Docs (${docNames.length})</button>`
             : '';
-
-        const remarks = DB.getAll('shipment_remarks').filter(n => n.ShipmentNo === r.ShipmentNo);
-        const remarksCount = remarks.length;
-        const notesButton = `
-      <button type="button" class="btn p-0 border-0 bg-transparent btn-note position-relative ms-2" onclick="showShipmentNotes('${r.ShipmentNo}')" title="Shipment Notes (${remarksCount} added)" style="line-height: 1; vertical-align: middle;">
-        ${UI.icon('file-text', 14)}
-        ${remarksCount > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.55rem; padding: 2px 4px; border: 1px solid #fff;">${remarksCount}</span>` : ''}
-      </button>
-    `;
 
         const rowStyle = isDeleted ? `style="background-color: #f8d7da !important; opacity: 0.75;"` : '';
 
@@ -405,25 +392,28 @@ function renderList() {
       <tr ${rowStyle}>
         <td class="col-date">${UI.fmtDate(r.PurchaseDate)}</td>
         <td class="col-qty" style="font-size:0.82rem; white-space:normal; min-width:280px;">
-          ${r.lines.map((l, idx) => {
-            const unitSuffix = l.Unit ? ' ' + l.Unit.trim() : '';
-
-            const tUnit = l.Quantity > 0 ? (l.TransportShare / l.Quantity) : 0;
-            const mspNum = Calc.round2((Number(l.PurchaseRate) || 0) + tUnit);
-            const mspInfo = mspNum > 0 ? `: <span class="text-success font-monospace" style="font-size:0.78rem; font-weight:600;">${UI.money(mspNum)}/Unit</span>` : '';
-
-            return `<div class="mb-2"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix}${mspInfo})</div>`;
-        }).join('') || '<span class="text-muted">—</span>'}
-        </td>
-        <td class="col-total text-end fw-bold font-monospace">
-          <div class="d-flex flex-column align-items-end" style="gap:2px;">
-            <span>${UI.money(grandTotal)}</span>
-            <div class="d-flex align-items-center justify-content-end flex-wrap gap-1 mt-1 font-sans" style="font-size:0.8rem; font-weight:normal;">
-              <span class="fw-semibold text-dark me-1">${r.VendorName || '-'}</span>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-1 mb-2" style="border-bottom: 1px solid #cbd5e1;">
+            <div>
+              <u><strong class="text-dark" style="font-size: 0.88rem;">${r.VendorName || 'Unknown Vendor'} (${typeLabel}-${UI.money(grandTotal)})</strong></u>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+              ${statusBadge}
+              ${docsButton}
             </div>
           </div>
+          <div>
+            ${r.lines.map((l, idx) => {
+              const unitSuffix = l.Unit ? ' ' + l.Unit.trim() : '';
+
+              const tUnit = l.Quantity > 0 ? (l.TransportShare / l.Quantity) : 0;
+              const mspNum = Calc.round2((Number(l.PurchaseRate) || 0) + tUnit);
+              const mspInfo = mspNum > 0 ? `: <span class="text-success font-monospace" style="font-size:0.78rem; font-weight:600;">${UI.money(mspNum)}/Unit</span>` : '';
+
+              return `<div class="mb-1.5"><a href="#" class="fw-bold text-primary text-decoration-none" onclick="showItemPriceBreakup('${r.ShipmentNo}', ${idx}); return false;">${l.ItemName}</a> (${l.Quantity}${unitSuffix}${mspInfo})</div>`;
+            }).join('') || '<span class="text-muted">—</span>'}
+          </div>
         </td>
-        <td class="no-print text-center">
+        <td class="no-print text-center" style="width: 90px;">
           <div class="d-flex gap-1 justify-content-center">
             ${actionButtons}
           </div>
