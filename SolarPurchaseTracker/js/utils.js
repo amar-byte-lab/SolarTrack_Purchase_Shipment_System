@@ -166,5 +166,18 @@ const Utils = (() => {
     return fmtDate(dateStr);
   }
 
-  return { uid, nextShipmentNo, getQueryParam, debounce, exportRowsToExcel, exportTableToPDF, csvEscape, initSearchableDropdown, fmtDate, formatDate };
+  function getDefaultGST(fallback = 18) {
+    try {
+      if (typeof DB !== 'undefined' && DB.isReady()) {
+        const settings = DB.getAll('settings');
+        const s = settings.find(st => st.Key === 'DefaultGST');
+        if (s && s.Value !== undefined && s.Value !== null && s.Value !== '' && !isNaN(Number(s.Value))) {
+          return Number(s.Value);
+        }
+      }
+    } catch (e) {}
+    return fallback;
+  }
+
+  return { uid, nextShipmentNo, getQueryParam, debounce, exportRowsToExcel, exportTableToPDF, csvEscape, initSearchableDropdown, fmtDate, formatDate, getDefaultGST };
 })();

@@ -1304,6 +1304,14 @@ function updateAdjustmentButtonsUI() {
 window.addAdjustmentLine = function(key) {
   if (activeAdjustments[key]) {
     activeAdjustments[key].active = true;
+    if (!activeAdjustments[key].value) {
+      const defaultGst = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
+      if (key === 'gst') {
+        activeAdjustments[key].value = defaultGst;
+      } else if (key === 'cgst' || key === 'sgst') {
+        activeAdjustments[key].value = defaultGst / 2;
+      }
+    }
     renderAdjustmentLines();
     updateAdjustmentButtonsUI();
     recalculateOffer();

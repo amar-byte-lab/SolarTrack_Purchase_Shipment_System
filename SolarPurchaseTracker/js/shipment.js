@@ -392,7 +392,7 @@ function renderList() {
       <tr ${rowStyle}>
         <td class="col-date">${UI.fmtDate(r.PurchaseDate)}</td>
         <td class="col-qty" style="font-size:0.82rem; white-space:normal; min-width:280px;">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-1 mb-2" style="border-bottom: 1px solid #cbd5e1;">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
             <div>
               <u><strong class="text-dark" style="font-size: 0.88rem;">${r.VendorName || 'Unknown Vendor'} (${typeLabel}-${UI.money(grandTotal)})</strong></u>
             </div>
@@ -452,7 +452,7 @@ function toDateInputValue(d) {
     return dt.toISOString().slice(0, 10);
 }
 
-function createMaterialRow(data, defaultGstPercent = 18) {
+function createMaterialRow(data, defaultGstPercent = null) {
     const tbody = document.getElementById('editMaterialsTbody');
     if (!tbody) return;
 
@@ -460,9 +460,12 @@ function createMaterialRow(data, defaultGstPercent = 18) {
         return Math.round((n + Number.EPSILON) * 100) / 100;
     }
 
+    const sysDefaultGst = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
+    const effectiveDefaultGst = (defaultGstPercent !== null && defaultGstPercent !== undefined && !isNaN(Number(defaultGstPercent))) ? Number(defaultGstPercent) : sysDefaultGst;
+
     const qty = data ? (Number(data.Quantity) || 0) : 0;
     const rate = data ? (Number(data.PurchaseRate) || 0) : 0;
-    const gst = data ? (data.GSTPercentage !== undefined && data.GSTPercentage !== null ? Number(data.GSTPercentage) : defaultGstPercent) : defaultGstPercent;
+    const gst = data ? (data.GSTPercentage !== undefined && data.GSTPercentage !== null && data.GSTPercentage !== '' ? Number(data.GSTPercentage) : effectiveDefaultGst) : effectiveDefaultGst;
     const rateWithGst = rate * (1 + gst / 100);
     const tot = data ? (Number(data.TotalPurchaseValue) || (qty * rate * (1 + gst / 100))) : 0;
     const savedTransport = data ? (data.TransportationCost !== undefined && data.TransportationCost !== null && data.TransportationCost !== '' ? Number(data.TransportationCost) : '') : '';
@@ -1052,7 +1055,7 @@ window.addInlineRow = function () {
     const matTbody = document.getElementById('editMaterialsTbody');
     if (matTbody) {
         matTbody.innerHTML = '';
-        createMaterialRow(null, 18);
+        createMaterialRow(null, Utils.getDefaultGST(18));
     }
 
     recalcInlineForm();
@@ -1097,10 +1100,11 @@ window.editRow = function (shipmentNo) {
     const matTbody = document.getElementById('editMaterialsTbody');
     if (matTbody) {
         matTbody.innerHTML = '';
+        const defaultGst = (s.GSTPercentage !== undefined && s.GSTPercentage !== null && s.GSTPercentage !== '') ? Number(s.GSTPercentage) : Utils.getDefaultGST(18);
         if (editMats.length) {
-            editMats.forEach(m => createMaterialRow(m, s.GSTPercentage || 18));
+            editMats.forEach(m => createMaterialRow(m, defaultGst));
         } else {
-            createMaterialRow(null, s.GSTPercentage || 18);
+            createMaterialRow(null, defaultGst);
         }
     }
 

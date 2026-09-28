@@ -1084,7 +1084,7 @@ function renderList() {
                 </div>
                 <div class="input-group input-group-sm">
                   <span class="input-group-text text-secondary" style="font-size:0.55rem; width: 60px; line-height: 1.1;" title="GST calculated on Customer Price">GST (%)</span>
-                  <input type="number" step="any" class="form-control" id="editGSTPercentage" value="${(expenses && expenses.gst_pct) || 18}" placeholder="GST %">
+                  <input type="number" step="any" class="form-control" id="editGSTPercentage" value="${(expenses && expenses.gst_pct !== undefined && expenses.gst_pct !== null && expenses.gst_pct !== '') ? expenses.gst_pct : (typeof Utils !== 'undefined' && Utils.getDefaultGST ? Utils.getDefaultGST(18) : 18)}" placeholder="GST %">
                   <span class="input-group-text bg-light fw-bold" id="lblEditGSTAmount" style="font-size:0.65rem; width: 60px;">₹0.00</span>
                 </div>
                 <div class="input-group input-group-sm">
@@ -2141,7 +2141,8 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cPartnerPrice').value = (expenses && expenses.partner) || 0;
       document.getElementById('cInstallationCost').value = (expenses && expenses.install) || 0;
       document.getElementById('cTransportCost').value = (expenses && expenses.transport) || 0;
-      document.getElementById('cGSTPercentage').value = (expenses && expenses.gst_pct) || 18;
+      const defaultGstVal = (expenses && expenses.gst_pct !== undefined && expenses.gst_pct !== null && expenses.gst_pct !== '') ? expenses.gst_pct : ((typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18);
+      document.getElementById('cGSTPercentage').value = defaultGstVal;
       document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
       if (document.getElementById('cNetMeterPayment')) {
         const netMeterVal = (r.NetMeterPayment != null && r.NetMeterPayment !== '') ? r.NetMeterPayment : ((expenses && expenses.net_meter_payment != null && expenses.net_meter_payment !== '') ? expenses.net_meter_payment : '');
@@ -2157,6 +2158,9 @@ window.openCustomerModal = function(slNo) {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    if (document.getElementById('cGSTPercentage')) {
+      document.getElementById('cGSTPercentage').value = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
+    }
     if (document.getElementById('cNetMeterPaid')) {
       document.getElementById('cNetMeterPaid').checked = false;
     }

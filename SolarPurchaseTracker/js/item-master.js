@@ -143,7 +143,7 @@ window.openModal = function (itemName) {
     document.getElementById('mCategory').value = '';
     document.getElementById('mUnit').value = '';
     document.getElementById('mHSN').value = '';
-    document.getElementById('mGST').value = '';
+    document.getElementById('mGST').value = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
     document.getElementById('mStatus').value = 'Active';
   }
   itemModal.show();
