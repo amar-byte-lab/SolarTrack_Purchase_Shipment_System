@@ -4,26 +4,26 @@
 
 @import url('master.css');
 
-/* ══ Khatabook Banner Card ════════════════════════════════════════════════ */
+/* ══ Khatabook Banner Card (Light Theme) ══════════════════════════════════ */
 .kb-banner-card {
-  background: linear-gradient(135deg, #181f2a 0%, #1e293b 100%);
-  color: #ffffff;
-  border-radius: 14px;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 12px;
   padding: 16px 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--st-border, #e2e8f0);
 }
 
 .kb-banner-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #ffffff;
+  color: #1e293b;
   letter-spacing: -0.2px;
 }
 
 .kb-banner-sub {
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: #64748b;
   margin-top: 2px;
   display: flex;
   align-items: center;
@@ -41,17 +41,17 @@
 }
 
 .kb-net-amount.advance {
-  color: #22c55e !important;
+  color: #16a34a !important;
 }
 
 .kb-net-amount.settled {
-  color: #94a3b8 !important;
+  color: #64748b !important;
 }
 
 .kb-net-direction {
   font-size: 0.74rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+  color: #64748b;
   text-transform: uppercase;
   margin-top: 2px;
   letter-spacing: 0.3px;
@@ -59,7 +59,7 @@
 
 .kb-eye-btn {
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.7);
+  color: #64748b;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -70,8 +70,8 @@
 }
 
 .kb-eye-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  color: #1e293b;
+  background: #f1f5f9;
 }
 
 /* ══ Search & Filter ══════════════════════════════════════════════════════ */

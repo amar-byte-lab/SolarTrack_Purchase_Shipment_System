@@ -11,6 +11,7 @@ let _borrowers      = [];
 let _txnCache       = {};
 let _activeBid      = null;
 let _txnModal       = null;
+let _addBorrowerModal = null;
 let _waShareModal   = null;
 let _searchQuery    = '';
 let _filterStatus   = 'all';
@@ -23,26 +24,11 @@ const AVATAR_COLORS = [
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-
-  const buttonsHtml = currentUser ? `
-    <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-1" id="btnAddNewBorrower" title="Add New Borrower">
-      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      <span>Add Borrower</span>
-    </button>
-  ` : '';
-
   UI.renderSidebar('borrower.html');
-  UI.renderTopbar('Borrower Ledger', buttonsHtml);
-
-  const btnAddNewBorrower = document.getElementById('btnAddNewBorrower');
-  if (btnAddNewBorrower) {
-    btnAddNewBorrower.addEventListener('click', () => {
-      addInlineBorrowerRow();
-    });
-  }
+  UI.renderTopbar('Borrower Ledger', '');
 
   _txnModal = new bootstrap.Modal(document.getElementById('txnModal'), { keyboard: true });
+  _addBorrowerModal = new bootstrap.Modal(document.getElementById('addBorrowerModal'), { keyboard: true });
 
   // Search
   document.getElementById('bwSearchInput')?.addEventListener('input', e => {
@@ -399,62 +385,74 @@ function renderGrid() {
   container.innerHTML = html;
 }
 
-// ── Add Row keyboard nav ────────────────────────────────────────────────
-function addInlineBorrowerRow() {
-  isAddingNew = true;
-  renderGrid();
+// ── Add Customer Modal ──────────────────────────────────────────────────
+window.openAddBorrowerModal = function() {
+  const nameEl = document.getElementById('modalAddName');
+  const mobEl = document.getElementById('modalAddMobile');
+  const addrEl = document.getElementById('modalAddAddress');
+  if (nameEl) nameEl.value = '';
+  if (mobEl) mobEl.value = '';
+  if (addrEl) addrEl.value = '';
+  if (_addBorrowerModal) _addBorrowerModal.show();
   setTimeout(() => {
-    document.getElementById('addName')?.focus();
-  }, 80);
-}
+    nameEl?.focus();
+  }, 100);
+};
 
-function cancelInlineBorrower() {
-  isAddingNew = false;
-  renderGrid();
-}
-
-function handleAddRowKey(e, field) {
-  if (e.key === 'Escape') { cancelInlineBorrower(); return; }
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    saveBorrower();
-  }
-}
-
-async function saveBorrower() {
-  const name    = (document.getElementById('addName')?.value || '').trim();
-  const mobile  = (document.getElementById('addMobile')?.value || '').trim();
-  const address = (document.getElementById('addAddress')?.value || '').trim();
+window.saveBorrowerModal = async function() {
+  const name = (document.getElementById('modalAddName')?.value || '').trim();
+  const mobile = (document.getElementById('modalAddMobile')?.value || '').trim();
+  const address = (document.getElementById('modalAddAddress')?.value || '').trim();
 
   if (!name) {
-    UI.toast('Borrower name is required', 'warning');
-    document.getElementById('addName')?.focus();
+    UI.toast('Customer name is required', 'warning');
+    document.getElementById('modalAddName')?.focus();
     return;
   }
-  if (_borrowers.some(b => b.Name.toLowerCase() === name.toLowerCase())) {
+  if (_borrowers.some(b => (b.Name || b.name || '').toLowerCase() === name.toLowerCase())) {
     UI.toast(`"${name}" already exists`, 'warning');
-    document.getElementById('addName')?.focus();
+    document.getElementById('modalAddName')?.focus();
     return;
   }
+
+  const btn = document.getElementById('btnSaveBorrowerModal');
+  if (btn) btn.disabled = true;
+
   try {
     const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-    const userId = currentUser ? currentUser.userid : '';
+    const userId = currentUser ? (currentUser.userid || currentUser.username || '').toLowerCase() : '';
     const resp = await fetch('/api/borrower-add', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ Name: name, Mobile: mobile, Address: address, CreatedBy: userId })
     });
     const data = await resp.json();
-    if (!data.BorrowerID) throw new Error('No BorrowerID');
+    if (!data.BorrowerID) throw new Error(data.error || 'Failed to save customer');
 
-    _borrowers.push({ BorrowerID: data.BorrowerID, Name: name, Mobile: mobile, Address: address, Status: 'Active', CreatedBy: userId, CreatedAt: new Date().toISOString() });
+    const newBorrower = {
+      BorrowerID: data.BorrowerID,
+      Name: name,
+      Mobile: mobile,
+      Address: address,
+      Status: 'Active',
+      CreatedBy: userId,
+      CreatedAt: new Date().toISOString()
+    };
+
+    _borrowers.push(newBorrower);
     _txnCache[data.BorrowerID] = [];
     _txnCache[String(data.BorrowerID)] = [];
     saveToLocalCache();
-    isAddingNew = false;
-    renderKPIs(); renderGrid();
-    UI.toast(`✓ "${name}" added`, 'success');
-  } catch (e) { UI.toast('Error: ' + e.message, 'danger'); }
-}
+    if (_addBorrowerModal) _addBorrowerModal.hide();
+    renderKPIs();
+    renderGrid();
+    UI.toast(`✓ "${name}" added successfully`, 'success');
+  } catch (e) {
+    UI.toast('Error: ' + e.message, 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
 
 // ── Transaction Modal (Instant 0ms synchronous render) ──────────────────
 window.openTxnModal = function(bid) {

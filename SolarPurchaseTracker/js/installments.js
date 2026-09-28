@@ -52,11 +52,11 @@ window.onDbReady = function () {
   const buttonsHtml = isAdmin ? `
     <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-1" id="btnAddNewCustomer" title="Add New Customer">
       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      <span>Add Customer</span>
+      <span>Add</span>
     </button>
     <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm bg-white text-nowrap rounded-1" id="btnImportCustomer" title="Import Customers from Excel">
       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-      <span>Import Customer</span>
+      <span>Import</span>
     </button>
     <button class="btn btn-outline-secondary ms-2" id="btnDownloadFormat" style="display: none;">Download format</button>
     <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
