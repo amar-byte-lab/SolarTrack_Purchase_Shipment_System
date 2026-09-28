@@ -59,7 +59,7 @@
       </div>
 
       <!-- Tabs for Buy / Sell Shipments -->
-      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 flex-shrink-0">
         <div class="overflow-x-auto pb-1" style="-webkit-overflow-scrolling: touch; scrollbar-width: thin; max-width: 100%;">
           <ul class="nav nav-pills flex-nowrap text-nowrap" id="shipmentTypeTabs" style="display: flex; flex-wrap: nowrap;">
             <li class="nav-item">
@@ -80,7 +80,7 @@
 
       <!-- Main View 1: Buy / Sell Shipments Table (Scrollable View) -->
       <div id="mainShipmentView">
-        <div class="st-card st-card-table-container" style="max-height: calc(100vh - 210px); overflow-y: auto; scrollbar-width: thin;">
+        <div class="st-card st-card-table-container">
           <div class="table-responsive-main">
             <table class="table table-hover table-installments mb-0" id="shipTable">
               <thead style="position: sticky; top: 0; z-index: 10; background-color: #f8fafc;">
@@ -92,9 +92,6 @@
                 </tr>
               </thead>
               <tbody></tbody>
-              <tfoot>
-                <!-- Grand Total injected by JS -->
-              </tfoot>
             </table>
           </div>
         </div>
@@ -102,7 +99,7 @@
 
       <!-- Main View 2: Price History Log Cards View (Scrollable View) -->
       <div id="mainPriceHistoryView" style="display:none;">
-        <div class="st-card p-3 mb-3" style="max-height: calc(100vh - 210px); overflow-y: auto; scrollbar-width: thin;">
+        <div class="st-card p-3 mb-0 flex-grow-1 overflow-auto" style="min-height:0;">
           <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 position-sticky top-0 bg-white py-1" style="z-index: 10;">
             <div class="flex-grow-1" style="max-width:400px;">
               <input type="text" class="form-control form-control-sm" id="mainPhSearchInput" placeholder="🔍 Search note title, item name or remarks..." oninput="renderPriceHistoryList()">

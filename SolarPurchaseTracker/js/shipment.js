@@ -20,8 +20,25 @@ const COLORABLE_COLS = [
 const LS_KEY = 'shipColColors';
 
 window.onDbReady = function () {
+    const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const isAdmin = currentUser ? (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') : true;
+
+    const buttonsHtml = isAdmin ? `
+    <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-1" id="btnAddNewShipment" title="Add New Shipment">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>Add New Shipment</span>
+    </button>
+    ` : '';
+
     UI.renderSidebar('shipment.html');
-    UI.renderTopbar('Shipments');
+    UI.renderTopbar('Shipments', buttonsHtml);
+
+    const btnAddNewShipment = document.getElementById('btnAddNewShipment');
+    if (btnAddNewShipment) {
+        btnAddNewShipment.addEventListener('click', () => {
+            addInlineRow();
+        });
+    }
 
     // Tabs for Buy / Sell / PriceHistory
     const tabBuy = document.getElementById('tabBuy');
@@ -40,11 +57,11 @@ window.onDbReady = function () {
 
         if (type === 'PriceHistory') {
             if (mainShipmentView) mainShipmentView.style.display = 'none';
-            if (mainPriceHistoryView) mainPriceHistoryView.style.display = 'block';
+            if (mainPriceHistoryView) mainPriceHistoryView.style.display = 'flex';
             renderPriceHistoryList();
         } else {
             if (mainPriceHistoryView) mainPriceHistoryView.style.display = 'none';
-            if (mainShipmentView) mainShipmentView.style.display = 'block';
+            if (mainShipmentView) mainShipmentView.style.display = 'flex';
             renderList();
         }
     };
@@ -305,12 +322,7 @@ function renderList() {
         tbody.innerHTML = `<tr><td colspan="4" class="empty-state text-center text-muted py-4">No shipments match your filters.</td></tr>`;
         const tfoot = document.querySelector('#shipTable tfoot');
         if (tfoot) {
-            tfoot.innerHTML = `
-        <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
-          <td class="text-center text-success fw-bold fs-5" style="background:#e8f5e9;">+</td>
-          <td colspan="3" class="text-success fw-semibold" style="background:#e8f5e9;">Add a new shipment record...</td>
-        </tr>
-      `;
+            tfoot.innerHTML = '';
         }
         return;
     }
@@ -422,63 +434,10 @@ function renderList() {
 
     tbody.innerHTML = html.join('');
 
-    // Set tfoot Grand Total and Sticky Add Row
+    // Clear tfoot (Grand Total row removed)
     const tfoot = document.querySelector('#shipTable tfoot');
     if (tfoot) {
-        let tfootHTML = '';
-
-        // 1. Sticky Add Row (always visible in table!)
-        tfootHTML += `
-      <tr class="add-row-sticky no-print" onclick="addInlineRow()" style="cursor:pointer; height:37px;">
-        <td class="text-center text-primary fw-bold fs-5" style="background:#f1f5f9;">+</td>
-        <td colspan="3" class="text-primary fw-semibold" style="background:#f1f5f9;">Add a new shipment record...</td>
-      </tr>
-    `;
-
-        const totalVendorRemaining = sumVendorDue - sumVendorPaid;
-        let totalVendorBtnClass = 'btn-outline-success';
-        let totalVendorBtnText = `Vendor Paid: ${UI.money(sumVendorPaid)}`;
-        if (totalVendorRemaining > 0) {
-            totalVendorBtnClass = sumVendorPaid > 0 ? 'btn-outline-warning' : 'btn-outline-danger';
-        } else if (totalVendorRemaining < 0) {
-            totalVendorBtnClass = 'btn-outline-primary';
-        }
-
-        const totalTransportRemaining = sumTransportCost - sumTransportPaid;
-        let totalTransportBtnClass = 'btn-outline-success';
-        let totalTransportBtnText = `Transport Paid: ${UI.money(sumTransportPaid)}`;
-        if (totalTransportRemaining > 0) {
-            totalTransportBtnClass = sumTransportPaid > 0 ? 'btn-outline-warning' : 'btn-outline-danger';
-        } else if (totalTransportRemaining < 0) {
-            totalTransportBtnClass = 'btn-outline-primary';
-        }
-
-        // 2. Grand Total Row
-        tfootHTML += `
-      <tr class="grand-total" style="height:37px;">
-        <td colspan="2">GRAND TOTAL</td>
-        <td class="text-end fw-bold font-monospace">
-          <div class="d-flex flex-column align-items-end" style="gap:2px;">
-            <span>${UI.money(sumGrandTotal)}</span>
-          </div>
-        </td>
-        <td class="no-print"></td>
-      </tr>
-    `;
-        tfoot.innerHTML = tfootHTML;
-
-        // Adjust sticky bottom of add-row-sticky row based on grand-total row height
-        setTimeout(() => {
-            const grandTotalRow = tfoot.querySelector('tr.grand-total');
-            const addRowSticky = tfoot.querySelector('tr.add-row-sticky');
-            if (grandTotalRow && addRowSticky) {
-                const grandTotalHeight = grandTotalRow.offsetHeight;
-                const tds = addRowSticky.querySelectorAll('td');
-                tds.forEach(td => {
-                    td.style.bottom = grandTotalHeight + 'px';
-                });
-            }
-        }, 50);
+        tfoot.innerHTML = '';
     }
 }
 
