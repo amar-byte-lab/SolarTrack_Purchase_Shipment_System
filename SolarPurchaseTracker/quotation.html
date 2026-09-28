@@ -68,41 +68,41 @@
                         </select>
                       </div>
                       <div class="row g-2 mb-2">
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                           <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
                           <input class="form-control form-control-sm bg-white font-monospace fw-semibold"
                             id="qCompanyPhone" placeholder="Seller phone">
                         </div>
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                           <label class="form-label fs-8 text-secondary mb-1">Company Email</label>
                           <input class="form-control form-control-sm bg-light font-monospace fw-semibold"
                             id="qCompanyEmail" placeholder="Seller email" readonly>
                         </div>
                       </div>
                       <div class="row g-2 mb-2">
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                           <label class="form-label fs-8 text-secondary mb-1">Quotation Date</label>
                           <input type="date" class="form-control form-control-sm bg-white font-monospace fw-semibold"
                             id="qDate">
                         </div>
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                           <label class="form-label fs-8 text-secondary mb-1">Quote No.</label>
                           <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold"
                             id="qQuoteNo" placeholder="TR2607201357">
                         </div>
                       </div>
                       <div class="row g-2">
-                        <div class="col-4">
+                        <div class="col-12 col-sm-4">
                           <label class="form-label fs-9 text-secondary mb-1">Validity</label>
                           <input type="text" class="form-control form-control-sm bg-white fw-semibold" id="qValidity"
                             value="10 Days">
                         </div>
-                        <div class="col-4">
+                        <div class="col-12 col-sm-4">
                           <label class="form-label fs-9 text-secondary mb-1">Delivery</label>
                           <input type="text" class="form-control form-control-sm bg-white fw-semibold"
                             id="qDeliveryDate" value="Within 1 wk. in advance">
                         </div>
-                        <div class="col-4">
+                        <div class="col-12 col-sm-4">
                           <label class="form-label fs-9 text-secondary mb-1">Payment</label>
                           <input type="text" class="form-control form-control-sm bg-white fw-semibold"
                             id="qPaymentTerms" value="Advance Mode">
@@ -116,12 +116,12 @@
                     <div class="p-3 bg-white border rounded h-100 text-start">
                       <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2">To (Client Details)</h6>
                       <div class="row g-2 mb-2">
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                           <label class="form-label fs-8 text-secondary mb-1">Customer Name</label>
                           <input type="text" class="form-control form-control-sm bg-white fw-bold" id="qCustName"
                             placeholder="Enter customer name">
                         </div>
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                           <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
                           <input type="text" class="form-control form-control-sm bg-white font-monospace fw-semibold"
                             id="qCustMobile" placeholder="Enter mobile number">
@@ -326,15 +326,14 @@
             </div>
 
             <!-- Terms and Print Footer -->
-            <div class="mt-4 pt-3 border-top no-print">
-              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span class="text-muted fs-8">* Price inclusive of all component items described in product
-                  packages.</span>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-outline-secondary px-4 py-2 fw-semibold fs-7"
+            <div class="mt-4 pt-3 border-top no-print quote-footer-actions">
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <span class="text-muted fs-8 quote-disclaimer-text">* Price inclusive of all component items described in product packages.</span>
+                <div class="quote-btn-group d-flex gap-2 align-items-center">
+                  <button type="button" class="btn btn-outline-secondary px-4 py-2 fw-semibold fs-7 btn-quote-back"
                     onclick="window.history.back()">Back</button>
-                  <button class="btn btn-primary px-4 py-2 fw-semibold fs-7" id="btnExportDocx"
-                    onclick="exportQuotationToDocx()">📄 Generate Word Document (.docx)</button>
+                  <button type="button" class="btn btn-primary px-4 py-2 fw-semibold fs-7 btn-quote-generate" id="btnExportDocx"
+                    onclick="exportQuotationToDocx()">Generate (.docx)</button>
                 </div>
               </div>
             </div>

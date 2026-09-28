@@ -194,8 +194,46 @@ body.offer-page .page-body {
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
 }
 
-/* Mobile View Optimizations for Quotation Table */
+/* Mobile View Optimizations for Quotation Page */
 @media (max-width: 768px) {
+  body.offer-page .page-body {
+    padding: 10px 8px !important;
+    gap: 10px !important;
+  }
+
+  .quote-container {
+    padding: 12px 8px !important;
+    border-radius: 8px !important;
+  }
+
+  #collapseAddresses {
+    padding: 0 4px 10px 4px !important;
+  }
+
+  #collapseAddresses .p-3 {
+    padding: 12px 10px !important;
+  }
+
+  #collapseAddresses .form-label {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 2px !important;
+  }
+
+  #collapseAddresses .form-control,
+  #collapseAddresses .form-select {
+    font-size: 0.84rem !important;
+    padding: 5px 8px !important;
+    min-height: 35px !important;
+    border-radius: 6px !important;
+  }
+
+  #collapseAddresses select#qOfficeAddressSelect {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
   .bank-details-collapse {
     display: none;
     margin-top: 8px;
@@ -260,11 +298,55 @@ body.offer-page .page-body {
     font-size: 0.65rem !important;
     margin-left: 2px !important;
   }
+
+  /* Responsive Footer Buttons Alignment */
+  .quote-footer-actions > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .quote-disclaimer-text {
+    text-align: center !important;
+    font-size: 0.75rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .quote-btn-group {
+    width: 100% !important;
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: space-between !important;
+  }
+
+  .btn-quote-back,
+  .btn-quote-generate {
+    flex: 1 1 0 !important;
+    min-height: 42px !important;
+    padding: 8px 12px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    border-radius: 6px !important;
+  }
 }
 
 @media (min-width: 769px) {
   .bank-details-collapse {
     display: block !important;
   }
+}
+
+.btn-quote-back,
+.btn-quote-generate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  line-height: 1.2;
 }
 
