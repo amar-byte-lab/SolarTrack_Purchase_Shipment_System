@@ -62,7 +62,7 @@ window.onDbReady = function () {
     <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
   ` : '';
 
-  UI.renderSidebar('installments.html');
+  UI.renderSidebar('customer.html');
   UI.renderTopbar('Customer', buttonsHtml);
 
   const btnAddNewCustomer = document.getElementById('btnAddNewCustomer');

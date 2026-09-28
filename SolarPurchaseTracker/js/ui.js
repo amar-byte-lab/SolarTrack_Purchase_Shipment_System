@@ -7,13 +7,13 @@ const UI = (() => {
 
   const NAV_ITEMS = [
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
-    { href: 'installments.html',    icon: 'customer',   label: 'Customer' },
+    { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'work-note.html',       icon: 'worknote',   label: 'Note' },
-    { href: 'offer.html',           icon: 'offer',      label: 'Offer' },
+    { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
     { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement' },
     { href: 'demand-note.html',     icon: 'demand',     label: 'NetMeter' },
     { href: 'sizing-calc.html',     icon: 'calculator', label: 'Calculator' },
-    { href: 'borrower.html',        icon: 'wallet',     label: 'Borrower' },
+    { href: 'ledger.html',          icon: 'wallet',     label: 'Ledger' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
 
@@ -84,9 +84,9 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['installments.html', 'work-note.html', 'offer.html', 'agreement.html', 'borrower.html', 'sizing-calc.html'].includes(item.href);
+            return ['customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['offer.html', 'agreement.html', 'borrower.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : [];
 

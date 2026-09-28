@@ -24,8 +24,8 @@ const AVATAR_COLORS = [
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  UI.renderSidebar('borrower.html');
-  UI.renderTopbar('Borrower Ledger', '');
+  UI.renderSidebar('ledger.html');
+  UI.renderTopbar('Ledger', '');
 
   _txnModal = new bootstrap.Modal(document.getElementById('txnModal'), { keyboard: true });
   _addBorrowerModal = new bootstrap.Modal(document.getElementById('addBorrowerModal'), { keyboard: true });

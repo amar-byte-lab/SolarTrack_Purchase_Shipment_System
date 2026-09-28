@@ -18,8 +18,8 @@ const activeAdjustments = {
 };
 
 window.onDbReady = function () {
-  UI.renderSidebar('offer.html');
-  UI.renderTopbar('Offer Generator');
+  UI.renderSidebar('quotation.html');
+  UI.renderTopbar('Quotation');
 
   const allProducts = DB.getAll('products');
   const emptyState = document.getElementById('emptyState');
@@ -41,7 +41,8 @@ window.onDbReady = function () {
   if (offerContainer) offerContainer.style.display = 'block';
 
   // Set default date
-  document.getElementById('qDate').value = UI.todayISO();
+  const elQDate = document.getElementById('qDate');
+  if (elQDate) elQDate.value = UI.todayISO();
 
   // Set default Quote Number TR{Year}{Month}{Day}{Hr}{Min} (e.g. TR2607201357)
   const now = new Date();
@@ -50,7 +51,8 @@ window.onDbReady = function () {
   const dd = String(now.getDate()).padStart(2, '0');
   const hh = String(now.getHours()).padStart(2, '0');
   const mi = String(now.getMinutes()).padStart(2, '0');
-  document.getElementById('qQuoteNo').value = `TR${yy}/${dd}${mm}${hh}${mi}`;
+  const elQuoteNo = document.getElementById('qQuoteNo');
+  if (elQuoteNo) elQuoteNo.value = `TR${yy}/${dd}${mm}${hh}${mi}`;
 
   // Load and apply Company Profile Settings
   loadCompanyProfileSettings();
@@ -231,21 +233,28 @@ function syncPrintLabels() {
   // 1. Heading Title based on checked product sets
   const checkedProds = Array.from(document.querySelectorAll('.offer-product-chk:checked')).map(chk => chk.value);
   const titleText = checkedProds.length > 0 ? `FOR ${checkedProds.join(' & ')}` : `FOR SOLAR POWER SYSTEM`;
-  document.getElementById('printHeadingTitle').textContent = titleText;
+  const elHeading = document.getElementById('printHeadingTitle');
+  if (elHeading) elHeading.textContent = titleText;
 
   // 2. Seller Details
   const companyName = getSetting('CompanyName', 'SolarTrack');
   const gstNum = getSetting('CompanyGST', '');
   const sellerAddr = getSelectedOfficeAddress();
   const sellerPhone = (document.getElementById('qCompanyPhone') ? document.getElementById('qCompanyPhone').value : '') || '';
-  const sellerEmail = document.getElementById('qCompanyEmail').value;
+  const sellerEmail = (document.getElementById('qCompanyEmail') ? document.getElementById('qCompanyEmail').value : '') || '';
   const logoBase64 = 'assets/sampleFiles/CompanyLogo.jpeg';
 
-  document.getElementById('printSellerName').textContent = companyName;
-  document.getElementById('printSignCompanyName').textContent = companyName.toUpperCase();
-  document.getElementById('printSellerAddress').innerHTML = sellerAddr.replace(/\n/g, '<br>');
-  document.getElementById('printSellerContacts').innerHTML = `Email: ${sellerEmail || '-'}, Mobile: ${sellerPhone || '-'}`;
-  document.getElementById('printSellerGSTIN').textContent = gstNum ? `GSTIN: ${gstNum}` : '';
+  const elSellerName = document.getElementById('printSellerName');
+  const elSignComp = document.getElementById('printSignCompanyName');
+  const elSellerAddr = document.getElementById('printSellerAddress');
+  const elSellerContacts = document.getElementById('printSellerContacts');
+  const elSellerGSTIN = document.getElementById('printSellerGSTIN');
+
+  if (elSellerName) elSellerName.textContent = companyName;
+  if (elSignComp) elSignComp.textContent = companyName.toUpperCase();
+  if (elSellerAddr) elSellerAddr.innerHTML = sellerAddr.replace(/\n/g, '<br>');
+  if (elSellerContacts) elSellerContacts.innerHTML = `Email: ${sellerEmail || '-'}, Mobile: ${sellerPhone || '-'}`;
+  if (elSellerGSTIN) elSellerGSTIN.textContent = gstNum ? `GSTIN: ${gstNum}` : '';
 
   const printLogo = document.getElementById('printSellerLogo');
   if (printLogo) {
@@ -254,18 +263,30 @@ function syncPrintLabels() {
   }
 
   // 4. Quote Metadata Box
-  document.getElementById('printQuoteNo').textContent = document.getElementById('qQuoteNo').value.trim() || '-';
-  document.getElementById('printQuoteDate').textContent = formatQuoteDate(document.getElementById('qDate').value);
-  document.getElementById('printDeliveryDate').textContent = document.getElementById('qDeliveryDate').value.trim() || '-';
-  document.getElementById('printPaymentTerms').textContent = document.getElementById('qPaymentTerms').value.trim() || '-';
+  const qNoVal = document.getElementById('qQuoteNo') ? document.getElementById('qQuoteNo').value.trim() : '';
+  const qDateVal = document.getElementById('qDate') ? document.getElementById('qDate').value : '';
+  const qDelVal = document.getElementById('qDeliveryDate') ? document.getElementById('qDeliveryDate').value.trim() : '';
+  const qPayVal = document.getElementById('qPaymentTerms') ? document.getElementById('qPaymentTerms').value.trim() : '';
+
+  const elQuoteNo = document.getElementById('printQuoteNo');
+  const elQuoteDate = document.getElementById('printQuoteDate');
+  const elDelDate = document.getElementById('printDeliveryDate');
+  const elPayTerms = document.getElementById('printPaymentTerms');
+
+  if (elQuoteNo) elQuoteNo.textContent = qNoVal || '-';
+  if (elQuoteDate) elQuoteDate.textContent = formatQuoteDate(qDateVal);
+  if (elDelDate) elDelDate.textContent = qDelVal || '-';
+  if (elPayTerms) elPayTerms.textContent = qPayVal || '-';
 
   // 5. Buyer Details
   const buyerName = document.getElementById('qCustName')?.value.trim() || '-';
   const buyerMobile = document.getElementById('qCustMobile')?.value.trim() || '';
   const buyerAddr = document.getElementById('qCustAddress')?.value || '-';
 
-  document.getElementById('printBuyerName').textContent = buyerName;
-  document.getElementById('printBuyerAddress').innerHTML = buyerAddr.replace(/\n/g, '<br>');
+  const elBuyerName = document.getElementById('printBuyerName');
+  const elBuyerAddr = document.getElementById('printBuyerAddress');
+  if (elBuyerName) elBuyerName.textContent = buyerName;
+  if (elBuyerAddr) elBuyerAddr.innerHTML = buyerAddr.replace(/\n/g, '<br>');
 
   const printBuyerMob = document.getElementById('printBuyerMobile');
   const printBuyerMobWrap = document.getElementById('printBuyerMobileWrapper');
@@ -289,10 +310,15 @@ function syncPrintLabels() {
   const acNoVal = getSetting('BankAcNo', '123456789123');
   const ifsVal = getSetting('BankBranchIFS', 'Branch & IFS Code');
 
-  document.getElementById('printBankName').textContent = bankVal;
-  document.getElementById('printBankAcHolder').textContent = holderVal;
-  document.getElementById('printBankAcNo').textContent = acNoVal;
-  document.getElementById('printBankBranchIFS').textContent = ifsVal;
+  const elBankName = document.getElementById('printBankName');
+  const elBankHolder = document.getElementById('printBankAcHolder');
+  const elBankAcNo = document.getElementById('printBankAcNo');
+  const elBankIFS = document.getElementById('printBankBranchIFS');
+
+  if (elBankName) elBankName.textContent = bankVal;
+  if (elBankHolder) elBankHolder.textContent = holderVal;
+  if (elBankAcNo) elBankAcNo.textContent = acNoVal;
+  if (elBankIFS) elBankIFS.textContent = ifsVal;
 
   // 7. Terms and Conditions
   const termsText = getSetting('CompanyTerms', '');
@@ -321,12 +347,17 @@ function syncPrintLabels() {
     const selectedIndex = Number(subSelect.value);
     const sub = offerSubsidiesList[selectedIndex];
     if (sub) {
-      document.getElementById('printSubPerKW').textContent = `${sub.kw} KW`;
-      document.getElementById('printSubCentral').textContent = Number(sub.central).toLocaleString('en-IN');
-      document.getElementById('printSubState').textContent = Number(sub.state).toLocaleString('en-IN');
+      const elSubKW = document.getElementById('printSubPerKW');
+      const elSubCentral = document.getElementById('printSubCentral');
+      const elSubState = document.getElementById('printSubState');
+      const elSubTotal = document.getElementById('printSubTotal');
+
+      if (elSubKW) elSubKW.textContent = `${sub.kw} KW`;
+      if (elSubCentral) elSubCentral.textContent = Number(sub.central).toLocaleString('en-IN');
+      if (elSubState) elSubState.textContent = Number(sub.state).toLocaleString('en-IN');
       
       const totalSub = (sub.central || 0) + (sub.state || 0);
-      document.getElementById('printSubTotal').textContent = `${totalSub.toLocaleString('en-IN')}`;
+      if (elSubTotal) elSubTotal.textContent = `${totalSub.toLocaleString('en-IN')}`;
       
       if (printSubsidyCell) {
         printSubsidyCell.style.display = 'block';
@@ -498,7 +529,10 @@ function generatePrintItemsGrid() {
   tbody.innerHTML = html.join('');
 
   // Update Amount in Words
-  document.getElementById('printAmountInWords').textContent = `Amount Chargeable (in words): ${convertNumberToWords(grandTotal)}`;
+  const elAmtWords = document.getElementById('printAmountInWords');
+  if (elAmtWords) {
+    elAmtWords.textContent = `Amount Chargeable (in words): ${convertNumberToWords(grandTotal)}`;
+  }
 }
 
 function createPrintPageShell() {
@@ -1368,8 +1402,10 @@ function recalculateOffer() {
 
   const grandTotal = Math.max(0, runningTotal);
 
-  document.getElementById('lblOfferSubtotal').textContent = UI.money(subtotal);
-  document.getElementById('lblOfferGrandTotal').textContent = UI.money(grandTotal);
+  const lblSubtotal = document.getElementById('lblOfferSubtotal');
+  const lblGrandTotal = document.getElementById('lblOfferGrandTotal');
+  if (lblSubtotal) lblSubtotal.textContent = UI.money(subtotal);
+  if (lblGrandTotal) lblGrandTotal.textContent = UI.money(grandTotal);
 
   // Update screen table tfoot values
   const tblSub = document.getElementById('tblSubtotalVal');
@@ -1396,14 +1432,22 @@ function recalculateOffer() {
       const totalSubsidy = stateAmt + centralAmt;
       const netPayable = Math.max(0, grandTotal - totalSubsidy);
       
-      document.getElementById('lblStateSubsidy').textContent = `₹` + stateAmt.toLocaleString('en-IN', {
-        maximumFractionDigits: 2,
-        minimumFractionDigits: 2
-      });
-      document.getElementById('lblCentralSubsidy').textContent = `₹` + centralAmt.toLocaleString('en-IN', {
-        maximumFractionDigits: 2,
-        minimumFractionDigits: 2
-      });
+      const lblState = document.getElementById('lblStateSubsidy');
+      if (lblState) {
+        lblState.textContent = `₹` + stateAmt.toLocaleString('en-IN', {
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2
+        });
+      }
+      
+      const lblCentral = document.getElementById('lblCentralSubsidy');
+      if (lblCentral) {
+        lblCentral.textContent = `₹` + centralAmt.toLocaleString('en-IN', {
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2
+        });
+      }
+      
       const lblTotalSub = document.getElementById('lblTotalSubsidy');
       if (lblTotalSub) lblTotalSub.textContent = UI.money(totalSubsidy);
 

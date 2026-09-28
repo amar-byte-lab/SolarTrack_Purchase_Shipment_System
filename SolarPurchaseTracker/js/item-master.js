@@ -68,7 +68,7 @@ function updateTopbarActions() {
     `;
   } else {
     actionsHtml = `
-      <button class="btn btn-success fw-semibold" id="btnGenerateOffer">Generate Offer</button>
+      <button class="btn btn-success fw-semibold" id="btnGenerateQuotation">Generate Quotation</button>
     `;
   }
 
@@ -83,8 +83,8 @@ function updateTopbarActions() {
       });
     }
   } else {
-    const btnGen = document.getElementById('btnGenerateOffer');
-    if (btnGen) btnGen.addEventListener('click', generateOfferRedirect);
+    const btnGen = document.getElementById('btnGenerateQuotation');
+    if (btnGen) btnGen.addEventListener('click', generateQuotationRedirect);
   }
 }
 /* ── Tab 1: Item Master Controllers ──────────────────────────────────── */
@@ -526,15 +526,15 @@ window.deleteProduct = async function (productName) {
   }
 };
 
-function generateOfferRedirect() {
+function generateQuotationRedirect() {
   const checked = Array.from(document.querySelectorAll('.product-chk:checked')).map(chk => chk.value);
   if (checked.length === 0) {
     UI.toast('Please select at least one Product Set using the checkboxes.', 'warning');
     return;
   }
-  // Redirect to offer generator page
+  // Redirect to quotation generator page
   const params = encodeURIComponent(checked.join(','));
-  window.location.href = `offer.html?products=${params}`;
+  window.location.href = `quotation.html?products=${params}`;
 }
 
 

@@ -193,7 +193,7 @@
     const res = await Auth.login(userid, password);
 
     if (res.success) {
-      window.location.href = 'offer.html';
+      window.location.href = 'quotation.html';
     } else {
       alertEl.textContent = res.error || 'Invalid User ID or Password';
       alertEl.style.display = 'block';
