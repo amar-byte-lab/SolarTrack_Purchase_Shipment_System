@@ -691,12 +691,23 @@
     font-size: 0.88rem !important;
   }
 
-  /* Appliance Summary Text Preview */
+  /* Appliance Summary Text Preview (Single Row Well-Aligned) */
   #applianceSummaryBadges {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 8px;
     font-size: 0.78rem !important;
-    line-height: 1.5 !important;
+    line-height: 1.4 !important;
     cursor: pointer;
     transition: opacity 0.15s ease;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  #applianceSummaryBadges::-webkit-scrollbar {
+    display: none;
   }
   #applianceSummaryBadges:hover {
     opacity: 0.85;

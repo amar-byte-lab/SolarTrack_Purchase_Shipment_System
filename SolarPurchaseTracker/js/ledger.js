@@ -1071,8 +1071,7 @@ async function shareActiveBorrowerWhatsapp() {
       // Check page overflow
       if (y > 270) {
         doc.addPage();
-        drawPageHeader();
-        y = 45;
+        y = 15;
         drawTableHeader(y);
         y += 14;
       }
@@ -1120,8 +1119,7 @@ async function shareActiveBorrowerWhatsapp() {
     // Summary footer on last page
     if (y > 250) {
       doc.addPage();
-      drawPageHeader();
-      y = 45;
+      y = 15;
     }
 
     // Draw final total line

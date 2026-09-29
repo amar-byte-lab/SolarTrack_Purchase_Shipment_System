@@ -567,8 +567,8 @@ const SizingUI = (() => {
         badgesContainer.innerHTML = displayApps.map(app => {
           const itemHours = isBackupContext ? (Number(app.defaultHours) || backupHrs) : (Number(app.defaultHours) || 1);
           const itemWh = (app.watts || 0) * itemHours * (app.defaultQty || 1);
-          return `<span class="text-dark fw-medium">${app.name} × <strong>${app.defaultQty}</strong> <span class="text-primary fw-semibold">(${formatEnergy(itemWh)})</span></span>`;
-        }).join('<span class="text-muted mx-1.5">•</span>');
+          return `<span class="d-inline-flex align-items-center gap-1 text-dark fs-8 fw-medium flex-shrink-0 text-nowrap"><span>${app.name} × <strong>${app.defaultQty}</strong></span> <span class="text-primary fw-semibold">(${formatEnergy(itemWh)})</span></span>`;
+        }).join('<span class="text-muted opacity-50 flex-shrink-0 mx-1.5">•</span>');
       }
     }
   }
