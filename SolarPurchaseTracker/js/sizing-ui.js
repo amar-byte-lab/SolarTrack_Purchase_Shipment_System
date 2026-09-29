@@ -144,8 +144,13 @@ const SizingUI = (() => {
    * or resets back to individual schedule hours when switching away from Backup Duration.
    */
   function applyBackupHoursOverrideOrReset() {
-    if (state.energyCalculationBasis === 'backup_duration') {
-      const backupHrs = Number(state.backupHours) || 4;
+    const backupHrs = Number(state.backupHours) || 4;
+    const isDurationBasis = state.energyCalculationBasis === 'backup_duration';
+    const isHybrid = state.systemType === 'hybrid';
+    const isOffGrid = state.systemType === 'off-grid';
+    const isWithoutSolar = state.systemType === 'without-solar';
+
+    if (isDurationBasis || isOffGrid || isWithoutSolar || isHybrid) {
       state.appliances.forEach(app => {
         if (app.scheduleHours === undefined) {
           const defaultDef = COMMON_APPLIANCES.find(d => d.id === app.id);
@@ -222,13 +227,13 @@ const SizingUI = (() => {
     const txtHybridHours = document.getElementById('txtHybridBackupHours');
     if (txtHybridHours && Number(txtHybridHours.value) !== state.backupHours) txtHybridHours.value = state.backupHours;
     
-    if (state.energyCalculationBasis === 'backup_duration') {
-      applyBackupHoursOverrideOrReset();
-      renderModalApplianceList();
-      updateModalStats();
-    }
+    // Always apply backup hours override to all backup appliances
+    applyBackupHoursOverrideOrReset();
+    renderModalApplianceList();
+    updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
+    renderCostRecovery();
   }
 
   function onHybridBackupHoursChange(hoursVal) {
@@ -546,17 +551,12 @@ const SizingUI = (() => {
     const badgesContainer = document.getElementById('applianceSummaryBadges');
     if (badgesContainer) {
       if (activeApps.length === 0) {
-        badgesContainer.innerHTML = `<span class="text-muted fs-8 fst-italic">No appliances selected. Click "?" to select loads.</span>`;
+        badgesContainer.innerHTML = `<span class="text-muted fs-8 fst-italic">No appliances selected. Click here or "?" to select loads.</span>`;
       } else {
         badgesContainer.innerHTML = activeApps.map(app => {
           const itemWh = (app.watts || 0) * (app.defaultHours || 1) * (app.defaultQty || 1);
-          return `
-            <span class="badge bg-white text-dark border fs-8 px-2 py-1 shadow-2xs d-inline-flex align-items-center gap-1">
-              <span>${app.name} × <strong>${app.defaultQty}</strong></span>
-              <span class="text-primary fw-bold fs-9">(${formatEnergy(itemWh)})</span>
-            </span>
-          `;
-        }).join('');
+          return `<span class="text-dark fw-medium">${app.name} × <strong>${app.defaultQty}</strong> <span class="text-primary fw-semibold">(${formatEnergy(itemWh)})</span></span>`;
+        }).join('<span class="text-muted mx-1.5">•</span>');
       }
     }
   }

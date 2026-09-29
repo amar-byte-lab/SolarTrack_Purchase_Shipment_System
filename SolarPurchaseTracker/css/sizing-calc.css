@@ -691,10 +691,15 @@
     font-size: 0.88rem !important;
   }
 
-  /* Appliance Badges Preview Box */
-  #applianceSummaryBadges .badge {
-    font-size: 0.68rem !important;
-    padding: 2px 6px !important;
+  /* Appliance Summary Text Preview */
+  #applianceSummaryBadges {
+    font-size: 0.78rem !important;
+    line-height: 1.5 !important;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  #applianceSummaryBadges:hover {
+    opacity: 0.85;
   }
 
   /* 3 Result Specification Cards */

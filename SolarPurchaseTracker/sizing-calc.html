@@ -289,15 +289,9 @@
                 </div>
 
                 <!-- Selected Appliances Summary with Question Mark Symbol -->
-                <div class="mb-2" id="wrapSelectedAppliancesSummary">
-                  <div class="d-flex align-items-center gap-1.5 mb-1.5">
-                    <label class="form-label fs-8 fw-bold text-dark mb-0">Selected Appliances Summary</label>
-                    <button type="button" class="btn btn-xs btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center rounded-circle border text-muted" id="btnEditApplianceSchedule" title="Set Load & Hours" style="width: 18px; height: 18px; font-size: 11px; font-weight: bold; line-height: 1;" onclick="SizingUI.openApplianceModal()">
-                      ?
-                    </button>
-                  </div>
-                  <div class="d-flex flex-wrap gap-1.5 p-2.5 bg-white rounded-3 border" id="applianceSummaryBadges" style="min-height: 52px;">
-                    <!-- Rendered dynamically -->
+                <div class="mt-2.5 mb-1" id="wrapSelectedAppliancesSummary">
+                  <div class="fs-8 text-secondary lh-base cursor-pointer py-0.5" id="applianceSummaryBadges" onclick="SizingUI.openApplianceModal()" style="cursor: pointer;" title="Click to view & configure appliances">
+                    <!-- Rendered dynamically as inline text labels -->
                   </div>
                 </div>
               </div>
