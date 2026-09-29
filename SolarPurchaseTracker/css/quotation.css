@@ -4,12 +4,14 @@
 
 html.offer-page, body.offer-page, body.offer-page .app-shell {
   height: 100vh;
+  height: 100dvh;
   margin: 0;
   overflow: hidden;
 }
 
 body.offer-page .main-content {
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -196,14 +198,44 @@ body.offer-page .page-body {
 
 /* Mobile View Optimizations for Quotation Page */
 @media (max-width: 768px) {
+  html.offer-page, body.offer-page, body.offer-page .app-shell {
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0;
+    overflow: hidden !important;
+  }
+
+  body.offer-page .main-content {
+    height: 100vh !important;
+    height: 100dvh !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+
   body.offer-page .page-body {
-    padding: 10px 8px !important;
-    gap: 10px !important;
+    padding: 8px 8px 48px 8px !important;
+    padding-bottom: max(48px, env(safe-area-inset-bottom, 24px) + 32px) !important;
+    gap: 8px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   .quote-container {
-    padding: 12px 8px !important;
+    padding: 10px 8px 20px 8px !important;
     border-radius: 8px !important;
+    margin-bottom: 24px !important;
+  }
+
+  #offerWorkspace > .st-card,
+  #offerWorkspace > .table-responsive,
+  #offerWorkspace > .row {
+    margin-bottom: 10px !important;
+  }
+
+  #termsSection {
+    margin-top: 10px !important;
+    padding-top: 6px !important;
   }
 
   #collapseAddresses {
@@ -300,16 +332,24 @@ body.offer-page .page-body {
   }
 
   /* Responsive Footer Buttons Alignment */
+  .quote-footer-actions {
+    margin-top: 12px !important;
+    padding-top: 10px !important;
+    padding-bottom: 20px !important;
+    margin-bottom: 16px !important;
+  }
+
   .quote-footer-actions > div {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 12px !important;
+    gap: 8px !important;
   }
 
   .quote-disclaimer-text {
     text-align: center !important;
     font-size: 0.75rem !important;
     line-height: 1.35 !important;
+    margin-bottom: 2px !important;
   }
 
   .quote-btn-group {
@@ -317,6 +357,7 @@ body.offer-page .page-body {
     display: flex !important;
     gap: 10px !important;
     justify-content: space-between !important;
+    margin-top: 2px !important;
   }
 
   .btn-quote-back,
