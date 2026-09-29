@@ -46,7 +46,8 @@
 }
 
 #secGridPhaseAndLoad {
-  margin-bottom: 16px !important;
+  margin-top: 14px !important;
+  margin-bottom: 0 !important;
 }
 
 #secGridPhaseAndLoad .form-label {

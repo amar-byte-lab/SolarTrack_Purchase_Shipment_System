@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Solar & Inverter-Battery Sizing Calculator — Solar Track</title>
+  <title>Solar & Inverter-Battery Calculate System Variables — Solar Track</title>
   <link rel="stylesheet" href="assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/sizing-calc.css">
@@ -22,20 +22,20 @@
       <div class="page-body sizing-page-body">
 
         <!-- MAIN INPUTS ROW: SYSTEM TYPE & APPLIANCES / LOAD IN SAME ROW -->
-        <div class="row g-3 align-items-stretch mb-2">
+        <div class="row g-3 align-items-stretch mb-3">
           
           <!-- STEP 1: SYSTEM TYPE SELECTION (RICH CONTAINER DROPDOWN) -->
           <div class="col-lg-6" id="colStep1Wrapper">
-            <div class="step-card p-4 h-100 d-flex flex-column mb-0" id="secSystemType">
+            <div class="step-card h-100 p-3.5 p-md-4 mb-0" id="secSystemType">
               <div>
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3.5 pb-1">
                   <div>
                     <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
                   </div>
                 </div>
 
                 <!-- Custom Rich Dropdown Trigger & Menu -->
-                <div class="dropdown mt-2 w-100" id="systemTypeDropdownContainer" style="position: relative;">
+                <div class="dropdown mb-3 w-100" id="systemTypeDropdownContainer" style="position: relative;">
                   <button class="btn btn-white border w-100 p-2.5 d-flex align-items-center justify-content-between text-start rounded-3 shadow-2xs custom-dropdown-trigger" 
                     type="button" id="btnSystemTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="max-width: 100%; overflow: hidden;">
                     <div class="d-flex align-items-center gap-2.5 overflow-hidden flex-grow-1 min-w-0" id="selectedSystemTypeDisplay">
@@ -119,15 +119,54 @@
                   </ul>
                 </div>
 
+                <!-- Grid Supply Phase & Sanctioned Load -->
+                <div class="row g-2.5 mb-0" id="secGridPhaseAndLoad">
+                  <!-- 1. Grid Supply Phase -->
+                  <div class="col-6">
+                    <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSupplyPhase">
+                      Grid Supply Phase
+                    </label>
+                    <div class="input-group shadow-2xs">
+                      <select class="form-select fw-semibold fs-8" id="selSupplyPhase" onchange="SizingUI.onSupplyPhaseChange(this.value)" style="height: 38px;">
+                        <option value="1-Phase" selected>1-Phase (230V) — Max 5 kW</option>
+                        <option value="3-Phase">3-Phase (415V) — Multi-kW</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- 2. Customer Sanctioned Load -->
+                  <div class="col-6">
+                    <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSanctionedLoad">
+                      Sanctioned Load
+                    </label>
+                    <div class="input-group shadow-2xs">
+                      <select class="form-select fw-semibold fs-8" id="selSanctionedLoad" onchange="SizingUI.onSanctionedLoadChange(this.value)" style="height: 38px;">
+                        <option value="1">1 kW (₹20/mo)</option>
+                        <option value="2">2 kW (₹40/mo)</option>
+                        <option value="3" selected>3 kW (₹60/mo)</option>
+                        <option value="4">4 kW (₹80/mo)</option>
+                        <option value="5">5 kW (₹100/mo) — 1-Phase Max</option>
+                        <option value="6">6 kW (₹120/mo) — 3-Phase</option>
+                        <option value="7">7 kW (₹140/mo) — 3-Phase</option>
+                        <option value="8">8 kW (₹160/mo) — 3-Phase</option>
+                        <option value="10">10 kW (₹200/mo) — 3-Phase</option>
+                        <option value="12">12 kW (₹240/mo) — 3-Phase</option>
+                        <option value="15">15 kW (₹300/mo) — 3-Phase</option>
+                        <option value="20">20 kW (₹400/mo) — 3-Phase</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
 
           <!-- STEP 2: APPLIANCES, CONNECTED LOAD & SIZING BASIS -->
           <div class="col-lg-6" id="colStep2Wrapper">
-            <div class="step-card p-4 h-100 d-flex flex-column justify-content-between mb-0" id="secApplianceSummary">
+            <div class="step-card h-100 p-3.5 p-md-4 mb-0" id="secApplianceSummary">
               <div>
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3.5 pb-1">
                   <div>
                     <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
                   </div>
@@ -135,47 +174,8 @@
 
                 <!-- Sizing Calculation Basis (Monthly Units, Configured Appliances Load, Backup Duration) -->
                 <div class="mb-3 p-3 bg-light rounded-3 border" id="secEnergyCalculationBasis">
-                  <!-- Grid Supply Phase & Sanctioned Load (Inside secEnergyCalculationBasis) -->
-                  <div class="row g-2.5 mb-3.5" id="secGridPhaseAndLoad">
-                    <!-- 1. Grid Supply Phase -->
-                    <div class="col-6">
-                      <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSupplyPhase">
-                        Grid Supply Phase
-                      </label>
-                      <div class="input-group shadow-2xs">
-                        <select class="form-select fw-semibold fs-8" id="selSupplyPhase" onchange="SizingUI.onSupplyPhaseChange(this.value)" style="height: 38px;">
-                          <option value="1-Phase" selected>1-Phase (230V) — Max 5 kW</option>
-                          <option value="3-Phase">3-Phase (415V) — Multi-kW</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <!-- 2. Customer Sanctioned Load -->
-                    <div class="col-6">
-                      <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSanctionedLoad">
-                        Sanctioned Load
-                      </label>
-                      <div class="input-group shadow-2xs">
-                        <select class="form-select fw-semibold fs-8" id="selSanctionedLoad" onchange="SizingUI.onSanctionedLoadChange(this.value)" style="height: 38px;">
-                          <option value="1">1 kW (₹20/mo)</option>
-                          <option value="2">2 kW (₹40/mo)</option>
-                          <option value="3" selected>3 kW (₹60/mo)</option>
-                          <option value="4">4 kW (₹80/mo)</option>
-                          <option value="5">5 kW (₹100/mo) — 1-Phase Max</option>
-                          <option value="6">6 kW (₹120/mo) — 3-Phase</option>
-                          <option value="7">7 kW (₹140/mo) — 3-Phase</option>
-                          <option value="8">8 kW (₹160/mo) — 3-Phase</option>
-                          <option value="10">10 kW (₹200/mo) — 3-Phase</option>
-                          <option value="12">12 kW (₹240/mo) — 3-Phase</option>
-                          <option value="15">15 kW (₹300/mo) — 3-Phase</option>
-                          <option value="20">20 kW (₹400/mo) — 3-Phase</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
                   <!-- 3 Radio Buttons -->
-                  <div class="btn-group w-100 shadow-2xs mb-2" role="group" aria-label="Sizing Calculation Basis" id="grpEnergyBasisRadios">
+                  <div class="btn-group w-100 shadow-2xs mb-2.5" role="group" aria-label="Sizing Calculation Basis" id="grpEnergyBasisRadios">
                     <!-- 1. Monthly Units -->
                     <input type="radio" class="btn-check" name="radEnergyBasis" id="radBasisMonthlyUnits" value="monthly_units" checked onchange="SizingUI.onEnergyBasisChange('monthly_units')">
                     <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisMonthlyUnits" id="lblRadBasisMonthlyUnits" title="Calculate sizing based on Monthly Units consumption">
