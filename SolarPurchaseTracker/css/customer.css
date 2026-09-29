@@ -709,26 +709,19 @@ body.installments-page .page-body {
 /* ══ Enterprise Executive KPI Summary Banner ══════════════════════════ */
 .customer-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
 }
 
-@media (max-width: 992px) {
+@media (min-width: 768px) {
   .customer-kpi-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .customer-kpi-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-}
-
-@media (max-width: 420px) {
-  .customer-kpi-grid {
-    grid-template-columns: 1fr 1fr;
     gap: 6px;
   }
 }
@@ -736,16 +729,16 @@ body.installments-page .page-body {
 .customer-kpi-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 6px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   position: relative;
   overflow: hidden;
   transition: all 0.15s ease;
-  min-height: 84px;
+  min-height: 72px;
 }
 
 .customer-kpi-card:hover {

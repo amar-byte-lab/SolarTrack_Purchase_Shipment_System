@@ -1083,6 +1083,15 @@ function renderList() {
 
   const tbody = document.querySelector('#installmentsTable tbody');
   
+  const filterParts = [];
+  if (showDeactive) filterParts.push('Deactive');
+  if (selectedDistricts.length > 0) filterParts.push(selectedDistricts.length === 1 ? selectedDistricts[0] : `${selectedDistricts.length} Districts`);
+  if (selectedPartners.length > 0) filterParts.push(selectedPartners.length === 1 ? selectedPartners[0] : `${selectedPartners.length} Partners`);
+  if (selectedBrands.length > 0) filterParts.push(selectedBrands.length === 1 ? selectedBrands[0] : `${selectedBrands.length} Brands`);
+  if (search) filterParts.push(`"${search}"`);
+  if (loginFrom || loginTo) filterParts.push('Date Filter');
+  const filterLabel = filterParts.length > 0 ? filterParts.join(', ') : 'All';
+
   const currentUser = Auth.getUser();
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
 
@@ -1092,6 +1101,8 @@ function renderList() {
     renderTopKpis({
       activeCount: 0,
       totalInDb: allDbRows.length,
+      filterLabel,
+      showDeactive,
       sumPrice: 0,
       sumTotal: 0,
       pendingCust: 0,
@@ -1342,6 +1353,8 @@ function renderList() {
   renderTopKpis({
     activeCount: displayCount,
     totalInDb: allDbRows.length,
+    filterLabel,
+    showDeactive,
     sumPrice,
     sumTotal,
     pendingCust,
@@ -1475,6 +1488,8 @@ function renderTopKpis(metrics) {
   const {
     activeCount,
     totalInDb,
+    filterLabel = 'All',
+    showDeactive = false,
     sumPrice,
     sumTotal,
     pendingCust,
@@ -1492,24 +1507,24 @@ function renderTopKpis(metrics) {
   const rupeeIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>`;
 
   const cardsHtml = [
-    // 1. Total Customers Card
+    // 1. Total Customers Card (With filter value badge)
     `
     <div class="customer-kpi-card kpi-customers">
       <div class="customer-kpi-header">
         <span class="customer-kpi-title">Customers</span>
-        <span class="customer-kpi-icon-wrap" title="Total active customers">
+        <span class="customer-kpi-icon-wrap" title="Total active records">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </span>
       </div>
       <div class="customer-kpi-value text-indigo">${activeCount}</div>
-      <div class="customer-kpi-footer">
-        <span>Active Records</span>
-        <span class="badge bg-indigo-subtle text-indigo px-1.5 py-0 fs-8">${activeCount === totalInDb ? 'All' : `${activeCount}/${totalInDb}`}</span>
+      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap">
+        <span class="text-secondary fs-8">${showDeactive ? 'Deactive' : 'Active Records'}</span>
+        <span class="badge bg-indigo-subtle text-indigo px-1.5 py-0 fs-8 text-truncate" style="max-width: 110px;" title="Filter: ${filterLabel}">${filterLabel}</span>
       </div>
     </div>
     `,
 
-    // 2. Total Revenue Card
+    // 2. Total Revenue Card (Includes Collected Amount (%), Pending Amount (%))
     `
     <div class="customer-kpi-card kpi-revenue">
       <div class="customer-kpi-header">
@@ -1519,48 +1534,14 @@ function renderTopKpis(metrics) {
         </span>
       </div>
       <div class="customer-kpi-value text-sky">${fmtGrandTotal(sumPrice)}</div>
-      <div class="customer-kpi-footer">
-        <span>Committed Value</span>
-        <span class="text-secondary fs-8">100%</span>
+      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+        <span class="text-success fw-semibold" title="Collected: ${fmtGrandTotal(sumTotal)}">Rec: ${fmtGrandTotal(sumTotal)} <span class="badge bg-success-subtle text-success px-1 py-0 fs-9">${collectionRate}%</span></span>
+        <span class="text-danger fw-semibold" title="Pending: ${fmtGrandTotal(pendingCust)}">Pend: ${fmtGrandTotal(pendingCust)} <span class="badge bg-danger-subtle text-danger px-1 py-0 fs-9">${pendingRate}%</span></span>
       </div>
     </div>
     `,
 
-    // 3. Received / Collected Card
-    `
-    <div class="customer-kpi-card kpi-collected">
-      <div class="customer-kpi-header">
-        <span class="customer-kpi-title">Collected</span>
-        <span class="customer-kpi-icon-wrap" title="Total installments received">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </span>
-      </div>
-      <div class="customer-kpi-value text-success">${fmtGrandTotal(sumTotal)}</div>
-      <div class="customer-kpi-footer">
-        <span>Received</span>
-        <span class="badge bg-success-subtle text-success px-1.5 py-0 fs-8">${collectionRate}%</span>
-      </div>
-    </div>
-    `,
-
-    // 4. Pending Balance Card
-    `
-    <div class="customer-kpi-card kpi-pending">
-      <div class="customer-kpi-header">
-        <span class="customer-kpi-title">Cust. Pending</span>
-        <span class="customer-kpi-icon-wrap" title="Pending from customers">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </span>
-      </div>
-      <div class="customer-kpi-value text-warning-emphasis">${fmtGrandTotal(pendingCust)}</div>
-      <div class="customer-kpi-footer">
-        <span>Receivable</span>
-        <span class="badge bg-warning-subtle text-warning-emphasis px-1.5 py-0 fs-8">${pendingRate}%</span>
-      </div>
-    </div>
-    `,
-
-    // 5. Partner Amount Card
+    // 3. Partner Amount Card
     `
     <div class="customer-kpi-card kpi-partner">
       <div class="customer-kpi-header">
@@ -1570,8 +1551,8 @@ function renderTopKpis(metrics) {
         </span>
       </div>
       <div class="customer-kpi-value text-purple">${fmtGrandTotal(sumPartnerPrice)}</div>
-      <div class="customer-kpi-footer">
-        <span>Pending Due</span>
+      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+        <span class="text-secondary">Pending Due:</span>
         <span class="badge bg-danger-subtle text-danger px-1.5 py-0 fs-8">${fmtGrandTotal(partnerPending)}</span>
       </div>
     </div>
@@ -1587,7 +1568,7 @@ function renderTopKpis(metrics) {
   );
 
   if (isAdminOrSuperAdmin) {
-    // 6. Net Profit Card (Admin and Superadmin only)
+    // 4. Net Profit Card (Admin and Superadmin only)
     const profitColorClass = totalProfit >= 0 ? 'text-emerald' : 'text-danger';
     const profitBadgeClass = totalProfit >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
     cardsHtml.push(`
@@ -1599,8 +1580,8 @@ function renderTopKpis(metrics) {
           </span>
         </div>
         <div class="customer-kpi-value ${profitColorClass}">${fmtGrandTotal(totalProfit)}</div>
-        <div class="customer-kpi-footer">
-          <span>Exp: ${fmtGrandTotal(sumVendorPrice)}</span>
+        <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+          <span class="text-secondary">Exp: ${fmtGrandTotal(sumVendorPrice)}</span>
           <span class="badge ${profitBadgeClass} px-1.5 py-0 fs-8">${profitMargin}%</span>
         </div>
       </div>
