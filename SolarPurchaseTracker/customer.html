@@ -88,10 +88,10 @@
           <table class="table table-hover table-installments mb-0" id="installmentsTable">
             <thead>
               <tr>
-                <th class="text-center" style="width: 45px;">Sl.</th>
+                <th class="text-center sortable" data-sort="SlNo" style="width: 45px;">Sl.</th>
                 <th class="sortable" data-sort="Name" id="thName">Customer</th>
-                <th>Partner</th>
-                <th class="col-price admin-only-column">Total Expense</th>
+                <th class="sortable col-Partner" data-sort="Delay" id="thPartner" title="Click to sort by Delay time / Partner">Partner</th>
+                <th class="col-price admin-only-column sortable" data-sort="CommittedPrice">Total Expense</th>
                 <th class="no-print" style="width: 90px; text-align: center;">Actions</th>
               </tr>
             </thead>
@@ -112,75 +112,50 @@
     <div class="modal-content border shadow-sm rounded-2">
       <div class="modal-header py-2.5 px-3 border-bottom bg-light">
         <div class="d-flex align-items-center gap-2">
-          <span class="p-1.5 bg-primary-subtle text-primary rounded-1 d-inline-flex">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </span>
           <div>
-            <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="customerSummaryModalTitle">Executive Financial & Sales Summary</h6>
-            <span class="text-secondary fs-8">Real-time performance indicators, collections, and regional distribution</span>
+            <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="customerSummaryModalTitle">Executive Financial & Customer Breakdown</h6>
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3 d-flex flex-column gap-3">
         <!-- Executive KPI Cards Grid -->
-        <div>
-          <span class="text-secondary fs-8 fw-semibold text-uppercase d-block mb-1.5" style="letter-spacing: 0.05em;">Key Financial Indicators</span>
-          <div class="customer-kpi-grid" id="customerKpiGrid">
-            <!-- Injected dynamically by JS -->
-          </div>
+        <div class="customer-kpi-grid" id="customerKpiGrid">
+          <!-- Injected dynamically by JS -->
         </div>
 
-        <!-- Distribution Breakdown Tables -->
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="card border rounded-1 h-100 bg-white">
-              <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-                <span class="fw-semibold text-dark fs-8">Brand-wise Sales</span>
-                <span class="badge bg-secondary-subtle text-secondary fs-8" id="sumModalBrandCount">0 Brands</span>
-              </div>
-              <div class="table-responsive p-0" style="max-height: 240px; overflow-y: auto;">
-                <table class="table table-sm table-hover align-middle mb-0" id="brandSummaryTable" style="font-size:0.83rem;">
-                  <thead>
-                    <tr class="table-light">
-                      <th>Brand</th>
-                      <th class="text-center">Active Customers</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Brand rows injected here -->
-                  </tbody>
-                </table>
-              </div>
+        <!-- Customer-wise Financial Breakdown Grid -->
+        <div class="card border rounded-1 bg-white">
+          <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-semibold text-dark fs-8 text-uppercase" style="letter-spacing: 0.04em;">Customer Financial Breakdown</span>
+              <span class="badge bg-primary-subtle text-primary fs-8" id="sumModalRowCount">0 Records</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <input type="text" class="form-control form-control-sm fs-8 py-0.5 px-2 bg-white" id="fSumModalSearch" placeholder="Search in popup..." style="max-width: 200px;">
             </div>
           </div>
-
-          <div class="col-md-6">
-            <div class="card border rounded-1 h-100 bg-white">
-              <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-                <span class="fw-semibold text-dark fs-8">District-wise Sales</span>
-                <span class="badge bg-secondary-subtle text-secondary fs-8" id="sumModalDistrictCount">0 Districts</span>
-              </div>
-              <div class="table-responsive p-0" style="max-height: 240px; overflow-y: auto;">
-                <table class="table table-sm table-hover align-middle mb-0" id="districtSummaryTable" style="font-size:0.83rem;">
-                  <thead>
-                    <tr class="table-light">
-                      <th>District</th>
-                      <th class="text-center">Active Customers</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- District rows injected here -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          <div class="table-responsive p-0" style="max-height: 360px; overflow-y: auto;">
+            <table class="table table-sm table-hover table-striped align-middle mb-0" id="sumModalCustomerTable" style="font-size: 0.8rem;">
+              <thead class="table-light sticky-top" style="z-index: 2;">
+                <tr>
+                  <th class="text-center" style="width: 40px;">Sl</th>
+                  <th style="min-width: 160px;">Customer</th>
+                  <th class="text-end font-monospace" style="min-width: 95px;">Revenue</th>
+                  <th class="text-end font-monospace text-success" style="min-width: 95px;">Collected</th>
+                  <th class="text-end font-monospace text-danger" style="min-width: 95px;">Cust. Pending</th>
+                  <th style="min-width: 140px;">Partner</th>
+                  <th class="text-end font-monospace text-purple" style="min-width: 100px;">Partner Price</th>
+                  <th class="text-end font-monospace text-warning-emphasis" style="min-width: 105px;">Partner Pending</th>
+                  <th class="text-end font-monospace admin-only-summary-col" style="min-width: 100px;">Net Profit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
-      <div class="modal-footer bg-light border-top py-1.5 px-3 d-flex justify-content-between">
-        <span class="text-muted fs-8 font-monospace">Live Filter Synced</span>
-        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

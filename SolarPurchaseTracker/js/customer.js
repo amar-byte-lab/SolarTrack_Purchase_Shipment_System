@@ -157,7 +157,7 @@ window.onDbReady = function () {
         sortDir = sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         sortCol = col;
-        sortDir = 'asc';
+        sortDir = (col === 'Delay') ? 'desc' : 'asc';
       }
       updateSortHeadersUI();
       renderList();
@@ -965,8 +965,10 @@ function renderList() {
 
   let rows = getInstallmentRows();
 
-  // Filter Deactive customers unless 'Show Deactive' checkbox is checked
-  if (!showDeactive) {
+  // Filter exclusively: if 'Show Deactive' is checked, show ONLY Deactive customers; otherwise show ONLY Active customers
+  if (showDeactive) {
+    rows = rows.filter(r => r.Status === 'Deactive');
+  } else {
     rows = rows.filter(r => r.Status !== 'Deactive');
   }
 
@@ -1026,8 +1028,18 @@ function renderList() {
     let bVal = b[sortCol];
 
     if (sortCol === 'Delay') {
-      aVal = getRawDelayDays(a.LoginDate);
-      bVal = getRawDelayDays(b.LoginDate);
+      const aDays = getRawDelayDays(a.LoginDate);
+      const bDays = getRawDelayDays(b.LoginDate);
+      const aValid = Boolean(a.LoginDate && aDays !== -999999);
+      const bValid = Boolean(b.LoginDate && bDays !== -999999);
+
+      if (!aValid && !bValid) return 0;
+      if (!aValid) return 1;
+      if (!bValid) return -1;
+
+      if (aDays < bDays) return sortDir === 'asc' ? -1 : 1;
+      if (aDays > bDays) return sortDir === 'asc' ? 1 : -1;
+      return 0;
     } else if (sortCol === 'LoginDate' || sortCol === 'InstallationDate' || sortCol === 'CommissioningDate') {
       aVal = aVal ? new Date(aVal).getTime() : 0;
       bVal = bVal ? new Date(bVal).getTime() : 0;
@@ -1089,7 +1101,8 @@ function renderList() {
       totalProfit: 0,
       isAdmin
     });
-    renderSalesSummary([]);
+    window._lastRenderedRows = [];
+    renderSummaryModalBreakdown([], isAdmin);
     return;
   }
 
@@ -1320,14 +1333,14 @@ function renderList() {
     }
   }).join('');
 
-  const activeCount = rows.filter(r => r.Status !== 'Deactive').length;
+  const displayCount = isAddingNew ? rows.length - 1 : rows.length;
   // Render Top Executive KPI Grid
   const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
   const partnerPending = (sumPrice - sumPartnerPrice) - sumVendorPaid;
   const pendingCust = sumPrice - sumTotal;
   const allDbRows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
   renderTopKpis({
-    activeCount: isAddingNew ? activeCount - 1 : activeCount,
+    activeCount: displayCount,
     totalInDb: allDbRows.length,
     sumPrice,
     sumTotal,
@@ -1339,11 +1352,11 @@ function renderList() {
     isAdmin
   });
 
+  window._lastRenderedRows = rows;
+  renderSummaryModalBreakdown(rows, isAdmin);
+
   // Bind dynamic inputs calculation listeners for active editing row
   bindEditRowListeners();
-
-  // Render Brand-wise and District-wise aggregate reports dynamically
-  renderSalesSummary(rows);
 }
 
 function bindEditRowListeners() {
@@ -1565,8 +1578,16 @@ function renderTopKpis(metrics) {
     `
   ];
 
-  if (isAdmin) {
-    // 6. Net Profit Card (Admin only)
+  // Net Profit Card is ONLY visible for admin and superadmin users
+  const currentUser = Auth.getUser();
+  const isAdminOrSuperAdmin = currentUser && (
+    currentUser.role === 'admin' ||
+    currentUser.role === 'superadmin' ||
+    String(currentUser.userid || '').toLowerCase() === 'amar'
+  );
+
+  if (isAdminOrSuperAdmin) {
+    // 6. Net Profit Card (Admin and Superadmin only)
     const profitColorClass = totalProfit >= 0 ? 'text-emerald' : 'text-danger';
     const profitBadgeClass = totalProfit >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
     cardsHtml.push(`
@@ -1589,106 +1610,105 @@ function renderTopKpis(metrics) {
   container.innerHTML = cardsHtml.join('');
 }
 
-function renderSalesSummary(filteredRows) {
-  const activeRows = DB.getAll('installments').filter(r => r.Status !== 'Deactive' && Number(r.SlNo) !== Number(editingSlNo));
+function renderSummaryModalBreakdown(rows, isAdmin) {
+  const tbody = document.querySelector('#sumModalCustomerTable tbody');
+  const tfoot = document.querySelector('#sumModalCustomerTable tfoot');
+  const rowCountBadge = document.getElementById('sumModalRowCount');
+  const searchInput = document.getElementById('fSumModalSearch');
+  if (!tbody) return;
 
-  // 1. Brand-wise Sale
-  const brandMap = {};
-  activeRows.forEach(r => {
-    const brand = r.CommittedBrand ? r.CommittedBrand.trim() : '(No Brand)';
-    const brandName = brand === '' ? '(No Brand)' : brand;
-    if (!brandMap[brandName]) {
-      brandMap[brandName] = 0;
-    }
-    brandMap[brandName]++;
-  });
-
-  const brands = Object.keys(brandMap).sort();
-  const brandCountBadge = document.getElementById('sumModalBrandCount');
-  if (brandCountBadge) brandCountBadge.textContent = `${brands.length} Brands`;
-
-  const brandTbody = document.querySelector('#brandSummaryTable tbody');
-  if (brandTbody) {
-    if (brands.length === 0) {
-      brandTbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No active brand sales.</td></tr>`;
-    } else {
-      brandTbody.innerHTML = brands.map(b => {
-        const isSelected = selectedBrands.includes(b);
-        return `
-          <tr class="${isSelected ? 'table-primary fw-bold' : ''}" data-brand="${b}" style="cursor:pointer;">
-            <td>
-              <div class="form-check mb-0">
-                <input class="form-check-input summary-brand-chk" type="checkbox" value="${b}" id="sum_chk_brand_${b.replace(/\s+/g, '_')}" ${isSelected ? 'checked' : ''}>
-                <label class="form-check-label w-100" for="sum_chk_brand_${b.replace(/\s+/g, '_')}">${b}</label>
-              </div>
-            </td>
-            <td class="text-center">${brandMap[b]}</td>
-          </tr>
-        `;
-      }).join('');
-
-      brandTbody.querySelectorAll('.summary-brand-chk').forEach(chk => {
-        chk.addEventListener('change', () => {
-          selectedBrands = Array.from(brandTbody.querySelectorAll('.summary-brand-chk:checked')).map(c => c.value);
-          updateBrandDropdownButton();
-          // Keep dropdown checkboxes in sync
-          document.querySelectorAll('.brand-chk').forEach(c => {
-            c.checked = selectedBrands.includes(c.value);
-          });
-          renderList();
-        });
-      });
-    }
+  if (searchInput && !searchInput.dataset.bound) {
+    searchInput.dataset.bound = 'true';
+    searchInput.addEventListener('input', () => {
+      const currentRows = (window._lastRenderedRows || getInstallmentRows());
+      const currentUser = Auth.getUser();
+      const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+      renderSummaryModalBreakdown(currentRows, isAdm);
+    });
   }
 
-  // 2. District-wise Sale (only for districts with customers)
-  const distMap = {};
-  activeRows.forEach(r => {
-    const dist = r.District ? r.District.trim() : '(No District)';
-    const distName = dist === '' ? '(No District)' : dist;
-    if (!distMap[distName]) {
-      distMap[distName] = 0;
-    }
-    distMap[distName]++;
+  const searchTerm = searchInput ? (searchInput.value || '').toLowerCase().trim() : '';
+  const activeRows = rows.filter(r => Number(r.SlNo) !== Number(editingSlNo));
+  const filteredBreakdown = searchTerm
+    ? activeRows.filter(r =>
+        String(r.Name || '').toLowerCase().includes(searchTerm) ||
+        String(r.BrokerName || '').toLowerCase().includes(searchTerm) ||
+        String(r.District || '').toLowerCase().includes(searchTerm) ||
+        String(r.SlNo || '').includes(searchTerm)
+      )
+    : activeRows;
+
+  if (rowCountBadge) {
+    rowCountBadge.textContent = `${filteredBreakdown.length} Records`;
+  }
+
+  // Handle admin columns visibility in modal
+  document.querySelectorAll('.admin-only-summary-col').forEach(el => {
+    el.style.display = isAdmin ? '' : 'none';
   });
 
-  const districts = Object.keys(distMap).sort();
-  const distCountBadge = document.getElementById('sumModalDistrictCount');
-  if (distCountBadge) distCountBadge.textContent = `${districts.length} Districts`;
-
-  const distTbody = document.querySelector('#districtSummaryTable tbody');
-  if (distTbody) {
-    if (districts.length === 0) {
-      distTbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No active district sales.</td></tr>`;
-    } else {
-      distTbody.innerHTML = districts.map(d => {
-        const isSelected = selectedDistricts.includes(d);
-        return `
-          <tr class="${isSelected ? 'table-primary fw-bold' : ''}" data-district="${d}" style="cursor:pointer;">
-            <td>
-              <div class="form-check mb-0">
-                <input class="form-check-input summary-dist-chk" type="checkbox" value="${d}" id="sum_chk_dist_${d.replace(/\s+/g, '_')}" ${isSelected ? 'checked' : ''}>
-                <label class="form-check-label w-100" for="sum_chk_dist_${d.replace(/\s+/g, '_')}">${d}</label>
-              </div>
-            </td>
-            <td class="text-center">${distMap[d]}</td>
-          </tr>
-        `;
-      }).join('');
-
-      distTbody.querySelectorAll('.summary-dist-chk').forEach(chk => {
-        chk.addEventListener('change', () => {
-          selectedDistricts = Array.from(distTbody.querySelectorAll('.summary-dist-chk:checked')).map(c => c.value);
-          updateDistrictDropdownButton();
-          // Keep dropdown checkboxes in sync
-          document.querySelectorAll('.district-chk').forEach(c => {
-            c.checked = selectedDistricts.includes(c.value);
-          });
-          renderList();
-        });
-      });
-    }
+  if (filteredBreakdown.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '9' : '8'}" class="text-center text-muted py-3">No records found.</td></tr>`;
+    return;
   }
+
+  tbody.innerHTML = filteredBreakdown.map(r => {
+    // Parse expenses
+    let expenses = null;
+    if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+      try {
+        const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+        expenses = JSON.parse(jsonStr);
+      } catch (e) {
+        expenses = null;
+      }
+    }
+
+    const price = Number(r.CommittedPrice) || 0;
+    const total = Number(r.Total) || 0;
+    const custPending = price - total;
+
+    const partnerPrice = (expenses && expenses.partner) ? Number(expenses.partner) : (Number(r.BrokerShare) || price);
+    const vPaid = Number(r.VendorPaid) || 0;
+    const partnerPending = (price - partnerPrice) - vPaid;
+
+    let vPrice = 0;
+    if (r.VendorPrice !== undefined && r.VendorPrice !== null && r.VendorPrice !== '') {
+      vPrice = Number(r.VendorPrice) || 0;
+    } else if (expenses) {
+      const mat = Number(expenses.material) || 0;
+      const inst = Number(expenses.install) || 0;
+      const gst = (expenses.gst !== undefined) ? Number(expenses.gst) : (price * ((Number(expenses.gst_pct) || 0) / 100));
+      const trans = Number(expenses.transport) || 0;
+      const oth = Number(expenses.other) || 0;
+      vPrice = mat + inst + gst + trans + oth;
+    }
+
+    const comm = Number(r.Commission) || 0;
+    const profit = partnerPrice - comm - vPrice;
+
+    const custPendingClass = Math.abs(custPending) < 0.01 ? 'text-secondary' : (custPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
+    const partnerPendingClass = Math.abs(partnerPending) < 0.01 ? 'text-secondary' : (partnerPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
+    const profitClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+
+    return `
+      <tr>
+        <td class="text-center text-muted font-monospace">${r.SlNo}</td>
+        <td>
+          <div class="fw-semibold text-dark text-truncate" style="max-width: 210px;" title="${r.Name || ''}">${r.Name || '—'}</div>
+        </td>
+        <td class="text-end font-monospace">₹${Math.round(price).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace text-success fw-semibold">₹${Math.round(total).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace ${custPendingClass}">₹${Math.round(custPending).toLocaleString('en-IN')}</td>
+        <td>
+          <div class="text-dark text-truncate" style="max-width: 160px;" title="${r.BrokerName || ''}">${r.BrokerName || '—'}</div>
+        </td>
+        <td class="text-end font-monospace text-purple fw-semibold">₹${Math.round(partnerPrice).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace ${partnerPendingClass}">₹${Math.round(partnerPending).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace admin-only-summary-col ${profitClass}" style="${isAdmin ? '' : 'display:none;'}">₹${Math.round(profit).toLocaleString('en-IN')}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 window.openCustomerSummaryModal = function() {
