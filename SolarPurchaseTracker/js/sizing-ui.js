@@ -216,14 +216,21 @@ const SizingUI = (() => {
   function onBackupHoursChange(hoursVal) {
     state.backupHours = Math.max(0.5, Number(hoursVal) || 4);
     const txtHours = document.getElementById('txtBackupHours');
-    if (txtHours && txtHours.value != state.backupHours) txtHours.value = state.backupHours;
+    if (txtHours && Number(txtHours.value) !== state.backupHours) txtHours.value = state.backupHours;
+    const txtHybridHours = document.getElementById('txtHybridBackupHours');
+    if (txtHybridHours && Number(txtHybridHours.value) !== state.backupHours) txtHybridHours.value = state.backupHours;
+    
     if (state.energyCalculationBasis === 'backup_duration') {
       applyBackupHoursOverrideOrReset();
       renderModalApplianceList();
       updateModalStats();
-      renderApplianceSummaryCard();
     }
+    renderApplianceSummaryCard();
     calculateAndRender();
+  }
+
+  function onHybridBackupHoursChange(hoursVal) {
+    onBackupHoursChange(hoursVal);
   }
 
   const SYSTEM_DESCRIPTIONS = {
@@ -236,7 +243,9 @@ const SizingUI = (() => {
   function updateSystemTypeVisibility() {
     const isGrid = state.systemType === 'on-grid';
     const isWithoutSolar = state.systemType === 'without-solar';
-    const isHybridOrOffGrid = state.systemType === 'hybrid' || state.systemType === 'off-grid';
+    const isHybrid = state.systemType === 'hybrid';
+    const isOffGrid = state.systemType === 'off-grid';
+    const isHybridOrOffGrid = isHybrid || isOffGrid;
 
     // Solar Configuration Fields: Shown for on-grid, hybrid, off-grid (hidden for without-solar)
     const showSolarParams = (isGrid || isHybridOrOffGrid);
@@ -251,54 +260,82 @@ const SizingUI = (() => {
       secCostRecovery.style.display = showSolarParams ? '' : 'none';
     }
 
-    // Monthly Units Radio Button & Label (Hidden for Without-Solar because there is no solar generation)
+    const lblBasisTitle = document.getElementById('lblSizingBasisTitle');
+    const grpRadios = document.getElementById('grpEnergyBasisRadios');
     const radMonthly = document.getElementById('radBasisMonthlyUnits');
     const lblRadMonthly = document.getElementById('lblRadBasisMonthlyUnits');
-    if (radMonthly && lblRadMonthly) {
-      if (isWithoutSolar) {
-        radMonthly.style.display = 'none';
-        lblRadMonthly.style.display = 'none';
-        if (state.energyCalculationBasis === 'monthly_units') {
-          state.energyCalculationBasis = 'backup_duration';
-          applyBackupHoursOverrideOrReset();
-        }
-      } else {
-        radMonthly.style.display = '';
-        lblRadMonthly.style.display = '';
-      }
-    }
-
-    // Backup Duration Radio Button & Label (Hidden for On-Grid, Shown for without-solar, hybrid, off-grid)
+    const radAppliance = document.getElementById('radBasisApplianceLoad');
+    const lblRadAppliance = document.getElementById('lblRadBasisApplianceLoad');
     const radDuration = document.getElementById('radBasisBackupDuration');
     const lblRadDuration = document.getElementById('lblRadBasisBackupDuration');
-    if (radDuration && lblRadDuration) {
-      if (isGrid) {
-        radDuration.style.display = 'none';
-        lblRadDuration.style.display = 'none';
-        if (state.energyCalculationBasis === 'backup_duration') {
-          state.energyCalculationBasis = 'monthly_units';
-          applyBackupHoursOverrideOrReset();
-        }
-      } else {
-        radDuration.style.display = '';
-        lblRadDuration.style.display = '';
+
+    if (isOffGrid) {
+      // Off-Grid: ONLY Backup duration part rahiba. Hide Monthly units & AppliancesLoad choices.
+      if (lblBasisTitle) lblBasisTitle.textContent = 'Backup Duration (Off-Grid Solar & Battery)';
+      if (grpRadios) grpRadios.style.display = 'none';
+      if (radMonthly) { radMonthly.style.display = 'none'; if (lblRadMonthly) lblRadMonthly.style.display = 'none'; }
+      if (radAppliance) { radAppliance.style.display = 'none'; if (lblRadAppliance) lblRadAppliance.style.display = 'none'; }
+      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
+
+      state.energyCalculationBasis = 'backup_duration';
+      applyBackupHoursOverrideOrReset();
+    } else if (isHybrid) {
+      // Hybrid: Show Monthly Units or Appliances load options; Backup duration section will be open below it!
+      if (lblBasisTitle) lblBasisTitle.textContent = 'Solar Sizing Basis (Monthly Units / Load)';
+      if (grpRadios) grpRadios.style.display = '';
+      if (radMonthly) { radMonthly.style.display = ''; if (lblRadMonthly) lblRadMonthly.style.display = ''; }
+      if (radAppliance) { radAppliance.style.display = ''; if (lblRadAppliance) lblRadAppliance.style.display = ''; }
+      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
+
+      if (state.energyCalculationBasis === 'backup_duration') {
+        state.energyCalculationBasis = 'monthly_units';
+        applyBackupHoursOverrideOrReset();
       }
+    } else if (isGrid) {
+      // On-Grid: Show Monthly Units & Appliances load. Hide Backup Duration.
+      if (lblBasisTitle) lblBasisTitle.textContent = 'Sizing Calculation Basis';
+      if (grpRadios) grpRadios.style.display = '';
+      if (radMonthly) { radMonthly.style.display = ''; if (lblRadMonthly) lblRadMonthly.style.display = ''; }
+      if (radAppliance) { radAppliance.style.display = ''; if (lblRadAppliance) lblRadAppliance.style.display = ''; }
+      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
+
+      if (state.energyCalculationBasis === 'backup_duration') {
+        state.energyCalculationBasis = 'monthly_units';
+        applyBackupHoursOverrideOrReset();
+      }
+    } else if (isWithoutSolar) {
+      // Without Solar: ONLY Backup duration part rahiba. Hide Monthly units & AppliancesLoad choices.
+      if (lblBasisTitle) lblBasisTitle.textContent = 'Backup Duration (Home UPS Inverter & Battery)';
+      if (grpRadios) grpRadios.style.display = 'none';
+      if (radMonthly) { radMonthly.style.display = 'none'; if (lblRadMonthly) lblRadMonthly.style.display = 'none'; }
+      if (radAppliance) { radAppliance.style.display = 'none'; if (lblRadAppliance) lblRadAppliance.style.display = 'none'; }
+      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
+
+      state.energyCalculationBasis = 'backup_duration';
+      applyBackupHoursOverrideOrReset();
     }
 
     const txtBackupHours = document.getElementById('txtBackupHours');
     if (txtBackupHours) {
       txtBackupHours.value = state.backupHours || 4;
     }
+    const txtHybridBackupHours = document.getElementById('txtHybridBackupHours');
+    if (txtHybridBackupHours) {
+      txtHybridBackupHours.value = state.backupHours || 4;
+    }
 
     updateEnergyBasisVisibility();
 
-    if (isGrid || isHybridOrOffGrid) {
+    if (showSolarParams) {
       updateOnGridDemandDisplay();
     }
   }
 
   function updateEnergyBasisVisibility() {
-    const basis = state.energyCalculationBasis || 'monthly_units';
+    const isHybrid = state.systemType === 'hybrid';
+    const isOffGrid = state.systemType === 'off-grid';
+    const isWithoutSolar = state.systemType === 'without-solar';
+    const basis = state.energyCalculationBasis || ((isOffGrid || isWithoutSolar) ? 'backup_duration' : 'monthly_units');
     const isMonthly = basis === 'monthly_units';
     const isAppliance = (basis === 'appliance_load' || basis === 'appliance_schedule');
     const isDuration = basis === 'backup_duration';
@@ -314,26 +351,37 @@ const SizingUI = (() => {
     const wrapMonthly = document.getElementById('wrapBasisMonthlyUnitsInputs');
     const wrapAppliance = document.getElementById('wrapBasisApplianceLoadInputs');
     const wrapDuration = document.getElementById('wrapBasisBackupDurationInputs');
+    const wrapHybridBackup = document.getElementById('wrapHybridBackupSection');
 
-    if (wrapMonthly) wrapMonthly.style.display = isMonthly ? 'block' : 'none';
-    if (wrapAppliance) wrapAppliance.style.display = isAppliance ? 'block' : 'none';
-    if (wrapDuration) wrapDuration.style.display = isDuration ? 'block' : 'none';
+    if (isOffGrid || isWithoutSolar) {
+      // Offgrid & Without-Solar: ONLY Backup duration is shown
+      if (wrapMonthly) wrapMonthly.style.display = 'none';
+      if (wrapAppliance) wrapAppliance.style.display = 'none';
+      if (wrapDuration) wrapDuration.style.display = 'block';
+      if (wrapHybridBackup) wrapHybridBackup.style.display = 'none';
+    } else if (isHybrid) {
+      // Hybrid: Monthly units or Appliance load above, and Backup section ALWAYS open below it!
+      if (wrapMonthly) wrapMonthly.style.display = isMonthly ? 'block' : 'none';
+      if (wrapAppliance) wrapAppliance.style.display = isAppliance ? 'block' : 'none';
+      if (wrapDuration) wrapDuration.style.display = 'none';
+      if (wrapHybridBackup) wrapHybridBackup.style.display = 'block';
+    } else {
+      // On-grid
+      if (wrapMonthly) wrapMonthly.style.display = isMonthly ? 'block' : 'none';
+      if (wrapAppliance) wrapAppliance.style.display = isAppliance ? 'block' : 'none';
+      if (wrapDuration) wrapDuration.style.display = isDuration ? 'block' : 'none';
+      if (wrapHybridBackup) wrapHybridBackup.style.display = 'none';
+    }
 
     const lblBadge = document.getElementById('lblBasisBadge');
     if (lblBadge) {
-      if (isMonthly) lblBadge.textContent = 'Monthly Units';
+      if (isOffGrid) lblBadge.textContent = 'Backup Duration (Off-Grid)';
+      else if (isWithoutSolar) lblBadge.textContent = 'Backup Duration (Home UPS)';
+      else if (isHybrid) lblBadge.textContent = isMonthly ? 'Monthly Units + Backup Duration' : 'Appliances Load + Backup Duration';
+      else if (isMonthly) lblBadge.textContent = 'Monthly Units';
       else if (isAppliance) lblBadge.textContent = 'Configured Appliances Load';
       else lblBadge.textContent = 'Backup Duration';
     }
-
-    // Hide Total Connected Load, Total Daily Energy, and Selected Appliances Summary for Monthly Units basis
-    const wrapStats = document.getElementById('wrapConnectedLoadEnergyStats');
-    const wrapSummary = document.getElementById('wrapSelectedAppliancesSummary');
-    const btnConfigure = document.getElementById('btnConfigureAppliances');
-
-    if (wrapStats) wrapStats.style.display = isMonthly ? 'none' : 'block';
-    if (wrapSummary) wrapSummary.style.display = isMonthly ? 'none' : 'block';
-    if (btnConfigure) btnConfigure.style.display = isMonthly ? 'none' : 'inline-flex';
 
     // Step 2 contains Sizing Calculation Basis and Appliances summary - keep both columns visible (col-lg-6)
     const step2Col = document.getElementById('colStep2Wrapper');
@@ -391,7 +439,17 @@ const SizingUI = (() => {
     const pr = 0.78;
     let solarTargetKwh = dailyKwh;
     if (state.systemType === 'off-grid') {
-      solarTargetKwh = (dailyKwh * (7 / 24)) + ((dailyKwh * (17 / 24)) / 0.88);
+      let backupW = 0;
+      state.appliances.forEach(app => {
+        if (app.checked && Number(app.defaultQty) > 0 && app.isBackup !== false) {
+          backupW += (Number(app.watts) || 0) * Number(app.defaultQty);
+        }
+      });
+      const bHours = Number(state.backupHours) || 4;
+      const bEnergyKwh = (backupW * bHours) / 1000;
+      const bRechargeKwh = bEnergyKwh / 0.88;
+      const daytimeKwh = Math.max(0.5, dailyKwh * 0.4);
+      solarTargetKwh = daytimeKwh + bRechargeKwh;
     }
     const targetKwp = (solarTargetKwh / (sunHours * pr)).toFixed(2);
     const panelCount = Math.ceil((targetKwp * 1000) / 550);
@@ -409,8 +467,12 @@ const SizingUI = (() => {
   /* ---------------- Main Page Step 2 Summary Card ---------------- */
   function renderApplianceSummaryCard() {
     let totalConnectedWatts = 0;
+    let totalBackupWatts = 0;
     let totalDailyWh = 0;
+    let backupDailyWh = 0;
     const activeApps = [];
+
+    const backupHrs = Number(state.backupHours) || 4;
 
     state.appliances.forEach(app => {
       if (app.checked && Number(app.defaultQty) > 0) {
@@ -423,38 +485,55 @@ const SizingUI = (() => {
         totalConnectedWatts += totalItemW;
         totalDailyWh += itemDailyWh;
 
+        const isBackup = app.isBackup !== false;
+        if (isBackup) {
+          totalBackupWatts += totalItemW;
+          backupDailyWh += (totalItemW * (state.energyCalculationBasis === 'backup_duration' ? backupHrs : hours));
+        }
+
         activeApps.push(app);
       }
     });
 
+    const activeBackupW = totalBackupWatts > 0 ? totalBackupWatts : totalConnectedWatts;
     const loadText = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
+    const backupLoadText = `${activeBackupW} W (${(activeBackupW / 1000).toFixed(2)} kW)`;
+
     const kwhVal = (totalDailyWh / 1000).toFixed(2);
     const demandText = `${kwhVal} kWh / day`;
+
+    const backupEnergyKwhVal = ((activeBackupW * backupHrs) / 1000).toFixed(2);
+    const backupEnergyText = `${backupEnergyKwhVal} kWh`;
 
     const lblAppLoad = document.getElementById('lblApplianceBasisConnectedLoad');
     if (lblAppLoad) lblAppLoad.textContent = loadText;
     const lblBackupLoad = document.getElementById('lblBackupBasisConnectedLoad');
-    if (lblBackupLoad) lblBackupLoad.textContent = loadText;
+    if (lblBackupLoad) lblBackupLoad.textContent = backupLoadText;
+    const lblHybridLoad = document.getElementById('lblHybridBackupLoad');
+    if (lblHybridLoad) lblHybridLoad.textContent = backupLoadText;
+    const lblHybridEnergy = document.getElementById('lblHybridBackupEnergy');
+    if (lblHybridEnergy) lblHybridEnergy.textContent = backupEnergyText;
     const lblLoad = document.getElementById('lblTotalConnectedLoad');
     if (lblLoad) lblLoad.textContent = loadText;
 
     const lblAppDemand = document.getElementById('lblApplianceBasisDailyDemand');
     if (lblAppDemand) lblAppDemand.textContent = demandText;
     const lblBackupDemand = document.getElementById('lblBackupBasisDailyDemand');
-    if (lblBackupDemand) lblBackupDemand.textContent = demandText;
+    if (lblBackupDemand) lblBackupDemand.textContent = `${backupEnergyKwhVal} kWh / day`;
     const lblEnergy = document.getElementById('lblTotalCalculatedEnergy');
     if (lblEnergy) lblEnergy.textContent = demandText;
 
     const badgesContainer = document.getElementById('applianceSummaryBadges');
     if (badgesContainer) {
       if (activeApps.length === 0) {
-        badgesContainer.innerHTML = `<span class="text-muted fs-8 fst-italic">No appliances selected. Click "Configure Appliances" to select loads.</span>`;
+        badgesContainer.innerHTML = `<span class="text-muted fs-8 fst-italic">No appliances selected. Click "?" to select loads.</span>`;
       } else {
         badgesContainer.innerHTML = activeApps.map(app => {
           const itemWh = (app.watts || 0) * (app.defaultHours || 1) * (app.defaultQty || 1);
+          const backupBadge = app.isBackup !== false ? '<span title="Emergency Battery Backup" class="fs-9">🔋</span>' : '';
           return `
             <span class="badge bg-white text-dark border fs-8 px-2 py-1 shadow-2xs d-inline-flex align-items-center gap-1">
-              <span>${app.icon || '⚡'} ${app.name} × <strong>${app.defaultQty}</strong></span>
+              <span>${app.icon || '⚡'} ${app.name} × <strong>${app.defaultQty}</strong> ${backupBadge}</span>
               <span class="text-primary fw-bold fs-9">(${formatEnergy(itemWh)})</span>
             </span>
           `;
@@ -1482,6 +1561,17 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
       txtBackupHours.addEventListener('keyup', handleBackupHoursChange);
     }
 
+    // Hybrid Backup Hours Input
+    const txtHybridBackupHours = document.getElementById('txtHybridBackupHours');
+    if (txtHybridBackupHours) {
+      const handleHybridBackupHoursChange = (e) => {
+        onHybridBackupHoursChange(e.target.value);
+      };
+      txtHybridBackupHours.addEventListener('input', handleHybridBackupHoursChange);
+      txtHybridBackupHours.addEventListener('change', handleHybridBackupHoursChange);
+      txtHybridBackupHours.addEventListener('keyup', handleHybridBackupHoursChange);
+    }
+
     // Advanced Settings Modal Binds
     const btnOpenAdvanced = document.getElementById('btnOpenAdvanced');
     if (btnOpenAdvanced) {
@@ -1910,6 +2000,7 @@ Generated by Shri Trutiyadev Solar Enterprise Sizing Calculator`;
     onFinanceTypeChange,
     onCardBatteryTypeChange,
     onBackupHoursChange,
+    onHybridBackupHoursChange,
     onEnergyBasisChange,
     toggleApplianceBackup
   };

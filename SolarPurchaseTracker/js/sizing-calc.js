@@ -844,9 +844,15 @@ const SizingCalc = (() => {
     // AND fully recharge the battery bank (accounting for ~88% roundtrip charging efficiency)
     let totalSolarDailyTargetKwh = dailyDemandKwh;
     if (systemType === 'off-grid') {
-      const daytimeDirectKwh = dailyDemandKwh * (7 / 24);
-      const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : ((dailyDemandKwh * (17 / 24)) / 0.88);
-      totalSolarDailyTargetKwh = daytimeDirectKwh + batteryChargeNeedKwh;
+      if (energyCalculationBasis === 'backup_duration') {
+        const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : (dailyDemandKwh / 0.88);
+        const daytimeDirectKwh = Math.max(0.5, dailyDemandKwh * 0.4);
+        totalSolarDailyTargetKwh = daytimeDirectKwh + batteryChargeNeedKwh;
+      } else {
+        const daytimeDirectKwh = dailyDemandKwh * (7 / 24);
+        const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : ((dailyDemandKwh * (17 / 24)) / 0.88);
+        totalSolarDailyTargetKwh = daytimeDirectKwh + batteryChargeNeedKwh;
+      }
     }
 
     const sunHours = Math.max(1, Number(peakSunHours) || 5.0);
