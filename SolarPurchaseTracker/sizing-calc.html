@@ -224,14 +224,8 @@
 
                 <!-- Sizing Calculation Basis (Monthly Units, Configured Appliances Load, Backup Duration) -->
                 <div class="mb-3 p-3 bg-light rounded-3 border" id="secEnergyCalculationBasis">
-                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                    <label class="form-label fw-bold text-dark fs-8 mb-0" id="lblSizingBasisTitle">
-                      Sizing Calculation Basis
-                    </label>
-                  </div>
-
                   <!-- 3 Radio Buttons -->
-                  <div class="btn-group w-100 shadow-2xs" role="group" aria-label="Sizing Calculation Basis" id="grpEnergyBasisRadios">
+                  <div class="btn-group w-100 shadow-2xs mb-2" role="group" aria-label="Sizing Calculation Basis" id="grpEnergyBasisRadios">
                     <!-- 1. Monthly Units -->
                     <input type="radio" class="btn-check" name="radEnergyBasis" id="radBasisMonthlyUnits" value="monthly_units" checked onchange="SizingUI.onEnergyBasisChange('monthly_units')">
                     <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisMonthlyUnits" id="lblRadBasisMonthlyUnits" title="Calculate sizing based on Monthly Units consumption">
@@ -252,7 +246,7 @@
                   </div>
 
                   <!-- Dynamic Sub-panel for Monthly Units -->
-                  <div id="wrapBasisMonthlyUnitsInputs" class="pt-2.5 mt-2 border-top">
+                  <div id="wrapBasisMonthlyUnitsInputs" class="pt-2 mt-1">
                     <div class="row g-2 align-items-center">
                       <div class="col-6">
                         <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtMonthlyUnits">Monthly Units</label>
@@ -272,7 +266,7 @@
                   </div>
 
                   <!-- Dynamic Sub-panel for Configured Appliances Load -->
-                  <div id="wrapBasisApplianceLoadInputs" class="pt-2.5 mt-2 border-top" style="display:none;">
+                  <div id="wrapBasisApplianceLoadInputs" class="pt-2 mt-1" style="display:none;">
                     <div class="row g-2 align-items-center">
                       <div class="col-6">
                         <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Connected Load</label>
@@ -290,7 +284,7 @@
                   </div>
 
                   <!-- Dynamic Sub-panel for Standalone Backup Duration (Offgrid & Without-Solar) -->
-                  <div id="wrapBasisBackupDurationInputs" class="pt-2.5 mt-2 border-top" style="display:none;">
+                  <div id="wrapBasisBackupDurationInputs" style="display:none;">
                     <div class="row g-2 align-items-center">
                       <div class="col-md-4 col-12">
                         <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtBackupHours">
@@ -317,13 +311,7 @@
                   </div>
 
                   <!-- Dynamic Sub-panel for Hybrid: Backup Duration section placed below Monthly Units/Appliances Load -->
-                  <div id="wrapHybridBackupSection" class="pt-2.5 mt-2 border-top" style="display:none;">
-                    <div class="d-flex align-items-center justify-content-between mb-1.5">
-                      <label class="form-label fw-bold text-dark fs-8 mb-0 d-flex align-items-center gap-1">
-                        <span>🔋</span>
-                        <span>Power Backup Duration (Battery Storage)</span>
-                      </label>
-                    </div>
+                  <div id="wrapHybridBackupSection" class="pt-2 mt-2" style="display:none;">
                     <div class="row g-2 align-items-center">
                       <div class="col-md-4 col-12">
                         <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block" for="txtHybridBackupHours">

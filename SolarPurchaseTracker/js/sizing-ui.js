@@ -383,6 +383,12 @@ const SizingUI = (() => {
       else lblBadge.textContent = 'Backup Duration';
     }
 
+    // Hide Selected Appliances Summary & Customize button when Monthly Units is selected
+    const wrapSummary = document.getElementById('wrapSelectedAppliancesSummary');
+    const btnCustomize = document.getElementById('btnEditApplianceSchedule');
+    if (wrapSummary) wrapSummary.style.display = isMonthly ? 'none' : 'block';
+    if (btnCustomize) btnCustomize.style.display = isMonthly ? 'none' : 'inline-flex';
+
     // Step 2 contains Sizing Calculation Basis and Appliances summary - keep both columns visible (col-lg-6)
     const step2Col = document.getElementById('colStep2Wrapper');
     const step1Col = document.getElementById('colStep1Wrapper');
@@ -530,10 +536,9 @@ const SizingUI = (() => {
       } else {
         badgesContainer.innerHTML = activeApps.map(app => {
           const itemWh = (app.watts || 0) * (app.defaultHours || 1) * (app.defaultQty || 1);
-          const backupBadge = app.isBackup !== false ? '<span title="Emergency Battery Backup" class="fs-9">🔋</span>' : '';
           return `
             <span class="badge bg-white text-dark border fs-8 px-2 py-1 shadow-2xs d-inline-flex align-items-center gap-1">
-              <span>${app.icon || '⚡'} ${app.name} × <strong>${app.defaultQty}</strong> ${backupBadge}</span>
+              <span>${app.name} × <strong>${app.defaultQty}</strong></span>
               <span class="text-primary fw-bold fs-9">(${formatEnergy(itemWh)})</span>
             </span>
           `;
@@ -621,8 +626,7 @@ const SizingUI = (() => {
           <!-- Appliance Name + Superscript Energy (strictly within appliance cell boundary) -->
           <td class="p-1" style="max-width: 145px; overflow: hidden;">
             <label class="form-check-label d-flex align-items-center justify-content-between gap-1 mb-0 w-100" for="chkApp_${index}" style="cursor: pointer;" title="${app.name}">
-              <span class="d-inline-flex align-items-center gap-1 text-truncate" style="min-width: 0;">
-                <span class="fs-7 flex-shrink-0">${app.icon || '⚡'}</span>
+              <span class="d-inline-flex align-items-center text-truncate" style="min-width: 0;">
                 <span class="fw-semibold ${isChecked ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
               </span>
               <sup class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill py-0 px-1 fw-bold flex-shrink-0 align-self-start" id="bracketEnergy_${index}" style="font-size: 0.62rem; line-height: 1.1; margin-top: 1px;">

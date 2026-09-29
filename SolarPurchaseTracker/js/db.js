@@ -300,7 +300,7 @@ const DB = (() => {
             const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS[key] });
             XLSX.utils.book_append_sheet(wb, ws, sheet);
             const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([out], { type: 'application/octet-stream' });
+            const blob = new Blob([out], { type: 'application/octet-stream' }); 
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = file;
