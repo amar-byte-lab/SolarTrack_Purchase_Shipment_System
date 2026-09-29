@@ -30,6 +30,10 @@
             </div>
           </div>
           <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+            <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" type="button" onclick="openCustomerSummaryModal()" id="btnOpenSummaryModal" title="View Executive Summary & Metrics">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Summary</span>
+            </button>
             <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
               <span>Filters</span>
@@ -94,23 +98,48 @@
             <tbody>
               <!-- Injected by installments.js -->
             </tbody>
-            <tfoot>
-              <!-- Grand Total injected by JS -->
-            </tfoot>
           </table>
         </div>
       </div>
 
-      <!-- Sales Summary Dashboard -->
-      <div class="row g-3 mt-1 no-print" style="display: none;">
-        <div class="col-lg-6">
-          <div class="st-card">
-            <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#brandSummaryCollapse" aria-expanded="false" aria-controls="brandSummaryCollapse" style="cursor:pointer;">
-              <h6 class="mb-0 fw-semibold text-dark fs-7">Brand-wise Sales Summary</h6>
-              <span class="fs-8 text-muted" id="brandSummaryCollapseIndicator">▾</span>
-            </div>
-            <div class="collapse" id="brandSummaryCollapse">
-              <div class="pt-2 table-responsive" style="max-height: 250px; overflow-y: auto;">
+    </div>
+  </div>
+</div>
+
+<!-- ══ Executive Financial & Customer Summary Modal ═══════════════════════ -->
+<div class="modal fade" id="customerSummaryModal" tabindex="-1" aria-labelledby="customerSummaryModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <span class="p-1.5 bg-primary-subtle text-primary rounded-1 d-inline-flex">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          <div>
+            <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="customerSummaryModalTitle">Executive Financial & Sales Summary</h6>
+            <span class="text-secondary fs-8">Real-time performance indicators, collections, and regional distribution</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 d-flex flex-column gap-3">
+        <!-- Executive KPI Cards Grid -->
+        <div>
+          <span class="text-secondary fs-8 fw-semibold text-uppercase d-block mb-1.5" style="letter-spacing: 0.05em;">Key Financial Indicators</span>
+          <div class="customer-kpi-grid" id="customerKpiGrid">
+            <!-- Injected dynamically by JS -->
+          </div>
+        </div>
+
+        <!-- Distribution Breakdown Tables -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card border rounded-1 h-100 bg-white">
+              <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-dark fs-8">Brand-wise Sales</span>
+                <span class="badge bg-secondary-subtle text-secondary fs-8" id="sumModalBrandCount">0 Brands</span>
+              </div>
+              <div class="table-responsive p-0" style="max-height: 240px; overflow-y: auto;">
                 <table class="table table-sm table-hover align-middle mb-0" id="brandSummaryTable" style="font-size:0.83rem;">
                   <thead>
                     <tr class="table-light">
@@ -119,21 +148,20 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <!-- Brand summaries injected here -->
+                    <!-- Brand rows injected here -->
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="st-card">
-            <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#districtSummaryCollapse" aria-expanded="false" aria-controls="districtSummaryCollapse" style="cursor:pointer;">
-              <h6 class="mb-0 fw-semibold text-dark fs-7">District-wise Sales Summary</h6>
-              <span class="fs-8 text-muted" id="districtSummaryCollapseIndicator">▾</span>
-            </div>
-            <div class="collapse" id="districtSummaryCollapse">
-              <div class="pt-2 table-responsive" style="max-height: 250px; overflow-y: auto;">
+
+          <div class="col-md-6">
+            <div class="card border rounded-1 h-100 bg-white">
+              <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-dark fs-8">District-wise Sales</span>
+                <span class="badge bg-secondary-subtle text-secondary fs-8" id="sumModalDistrictCount">0 Districts</span>
+              </div>
+              <div class="table-responsive p-0" style="max-height: 240px; overflow-y: auto;">
                 <table class="table table-sm table-hover align-middle mb-0" id="districtSummaryTable" style="font-size:0.83rem;">
                   <thead>
                     <tr class="table-light">
@@ -142,13 +170,17 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <!-- District summaries injected here -->
+                    <!-- District rows injected here -->
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      <div class="modal-footer bg-light border-top py-1.5 px-3 d-flex justify-content-between">
+        <span class="text-muted fs-8 font-monospace">Live Filter Synced</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -336,6 +368,13 @@
                 <span class="text-secondary d-block fs-8 mb-0.5">Phone Number</span>
                 <span class="fw-semibold text-dark fs-7" id="detPartnerPhone">—</span>
               </div>
+              <div id="detPartnerLoginDateRow" style="display: none;">
+                <span class="text-secondary d-block fs-8 mb-0.5">Login Date & Delay</span>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fw-semibold text-dark fs-7 font-monospace" id="detPartnerLoginDate">—</span>
+                  <span id="detPartnerLoginDelayBadge" class="badge erp-delay-badge font-monospace fs-8"></span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -492,7 +531,10 @@
                   <input type="text" class="form-control form-control-sm fs-8 bg-light" id="cState" value="Odisha" readonly>
                 </div>
                 <div class="col-md-4 col-12 mb-1.5">
-                  <label class="form-label fs-8 text-secondary mb-1">Login Date</label>
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label fs-8 text-secondary mb-0" for="cLoginDate">Login Date</label>
+                    <span id="cLoginDelayBadge" class="badge erp-delay-badge font-monospace fs-8" style="display: none;"></span>
+                  </div>
                   <input type="date" class="form-control form-control-sm fs-8" id="cLoginDate">
                 </div>
                 <div class="col-md-4 col-6 mb-1.5">
@@ -643,6 +685,7 @@
                   <th>Consumer Name</th>
                   <th>Consumer No</th>
                   <th>Mobile Number</th>
+                  <th>Submitted On</th>
                   <th>District</th>
                   <th>Partner Name</th>
                   <th>Status</th>
@@ -666,6 +709,7 @@
                   <th>Consumer Name</th>
                   <th>Consumer No</th>
                   <th>Mobile Number</th>
+                  <th>Login Date</th>
                   <th>District</th>
                   <th>Partner Name</th>
                   <th>Status</th>

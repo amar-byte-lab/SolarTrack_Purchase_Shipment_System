@@ -675,3 +675,164 @@ body.installments-page .page-body {
 .inst-act-btn { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px; background: #ffffff; border: 1px solid #e2e8f0; }
 .inst-act-btn:hover { background: #f8fafc; }
 
+/* Delay Badge Indicators */
+.erp-delay-badge {
+  font-size: 0.72rem;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  font-family: var(--st-font-mono, monospace);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.erp-delay-badge.delay-red {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.erp-delay-badge.delay-yellow {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fcd34d !important;
+}
+
+.erp-delay-badge.delay-normal {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+
+/* ══ Enterprise Executive KPI Summary Banner ══════════════════════════ */
+.customer-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 992px) {
+  .customer-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .customer-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .customer-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+}
+
+.customer-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.15s ease;
+  min-height: 84px;
+}
+
+.customer-kpi-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.customer-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.customer-kpi-card.kpi-customers::before { background: #6366f1; }
+.customer-kpi-card.kpi-revenue::before { background: #0284c7; }
+.customer-kpi-card.kpi-collected::before { background: #16a34a; }
+.customer-kpi-card.kpi-pending::before { background: #ea580c; }
+.customer-kpi-card.kpi-partner::before { background: #8b5cf6; }
+.customer-kpi-card.kpi-profit::before { background: #059669; }
+
+.customer-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.customer-kpi-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin: 0;
+}
+
+.customer-kpi-icon-wrap {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.customer-kpi-card.kpi-customers .customer-kpi-icon-wrap { background: #eef2ff; color: #4f46e5; }
+.customer-kpi-card.kpi-revenue .customer-kpi-icon-wrap { background: #e0f2fe; color: #0284c7; }
+.customer-kpi-card.kpi-collected .customer-kpi-icon-wrap { background: #dcfce7; color: #16a34a; }
+.customer-kpi-card.kpi-pending .customer-kpi-icon-wrap { background: #ffedd5; color: #ea580c; }
+.customer-kpi-card.kpi-partner .customer-kpi-icon-wrap { background: #f3e8ff; color: #7c3aed; }
+.customer-kpi-card.kpi-profit .customer-kpi-icon-wrap { background: #d1fae5; color: #059669; }
+
+.customer-kpi-value {
+  font-size: 1.12rem;
+  font-weight: 700;
+  font-family: var(--st-font-mono, monospace);
+  color: #0f172a;
+  line-height: 1.25;
+  margin: 2px 0 3px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.customer-kpi-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #64748b;
+  border-top: 1px dashed #f1f5f9;
+  padding-top: 3px;
+  margin-top: 2px;
+}
+
+.text-indigo { color: #4f46e5 !important; }
+.text-sky { color: #0284c7 !important; }
+.text-purple { color: #7c3aed !important; }
+.text-emerald { color: #059669 !important; }
+.bg-indigo-subtle { background-color: #eef2ff !important; }
+
+
+

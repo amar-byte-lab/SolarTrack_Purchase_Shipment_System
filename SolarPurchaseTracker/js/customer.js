@@ -72,6 +72,12 @@ window.onDbReady = function () {
     });
   }
 
+  const modalLoginDate = document.getElementById('cLoginDate');
+  if (modalLoginDate) {
+    modalLoginDate.addEventListener('input', updateModalLoginDelayBadge);
+    modalLoginDate.addEventListener('change', updateModalLoginDelayBadge);
+  }
+
   // Excel Import element event listeners
   const btnImport = document.getElementById('btnImportCustomer');
   if (btnImport) {
@@ -283,6 +289,8 @@ window.onDbReady = function () {
       tr.classList.toggle('selected-row');
     }
   });
+
+
 
   const collapseEl = document.getElementById('searchCollapse');
   if (collapseEl) {
@@ -811,18 +819,116 @@ function getCommDiffBadge(comm, commPaid) {
   }
 }
 
-function calculateDelay(loginDateStr) {
-  if (!loginDateStr) return '';
-  const loginDate = new Date(loginDateStr);
-  if (isNaN(loginDate.getTime())) return '';
-  
+function parseExcelDate(val) {
+  if (val === undefined || val === null || val === '') return '';
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return '';
+    return val.toISOString().slice(0, 10);
+  }
+  if (typeof val === 'number') {
+    // Excel date serial numbers
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  }
+  const s = String(val).trim();
+  // Match DD-MM-YY, DD-MM-YYYY, DD/MM/YY, DD/MM/YYYY
+  const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+  if (dmy) {
+    let day = parseInt(dmy[1], 10);
+    let month = parseInt(dmy[2], 10);
+    let year = parseInt(dmy[3], 10);
+    if (year < 100) year += 2000;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    }
+  }
+  // Match YYYY-MM-DD
+  const ymd = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (ymd) {
+    let year = parseInt(ymd[1], 10);
+    let month = parseInt(ymd[2], 10);
+    let day = parseInt(ymd[3], 10);
+    return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+  }
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return s;
+}
+
+function getDelayInfo(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  loginDate.setHours(0, 0, 0, 0);
-  
-  const diffTime = today.getTime() - loginDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays + ' days';
+  d.setHours(0, 0, 0, 0);
+
+  const diffMs = today.getTime() - d.getTime();
+  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (totalDays < 0) return { totalDays, text: '0D', colorType: 'normal' };
+
+  let y = today.getFullYear() - d.getFullYear();
+  let m = today.getMonth() - d.getMonth();
+  let day = today.getDate() - d.getDate();
+
+  if (day < 0) {
+    m -= 1;
+    const prevMonthDays = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+    day += prevMonthDays;
+  }
+  if (m < 0) {
+    y -= 1;
+    m += 12;
+  }
+
+  const parts = [];
+  if (y > 0) parts.push(`${y}Y`);
+  if (m > 0) parts.push(`${m}M`);
+  if (day > 0 || parts.length === 0) parts.push(`${day}D`);
+
+  const text = parts.join(' ');
+  let colorType = 'normal';
+  if (totalDays > 90) {
+    colorType = 'red';
+  } else if (totalDays > 60) {
+    colorType = 'yellow';
+  } else {
+    colorType = 'normal';
+  }
+
+  return { totalDays, text, colorType };
+}
+
+function getDelayBadgeHtml(dateStr) {
+  const info = getDelayInfo(dateStr);
+  if (!info) return '';
+  return `<span class="badge erp-delay-badge delay-${info.colorType} ms-1" title="Login Date: ${fmtDateExcel(dateStr)} (${info.totalDays} days ago)">(${info.text})</span>`;
+}
+
+function calculateDelay(loginDateStr) {
+  const info = getDelayInfo(loginDateStr);
+  return info ? info.text : '';
+}
+
+function updateModalLoginDelayBadge() {
+  const badge = document.getElementById('cLoginDelayBadge');
+  const input = document.getElementById('cLoginDate');
+  if (!badge || !input) return;
+  const val = input.value;
+  if (!val) {
+    badge.style.display = 'none';
+    badge.textContent = '';
+    return;
+  }
+  const info = getDelayInfo(val);
+  if (!info) {
+    badge.style.display = 'none';
+    return;
+  }
+  badge.style.display = 'inline-flex';
+  badge.textContent = `(${info.text})`;
+  badge.className = `badge erp-delay-badge delay-${info.colorType} font-monospace fs-8`;
+  badge.title = `${info.totalDays} days delay from Login Date`;
 }
 
 function calculateInstDelay(loginDateStr, instDateStr) {
@@ -970,16 +1076,19 @@ function renderList() {
 
   if (!rows.length && !isAddingNew) {
     tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
-    const tfoot = document.querySelector('#installmentsTable tfoot');
-    if (tfoot) {
-      tfoot.innerHTML = `
-        <tr class="grand-total" style="height:37px;">
-          <td class="text-center">0</td>
-          <td colspan="2">GRAND TOTAL</td>
-          <td colspan="${isAdmin ? '2' : '1'}"></td>
-        </tr>
-      `;
-    }
+    const allDbRows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
+    renderTopKpis({
+      activeCount: 0,
+      totalInDb: allDbRows.length,
+      sumPrice: 0,
+      sumTotal: 0,
+      pendingCust: 0,
+      sumPartnerPrice: 0,
+      partnerPending: 0,
+      sumVendorPrice: 0,
+      totalProfit: 0,
+      isAdmin
+    });
     renderSalesSummary([]);
     return;
   }
@@ -1173,6 +1282,7 @@ function renderList() {
                 <a href="#" class="erp-partner-name" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
                   ${r.BrokerName || '—'}
                 </a>
+                ${r.LoginDate ? getDelayBadgeHtml(r.LoginDate) : ''}
               </div>
               <div class="erp-meta-row">
                 <span class="erp-price-text">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
@@ -1210,52 +1320,24 @@ function renderList() {
     }
   }).join('');
 
-  // Set GRAND TOTAL in tfoot
   const activeCount = rows.filter(r => r.Status !== 'Deactive').length;
-  const tfoot = document.querySelector('#installmentsTable tfoot');
-  if (tfoot) {
-    let tfootHTML = `
-      <tr class="grand-total erp-grand-total">
-        <td class="text-center align-middle fs-8">${isAddingNew ? activeCount - 1 : activeCount}</td>
-        <td class="align-middle fs-8 font-monospace">
-          <div class="d-flex flex-column gap-0.5">
-            <div class="text-dark fw-bold">${fmtGrandTotal(sumPrice)}</div>
-            <div class="text-success d-inline-flex align-items-center gap-1" title="Paid: ${fmtGrandTotal(sumTotal)}">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <span class="text-dark fw-semibold">${fmtGrandTotal(sumTotal)}</span>
-            </div>
-            <div class="erp-status-pending d-inline-flex align-items-center gap-1" title="Pending: ${fmtGrandTotal(sumPrice - sumTotal)}">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span>${fmtGrandTotal(sumPrice - sumTotal)}</span>
-            </div>
-          </div>
-        </td>
-        <td class="align-middle fs-8 font-monospace">
-          <div class="d-flex flex-column gap-0.5">
-            <div class="d-flex align-items-center gap-1">
-              <span class="fw-semibold text-dark">${fmtGrandTotal(sumPartnerPrice)}</span>
-              <span class="erp-status-pending d-inline-flex align-items-center gap-0.5 ms-1" title="Pending: ${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)}">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span>${fmtGrandTotal((sumPrice - sumPartnerPrice) - sumVendorPaid)}</span>
-              </span>
-            </div>
-          </div>
-        </td>
-        <td class="align-middle admin-only-column fs-8 font-monospace">
-          <div class="d-flex flex-column gap-0.5">
-            <div><span class="text-secondary">Exp:</span> <span class="fw-semibold text-dark">${fmtGrandTotal(sumVendorPrice)}</span></div>
-            ${(() => {
-              const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
-              const profitColorClass = totalProfit >= 0 ? 'text-success' : 'text-danger';
-              return `<div><span class="text-secondary">Profit:</span> <span class="${profitColorClass} fw-bold">${fmtGrandTotal(totalProfit)}</span></div>`;
-            })()}
-          </div>
-        </td>
-        <td class="no-print"></td>
-      </tr>
-    `;
-    tfoot.innerHTML = tfootHTML;
-  }
+  // Render Top Executive KPI Grid
+  const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
+  const partnerPending = (sumPrice - sumPartnerPrice) - sumVendorPaid;
+  const pendingCust = sumPrice - sumTotal;
+  const allDbRows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
+  renderTopKpis({
+    activeCount: isAddingNew ? activeCount - 1 : activeCount,
+    totalInDb: allDbRows.length,
+    sumPrice,
+    sumTotal,
+    pendingCust,
+    sumPartnerPrice,
+    partnerPending,
+    sumVendorPrice,
+    totalProfit,
+    isAdmin
+  });
 
   // Bind dynamic inputs calculation listeners for active editing row
   bindEditRowListeners();
@@ -1277,7 +1359,16 @@ function bindEditRowListeners() {
     const commVal = editCommInput ? editCommInput.value : '';
     
     const loginDelayEl = document.getElementById('editLoginDelay');
-    if (loginDelayEl) loginDelayEl.textContent = `(${calculateDelay(loginVal) || '—'})`;
+    if (loginDelayEl) {
+      const info = getDelayInfo(loginVal);
+      if (info) {
+        loginDelayEl.textContent = `(${info.text})`;
+        loginDelayEl.className = `badge erp-delay-badge delay-${info.colorType} font-monospace fs-8`;
+      } else {
+        loginDelayEl.textContent = '(—)';
+        loginDelayEl.className = 'badge bg-primary-subtle text-primary-emphasis font-monospace fs-8';
+      }
+    }
 
     const instDelayEl = document.getElementById('editInstDelay');
     if (instDelayEl) instDelayEl.textContent = `(${calculateInstDelay(loginVal, instVal) || '—'})`;
@@ -1364,6 +1455,140 @@ function bindEditRowListeners() {
   updateInlineCalculations();
 }
 
+function renderTopKpis(metrics) {
+  const container = document.getElementById('customerKpiGrid');
+  if (!container) return;
+
+  const {
+    activeCount,
+    totalInDb,
+    sumPrice,
+    sumTotal,
+    pendingCust,
+    sumPartnerPrice,
+    partnerPending,
+    sumVendorPrice,
+    totalProfit,
+    isAdmin
+  } = metrics;
+
+  const collectionRate = sumPrice > 0 ? ((sumTotal / sumPrice) * 100).toFixed(1) : '0.0';
+  const pendingRate = sumPrice > 0 ? ((pendingCust / sumPrice) * 100).toFixed(1) : '0.0';
+  const profitMargin = sumPrice > 0 ? ((totalProfit / sumPrice) * 100).toFixed(1) : '0.0';
+
+  const rupeeIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>`;
+
+  const cardsHtml = [
+    // 1. Total Customers Card
+    `
+    <div class="customer-kpi-card kpi-customers">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Customers</span>
+        <span class="customer-kpi-icon-wrap" title="Total active customers">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-indigo">${activeCount}</div>
+      <div class="customer-kpi-footer">
+        <span>Active Records</span>
+        <span class="badge bg-indigo-subtle text-indigo px-1.5 py-0 fs-8">${activeCount === totalInDb ? 'All' : `${activeCount}/${totalInDb}`}</span>
+      </div>
+    </div>
+    `,
+
+    // 2. Total Revenue Card
+    `
+    <div class="customer-kpi-card kpi-revenue">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Total Revenue</span>
+        <span class="customer-kpi-icon-wrap" title="Total committed customer amount">
+          ${rupeeIconSvg}
+        </span>
+      </div>
+      <div class="customer-kpi-value text-sky">${fmtGrandTotal(sumPrice)}</div>
+      <div class="customer-kpi-footer">
+        <span>Committed Value</span>
+        <span class="text-secondary fs-8">100%</span>
+      </div>
+    </div>
+    `,
+
+    // 3. Received / Collected Card
+    `
+    <div class="customer-kpi-card kpi-collected">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Collected</span>
+        <span class="customer-kpi-icon-wrap" title="Total installments received">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-success">${fmtGrandTotal(sumTotal)}</div>
+      <div class="customer-kpi-footer">
+        <span>Received</span>
+        <span class="badge bg-success-subtle text-success px-1.5 py-0 fs-8">${collectionRate}%</span>
+      </div>
+    </div>
+    `,
+
+    // 4. Pending Balance Card
+    `
+    <div class="customer-kpi-card kpi-pending">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Cust. Pending</span>
+        <span class="customer-kpi-icon-wrap" title="Pending from customers">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-warning-emphasis">${fmtGrandTotal(pendingCust)}</div>
+      <div class="customer-kpi-footer">
+        <span>Receivable</span>
+        <span class="badge bg-warning-subtle text-warning-emphasis px-1.5 py-0 fs-8">${pendingRate}%</span>
+      </div>
+    </div>
+    `,
+
+    // 5. Partner Amount Card
+    `
+    <div class="customer-kpi-card kpi-partner">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Partner Total</span>
+        <span class="customer-kpi-icon-wrap" title="Partner share and pending">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-purple">${fmtGrandTotal(sumPartnerPrice)}</div>
+      <div class="customer-kpi-footer">
+        <span>Pending Due</span>
+        <span class="badge bg-danger-subtle text-danger px-1.5 py-0 fs-8">${fmtGrandTotal(partnerPending)}</span>
+      </div>
+    </div>
+    `
+  ];
+
+  if (isAdmin) {
+    // 6. Net Profit Card (Admin only)
+    const profitColorClass = totalProfit >= 0 ? 'text-emerald' : 'text-danger';
+    const profitBadgeClass = totalProfit >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+    cardsHtml.push(`
+      <div class="customer-kpi-card kpi-profit">
+        <div class="customer-kpi-header">
+          <span class="customer-kpi-title">Net Profit</span>
+          <span class="customer-kpi-icon-wrap" title="Net profit after expenses and commission">
+            ${rupeeIconSvg}
+          </span>
+        </div>
+        <div class="customer-kpi-value ${profitColorClass}">${fmtGrandTotal(totalProfit)}</div>
+        <div class="customer-kpi-footer">
+          <span>Exp: ${fmtGrandTotal(sumVendorPrice)}</span>
+          <span class="badge ${profitBadgeClass} px-1.5 py-0 fs-8">${profitMargin}%</span>
+        </div>
+      </div>
+    `);
+  }
+
+  container.innerHTML = cardsHtml.join('');
+}
+
 function renderSalesSummary(filteredRows) {
   const activeRows = DB.getAll('installments').filter(r => r.Status !== 'Deactive' && Number(r.SlNo) !== Number(editingSlNo));
 
@@ -1378,9 +1603,12 @@ function renderSalesSummary(filteredRows) {
     brandMap[brandName]++;
   });
 
+  const brands = Object.keys(brandMap).sort();
+  const brandCountBadge = document.getElementById('sumModalBrandCount');
+  if (brandCountBadge) brandCountBadge.textContent = `${brands.length} Brands`;
+
   const brandTbody = document.querySelector('#brandSummaryTable tbody');
   if (brandTbody) {
-    const brands = Object.keys(brandMap).sort();
     if (brands.length === 0) {
       brandTbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No active brand sales.</td></tr>`;
     } else {
@@ -1398,6 +1626,18 @@ function renderSalesSummary(filteredRows) {
           </tr>
         `;
       }).join('');
+
+      brandTbody.querySelectorAll('.summary-brand-chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+          selectedBrands = Array.from(brandTbody.querySelectorAll('.summary-brand-chk:checked')).map(c => c.value);
+          updateBrandDropdownButton();
+          // Keep dropdown checkboxes in sync
+          document.querySelectorAll('.brand-chk').forEach(c => {
+            c.checked = selectedBrands.includes(c.value);
+          });
+          renderList();
+        });
+      });
     }
   }
 
@@ -1412,9 +1652,12 @@ function renderSalesSummary(filteredRows) {
     distMap[distName]++;
   });
 
+  const districts = Object.keys(distMap).sort();
+  const distCountBadge = document.getElementById('sumModalDistrictCount');
+  if (distCountBadge) distCountBadge.textContent = `${districts.length} Districts`;
+
   const distTbody = document.querySelector('#districtSummaryTable tbody');
   if (distTbody) {
-    const districts = Object.keys(distMap).sort();
     if (districts.length === 0) {
       distTbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No active district sales.</td></tr>`;
     } else {
@@ -1432,9 +1675,28 @@ function renderSalesSummary(filteredRows) {
           </tr>
         `;
       }).join('');
+
+      distTbody.querySelectorAll('.summary-dist-chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+          selectedDistricts = Array.from(distTbody.querySelectorAll('.summary-dist-chk:checked')).map(c => c.value);
+          updateDistrictDropdownButton();
+          // Keep dropdown checkboxes in sync
+          document.querySelectorAll('.district-chk').forEach(c => {
+            c.checked = selectedDistricts.includes(c.value);
+          });
+          renderList();
+        });
+      });
     }
   }
 }
+
+window.openCustomerSummaryModal = function() {
+  const modalEl = document.getElementById('customerSummaryModal');
+  if (!modalEl) return;
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+};
 
 window.addInlineRow = function () {
   if (editingSlNo !== null) {
@@ -1975,6 +2237,23 @@ window.showPartnerDetailsPopup = function(slNo) {
   document.getElementById('partnerDetailsModalTitle').textContent = r.BrokerName || 'Partner Details';
   document.getElementById('detPartnerPhone').textContent = (r.BrokerNumber || '').split('|')[0] || '—';
 
+  const loginRow = document.getElementById('detPartnerLoginDateRow');
+  if (loginRow) {
+    if (r.LoginDate) {
+      loginRow.style.display = 'block';
+      const info = getDelayInfo(r.LoginDate);
+      document.getElementById('detPartnerLoginDate').textContent = fmtDateExcel(r.LoginDate);
+      const delayBadge = document.getElementById('detPartnerLoginDelayBadge');
+      if (delayBadge && info) {
+        delayBadge.textContent = `(${info.text})`;
+        delayBadge.className = `badge erp-delay-badge delay-${info.colorType} font-monospace fs-8`;
+        delayBadge.title = `${info.totalDays} days delay`;
+      }
+    } else {
+      loginRow.style.display = 'none';
+    }
+  }
+
   const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('partnerDetailsModal'));
   modal.show();
 };
@@ -1989,9 +2268,19 @@ window.showTimestampDetailsPopup = function(slNo) {
   }
 
   const loginDateStr = fmtDateExcel(r.LoginDate) || '—';
-  const loginDelay = calculateDelay(r.LoginDate);
+  const loginDelayInfo = getDelayInfo(r.LoginDate);
   document.getElementById('tsModalLoginDate').textContent = loginDateStr;
-  document.getElementById('tsModalLoginDelay').textContent = loginDelay ? `(${loginDelay})` : '—';
+  const loginDelayEl = document.getElementById('tsModalLoginDelay');
+  if (loginDelayEl) {
+    if (loginDelayInfo) {
+      loginDelayEl.textContent = `(${loginDelayInfo.text})`;
+      loginDelayEl.className = `badge erp-delay-badge delay-${loginDelayInfo.colorType} font-monospace fs-8`;
+      loginDelayEl.title = `${loginDelayInfo.totalDays} days delay`;
+    } else {
+      loginDelayEl.textContent = '—';
+      loginDelayEl.className = 'badge bg-primary-subtle text-primary-emphasis font-monospace fs-8';
+    }
+  }
 
   const instDateStr = fmtDateExcel(r.InstallationDate) || '—';
   const instDelay = calculateInstDelay(r.LoginDate, r.InstallationDate);
@@ -2168,6 +2457,8 @@ window.openCustomerModal = function(slNo) {
     if (document.getElementById('cState')) document.getElementById('cState').value = 'Odisha';
     document.getElementById('cLoginDate').value = UI.todayISO();
   }
+
+  updateModalLoginDelayBadge();
 
   const vendors = DB.getAll('vendors');
   Utils.initSearchableDropdown('cBrokerName', vendors.map(v => v.VendorName), (selectedBrokerName) => {
@@ -2470,6 +2761,11 @@ async function handleExcelImport(e) {
         return lk === 'address' || lk === 'full address' || lk === 'location';
       });
 
+      const loginDateKey = keys.find(k => {
+        const lk = k.toLowerCase().trim();
+        return lk === 'submitted on' || lk === 'submitted_on' || lk === 'submitted date' || lk === 'submission date' || lk === 'submission on' || lk === 'login date' || lk === 'logindate' || lk === 'login_date' || lk === 'application date' || lk === 'applied on' || lk === 'submission_date';
+      });
+
       if (!nameKey) {
         UI.toast('Invalid format! Could not find "Consumer Name" or "Name" column.', 'danger');
         return;
@@ -2496,6 +2792,7 @@ async function handleExcelImport(e) {
         const rawDistrict = districtKey ? String(row[districtKey] || '').trim() : '';
         const rawBroker = brokerKey ? String(row[brokerKey] || '').trim() : '';
         const rawAddress = addressKey ? String(row[addressKey] || '').trim() : '';
+        const rawLoginDate = loginDateKey ? parseExcelDate(row[loginDateKey]) : '';
 
         const cleanNameVal = cleanName(rawName);
         excelNamesSet.add(cleanNameVal);
@@ -2510,8 +2807,9 @@ async function handleExcelImport(e) {
           const distDiff = norm(gridMatch.District) !== norm(rawDistrict) && Boolean(rawDistrict);
           const brokerDiff = norm(gridMatch.BrokerName) !== norm(rawBroker) && Boolean(rawBroker);
           const addrDiff = norm(gridMatch.Address) !== norm(rawAddress) && Boolean(rawAddress);
+          const loginDiff = rawLoginDate && gridMatch.LoginDate && norm(gridMatch.LoginDate) !== norm(rawLoginDate);
 
-          const hasDifferences = cNoDiff || mobDiff || distDiff || brokerDiff || addrDiff;
+          const hasDifferences = cNoDiff || mobDiff || distDiff || brokerDiff || addrDiff || loginDiff;
 
           if (!hasDifferences) {
             // BOTH ARE 100% IDENTICAL! Auto-skip (do not display 2 times or show checkbox)
@@ -2526,21 +2824,24 @@ async function handleExcelImport(e) {
                 MobileNumber: gridMatch.MobileNumber || '',
                 District: gridMatch.District || '',
                 BrokerName: gridMatch.BrokerName || '',
-                Address: gridMatch.Address || ''
+                Address: gridMatch.Address || '',
+                LoginDate: gridMatch.LoginDate || ''
               },
               ExcelData: {
                 ConsumerNo: rawConsumerNo || gridMatch.ConsumerNo || '',
                 MobileNumber: rawMobile || gridMatch.MobileNumber || '',
                 District: rawDistrict || gridMatch.District || '',
                 BrokerName: rawBroker || gridMatch.BrokerName || '',
-                Address: rawAddress || gridMatch.Address || ''
+                Address: rawAddress || gridMatch.Address || '',
+                LoginDate: rawLoginDate || gridMatch.LoginDate || ''
               },
               Diffs: {
                 ConsumerNo: cNoDiff,
                 MobileNumber: mobDiff,
                 District: distDiff,
                 BrokerName: brokerDiff,
-                Address: addrDiff
+                Address: addrDiff,
+                LoginDate: loginDiff
               },
               SelectedChoice: 'EXCEL' // Default selection
             });
@@ -2554,6 +2855,7 @@ async function handleExcelImport(e) {
             MobileNumber: rawMobile,
             District: rawDistrict,
             BrokerName: rawBroker,
+            LoginDate: rawLoginDate || UI.todayISO(),
             Status: 'Duplicate (In Excel)',
             IsDuplicate: true
           });
@@ -2566,6 +2868,7 @@ async function handleExcelImport(e) {
             MobileNumber: rawMobile,
             District: rawDistrict,
             BrokerName: rawBroker,
+            LoginDate: rawLoginDate || UI.todayISO(),
             Status: 'New Name',
             IsDuplicate: false
           });
@@ -2582,6 +2885,7 @@ async function handleExcelImport(e) {
             MobileNumber: r.MobileNumber || '',
             District: r.District || '',
             BrokerName: r.BrokerName || '',
+            LoginDate: r.LoginDate || '',
             Status: 'Missing in Excel'
           });
         }
@@ -2685,6 +2989,7 @@ function renderImportPreviewModal() {
                   <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2" style="font-size:0.78rem;">
                     <div><strong>Consumer No:</strong> ${fmtVal(item.Diffs.ConsumerNo, item.ExcelData.ConsumerNo)}</div>
                     <div><strong>Mobile Number:</strong> ${fmtVal(item.Diffs.MobileNumber, item.ExcelData.MobileNumber)}</div>
+                    <div><strong>Submitted On (Login Date):</strong> ${fmtVal(item.Diffs.LoginDate, item.ExcelData.LoginDate ? fmtDateExcel(item.ExcelData.LoginDate) : '—')}</div>
                     <div><strong>District:</strong> ${fmtVal(item.Diffs.District, item.ExcelData.District)}</div>
                     <div><strong>Partner Name:</strong> ${fmtVal(item.Diffs.BrokerName, item.ExcelData.BrokerName)}</div>
                   </div>
@@ -2703,6 +3008,7 @@ function renderImportPreviewModal() {
                   <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2" style="font-size:0.78rem;">
                     <div><strong>Consumer No:</strong> ${escapeHtml(item.GridData.ConsumerNo || '—')}</div>
                     <div><strong>Mobile Number:</strong> ${escapeHtml(item.GridData.MobileNumber || '—')}</div>
+                    <div><strong>Login Date:</strong> ${escapeHtml(item.GridData.LoginDate ? fmtDateExcel(item.GridData.LoginDate) : '—')}</div>
                     <div><strong>District:</strong> ${escapeHtml(item.GridData.District || '—')}</div>
                     <div><strong>Partner Name:</strong> ${escapeHtml(item.GridData.BrokerName || '—')}</div>
                   </div>
@@ -2740,6 +3046,7 @@ function renderImportPreviewModal() {
           <td class="fw-semibold">${escapeHtml(c.Name)}</td>
           <td class="font-monospace">${escapeHtml(c.ConsumerNo || '—')}</td>
           <td>${escapeHtml(c.MobileNumber || '—')}</td>
+          <td>${c.LoginDate ? `<span class="font-monospace">${fmtDateExcel(c.LoginDate)}</span> ${getDelayBadgeHtml(c.LoginDate)}` : '—'}</td>
           <td>
             <div class="position-relative">
               <input type="text" class="form-control form-control-sm import-district-input" id="importDistrict_${index}" placeholder="Select District" autocomplete="off" style="font-size: 0.8rem; min-width: 130px;" value="${escapeHtml(c.District || '')}">
@@ -2801,6 +3108,7 @@ function renderImportPreviewModal() {
           <td class="fw-semibold" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.Name)}</td>
           <td class="font-monospace" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.ConsumerNo || '—')}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.MobileNumber || '—')}</td>
+          <td style="background-color: #fff3cd !important; color: #664d03 !important;">${c.LoginDate ? `<span class="font-monospace">${fmtDateExcel(c.LoginDate)}</span> ${getDelayBadgeHtml(c.LoginDate)}` : '—'}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.District || '—')}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.BrokerName || '—')}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">
@@ -2827,21 +3135,21 @@ function downloadTxtReport() {
   parsedConflictingCustomers.forEach((c, idx) => {
     txt += `${idx + 1}. Consumer: ${c.Name} (Sl. #${c.SlNo})\n`;
     txt += `   Selected Choice: ${c.SelectedChoice === 'EXCEL' ? 'Excel Data (Overwrite)' : 'Grid Data (Keep Previous)'}\n`;
-    txt += `   Excel Values -> ConsumerNo: ${c.ExcelData.ConsumerNo || 'N/A'}, Mobile: ${c.ExcelData.MobileNumber || 'N/A'}, District: ${c.ExcelData.District || 'N/A'}, Partner: ${c.ExcelData.BrokerName || 'N/A'}\n`;
-    txt += `   Grid Values  -> ConsumerNo: ${c.GridData.ConsumerNo || 'N/A'}, Mobile: ${c.GridData.MobileNumber || 'N/A'}, District: ${c.GridData.District || 'N/A'}, Partner: ${c.GridData.BrokerName || 'N/A'}\n\n`;
+    txt += `   Excel Values -> ConsumerNo: ${c.ExcelData.ConsumerNo || 'N/A'}, Mobile: ${c.ExcelData.MobileNumber || 'N/A'}, Submitted On: ${c.ExcelData.LoginDate || 'N/A'}, District: ${c.ExcelData.District || 'N/A'}, Partner: ${c.ExcelData.BrokerName || 'N/A'}\n`;
+    txt += `   Grid Values  -> ConsumerNo: ${c.GridData.ConsumerNo || 'N/A'}, Mobile: ${c.GridData.MobileNumber || 'N/A'}, Login Date: ${c.GridData.LoginDate || 'N/A'}, District: ${c.GridData.District || 'N/A'}, Partner: ${c.GridData.BrokerName || 'N/A'}\n\n`;
   });
 
   txt += 'SECTION 2: NEW EXCEL RECORDS TO ADD\n';
   txt += '----------------------------------------------------------------------\n';
   parsedCustomers.filter(c => !c.IsDuplicate).forEach((c, idx) => {
-    txt += `${idx + 1}. | ${c.Name} | ${c.ConsumerNo || 'N/A'} | ${c.MobileNumber || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
+    txt += `${idx + 1}. | ${c.Name} | ${c.ConsumerNo || 'N/A'} | ${c.MobileNumber || 'N/A'} | ${c.LoginDate || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
   });
 
   txt += '\n======================================================================\n';
   txt += 'SECTION 3: GRID RECORDS MISSING IN EXCEL FILE\n';
   txt += '----------------------------------------------------------------------\n';
   parsedMissingCustomers.forEach((c, idx) => {
-    txt += `${idx + 1}. | ${c.Name} | ${c.MobileNumber || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
+    txt += `${idx + 1}. | ${c.Name} | ${c.MobileNumber || 'N/A'} | ${c.LoginDate || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
   });
 
   txt += '\n======================================================================\n';
@@ -2914,7 +3222,7 @@ async function saveImportedCustomers() {
           CommittedPrice: 0,
           VendorPrice: 0,
           VendorPaid: 0,
-          LoginDate: UI.todayISO(),
+          LoginDate: customer.LoginDate || UI.todayISO(),
           InstallationDate: null,
           BrokerName: customer.BrokerName || '',
           BrokerNumber: brokerNumberVal,
@@ -2939,7 +3247,8 @@ async function saveImportedCustomers() {
             MobileNumber: c.ExcelData.MobileNumber || existingRow.MobileNumber || '',
             District: c.ExcelData.District || existingRow.District || '',
             BrokerName: c.ExcelData.BrokerName || existingRow.BrokerName || '',
-            Address: c.ExcelData.Address || existingRow.Address || ''
+            Address: c.ExcelData.Address || existingRow.Address || '',
+            LoginDate: c.ExcelData.LoginDate || existingRow.LoginDate || null
           };
           promises.push(DB.update('installments', r => Number(r.SlNo) === Number(c.SlNo), updatedRow));
         }
