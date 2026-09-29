@@ -402,11 +402,15 @@ const SizingUI = (() => {
       else lblBadge.textContent = 'Backup Duration';
     }
 
-    // Hide Selected Appliances Summary & Customize button when Monthly Units is selected
+    // Show summary whenever Backup Duration is active OR when in Hybrid/OffGrid/WithoutSolar OR Appliance Load mode.
+    // Only hide if On-Grid AND Monthly Units!
+    const isGrid = state.systemType === 'on-grid';
+    const hideSummary = (isGrid && isMonthly);
+
     const wrapSummary = document.getElementById('wrapSelectedAppliancesSummary');
     const btnCustomize = document.getElementById('btnEditApplianceSchedule');
-    if (wrapSummary) wrapSummary.style.display = isMonthly ? 'none' : 'block';
-    if (btnCustomize) btnCustomize.style.display = isMonthly ? 'none' : 'inline-flex';
+    if (wrapSummary) wrapSummary.style.display = hideSummary ? 'none' : 'block';
+    if (btnCustomize) btnCustomize.style.display = hideSummary ? 'none' : 'inline-flex';
 
     // Step 2 contains Sizing Calculation Basis and Appliances summary - keep both columns visible (col-lg-6)
     const step2Col = document.getElementById('colStep2Wrapper');
@@ -498,6 +502,7 @@ const SizingUI = (() => {
     const activeApps = [];
 
     const backupHrs = Number(state.backupHours) || 4;
+    const isBackupContext = (state.systemType === 'hybrid' || state.systemType === 'off-grid' || state.systemType === 'without-solar' || state.energyCalculationBasis === 'backup_duration');
 
     state.appliances.forEach(app => {
       if (app.checked && Number(app.defaultQty) > 0) {
@@ -550,11 +555,18 @@ const SizingUI = (() => {
 
     const badgesContainer = document.getElementById('applianceSummaryBadges');
     if (badgesContainer) {
-      if (activeApps.length === 0) {
-        badgesContainer.innerHTML = `<span class="text-muted fs-8 fst-italic">No appliances selected. Click here or "?" to select loads.</span>`;
+      const displayApps = isBackupContext 
+        ? state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0 && a.isBackup !== false)
+        : state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0);
+
+      if (displayApps.length === 0) {
+        badgesContainer.innerHTML = isBackupContext
+          ? `<span class="text-muted fs-8 fst-italic">No backup appliances selected. Click here to select backup loads.</span>`
+          : `<span class="text-muted fs-8 fst-italic">No appliances selected. Click here to select loads.</span>`;
       } else {
-        badgesContainer.innerHTML = activeApps.map(app => {
-          const itemWh = (app.watts || 0) * (app.defaultHours || 1) * (app.defaultQty || 1);
+        badgesContainer.innerHTML = displayApps.map(app => {
+          const itemHours = isBackupContext ? (Number(app.defaultHours) || backupHrs) : (Number(app.defaultHours) || 1);
+          const itemWh = (app.watts || 0) * itemHours * (app.defaultQty || 1);
           return `<span class="text-dark fw-medium">${app.name} × <strong>${app.defaultQty}</strong> <span class="text-primary fw-semibold">(${formatEnergy(itemWh)})</span></span>`;
         }).join('<span class="text-muted mx-1.5">•</span>');
       }

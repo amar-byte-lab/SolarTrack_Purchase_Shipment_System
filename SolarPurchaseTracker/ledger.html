@@ -189,41 +189,6 @@
   </div>
 </div>
 
-<!-- ══ WhatsApp Share Modal ══════════════════════════════════════════════════ -->
-<div class="modal fade" id="whatsappShareModal" tabindex="-1" aria-labelledby="waShareModalLabel" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h6 class="modal-title fw-bold fs-7" id="waShareModalLabel">Send Statement via WhatsApp</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-3 bg-light d-flex flex-column gap-3">
-        <div class="row g-2">
-          <div class="col-6">
-            <label class="form-label fs-8 text-secondary mb-1" for="waFromMobile">From Mobile Number (You)</label>
-            <input type="text" class="form-control form-control-sm" id="waFromMobile" placeholder="Your mobile number" autocomplete="off">
-          </div>
-          <div class="col-6">
-            <label class="form-label fs-8 text-secondary mb-1" for="waToMobile">To Mobile Number (Borrower) <span class="text-danger">*</span></label>
-            <input type="text" class="form-control form-control-sm" id="waToMobile" placeholder="Borrower mobile number" autocomplete="off">
-          </div>
-        </div>
-        <div>
-          <label class="form-label fs-8 text-secondary mb-1" for="waMessageText">Message *</label>
-          <textarea class="form-control form-control-sm" id="waMessageText" rows="6" placeholder="Enter message here..." style="font-size: 0.82rem;"></textarea>
-        </div>
-        <div class="small text-muted" style="font-size: 0.72rem;">
-          Note: Open WhatsApp will launch WhatsApp Web or your local WhatsApp app with the message prefilled for the recipient.
-        </div>
-      </div>
-      <div class="modal-footer bg-light border-top py-2">
-        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-sm btn-success px-4" id="btnSendWhatsappConfirm">Open WhatsApp</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Scripts -->
 <script src="assets/js/bootstrap.bundle.min.js" defer></script>
 <script src="assets/js/xlsx.full.min.js" defer></script>

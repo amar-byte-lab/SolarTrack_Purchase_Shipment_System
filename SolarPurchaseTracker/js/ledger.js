@@ -12,7 +12,6 @@ let _txnCache       = {};
 let _activeBid      = null;
 let _txnModal       = null;
 let _addBorrowerModal = null;
-let _waShareModal   = null;
 let _searchQuery    = '';
 let _filterStatus   = 'all';
 let _isMasked       = false;
@@ -45,10 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnShareWhatsapp = document.getElementById('btnShareWhatsapp');
   if (btnShareWhatsapp) {
     btnShareWhatsapp.addEventListener('click', shareActiveBorrowerWhatsapp);
-  }
-  const btnSendWhatsappConfirm = document.getElementById('btnSendWhatsappConfirm');
-  if (btnSendWhatsappConfirm) {
-    btnSendWhatsappConfirm.addEventListener('click', sendWhatsappConfirmed);
   }
 
   // Enter on amount/remarks saves default Credit
@@ -936,57 +931,54 @@ async function shareActiveBorrowerWhatsapp() {
   const borrower = _borrowers.find(b => b.BorrowerID === _activeBid);
   if (!borrower) return;
 
+  const txns = _txnCache[_activeBid] || [];
+
+  // Calculate stats
+  const creditTxns = txns.filter(t => t.Type === 'Credit');
+  const debitTxns = txns.filter(t => t.Type === 'Debit');
+  const creditTotal = creditTxns.reduce((sum, t) => sum + Number(t.Amount), 0);
+  const debitTotal = debitTxns.reduce((sum, t) => sum + Number(t.Amount), 0);
+  const creditCount = creditTxns.length;
+  const debitCount = debitTxns.length;
+
   const { net } = netBalance(_activeBid);
   let balText = '';
   if (net > 0) balText = `₹${net.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (Outstanding)`;
   else if (net < 0) balText = `₹${Math.abs(net).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (Surplus)`;
-  else balText = 'Settled';
+  else balText = '₹0.00 (Settled)';
 
-  // Format message
-  let message = `Hello ${borrower.Name},\n\n`;
-  message += `Here is your transaction ledger summary from SolarTrack.\n`;
-  message += `Current Balance: *${balText}*.\n\n`;
-  message += `Please check the attached PDF statement for details.\n\n`;
+  // Date range string
+  let dateRangeStr = '—';
+  if (txns.length > 0) {
+    const sortedTxns = [...txns].sort((a, b) => a.TxnDate.localeCompare(b.TxnDate));
+    const firstDate = fmtDate(sortedTxns[0].TxnDate);
+    const lastDate = fmtDate(sortedTxns[sortedTxns.length - 1].TxnDate);
+    dateRangeStr = `${firstDate} - ${lastDate}`;
+  }
+
+  // Format message text
+  let message = `Hello *${borrower.Name}*,\n\n`;
+  message += `Here is your transaction ledger summary from SolarTrack.\n\n`;
+  message += `📊 *Ledger Statement Summary:*\n`;
+  message += `• Current Balance: *${balText}*\n`;
+  message += `• Statement Period: ${dateRangeStr}\n`;
+  message += `• Total Given (Credit): ₹${creditTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+  message += `• Total Received (Payment): ₹${debitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n`;
+  message += `Please find the detailed PDF statement attached.\n\n`;
   message += `Thank you!`;
 
-  // Pre-populate WhatsApp share modal with logged in user's number
-  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-  let defaultFromMobile = (currentUser && currentUser.mobile) ? currentUser.mobile : '';
-  
-  document.getElementById('waFromMobile').value = localStorage.getItem('whatsapp_from_mobile') || defaultFromMobile;
-  document.getElementById('waToMobile').value = borrower.Mobile || '';
-  document.getElementById('waMessageText').value = message;
-
-  // Initialize and show the modal if not already done
-  if (!_waShareModal) {
-    _waShareModal = new bootstrap.Modal(document.getElementById('whatsappShareModal'), { keyboard: true });
+  let phone = (borrower.Mobile || '').replace(/\D/g, '');
+  if (phone.length === 10) {
+    phone = '91' + phone;
   }
-  _waShareModal.show();
-}
-
-// ── Confirm Send to WhatsApp ───────────────────────────────────────────────
-async function sendWhatsappConfirmed() {
-  const fromMobile = document.getElementById('waFromMobile').value.trim();
-  const toMobile = document.getElementById('waToMobile').value.trim();
-  const message = document.getElementById('waMessageText').value;
-
-  if (!toMobile) {
-    UI.toast('Recipient mobile number is required.', 'warning');
-    document.getElementById('waToMobile').focus();
-    return;
-  }
-
-  // Save the "From" number
-  localStorage.setItem('whatsapp_from_mobile', fromMobile);
-
-  const borrower = _borrowers.find(b => b.BorrowerID === _activeBid);
-  if (!borrower) return;
-
-  const txns = _txnCache[_activeBid] || [];
 
   const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
   if (!jsPDF) {
-    UI.toast('PDF library is not loaded properly.', 'danger');
+    const waUrl = phone
+      ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+    UI.toast('Opening WhatsApp...', 'success');
     return;
   }
 
@@ -999,24 +991,8 @@ async function sendWhatsappConfirmed() {
       format: 'a4'
     });
 
-    // Calculate stats
-    const creditTxns = txns.filter(t => t.Type === 'Credit');
-    const debitTxns = txns.filter(t => t.Type === 'Debit');
-    const creditTotal = creditTxns.reduce((sum, t) => sum + Number(t.Amount), 0);
-    const debitTotal = debitTxns.reduce((sum, t) => sum + Number(t.Amount), 0);
-    const creditCount = creditTxns.length;
-    const debitCount = debitTxns.length;
-
-    const { net } = netBalance(_activeBid);
-
-    // Date range string
-    let dateRangeStr = '—';
-    if (txns.length > 0) {
-      const sortedTxns = [...txns].sort((a, b) => a.TxnDate.localeCompare(b.TxnDate));
-      const firstDate = fmtDate(sortedTxns[0].TxnDate);
-      const lastDate = fmtDate(sortedTxns[sortedTxns.length - 1].TxnDate);
-      dateRangeStr = `${firstDate} - ${lastDate}`;
-    }
+    const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const fromMobile = (currentUser && currentUser.mobile) ? currentUser.mobile : (localStorage.getItem('whatsapp_from_mobile') || '');
 
     // Helper functions to draw page elements
     function drawPageHeader() {
@@ -1159,7 +1135,6 @@ async function sendWhatsappConfirmed() {
     doc.setFontSize(10);
     doc.setTextColor(30, 41, 59);
     
-    // In sample: Current Balance: Rs. 8,72,491 (Total Balance Advance)
     const finalBalText = `Current Balance: Rs. ${Math.abs(net).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${net >= 0 ? 'Outstanding' : 'Advance'})`;
     doc.text(finalBalText, 190, y, { align: 'right' });
     
@@ -1186,37 +1161,37 @@ async function sendWhatsappConfirmed() {
       console.error('Failed to upload PDF reference:', e);
     }
 
-    // Sanitize receiver number
-    let phone = toMobile.replace(/\D/g, '');
-    if (phone.length === 10) {
-      phone = '91' + phone;
-    }
-
     let sharedSuccessfully = false;
     const fileObj = new File([pdfBlob], filename, { type: 'application/pdf' });
 
-    // Try Web Share API for direct file attachment
+    // Try Web Share API for direct file attachment on mobile
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileObj] })) {
       try {
         await navigator.share({
           files: [fileObj],
-          title: 'SolarTrack Ledger Statement',
+          title: `${borrower.Name} - Ledger Statement`,
           text: message
         });
         sharedSuccessfully = true;
       } catch (err) {
-        console.warn('Native Web Share failed, falling back to desktop download & message:', err);
+        if (err.name !== 'AbortError') {
+          console.warn('Native Web Share failed, falling back to WhatsApp URL & download:', err);
+        } else {
+          sharedSuccessfully = true;
+        }
       }
     }
 
     if (!sharedSuccessfully) {
-      // Fallback: download PDF locally (only since web browser has no other way to attach local file on desktop)
-      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`;
+      // Direct WhatsApp URL (with phone if borrower has phone, or without phone so user selects contact from WhatsApp)
+      const waUrl = phone
+        ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
       window.open(waUrl, '_blank');
       doc.save(filename);
-      UI.toast('PDF statement downloaded. Please attach it manually in WhatsApp.', 'success');
+      UI.toast('Opening WhatsApp... PDF statement downloaded.', 'success');
     } else {
-      UI.toast('PDF statement shared successfully!', 'success');
+      UI.toast('Statement shared via WhatsApp successfully!', 'success');
     }
 
   } catch (err) {
@@ -1224,9 +1199,6 @@ async function sendWhatsappConfirmed() {
     UI.toast('Failed to generate PDF: ' + err.message, 'danger');
   } finally {
     UI.showLoading(false);
-    if (_waShareModal) {
-      _waShareModal.hide();
-    }
   }
 }
 
