@@ -324,14 +324,15 @@ window.openProductModal = function (productName) {
   const gstEl = document.getElementById('pGSTPercent');
   const inclEl = document.getElementById('pIncludeGST');
 
+  const sysDefaultGst = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
   if (productName) {
     const p = DB.getAll('products').find(x => x.ProductName === productName);
     if (costEl) costEl.value = p && (p.TotalCost !== undefined && p.TotalCost !== '' && p.TotalCost !== null) ? p.TotalCost : '';
-    if (gstEl) gstEl.value = p && p.GSTPercent !== undefined ? p.GSTPercent : 18;
+    if (gstEl) gstEl.value = p && p.GSTPercent !== undefined ? p.GSTPercent : sysDefaultGst;
     if (inclEl) inclEl.checked = p ? p.IncludeGST !== false : true;
   } else {
     if (costEl) costEl.value = '';
-    if (gstEl) gstEl.value = 18;
+    if (gstEl) gstEl.value = sysDefaultGst;
     if (inclEl) inclEl.checked = true;
   }
 

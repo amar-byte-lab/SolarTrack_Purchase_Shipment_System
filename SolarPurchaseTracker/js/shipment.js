@@ -175,6 +175,7 @@ window.onDbReady = function () {
 function populateDatalists() {
     const vendors = DB.getAll('vendors');
     const items = DB.getAll('items');
+    const products = typeof DB.getAll === 'function' ? (DB.getAll('products') || []) : [];
 
     const vendorListEl = document.getElementById('vendorList');
     if (vendorListEl) {
@@ -182,7 +183,10 @@ function populateDatalists() {
     }
     const itemListEl = document.getElementById('itemList');
     if (itemListEl) {
-        itemListEl.innerHTML = items.map(i => `<option value="${i.ItemName}">`).join('');
+        const itemNames = new Set();
+        items.forEach(i => i.ItemName && itemNames.add(i.ItemName));
+        products.forEach(p => p.ProductName && itemNames.add(p.ProductName));
+        itemListEl.innerHTML = Array.from(itemNames).map(name => `<option value="${name}">`).join('');
     }
 
     const vendorFilter = document.getElementById('fVendor');
@@ -472,7 +476,7 @@ function createMaterialRow(data, defaultGstPercent = null) {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-    <td><input type="text"   class="form-control form-control-sm mat-name border-0 p-0 text-center" value="${data ? (data.ItemName || '') : ''}" placeholder="Item Name" autocomplete="off"></td>
+    <td><input type="text"   class="form-control form-control-sm mat-name border-0 p-0 text-center" list="itemList" value="${data ? (data.ItemName || '') : ''}" placeholder="Item Name" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-qty  border-0 p-0 text-end" min="0" step="any" value="${qty || ''}" autocomplete="off"></td>
     <td><input type="text"   class="form-control form-control-sm mat-unit border-0 p-0 text-center" value="${data ? (data.Unit || '') : ''}" placeholder="Unit" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-rate border-0 p-0 text-end" min="0" step="any" value="${rate || ''}" autocomplete="off"></td>
@@ -700,19 +704,36 @@ function createMaterialRow(data, defaultGstPercent = null) {
     totalEl.addEventListener('input', onTotalInput);
     totalWithoutGstEl.addEventListener('input', onTotalWithoutGstInput);
 
-    nameEl.addEventListener('input', () => {
+    const handleItemSelection = () => {
         const val = nameEl.value.trim();
         if (!val) return;
         const items = DB.getAll('items');
-        const matched = items.find(i => i.ItemName.toLowerCase() === val.toLowerCase());
+        const matched = items.find(i => i.ItemName && i.ItemName.toLowerCase() === val.toLowerCase());
         if (matched) {
             if (matched.Unit) unitEl.value = matched.Unit;
-            if (matched.GSTPercent !== undefined && matched.GSTPercent !== null && matched.GSTPercent !== '') {
-                gstEl.value = matched.GSTPercent;
+            if (matched.GSTPercent !== undefined && matched.GSTPercent !== null && matched.GSTPercent !== '' && !isNaN(Number(matched.GSTPercent))) {
+                gstEl.value = Number(matched.GSTPercent);
+            } else {
+                gstEl.value = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
+            }
+            onGstInput();
+            return;
+        }
+
+        const products = (typeof DB.getAll === 'function') ? (DB.getAll('products') || []) : [];
+        const matchedProd = products.find(p => p.ProductName && p.ProductName.toLowerCase() === val.toLowerCase());
+        if (matchedProd) {
+            if (matchedProd.GSTPercent !== undefined && matchedProd.GSTPercent !== null && matchedProd.GSTPercent !== '' && !isNaN(Number(matchedProd.GSTPercent))) {
+                gstEl.value = Number(matchedProd.GSTPercent);
+            } else {
+                gstEl.value = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
             }
             onGstInput();
         }
-    });
+    };
+
+    nameEl.addEventListener('input', handleItemSelection);
+    nameEl.addEventListener('change', handleItemSelection);
 
     recalcInlineForm();
 }
@@ -724,7 +745,8 @@ window.removeMaterialRowInline = function (btn) {
 };
 
 window.addMaterialRowInline = function () {
-    createMaterialRow(null, 18);
+    const sysDefaultGst = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
+    createMaterialRow(null, sysDefaultGst);
 };
 
 function recalcInlineForm() {
