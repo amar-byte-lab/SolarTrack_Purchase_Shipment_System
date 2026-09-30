@@ -150,7 +150,7 @@ window.onDbReady = function () {
   });
 
   // Table header sorting listeners
-  document.querySelectorAll('th.sortable').forEach(th => {
+  document.querySelectorAll('#installmentsTable th.sortable').forEach(th => {
     th.addEventListener('click', () => {
       const col = th.getAttribute('data-sort');
       if (sortCol === col) {
@@ -493,7 +493,7 @@ function applyCustomStyles() {
 }
 
 function updateSortHeadersUI() {
-  document.querySelectorAll('th.sortable').forEach(th => {
+  document.querySelectorAll('#installmentsTable th.sortable').forEach(th => {
     th.classList.remove('sort-asc', 'sort-desc');
     if (th.getAttribute('data-sort') === sortCol) {
       th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
@@ -1591,12 +1591,100 @@ function renderTopKpis(metrics) {
   container.innerHTML = cardsHtml.join('');
 }
 
+let sumModalSortCol = null;
+let sumModalSortDir = 'desc';
+
+function getSummaryRowValues(r) {
+  let expenses = null;
+  if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+    try {
+      const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+      expenses = JSON.parse(jsonStr);
+    } catch (e) {
+      expenses = null;
+    }
+  }
+
+  const price = Number(r.CommittedPrice) || 0;
+  const total = Number(r.Total) || 0;
+  const custPending = price - total;
+
+  const partnerPrice = (expenses && expenses.partner) ? Number(expenses.partner) : (Number(r.BrokerShare) || price);
+  const vPaid = Number(r.VendorPaid) || 0;
+  const partnerPending = (price - partnerPrice) - vPaid;
+
+  const netMeterAmt = (r.NetMeterPayment != null && r.NetMeterPayment !== '') 
+    ? Number(r.NetMeterPayment) 
+    : (expenses && expenses.net_meter_payment ? Number(expenses.net_meter_payment) : 0);
+
+  let vPrice = 0;
+  if (r.VendorPrice !== undefined && r.VendorPrice !== null && r.VendorPrice !== '') {
+    vPrice = Number(r.VendorPrice) || 0;
+  } else if (expenses) {
+    const mat = Number(expenses.material) || 0;
+    const inst = Number(expenses.install) || 0;
+    const gst = (expenses.gst !== undefined) ? Number(expenses.gst) : (price * ((Number(expenses.gst_pct) || 0) / 100));
+    const trans = Number(expenses.transport) || 0;
+    const oth = Number(expenses.other) || 0;
+    vPrice = mat + inst + gst + trans + oth;
+  }
+
+  const comm = Number(r.Commission) || 0;
+  const profit = partnerPrice - comm - vPrice;
+
+  return {
+    expenses,
+    price,
+    total,
+    custPending,
+    partnerPrice,
+    partnerPending,
+    netMeterAmt,
+    profit
+  };
+}
+
+function updateSummaryModalSortHeadersUI() {
+  document.querySelectorAll('#sumModalCustomerTable th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.getAttribute('data-sort') === sumModalSortCol) {
+      th.classList.add(sumModalSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+
+function initSummaryModalSortListeners() {
+  const modalTable = document.getElementById('sumModalCustomerTable');
+  if (!modalTable || modalTable.dataset.sortBound) return;
+  modalTable.dataset.sortBound = 'true';
+
+  modalTable.querySelectorAll('thead th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.getAttribute('data-sort');
+      if (sumModalSortCol === col) {
+        sumModalSortDir = sumModalSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sumModalSortCol = col;
+        sumModalSortDir = (col === 'Name' || col === 'Partner' || col === 'SlNo') ? 'asc' : 'desc';
+      }
+      updateSummaryModalSortHeadersUI();
+      const currentRows = (window._lastRenderedRows || getInstallmentRows());
+      const currentUser = Auth.getUser();
+      const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+      renderSummaryModalBreakdown(currentRows, isAdm);
+    });
+  });
+}
+
 function renderSummaryModalBreakdown(rows, isAdmin) {
   const tbody = document.querySelector('#sumModalCustomerTable tbody');
   const tfoot = document.querySelector('#sumModalCustomerTable tfoot');
   const rowCountBadge = document.getElementById('sumModalRowCount');
   const searchInput = document.getElementById('fSumModalSearch');
   if (!tbody) return;
+
+  initSummaryModalSortListeners();
+  updateSummaryModalSortHeadersUI();
 
   if (searchInput && !searchInput.dataset.bound) {
     searchInput.dataset.bound = 'true';
@@ -1610,14 +1698,76 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
 
   const searchTerm = searchInput ? (searchInput.value || '').toLowerCase().trim() : '';
   const activeRows = rows.filter(r => Number(r.SlNo) !== Number(editingSlNo));
-  const filteredBreakdown = searchTerm
+  let filteredBreakdown = searchTerm
     ? activeRows.filter(r =>
         String(r.Name || '').toLowerCase().includes(searchTerm) ||
         String(r.BrokerName || '').toLowerCase().includes(searchTerm) ||
         String(r.District || '').toLowerCase().includes(searchTerm) ||
         String(r.SlNo || '').includes(searchTerm)
       )
-    : activeRows;
+    : activeRows.slice();
+
+  if (sumModalSortCol) {
+    filteredBreakdown.sort((a, b) => {
+      const calcA = getSummaryRowValues(a);
+      const calcB = getSummaryRowValues(b);
+      let valA, valB;
+
+      switch (sumModalSortCol) {
+        case 'Collected':
+          valA = calcA.total;
+          valB = calcB.total;
+          break;
+        case 'CustPending':
+          valA = calcA.custPending;
+          valB = calcB.custPending;
+          break;
+        case 'Meter':
+          valA = calcA.netMeterAmt;
+          valB = calcB.netMeterAmt;
+          break;
+        case 'PartnerPending':
+          valA = calcA.partnerPending;
+          valB = calcB.partnerPending;
+          break;
+        case 'Revenue':
+          valA = calcA.price;
+          valB = calcB.price;
+          break;
+        case 'PartnerPrice':
+          valA = calcA.partnerPrice;
+          valB = calcB.partnerPrice;
+          break;
+        case 'NetProfit':
+          valA = calcA.profit;
+          valB = calcB.profit;
+          break;
+        case 'Name':
+          valA = String(a.Name || '').toLowerCase();
+          valB = String(b.Name || '').toLowerCase();
+          break;
+        case 'Partner':
+          valA = String(a.BrokerName || '').toLowerCase();
+          valB = String(b.BrokerName || '').toLowerCase();
+          break;
+        case 'SlNo':
+          valA = Number(a.SlNo) || 0;
+          valB = Number(b.SlNo) || 0;
+          break;
+        default:
+          valA = 0;
+          valB = 0;
+      }
+
+      if (typeof valA === 'string' || typeof valB === 'string') {
+        const cmp = String(valA).localeCompare(String(valB));
+        return sumModalSortDir === 'asc' ? cmp : -cmp;
+      }
+
+      const diff = Number(valA) - Number(valB);
+      return sumModalSortDir === 'asc' ? diff : -diff;
+    });
+  }
 
   if (rowCountBadge) {
     rowCountBadge.textContent = `${filteredBreakdown.length} Records`;
@@ -1629,48 +1779,24 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
   });
 
   if (filteredBreakdown.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '9' : '8'}" class="text-center text-muted py-3">No records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '10' : '9'}" class="text-center text-muted py-3">No records found.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filteredBreakdown.map(r => {
-    // Parse expenses
-    let expenses = null;
-    if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
-      try {
-        const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
-        expenses = JSON.parse(jsonStr);
-      } catch (e) {
-        expenses = null;
-      }
-    }
-
-    const price = Number(r.CommittedPrice) || 0;
-    const total = Number(r.Total) || 0;
-    const custPending = price - total;
-
-    const partnerPrice = (expenses && expenses.partner) ? Number(expenses.partner) : (Number(r.BrokerShare) || price);
-    const vPaid = Number(r.VendorPaid) || 0;
-    const partnerPending = (price - partnerPrice) - vPaid;
-
-    let vPrice = 0;
-    if (r.VendorPrice !== undefined && r.VendorPrice !== null && r.VendorPrice !== '') {
-      vPrice = Number(r.VendorPrice) || 0;
-    } else if (expenses) {
-      const mat = Number(expenses.material) || 0;
-      const inst = Number(expenses.install) || 0;
-      const gst = (expenses.gst !== undefined) ? Number(expenses.gst) : (price * ((Number(expenses.gst_pct) || 0) / 100));
-      const trans = Number(expenses.transport) || 0;
-      const oth = Number(expenses.other) || 0;
-      vPrice = mat + inst + gst + trans + oth;
-    }
-
-    const comm = Number(r.Commission) || 0;
-    const profit = partnerPrice - comm - vPrice;
+    const calc = getSummaryRowValues(r);
+    const price = calc.price;
+    const total = calc.total;
+    const custPending = calc.custPending;
+    const partnerPrice = calc.partnerPrice;
+    const partnerPending = calc.partnerPending;
+    const netMeterAmt = calc.netMeterAmt;
+    const profit = calc.profit;
 
     const custPendingClass = Math.abs(custPending) < 0.01 ? 'text-secondary' : (custPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
     const partnerPendingClass = Math.abs(partnerPending) < 0.01 ? 'text-secondary' : (partnerPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
     const profitClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+    const meterColorClass = netMeterAmt > 0 ? 'text-primary fw-semibold' : 'text-secondary';
 
     return `
       <tr>
@@ -1681,6 +1807,7 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
         <td class="text-end font-monospace">₹${Math.round(price).toLocaleString('en-IN')}</td>
         <td class="text-end font-monospace text-success fw-semibold">₹${Math.round(total).toLocaleString('en-IN')}</td>
         <td class="text-end font-monospace ${custPendingClass}">₹${Math.round(custPending).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace ${meterColorClass}">₹${Math.round(netMeterAmt).toLocaleString('en-IN')}</td>
         <td>
           <div class="text-dark text-truncate" style="max-width: 160px;" title="${r.BrokerName || ''}">${r.BrokerName || '—'}</div>
         </td>

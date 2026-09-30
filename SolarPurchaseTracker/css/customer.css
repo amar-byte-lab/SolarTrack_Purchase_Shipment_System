@@ -110,31 +110,41 @@
   opacity: 0.8;
 }
 
-.table-installments th.sortable {
+.table-installments th.sortable,
+#sumModalCustomerTable th.sortable {
   cursor: pointer;
   user-select: none;
   position: sticky !important;
   top: 0;
-  z-index: 12 !important;
-  padding-right: 22px !important;
+  padding-right: 18px !important;
 }
-.table-installments th.sortable:hover {
+.table-installments th.sortable {
+  z-index: 12 !important;
+}
+#sumModalCustomerTable th.sortable {
+  z-index: 3 !important;
+}
+.table-installments th.sortable:hover,
+#sumModalCustomerTable th.sortable:hover {
   background-color: #f1f5f9 !important;
 }
-.table-installments th.sortable::after {
+.table-installments th.sortable::after,
+#sumModalCustomerTable th.sortable::after {
   content: ' ↕';
   font-size: 0.75em;
   color: #94a3b8;
   position: absolute;
-  right: 6px;
+  right: 5px;
   top: 50%;
   transform: translateY(-50%);
 }
-.table-installments th.sort-asc::after {
+.table-installments th.sort-asc::after,
+#sumModalCustomerTable th.sort-asc::after {
   content: ' ▲';
   color: var(--st-primary);
 }
-.table-installments th.sort-desc::after {
+.table-installments th.sort-desc::after,
+#sumModalCustomerTable th.sort-desc::after {
   content: ' ▼';
   color: var(--st-primary);
 }
