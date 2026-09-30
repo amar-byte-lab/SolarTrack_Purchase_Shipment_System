@@ -91,7 +91,10 @@
 }
 
 .table-installments tr.comm-completed-row td {
-  background-color: #ffffff !important;
+  background-color: #f1f5f9 !important;
+}
+.table-installments tr.comm-completed-row:hover td {
+  background-color: #e2e8f0 !important;
 }
 
 /* Draggable Column Resizing */

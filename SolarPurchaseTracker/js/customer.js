@@ -1028,10 +1028,12 @@ function renderList() {
     let bVal = b[sortCol];
 
     if (sortCol === 'Delay') {
+      const aCommissioned = Boolean(a.CommissioningDate && String(a.CommissioningDate).trim() !== '');
+      const bCommissioned = Boolean(b.CommissioningDate && String(b.CommissioningDate).trim() !== '');
       const aDays = getRawDelayDays(a.LoginDate);
       const bDays = getRawDelayDays(b.LoginDate);
-      const aValid = Boolean(a.LoginDate && aDays !== -999999);
-      const bValid = Boolean(b.LoginDate && bDays !== -999999);
+      const aValid = Boolean(!aCommissioned && a.LoginDate && aDays !== -999999);
+      const bValid = Boolean(!bCommissioned && b.LoginDate && bDays !== -999999);
 
       if (!aValid && !bValid) return 0;
       if (!aValid) return 1;
@@ -1306,7 +1308,7 @@ function renderList() {
                 <a href="#" class="erp-partner-name" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
                   ${r.BrokerName || '—'}
                 </a>
-                ${r.LoginDate ? getDelayBadgeHtml(r.LoginDate) : ''}
+                ${(!isCommissioned && r.LoginDate) ? getDelayBadgeHtml(r.LoginDate) : ''}
               </div>
               <div class="erp-meta-row">
                 <span class="erp-price-text">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
