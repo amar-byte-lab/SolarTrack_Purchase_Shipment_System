@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" class="installments-page manage-work-page">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Work — SolarTrack</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/customer.css">
+<link rel="stylesheet" href="css/manage-work.css">
+<script src="js/auth.js"></script>
+</head>
+<body class="installments-page manage-work-page">
+
+<div class="app-shell">
+  <div id="sidebar"></div>
+
+  <div class="main-content">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="page-body">
+      <!-- Search & Filters Toolbar (Exact same as Customer page) -->
+      <div class="st-card erp-toolbar mb-2.5 no-print py-2 px-3">
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+          <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 460px;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input type="text" class="form-control border-start-0 ps-1" id="fSearch" placeholder="Search customer, mobile, address, brand..." style="font-size:0.83rem;">
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+            <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" type="button" onclick="openWorkSummaryModal()" id="btnOpenSummaryModal" title="View Stage Progress & Metrics">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Summary</span>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span>Filters</span>
+              <span class="text-muted fs-8" id="searchCollapseIndicator">▾</span>
+            </button>
+            <button class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-2 fs-8" id="btnClearFilters">Clear</button>
+            <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center" style="font-size: 0.75rem;"></div>
+          </div>
+        </div>
+        <div class="collapse border-top mt-2 pt-2" id="searchCollapse">
+          <div class="row g-2 align-items-end pt-1">
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">Partner</label>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="padding: 5px 8px;">
+                  All Partners
+                </button>
+                <div class="dropdown-menu p-3" id="partnerMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.82rem;">
+                  <!-- Checkboxes injected by js -->
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">Date Type</label>
+              <select class="form-select form-select-sm fs-8" id="fDateType">
+                <option value="LoginDate" selected>Login Date</option>
+                <option value="AgreementDate">Agreement Date</option>
+                <option value="MaterialDispatchedDate">Dispatched Date</option>
+                <option value="InstallationDate">Installation Date</option>
+                <option value="NetMeterDate">NetMeter Date</option>
+                <option value="InspectionDate">Inspection Date</option>
+                <option value="MeterConnectedDate">Connection Date</option>
+                <option value="CommissioningDate">Subsidy Date</option>
+              </select>
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">From Date</label>
+              <input type="date" class="form-control form-control-sm fs-8" id="fLoginFrom">
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="form-label fs-8 text-secondary fw-medium mb-1">To Date</label>
+              <input type="date" class="form-control form-control-sm fs-8" id="fLoginTo">
+            </div>
+            <div class="col-md-auto col-6 d-flex align-items-center mb-1">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="chkShowDeactive">
+                <label class="form-check-label fs-8 text-secondary" for="chkShowDeactive">Show Deactive</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Progress & Workflow Table -->
+      <div class="st-card st-card-table-container">
+        <div class="table-responsive-main" style="max-height: calc(100vh - 170px); overflow-y: auto;">
+          <table class="table table-hover table-manage-work mb-0" id="manageWorkTable">
+            <thead>
+              <tr>
+                <th class="th-customer sortable" data-sort="Name" id="thCustomer">Customer</th>
+                <th class="th-stage sortable" data-sort="AgreementDate">Aggreement</th>
+                <th class="th-stage sortable" data-sort="MaterialDispatchedDate">Dispatched</th>
+                <th class="th-stage sortable" data-sort="InstallationDate">Installation</th>
+                <th class="th-stage th-netmeter sortable" data-sort="NetMeterDate">NetMeter</th>
+                <th class="th-stage sortable" data-sort="InspectionDate">Inspection</th>
+                <th class="th-stage sortable" data-sort="MeterConnectedDate">Connection</th>
+                <th class="th-stage sortable" data-sort="CommissioningDate">Subsidy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Injected dynamically by manage-work.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ Work Progress & Breakdown Modal ═══════════════════════════════════ -->
+<div class="modal fade" id="workSummaryModal" tabindex="-1" aria-labelledby="workSummaryModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="workSummaryModalTitle">Work Progress & Stage Tracking Summary</h6>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 d-flex flex-column gap-3">
+        <!-- Stage Completion KPI Grid -->
+        <div class="mw-kpi-grid" id="workKpiGrid">
+          <!-- Injected dynamically by JS -->
+        </div>
+
+        <!-- Customer Workflow Progress Breakdown -->
+        <div class="card border rounded-1 bg-white">
+          <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-nowrap gap-2">
+            <span class="fw-semibold text-dark fs-8 text-uppercase" style="letter-spacing: 0.04em;">Customer Progress Overview</span>
+            <div style="max-width: 220px; min-width: 130px;">
+              <input type="text" class="form-control form-control-sm fs-8 py-0.5 px-2 bg-white w-100" id="fSumModalSearch" placeholder="Search in popup...">
+            </div>
+          </div>
+          <div class="table-responsive p-0" style="max-height: 360px; overflow-y: auto;">
+            <table class="table table-sm table-hover table-striped align-middle mb-0" id="workSummaryTable" style="font-size: 0.8rem;">
+              <thead class="table-light sticky-top" style="z-index: 2;">
+                <tr>
+                  <th class="text-center" style="width: 40px;">Sl</th>
+                  <th>Customer</th>
+                  <th>Partner</th>
+                  <th class="text-center">Agreement</th>
+                  <th class="text-center">Dispatched</th>
+                  <th class="text-center">Installation</th>
+                  <th class="text-center">NetMeter</th>
+                  <th class="text-center">Inspection</th>
+                  <th class="text-center">Connection</th>
+                  <th class="text-center">Subsidy</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- ══ Customer Details Popup Modal ══════════════════════════════════════ -->
+<div class="modal fade" id="customerDetailsModal" tabindex="-1" aria-labelledby="customerDetailsModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border shadow-sm rounded-2">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary fs-7" id="cdModalSlNo">#1</span>
+          <h6 class="modal-title fw-bold fs-6 text-dark mb-0" id="cdModalTitle">Customer Details</h6>
+          <span class="badge bg-success ms-1" id="cdModalStatus">Active</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 d-flex flex-column gap-3" id="cdModalBody">
+        <!-- Injected dynamically by JS -->
+      </div>
+      <div class="modal-footer bg-light py-2 px-3">
+        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/bootstrap.bundle.min.js" defer></script>
+<script src="assets/js/xlsx.full.min.js" defer></script>
+<script src="js/db.js" defer></script>
+<script src="js/calc.js" defer></script>
+<script src="js/validation.js" defer></script>
+<script src="js/utils.js" defer></script>
+<script src="js/ui.js?v=1.0.2" defer></script>
+<script src="js/connect.js" defer></script>
+<script src="js/manage-work.js?v=1.0.0" defer></script>
+</body>
+</html>

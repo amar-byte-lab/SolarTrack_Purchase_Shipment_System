@@ -8,6 +8,7 @@ const UI = (() => {
   const NAV_ITEMS = [
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
+    { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
     { href: 'work-note.html',       icon: 'worknote',   label: 'Note' },
     { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
     { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement' },
@@ -18,6 +19,7 @@ const UI = (() => {
   ];
 
   const ICONS = {
+    briefcase: `<rect x="2" y="7" width="20" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
     calculator: `<rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor" stroke-width="1.75" fill="none"/><line x1="8" y1="6" x2="16" y2="6" stroke="currentColor" stroke-width="1.75"/><line x1="16" y1="14" x2="16" y2="18" stroke="currentColor" stroke-width="1.75"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
     grid: `<rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
     truck: `<rect x="1" y="3" width="14" height="13" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8" stroke="currentColor" stroke-width="1.75" fill="none"/><circle cx="5.5" cy="18.5" r="2.5" stroke="currentColor" stroke-width="1.75" fill="none"/><circle cx="17.5" cy="18.5" r="2.5" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
@@ -84,9 +86,9 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : [];
 

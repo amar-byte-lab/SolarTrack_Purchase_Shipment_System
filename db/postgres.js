@@ -53,6 +53,15 @@ async function getTable(tableName) {
           if (lower === 'createdat') normalized.CreatedAt = row[k];
           if (lower === 'updatedat') normalized.UpdatedAt = row[k];
         });
+        if (tableName === 'installments' && normalized.BrokerNumber && normalized.BrokerNumber.includes('|work:')) {
+          try {
+            const workPart = normalized.BrokerNumber.split('|work:')[1].split('|')[0];
+            const workData = JSON.parse(workPart);
+            Object.assign(normalized, workData);
+          } catch (e) {
+            console.error('[Postgres] Error parsing work metadata:', e);
+          }
+        }
         return normalized;
       });
     }

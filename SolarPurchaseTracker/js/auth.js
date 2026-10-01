@@ -159,13 +159,13 @@ const Auth = (() => {
     
     if (!isPowerUser) {
       if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        const allowed = ['customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+        const allowed = ['customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'quotation.html';
           return;
         }
       } else {
-        const allowed = ['quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
+        const allowed = ['manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'quotation.html';
           return;

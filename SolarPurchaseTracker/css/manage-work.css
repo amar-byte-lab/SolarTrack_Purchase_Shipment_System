@@ -1,0 +1,295 @@
+/* =========================================================================
+   manage-work.css — Modern Workflow & Progress Management Interface
+   ========================================================================= */
+
+.manage-work-page {
+  background-color: #f8fafc;
+}
+
+.table-manage-work {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 0.82rem;
+  width: 100%;
+  border: 1px solid var(--st-border) !important;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.table-manage-work th {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-right: 1px solid #e2e8f0 !important;
+  padding: 8px 10px;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.table-manage-work th.th-customer {
+  text-align: left;
+  min-width: 200px;
+}
+
+.table-manage-work th.th-stage {
+  min-width: 175px;
+}
+
+.table-manage-work th.th-netmeter {
+  min-width: 285px;
+}
+
+.table-manage-work td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-right: 1px solid #f1f5f9 !important;
+  vertical-align: middle;
+  padding: 5px 8px;
+  background: #ffffff;
+  white-space: nowrap;
+  height: 42px;
+  transition: background-color 0.15s ease;
+}
+
+.table-manage-work tr:hover td {
+  background-color: #f8fafc;
+}
+
+.table-manage-work tr.stage-complete-all td {
+  background-color: #f0fdf4 !important;
+}
+
+/* ══ Customer Cell (Single Row with Clickable Name for Modal) ═════════ */
+.mw-customer-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.mw-sl-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: #e2e8f0;
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mw-customer-btn {
+  font-weight: 600;
+  color: #1d4ed8;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.84rem;
+  text-align: left;
+  text-decoration: underline text-decoration-color 0.2s;
+  text-underline-offset: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mw-customer-btn:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* ══ Workflow Stage Cells (Single Inline Row) ═════════════════════════ */
+.mw-stage-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.mw-netmeter-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* Compact Modern Switch */
+.mw-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.mw-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.mw-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .2s ease;
+  border-radius: 20px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.mw-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .2s ease;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+.mw-switch input:checked + .mw-slider {
+  background-color: #10b981;
+}
+
+.mw-switch input:focus + .mw-slider {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.mw-switch input:checked + .mw-slider:before {
+  transform: translateX(16px);
+}
+
+/* Datepicker & Payment Input (Inline) */
+.mw-date-input {
+  width: 118px !important;
+  font-size: 0.76rem !important;
+  padding: 2px 5px !important;
+  height: 28px !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  text-align: center;
+  color: #0f172a;
+}
+
+.mw-date-input:focus {
+  border-color: #3b82f6 !important;
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+.mw-netmeter-pay-group {
+  width: 108px;
+}
+
+.mw-netmeter-pay-group .input-group-text {
+  padding: 2px 5px;
+  font-size: 0.72rem;
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+  height: 28px;
+}
+
+.mw-netmeter-pay-group input {
+  font-size: 0.76rem !important;
+  padding: 2px 5px !important;
+  height: 28px !important;
+  border-color: #cbd5e1 !important;
+  text-align: right;
+}
+
+/* ══ Customer Details Modal Styles ════════════════════════════════════ */
+.cd-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.cd-info-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cd-card-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 4px;
+}
+
+.cd-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.81rem;
+}
+
+.cd-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.cd-val {
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Stage KPI Counter Cards in Summary */
+.mw-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.mw-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.mw-kpi-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mw-kpi-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}

@@ -51,7 +51,12 @@ CREATE TABLE IF NOT EXISTS installments (
   "PinCode" TEXT,
   "State" TEXT,
   "NetMeterPayment" NUMERIC,
-  "NetMeterPaid" BOOLEAN DEFAULT false
+  "NetMeterPaid" BOOLEAN DEFAULT false,
+  "AgreementDate" TEXT,
+  "MaterialDispatchedDate" TEXT,
+  "NetMeterDate" TEXT,
+  "InspectionDate" TEXT,
+  "MeterConnectedDate" TEXT
 );
 
 -- Migrations to add new columns if table exists
@@ -60,6 +65,11 @@ ALTER TABLE installments ADD COLUMN IF NOT EXISTS "PinCode" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "State" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "NetMeterPayment" NUMERIC;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "NetMeterPaid" BOOLEAN DEFAULT false;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "AgreementDate" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "MaterialDispatchedDate" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "NetMeterDate" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "InspectionDate" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "MeterConnectedDate" TEXT;
 
 CREATE TABLE IF NOT EXISTS installment_txns (
   "TxnID" TEXT PRIMARY KEY,

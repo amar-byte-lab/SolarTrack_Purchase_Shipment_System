@@ -177,31 +177,54 @@ const DB = (() => {
         return !!cache.shipments;
     }
 
+    function normalizeInstallmentRow(r) {
+        if (!r) return r;
+        if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
+            try {
+                const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
+                const workData = JSON.parse(workPart);
+                Object.keys(workData).forEach(k => {
+                    if (r[k] === undefined || r[k] === null || r[k] === '') {
+                        r[k] = workData[k];
+                    }
+                });
+            } catch (e) { }
+        }
+        return r;
+    }
+
     function getAll(key) {
         let rows = cache[key] ? [...cache[key]] : [];
+        if (key === 'installments') {
+            rows = rows.map(r => normalizeInstallmentRow({ ...r }));
+        }
         if (typeof Auth !== 'undefined') {
             const currentUser = Auth.getUser();
-            if (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associates')) {
+            const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || String(currentUser.userid || '').toLowerCase() === 'amar');
+            if (currentUser && !isPowerUser) {
                 const partnerNames = [
-                    currentUser.username.toLowerCase().trim(),
-                    currentUser.userid.toLowerCase().trim()
-                ].concat(
-                    (currentUser.username && currentUser.username.includes(','))
-                        ? currentUser.username.split(',').map(s => s.toLowerCase().trim())
-                        : []
-                );
+                    (currentUser.username || '').toLowerCase().trim(),
+                    (currentUser.userid || '').toLowerCase().trim()
+                ].filter(Boolean);
+                if (currentUser.username && currentUser.username.includes(',')) {
+                    currentUser.username.split(',').forEach(s => partnerNames.push(s.toLowerCase().trim()));
+                }
 
                 if (key === 'installments') {
                     rows = rows.filter(r => {
                         const broker = (r.BrokerName || '').toLowerCase().trim();
-                        return partnerNames.includes(broker);
+                        if (partnerNames.includes(broker)) return true;
+                        if (r.BrokerNumber && r.BrokerNumber.includes(`|creator:${currentUser.userid}`)) return true;
+                        return false;
                     });
                 } else if (['installment_txns', 'commission_txns', 'installment_remarks'].includes(key)) {
                     const allowedSlNos = new Set(
                         (cache['installments'] || [])
                             .filter(r => {
                                 const broker = (r.BrokerName || '').toLowerCase().trim();
-                                return partnerNames.includes(broker);
+                                if (partnerNames.includes(broker)) return true;
+                                if (r.BrokerNumber && r.BrokerNumber.includes(`|creator:${currentUser.userid}`)) return true;
+                                return false;
                             })
                             .map(r => Number(r.SlNo))
                     );
