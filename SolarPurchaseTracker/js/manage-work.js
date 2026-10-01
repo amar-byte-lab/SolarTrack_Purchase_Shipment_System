@@ -373,8 +373,14 @@ function renderList() {
     rows = rows.filter(r => r[dateType] && r[dateType] <= loginTo);
   }
 
-  // Sort rows
+  // Sort rows: Customers with Subsidy ON (CommissioningDate) are always placed at the bottom
   rows.sort((a, b) => {
+    const aSubsidy = Boolean(a.CommissioningDate);
+    const bSubsidy = Boolean(b.CommissioningDate);
+    if (aSubsidy !== bSubsidy) {
+      return aSubsidy ? 1 : -1; // Subsidy ON always placed last
+    }
+
     let aVal = a[sortCol];
     let bVal = b[sortCol];
 
@@ -435,8 +441,8 @@ function renderList() {
 
     const isAllComplete = hasAgreement && hasDispatched && hasInstallation && isNetMeterPaid && hasInspection && hasMeterConnected && hasSubsidy;
 
-    // Delay Badge for customer
-    const delayInfo = getDelayInfo(r.LoginDate);
+    // Delay Badge for customer (hidden if Subsidy is ON)
+    const delayInfo = !hasSubsidy ? getDelayInfo(r.LoginDate) : null;
     const delayBadgeHtml = delayInfo
       ? `<span class="badge erp-delay-badge delay-${delayInfo.colorType} fs-8" title="Login: ${r.LoginDate || ''} (${delayInfo.totalDays} days)">(${delayInfo.text})</span>`
       : '';
@@ -575,19 +581,28 @@ window.openCustomerDetailsModal = function (slNo) {
     statusEl.className = `badge ${r.Status === 'Deactive' ? 'bg-danger' : 'bg-success'} ms-1`;
   }
 
-  const delayInfo = getDelayInfo(r.LoginDate);
-  const delayStr = delayInfo ? `${delayInfo.text} (${delayInfo.totalDays} days ago)` : '―';
+  const hasSubsidy = Boolean(r.CommissioningDate);
+  const delayInfo = !hasSubsidy ? getDelayInfo(r.LoginDate) : null;
+  const delayStr = delayInfo ? `${delayInfo.text} (${delayInfo.totalDays} days ago)` : (hasSubsidy ? 'Completed' : '―');
 
-  // Format stages status list
+  // Stage Stepper calculation across columns
   const stageBadges = [
     { label: 'Agreement', date: r.AgreementDate },
     { label: 'Dispatched', date: r.MaterialDispatchedDate },
     { label: 'Installation', date: r.InstallationDate },
-    { label: 'NetMeter', date: r.NetMeterDate || ((r.NetMeterPaid) ? 'Done' : '') },
+    { label: 'NetMeter', date: r.NetMeterDate || ((r.NetMeterPaid) ? (r.InstallationDate || 'Paid') : '') },
     { label: 'Inspection', date: r.InspectionDate },
     { label: 'Connection', date: r.MeterConnectedDate },
     { label: 'Subsidy', date: r.CommissioningDate }
   ];
+
+  let doneCount = stageBadges.filter(s => Boolean(s.date)).length;
+  let trackPct = 0;
+  if (doneCount > 1) {
+    trackPct = Math.round(((doneCount - 1) / (stageBadges.length - 1)) * 100);
+  } else if (doneCount === 1) {
+    trackPct = 10;
+  }
 
   const modalBody = document.getElementById('cdModalBody');
   if (modalBody) {
@@ -614,21 +629,26 @@ window.openCustomerDetailsModal = function (slNo) {
         </div>
       </div>
 
-      <!-- 3. Workflow Progress Tracker -->
+      <!-- 3. Workflow Stage Progress Stepper (Timeline across Column Names) -->
       <div class="card border rounded-1 bg-white p-3">
-        <div class="fw-bold text-dark fs-7 mb-2 text-uppercase" style="letter-spacing: 0.03em;">Progress & Milestones</div>
-        <div class="d-flex flex-wrap gap-2">
-          <div class="badge ${r.LoginDate ? 'bg-light text-dark border' : 'bg-light text-muted border'} p-2 d-flex flex-column align-items-start gap-1">
-            <span class="fw-semibold fs-8">Login Date</span>
-            <span class="fs-8">${r.LoginDate || '―'}</span>
-            <span class="text-secondary fs-8">${delayStr}</span>
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+          <div class="fw-bold text-dark fs-7 text-uppercase" style="letter-spacing: 0.03em;">Stage Milestone Progression</div>
+          <span class="fs-8 text-secondary">Login: <strong>${r.LoginDate || '―'}</strong> ${delayStr !== '―' ? `(${delayStr})` : ''}</span>
+        </div>
+        <div class="position-relative mw-stage-stepper-container mt-1">
+          <div class="mw-stepper-track-wrap">
+            <div class="mw-stepper-track-fill" style="width: ${trackPct}%;"></div>
           </div>
-          ${stageBadges.map(st => `
-            <div class="badge ${st.date ? 'bg-success-subtle text-success-emphasis border border-success-subtle' : 'bg-light text-muted border'} p-2 d-flex flex-column align-items-start gap-1">
-              <span class="fw-semibold fs-8">${st.date ? '✓' : '○'} ${st.label}</span>
-              <span class="fs-8">${st.date || 'Pending'}</span>
-            </div>
-          `).join('')}
+          ${stageBadges.map((st, i) => {
+            const isDone = Boolean(st.date);
+            return `
+              <div class="mw-stepper-step ${isDone ? 'completed' : ''}">
+                <div class="mw-stepper-circle">${isDone ? '✓' : (i + 1)}</div>
+                <div class="mw-stepper-col-name">${st.label}</div>
+                <div class="mw-stepper-date ${isDone ? 'text-success fw-bold' : 'text-muted'}">${st.date || 'Pending'}</div>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -844,50 +864,184 @@ window.openWorkSummaryModal = function () {
   let connectedCount = 0;
   let subsidyCount = 0;
 
+  let latestDates = {
+    AgreementDate: '',
+    MaterialDispatchedDate: '',
+    InstallationDate: '',
+    NetMeterDate: '',
+    InspectionDate: '',
+    MeterConnectedDate: '',
+    CommissioningDate: ''
+  };
+
   rows.forEach(r => {
-    if (r.AgreementDate) agreementCount++;
-    if (r.MaterialDispatchedDate) dispatchedCount++;
-    if (r.InstallationDate) installedCount++;
-    if (r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate) netMeterCount++;
-    if (r.InspectionDate) inspectionCount++;
-    if (r.MeterConnectedDate) connectedCount++;
-    if (r.CommissioningDate) subsidyCount++;
+    if (r.AgreementDate) {
+      agreementCount++;
+      if (!latestDates.AgreementDate || r.AgreementDate > latestDates.AgreementDate) latestDates.AgreementDate = r.AgreementDate;
+    }
+    if (r.MaterialDispatchedDate) {
+      dispatchedCount++;
+      if (!latestDates.MaterialDispatchedDate || r.MaterialDispatchedDate > latestDates.MaterialDispatchedDate) latestDates.MaterialDispatchedDate = r.MaterialDispatchedDate;
+    }
+    if (r.InstallationDate) {
+      installedCount++;
+      if (!latestDates.InstallationDate || r.InstallationDate > latestDates.InstallationDate) latestDates.InstallationDate = r.InstallationDate;
+    }
+    const nmDate = r.NetMeterDate || (r.NetMeterPaid ? r.InstallationDate : '');
+    if (r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || nmDate) {
+      netMeterCount++;
+      if (nmDate && (!latestDates.NetMeterDate || nmDate > latestDates.NetMeterDate)) latestDates.NetMeterDate = nmDate;
+    }
+    if (r.InspectionDate) {
+      inspectionCount++;
+      if (!latestDates.InspectionDate || r.InspectionDate > latestDates.InspectionDate) latestDates.InspectionDate = r.InspectionDate;
+    }
+    if (r.MeterConnectedDate) {
+      connectedCount++;
+      if (!latestDates.MeterConnectedDate || r.MeterConnectedDate > latestDates.MeterConnectedDate) latestDates.MeterConnectedDate = r.MeterConnectedDate;
+    }
+    if (r.CommissioningDate) {
+      subsidyCount++;
+      if (!latestDates.CommissioningDate || r.CommissioningDate > latestDates.CommissioningDate) latestDates.CommissioningDate = r.CommissioningDate;
+    }
   });
+
+  const getPct = (cnt) => (total > 0 ? Math.round((cnt / total) * 100) : 0);
+
+  // Stage sequence across the column names
+  const stagesList = [
+    { key: 'AgreementDate', name: 'Agreement', count: agreementCount, pct: getPct(agreementCount), date: latestDates.AgreementDate, color: '#3b82f6' },
+    { key: 'MaterialDispatchedDate', name: 'Dispatched', count: dispatchedCount, pct: getPct(dispatchedCount), date: latestDates.MaterialDispatchedDate, color: '#06b6d4' },
+    { key: 'InstallationDate', name: 'Installation', count: installedCount, pct: getPct(installedCount), date: latestDates.InstallationDate, color: '#f59e0b' },
+    { key: 'NetMeter', name: 'NetMeter', count: netMeterCount, pct: getPct(netMeterCount), date: latestDates.NetMeterDate, color: '#8b5cf6' },
+    { key: 'InspectionDate', name: 'Inspection', count: inspectionCount, pct: getPct(inspectionCount), date: latestDates.InspectionDate, color: '#64748b' },
+    { key: 'MeterConnectedDate', name: 'Connection', count: connectedCount, pct: getPct(connectedCount), date: latestDates.MeterConnectedDate, color: '#2563eb' },
+    { key: 'CommissioningDate', name: 'Subsidy', count: subsidyCount, pct: getPct(subsidyCount), date: latestDates.CommissioningDate, color: '#10b981' }
+  ];
+
+  const avgCompletionPct = Math.round((stagesList.reduce((acc, s) => acc + s.pct, 0) / (stagesList.length * 100)) * 100);
 
   const kpiGrid = document.getElementById('workKpiGrid');
   if (kpiGrid) {
     kpiGrid.innerHTML = `
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">Total Customers</span>
-        <span class="mw-kpi-value text-dark">${total}</span>
+      <!-- Total Customers -->
+      <div class="mw-kpi-card border-start border-3 border-dark">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Total Customers</span>
+          <span class="badge bg-light text-dark border fs-9">Active</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value text-dark">${total}</span>
+          <span class="mw-kpi-subtext">100% in scope</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar bg-dark" role="progressbar" style="width: 100%;"></div>
+        </div>
       </div>
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">Agreement</span>
-        <span class="mw-kpi-value text-primary">${agreementCount} <span class="fs-8 text-muted fw-normal">(${total ? Math.round(agreementCount/total*100) : 0}%)</span></span>
+
+      <!-- Agreement -->
+      <div class="mw-kpi-card border-start border-3 border-primary">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Agreement</span>
+          <span class="mw-kpi-pct text-primary">${getPct(agreementCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value text-primary">${agreementCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar bg-primary" role="progressbar" style="width: ${getPct(agreementCount)}%;"></div>
+        </div>
       </div>
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">Dispatched</span>
-        <span class="mw-kpi-value text-info">${dispatchedCount} <span class="fs-8 text-muted fw-normal">(${total ? Math.round(dispatchedCount/total*100) : 0}%)</span></span>
+
+      <!-- Dispatched -->
+      <div class="mw-kpi-card border-start border-3 border-info">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Dispatched</span>
+          <span class="mw-kpi-pct text-info">${getPct(dispatchedCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value text-info">${dispatchedCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar bg-info" role="progressbar" style="width: ${getPct(dispatchedCount)}%;"></div>
+        </div>
       </div>
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">Installation</span>
-        <span class="mw-kpi-value text-warning">${installedCount} <span class="fs-8 text-muted fw-normal">(${total ? Math.round(installedCount/total*100) : 0}%)</span></span>
+
+      <!-- Installation -->
+      <div class="mw-kpi-card border-start border-3 border-warning">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Installation</span>
+          <span class="mw-kpi-pct text-warning">${getPct(installedCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value text-warning">${installedCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar bg-warning" role="progressbar" style="width: ${getPct(installedCount)}%;"></div>
+        </div>
       </div>
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">NetMeter</span>
-        <span class="mw-kpi-value text-purple">${netMeterCount} <span class="fs-8 text-muted fw-normal">(${total ? Math.round(netMeterCount/total*100) : 0}%)</span></span>
+
+      <!-- NetMeter -->
+      <div class="mw-kpi-card border-start border-3" style="border-color: #8b5cf6 !important;">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">NetMeter</span>
+          <span class="mw-kpi-pct" style="color: #8b5cf6;">${getPct(netMeterCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value" style="color: #8b5cf6;">${netMeterCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar" role="progressbar" style="background-color: #8b5cf6; width: ${getPct(netMeterCount)}%;"></div>
+        </div>
       </div>
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">Inspection</span>
-        <span class="mw-kpi-value text-secondary">${inspectionCount} <span class="fs-8 text-muted fw-normal">(${total ? Math.round(inspectionCount/total*100) : 0}%)</span></span>
+
+      <!-- Inspection -->
+      <div class="mw-kpi-card border-start border-3 border-secondary">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Inspection</span>
+          <span class="mw-kpi-pct text-secondary">${getPct(inspectionCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value text-secondary">${inspectionCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar bg-secondary" role="progressbar" style="width: ${getPct(inspectionCount)}%;"></div>
+        </div>
       </div>
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">Connection</span>
-        <span class="mw-kpi-value text-primary">${connectedCount} <span class="fs-8 text-muted fw-normal">(${total ? Math.round(connectedCount/total*100) : 0}%)</span></span>
+
+      <!-- Connection -->
+      <div class="mw-kpi-card border-start border-3 border-primary">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Connection</span>
+          <span class="mw-kpi-pct text-primary">${getPct(connectedCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value text-primary">${connectedCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar bg-primary" role="progressbar" style="width: ${getPct(connectedCount)}%;"></div>
+        </div>
       </div>
-      <div class="mw-kpi-card">
-        <span class="mw-kpi-title">Subsidy</span>
-        <span class="mw-kpi-value text-success">${subsidyCount} <span class="fs-8 text-muted fw-normal">(${total ? Math.round(subsidyCount/total*100) : 0}%)</span></span>
+
+      <!-- Subsidy (Final Milestone) -->
+      <div class="mw-kpi-card border-start border-3 border-success">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Subsidy</span>
+          <span class="mw-kpi-pct text-success">${getPct(subsidyCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value text-success">${subsidyCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar bg-success" role="progressbar" style="width: ${getPct(subsidyCount)}%;"></div>
+        </div>
       </div>
     `;
   }
@@ -903,26 +1057,64 @@ window.openWorkSummaryModal = function () {
       );
     });
 
+    const countBadge = document.getElementById('sumModalRowCount');
+    if (countBadge) {
+      countBadge.textContent = `${filtered.length} of ${rows.length} customers`;
+    }
+
     const tbody = document.querySelector('#workSummaryTable tbody');
     if (tbody) {
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No records matching popup search.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted fs-8">No records matching search.</td></tr>`;
         return;
       }
-      tbody.innerHTML = filtered.map((r, i) => `
-        <tr>
-          <td class="text-center text-muted fs-8">${r.SlNo || (i + 1)}</td>
-          <td><span class="fw-semibold text-dark">${r.Name || '-'}</span></td>
-          <td><span class="text-secondary fs-8">${r.BrokerName || '-'}</span></td>
-          <td class="text-center">${r.AgreementDate ? `<span class="badge bg-success-subtle text-success border border-success-subtle">✓ ${r.AgreementDate}</span>` : '<span class="text-muted">―</span>'}</td>
-          <td class="text-center">${r.MaterialDispatchedDate ? `<span class="badge bg-info-subtle text-info border border-info-subtle">✓ ${r.MaterialDispatchedDate}</span>` : '<span class="text-muted">―</span>'}</td>
-          <td class="text-center">${r.InstallationDate ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">✓ ${r.InstallationDate}</span>` : '<span class="text-muted">―</span>'}</td>
-          <td class="text-center">${(r.NetMeterPaid || r.NetMeterDate) ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle">✓ ${r.NetMeterDate || 'Paid'}</span>` : '<span class="text-muted">―</span>'}</td>
-          <td class="text-center">${r.InspectionDate ? `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">✓ ${r.InspectionDate}</span>` : '<span class="text-muted">―</span>'}</td>
-          <td class="text-center">${r.MeterConnectedDate ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle">✓ ${r.MeterConnectedDate}</span>` : '<span class="text-muted">―</span>'}</td>
-          <td class="text-center">${r.CommissioningDate ? `<span class="badge bg-success-subtle text-success border border-success-subtle">✓ ${r.CommissioningDate}</span>` : '<span class="text-muted">―</span>'}</td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = filtered.map((r, i) => {
+        const stages = [
+          { num: 1, date: r.AgreementDate || '', styleClass: 'node-style-1' },
+          { num: 2, date: r.MaterialDispatchedDate || '', styleClass: 'node-style-2' },
+          { num: 3, date: r.InstallationDate || '', styleClass: 'node-style-3' },
+          { num: 4, date: (r.NetMeterDate || (r.NetMeterPaid ? (r.InstallationDate || 'Paid') : '')) || '', styleClass: 'node-style-4' },
+          { num: 5, date: r.InspectionDate || '', styleClass: 'node-style-5' },
+          { num: 6, date: r.MeterConnectedDate || '', styleClass: 'node-style-6' },
+          { num: 7, date: r.CommissioningDate || '', styleClass: 'node-style-7' }
+        ];
+
+        const stageCellsHtml = stages.map((st, idx) => {
+          const isDone = Boolean(st.date);
+          const hasLeftLine = idx > 0;
+          const hasRightLine = idx < stages.length - 1;
+          const leftFilled = hasLeftLine && Boolean(stages[idx - 1].date && isDone);
+          const rightFilled = hasRightLine && Boolean(isDone && stages[idx + 1].date);
+
+          return `
+            <td class="mw-stepper-td">
+              <div class="mw-row-stepper-cell">
+                ${hasLeftLine ? `<div class="mw-row-line-left ${leftFilled ? 'filled' : ''}"></div>` : ''}
+                ${hasRightLine ? `<div class="mw-row-line-right ${rightFilled ? 'filled' : ''}"></div>` : ''}
+                <div class="mw-row-node ${isDone ? st.styleClass : 'inactive'}">
+                  ${st.num}
+                </div>
+                <div class="mw-row-node-date ${isDone ? '' : 'empty'}">
+                  ${isDone ? st.date : '―'}
+                </div>
+              </div>
+            </td>
+          `;
+        }).join('');
+
+        return `
+          <tr>
+            <td class="text-center text-muted fs-8">${r.SlNo || (i + 1)}</td>
+            <td>
+              <div class="d-flex align-items-center gap-1.5 text-nowrap">
+                <span class="fw-bold text-dark fs-8">${r.Name || '-'}</span>
+              </div>
+            </td>
+            <td><span class="badge bg-light text-secondary border fw-normal fs-9 text-nowrap">${r.BrokerName || 'Direct'}</span></td>
+            ${stageCellsHtml}
+          </tr>
+        `;
+      }).join('');
     }
   };
 

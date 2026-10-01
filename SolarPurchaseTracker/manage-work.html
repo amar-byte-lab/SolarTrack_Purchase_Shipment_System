@@ -132,27 +132,33 @@
         </div>
 
         <!-- Customer Workflow Progress Breakdown -->
-        <div class="card border rounded-1 bg-white">
-          <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-nowrap gap-2">
-            <span class="fw-semibold text-dark fs-8 text-uppercase" style="letter-spacing: 0.04em;">Customer Progress Overview</span>
-            <div style="max-width: 220px; min-width: 130px;">
-              <input type="text" class="form-control form-control-sm fs-8 py-0.5 px-2 bg-white w-100" id="fSumModalSearch" placeholder="Search in popup...">
+        <div class="card border rounded-2 bg-white shadow-sm overflow-hidden">
+          <div class="card-header py-2.5 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-dark fs-7 text-uppercase" style="letter-spacing: 0.04em;">Customer Progress Tracker</span>
+              <span class="badge bg-white text-secondary border fs-9 fw-normal" id="sumModalRowCount"></span>
+            </div>
+            <div style="max-width: 240px; min-width: 140px;" class="flex-grow-1 flex-sm-grow-0">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0 text-muted py-0.5"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control form-control-sm fs-8 border-start-0 py-1 px-2 bg-white" id="fSumModalSearch" placeholder="Filter customers...">
+              </div>
             </div>
           </div>
-          <div class="table-responsive p-0" style="max-height: 360px; overflow-y: auto;">
-            <table class="table table-sm table-hover table-striped align-middle mb-0" id="workSummaryTable" style="font-size: 0.8rem;">
+          <div class="table-responsive p-0" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0 table-manage-work-summary" id="workSummaryTable">
               <thead class="table-light sticky-top" style="z-index: 2;">
                 <tr>
-                  <th class="text-center" style="width: 40px;">Sl</th>
-                  <th>Customer</th>
-                  <th>Partner</th>
-                  <th class="text-center">Agreement</th>
-                  <th class="text-center">Dispatched</th>
-                  <th class="text-center">Installation</th>
-                  <th class="text-center">NetMeter</th>
-                  <th class="text-center">Inspection</th>
-                  <th class="text-center">Connection</th>
-                  <th class="text-center">Subsidy</th>
+                  <th class="text-center" style="width: 35px;">#</th>
+                  <th style="min-width: 140px;">Customer</th>
+                  <th style="min-width: 90px;">Partner</th>
+                  <th class="text-center th-stage-col">1. AGREEMENT</th>
+                  <th class="text-center th-stage-col">2. DISPATCHED</th>
+                  <th class="text-center th-stage-col">3. INSTALLATION</th>
+                  <th class="text-center th-stage-col">4. NETMETER</th>
+                  <th class="text-center th-stage-col">5. INSPECTION</th>
+                  <th class="text-center th-stage-col">6. CONNECTION</th>
+                  <th class="text-center th-stage-col">7. SUBSIDY</th>
                 </tr>
               </thead>
               <tbody>
