@@ -82,6 +82,44 @@ window.onDbReady = function () {
   populateFilterDatalists();
   updateSortHeadersUI();
   renderList();
+
+  // Single Row Selection click listener
+  const tableTbody = document.querySelector('#manageWorkTable tbody');
+  if (tableTbody) {
+    tableTbody.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr || tr.classList.contains('no-print') || tr.querySelector('td[colspan]')) return;
+
+      // If clicked inside input, select, datepicker, or toggle switch
+      if (e.target.closest('input') || e.target.closest('select') || e.target.closest('.mw-switch')) {
+        document.querySelectorAll('#manageWorkTable tbody tr').forEach(r => {
+          if (r !== tr) r.classList.remove('selected-row');
+        });
+        tr.classList.add('selected-row');
+        return;
+      }
+
+      // If clicked on customer button, allow modal to open and select this row
+      if (e.target.closest('.mw-customer-btn')) {
+        document.querySelectorAll('#manageWorkTable tbody tr').forEach(r => {
+          if (r !== tr) r.classList.remove('selected-row');
+        });
+        tr.classList.add('selected-row');
+        return;
+      }
+
+      const isAlreadySelected = tr.classList.contains('selected-row');
+
+      // Clear all other selections (strictly single selection)
+      document.querySelectorAll('#manageWorkTable tbody tr').forEach(r => {
+        r.classList.remove('selected-row');
+      });
+
+      if (!isAlreadySelected) {
+        tr.classList.add('selected-row');
+      }
+    });
+  }
 };
 
 function updateSortHeadersUI() {
@@ -655,10 +693,40 @@ async function saveWorkProgress(slNo, patch, metaUpdates) {
 }
 
 // ══ Toggle and Input Handlers ════════════════════════════════════════════════
+const STAGE_DISPLAY_NAMES = {
+  AgreementDate: 'Agreement',
+  MaterialDispatchedDate: 'Dispatched',
+  InstallationDate: 'Installation',
+  NetMeter: 'NetMeter',
+  InspectionDate: 'Inspection',
+  MeterConnectedDate: 'Connection',
+  CommissioningDate: 'Subsidy'
+};
+
 window.handleStageToggle = async function (toggleEl, slNo, fieldName) {
   const isChecked = toggleEl.checked;
-  const wrapEl = document.getElementById(`wrap_${fieldName}_${slNo}`);
+  const stageName = STAGE_DISPLAY_NAMES[fieldName] || fieldName;
+  const existing = (DB.getAll('installments') || []).find(r => Number(r.SlNo) === Number(slNo));
+  const custName = existing?.Name || `Customer #${slNo}`;
+  const consumerNo = existing?.ConsumerNo ? ` (CN: ${existing.ConsumerNo})` : '';
   const today = UI.todayISO();
+
+  let confirmed = false;
+  if (isChecked) {
+    const msg = `Are you sure you want to mark "${stageName}" as COMPLETED for ${custName}${consumerNo} with date ${today}?`;
+    confirmed = await UI.confirmDialog(msg, `Confirm ${stageName}`, 'Yes, Turn ON', 'btn-success');
+  } else {
+    const existingDate = existing ? existing[fieldName] : '';
+    const msg = `Are you sure you want to turn OFF "${stageName}" for ${custName}${consumerNo}? This will clear the recorded date (${existingDate || 'Not set'}) and revert its status.`;
+    confirmed = await UI.confirmDialog(msg, `Warning: Turn OFF ${stageName}`, 'Yes, Turn OFF', 'btn-danger');
+  }
+
+  if (!confirmed) {
+    toggleEl.checked = !isChecked; // Revert switch without saving
+    return;
+  }
+
+  const wrapEl = document.getElementById(`wrap_${fieldName}_${slNo}`);
 
   if (isChecked) {
     if (wrapEl) {
@@ -691,8 +759,28 @@ window.handleStageDateChange = async function (slNo, fieldName, dateVal) {
 
 window.handleNetMeterToggle = async function (toggleEl, slNo) {
   const isChecked = toggleEl.checked;
-  const wrapEl = document.getElementById(`wrap_NetMeter_${slNo}`);
+  const existing = (DB.getAll('installments') || []).find(r => Number(r.SlNo) === Number(slNo));
+  const custName = existing?.Name || `Customer #${slNo}`;
+  const consumerNo = existing?.ConsumerNo ? ` (CN: ${existing.ConsumerNo})` : '';
   const today = UI.todayISO();
+
+  let confirmed = false;
+  if (isChecked) {
+    const msg = `Are you sure you want to mark "NetMeter" as APPLIED for ${custName}${consumerNo} with date ${today}?`;
+    confirmed = await UI.confirmDialog(msg, `Confirm NetMeter`, 'Yes, Turn ON', 'btn-success');
+  } else {
+    const existingDate = existing?.NetMeterDate || '';
+    const existingAmt = existing?.NetMeterPayment ? `₹${Number(existing.NetMeterPayment).toLocaleString('en-IN')}` : '₹0';
+    const msg = `Are you sure you want to turn OFF "NetMeter" for ${custName}${consumerNo}? This will clear the NetMeter date (${existingDate || 'None'}) and payment (${existingAmt}).`;
+    confirmed = await UI.confirmDialog(msg, `Warning: Turn OFF NetMeter`, 'Yes, Turn OFF', 'btn-danger');
+  }
+
+  if (!confirmed) {
+    toggleEl.checked = !isChecked; // Revert switch without saving
+    return;
+  }
+
+  const wrapEl = document.getElementById(`wrap_NetMeter_${slNo}`);
 
   if (isChecked) {
     if (wrapEl) {

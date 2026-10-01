@@ -187,7 +187,7 @@ const UI = (() => {
     el.addEventListener('hidden.bs.toast', () => el.remove());
   }
 
-  function confirmDialog(message, title = 'Please confirm', confirmBtnText = 'Delete', confirmBtnClass = 'btn-danger') {
+  function confirmDialog(message, title = 'Please confirm', confirmBtnText = 'Confirm', confirmBtnClass = 'btn-primary') {
     return new Promise(resolve => {
       let modalEl = document.getElementById('confirmModal');
       if (!modalEl) {
@@ -196,13 +196,15 @@ const UI = (() => {
         modalEl.className = 'modal fade';
         modalEl.innerHTML = `
           <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header"><h5 class="modal-title" id="confirmModalTitle"></h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button></div>
-              <div class="modal-body" id="confirmModalBody"></div>
-              <div class="modal-footer">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn" id="confirmModalOk"></button>
+            <div class="modal-content border shadow-sm rounded-2">
+              <div class="modal-header py-2 px-3 bg-light border-bottom">
+                <h6 class="modal-title fw-bold text-dark fs-7" id="confirmModalTitle"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-3 fs-8 text-secondary" id="confirmModalBody"></div>
+              <div class="modal-footer py-1.5 px-3 bg-light border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm px-3 fs-8 fw-semibold" id="confirmModalOk"></button>
               </div>
             </div>
           </div>`;
@@ -213,12 +215,31 @@ const UI = (() => {
       
       const okBtn = document.getElementById('confirmModalOk');
       okBtn.textContent = confirmBtnText;
-      okBtn.className = `btn ${confirmBtnClass}`;
+      okBtn.className = `btn btn-sm ${confirmBtnClass} px-3 fs-8 fw-semibold`;
       
-      const modal = new bootstrap.Modal(modalEl);
-      const handler = () => { modal.hide(); okBtn.removeEventListener('click', handler); resolve(true); };
-      okBtn.addEventListener('click', handler);
-      modalEl.addEventListener('hidden.bs.modal', () => resolve(false), { once: true });
+      let resolved = false;
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      
+      const clickHandler = () => {
+        if (!resolved) {
+          resolved = true;
+          modal.hide();
+          resolve(true);
+        }
+      };
+      
+      const newOkBtn = okBtn.cloneNode(true);
+      okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+      newOkBtn.addEventListener('click', clickHandler);
+      
+      const hiddenHandler = () => {
+        modalEl.removeEventListener('hidden.bs.modal', hiddenHandler);
+        if (!resolved) {
+          resolved = true;
+          resolve(false);
+        }
+      };
+      modalEl.addEventListener('hidden.bs.modal', hiddenHandler);
       modal.show();
     });
   }
