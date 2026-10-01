@@ -596,11 +596,17 @@ window.openCustomerDetailsModal = function (slNo) {
     { label: 'Subsidy', date: r.CommissioningDate }
   ];
 
-  let doneCount = stageBadges.filter(s => Boolean(s.date)).length;
+  let highestMarkedIdx = -1;
+  stageBadges.forEach((st, idx) => {
+    if (st.date) {
+      highestMarkedIdx = Math.max(highestMarkedIdx, idx);
+    }
+  });
+
   let trackPct = 0;
-  if (doneCount > 1) {
-    trackPct = Math.round(((doneCount - 1) / (stageBadges.length - 1)) * 100);
-  } else if (doneCount === 1) {
+  if (highestMarkedIdx > 0) {
+    trackPct = Math.round((highestMarkedIdx / (stageBadges.length - 1)) * 100);
+  } else if (highestMarkedIdx === 0) {
     trackPct = 10;
   }
 
@@ -640,12 +646,13 @@ window.openCustomerDetailsModal = function (slNo) {
             <div class="mw-stepper-track-fill" style="width: ${trackPct}%;"></div>
           </div>
           ${stageBadges.map((st, i) => {
-            const isDone = Boolean(st.date);
+            const isDone = (i <= highestMarkedIdx) || Boolean(st.date);
+            const dateDisplay = st.date || (isDone ? '✓ Completed' : 'Pending');
             return `
               <div class="mw-stepper-step ${isDone ? 'completed' : ''}">
                 <div class="mw-stepper-circle">${isDone ? '✓' : (i + 1)}</div>
                 <div class="mw-stepper-col-name">${st.label}</div>
-                <div class="mw-stepper-date ${isDone ? 'text-success fw-bold' : 'text-muted'}">${st.date || 'Pending'}</div>
+                <div class="mw-stepper-date ${isDone ? 'text-success fw-bold' : 'text-muted'}">${dateDisplay}</div>
               </div>
             `;
           }).join('')}
@@ -1079,12 +1086,19 @@ window.openWorkSummaryModal = function () {
           { num: 7, date: r.CommissioningDate || '', styleClass: 'node-style-7' }
         ];
 
+        let highestMarkedIdx = -1;
+        stages.forEach((st, idx) => {
+          if (st.date) {
+            highestMarkedIdx = Math.max(highestMarkedIdx, idx);
+          }
+        });
+
         const stageCellsHtml = stages.map((st, idx) => {
-          const isDone = Boolean(st.date);
+          const isDone = (idx <= highestMarkedIdx) || Boolean(st.date);
           const hasLeftLine = idx > 0;
           const hasRightLine = idx < stages.length - 1;
-          const leftFilled = hasLeftLine && Boolean(stages[idx - 1].date && isDone);
-          const rightFilled = hasRightLine && Boolean(isDone && stages[idx + 1].date);
+          const leftFilled = hasLeftLine && (idx <= highestMarkedIdx);
+          const rightFilled = hasRightLine && (idx < highestMarkedIdx);
 
           return `
             <td class="mw-stepper-td">
@@ -1095,7 +1109,7 @@ window.openWorkSummaryModal = function () {
                   ${st.num}
                 </div>
                 <div class="mw-row-node-date ${isDone ? '' : 'empty'}">
-                  ${isDone ? st.date : '―'}
+                  ${st.date ? st.date : (isDone ? '✓' : '―')}
                 </div>
               </div>
             </td>
