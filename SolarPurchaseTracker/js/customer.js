@@ -2542,8 +2542,12 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cPrice').value = r.CommittedPrice || '';
       document.getElementById('cVendorPrice').value = r.VendorPrice || '';
       document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
-      document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
-      document.getElementById('cCommissioningDate').value = r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '';
+      if (document.getElementById('cInstallationDate')) {
+        document.getElementById('cInstallationDate').value = r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '';
+      }
+      if (document.getElementById('cCommissioningDate')) {
+        document.getElementById('cCommissioningDate').value = r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '';
+      }
       document.getElementById('cBrokerName').value = r.BrokerName || '';
       if (document.getElementById('cBrokerNumber')) {
         document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|')[0];
@@ -2708,6 +2712,8 @@ async function saveCustomerModal() {
   const gstPctVal = Number(document.getElementById('cGSTPercentage').value) || 0;
   const calculatedGSTAmount = custPriceVal * (gstPctVal / 100);
 
+  const existingRow = slNoVal ? (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNoVal)) : null;
+
   const expenses = {
     material: Number(document.getElementById('cMaterialCost').value) || 0,
     partner: Number(document.getElementById('cPartnerPrice').value) || 0,
@@ -2716,17 +2722,15 @@ async function saveCustomerModal() {
     gst_pct: gstPctVal,
     gst: calculatedGSTAmount,
     other: Number(document.getElementById('cOtherCost').value) || 0,
-    net_meter_payment: document.getElementById('cNetMeterPayment') ? (Number(document.getElementById('cNetMeterPayment').value) || 0) : 0,
-    net_meter_paid: document.getElementById('cNetMeterPaid') ? document.getElementById('cNetMeterPaid').checked : false
+    net_meter_payment: document.getElementById('cNetMeterPayment') ? (Number(document.getElementById('cNetMeterPayment').value) || 0) : (existingRow ? (existingRow.NetMeterPayment || 0) : 0),
+    net_meter_paid: document.getElementById('cNetMeterPaid') ? document.getElementById('cNetMeterPaid').checked : (existingRow ? !!existingRow.NetMeterPaid : false)
   };
   const calculatedVendorPrice = expenses.material + expenses.install + expenses.transport + expenses.gst + expenses.other;
   const cBrokerNumEl = document.getElementById('cBrokerNumber');
   let phoneClean = cBrokerNumEl ? cBrokerNumEl.value.trim().split('|')[0] : '';
   if (!phoneClean && slNoVal) {
-    const slNo = Number(slNoVal);
-    const existing = DB.getAll('installments').find(x => Number(x.SlNo) === slNo);
-    if (existing && existing.BrokerNumber) {
-      phoneClean = existing.BrokerNumber.split('|')[0];
+    if (existingRow && existingRow.BrokerNumber) {
+      phoneClean = existingRow.BrokerNumber.split('|')[0];
     }
   }
   if (!phoneClean) {
@@ -2752,8 +2756,8 @@ async function saveCustomerModal() {
     CommittedPrice: Number(document.getElementById('cPrice').value) || 0,
     VendorPrice: calculatedVendorPrice,
     LoginDate: document.getElementById('cLoginDate').value || null,
-    InstallationDate: document.getElementById('cInstallationDate').value || null,
-    CommissioningDate: document.getElementById('cCommissioningDate').value || null,
+    InstallationDate: document.getElementById('cInstallationDate') ? (document.getElementById('cInstallationDate').value || null) : (existingRow ? (existingRow.InstallationDate || null) : null),
+    CommissioningDate: document.getElementById('cCommissioningDate') ? (document.getElementById('cCommissioningDate').value || null) : (existingRow ? (existingRow.CommissioningDate || null) : null),
     BrokerName: document.getElementById('cBrokerName').value.trim(),
     BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
     Commission: Number(document.getElementById('cCommission').value) || 0,

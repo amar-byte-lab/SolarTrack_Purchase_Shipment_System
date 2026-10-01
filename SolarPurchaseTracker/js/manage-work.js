@@ -647,12 +647,11 @@ window.openCustomerDetailsModal = function (slNo) {
           </div>
           ${stageBadges.map((st, i) => {
             const isDone = (i <= highestMarkedIdx) || Boolean(st.date);
-            const dateDisplay = st.date || (isDone ? '✓ Completed' : 'Pending');
             return `
               <div class="mw-stepper-step ${isDone ? 'completed' : ''}">
                 <div class="mw-stepper-circle">${isDone ? '✓' : (i + 1)}</div>
                 <div class="mw-stepper-col-name">${st.label}</div>
-                <div class="mw-stepper-date ${isDone ? 'text-success fw-bold' : 'text-muted'}">${dateDisplay}</div>
+                <div class="mw-stepper-date">${st.date ? st.date : '&nbsp;'}</div>
               </div>
             `;
           }).join('')}
@@ -863,14 +862,6 @@ window.openWorkSummaryModal = function () {
   const rows = window._lastFilteredWorkRows || getWorkRows().filter(r => r.Status !== 'Deactive');
   const total = rows.length;
 
-  let agreementCount = 0;
-  let dispatchedCount = 0;
-  let installedCount = 0;
-  let netMeterCount = 0;
-  let inspectionCount = 0;
-  let connectedCount = 0;
-  let subsidyCount = 0;
-
   let latestDates = {
     AgreementDate: '',
     MaterialDispatchedDate: '',
@@ -881,65 +872,65 @@ window.openWorkSummaryModal = function () {
     CommissioningDate: ''
   };
 
+  let stageCurrentCounts = {
+    'AgreementDate': 0,
+    'MaterialDispatchedDate': 0,
+    'InstallationDate': 0,
+    'NetMeter': 0,
+    'InspectionDate': 0,
+    'MeterConnectedDate': 0,
+    'CommissioningDate': 0
+  };
+
   rows.forEach(r => {
-    if (r.AgreementDate) {
-      agreementCount++;
-      if (!latestDates.AgreementDate || r.AgreementDate > latestDates.AgreementDate) latestDates.AgreementDate = r.AgreementDate;
-    }
-    if (r.MaterialDispatchedDate) {
-      dispatchedCount++;
-      if (!latestDates.MaterialDispatchedDate || r.MaterialDispatchedDate > latestDates.MaterialDispatchedDate) latestDates.MaterialDispatchedDate = r.MaterialDispatchedDate;
-    }
-    if (r.InstallationDate) {
-      installedCount++;
-      if (!latestDates.InstallationDate || r.InstallationDate > latestDates.InstallationDate) latestDates.InstallationDate = r.InstallationDate;
-    }
-    const nmDate = r.NetMeterDate || (r.NetMeterPaid ? r.InstallationDate : '');
-    if (r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || nmDate) {
-      netMeterCount++;
-      if (nmDate && (!latestDates.NetMeterDate || nmDate > latestDates.NetMeterDate)) latestDates.NetMeterDate = nmDate;
-    }
-    if (r.InspectionDate) {
-      inspectionCount++;
-      if (!latestDates.InspectionDate || r.InspectionDate > latestDates.InspectionDate) latestDates.InspectionDate = r.InspectionDate;
-    }
-    if (r.MeterConnectedDate) {
-      connectedCount++;
-      if (!latestDates.MeterConnectedDate || r.MeterConnectedDate > latestDates.MeterConnectedDate) latestDates.MeterConnectedDate = r.MeterConnectedDate;
-    }
-    if (r.CommissioningDate) {
-      subsidyCount++;
-      if (!latestDates.CommissioningDate || r.CommissioningDate > latestDates.CommissioningDate) latestDates.CommissioningDate = r.CommissioningDate;
-    }
+    const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+    const stages = [
+      Boolean(r.AgreementDate),
+      Boolean(r.MaterialDispatchedDate),
+      Boolean(r.InstallationDate),
+      isNm,
+      Boolean(r.InspectionDate),
+      Boolean(r.MeterConnectedDate),
+      Boolean(r.CommissioningDate)
+    ];
+    let highestIdx = -1;
+    stages.forEach((d, idx) => {
+      if (d) highestIdx = Math.max(highestIdx, idx);
+    });
+
+    if (highestIdx === 0) stageCurrentCounts.AgreementDate++;
+    else if (highestIdx === 1) stageCurrentCounts.MaterialDispatchedDate++;
+    else if (highestIdx === 2) stageCurrentCounts.InstallationDate++;
+    else if (highestIdx === 3) stageCurrentCounts.NetMeter++;
+    else if (highestIdx === 4) stageCurrentCounts.InspectionDate++;
+    else if (highestIdx === 5) stageCurrentCounts.MeterConnectedDate++;
+    else if (highestIdx === 6) stageCurrentCounts.CommissioningDate++;
   });
 
   const getPct = (cnt) => (total > 0 ? Math.round((cnt / total) * 100) : 0);
 
-  // Stage sequence across the column names
-  const stagesList = [
-    { key: 'AgreementDate', name: 'Agreement', count: agreementCount, pct: getPct(agreementCount), date: latestDates.AgreementDate, color: '#3b82f6' },
-    { key: 'MaterialDispatchedDate', name: 'Dispatched', count: dispatchedCount, pct: getPct(dispatchedCount), date: latestDates.MaterialDispatchedDate, color: '#06b6d4' },
-    { key: 'InstallationDate', name: 'Installation', count: installedCount, pct: getPct(installedCount), date: latestDates.InstallationDate, color: '#f59e0b' },
-    { key: 'NetMeter', name: 'NetMeter', count: netMeterCount, pct: getPct(netMeterCount), date: latestDates.NetMeterDate, color: '#8b5cf6' },
-    { key: 'InspectionDate', name: 'Inspection', count: inspectionCount, pct: getPct(inspectionCount), date: latestDates.InspectionDate, color: '#64748b' },
-    { key: 'MeterConnectedDate', name: 'Connection', count: connectedCount, pct: getPct(connectedCount), date: latestDates.MeterConnectedDate, color: '#2563eb' },
-    { key: 'CommissioningDate', name: 'Subsidy', count: subsidyCount, pct: getPct(subsidyCount), date: latestDates.CommissioningDate, color: '#10b981' }
-  ];
+  const agreementCount = stageCurrentCounts.AgreementDate;
+  const dispatchedCount = stageCurrentCounts.MaterialDispatchedDate;
+  const installedCount = stageCurrentCounts.InstallationDate;
+  const netMeterCount = stageCurrentCounts.NetMeter;
+  const inspectionCount = stageCurrentCounts.InspectionDate;
+  const connectedCount = stageCurrentCounts.MeterConnectedDate;
+  const subsidyCount = stageCurrentCounts.CommissioningDate;
 
-  const avgCompletionPct = Math.round((stagesList.reduce((acc, s) => acc + s.pct, 0) / (stagesList.length * 100)) * 100);
+  let selectedSummaryStage = 'ALL';
 
   const kpiGrid = document.getElementById('workKpiGrid');
   if (kpiGrid) {
     kpiGrid.innerHTML = `
-      <!-- Total Customers -->
-      <div class="mw-kpi-card border-start border-3 border-dark">
+      <!-- Total -->
+      <div class="mw-kpi-card border-start border-3 border-dark kpi-card-selected" data-stage="ALL" title="Click to show all customers">
         <div class="mw-kpi-header">
-          <span class="mw-kpi-title">Total Customers</span>
-          <span class="badge bg-light text-dark border fs-9">Active</span>
+          <span class="mw-kpi-title">TOTAL</span>
+          <span class="badge bg-light text-dark border" style="font-size: 0.50rem; padding: 1px 3px;">All</span>
         </div>
         <div class="mw-kpi-value-row">
           <span class="mw-kpi-value text-dark">${total}</span>
-          <span class="mw-kpi-subtext">100% in scope</span>
+          <span class="mw-kpi-subtext">all</span>
         </div>
         <div class="mw-kpi-progress">
           <div class="progress-bar bg-dark" role="progressbar" style="width: 100%;"></div>
@@ -947,7 +938,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Agreement -->
-      <div class="mw-kpi-card border-start border-3 border-primary">
+      <div class="mw-kpi-card border-start border-3 border-primary" data-stage="AgreementDate" title="Click to filter by Agreement stage">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Agreement</span>
           <span class="mw-kpi-pct text-primary">${getPct(agreementCount)}%</span>
@@ -962,7 +953,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Dispatched -->
-      <div class="mw-kpi-card border-start border-3 border-info">
+      <div class="mw-kpi-card border-start border-3 border-info" data-stage="MaterialDispatchedDate" title="Click to filter by Dispatched stage">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Dispatched</span>
           <span class="mw-kpi-pct text-info">${getPct(dispatchedCount)}%</span>
@@ -977,7 +968,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Installation -->
-      <div class="mw-kpi-card border-start border-3 border-warning">
+      <div class="mw-kpi-card border-start border-3 border-warning" data-stage="InstallationDate" title="Click to filter by Installation stage">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Installation</span>
           <span class="mw-kpi-pct text-warning">${getPct(installedCount)}%</span>
@@ -992,7 +983,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- NetMeter -->
-      <div class="mw-kpi-card border-start border-3" style="border-color: #8b5cf6 !important;">
+      <div class="mw-kpi-card border-start border-3" style="border-color: #8b5cf6 !important;" data-stage="NetMeter" title="Click to filter by NetMeter stage">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">NetMeter</span>
           <span class="mw-kpi-pct" style="color: #8b5cf6;">${getPct(netMeterCount)}%</span>
@@ -1007,7 +998,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Inspection -->
-      <div class="mw-kpi-card border-start border-3 border-secondary">
+      <div class="mw-kpi-card border-start border-3 border-secondary" data-stage="InspectionDate" title="Click to filter by Inspection stage">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Inspection</span>
           <span class="mw-kpi-pct text-secondary">${getPct(inspectionCount)}%</span>
@@ -1022,7 +1013,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Connection -->
-      <div class="mw-kpi-card border-start border-3 border-primary">
+      <div class="mw-kpi-card border-start border-3 border-primary" data-stage="MeterConnectedDate" title="Click to filter by Connection stage">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Connection</span>
           <span class="mw-kpi-pct text-primary">${getPct(connectedCount)}%</span>
@@ -1037,7 +1028,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Subsidy (Final Milestone) -->
-      <div class="mw-kpi-card border-start border-3 border-success">
+      <div class="mw-kpi-card border-start border-3 border-success" data-stage="CommissioningDate" title="Click to filter by Subsidy stage">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Subsidy</span>
           <span class="mw-kpi-pct text-success">${getPct(subsidyCount)}%</span>
@@ -1051,18 +1042,73 @@ window.openWorkSummaryModal = function () {
         </div>
       </div>
     `;
+
+    // Click event on KPI cards to filter customer list
+    kpiGrid.querySelectorAll('.mw-kpi-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const stage = card.getAttribute('data-stage') || 'ALL';
+        if (selectedSummaryStage === stage && stage !== 'ALL') {
+          selectedSummaryStage = 'ALL';
+        } else {
+          selectedSummaryStage = stage;
+        }
+
+        kpiGrid.querySelectorAll('.mw-kpi-card').forEach(c => {
+          c.classList.remove('kpi-card-selected');
+          if (c.getAttribute('data-stage') === selectedSummaryStage) {
+            c.classList.add('kpi-card-selected');
+          }
+        });
+
+        const searchInput = document.getElementById('fSumModalSearch');
+        renderPopupTable(searchInput ? searchInput.value.toLowerCase().trim() : '');
+      });
+    });
   }
 
+  const stageKeys = [
+    'AgreementDate',
+    'MaterialDispatchedDate',
+    'InstallationDate',
+    'NetMeter',
+    'InspectionDate',
+    'MeterConnectedDate',
+    'CommissioningDate'
+  ];
+
   const renderPopupTable = (filterTxt = '') => {
-    const filtered = rows.filter(r => {
-      if (!filterTxt) return true;
-      return (
+    let filtered = rows;
+
+    // Filter by selected summary stage (strictly customers whose maximum reached level is this stage)
+    if (selectedSummaryStage && selectedSummaryStage !== 'ALL') {
+      const targetStageIdx = stageKeys.indexOf(selectedSummaryStage);
+      filtered = filtered.filter(r => {
+        const stages = [
+          Boolean(r.AgreementDate),
+          Boolean(r.MaterialDispatchedDate),
+          Boolean(r.InstallationDate),
+          Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate),
+          Boolean(r.InspectionDate),
+          Boolean(r.MeterConnectedDate),
+          Boolean(r.CommissioningDate)
+        ];
+        let highestIdx = -1;
+        stages.forEach((d, idx) => {
+          if (d) highestIdx = Math.max(highestIdx, idx);
+        });
+        return highestIdx === targetStageIdx;
+      });
+    }
+
+    // Filter by search text
+    if (filterTxt) {
+      filtered = filtered.filter(r =>
         String(r.Name || '').toLowerCase().includes(filterTxt) ||
         String(r.ConsumerNo || '').toLowerCase().includes(filterTxt) ||
         String(r.BrokerName || '').toLowerCase().includes(filterTxt) ||
         String(r.District || '').toLowerCase().includes(filterTxt)
       );
-    });
+    }
 
     const countBadge = document.getElementById('sumModalRowCount');
     if (countBadge) {
@@ -1076,40 +1122,42 @@ window.openWorkSummaryModal = function () {
         return;
       }
       tbody.innerHTML = filtered.map((r, i) => {
+        const isNetMeterMarked = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
         const stages = [
-          { num: 1, date: r.AgreementDate || '', styleClass: 'node-style-1' },
-          { num: 2, date: r.MaterialDispatchedDate || '', styleClass: 'node-style-2' },
-          { num: 3, date: r.InstallationDate || '', styleClass: 'node-style-3' },
-          { num: 4, date: (r.NetMeterDate || (r.NetMeterPaid ? (r.InstallationDate || 'Paid') : '')) || '', styleClass: 'node-style-4' },
-          { num: 5, date: r.InspectionDate || '', styleClass: 'node-style-5' },
-          { num: 6, date: r.MeterConnectedDate || '', styleClass: 'node-style-6' },
-          { num: 7, date: r.CommissioningDate || '', styleClass: 'node-style-7' }
+          { num: 1, date: r.AgreementDate || '', isMarked: Boolean(r.AgreementDate) },
+          { num: 2, date: r.MaterialDispatchedDate || '', isMarked: Boolean(r.MaterialDispatchedDate) },
+          { num: 3, date: r.InstallationDate || '', isMarked: Boolean(r.InstallationDate) },
+          { num: 4, date: r.NetMeterDate || '', isMarked: isNetMeterMarked },
+          { num: 5, date: r.InspectionDate || '', isMarked: Boolean(r.InspectionDate) },
+          { num: 6, date: r.MeterConnectedDate || '', isMarked: Boolean(r.MeterConnectedDate) },
+          { num: 7, date: r.CommissioningDate || '', isMarked: Boolean(r.CommissioningDate) }
         ];
 
         let highestMarkedIdx = -1;
         stages.forEach((st, idx) => {
-          if (st.date) {
+          if (st.isMarked || st.date) {
             highestMarkedIdx = Math.max(highestMarkedIdx, idx);
           }
         });
 
         const stageCellsHtml = stages.map((st, idx) => {
-          const isDone = (idx <= highestMarkedIdx) || Boolean(st.date);
+          const isDone = (idx <= highestMarkedIdx) || st.isMarked || Boolean(st.date);
           const hasLeftLine = idx > 0;
           const hasRightLine = idx < stages.length - 1;
           const leftFilled = hasLeftLine && (idx <= highestMarkedIdx);
           const rightFilled = hasRightLine && (idx < highestMarkedIdx);
+          const nodeClass = isDone ? 'node-active' : 'node-inactive';
 
           return `
             <td class="mw-stepper-td">
               <div class="mw-row-stepper-cell">
                 ${hasLeftLine ? `<div class="mw-row-line-left ${leftFilled ? 'filled' : ''}"></div>` : ''}
                 ${hasRightLine ? `<div class="mw-row-line-right ${rightFilled ? 'filled' : ''}"></div>` : ''}
-                <div class="mw-row-node ${isDone ? st.styleClass : 'inactive'}">
+                <div class="mw-row-node ${nodeClass}">
                   ${st.num}
                 </div>
-                <div class="mw-row-node-date ${isDone ? '' : 'empty'}">
-                  ${st.date ? st.date : (isDone ? '✓' : '―')}
+                <div class="mw-row-node-date">
+                  ${st.date ? st.date : '&nbsp;'}
                 </div>
               </div>
             </td>
@@ -1118,13 +1166,13 @@ window.openWorkSummaryModal = function () {
 
         return `
           <tr>
-            <td class="text-center text-muted fs-8">${r.SlNo || (i + 1)}</td>
-            <td>
-              <div class="d-flex align-items-center gap-1.5 text-nowrap">
-                <span class="fw-bold text-dark fs-8">${r.Name || '-'}</span>
-              </div>
+            <td class="td-col-sl text-center text-muted">${r.SlNo || (i + 1)}</td>
+            <td class="td-col-cust">
+              <span class="mw-sum-cust-name" title="${r.Name || '-'}">${r.Name || '-'}</span>
             </td>
-            <td><span class="badge bg-light text-secondary border fw-normal fs-9 text-nowrap">${r.BrokerName || 'Direct'}</span></td>
+            <td class="td-col-partner">
+              <span class="badge bg-light text-secondary border fw-normal mw-sum-partner-badge" title="${r.BrokerName || 'Direct'}">${r.BrokerName || 'Direct'}</span>
+            </td>
             ${stageCellsHtml}
           </tr>
         `;

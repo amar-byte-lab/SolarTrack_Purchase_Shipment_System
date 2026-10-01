@@ -117,8 +117,8 @@
 
 <!-- ══ Work Progress & Breakdown Modal ═══════════════════════════════════ -->
 <div class="modal fade" id="workSummaryModal" tabindex="-1" aria-labelledby="workSummaryModalTitle" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border shadow-sm rounded-2">
+  <div class="modal-dialog modal-dialog-centered mw-summary-modal-dialog">
+    <div class="modal-content border shadow rounded-2">
       <div class="modal-header py-2.5 px-3 border-bottom bg-light">
         <div class="d-flex align-items-center gap-2">
           <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="workSummaryModalTitle">Work Progress & Stage Tracking Summary</h6>
@@ -133,12 +133,11 @@
 
         <!-- Customer Workflow Progress Breakdown -->
         <div class="card border rounded-2 bg-white shadow-sm overflow-hidden">
-          <div class="card-header py-2.5 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2">
-              <span class="fw-bold text-dark fs-7 text-uppercase" style="letter-spacing: 0.04em;">Customer Progress Tracker</span>
               <span class="badge bg-white text-secondary border fs-9 fw-normal" id="sumModalRowCount"></span>
             </div>
-            <div style="max-width: 240px; min-width: 140px;" class="flex-grow-1 flex-sm-grow-0">
+            <div class="ms-auto" style="max-width: 200px; min-width: 140px;">
               <div class="input-group input-group-sm">
                 <span class="input-group-text bg-white border-end-0 text-muted py-0.5"><i class="bi bi-search"></i></span>
                 <input type="text" class="form-control form-control-sm fs-8 border-start-0 py-1 px-2 bg-white" id="fSumModalSearch" placeholder="Filter customers...">
@@ -149,15 +148,15 @@
             <table class="table table-sm table-hover align-middle mb-0 table-manage-work-summary" id="workSummaryTable">
               <thead class="table-light sticky-top" style="z-index: 2;">
                 <tr>
-                  <th class="text-center" style="width: 35px;">#</th>
-                  <th style="min-width: 140px;">Customer</th>
-                  <th style="min-width: 90px;">Partner</th>
-                  <th class="text-center th-stage-col">1. AGREEMENT</th>
-                  <th class="text-center th-stage-col">2. DISPATCHED</th>
-                  <th class="text-center th-stage-col">3. INSTALLATION</th>
+                  <th class="text-center th-col-sl">#</th>
+                  <th class="th-col-cust">Customer</th>
+                  <th class="th-col-partner">Partner</th>
+                  <th class="text-center th-stage-col">1. AGRMT</th>
+                  <th class="text-center th-stage-col">2. DISPATCH</th>
+                  <th class="text-center th-stage-col">3. INSTALL</th>
                   <th class="text-center th-stage-col">4. NETMETER</th>
-                  <th class="text-center th-stage-col">5. INSPECTION</th>
-                  <th class="text-center th-stage-col">6. CONNECTION</th>
+                  <th class="text-center th-stage-col">5. INSPECT</th>
+                  <th class="text-center th-stage-col">6. CONNECT</th>
                   <th class="text-center th-stage-col">7. SUBSIDY</th>
                 </tr>
               </thead>
