@@ -136,8 +136,7 @@ function getWorkRows() {
   const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
   const isPowerUser = currentUser && (
     currentUser.role === 'admin' ||
-    currentUser.role === 'superadmin' ||
-    String(currentUser.userid || '').toLowerCase() === 'amar'
+    currentUser.role === 'superadmin'
   );
 
   if (isPowerUser) {
@@ -568,8 +567,7 @@ window.openCustomerDetailsModal = function (slNo) {
   const currentUser = Auth.getUser();
   const isPowerUser = currentUser && (
     currentUser.role === 'admin' ||
-    currentUser.role === 'superadmin' ||
-    String(currentUser.userid || '').toLowerCase() === 'amar'
+    currentUser.role === 'superadmin'
   );
 
   document.getElementById('cdModalSlNo').textContent = `#${r.SlNo}`;

@@ -200,7 +200,7 @@ const DB = (() => {
         }
         if (typeof Auth !== 'undefined') {
             const currentUser = Auth.getUser();
-            const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || String(currentUser.userid || '').toLowerCase() === 'amar');
+            const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
             if (currentUser && !isPowerUser) {
                 const partnerNames = [
                     (currentUser.username || '').toLowerCase().trim(),

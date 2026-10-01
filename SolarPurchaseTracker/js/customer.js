@@ -31,7 +31,7 @@ const DEFAULT_COLUMN_COLORS = [
 
 window.onDbReady = function () {
   const currentUser = Auth.getUser();
-  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
   if (!isAdmin) {
     const style = document.createElement('style');
     style.id = 'adminOnlyStyles';
@@ -599,7 +599,7 @@ function populateColorColCheckboxes() {
   const menu = document.getElementById('ccColumnMultiselectMenu');
   if (!menu) return;
   const currentUser = Auth.getUser();
-  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
   const cols = DEFAULT_COLUMN_COLORS.filter(c => isAdmin || c.key !== 'col-price');
   menu.innerHTML = cols.map(c => `
     <div class="form-check mb-1">
@@ -624,7 +624,7 @@ function updateColorColDropdownButton() {
   const btn = document.getElementById('btnColColorMultiselect');
   if (!btn) return;
   const currentUser = Auth.getUser();
-  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
   const cols = DEFAULT_COLUMN_COLORS.filter(c => isAdmin || c.key !== 'col-price');
   if (selectedColorCols.length === 0) {
     btn.textContent = 'Select Columns';
@@ -1095,7 +1095,7 @@ function renderList() {
   const filterLabel = filterParts.length > 0 ? filterParts.join(', ') : 'All';
 
   const currentUser = Auth.getUser();
-  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
 
   if (!rows.length && !isAddingNew) {
     tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
@@ -1565,8 +1565,7 @@ function renderTopKpis(metrics) {
   const currentUser = Auth.getUser();
   const isAdminOrSuperAdmin = currentUser && (
     currentUser.role === 'admin' ||
-    currentUser.role === 'superadmin' ||
-    String(currentUser.userid || '').toLowerCase() === 'amar'
+    currentUser.role === 'superadmin'
   );
 
   if (isAdminOrSuperAdmin) {
@@ -1672,7 +1671,7 @@ function initSummaryModalSortListeners() {
       updateSummaryModalSortHeadersUI();
       const currentRows = (window._lastRenderedRows || getInstallmentRows());
       const currentUser = Auth.getUser();
-      const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+      const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
       renderSummaryModalBreakdown(currentRows, isAdm);
     });
   });
@@ -1693,7 +1692,7 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
     searchInput.addEventListener('input', () => {
       const currentRows = (window._lastRenderedRows || getInstallmentRows());
       const currentUser = Auth.getUser();
-      const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+      const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
       renderSummaryModalBreakdown(currentRows, isAdm);
     });
   }

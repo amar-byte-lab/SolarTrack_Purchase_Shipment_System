@@ -90,6 +90,22 @@ window.onDbReady = function () {
     };
   }
 
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  const isPowerUser = currentUser && (
+    currentUser.role === 'admin' ||
+    currentUser.role === 'superadmin'
+  );
+
+  const manageWorkWrap = document.getElementById('dashManageWorkBtnWrap');
+  if (manageWorkWrap) {
+    if (isPowerUser) {
+      manageWorkWrap.style.removeProperty('display');
+      manageWorkWrap.style.display = 'flex';
+    } else {
+      manageWorkWrap.style.display = 'none';
+    }
+  }
+
   populatePartnerDropdown();
   renderDashboard();
 };
@@ -99,8 +115,7 @@ function getWorkRows() {
   const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
   const isPowerUser = currentUser && (
     currentUser.role === 'admin' ||
-    currentUser.role === 'superadmin' ||
-    String(currentUser.userid || '').toLowerCase() === 'amar'
+    currentUser.role === 'superadmin'
   );
 
   if (isPowerUser) {

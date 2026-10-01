@@ -83,13 +83,14 @@ const UI = (() => {
     if (!el) return;
 
     const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const isPowerUser = user && (user.role === 'admin' || user.role === 'superadmin');
     const visibleNavItems = user 
       ? NAV_ITEMS.filter(item => {
-          if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
+          if (isPowerUser) return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['dashboard.html', 'customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['dashboard.html', 'manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['dashboard.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : [];
 

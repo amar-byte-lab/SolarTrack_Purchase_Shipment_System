@@ -20,7 +20,7 @@ const LS_KEY = 'shipColColors';
 
 window.onDbReady = function () {
     const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-    const isAdmin = currentUser ? (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar') : true;
+    const isAdmin = currentUser ? (currentUser.role === 'admin' || currentUser.role === 'superadmin') : true;
 
     const buttonsHtml = isAdmin ? `
     <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 fs-8 px-2.5 py-1.5 shadow-sm text-nowrap rounded-1" id="btnAddNewShipment" title="Add New Shipment">

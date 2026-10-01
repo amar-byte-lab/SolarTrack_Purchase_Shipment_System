@@ -96,11 +96,6 @@ const Auth = (() => {
       setUser(u);
       return { success: true, user: u };
     }
-    if (id === 'amar' && password === 'amar') {
-      const u = { userid: 'amar', username: 'amar', role: 'user' };
-      setUser(u);
-      return { success: true, user: u };
-    }
     return { success: false, error: 'Invalid User ID or Password' };
   }
 
@@ -155,17 +150,17 @@ const Auth = (() => {
     }
 
     // 4. Access restrictions
-    const isPowerUser = (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+    const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
     
     if (!isPowerUser) {
       if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        const allowed = ['dashboard.html', 'customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+        const allowed = ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'dashboard.html';
           return;
         }
       } else {
-        const allowed = ['dashboard.html', 'manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
+        const allowed = ['dashboard.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'dashboard.html';
           return;

@@ -50,7 +50,7 @@ function render() {
   }
 
   const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-  const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.userid === 'amar');
+  const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
 
   tbody.innerHTML = vendors.map(v => {
     const userid = v.VendorName.toLowerCase().replace(/[^a-z0-9_-]/g, '');
