@@ -873,6 +873,7 @@ window.openWorkSummaryModal = function () {
   };
 
   let stageCurrentCounts = {
+    'LoginDate': 0,
     'AgreementDate': 0,
     'MaterialDispatchedDate': 0,
     'InstallationDate': 0,
@@ -885,6 +886,7 @@ window.openWorkSummaryModal = function () {
   rows.forEach(r => {
     const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
     const stages = [
+      Boolean(r.LoginDate),
       Boolean(r.AgreementDate),
       Boolean(r.MaterialDispatchedDate),
       Boolean(r.InstallationDate),
@@ -898,17 +900,19 @@ window.openWorkSummaryModal = function () {
       if (d) highestIdx = Math.max(highestIdx, idx);
     });
 
-    if (highestIdx === 0) stageCurrentCounts.AgreementDate++;
-    else if (highestIdx === 1) stageCurrentCounts.MaterialDispatchedDate++;
-    else if (highestIdx === 2) stageCurrentCounts.InstallationDate++;
-    else if (highestIdx === 3) stageCurrentCounts.NetMeter++;
-    else if (highestIdx === 4) stageCurrentCounts.InspectionDate++;
-    else if (highestIdx === 5) stageCurrentCounts.MeterConnectedDate++;
-    else if (highestIdx === 6) stageCurrentCounts.CommissioningDate++;
+    if (highestIdx === 0) stageCurrentCounts.LoginDate++;
+    else if (highestIdx === 1) stageCurrentCounts.AgreementDate++;
+    else if (highestIdx === 2) stageCurrentCounts.MaterialDispatchedDate++;
+    else if (highestIdx === 3) stageCurrentCounts.InstallationDate++;
+    else if (highestIdx === 4) stageCurrentCounts.NetMeter++;
+    else if (highestIdx === 5) stageCurrentCounts.InspectionDate++;
+    else if (highestIdx === 6) stageCurrentCounts.MeterConnectedDate++;
+    else if (highestIdx === 7) stageCurrentCounts.CommissioningDate++;
   });
 
   const getPct = (cnt) => (total > 0 ? Math.round((cnt / total) * 100) : 0);
 
+  const loginCount = stageCurrentCounts.LoginDate;
   const agreementCount = stageCurrentCounts.AgreementDate;
   const dispatchedCount = stageCurrentCounts.MaterialDispatchedDate;
   const installedCount = stageCurrentCounts.InstallationDate;
@@ -934,6 +938,21 @@ window.openWorkSummaryModal = function () {
         </div>
         <div class="mw-kpi-progress">
           <div class="progress-bar bg-dark" role="progressbar" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Login -->
+      <div class="mw-kpi-card border-start border-3" style="border-color: #0284c7 !important;" data-stage="LoginDate" title="Click to filter by Login stage">
+        <div class="mw-kpi-header">
+          <span class="mw-kpi-title">Login</span>
+          <span class="mw-kpi-pct" style="color: #0284c7;">${getPct(loginCount)}%</span>
+        </div>
+        <div class="mw-kpi-value-row">
+          <span class="mw-kpi-value" style="color: #0284c7;">${loginCount}</span>
+          <span class="mw-kpi-subtext">of ${total}</span>
+        </div>
+        <div class="mw-kpi-progress">
+          <div class="progress-bar" role="progressbar" style="background-color: #0284c7; width: ${getPct(loginCount)}%;"></div>
         </div>
       </div>
 
@@ -1067,6 +1086,7 @@ window.openWorkSummaryModal = function () {
   }
 
   const stageKeys = [
+    'LoginDate',
     'AgreementDate',
     'MaterialDispatchedDate',
     'InstallationDate',
@@ -1079,13 +1099,14 @@ window.openWorkSummaryModal = function () {
   let sumModalSortCol = null;
   let sumModalSortDir = 'desc';
 
-  function getAgreementSortScore(r) {
-    const isNetMeterMarked = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  function getLoginSortScore(r) {
+    const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
     const stages = [
+      Boolean(r.LoginDate),
       Boolean(r.AgreementDate),
       Boolean(r.MaterialDispatchedDate),
       Boolean(r.InstallationDate),
-      isNetMeterMarked,
+      isNm,
       Boolean(r.InspectionDate),
       Boolean(r.MeterConnectedDate),
       Boolean(r.CommissioningDate)
@@ -1095,14 +1116,51 @@ window.openWorkSummaryModal = function () {
       if (d) highestIdx = Math.max(highestIdx, idx);
     });
 
-    const agrmtDate = r.AgreementDate || r.LoginDate || '';
+    const loginDate = r.LoginDate || '';
+    const loginDelay = getDelayInfo(loginDate);
+    let alertScore = 0; // 0 = inactive
+    let delayDays = loginDelay ? loginDelay.totalDays : -999;
+
+    if (highestIdx === 0 && loginDelay) {
+      if (loginDelay.totalDays >= 90) {
+        alertScore = 3; // RED (>= 3 months delay)
+      } else if (loginDelay.totalDays >= 60) {
+        alertScore = 2; // YELLOW (>= 2 months delay)
+      } else {
+        alertScore = 1; // BLUE (normal)
+      }
+    } else if (highestIdx > 0) {
+      alertScore = 0.5; // Progressed past Login
+    }
+
+    return { alertScore, delayDays };
+  }
+
+  function getAgreementSortScore(r) {
+    const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+    const stages = [
+      Boolean(r.LoginDate),
+      Boolean(r.AgreementDate),
+      Boolean(r.MaterialDispatchedDate),
+      Boolean(r.InstallationDate),
+      isNm,
+      Boolean(r.InspectionDate),
+      Boolean(r.MeterConnectedDate),
+      Boolean(r.CommissioningDate)
+    ];
+    let highestIdx = -1;
+    stages.forEach((d, idx) => {
+      if (d) highestIdx = Math.max(highestIdx, idx);
+    });
+
+    const agrmtDate = r.AgreementDate || '';
     const agrmtDelay = getDelayInfo(agrmtDate);
-    const isEligibleForAlert = (highestIdx >= 0 && highestIdx <= 3);
+    const isEligibleForAlert = (highestIdx >= 1 && highestIdx <= 4);
 
     let alertScore = 0; // 0 = inactive
     let delayDays = agrmtDelay ? agrmtDelay.totalDays : -999;
 
-    if (highestIdx >= 0) {
+    if (highestIdx >= 1) {
       if (isEligibleForAlert && agrmtDelay && agrmtDelay.totalDays >= 90) {
         alertScore = 3; // RED (>= 3 months delay)
       } else if (isEligibleForAlert && agrmtDelay && agrmtDelay.totalDays >= 60) {
@@ -1123,6 +1181,7 @@ window.openWorkSummaryModal = function () {
       const targetStageIdx = stageKeys.indexOf(selectedSummaryStage);
       filtered = filtered.filter(r => {
         const stages = [
+          Boolean(r.LoginDate),
           Boolean(r.AgreementDate),
           Boolean(r.MaterialDispatchedDate),
           Boolean(r.InstallationDate),
@@ -1149,8 +1208,22 @@ window.openWorkSummaryModal = function () {
       );
     }
 
-    // Sort by Agreement Alert Status (Red -> Yellow -> Blue)
-    if (sumModalSortCol === 'Agreement') {
+    // Sort by Login or Agreement Alert Status (Red -> Yellow -> Blue) or Partner Name
+    if (sumModalSortCol === 'Login') {
+      filtered.sort((a, b) => {
+        const scoreA = getLoginSortScore(a);
+        const scoreB = getLoginSortScore(b);
+
+        if (scoreA.alertScore !== scoreB.alertScore) {
+          return sumModalSortDir === 'desc'
+            ? scoreB.alertScore - scoreA.alertScore
+            : scoreA.alertScore - scoreB.alertScore;
+        }
+        return sumModalSortDir === 'desc'
+          ? scoreB.delayDays - scoreA.delayDays
+          : scoreA.delayDays - scoreB.delayDays;
+      });
+    } else if (sumModalSortCol === 'Agreement') {
       filtered.sort((a, b) => {
         const scoreA = getAgreementSortScore(a);
         const scoreB = getAgreementSortScore(b);
@@ -1170,7 +1243,7 @@ window.openWorkSummaryModal = function () {
       filtered.sort((a, b) => {
         const pA = String(a.BrokerName || 'Direct').toLowerCase().trim();
         const pB = String(b.BrokerName || 'Direct').toLowerCase().trim();
-        return sumModalSortDir === 'asc' ? pA.localeCompare(pB) : pB.localeCompare(pA);
+        return sumModalSortDir === 'asc' ? pA.localeCompare(pB) : pB.localeCompare(a.BrokerName || 'Direct');
       });
     }
 
@@ -1182,22 +1255,25 @@ window.openWorkSummaryModal = function () {
     const tbody = document.querySelector('#workSummaryTable tbody');
     if (tbody) {
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted fs-8">No records matching search.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-muted fs-8">No records matching search.</td></tr>`;
         return;
       }
       tbody.innerHTML = filtered.map((r, i) => {
         const isNetMeterMarked = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
-        const agrmtDate = r.AgreementDate || r.LoginDate || '';
+        const loginDate = r.LoginDate || '';
+        const loginDelay = getDelayInfo(loginDate);
+        const agrmtDate = r.AgreementDate || '';
         const agrmtDelay = getDelayInfo(agrmtDate);
 
         const stages = [
-          { num: 1, date: r.AgreementDate || '', isMarked: Boolean(r.AgreementDate) },
-          { num: 2, date: r.MaterialDispatchedDate || '', isMarked: Boolean(r.MaterialDispatchedDate) },
-          { num: 3, date: r.InstallationDate || '', isMarked: Boolean(r.InstallationDate) },
-          { num: 4, date: r.NetMeterDate || '', isMarked: isNetMeterMarked },
-          { num: 5, date: r.InspectionDate || '', isMarked: Boolean(r.InspectionDate) },
-          { num: 6, date: r.MeterConnectedDate || '', isMarked: Boolean(r.MeterConnectedDate) },
-          { num: 7, date: r.CommissioningDate || '', isMarked: Boolean(r.CommissioningDate) }
+          { num: 1, date: r.LoginDate || '', isMarked: Boolean(r.LoginDate) },
+          { num: 2, date: r.AgreementDate || '', isMarked: Boolean(r.AgreementDate) },
+          { num: 3, date: r.MaterialDispatchedDate || '', isMarked: Boolean(r.MaterialDispatchedDate) },
+          { num: 4, date: r.InstallationDate || '', isMarked: Boolean(r.InstallationDate) },
+          { num: 5, date: r.NetMeterDate || '', isMarked: isNetMeterMarked },
+          { num: 6, date: r.InspectionDate || '', isMarked: Boolean(r.InspectionDate) },
+          { num: 7, date: r.MeterConnectedDate || '', isMarked: Boolean(r.MeterConnectedDate) },
+          { num: 8, date: r.CommissioningDate || '', isMarked: Boolean(r.CommissioningDate) }
         ];
 
         let highestMarkedIdx = -1;
@@ -1220,9 +1296,22 @@ window.openWorkSummaryModal = function () {
 
           if (isDone) {
             nodeClass = 'node-active';
-            // Stage 1 (Agreement) delay alert color for customers whose maximum reached stage is Agreement, Dispatch, Installation, or NetMeter (Stages 1-4)
-            const isEligibleForAlert = (highestMarkedIdx >= 0 && highestMarkedIdx <= 3);
-            if (idx === 0 && isEligibleForAlert && agrmtDelay) {
+            // Stage 1 (Login) delay alert: only for customers whose highest stage is strictly Login (idx === 0)
+            if (idx === 0 && highestMarkedIdx === 0 && loginDelay) {
+              if (loginDelay.totalDays >= 90) {
+                nodeClass += ' node-delay-red';
+                nodeTitle = `Login: ${loginDelay.text} (${loginDelay.totalDays} days ago - Delayed >= 3 Months)`;
+                dateClass = 'date-delay-red';
+              } else if (loginDelay.totalDays >= 60) {
+                nodeClass += ' node-delay-yellow';
+                nodeTitle = `Login: ${loginDelay.text} (${loginDelay.totalDays} days ago - Delayed >= 2 Months)`;
+                dateClass = 'date-delay-yellow';
+              }
+            }
+
+            // Stage 2 (Agreement) delay alert: for customers whose maximum reached stage is Agreement, Dispatch, Installation, or NetMeter (Stages 2-5, idx 1-4)
+            const isEligibleForAlert = (highestMarkedIdx >= 1 && highestMarkedIdx <= 4);
+            if (idx === 1 && isEligibleForAlert && agrmtDelay) {
               if (agrmtDelay.totalDays >= 90) {
                 nodeClass += ' node-delay-red';
                 nodeTitle = `Agreement: ${agrmtDelay.text} (${agrmtDelay.totalDays} days ago - Delayed >= 3 Months)`;
@@ -1268,10 +1357,24 @@ window.openWorkSummaryModal = function () {
   };
 
   const updateSortIcons = () => {
+    const thLogin = document.getElementById('thSumLogin');
     const thAgreement = document.getElementById('thSumAgreement');
     const thPartner = document.getElementById('thSumPartner');
+    const sortIconLogin = document.getElementById('sortIconLogin');
     const sortIconAgreement = document.getElementById('sortIconAgreement');
     const sortIconPartner = document.getElementById('sortIconPartner');
+
+    if (thLogin && sortIconLogin) {
+      if (sumModalSortCol === 'Login') {
+        thLogin.classList.add('sort-active');
+        sortIconLogin.className = sumModalSortDir === 'desc' 
+          ? 'bi bi-sort-down fs-9 ms-0.5 text-primary' 
+          : 'bi bi-sort-up fs-9 ms-0.5 text-primary';
+      } else {
+        thLogin.classList.remove('sort-active');
+        sortIconLogin.className = 'bi bi-arrow-down-up fs-9 ms-0.5 opacity-50';
+      }
+    }
 
     if (thAgreement && sortIconAgreement) {
       if (sumModalSortCol === 'Agreement') {
@@ -1299,6 +1402,22 @@ window.openWorkSummaryModal = function () {
   };
 
   renderPopupTable();
+
+  // Attach sort listener to Login column header
+  const thLogin = document.getElementById('thSumLogin');
+  if (thLogin) {
+    thLogin.onclick = () => {
+      if (sumModalSortCol === 'Login') {
+        sumModalSortDir = sumModalSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        sumModalSortCol = 'Login';
+        sumModalSortDir = 'desc';
+      }
+      updateSortIcons();
+      const searchInput = document.getElementById('fSumModalSearch');
+      renderPopupTable(searchInput ? searchInput.value.toLowerCase().trim() : '');
+    };
+  }
 
   // Attach sort listener to Agreement column header
   const thAgreement = document.getElementById('thSumAgreement');
@@ -1332,20 +1451,84 @@ window.openWorkSummaryModal = function () {
     };
   }
 
-  // Attach expand / fullscreen toggle listener
+  // Attach expand / compress toggle listener
   const btnExpand = document.getElementById('btnToggleSummaryExpand');
   if (btnExpand) {
     btnExpand.onclick = () => {
       const dialog = document.querySelector('#workSummaryModal .modal-dialog');
       const icon = document.getElementById('iconSummaryExpand');
       if (dialog) {
+        // Reset manual drag inline styles so CSS classes take effect
+        dialog.style.width = '';
+        dialog.style.maxWidth = '';
+        dialog.style.height = '';
+        dialog.style.maxHeight = '';
+
         dialog.classList.toggle('mw-summary-modal-expanded');
         const isExp = dialog.classList.contains('mw-summary-modal-expanded');
         if (icon) {
           icon.className = isExp ? 'bi bi-fullscreen-exit fs-8' : 'bi bi-arrows-fullscreen fs-8';
         }
-        btnExpand.title = isExp ? 'Restore Normal View' : 'Toggle Expand / Fullscreen';
+        btnExpand.title = isExp ? 'Compress / Normal Height & Width' : 'Expand / Fullscreen Height & Width';
+        btnExpand.classList.toggle('btn-primary', isExp);
+        btnExpand.classList.toggle('btn-outline-secondary', !isExp);
       }
+    };
+  }
+
+  // Attach interactive drag resize handler for Height & Width
+  const resizeHandle = document.getElementById('mwModalResizeHandle');
+  const modalDialog = document.querySelector('#workSummaryModal .modal-dialog');
+  if (resizeHandle && modalDialog) {
+    resizeHandle.onmousedown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startWidth = modalDialog.offsetWidth;
+      const startHeight = modalDialog.offsetHeight;
+
+      modalDialog.style.transition = 'none';
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'nwse-resize';
+
+      const onMouseMove = (moveEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+
+        const maxAvailW = window.innerWidth * 0.98;
+        const maxAvailH = window.innerHeight * 0.96;
+
+        const newWidth = Math.max(380, Math.min(maxAvailW, startWidth + deltaX * 2));
+        const newHeight = Math.max(320, Math.min(maxAvailH, startHeight + deltaY));
+
+        modalDialog.style.width = `${newWidth}px`;
+        modalDialog.style.maxWidth = `${newWidth}px`;
+        modalDialog.style.height = `${newHeight}px`;
+        modalDialog.style.maxHeight = `${newHeight}px`;
+        modalDialog.classList.remove('mw-summary-modal-expanded');
+
+        const btnExp = document.getElementById('btnToggleSummaryExpand');
+        const iconExp = document.getElementById('iconSummaryExpand');
+        if (btnExp && iconExp) {
+          iconExp.className = 'bi bi-arrows-fullscreen fs-8';
+          btnExp.title = 'Expand / Fullscreen Height & Width';
+          btnExp.classList.remove('btn-primary');
+          btnExp.classList.add('btn-outline-secondary');
+        }
+      };
+
+      const onMouseUp = () => {
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        modalDialog.style.transition = '';
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
     };
   }
 

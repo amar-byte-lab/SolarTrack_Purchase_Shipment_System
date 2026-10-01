@@ -2,25 +2,98 @@
    dashboard.css — Modern 2026 SaaS Dashboard Styles
    ========================================================================= */
 
-#kpiRow {
-  margin-bottom: 24px;
+.dashboard-page .erp-toolbar {
+  padding: 6px 12px !important;
 }
 
-#kpiRow .kpi-card {
-  height: 100%;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.dashboard-page .erp-toolbar .form-control-sm,
+.dashboard-page .erp-toolbar .form-select-sm,
+.dashboard-page .erp-toolbar .btn-sm {
+  font-size: 0.78rem !important;
+  height: 28px !important;
+  padding: 3px 8px !important;
 }
 
-#kpiRow .kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--st-shadow-md);
+/* ══ Show Deactive Toggle Button ═══════════════════════════════════════ */
+.dash-deactive-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 3px 10px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  color: #475569;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  margin-bottom: 0;
+  white-space: nowrap;
 }
 
-.st-card canvas {
-  width: 100% !important;
-  max-width: 100%;
+.dash-deactive-toggle:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 
-.recent-table-card {
-  margin-top: 20px;
+.dash-deactive-toggle input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  accent-color: #dc2626;
+  vertical-align: middle;
+}
+
+/* ══ District Stats Badges in Toolbar ═════════════════════════════════ */
+.dashboard-page .erp-tag {
+  font-size: 0.70rem !important;
+  padding: 2px 7px !important;
+  border-radius: 3px !important;
+  height: 24px !important;
+  line-height: 20px !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ══ Full-Page Table & Card Layout ════════════════════════════════════ */
+.dash-summary-card {
+  min-height: calc(100vh - 230px);
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-summary-table-wrap {
+  min-height: 400px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#dashWorkSummaryTable tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+#dashWorkSummaryTable tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .dash-summary-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 310px);
+  }
+
+  .dash-deactive-toggle {
+    height: 26px;
+    padding: 2px 6px;
+    font-size: 0.70rem;
+  }
 }

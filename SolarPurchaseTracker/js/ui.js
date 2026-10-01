@@ -6,6 +6,7 @@
 const UI = (() => {
 
   const NAV_ITEMS = [
+    { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
@@ -86,9 +87,9 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (user.role === 'admin' || user.role === 'superadmin' || user.userid === 'amar') return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['dashboard.html', 'customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['dashboard.html', 'manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : [];
 

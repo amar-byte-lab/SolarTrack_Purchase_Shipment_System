@@ -137,7 +137,7 @@ const Auth = (() => {
     // 1. If on login page
     if (page === 'login.html') {
       if (currentUser) {
-        window.location.href = 'quotation.html';
+        window.location.href = 'dashboard.html';
       }
       return;
     }
@@ -150,7 +150,7 @@ const Auth = (() => {
 
     // 3. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
-      window.location.href = 'quotation.html';
+      window.location.href = 'dashboard.html';
       return;
     }
 
@@ -159,15 +159,15 @@ const Auth = (() => {
     
     if (!isPowerUser) {
       if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        const allowed = ['customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+        const allowed = ['dashboard.html', 'customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
-          window.location.href = 'quotation.html';
+          window.location.href = 'dashboard.html';
           return;
         }
       } else {
-        const allowed = ['manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
+        const allowed = ['dashboard.html', 'manage-work.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
-          window.location.href = 'quotation.html';
+          window.location.href = 'dashboard.html';
           return;
         }
       }

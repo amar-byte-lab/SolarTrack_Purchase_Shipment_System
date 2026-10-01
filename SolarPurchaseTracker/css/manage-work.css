@@ -338,39 +338,117 @@
   text-align: right;
 }
 
-/* ══ Summary Modal Dialog Width ═════════════════════════════════════ */
+/* ══ Summary Modal Dialog Resizing (Expand, Compress & Drag Resizable) ════ */
 .mw-summary-modal-dialog {
-  max-width: 820px !important;
-  width: 96%;
-  margin: 1.25rem auto;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 860px !important;
+  width: 94vw !important;
+  height: 84vh !important;
+  min-height: 400px !important;
+  max-height: 88vh !important;
+  margin: 1.25rem auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1), height 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.mw-summary-modal-dialog.mw-summary-modal-expanded {
-  max-width: 96vw !important;
-  width: 96vw !important;
-  margin: 0.75rem auto !important;
-}
-
-.mw-summary-modal-dialog.mw-summary-modal-expanded .card {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.mw-summary-modal-dialog.mw-summary-modal-expanded .table-responsive {
-  max-height: calc(85vh - 220px) !important;
+#workSummaryModal .modal-content {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  border-radius: 8px !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  flex: 1 1 auto !important;
 }
 
 #workSummaryModal .modal-body {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 0.75rem 0.85rem !important;
+  gap: 0.6rem !important;
+}
+
+#workSummaryModal .mw-summary-table-card {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  margin-bottom: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden !important;
+}
+
+#workSummaryModal .mw-summary-table-wrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+  overflow-y: auto !important;
   overflow-x: hidden;
 }
 
-#workSummaryModal .table-responsive {
-  overflow-x: hidden;
+/* ══ Expanded / Fullscreen Modal Mode (Full Height & Width) ═══════════ */
+.mw-summary-modal-dialog.mw-summary-modal-expanded {
+  max-width: 98vw !important;
+  width: 98vw !important;
+  height: calc(100vh - 1.25rem) !important;
+  min-height: calc(100vh - 1.25rem) !important;
+  max-height: calc(100vh - 1.25rem) !important;
+  margin: 0.625rem auto !important;
+}
+
+.mw-summary-modal-dialog.mw-summary-modal-expanded .modal-content {
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+.mw-summary-modal-dialog.mw-summary-modal-expanded .mw-summary-table-card {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+/* ══ Drag Resize Handle at Bottom-Right ═════════════════════════════ */
+.mw-modal-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 50;
+  background: linear-gradient(135deg, transparent 50%, #94a3b8 50%, #94a3b8 60%, transparent 60%, transparent 75%, #94a3b8 75%, #94a3b8 85%, transparent 85%);
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+  user-select: none;
+}
+
+.mw-modal-resize-handle:hover {
+  opacity: 1;
+  background: linear-gradient(135deg, transparent 50%, #2563eb 50%, #2563eb 60%, transparent 60%, transparent 75%, #2563eb 75%, #2563eb 85%, transparent 85%);
 }
 
 @media (max-width: 768px) {
-  #workSummaryModal .table-responsive {
-    overflow-x: auto;
+  .mw-summary-modal-dialog {
+    height: 94vh !important;
+    max-height: 94vh !important;
+    margin: 0.35rem auto !important;
+    width: calc(100% - 0.7rem) !important;
+    max-width: calc(100% - 0.7rem) !important;
+  }
+
+  .mw-modal-resize-handle {
+    display: none !important;
+  }
+
+  #workSummaryModal .mw-summary-table-wrap {
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
   }
 }
@@ -378,8 +456,8 @@
 /* ══ KPI Grid in Summary Modal ════════════════════════════════════════ */
 .mw-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .mw-kpi-card {
@@ -412,6 +490,11 @@
 .mw-kpi-card.kpi-card-selected[data-stage="ALL"] {
   background: #1e293b !important;
   border-color: #0f172a !important;
+}
+
+.mw-kpi-card.kpi-card-selected[data-stage="LoginDate"] {
+  background: #0284c7 !important;
+  border-color: #0369a1 !important;
 }
 
 .mw-kpi-card.kpi-card-selected[data-stage="AgreementDate"] {
@@ -747,7 +830,7 @@
 }
 
 .table-manage-work-summary thead th.th-stage-col {
-  width: calc((100% - 213px) / 7);
+  width: calc((100% - 213px) / 8);
   color: #2563eb;
   background-color: #f8fafc !important;
   padding: 5px 2px !important;
@@ -760,7 +843,7 @@
   text-align: center;
   vertical-align: middle;
   background-color: transparent;
-  width: calc((100% - 213px) / 7);
+  width: calc((100% - 213px) / 8);
 }
 
 .mw-row-stepper-cell {
@@ -905,7 +988,7 @@
   }
 
   .mw-kpi-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 4px !important;
   }
 
