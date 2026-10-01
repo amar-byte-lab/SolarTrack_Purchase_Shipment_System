@@ -1076,8 +1076,47 @@ window.openWorkSummaryModal = function () {
     'CommissioningDate'
   ];
 
+  let sumModalSortCol = null;
+  let sumModalSortDir = 'desc';
+
+  function getAgreementSortScore(r) {
+    const isNetMeterMarked = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+    const stages = [
+      Boolean(r.AgreementDate),
+      Boolean(r.MaterialDispatchedDate),
+      Boolean(r.InstallationDate),
+      isNetMeterMarked,
+      Boolean(r.InspectionDate),
+      Boolean(r.MeterConnectedDate),
+      Boolean(r.CommissioningDate)
+    ];
+    let highestIdx = -1;
+    stages.forEach((d, idx) => {
+      if (d) highestIdx = Math.max(highestIdx, idx);
+    });
+
+    const agrmtDate = r.AgreementDate || r.LoginDate || '';
+    const agrmtDelay = getDelayInfo(agrmtDate);
+    const isEligibleForAlert = (highestIdx >= 0 && highestIdx <= 3);
+
+    let alertScore = 0; // 0 = inactive
+    let delayDays = agrmtDelay ? agrmtDelay.totalDays : -999;
+
+    if (highestIdx >= 0) {
+      if (isEligibleForAlert && agrmtDelay && agrmtDelay.totalDays >= 90) {
+        alertScore = 3; // RED (>= 3 months delay)
+      } else if (isEligibleForAlert && agrmtDelay && agrmtDelay.totalDays >= 60) {
+        alertScore = 2; // YELLOW (>= 2 months delay)
+      } else {
+        alertScore = 1; // BLUE (normal / no delay)
+      }
+    }
+
+    return { alertScore, delayDays };
+  }
+
   const renderPopupTable = (filterTxt = '') => {
-    let filtered = rows;
+    let filtered = [...rows];
 
     // Filter by selected summary stage (strictly customers whose maximum reached level is this stage)
     if (selectedSummaryStage && selectedSummaryStage !== 'ALL') {
@@ -1110,6 +1149,31 @@ window.openWorkSummaryModal = function () {
       );
     }
 
+    // Sort by Agreement Alert Status (Red -> Yellow -> Blue)
+    if (sumModalSortCol === 'Agreement') {
+      filtered.sort((a, b) => {
+        const scoreA = getAgreementSortScore(a);
+        const scoreB = getAgreementSortScore(b);
+
+        if (scoreA.alertScore !== scoreB.alertScore) {
+          return sumModalSortDir === 'desc'
+            ? scoreB.alertScore - scoreA.alertScore
+            : scoreA.alertScore - scoreB.alertScore;
+        }
+        // Sub-sort by total delay days within the same color group
+        return sumModalSortDir === 'desc'
+          ? scoreB.delayDays - scoreA.delayDays
+          : scoreA.delayDays - scoreB.delayDays;
+      });
+    } else if (sumModalSortCol === 'Partner') {
+      // Sort by Partner Name (A-Z / Z-A)
+      filtered.sort((a, b) => {
+        const pA = String(a.BrokerName || 'Direct').toLowerCase().trim();
+        const pB = String(b.BrokerName || 'Direct').toLowerCase().trim();
+        return sumModalSortDir === 'asc' ? pA.localeCompare(pB) : pB.localeCompare(pA);
+      });
+    }
+
     const countBadge = document.getElementById('sumModalRowCount');
     if (countBadge) {
       countBadge.textContent = `${filtered.length} of ${rows.length} customers`;
@@ -1123,6 +1187,9 @@ window.openWorkSummaryModal = function () {
       }
       tbody.innerHTML = filtered.map((r, i) => {
         const isNetMeterMarked = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+        const agrmtDate = r.AgreementDate || r.LoginDate || '';
+        const agrmtDelay = getDelayInfo(agrmtDate);
+
         const stages = [
           { num: 1, date: r.AgreementDate || '', isMarked: Boolean(r.AgreementDate) },
           { num: 2, date: r.MaterialDispatchedDate || '', isMarked: Boolean(r.MaterialDispatchedDate) },
@@ -1146,17 +1213,37 @@ window.openWorkSummaryModal = function () {
           const hasRightLine = idx < stages.length - 1;
           const leftFilled = hasLeftLine && (idx <= highestMarkedIdx);
           const rightFilled = hasRightLine && (idx < highestMarkedIdx);
-          const nodeClass = isDone ? 'node-active' : 'node-inactive';
+
+          let nodeClass = 'node-inactive';
+          let nodeTitle = `Stage ${st.num}`;
+          let dateClass = '';
+
+          if (isDone) {
+            nodeClass = 'node-active';
+            // Stage 1 (Agreement) delay alert color for customers whose maximum reached stage is Agreement, Dispatch, Installation, or NetMeter (Stages 1-4)
+            const isEligibleForAlert = (highestMarkedIdx >= 0 && highestMarkedIdx <= 3);
+            if (idx === 0 && isEligibleForAlert && agrmtDelay) {
+              if (agrmtDelay.totalDays >= 90) {
+                nodeClass += ' node-delay-red';
+                nodeTitle = `Agreement: ${agrmtDelay.text} (${agrmtDelay.totalDays} days ago - Delayed >= 3 Months)`;
+                dateClass = 'date-delay-red';
+              } else if (agrmtDelay.totalDays >= 60) {
+                nodeClass += ' node-delay-yellow';
+                nodeTitle = `Agreement: ${agrmtDelay.text} (${agrmtDelay.totalDays} days ago - Delayed >= 2 Months)`;
+                dateClass = 'date-delay-yellow';
+              }
+            }
+          }
 
           return `
             <td class="mw-stepper-td">
-              <div class="mw-row-stepper-cell">
+              <div class="mw-row-stepper-cell" title="${nodeTitle}">
                 ${hasLeftLine ? `<div class="mw-row-line-left ${leftFilled ? 'filled' : ''}"></div>` : ''}
                 ${hasRightLine ? `<div class="mw-row-line-right ${rightFilled ? 'filled' : ''}"></div>` : ''}
                 <div class="mw-row-node ${nodeClass}">
                   ${st.num}
                 </div>
-                <div class="mw-row-node-date">
+                <div class="mw-row-node-date ${dateClass}">
                   ${st.date ? st.date : '&nbsp;'}
                 </div>
               </div>
@@ -1180,7 +1267,87 @@ window.openWorkSummaryModal = function () {
     }
   };
 
+  const updateSortIcons = () => {
+    const thAgreement = document.getElementById('thSumAgreement');
+    const thPartner = document.getElementById('thSumPartner');
+    const sortIconAgreement = document.getElementById('sortIconAgreement');
+    const sortIconPartner = document.getElementById('sortIconPartner');
+
+    if (thAgreement && sortIconAgreement) {
+      if (sumModalSortCol === 'Agreement') {
+        thAgreement.classList.add('sort-active');
+        sortIconAgreement.className = sumModalSortDir === 'desc' 
+          ? 'bi bi-sort-down fs-9 ms-0.5 text-primary' 
+          : 'bi bi-sort-up fs-9 ms-0.5 text-primary';
+      } else {
+        thAgreement.classList.remove('sort-active');
+        sortIconAgreement.className = 'bi bi-arrow-down-up fs-9 ms-0.5 opacity-50';
+      }
+    }
+
+    if (thPartner && sortIconPartner) {
+      if (sumModalSortCol === 'Partner') {
+        thPartner.classList.add('sort-active');
+        sortIconPartner.className = sumModalSortDir === 'asc' 
+          ? 'bi bi-sort-alpha-down fs-9 ms-0.5 text-primary' 
+          : 'bi bi-sort-alpha-up-alt fs-9 ms-0.5 text-primary';
+      } else {
+        thPartner.classList.remove('sort-active');
+        sortIconPartner.className = 'bi bi-arrow-down-up fs-9 ms-0.5 opacity-50';
+      }
+    }
+  };
+
   renderPopupTable();
+
+  // Attach sort listener to Agreement column header
+  const thAgreement = document.getElementById('thSumAgreement');
+  if (thAgreement) {
+    thAgreement.onclick = () => {
+      if (sumModalSortCol === 'Agreement') {
+        sumModalSortDir = sumModalSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        sumModalSortCol = 'Agreement';
+        sumModalSortDir = 'desc';
+      }
+      updateSortIcons();
+      const searchInput = document.getElementById('fSumModalSearch');
+      renderPopupTable(searchInput ? searchInput.value.toLowerCase().trim() : '');
+    };
+  }
+
+  // Attach sort listener to Partner column header
+  const thPartner = document.getElementById('thSumPartner');
+  if (thPartner) {
+    thPartner.onclick = () => {
+      if (sumModalSortCol === 'Partner') {
+        sumModalSortDir = sumModalSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sumModalSortCol = 'Partner';
+        sumModalSortDir = 'asc';
+      }
+      updateSortIcons();
+      const searchInput = document.getElementById('fSumModalSearch');
+      renderPopupTable(searchInput ? searchInput.value.toLowerCase().trim() : '');
+    };
+  }
+
+  // Attach expand / fullscreen toggle listener
+  const btnExpand = document.getElementById('btnToggleSummaryExpand');
+  if (btnExpand) {
+    btnExpand.onclick = () => {
+      const dialog = document.querySelector('#workSummaryModal .modal-dialog');
+      const icon = document.getElementById('iconSummaryExpand');
+      if (dialog) {
+        dialog.classList.toggle('mw-summary-modal-expanded');
+        const isExp = dialog.classList.contains('mw-summary-modal-expanded');
+        if (icon) {
+          icon.className = isExp ? 'bi bi-fullscreen-exit fs-8' : 'bi bi-arrows-fullscreen fs-8';
+        }
+        btnExpand.title = isExp ? 'Restore Normal View' : 'Toggle Expand / Fullscreen';
+      }
+    };
+  }
 
   const searchInput = document.getElementById('fSumModalSearch');
   if (searchInput) {
