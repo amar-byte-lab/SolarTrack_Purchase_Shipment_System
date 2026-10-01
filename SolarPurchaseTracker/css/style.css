@@ -8,3 +8,22 @@
 @import url('app.css');
 
 /* Global Overrides and Responsive Polish */
+
+.searchable-dropdown-menu {
+  border-radius: 6px !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18) !important;
+  padding: 4px 0 !important;
+}
+
+.searchable-dropdown-menu .dropdown-item {
+  color: #1e293b !important;
+  transition: background-color 0.12s ease;
+}
+
+.searchable-dropdown-menu .dropdown-item:hover,
+.searchable-dropdown-menu .dropdown-item:focus {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}

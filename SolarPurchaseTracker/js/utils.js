@@ -79,32 +79,75 @@ const Utils = (() => {
     if (!menu) {
       menu = document.createElement('div');
       menu.id = menuId;
-      menu.className = 'dropdown-menu w-100 shadow';
-      menu.style.maxHeight = '250px';
-      menu.style.overflowY = 'auto';
-      menu.style.position = 'absolute';
-      input.after(menu);
+      menu.className = 'dropdown-menu shadow-lg searchable-dropdown-menu';
+      document.body.appendChild(menu);
+    } else if (menu.parentElement !== document.body) {
+      document.body.appendChild(menu);
     }
 
-    let currentOptions = optionsList;
+    let currentOptions = optionsList || [];
+
+    function escapeAttr(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
 
     function renderOptions(filterText = '') {
+      const q = String(filterText || '').toLowerCase().trim();
       const filtered = currentOptions.filter(opt => 
-        String(opt).toLowerCase().includes(filterText.toLowerCase())
+        String(opt).toLowerCase().includes(q)
       );
 
       if (filtered.length === 0) {
-        menu.innerHTML = `<div class="dropdown-item text-muted" style="cursor: default; font-size: 0.82rem;">No matches found</div>`;
+        menu.innerHTML = `<div class="dropdown-item text-muted" style="cursor: default; font-size: 0.82rem; padding: 6px 12px;">No matches found</div>`;
       } else {
         menu.innerHTML = filtered.map(opt => 
-          `<button type="button" class="dropdown-item text-start text-truncate py-1 px-3" data-value="${opt}" style="font-size: 0.82rem; border: none; background: none; width: 100%;">${opt}</button>`
+          `<button type="button" class="dropdown-item text-start text-truncate" data-value="${escapeAttr(opt)}" style="font-size: 0.82rem; border: none; background: none; width: 100%; padding: 6px 12px; cursor: pointer;">${escapeAttr(opt)}</button>`
         ).join('');
+      }
+    }
+
+    function positionMenu() {
+      if (!menu.classList.contains('show')) return;
+      const rect = input.getBoundingClientRect();
+
+      // If input is detached or not visible, hide menu
+      if (rect.width === 0 || rect.height === 0 || rect.bottom < 0 || rect.top > window.innerHeight) {
+        hideMenu();
+        return;
+      }
+
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const menuMaxHeight = 220;
+
+      menu.style.position = 'fixed';
+      menu.style.zIndex = '10800';
+      menu.style.minWidth = `${Math.max(rect.width, 160)}px`;
+      menu.style.width = `${rect.width}px`;
+      menu.style.left = `${rect.left}px`;
+      menu.style.maxHeight = `${menuMaxHeight}px`;
+      menu.style.overflowY = 'auto';
+      menu.style.margin = '0';
+
+      // Dropup if space below is too small (< 180px) and above has more space
+      if (spaceBelow < 180 && spaceAbove > spaceBelow) {
+        menu.style.top = 'auto';
+        menu.style.bottom = `${Math.max(0, window.innerHeight - rect.top + 3)}px`;
+      } else {
+        menu.style.top = `${rect.bottom + 3}px`;
+        menu.style.bottom = 'auto';
       }
     }
 
     const showMenu = () => {
       renderOptions(input.value);
       menu.classList.add('show');
+      positionMenu();
     };
 
     const hideMenu = () => {
@@ -120,11 +163,13 @@ const Utils = (() => {
     input.addEventListener('input', () => {
       renderOptions(input.value);
       menu.classList.add('show');
+      positionMenu();
     });
 
     menu.addEventListener('mousedown', (e) => {
       const item = e.target.closest('.dropdown-item');
       if (item && item.hasAttribute('data-value')) {
+        e.preventDefault();
         const val = item.getAttribute('data-value');
         input.value = val;
         hideMenu();
@@ -142,8 +187,26 @@ const Utils = (() => {
       }
     });
 
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideMenu();
+      }
+    });
+
+    window.addEventListener('scroll', positionMenu, { capture: true, passive: true });
+    window.addEventListener('resize', positionMenu, { passive: true });
+
+    // Clean up if modal closes
+    const parentModal = input.closest('.modal');
+    if (parentModal && !parentModal.dataset.hasDropdownCleanup) {
+      parentModal.dataset.hasDropdownCleanup = 'true';
+      parentModal.addEventListener('hidden.bs.modal', () => {
+        document.querySelectorAll('.searchable-dropdown-menu.show').forEach(m => m.classList.remove('show'));
+      });
+    }
+
     input.updateOptionsList = function(newOptions) {
-      currentOptions = newOptions;
+      currentOptions = newOptions || [];
     };
   }
 
