@@ -21,11 +21,8 @@
     <div class="page-body">
       <!-- Search & Filters Toolbar -->
       <div class="st-card erp-toolbar mb-2 no-print py-2 px-3">
-        <!-- Row 1: Area / District Badges (Horizontal Scrollable Strip on Mobile) -->
-        <div class="mw-chips-scroll-strip mw-district-strip pb-1.5 mb-1.5 border-bottom" id="districtStatsContainer"></div>
-
-        <!-- Row 2: Search and Main Action Controls -->
-        <div class="mw-toolbar-top-row d-flex justify-content-between align-items-center gap-2 flex-wrap">
+        <!-- Row 1: Search and Main Action Controls -->
+        <div class="mw-toolbar-top-row d-flex justify-content-between align-items-center gap-2 flex-wrap mb-1.5">
           <div class="mw-search-box flex-grow-1" style="max-width: 420px; min-width: 200px;">
             <div class="input-group input-group-sm">
               <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
@@ -55,8 +52,11 @@
           </div>
         </div>
 
+        <!-- Row 2: Area / District Badges (Horizontal Scrollable Strip on Mobile) -->
+        <div class="mw-chips-scroll-strip mw-district-strip mb-1.5" id="districtStatsContainer"></div>
+
         <!-- Row 3: Workflow Stage Filters (Horizontal Scrollable Strip on Mobile) -->
-        <div class="mw-chips-scroll-strip mw-stage-strip pt-1.5 mt-1.5 border-top" id="stageStatsContainer"></div>
+        <div class="mw-chips-scroll-strip mw-stage-strip" id="stageStatsContainer"></div>
       </div>
 
       <!-- Main Progress & Workflow Table -->
