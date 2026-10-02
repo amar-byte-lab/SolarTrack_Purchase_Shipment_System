@@ -1357,7 +1357,7 @@ function renderList() {
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
 
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '7' : '6'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No records found.</td></tr>`;
     const allDbRows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
     renderTopKpis({
       activeCount: 0,
@@ -1469,33 +1469,6 @@ function renderList() {
               <input type="text" class="form-control form-control-sm erp-partner-input" id="editBrokerName" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off">
             </div>
           </td>
-          <td class="col-price admin-only-column">
-            <div style="resize: horizontal; overflow: auto; min-width: 145px; max-width: 400px; padding: 2px;">
-              <div class="d-flex flex-column gap-1">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Material</span>
-                  <input type="number" step="0.01" class="form-control expense-calc-inline" id="editMaterialCost" value="${(expenses && expenses.material) || 0}" placeholder="Material Price">
-                </div>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Install</span>
-                  <input type="number" step="0.01" class="form-control expense-calc-inline" id="editInstallationCost" value="${(expenses && expenses.install) || 0}" placeholder="Installation">
-                </div>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text text-secondary" style="font-size:0.55rem; width: 60px; line-height: 1.1;" title="GST calculated on Customer Price">GST (%)</span>
-                  <input type="number" step="any" class="form-control" id="editGSTPercentage" value="${(expenses && expenses.gst_pct !== undefined && expenses.gst_pct !== null && expenses.gst_pct !== '') ? expenses.gst_pct : (typeof Utils !== 'undefined' && Utils.getDefaultGST ? Utils.getDefaultGST(18) : 18)}" placeholder="GST %">
-                  <span class="input-group-text bg-light fw-bold" id="lblEditGSTAmount" style="font-size:0.65rem; width: 60px;">₹0.00</span>
-                </div>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text" style="font-size:0.65rem; width: 60px;">Other</span>
-                  <input type="number" step="0.01" class="form-control expense-calc-inline" id="editOtherCost" value="${(expenses && expenses.other) || 0}" placeholder="Other">
-                </div>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text bg-light fw-bold" style="font-size:0.65rem; width: 60px;">Total</span>
-                  <input type="number" step="0.01" class="form-control bg-light fw-bold" id="editVendorPrice" value="${r.VendorPrice || ''}" placeholder="Total Expense" readonly>
-                </div>
-              </div>
-            </div>
-          </td>
           <td class="no-print text-center align-middle">
             <div class="d-flex gap-1 justify-content-center">
               <button class="btn btn-sm btn-success py-0.5 px-2 d-inline-flex align-items-center" onclick="saveInline(${r.SlNo})" title="Save">
@@ -1582,18 +1555,17 @@ function renderList() {
                     <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace text-nowrap" style="font-size: 0.74rem;">
                       ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
                     </span>
-                    ${netMeterBadgeHtml}
                   </div>
                   ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
                 </div>
                 <div class="erp-pay-inputs-wrap ${(hasPayment && !isFullyPaid) ? 'd-flex' : 'd-none'} align-items-center gap-1" id="payInputs_${r.SlNo}">
-                  <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 105px;" ${isFullyPaid ? 'disabled' : ''}>
+                  <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 105px;" disabled>
                   <div class="input-group input-group-sm" style="width: 105px;">
                     <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem; height: 26px;">₹</span>
-                    <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="${defaultPayAmt}" placeholder="${pendingAmt > 0 ? pendingAmt : 'Add Amt'}" title="Pending amount to pay" style="font-size: 0.75rem; height: 26px;" onkeydown="if(event.key==='Enter') saveCustomerQuickPayment(${r.SlNo})" ${isFullyPaid ? 'disabled' : ''}>
+                    <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="${defaultPayAmt}" placeholder="${pendingAmt > 0 ? pendingAmt : 'Add Amt'}" title="Pending amount to pay" style="font-size: 0.75rem; height: 26px;" disabled onkeydown="if(event.key==='Enter') window.saveCustomerQuickPayment(${r.SlNo}); else if(event.key==='Escape') window.cancelPayEdit(${r.SlNo});">
                   </div>
-                  <button type="button" class="btn btn-sm btn-outline-success p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; flex-shrink: 0;" onclick="saveCustomerQuickPayment(${r.SlNo})" title="Add Payment" ${isFullyPaid ? 'disabled' : ''}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <button type="button" class="btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnPayAction_${r.SlNo}" style="width: 26px; height: 26px; flex-shrink: 0;" onclick="window.togglePayEdit(${r.SlNo})" title="Edit Payment" ${isFullyPaid ? 'disabled' : ''}>
+                    ${UI.icon('pencil', 12)}
                   </button>
                 </div>
               </div>
@@ -1604,7 +1576,6 @@ function renderList() {
                     <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace text-nowrap" style="font-size: 0.75rem;">
                       ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
                     </span>
-                    ${netMeterBadgeHtml}
                   </div>
                   ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
                 </div>
@@ -1624,18 +1595,6 @@ function renderList() {
           <td class="col-Partner align-middle">
             <div class="erp-partner-searchable-wrap">
               <input type="text" class="form-control form-control-sm erp-partner-input" id="partnerInput_${r.SlNo}" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off">
-            </div>
-          </td>
-          <td class="col-price align-middle font-monospace">
-            <div class="erp-expense-cell">
-              <div class="d-flex justify-content-between align-items-center gap-2">
-                <span class="text-secondary fs-8">Exp:</span>
-                <span class="fw-semibold text-dark fs-8">₹${vPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-              </div>
-              <div class="d-flex justify-content-between align-items-center gap-2 border-top pt-0.5 mt-0.5">
-                <span class="text-secondary fs-8">Profit:</span>
-                <span class="${profitColorClass} fs-8">₹${profit.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-              </div>
             </div>
           </td>
           <td class="no-print text-center align-middle">
@@ -1770,8 +1729,10 @@ function bindEditRowListeners() {
   }
 
   const updateInlineCalculations = () => {
-    const custPriceVal = Number(document.getElementById('editCommittedPrice').value) || 0;
-    const gstPct = Number(document.getElementById('editGSTPercentage').value) || 0;
+    const editCommPriceEl = document.getElementById('editCommittedPrice');
+    const custPriceVal = editCommPriceEl ? (Number(editCommPriceEl.value) || 0) : 0;
+    const editGstPctEl = document.getElementById('editGSTPercentage');
+    const gstPct = editGstPctEl ? (Number(editGstPctEl.value) || 0) : 0;
     const gstVal = custPriceVal * (gstPct / 100);
 
     const gstLabel = document.getElementById('lblEditGSTAmount');
@@ -1779,9 +1740,12 @@ function bindEditRowListeners() {
       gstLabel.textContent = '₹' + gstVal.toFixed(2);
     }
 
-    const mat = Number(document.getElementById('editMaterialCost').value) || 0;
-    const inst = Number(document.getElementById('editInstallationCost').value) || 0;
-    const oth = Number(document.getElementById('editOtherCost').value) || 0;
+    const editMatEl = document.getElementById('editMaterialCost');
+    const editInstEl = document.getElementById('editInstallationCost');
+    const editOthEl = document.getElementById('editOtherCost');
+    const mat = editMatEl ? (Number(editMatEl.value) || 0) : 0;
+    const inst = editInstEl ? (Number(editInstEl.value) || 0) : 0;
+    const oth = editOthEl ? (Number(editOthEl.value) || 0) : 0;
 
     const totalField = document.getElementById('editVendorPrice');
     if (totalField) {
@@ -1834,24 +1798,7 @@ function renderTopKpis(metrics) {
   const rupeeIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>`;
 
   const cardsHtml = [
-    // 1. Total Customers Card (With filter value badge)
-    `
-    <div class="customer-kpi-card kpi-customers">
-      <div class="customer-kpi-header">
-        <span class="customer-kpi-title">Customers</span>
-        <span class="customer-kpi-icon-wrap" title="Total active records">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </span>
-      </div>
-      <div class="customer-kpi-value text-indigo">${activeCount}</div>
-      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap">
-        <span class="text-secondary fs-8">${showDeactive ? 'Deactive' : 'Active Records'}</span>
-        <span class="badge bg-indigo-subtle text-indigo px-1.5 py-0 fs-8 text-truncate" style="max-width: 110px;" title="Filter: ${filterLabel}">${filterLabel}</span>
-      </div>
-    </div>
-    `,
-
-    // 2. Total Revenue Card (Includes Collected Amount (%), Pending Amount (%))
+    // 1. Total Revenue Card
     `
     <div class="customer-kpi-card kpi-revenue">
       <div class="customer-kpi-header">
@@ -1862,25 +1809,42 @@ function renderTopKpis(metrics) {
       </div>
       <div class="customer-kpi-value text-sky">${fmtGrandTotal(sumPrice)}</div>
       <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
-        <span class="text-success fw-semibold" title="Collected: ${fmtGrandTotal(sumTotal)}">Rec: ${fmtGrandTotal(sumTotal)} <span class="badge bg-success-subtle text-success px-1 py-0 fs-9">${collectionRate}%</span></span>
-        <span class="text-danger fw-semibold" title="Pending: ${fmtGrandTotal(pendingCust)}">Pend: ${fmtGrandTotal(pendingCust)} <span class="badge bg-danger-subtle text-danger px-1 py-0 fs-9">${pendingRate}%</span></span>
+        <span class="text-secondary">${activeCount} Customers</span>
+        <span class="badge bg-primary-subtle text-primary px-1.5 py-0 fs-8">100%</span>
       </div>
     </div>
     `,
 
-    // 3. Partner Amount Card
+    // 2. Received (Collected) Card
     `
-    <div class="customer-kpi-card kpi-partner">
+    <div class="customer-kpi-card kpi-collected">
       <div class="customer-kpi-header">
-        <span class="customer-kpi-title">Partner Total</span>
-        <span class="customer-kpi-icon-wrap" title="Partner share and pending">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        <span class="customer-kpi-title">Received</span>
+        <span class="customer-kpi-icon-wrap" title="Total collected amount">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
         </span>
       </div>
-      <div class="customer-kpi-value text-purple">${fmtGrandTotal(sumPartnerPrice)}</div>
+      <div class="customer-kpi-value text-success">${fmtGrandTotal(sumTotal)}</div>
       <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
-        <span class="text-secondary">Pending Due:</span>
-        <span class="badge bg-danger-subtle text-danger px-1.5 py-0 fs-8">${fmtGrandTotal(partnerPending)}</span>
+        <span class="text-secondary">Collected</span>
+        <span class="badge bg-success-subtle text-success px-1.5 py-0 fs-8">${collectionRate}%</span>
+      </div>
+    </div>
+    `,
+
+    // 3. Pending Card
+    `
+    <div class="customer-kpi-card kpi-pending">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Pending</span>
+        <span class="customer-kpi-icon-wrap" title="Total pending customer amount">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-danger">${fmtGrandTotal(pendingCust)}</div>
+      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+        <span class="text-secondary">Due Balance</span>
+        <span class="badge bg-danger-subtle text-danger px-1.5 py-0 fs-8">${pendingRate}%</span>
       </div>
     </div>
     `
@@ -2439,9 +2403,8 @@ window.handleCustomerPaymentToggle = async function(chkEl, slNo) {
       const currentPending = Math.max(0, custPrice - total);
       amtInput.value = currentPending > 0 ? currentPending : '';
       amtInput.placeholder = currentPending > 0 ? String(currentPending) : 'Add Amt';
-      amtInput.focus();
-      amtInput.select();
     }
+    window.togglePayEdit(slNo);
   } else {
     // Toggled from ON to OFF:
     if (total > 0) {
@@ -2481,6 +2444,50 @@ window.handleCustomerPaymentToggle = async function(chkEl, slNo) {
   }
 };
 
+window.togglePayEdit = function(slNo) {
+  const dateInput = document.getElementById(`payDate_${slNo}`);
+  const amtInput = document.getElementById(`payAmt_${slNo}`);
+  const btn = document.getElementById(`btnPayAction_${slNo}`);
+  if (!amtInput || !btn) return;
+
+  if (amtInput.disabled) {
+    amtInput.dataset.origVal = amtInput.value;
+    if (dateInput) {
+      dateInput.dataset.origVal = dateInput.value;
+      dateInput.disabled = false;
+    }
+    amtInput.disabled = false;
+    amtInput.focus();
+    amtInput.select();
+
+    btn.className = 'btn btn-sm btn-outline-success erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center';
+    btn.title = 'Save Payment';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    btn.onclick = () => window.saveCustomerQuickPayment(slNo);
+  }
+};
+
+window.cancelPayEdit = function(slNo) {
+  const dateInput = document.getElementById(`payDate_${slNo}`);
+  const amtInput = document.getElementById(`payAmt_${slNo}`);
+  const btn = document.getElementById(`btnPayAction_${slNo}`);
+  if (!amtInput || !btn) return;
+
+  if (amtInput.dataset.origVal !== undefined) {
+    amtInput.value = amtInput.dataset.origVal;
+  }
+  if (dateInput && dateInput.dataset.origVal !== undefined) {
+    dateInput.value = dateInput.dataset.origVal;
+  }
+  amtInput.disabled = true;
+  if (dateInput) dateInput.disabled = true;
+
+  btn.className = 'btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center';
+  btn.title = 'Edit Payment';
+  btn.innerHTML = UI.icon('pencil', 12);
+  btn.onclick = () => window.togglePayEdit(slNo);
+};
+
 window.saveCustomerQuickPayment = async function(slNo) {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
@@ -2497,6 +2504,20 @@ window.saveCustomerQuickPayment = async function(slNo) {
     return;
   }
 
+  const custName = r.Name || `Customer #${slNo}`;
+  const formattedAmt = `₹${Number(payAmt).toLocaleString('en-IN')}`;
+  const formattedDate = fmtDateExcel(payDate);
+  const ok = await UI.confirmDialog(
+    `Are you sure you want to add payment of ${formattedAmt} dated ${formattedDate} for "${custName}"? This will update the customer payment and pending balance.`,
+    'Confirm Payment Save',
+    'Yes, Save Payment',
+    'btn-primary'
+  );
+  if (!ok) {
+    window.cancelPayEdit(slNo);
+    return;
+  }
+
   UI.showLoading(true);
   try {
     // Insert new payment transaction
@@ -2510,7 +2531,7 @@ window.saveCustomerQuickPayment = async function(slNo) {
     });
 
     await syncInstallmentTotal(slNo, 'Customer');
-    UI.toast(`Payment of ₹${Math.round(payAmt).toLocaleString('en-IN')} added. Pending balance updated.`, 'success');
+    UI.toast(`Payment of ${formattedAmt} added. Pending balance updated.`, 'success');
     renderList();
   } catch (err) {
     UI.toast('Error saving payment: ' + err.message, 'danger');
@@ -3322,7 +3343,7 @@ window.openCustomerModal = function(slNo) {
       if (document.getElementById('cPinCode')) document.getElementById('cPinCode').value = r.PinCode || '';
       if (document.getElementById('cState')) document.getElementById('cState').value = r.State || 'Odisha';
       document.getElementById('cAddress').value = r.Address || '';
-      document.getElementById('cBrand').value = r.CommittedBrand || '';
+      if (document.getElementById('cBrand')) document.getElementById('cBrand').value = r.CommittedBrand || '';
       document.getElementById('cPrice').value = r.CommittedPrice || '';
       document.getElementById('cVendorPrice').value = r.VendorPrice || '';
       document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
@@ -3332,7 +3353,7 @@ window.openCustomerModal = function(slNo) {
       if (document.getElementById('cCommissioningDate')) {
         document.getElementById('cCommissioningDate').value = r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '';
       }
-      document.getElementById('cBrokerName').value = r.BrokerName || '';
+      if (document.getElementById('cBrokerName')) document.getElementById('cBrokerName').value = r.BrokerName || '';
       if (document.getElementById('cBrokerNumber')) {
         document.getElementById('cBrokerNumber').value = (r.BrokerNumber || '').split('|')[0];
       }
@@ -3378,25 +3399,27 @@ window.openCustomerModal = function(slNo) {
 
   updateModalLoginDelayBadge();
 
-  const vendors = DB.getAll('vendors');
-  Utils.initSearchableDropdown('cBrokerName', vendors.map(v => v.VendorName), (selectedBrokerName) => {
-    const found = vendors.find(v => v.VendorName === selectedBrokerName);
-    if (found && found.Phone) {
-      const cBrokerNumberInput = document.getElementById('cBrokerNumber');
-      if (cBrokerNumberInput) {
-        cBrokerNumberInput.value = found.Phone;
+  const cBrokerEl = document.getElementById('cBrokerName');
+  const vendors = DB.getAll('vendors') || [];
+  if (cBrokerEl) {
+    Utils.initSearchableDropdown('cBrokerName', vendors.map(v => v.VendorName), (selectedBrokerName) => {
+      const found = vendors.find(v => v.VendorName === selectedBrokerName);
+      if (found && found.Phone) {
+        const cBrokerNumberInput = document.getElementById('cBrokerNumber');
+        if (cBrokerNumberInput) {
+          cBrokerNumberInput.value = found.Phone;
+        }
       }
+    });
+    if (cBrokerEl.updateOptionsList) {
+      cBrokerEl.updateOptionsList(vendors.map(v => v.VendorName));
     }
-  });
-  const brokerInput = document.getElementById('cBrokerName');
-  if (brokerInput && brokerInput.updateOptionsList) {
-    brokerInput.updateOptionsList(vendors.map(v => v.VendorName));
   }
 
   const currentUser = Auth.getUser();
   if (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associates')) {
-    if (brokerInput && !slNo) {
-      brokerInput.value = currentUser.username;
+    if (cBrokerEl && !slNo) {
+      cBrokerEl.value = currentUser.username;
     }
     if (!slNo) {
       const foundVendor = vendors.find(v => v.VendorName === currentUser.username);
@@ -3406,8 +3429,8 @@ window.openCustomerModal = function(slNo) {
       }
     }
   }
-  if (brokerInput) {
-    brokerInput.disabled = false;
+  if (cBrokerEl) {
+    cBrokerEl.disabled = false;
   }
 
   const updateModalCalculations = () => {
@@ -3536,13 +3559,13 @@ async function saveCustomerModal() {
     PinCode: document.getElementById('cPinCode') ? document.getElementById('cPinCode').value.trim() : '',
     State: document.getElementById('cState') ? document.getElementById('cState').value.trim() : 'Odisha',
     Address: document.getElementById('cAddress').value.trim(),
-    CommittedBrand: document.getElementById('cBrand').value.trim(),
+    CommittedBrand: document.getElementById('cBrand') ? document.getElementById('cBrand').value.trim() : (existingRow ? (existingRow.CommittedBrand || '') : ''),
     CommittedPrice: Number(document.getElementById('cPrice').value) || 0,
     VendorPrice: calculatedVendorPrice,
     LoginDate: document.getElementById('cLoginDate').value || null,
     InstallationDate: document.getElementById('cInstallationDate') ? (document.getElementById('cInstallationDate').value || null) : (existingRow ? (existingRow.InstallationDate || null) : null),
     CommissioningDate: document.getElementById('cCommissioningDate') ? (document.getElementById('cCommissioningDate').value || null) : (existingRow ? (existingRow.CommissioningDate || null) : null),
-    BrokerName: document.getElementById('cBrokerName').value.trim(),
+    BrokerName: document.getElementById('cBrokerName') ? document.getElementById('cBrokerName').value.trim() : (existingRow ? (existingRow.BrokerName || '') : ''),
     BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
     Commission: Number(document.getElementById('cCommission').value) || 0,
     NetMeterPayment: expenses.net_meter_payment,
