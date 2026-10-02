@@ -575,28 +575,30 @@ body.installments-page .page-body {
   font-size: 0.78rem;
 }
 
-.erp-status-pending {
+.erp-pending-text, .erp-status-pending, .erp-pending-pill {
   color: #dc2626;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--st-font-mono, monospace);
-  font-size: 0.77rem;
-  text-decoration: none;
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
+  user-select: none;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
-.erp-status-pending:hover {
-  text-decoration: underline;
-}
-
-.erp-status-advance {
+.erp-advance-text, .erp-status-advance, .erp-advance-pill {
   color: #2563eb;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--st-font-mono, monospace);
-  font-size: 0.77rem;
-  text-decoration: none;
-}
-
-.erp-status-advance:hover {
-  text-decoration: underline;
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
+  user-select: none;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
 .erp-meta-text {

@@ -1324,19 +1324,19 @@ function renderList() {
         `;
       }
 
-      function renderDiffText(targetAmt, paidAmt, onclickAttr) {
+      function renderDiffText(targetAmt, paidAmt) {
         const diff = targetAmt - paidAmt;
         if (Math.abs(diff) < 0.01) {
           return '';
         } else if (diff > 0) {
-          return `<span class="erp-status-pending cursor-pointer no-print ms-1 d-inline-flex align-items-center gap-0.5" onclick="${onclickAttr}" title="Pending: ₹${diff.toLocaleString('en-IN')} (Click to view payment history)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>₹${diff.toLocaleString('en-IN')}</span>`;
+          return `<span class="erp-pending-text no-print" title="Pending: ₹${diff.toLocaleString('en-IN', {minimumFractionDigits:2})}">₹${diff.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>`;
         } else {
-          return `<span class="erp-status-advance cursor-pointer no-print ms-1 d-inline-flex align-items-center gap-0.5" onclick="${onclickAttr}" title="Advance: +₹${Math.abs(diff).toLocaleString('en-IN')} (Click to view payment history)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>+₹${Math.abs(diff).toLocaleString('en-IN')}</span>`;
+          return `<span class="erp-advance-text no-print" title="Advance: +₹${Math.abs(diff).toLocaleString('en-IN', {minimumFractionDigits:2})}">+₹${Math.abs(diff).toLocaleString('en-IN', {minimumFractionDigits:2})}</span>`;
         }
       }
 
-      const custPillHtml = renderDiffText(price, total, `showTransactionHistory(${r.SlNo}, 'Customer')`);
-      const vendorPillHtml = renderDiffText(price - partnerPrice, vPaid, `showTransactionHistory(${r.SlNo}, 'Vendor')`);
+      const custPillHtml = renderDiffText(price, total);
+      const vendorPillHtml = renderDiffText(price - partnerPrice, vPaid);
       const profit = partnerPrice - comm - vPrice;
       const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
       const isFullyPaid = (price > 0 && total >= price);
