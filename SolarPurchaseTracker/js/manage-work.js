@@ -618,7 +618,7 @@ function renderList() {
         <!-- 1. Customer Cell (Click name for modal) -->
         <td>
           <div class="mw-customer-cell">
-            <span class="mw-sl-badge">#${r.SlNo || (idx + 1)}</span>
+            <span class="mw-sl-badge">${idx + 1}</span>
             <button type="button" class="mw-customer-btn" onclick="openCustomerDetailsModal(${slNo})" title="Click to view full details of ${r.Name || ''}">
               ${r.Name || 'Unnamed Customer'}
             </button>
@@ -1648,7 +1648,7 @@ window.openWorkSummaryModal = function () {
 
         return `
           <tr>
-            <td class="td-col-sl text-center text-muted">${r.SlNo || (i + 1)}</td>
+            <td class="td-col-sl text-center text-muted">${i + 1}</td>
             <td class="td-col-cust">
               <span class="mw-sum-cust-name" title="${r.Name || '-'}">${r.Name || '-'}</span>
             </td>

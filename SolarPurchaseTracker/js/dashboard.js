@@ -829,7 +829,7 @@ function renderDashboard() {
 
       return `
         <tr onclick="openCustomerDetailsFromDash('${safeId}')" title="Click to view Customer Details">
-          <td class="td-col-sl text-center text-muted">${r.SlNo || (i + 1)}</td>
+          <td class="td-col-sl text-center text-muted">${i + 1}</td>
           <td class="td-col-cust">
             <span class="mw-sum-cust-name text-primary fw-bold" title="${r.Name || '-'}">${r.Name || '-'}</span>
             ${r.ConsumerNo ? `<small class="text-muted d-block fs-9">${r.ConsumerNo}</small>` : ''}
@@ -1160,7 +1160,7 @@ function renderDashFinancialBreakdown(rows, isAdmin) {
   let sumMeter = 0;
   let sumProfit = 0;
 
-  tbody.innerHTML = filteredBreakdown.map(r => {
+  tbody.innerHTML = filteredBreakdown.map((r, i) => {
     const calc = getDashSummaryRowValues(r);
     const price = calc.price;
     const total = calc.total;
@@ -1181,7 +1181,7 @@ function renderDashFinancialBreakdown(rows, isAdmin) {
 
     return `
       <tr>
-        <td class="text-center text-muted font-monospace">${r.SlNo}</td>
+        <td class="text-center text-muted font-monospace">${i + 1}</td>
         <td>
           <a href="#" class="fw-semibold text-primary text-decoration-none text-truncate d-block" style="max-width: 220px;" onclick="window.openCustomerDetailsFromDash('${safeSlNo}'); return false;" title="${escapeHtml(r.Name || '')} (Click for details)">
             ${escapeHtml(r.Name || '—')}

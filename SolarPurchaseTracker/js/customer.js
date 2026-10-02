@@ -1389,7 +1389,7 @@ function renderList() {
 
   const allPartners = getAllPartnerNames();
 
-  tbody.innerHTML = rows.map((r) => {
+  tbody.innerHTML = rows.map((r, i) => {
     const isEditing = (Number(r.SlNo) === Number(editingSlNo));
     const isDeactive = (r.Status === 'Deactive');
     
@@ -1437,7 +1437,7 @@ function renderList() {
       // Render input fields for inline editing
       return `
         <tr class="table-warning">
-          <td class="text-center fw-semibold align-middle">${r.SlNo}</td>
+          <td class="text-center fw-semibold align-middle">${i + 1}</td>
           <td>
             <div class="d-flex flex-column gap-1">
               <input type="text" class="form-control form-control-sm" id="editName" value="${escapeHtml(r.Name || '')}" placeholder="Name *" required>
@@ -1528,7 +1528,7 @@ function renderList() {
 
       return `
         <tr class="${rowClass}">
-          <td class="text-center fw-semibold text-secondary align-middle fs-8">${r.SlNo}</td>
+          <td class="text-center fw-semibold text-secondary align-middle fs-8">${i + 1}</td>
           <td class="align-middle">
             <div class="erp-customer-cell">
               <div class="erp-name-row">
@@ -2075,7 +2075,7 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
   let sumMeter = 0;
   let sumProfit = 0;
 
-  tbody.innerHTML = filteredBreakdown.map(r => {
+  tbody.innerHTML = filteredBreakdown.map((r, i) => {
     const calc = getSummaryRowValues(r);
     const price = calc.price;
     const total = calc.total;
@@ -2097,7 +2097,7 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
 
     return `
       <tr>
-        <td class="text-center text-muted font-monospace">${r.SlNo}</td>
+        <td class="text-center text-muted font-monospace">${i + 1}</td>
         <td>
           <div class="fw-semibold text-dark text-truncate" style="max-width: 210px;" title="${r.Name || ''}">${r.Name || '—'}</div>
         </td>
