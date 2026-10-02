@@ -28,6 +28,44 @@
   line-height: 20px !important;
 }
 
+.manage-work-page .stage-filter-tag {
+  font-size: 0.69rem !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  height: 23px !important;
+  line-height: 19px !important;
+  font-weight: 500;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.manage-work-page .stage-filter-tag:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.manage-work-page .stage-filter-tag.active {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #1e293b;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.manage-work-page .stage-filter-tag.stage-tag-1.active { background: #0284c7; border-color: #0284c7; }
+.manage-work-page .stage-filter-tag.stage-tag-2.active { background: #7c3aed; border-color: #7c3aed; }
+.manage-work-page .stage-filter-tag.stage-tag-3.active { background: #0891b2; border-color: #0891b2; }
+.manage-work-page .stage-filter-tag.stage-tag-4.active { background: #d97706; border-color: #d97706; }
+.manage-work-page .stage-filter-tag.stage-tag-5.active { background: #9333ea; border-color: #9333ea; }
+.manage-work-page .stage-filter-tag.stage-tag-6.active { background: #475569; border-color: #475569; }
+.manage-work-page .stage-filter-tag.stage-tag-7.active { background: #4338ca; border-color: #4338ca; }
+.manage-work-page .stage-filter-tag.stage-tag-8.active { background: #16a34a; border-color: #16a34a; }
+
 /* ══ Main Progress Table ══════════════════════════════════════════════ */
 .table-manage-work {
   border-collapse: separate !important;

@@ -137,24 +137,29 @@ const Auth = (() => {
       return;
     }
 
-    // 2. If user is not logged in -> redirect to login.html
+    // 2. Allow reset password page without auth
+    if (page === 'reset-password.html') {
+      return;
+    }
+
+    // 3. If user is not logged in -> redirect to login.html
     if (!currentUser) {
       window.location.href = 'login.html';
       return;
     }
 
-    // 3. Handle index.html forwarding for logged in users
+    // 4. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
       window.location.href = 'dashboard.html';
       return;
     }
 
-    // 4. Access restrictions
+    // 5. Access restrictions
     const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
     
     if (!isPowerUser) {
       if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        const allowed = ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+        const allowed = ['dashboard.html', 'customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'dashboard.html';
           return;

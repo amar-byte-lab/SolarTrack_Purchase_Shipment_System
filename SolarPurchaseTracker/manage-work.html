@@ -19,10 +19,10 @@
     <div class="topbar" id="topbar"></div>
 
     <div class="page-body">
-      <!-- Search & Filters Toolbar (Exact same as Customer page) -->
+      <!-- Search & Filters Toolbar -->
       <div class="st-card erp-toolbar mb-2.5 no-print py-2 px-3">
         <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-          <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 460px;">
+          <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 420px;">
             <div class="input-group input-group-sm">
               <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -35,57 +35,25 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               <span>Summary</span>
             </button>
-            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" data-bs-toggle="collapse" data-bs-target="#searchCollapse" aria-expanded="false" aria-controls="searchCollapse">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-              <span>Filters</span>
-              <span class="text-muted fs-8" id="searchCollapseIndicator">▾</span>
-            </button>
+            <div class="dropdown" style="min-width: 140px; max-width: 180px;">
+              <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2.5 shadow-none" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                All Partners
+              </button>
+              <div class="dropdown-menu p-3 shadow-sm border" id="partnerMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.82rem;">
+                <!-- Checkboxes injected by js -->
+              </div>
+            </div>
+            <div class="form-check mb-0 d-flex align-items-center gap-1">
+              <input class="form-check-input mt-0" type="checkbox" id="chkShowDeactive">
+              <label class="form-check-label fs-8 text-secondary" for="chkShowDeactive" style="cursor: pointer;">Show Deactive</label>
+            </div>
             <button class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-2 fs-8" id="btnClearFilters">Clear</button>
             <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center" style="font-size: 0.75rem;"></div>
           </div>
         </div>
-        <div class="collapse border-top mt-2 pt-2" id="searchCollapse">
-          <div class="row g-2 align-items-end pt-1">
-            <div class="col-md-2 col-6">
-              <label class="form-label fs-8 text-secondary fw-medium mb-1">Partner</label>
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="padding: 5px 8px;">
-                  All Partners
-                </button>
-                <div class="dropdown-menu p-3" id="partnerMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.82rem;">
-                  <!-- Checkboxes injected by js -->
-                </div>
-              </div>
-            </div>
-            <div class="col-md-2 col-6">
-              <label class="form-label fs-8 text-secondary fw-medium mb-1">Date Type</label>
-              <select class="form-select form-select-sm fs-8" id="fDateType">
-                <option value="LoginDate" selected>Login Date</option>
-                <option value="AgreementDate">Agreement Date</option>
-                <option value="MaterialDispatchedDate">Dispatched Date</option>
-                <option value="InstallationDate">Installation Date</option>
-                <option value="NetMeterDate">NetMeter Date</option>
-                <option value="InspectionDate">Inspection Date</option>
-                <option value="MeterConnectedDate">Connection Date</option>
-                <option value="CommissioningDate">Subsidy Date</option>
-              </select>
-            </div>
-            <div class="col-md-2 col-6">
-              <label class="form-label fs-8 text-secondary fw-medium mb-1">From Date</label>
-              <input type="date" class="form-control form-control-sm fs-8" id="fLoginFrom">
-            </div>
-            <div class="col-md-2 col-6">
-              <label class="form-label fs-8 text-secondary fw-medium mb-1">To Date</label>
-              <input type="date" class="form-control form-control-sm fs-8" id="fLoginTo">
-            </div>
-            <div class="col-md-auto col-6 d-flex align-items-center mb-1">
-              <div class="form-check mb-0">
-                <input class="form-check-input" type="checkbox" id="chkShowDeactive">
-                <label class="form-check-label fs-8 text-secondary" for="chkShowDeactive">Show Deactive</label>
-              </div>
-            </div>
-          </div>
-        </div>
+
+        <!-- Stage Workflow Step Filters (Summary Filters) -->
+        <div class="d-flex flex-wrap gap-1 align-items-center pt-2 mt-2 border-top" id="stageStatsContainer" style="font-size: 0.75rem;"></div>
       </div>
 
       <!-- Main Progress & Workflow Table -->

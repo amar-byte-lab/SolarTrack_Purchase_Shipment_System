@@ -7,6 +7,37 @@ let sortDir = 'asc';
 
 let selectedDistricts = [];
 let selectedPartners = [];
+let selectedStage = 'ALL';
+
+const WORKFLOW_STAGES = [
+  { key: 'LoginDate', name: 'Login', num: 1 },
+  { key: 'AgreementDate', name: 'Agreement', num: 2 },
+  { key: 'MaterialDispatchedDate', name: 'Dispatched', num: 3 },
+  { key: 'InstallationDate', name: 'Installation', num: 4 },
+  { key: 'NetMeter', name: 'NetMeter', num: 5 },
+  { key: 'InspectionDate', name: 'Inspection', num: 6 },
+  { key: 'MeterConnectedDate', name: 'Connection', num: 7 },
+  { key: 'CommissioningDate', name: 'Subsidy', num: 8 }
+];
+
+function getRowHighestStageIdx(r) {
+  const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  const stages = [
+    Boolean(r.LoginDate),
+    Boolean(r.AgreementDate),
+    Boolean(r.MaterialDispatchedDate),
+    Boolean(r.InstallationDate),
+    isNm,
+    Boolean(r.InspectionDate),
+    Boolean(r.MeterConnectedDate),
+    Boolean(r.CommissioningDate)
+  ];
+  let highestIdx = -1;
+  stages.forEach((d, idx) => {
+    if (d) highestIdx = Math.max(highestIdx, idx);
+  });
+  return highestIdx < 0 ? 0 : highestIdx;
+}
 
 const DISTRICTS = [
   'Angul', 'Balangir', 'Balasore', 'Bargarh', 'Bhadrak', 'Boudh', 'Cuttack',
@@ -21,7 +52,7 @@ window.onDbReady = function () {
   UI.renderTopbar('Manage Work');
 
   // Search & Filter event listeners
-  ['fSearch', 'fLoginFrom', 'fLoginTo', 'fDateType', 'chkShowDeactive'].forEach(id => {
+  ['fSearch', 'chkShowDeactive'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', Utils.debounce(renderList, 200));
@@ -33,17 +64,14 @@ window.onDbReady = function () {
   const btnClear = document.getElementById('btnClearFilters');
   if (btnClear) {
     btnClear.addEventListener('click', () => {
-      ['fSearch', 'fLoginFrom', 'fLoginTo'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
-      const dateTypeSel = document.getElementById('fDateType');
-      if (dateTypeSel) dateTypeSel.value = 'LoginDate';
+      const fSearch = document.getElementById('fSearch');
+      if (fSearch) fSearch.value = '';
       const chkDeactive = document.getElementById('chkShowDeactive');
       if (chkDeactive) chkDeactive.checked = false;
 
       selectedDistricts = [];
       selectedPartners = [];
+      selectedStage = 'ALL';
       document.querySelectorAll('.district-chk').forEach(c => c.checked = false);
       document.querySelectorAll('.partner-chk').forEach(c => c.checked = false);
       updatePartnerDropdownButton();
@@ -59,25 +87,11 @@ window.onDbReady = function () {
         sortDir = sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         sortCol = col;
-        sortDir = 'asc';
       }
       updateSortHeadersUI();
       renderList();
     });
   });
-
-  // Filter collapse indicator
-  const collapseEl = document.getElementById('searchCollapse');
-  if (collapseEl) {
-    collapseEl.addEventListener('shown.bs.collapse', () => {
-      const ind = document.getElementById('searchCollapseIndicator');
-      if (ind) ind.textContent = '▲ Hide';
-    });
-    collapseEl.addEventListener('hidden.bs.collapse', () => {
-      const ind = document.getElementById('searchCollapseIndicator');
-      if (ind) ind.textContent = '▼ Show';
-    });
-  }
 
   populateFilterDatalists();
   updateSortHeadersUI();
@@ -263,6 +277,49 @@ function updateDistrictStats() {
   container.innerHTML = totalBadge + ' ' + districtBadges;
 }
 
+window.toggleStageBadgeFilter = function(stageKey, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  if (stageKey === 'ALL' || selectedStage === stageKey) {
+    selectedStage = 'ALL';
+  } else {
+    selectedStage = stageKey;
+  }
+  renderList();
+};
+
+function updateStageStats() {
+  const container = document.getElementById('stageStatsContainer');
+  if (!container) return;
+
+  const allRows = getWorkRows();
+  const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
+  const activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  const stageCounts = [0, 0, 0, 0, 0, 0, 0, 0];
+  activeRows.forEach(r => {
+    const idx = getRowHighestStageIdx(r);
+    if (idx >= 0 && idx < 8) {
+      stageCounts[idx]++;
+    }
+  });
+
+  const totalCount = activeRows.length;
+  const isTotalActive = (selectedStage === 'ALL');
+
+  const totalBadge = `<button type="button" onclick="window.toggleStageBadgeFilter('ALL', event)" class="stage-filter-tag ${isTotalActive ? 'active' : ''}" title="Show all stages">Total (${totalCount})</button>`;
+
+  const stageBadges = WORKFLOW_STAGES.map((st, idx) => {
+    const count = stageCounts[idx] || 0;
+    const isSelected = (selectedStage === st.key);
+    return `<button type="button" onclick="window.toggleStageBadgeFilter('${st.key}', event)" class="stage-filter-tag stage-tag-${st.num} ${isSelected ? 'active' : ''}" title="Filter by Stage ${st.num}: ${st.name}">${st.num}. ${st.name} (${count})</button>`;
+  }).join(' ');
+
+  container.innerHTML = totalBadge + ' ' + stageBadges;
+}
+
 function getDelayInfo(dateStr) {
   if (!dateStr) return null;
   const d = new Date(dateStr);
@@ -309,11 +366,9 @@ function getDelayInfo(dateStr) {
 
 function renderList() {
   updateDistrictStats();
+  updateStageStats();
 
   const search = (document.getElementById('fSearch')?.value || '').toLowerCase().trim();
-  const loginFrom = document.getElementById('fLoginFrom')?.value;
-  const loginTo = document.getElementById('fLoginTo')?.value;
-  const dateType = document.getElementById('fDateType')?.value || 'LoginDate';
   const showDeactive = document.getElementById('chkShowDeactive')?.checked || false;
 
   let rows = getWorkRows();
@@ -364,12 +419,12 @@ function renderList() {
     });
   }
 
-  // Date Range filter
-  if (loginFrom) {
-    rows = rows.filter(r => r[dateType] && r[dateType] >= loginFrom);
-  }
-  if (loginTo) {
-    rows = rows.filter(r => r[dateType] && r[dateType] <= loginTo);
+  // Stage filter (matching highest reached stage)
+  if (selectedStage && selectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(s => s.key === selectedStage);
+    if (targetIdx !== -1) {
+      rows = rows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+    }
   }
 
   // Sort rows: Customers with Subsidy ON (CommissioningDate) are always placed at the bottom

@@ -716,10 +716,27 @@ const server = http.createServer(async (req, res) => {
     filePath = path.join(filePath, 'index.html');
   }
 
+  // Clean URLs: check if <path>.html exists (e.g., /dashboard -> /dashboard.html)
+  if (!fs.existsSync(filePath) && fs.existsSync(filePath + '.html') && fs.statSync(filePath + '.html').isFile()) {
+    filePath = filePath + '.html';
+  }
+
+  // If file still doesn't exist or is a directory
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-    res.statusCode = 404;
-    res.setHeader('Content-Type', 'text/plain');
-    res.end('404 Not Found');
+    const ext = path.extname(filePath).toLowerCase();
+    const isAsset = ext && ext !== '.html' && MIME_TYPES[ext];
+
+    // For missing static assets (images, js, css, etc.), return 404
+    if (isAsset) {
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'text/plain');
+      res.end('404 Not Found');
+      return;
+    }
+
+    // For unavailable/invalid page routes, redirect to default landing page (/dashboard.html)
+    res.writeHead(302, { Location: '/dashboard.html' });
+    res.end();
     return;
   }
 
