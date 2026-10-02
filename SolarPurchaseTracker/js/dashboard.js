@@ -1183,17 +1183,17 @@ function renderDashFinancialBreakdown(rows, isAdmin) {
       <tr>
         <td class="text-center text-muted font-monospace">${i + 1}</td>
         <td>
-          <a href="#" class="fw-semibold text-primary text-decoration-none text-truncate d-block" style="max-width: 220px;" onclick="window.openCustomerDetailsFromDash('${safeSlNo}'); return false;" title="${escapeHtml(r.Name || '')} (Click for details)">
+          <a href="#" class="fw-semibold text-primary text-decoration-none text-truncate d-block" style="max-width: 220px; font-size: 0.70rem;" onclick="window.openCustomerDetailsFromDash('${safeSlNo}'); return false;" title="${escapeHtml(r.Name || '')} (Click for details)">
             ${escapeHtml(r.Name || '—')}
           </a>
-          ${r.MobileNumber ? `<span class="text-secondary font-monospace" style="font-size: 0.72rem;">${escapeHtml(r.MobileNumber)}</span>` : ''}
+          ${r.MobileNumber ? `<span class="text-secondary font-monospace" style="font-size: 0.66rem;">${escapeHtml(r.MobileNumber)}</span>` : ''}
         </td>
         <td class="text-end font-monospace">₹${Math.round(price).toLocaleString('en-IN')}</td>
         <td class="text-end font-monospace text-success fw-semibold">₹${Math.round(total).toLocaleString('en-IN')}</td>
         <td class="text-end font-monospace ${custPendingClass}">₹${Math.round(custPending).toLocaleString('en-IN')}</td>
         <td class="text-end font-monospace ${meterColorClass}">₹${Math.round(netMeterAmt).toLocaleString('en-IN')}</td>
         <td>
-          <span class="badge bg-light text-secondary border fw-normal text-truncate" style="max-width: 140px;" title="${escapeHtml(r.BrokerName || 'Direct')}">${escapeHtml(r.BrokerName || 'Direct')}</span>
+          <span class="badge bg-light text-secondary border fw-normal text-truncate" style="max-width: 140px; font-size: 0.65rem;" title="${escapeHtml(r.BrokerName || 'Direct')}">${escapeHtml(r.BrokerName || 'Direct')}</span>
         </td>
         <td class="text-end font-monospace admin-only-dash-fin-col ${profitClass}" style="${isAdmin ? '' : 'display:none;'}">₹${Math.round(profit).toLocaleString('en-IN')}</td>
       </tr>

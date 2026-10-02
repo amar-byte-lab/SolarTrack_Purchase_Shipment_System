@@ -85,16 +85,16 @@
 
           <!-- Full Page Customer Workflow Progress Table Card -->
           <div class="card border rounded-3 bg-white shadow-sm overflow-hidden dash-summary-card">
-            <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="card-header py-1.5 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-white text-secondary border fs-8 fw-normal" id="dashSumRowCount">Loading customers...</span>
                 <button type="button" class="btn btn-sm btn-link text-decoration-none text-primary p-0 fs-8 fw-semibold" id="btnResetDashKpiFilter" style="display: none;">
                   Show All Stages
                 </button>
               </div>
-              <div class="d-flex align-items-center gap-2 ms-auto" id="dashManageWorkBtnWrap" style="display: none !important;">
-                <a href="manage-work.html" class="btn btn-sm btn-outline-primary fs-8 d-inline-flex align-items-center gap-1 py-1 px-2.5" id="btnDashManageWork">
-                  <i class="bi bi-box-arrow-up-right"></i> <span>Manage Work</span>
+              <div class="d-flex align-items-center gap-2 ms-auto" id="dashManageWorkBtnWrap">
+                <a href="manage-work.html" class="btn btn-sm btn-outline-primary fs-8 d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none" id="btnDashManageWork" title="Go to Manage Work Page">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                  <span>Manage Work</span>
                 </a>
               </div>
             </div>
@@ -138,14 +138,16 @@
 
           <!-- Customer Financial Breakdown Card -->
           <div class="card border rounded-3 bg-white shadow-sm overflow-hidden dash-summary-card">
-            <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div class="d-flex align-items-center gap-2">
-                <span class="fw-semibold text-dark fs-8 text-uppercase" style="letter-spacing: 0.04em;">Customer Financial Breakdown</span>
-                <span class="badge bg-white text-secondary border px-2 py-0.5 fs-8" id="dashFinSumRowCount">0 Records</span>
+            <div class="card-header py-1.5 px-3 bg-light border-bottom d-flex justify-content-end align-items-center flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-2 ms-auto">
+                <a href="customer.html" class="btn btn-sm btn-outline-primary fs-8 d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none" id="btnDashCustomer" title="Go to Customer Page">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  <span>Customer</span>
+                </a>
               </div>
             </div>
             <div class="table-responsive p-0 dash-summary-table-wrap">
-              <table class="table table-sm table-hover table-striped align-middle mb-0" id="dashFinBreakdownTable" style="font-size: 0.81rem;">
+              <table class="table table-sm table-hover table-striped align-middle mb-0" id="dashFinBreakdownTable" style="font-size: 0.70rem;">
                 <thead class="table-light sticky-top" style="z-index: 2;">
                   <tr>
                     <th class="text-center sortable" data-sort="SlNo" style="width: 45px;">SL.</th>

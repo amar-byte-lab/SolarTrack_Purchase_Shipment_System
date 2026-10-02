@@ -68,6 +68,40 @@
   background-color: #f1f5f9;
 }
 
+/* ══ Financial Breakdown Table Styles (Matching Progress Tab Font Size & Density) ══ */
+#dashFinBreakdownTable {
+  font-size: 0.70rem !important;
+}
+
+#dashFinBreakdownTable thead th {
+  font-size: 0.70rem !important;
+  padding: 5px 6px !important;
+  background-color: #f8fafc !important;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+#dashFinBreakdownTable tbody td {
+  font-size: 0.70rem !important;
+  padding: 4px 6px !important;
+  vertical-align: middle;
+}
+
+#dashFinBreakdownTable tfoot td {
+  font-size: 0.70rem !important;
+  padding: 5px 6px !important;
+  vertical-align: middle;
+}
+
+#dashFinBreakdownTable a.fw-semibold {
+  font-size: 0.70rem !important;
+}
+
+#dashFinBreakdownTable .badge {
+  font-size: 0.65rem !important;
+  padding: 1.5px 4px !important;
+}
+
 @media (max-width: 768px) {
   .dashboard-page .page-body {
     padding: 6px 8px !important;
@@ -167,6 +201,14 @@
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     max-height: calc(100vh - 310px);
+  }
+
+  #dashFinBreakdownTable,
+  #dashFinBreakdownTable thead th,
+  #dashFinBreakdownTable tbody td,
+  #dashFinBreakdownTable tfoot td {
+    font-size: 0.62rem !important;
+    padding: 3px 4px !important;
   }
 }
 
