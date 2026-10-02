@@ -628,6 +628,17 @@ body.installments-page .page-body {
   border-radius: 3px;
 }
 
+.erp-meter-text {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #16a34a;
+  font-family: var(--st-font-mono, monospace);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  user-select: none;
+}
+
 .erp-expense-cell {
   display: flex;
   flex-direction: column;
@@ -678,6 +689,93 @@ body.installments-page .page-body {
   color: #ffffff;
   border-color: #4338ca;
   font-weight: 600;
+}
+
+/* ══ Stage Filter Chips ════════════════════════════════════════════════ */
+.stage-filter-tag {
+  font-size: 0.74rem !important;
+  padding: 2.5px 8px !important;
+  border-radius: 4px !important;
+  height: 24px !important;
+  line-height: 19px !important;
+  font-weight: 500;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.stage-filter-tag:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.stage-filter-tag.active {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  border-color: #1e293b !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+
+/* ══ Chips Horizontal Scrollable Strip (Ultra-Compact on Mobile) ══════ */
+.mw-chips-scroll-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  padding-bottom: 2px;
+}
+
+.mw-chips-scroll-strip::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+  height: 0px;
+}
+
+@media (min-width: 992px) {
+  .mw-chips-scroll-strip {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+@media (max-width: 767px) {
+  .erp-toolbar {
+    padding: 6px 10px !important;
+  }
+  .mw-toolbar-top-row {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+  .mw-search-box {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .mw-toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px !important;
+  }
+  .stage-filter-tag {
+    font-size: 0.69rem !important;
+    padding: 2px 7px !important;
+    height: 23px !important;
+    line-height: 19px !important;
+  }
+  .erp-tag {
+    font-size: 0.67rem !important;
+    padding: 1px 5px !important;
+    height: 22px !important;
+    line-height: 20px !important;
+  }
 }
 
 /* Legacy fallback classes to ensure seamless rendering */

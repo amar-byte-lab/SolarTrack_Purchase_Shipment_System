@@ -11,7 +11,81 @@ let sortDir = 'asc';  // default sort direction
 let selectedDistricts = []; // Array of currently selected districts for filtering
 let selectedBrands = [];    // Array of currently selected brands for filtering
 let selectedPartners = [];  // Array of currently selected partners for filtering
+let selectedStage = 'ALL';  // Selected workflow stage for filtering
 let selectedColorCols = []; // Array of column keys currently checked in custom coloring menu
+
+const WORKFLOW_STAGES = [
+  { key: 'LoginDate', name: 'Login', num: 1 },
+  { key: 'AgreementDate', name: 'Agreement', num: 2 },
+  { key: 'MaterialDispatchedDate', name: 'Dispatched', num: 3 },
+  { key: 'InstallationDate', name: 'Installation', num: 4 },
+  { key: 'NetMeter', name: 'NetMeter', num: 5 },
+  { key: 'InspectionDate', name: 'Inspection', num: 6 },
+  { key: 'MeterConnectedDate', name: 'Connection', num: 7 },
+  { key: 'CommissioningDate', name: 'Subsidy', num: 8 }
+];
+
+function getRowHighestStageIdx(r) {
+  const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  const stages = [
+    Boolean(r.LoginDate),
+    Boolean(r.AgreementDate),
+    Boolean(r.MaterialDispatchedDate),
+    Boolean(r.InstallationDate),
+    isNm,
+    Boolean(r.InspectionDate),
+    Boolean(r.MeterConnectedDate),
+    Boolean(r.CommissioningDate)
+  ];
+  let highestIdx = -1;
+  stages.forEach((d, idx) => {
+    if (d) highestIdx = Math.max(highestIdx, idx);
+  });
+  return highestIdx < 0 ? 0 : highestIdx;
+}
+
+window.toggleStageBadgeFilter = function(stageKey, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  if (stageKey === 'ALL' || selectedStage === stageKey) {
+    selectedStage = 'ALL';
+  } else {
+    selectedStage = stageKey;
+  }
+  renderList();
+};
+
+function updateStageStats() {
+  const container = document.getElementById('stageStatsContainer');
+  if (!container) return;
+
+  const allRows = getInstallmentRows();
+  const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
+  const activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  const stageCounts = [0, 0, 0, 0, 0, 0, 0, 0];
+  activeRows.forEach(r => {
+    const idx = getRowHighestStageIdx(r);
+    if (idx >= 0 && idx < 8) {
+      stageCounts[idx]++;
+    }
+  });
+
+  const totalCount = activeRows.length;
+  const isTotalActive = (selectedStage === 'ALL');
+
+  const totalBadge = `<button type="button" onclick="window.toggleStageBadgeFilter('ALL', event)" class="stage-filter-tag ${isTotalActive ? 'active' : ''}" title="Show all stages">Total (${totalCount})</button>`;
+
+  const stageBadges = WORKFLOW_STAGES.map((st, idx) => {
+    const count = stageCounts[idx] || 0;
+    const isSelected = (selectedStage === st.key);
+    return `<button type="button" onclick="window.toggleStageBadgeFilter('${st.key}', event)" class="stage-filter-tag stage-tag-${st.num} ${isSelected ? 'active' : ''}" title="Filter by Stage ${st.num}: ${st.name}">${st.num}. ${st.name} (${count})</button>`;
+  }).join(' ');
+
+  container.innerHTML = totalBadge + ' ' + stageBadges;
+}
 
 const DISTRICTS = [
   'Angul', 'Balangir', 'Balasore', 'Bargarh', 'Bhadrak', 'Boudh', 'Cuttack',
@@ -142,7 +216,7 @@ window.onDbReady = function () {
   if (btnSaveCust) btnSaveCust.addEventListener('click', saveCustomerModal);
 
   // Search & Filter listeners
-  ['fSearch', 'fLoginFrom', 'fLoginTo', 'fDateType', 'chkShowDeactive'].forEach(id => {
+  ['fSearch', 'chkShowDeactive'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', Utils.debounce(renderList, 200));
@@ -166,14 +240,14 @@ window.onDbReady = function () {
   });
 
   document.getElementById('btnClearFilters').addEventListener('click', () => {
-    ['fSearch', 'fLoginFrom', 'fLoginTo'].forEach(id => document.getElementById(id).value = '');
-    const dateTypeSel = document.getElementById('fDateType');
-    if (dateTypeSel) dateTypeSel.value = 'LoginDate';
+    const fSearch = document.getElementById('fSearch');
+    if (fSearch) fSearch.value = '';
     const chkDeactive = document.getElementById('chkShowDeactive');
     if (chkDeactive) chkDeactive.checked = false;
     selectedDistricts = [];
     selectedBrands = [];
     selectedPartners = [];
+    selectedStage = 'ALL';
     document.querySelectorAll('.district-chk').forEach(c => c.checked = false);
     document.querySelectorAll('.brand-chk').forEach(c => c.checked = false);
     document.querySelectorAll('.partner-chk').forEach(c => c.checked = false);
@@ -293,15 +367,7 @@ window.onDbReady = function () {
 
 
 
-  const collapseEl = document.getElementById('searchCollapse');
-  if (collapseEl) {
-    collapseEl.addEventListener('shown.bs.collapse', () => {
-      document.getElementById('searchCollapseIndicator').textContent = '▲ Hide';
-    });
-    collapseEl.addEventListener('hidden.bs.collapse', () => {
-      document.getElementById('searchCollapseIndicator').textContent = '▼ Show';
-    });
-  }
+
 
   const brandCollapseEl = document.getElementById('brandSummaryCollapse');
   if (brandCollapseEl) {
@@ -1005,10 +1071,8 @@ function calculateCommDelay(commDateStr, instDateStr) {
 
 function renderList() {
   updateDistrictStats();
-  const search = (document.getElementById('fSearch').value || '').toLowerCase();
-  const loginFrom = document.getElementById('fLoginFrom').value;
-  const loginTo = document.getElementById('fLoginTo').value;
-  const dateType = document.getElementById('fDateType') ? document.getElementById('fDateType').value : 'LoginDate';
+  updateStageStats();
+  const search = (document.getElementById('fSearch') ? document.getElementById('fSearch').value : '').toLowerCase();
   const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
 
   let rows = getInstallmentRows();
@@ -1062,12 +1126,12 @@ function renderList() {
     });
   }
 
-  // Apply Date Range filters
-  if (loginFrom) {
-    rows = rows.filter(r => r[dateType] && r[dateType] >= loginFrom);
-  }
-  if (loginTo) {
-    rows = rows.filter(r => r[dateType] && r[dateType] <= loginTo);
+  // Apply workflow Stage Filter
+  if (selectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(st => st.key === selectedStage);
+    if (targetIdx >= 0) {
+      rows = rows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+    }
   }
 
   // Apply sort
@@ -1135,11 +1199,14 @@ function renderList() {
   
   const filterParts = [];
   if (showDeactive) filterParts.push('Deactive');
+  if (selectedStage !== 'ALL') {
+    const stObj = WORKFLOW_STAGES.find(s => s.key === selectedStage);
+    if (stObj) filterParts.push(`Stage: ${stObj.name}`);
+  }
   if (selectedDistricts.length > 0) filterParts.push(selectedDistricts.length === 1 ? selectedDistricts[0] : `${selectedDistricts.length} Districts`);
   if (selectedPartners.length > 0) filterParts.push(selectedPartners.length === 1 ? selectedPartners[0] : `${selectedPartners.length} Partners`);
   if (selectedBrands.length > 0) filterParts.push(selectedBrands.length === 1 ? selectedBrands[0] : `${selectedBrands.length} Brands`);
   if (search) filterParts.push(`"${search}"`);
-  if (loginFrom || loginTo) filterParts.push('Date Filter');
   const filterLabel = filterParts.length > 0 ? filterParts.join(', ') : 'All';
 
   const currentUser = Auth.getUser();
@@ -1320,7 +1387,7 @@ function renderList() {
       let netMeterBadgeHtml = '';
       if (isNetMeterPaid) {
         netMeterBadgeHtml = `
-          <span class="erp-meta-tag" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}">Meter: ₹${netMeterAmt.toLocaleString('en-IN')}</span>
+          <span class="erp-meter-text" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14v-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>₹${netMeterAmt.toLocaleString('en-IN')}</span>
         `;
       }
 
