@@ -687,9 +687,18 @@ function renderList() {
             </label>
             <div class="mw-stage-input-wrap d-inline-flex align-items-center gap-1 ${isNetMeterPaid ? '' : 'd-none'}" id="wrap_NetMeter_${slNo}">
               <input type="date" class="form-control form-control-sm mw-date-input" value="${netMeterDate}" onchange="handleNetMeterDateChange(${slNo}, this.value)" title="NetMeter Application Date">
-              <div class="input-group input-group-sm mw-netmeter-pay-group" title="NetMeter Payment (Optional)">
+              <div class="input-group input-group-sm mw-netmeter-pay-group" title="NetMeter Payment">
                 <span class="input-group-text">₹</span>
-                <input type="number" step="0.01" class="form-control form-control-sm" placeholder="Amount" value="${netMeterPayment}" onchange="handleNetMeterPaymentChange(${slNo}, this.value)">
+                <input type="number" step="any" class="form-control form-control-sm font-monospace" id="nmPayInput_${slNo}" placeholder="Amount" value="${netMeterPayment}" disabled onkeydown="if(event.key==='Enter') window.saveNetMeterPayment(${slNo}); else if(event.key==='Escape') window.cancelNetMeterEdit(${slNo});">
+                <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" id="btnNmEdit_${slNo}" onclick="window.toggleNetMeterEdit(${slNo})" title="Edit Payment" style="width: 22px; height: 23px; flex-shrink: 0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success p-0 d-none align-items-center justify-content-center" id="btnNmSave_${slNo}" onclick="window.saveNetMeterPayment(${slNo})" title="Save Payment" style="width: 22px; height: 23px; flex-shrink: 0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary p-0 d-none align-items-center justify-content-center" id="btnNmCancel_${slNo}" onclick="window.cancelNetMeterEdit(${slNo})" title="Cancel Edit" style="width: 22px; height: 23px; flex-shrink: 0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
             </div>
           </div>
@@ -883,6 +892,19 @@ function formatBrokerNumberWithWorkMeta(existingBrokerNumber, workUpdates) {
 
   Object.assign(workObj, workUpdates);
 
+  if (expensesJson && (workUpdates.NetMeterPayment !== undefined || workUpdates.NetMeterPaid !== undefined)) {
+    try {
+      const exp = JSON.parse(expensesJson);
+      if (workUpdates.NetMeterPayment !== undefined) {
+        exp.net_meter_payment = workUpdates.NetMeterPayment;
+      }
+      if (workUpdates.NetMeterPaid !== undefined) {
+        exp.net_meter_paid = workUpdates.NetMeterPaid;
+      }
+      expensesJson = JSON.stringify(exp);
+    } catch (e) {}
+  }
+
   let result = basePhone;
   if (expensesJson) result += '|expenses:' + expensesJson;
   if (creatorId) result += '|creator:' + creatorId;
@@ -1042,11 +1064,103 @@ window.handleNetMeterDateChange = async function (slNo, dateVal) {
   renderList();
 };
 
-window.handleNetMeterPaymentChange = async function (slNo, paymentVal) {
+window.toggleNetMeterEdit = function (slNo) {
+  const input = document.getElementById(`nmPayInput_${slNo}`);
+  const btnEdit = document.getElementById(`btnNmEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnNmSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
+  if (!input) return;
+
+  input.dataset.origVal = input.value;
+  input.disabled = false;
+  input.focus();
+  input.select();
+
+  if (btnEdit) btnEdit.classList.add('d-none');
+  if (btnSave) {
+    btnSave.classList.remove('d-none');
+    btnSave.classList.add('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.remove('d-none');
+    btnCancel.classList.add('d-inline-flex');
+  }
+};
+
+window.cancelNetMeterEdit = function (slNo) {
+  const input = document.getElementById(`nmPayInput_${slNo}`);
+  const btnEdit = document.getElementById(`btnNmEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnNmSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
+  if (!input) return;
+
+  if (input.dataset.origVal !== undefined) {
+    input.value = input.dataset.origVal;
+  }
+  input.disabled = true;
+
+  if (btnSave) {
+    btnSave.classList.add('d-none');
+    btnSave.classList.remove('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.add('d-none');
+    btnCancel.classList.remove('d-inline-flex');
+  }
+  if (btnEdit) {
+    btnEdit.classList.remove('d-none');
+  }
+};
+
+window.saveNetMeterPayment = async function (slNo) {
+  const input = document.getElementById(`nmPayInput_${slNo}`);
+  const btnEdit = document.getElementById(`btnNmEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnNmSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
+  if (!input) return;
+
+  const paymentVal = input.value.trim();
   const numVal = paymentVal ? Number(paymentVal) : 0;
-  const patch = { NetMeterPayment: numVal };
-  await saveWorkProgress(slNo, patch, { NetMeterPayment: numVal });
-  renderList();
+
+  const existing = (DB.getAll('installments') || []).find(r => Number(r.SlNo) === Number(slNo));
+  const custName = existing?.Name || `Customer #${slNo}`;
+  const consumerNo = existing?.ConsumerNo ? ` (CN: ${existing.ConsumerNo})` : '';
+  const formattedAmt = `₹${numVal.toLocaleString('en-IN')}`;
+
+  const confirmed = await UI.confirmDialog(
+    `Are you sure you want to save NetMeter payment of ${formattedAmt} for "${custName}"${consumerNo}?`,
+    'Confirm NetMeter Payment',
+    'Yes, Save Payment',
+    'btn-primary'
+  );
+
+  if (!confirmed) {
+    window.cancelNetMeterEdit(slNo);
+    return;
+  }
+
+  try {
+    const patch = { NetMeterPayment: numVal };
+    await saveWorkProgress(slNo, patch, { NetMeterPayment: numVal });
+    input.dataset.origVal = input.value;
+    input.disabled = true;
+
+    if (btnSave) {
+      btnSave.classList.add('d-none');
+      btnSave.classList.remove('d-inline-flex');
+    }
+    if (btnCancel) {
+      btnCancel.classList.add('d-none');
+      btnCancel.classList.remove('d-inline-flex');
+    }
+    if (btnEdit) {
+      btnEdit.classList.remove('d-none');
+    }
+    UI.toast(`NetMeter payment updated to ${formattedAmt}`, 'success');
+    renderList();
+  } catch (err) {
+    UI.toast('Error saving NetMeter payment: ' + err.message, 'danger');
+  }
 };
 
 // ══ Summary Modal ═══════════════════════════════════════════════════════════

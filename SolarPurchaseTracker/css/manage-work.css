@@ -189,8 +189,8 @@
 }
 
 .table-manage-work th.th-netmeter {
-  min-width: 182px;
-  width: 182px;
+  min-width: 228px;
+  width: 228px;
 }
 
 .table-manage-work td {
@@ -407,7 +407,8 @@
 
 /* Compact NetMeter Payment Input */
 .mw-netmeter-pay-group {
-  width: 76px;
+  width: auto;
+  flex-wrap: nowrap;
 }
 
 .mw-netmeter-pay-group .input-group-text {
@@ -425,8 +426,21 @@
   padding: 1px 3px !important;
   height: 23px !important;
   border-color: #cbd5e1 !important;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 !important;
   text-align: right;
+  width: 54px !important;
+}
+
+.mw-netmeter-pay-group .btn {
+  font-size: 0.68rem !important;
+  border-color: #cbd5e1 !important;
+  border-radius: 0 !important;
+  padding: 0 4px !important;
+  line-height: 1 !important;
+}
+
+.mw-netmeter-pay-group .btn:last-child {
+  border-radius: 0 3px 3px 0 !important;
 }
 
 /* ══ Delay Badges (Small) ═════════════════════════════════════════════ */

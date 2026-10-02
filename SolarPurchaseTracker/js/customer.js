@@ -1559,13 +1559,19 @@ function renderList() {
                   ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
                 </div>
                 <div class="erp-pay-inputs-wrap ${(hasPayment && !isFullyPaid) ? 'd-flex' : 'd-none'} align-items-center gap-1" id="payInputs_${r.SlNo}">
-                  <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 105px;" disabled>
-                  <div class="input-group input-group-sm" style="width: 105px;">
+                  <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 95px;" disabled>
+                  <div class="input-group input-group-sm" style="width: 88px;">
                     <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem; height: 26px;">₹</span>
                     <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="${defaultPayAmt}" placeholder="${pendingAmt > 0 ? pendingAmt : 'Add Amt'}" title="Pending amount to pay" style="font-size: 0.75rem; height: 26px;" disabled onkeydown="if(event.key==='Enter') window.saveCustomerQuickPayment(${r.SlNo}); else if(event.key==='Escape') window.cancelPayEdit(${r.SlNo});">
                   </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnPayAction_${r.SlNo}" style="width: 26px; height: 26px; flex-shrink: 0;" onclick="window.togglePayEdit(${r.SlNo})" title="Edit Payment" ${isFullyPaid ? 'disabled' : ''}>
+                  <button type="button" class="btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnPayEdit_${r.SlNo}" style="width: 22px; height: 26px; flex-shrink: 0;" onclick="window.togglePayEdit(${r.SlNo})" title="Edit Payment" ${isFullyPaid ? 'disabled' : ''}>
                     ${UI.icon('pencil', 12)}
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-success erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnPaySave_${r.SlNo}" style="width: 22px; height: 26px; flex-shrink: 0;" onclick="window.saveCustomerQuickPayment(${r.SlNo})" title="Save Payment">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnPayCancel_${r.SlNo}" style="width: 22px; height: 26px; flex-shrink: 0;" onclick="window.cancelPayEdit(${r.SlNo})" title="Cancel Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
               </div>
@@ -1585,10 +1591,18 @@ function renderList() {
           <td class="col-brand align-middle">
             <div class="erp-brand-cell" id="brandWrap_${r.SlNo}">
               <div class="erp-brand-input-row">
-                <textarea class="form-control form-control-sm erp-brand-textarea" id="brandText_${r.SlNo}" rows="1" placeholder="Product details..." ${hasBrand ? 'disabled' : ''} onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.saveBrandInline(${r.SlNo}); } else if(event.key==='Escape'){ window.cancelBrandEdit(${r.SlNo}); }">${escapeHtml(r.CommittedBrand || '')}</textarea>
-                <button type="button" class="btn btn-sm ${hasBrand ? 'btn-outline-primary' : 'btn-outline-success'} erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnBrandAction_${r.SlNo}" onclick="${hasBrand ? `window.toggleBrandEdit(${r.SlNo})` : `window.saveBrandInline(${r.SlNo})`}" title="${hasBrand ? 'Edit Product' : 'Save Product'}">
-                  ${hasBrand ? UI.icon('pencil', 12) : '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'}
-                </button>
+                <textarea class="form-control form-control-sm erp-brand-textarea" id="brandText_${r.SlNo}" rows="1" placeholder="Product details..." disabled onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.saveBrandInline(${r.SlNo}); } else if(event.key==='Escape'){ window.cancelBrandEdit(${r.SlNo}); }">${escapeHtml(r.CommittedBrand || '')}</textarea>
+                <div class="erp-brand-actions-wrap d-flex flex-column">
+                  <button type="button" class="btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnBrandEdit_${r.SlNo}" onclick="window.toggleBrandEdit(${r.SlNo})" title="Edit Product">
+                    ${UI.icon('pencil', 12)}
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-success erp-brand-action-btn p-0 d-none align-items-center justify-content-center" id="btnBrandSave_${r.SlNo}" onclick="window.saveBrandInline(${r.SlNo})" title="Save Product">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary erp-brand-action-btn p-0 d-none align-items-center justify-content-center" id="btnBrandCancel_${r.SlNo}" onclick="window.cancelBrandEdit(${r.SlNo})" title="Cancel Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
           </td>
@@ -2447,31 +2461,38 @@ window.handleCustomerPaymentToggle = async function(chkEl, slNo) {
 window.togglePayEdit = function(slNo) {
   const dateInput = document.getElementById(`payDate_${slNo}`);
   const amtInput = document.getElementById(`payAmt_${slNo}`);
-  const btn = document.getElementById(`btnPayAction_${slNo}`);
-  if (!amtInput || !btn) return;
+  const btnEdit = document.getElementById(`btnPayEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnPaySave_${slNo}`);
+  const btnCancel = document.getElementById(`btnPayCancel_${slNo}`);
+  if (!amtInput) return;
 
-  if (amtInput.disabled) {
-    amtInput.dataset.origVal = amtInput.value;
-    if (dateInput) {
-      dateInput.dataset.origVal = dateInput.value;
-      dateInput.disabled = false;
-    }
-    amtInput.disabled = false;
-    amtInput.focus();
-    amtInput.select();
+  amtInput.dataset.origVal = amtInput.value;
+  if (dateInput) {
+    dateInput.dataset.origVal = dateInput.value;
+    dateInput.disabled = false;
+  }
+  amtInput.disabled = false;
+  amtInput.focus();
+  amtInput.select();
 
-    btn.className = 'btn btn-sm btn-outline-success erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center';
-    btn.title = 'Save Payment';
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-    btn.onclick = () => window.saveCustomerQuickPayment(slNo);
+  if (btnEdit) btnEdit.classList.add('d-none');
+  if (btnSave) {
+    btnSave.classList.remove('d-none');
+    btnSave.classList.add('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.remove('d-none');
+    btnCancel.classList.add('d-inline-flex');
   }
 };
 
 window.cancelPayEdit = function(slNo) {
   const dateInput = document.getElementById(`payDate_${slNo}`);
   const amtInput = document.getElementById(`payAmt_${slNo}`);
-  const btn = document.getElementById(`btnPayAction_${slNo}`);
-  if (!amtInput || !btn) return;
+  const btnEdit = document.getElementById(`btnPayEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnPaySave_${slNo}`);
+  const btnCancel = document.getElementById(`btnPayCancel_${slNo}`);
+  if (!amtInput) return;
 
   if (amtInput.dataset.origVal !== undefined) {
     amtInput.value = amtInput.dataset.origVal;
@@ -2482,10 +2503,17 @@ window.cancelPayEdit = function(slNo) {
   amtInput.disabled = true;
   if (dateInput) dateInput.disabled = true;
 
-  btn.className = 'btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center';
-  btn.title = 'Edit Payment';
-  btn.innerHTML = UI.icon('pencil', 12);
-  btn.onclick = () => window.togglePayEdit(slNo);
+  if (btnSave) {
+    btnSave.classList.add('d-none');
+    btnSave.classList.remove('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.add('d-none');
+    btnCancel.classList.remove('d-inline-flex');
+  }
+  if (btnEdit) {
+    btnEdit.classList.remove('d-none');
+  }
 };
 
 window.saveCustomerQuickPayment = async function(slNo) {
@@ -2542,49 +2570,80 @@ window.saveCustomerQuickPayment = async function(slNo) {
 
 window.toggleBrandEdit = function(slNo) {
   const textarea = document.getElementById(`brandText_${slNo}`);
-  const btn = document.getElementById(`btnBrandAction_${slNo}`);
-  if (!textarea || !btn) return;
+  const btnEdit = document.getElementById(`btnBrandEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnBrandSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnBrandCancel_${slNo}`);
+  if (!textarea) return;
 
-  if (textarea.disabled) {
-    textarea.dataset.origVal = textarea.value;
-    textarea.disabled = false;
-    textarea.focus();
-    const val = textarea.value;
-    textarea.value = '';
-    textarea.value = val;
+  textarea.dataset.origVal = textarea.value;
+  textarea.disabled = false;
+  textarea.focus();
+  const val = textarea.value;
+  textarea.value = '';
+  textarea.value = val;
 
-    btn.className = 'btn btn-sm btn-outline-success erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center';
-    btn.title = 'Save Product';
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-    btn.onclick = () => window.saveBrandInline(slNo);
+  if (btnEdit) btnEdit.classList.add('d-none');
+  if (btnSave) {
+    btnSave.classList.remove('d-none');
+    btnSave.classList.add('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.remove('d-none');
+    btnCancel.classList.add('d-inline-flex');
   }
 };
 
 window.cancelBrandEdit = function(slNo) {
   const textarea = document.getElementById(`brandText_${slNo}`);
-  const btn = document.getElementById(`btnBrandAction_${slNo}`);
-  if (!textarea || !btn) return;
+  const btnEdit = document.getElementById(`btnBrandEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnBrandSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnBrandCancel_${slNo}`);
+  if (!textarea) return;
 
-  if (textarea.dataset.origVal !== undefined && textarea.dataset.origVal.trim() !== '') {
+  if (textarea.dataset.origVal !== undefined) {
     textarea.value = textarea.dataset.origVal;
-    textarea.disabled = true;
-    btn.className = 'btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center';
-    btn.title = 'Edit Product';
-    btn.innerHTML = UI.icon('pencil', 13);
-    btn.onclick = () => window.toggleBrandEdit(slNo);
+  }
+  textarea.disabled = true;
+
+  if (btnSave) {
+    btnSave.classList.add('d-none');
+    btnSave.classList.remove('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.add('d-none');
+    btnCancel.classList.remove('d-inline-flex');
+  }
+  if (btnEdit) {
+    btnEdit.classList.remove('d-none');
   }
 };
 
 window.saveBrandInline = async function(slNo) {
   const textarea = document.getElementById(`brandText_${slNo}`);
-  const btn = document.getElementById(`btnBrandAction_${slNo}`);
+  const btnSave = document.getElementById(`btnBrandSave_${slNo}`);
   if (!textarea) return;
 
   const newBrand = textarea.value.trim();
-  if (btn) btn.disabled = true;
+  const existing = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+  const custName = existing?.Name || `Customer #${slNo}`;
+  const consumerNo = existing?.ConsumerNo ? ` (CN: ${existing.ConsumerNo})` : '';
+  const displayBrand = newBrand || 'None / Cleared';
+
+  const confirmed = await UI.confirmDialog(
+    `Are you sure you want to update Product details to "${displayBrand}" for "${custName}"${consumerNo}?`,
+    'Confirm Product Update',
+    'Yes, Save Product',
+    'btn-primary'
+  );
+
+  if (!confirmed) {
+    window.cancelBrandEdit(slNo);
+    return;
+  }
+
+  if (btnSave) btnSave.disabled = true;
 
   try {
-    const existing = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
     await DB.update('installments', r => Number(r.SlNo) === Number(slNo), {
       ...(existing || {}),
       CommittedBrand: newBrand
@@ -2594,7 +2653,7 @@ window.saveBrandInline = async function(slNo) {
   } catch (err) {
     console.error('Error updating Product:', err);
     UI.toast('Error saving Product: ' + err.message, 'danger');
-    if (btn) btn.disabled = false;
+    if (btnSave) btnSave.disabled = false;
   }
 };
 
