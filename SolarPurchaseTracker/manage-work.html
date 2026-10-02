@@ -20,9 +20,10 @@
 
     <div class="page-body">
       <!-- Search & Filters Toolbar -->
-      <div class="st-card erp-toolbar mb-2.5 no-print py-2 px-3">
-        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-          <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 420px;">
+      <div class="st-card erp-toolbar mb-2 no-print py-2 px-3">
+        <!-- Row 1: Search and Main Action Controls -->
+        <div class="mw-toolbar-top-row d-flex justify-content-between align-items-center gap-2 flex-wrap">
+          <div class="mw-search-box flex-grow-1" style="max-width: 420px; min-width: 200px;">
             <div class="input-group input-group-sm">
               <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -30,13 +31,13 @@
               <input type="text" class="form-control border-start-0 ps-1" id="fSearch" placeholder="Search customer, mobile, address, brand..." style="font-size:0.83rem;">
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+          <div class="mw-toolbar-actions d-flex align-items-center gap-2 flex-wrap ms-auto">
             <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" type="button" onclick="openWorkSummaryModal()" id="btnOpenSummaryModal" title="View Stage Progress & Metrics">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               <span>Summary</span>
             </button>
-            <div class="dropdown" style="min-width: 140px; max-width: 180px;">
-              <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2.5 shadow-none" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+            <div class="dropdown" style="min-width: 130px; max-width: 170px;">
+              <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2 shadow-none" type="button" id="btnPartnerMultiselect" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                 All Partners
               </button>
               <div class="dropdown-menu p-3 shadow-sm border" id="partnerMultiselectMenu" style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size:0.82rem;">
@@ -45,15 +46,17 @@
             </div>
             <div class="form-check mb-0 d-flex align-items-center gap-1">
               <input class="form-check-input mt-0" type="checkbox" id="chkShowDeactive">
-              <label class="form-check-label fs-8 text-secondary" for="chkShowDeactive" style="cursor: pointer;">Show Deactive</label>
+              <label class="form-check-label fs-8 text-secondary" for="chkShowDeactive" style="cursor: pointer; white-space: nowrap;">Show Deactive</label>
             </div>
-            <button class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-2 fs-8" id="btnClearFilters">Clear</button>
-            <div id="districtStatsContainer" class="d-flex flex-wrap gap-1 align-items-center" style="font-size: 0.75rem;"></div>
+            <button class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-1.5 fs-8" id="btnClearFilters">Clear</button>
           </div>
         </div>
 
-        <!-- Stage Workflow Step Filters (Summary Filters) -->
-        <div class="d-flex flex-wrap gap-1 align-items-center pt-2 mt-2 border-top" id="stageStatsContainer" style="font-size: 0.75rem;"></div>
+        <!-- Row 2: Workflow Stage Filters (Horizontal Scrollable Strip on Mobile) -->
+        <div class="mw-chips-scroll-strip mw-stage-strip pt-1.5 mt-1.5 border-top" id="stageStatsContainer"></div>
+
+        <!-- Row 3: District Badges (Horizontal Scrollable Strip on Mobile) -->
+        <div class="mw-chips-scroll-strip mw-district-strip pt-1 mt-1" id="districtStatsContainer"></div>
       </div>
 
       <!-- Main Progress & Workflow Table -->

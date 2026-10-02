@@ -66,6 +66,31 @@
 .manage-work-page .stage-filter-tag.stage-tag-7.active { background: #4338ca; border-color: #4338ca; }
 .manage-work-page .stage-filter-tag.stage-tag-8.active { background: #16a34a; border-color: #16a34a; }
 
+/* ══ Chips Horizontal Scrollable Strip (Ultra-Compact on Mobile) ══════ */
+.mw-chips-scroll-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  padding-bottom: 2px;
+}
+
+.mw-chips-scroll-strip::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+  height: 0px;
+}
+
+@media (min-width: 992px) {
+  .mw-chips-scroll-strip {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
 /* ══ Main Progress Table ══════════════════════════════════════════════ */
 .table-manage-work {
   border-collapse: separate !important;
@@ -1034,9 +1059,104 @@
 
 /* ══ Premium Mobile & Responsive Design (< 768px) ═════════════════════ */
 @media (max-width: 768px) {
+  /* Mobile Toolbar Ultra-Compact Redesign */
+  .manage-work-page .page-body {
+    padding: 6px 8px !important;
+  }
+
+  .manage-work-page .erp-toolbar {
+    padding: 5px 8px !important;
+    margin-bottom: 6px !important;
+    border-radius: 6px !important;
+  }
+
+  .mw-toolbar-top-row {
+    gap: 4px !important;
+  }
+
+  .mw-search-box {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-bottom: 2px !important;
+  }
+
+  .mw-search-box .input-group-sm {
+    height: 26px !important;
+  }
+
+  .mw-search-box .form-control {
+    font-size: 0.74rem !important;
+    height: 26px !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+  }
+
+  .mw-toolbar-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    margin-left: 0 !important;
+    margin-top: 1px !important;
+  }
+
+  .mw-toolbar-actions .btn-sm,
+  .mw-toolbar-actions .dropdown button {
+    font-size: 0.67rem !important;
+    height: 23px !important;
+    padding: 1px 5px !important;
+  }
+
+  .mw-toolbar-actions .dropdown {
+    flex: 1 1 auto;
+    min-width: 90px !important;
+    max-width: 130px !important;
+  }
+
+  .mw-toolbar-actions .form-check {
+    font-size: 0.66rem !important;
+  }
+
+  .mw-toolbar-actions .form-check-label {
+    font-size: 0.66rem !important;
+  }
+
+  .mw-toolbar-actions .form-check-input {
+    width: 12px !important;
+    height: 12px !important;
+    margin-top: 1px !important;
+  }
+
+  .mw-chips-scroll-strip {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-top: 3px !important;
+    margin-top: 3px !important;
+    gap: 3px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .manage-work-page .stage-filter-tag {
+    font-size: 0.61rem !important;
+    padding: 1px 5px !important;
+    height: 20px !important;
+    line-height: 16px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .manage-work-page .erp-tag {
+    font-size: 0.61rem !important;
+    padding: 1px 5px !important;
+    height: 19px !important;
+    line-height: 15px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
   .table-responsive-main {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    max-height: calc(100vh - 130px) !important;
   }
 
   .modal-dialog {
