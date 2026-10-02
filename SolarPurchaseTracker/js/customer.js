@@ -1593,7 +1593,7 @@ function renderList() {
               <div class="erp-brand-input-row">
                 <textarea class="form-control form-control-sm erp-brand-textarea" id="brandText_${r.SlNo}" rows="1" placeholder="Product details..." disabled onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.saveBrandInline(${r.SlNo}); } else if(event.key==='Escape'){ window.cancelBrandEdit(${r.SlNo}); }">${escapeHtml(r.CommittedBrand || '')}</textarea>
                 <div class="erp-brand-actions-wrap d-flex flex-column">
-                  <button type="button" class="btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnBrandEdit_${r.SlNo}" onclick="window.toggleBrandEdit(${r.SlNo})" title="Edit Product">
+                  <button type="button" class="btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-flex align-items-center justify-content-center" id="btnBrandEdit_${r.SlNo}" onclick="window.toggleBrandEdit(${r.SlNo})" title="Edit Product">
                     ${UI.icon('pencil', 12)}
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-success erp-brand-action-btn p-0 d-none align-items-center justify-content-center" id="btnBrandSave_${r.SlNo}" onclick="window.saveBrandInline(${r.SlNo})" title="Save Product">
@@ -2582,14 +2582,17 @@ window.toggleBrandEdit = function(slNo) {
   textarea.value = '';
   textarea.value = val;
 
-  if (btnEdit) btnEdit.classList.add('d-none');
+  if (btnEdit) {
+    btnEdit.classList.add('d-none');
+    btnEdit.classList.remove('d-inline-flex', 'd-flex');
+  }
   if (btnSave) {
     btnSave.classList.remove('d-none');
-    btnSave.classList.add('d-inline-flex');
+    btnSave.classList.add('d-flex');
   }
   if (btnCancel) {
     btnCancel.classList.remove('d-none');
-    btnCancel.classList.add('d-inline-flex');
+    btnCancel.classList.add('d-flex');
   }
 };
 
@@ -2607,14 +2610,15 @@ window.cancelBrandEdit = function(slNo) {
 
   if (btnSave) {
     btnSave.classList.add('d-none');
-    btnSave.classList.remove('d-inline-flex');
+    btnSave.classList.remove('d-flex', 'd-inline-flex');
   }
   if (btnCancel) {
     btnCancel.classList.add('d-none');
-    btnCancel.classList.remove('d-inline-flex');
+    btnCancel.classList.remove('d-flex', 'd-inline-flex');
   }
   if (btnEdit) {
     btnEdit.classList.remove('d-none');
+    btnEdit.classList.add('d-flex');
   }
 };
 

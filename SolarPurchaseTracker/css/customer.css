@@ -1,32 +1,34 @@
-/* =========================================================================
-   installments.css — Modern 2026 SaaS Customer Installments Styles
-   ========================================================================= */
+.installments-page {
+  background-color: #f8fafc;
+  font-size: 0.75rem;
+}
 
 .table-installments {
   border-collapse: separate !important;
   border-spacing: 0 !important;
-  font-size: 0.85rem;
+  font-size: 0.74rem;
   width: 100%;
   border-top: 1px solid var(--st-border) !important;
   border-left: 1px solid var(--st-border) !important;
 }
 
 .table-installments th {
-  background: #f8fafc !important;
-  color: var(--st-text-secondary) !important;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
+  font-size: 0.67rem;
+  letter-spacing: 0.02em;
   text-align: center;
   vertical-align: middle;
   border-top: none !important;
   border-left: none !important;
   border-right: 1px solid var(--st-border) !important;
   border-bottom: 1px solid var(--st-border) !important;
-  padding: 10px 12px;
+  padding: 5px 6px;
   white-space: nowrap;
   position: relative;
+  height: 28px;
 }
 
 .table-installments td {
@@ -35,8 +37,9 @@
   border-right: 1px solid var(--st-border) !important;
   border-bottom: 1px solid var(--st-border) !important;
   vertical-align: middle;
-  padding: 8px 10px;
+  padding: 3px 5px !important;
   background: var(--st-surface);
+  white-space: nowrap;
 }
 
 .table-installments td.highlight-yellow {
@@ -456,15 +459,20 @@ body.installments-page .page-body {
   }
 
   .erp-brand-textarea {
-    font-size: 0.68rem !important;
-    padding: 1px 3px !important;
-    min-height: 20px !important;
-    height: 22px !important;
+    font-size: 0.70rem !important;
+    padding: 2px 4px !important;
+    min-height: 100% !important;
+    height: 100% !important;
+  }
+
+  .erp-brand-actions-wrap {
+    width: 20px !important;
+    min-width: 20px !important;
   }
 
   .erp-brand-action-btn {
     width: 20px !important;
-    height: 20px !important;
+    min-height: 0 !important;
   }
 
   /* Compact Grand Total Footer for Mobile */
@@ -532,56 +540,57 @@ body.installments-page .page-body {
 }
 
 .table-installments td {
-  padding: 7px 10px !important;
+  padding: 3px 5px !important;
   vertical-align: middle !important;
   border-right: 1px solid var(--st-border) !important;
   border-bottom: 1px solid var(--st-border) !important;
+  font-size: 0.74rem;
 }
 
 /* Customer & Partner Cell Typography Hierarchy */
 .erp-customer-cell, .erp-partner-cell {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .erp-name-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex-wrap: nowrap;
 }
 
 .erp-cust-name {
   font-weight: 600;
-  color: #0f172a;
-  font-size: 0.84rem;
+  color: #1d4ed8;
+  font-size: 0.76rem;
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .erp-cust-name:hover {
-  color: #4338ca;
+  color: #1e40af;
   text-decoration: underline;
 }
 
 .erp-partner-name {
   font-weight: 600;
   color: #334155;
-  font-size: 0.83rem;
+  font-size: 0.74rem;
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .erp-partner-name:hover {
-  color: #4338ca;
+  color: #1e40af;
   text-decoration: underline;
 }
 
 .erp-meta-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
@@ -589,14 +598,14 @@ body.installments-page .page-body {
   font-weight: 500;
   font-family: var(--st-font-mono, monospace);
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.70rem;
 }
 
 .erp-pending-text, .erp-status-pending, .erp-pending-pill {
   color: #dc2626;
   font-weight: 700;
   font-family: var(--st-font-mono, monospace);
-  font-size: 0.78rem;
+  font-size: 0.70rem;
   letter-spacing: -0.01em;
   user-select: none;
   background: none !important;
@@ -609,7 +618,7 @@ body.installments-page .page-body {
   color: #2563eb;
   font-weight: 700;
   font-family: var(--st-font-mono, monospace);
-  font-size: 0.78rem;
+  font-size: 0.70rem;
   letter-spacing: -0.01em;
   user-select: none;
   background: none !important;
@@ -619,12 +628,12 @@ body.installments-page .page-body {
 }
 
 .erp-meta-text {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: #64748b;
   font-weight: 500;
   cursor: pointer;
   background: #f1f5f9;
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 3px;
   border: 1px solid #e2e8f0;
   transition: all 0.15s ease;
@@ -636,23 +645,23 @@ body.installments-page .page-body {
 }
 
 .erp-meta-tag {
-  font-size: 0.71rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: #166534;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 3px;
 }
 
 .erp-meter-text {
-  font-size: 0.76rem;
+  font-size: 0.70rem;
   font-weight: 700;
   color: #16a34a;
   font-family: var(--st-font-mono, monospace);
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   user-select: none;
 }
 
@@ -684,16 +693,17 @@ body.installments-page .page-body {
 
 /* Filter Tag Chips */
 .erp-tag {
-  font-size: 0.72rem;
-  padding: 2px 7px;
-  border-radius: 3px;
+  font-size: 0.67rem !important;
+  padding: 1px 5px !important;
+  border-radius: 3px !important;
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.15s ease;
   font-weight: 500;
-  line-height: 1.3;
+  height: 22px !important;
+  line-height: 20px !important;
 }
 
 .erp-tag:hover {
@@ -710,10 +720,10 @@ body.installments-page .page-body {
 
 /* ══ Stage Filter Chips ════════════════════════════════════════════════ */
 .stage-filter-tag {
-  font-size: 0.74rem !important;
-  padding: 2.5px 8px !important;
+  font-size: 0.69rem !important;
+  padding: 2px 7px !important;
   border-radius: 4px !important;
-  height: 24px !important;
+  height: 23px !important;
   line-height: 19px !important;
   font-weight: 500;
   cursor: pointer;
@@ -1100,14 +1110,14 @@ body.installments-page .page-body {
 
 /* ══ Product Column & Inline Quick Edit ═════════════════════════ */
 .col-brand {
-  min-width: 140px;
-  width: 165px;
+  min-width: 130px;
+  width: 150px;
 }
 
 .table-installments td.col-brand {
   padding: 0 !important;
-  vertical-align: middle;
-  height: 100%;
+  vertical-align: top !important;
+  height: 1px; /* Crucial: allows child height: 100% to match full table row height */
 }
 
 .erp-brand-cell {
@@ -1117,7 +1127,7 @@ body.installments-page .page-body {
   justify-content: stretch;
   width: 100%;
   height: 100%;
-  min-height: 48px;
+  min-height: 100%;
   box-sizing: border-box;
 }
 
@@ -1126,19 +1136,19 @@ body.installments-page .page-body {
   align-items: stretch;
   width: 100%;
   height: 100%;
-  flex: 1 1 auto;
+  flex: 1 1 100%;
 }
 
 .erp-brand-textarea {
-  font-size: 0.78rem !important;
-  line-height: 1.25 !important;
+  font-size: 0.74rem !important;
+  line-height: 1.35 !important;
   padding: 4px 6px !important;
   border-radius: 0 !important;
   border: none !important;
   border-right: 1px solid #e2e8f0 !important;
   background-color: transparent !important;
   color: #1e293b !important;
-  min-height: 46px !important;
+  min-height: 100% !important;
   height: 100% !important;
   flex: 1 1 auto;
   width: 100%;
@@ -1166,19 +1176,39 @@ body.installments-page .page-body {
   min-width: 24px;
   height: 100%;
   align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  flex-shrink: 0;
+  background: #f8fafc;
 }
 
 .erp-brand-action-btn {
   width: 24px !important;
-  flex: 1 1 auto;
-  min-height: 23px !important;
+  flex: 1 1 50%;
+  height: 100%;
+  min-height: 0 !important;
   align-self: stretch;
   padding: 0 !important;
   flex-shrink: 0 !important;
   border: none !important;
   border-radius: 0 !important;
   background: #f8fafc;
-  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.erp-brand-action-btn:only-child,
+.erp-brand-action-btn:only-of-type {
+  flex: 1 1 100%;
+  height: 100%;
+}
+
+.erp-brand-action-btn + .erp-brand-action-btn {
+  border-top: 1px solid #e2e8f0 !important;
 }
 
 .erp-brand-action-btn:hover {
@@ -1187,12 +1217,12 @@ body.installments-page .page-body {
 
 /* ══ Partner Column & Inline Searchable Dropdown ═════════════════════════ */
 .col-Partner {
-  min-width: 140px;
-  width: 160px;
+  min-width: 130px;
+  width: 150px;
 }
 
 .table-installments td.col-Partner {
-  padding: 4px 6px !important;
+  padding: 2px 4px !important;
   vertical-align: middle;
 }
 
@@ -1202,16 +1232,16 @@ body.installments-page .page-body {
 }
 
 .erp-partner-input {
-  font-size: 0.78rem !important;
-  padding: 4px 22px 4px 8px !important;
-  height: 32px !important;
+  font-size: 0.74rem !important;
+  padding: 2px 20px 2px 6px !important;
+  height: 26px !important;
   border-radius: 4px !important;
   border: 1px solid #cbd5e1 !important;
   background-color: #ffffff !important;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
   background-repeat: no-repeat !important;
-  background-position: right 6px center !important;
-  background-size: 10px 10px !important;
+  background-position: right 5px center !important;
+  background-size: 9px 9px !important;
   color: #1e293b !important;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
