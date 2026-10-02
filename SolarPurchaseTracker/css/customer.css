@@ -450,6 +450,23 @@ body.installments-page .page-body {
     height: 12px !important;
   }
 
+  .col-brand {
+    min-width: 110px !important;
+    width: 125px !important;
+  }
+
+  .erp-brand-textarea {
+    font-size: 0.68rem !important;
+    padding: 1px 3px !important;
+    min-height: 20px !important;
+    height: 22px !important;
+  }
+
+  .erp-brand-action-btn {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
   /* Compact Grand Total Footer for Mobile */
   .table-installments tr.grand-total td {
     padding: 4px 6px !important;
@@ -1063,6 +1080,102 @@ body.installments-page .page-body {
 .text-purple { color: #7c3aed !important; }
 .text-emerald { color: #059669 !important; }
 .bg-indigo-subtle { background-color: #eef2ff !important; }
+
+/* ══ Brand / System Column & Inline Quick Edit ═════════════════════════ */
+.col-brand {
+  min-width: 150px;
+  width: 180px;
+}
+
+.table-installments td.col-brand {
+  padding: 4px 6px !important;
+  vertical-align: middle;
+}
+
+.erp-brand-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.erp-brand-partner-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-bottom: 1px;
+}
+
+.erp-brand-partner-label a {
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.erp-brand-partner-label a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.erp-brand-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  width: 100%;
+  flex: 1 1 auto;
+}
+
+.erp-brand-textarea {
+  font-size: 0.76rem !important;
+  line-height: 1.25 !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  min-height: 30px !important;
+  height: 32px !important;
+  flex: 1 1 auto;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.erp-brand-textarea:disabled,
+.erp-brand-textarea[disabled] {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+  cursor: default !important;
+  opacity: 0.95 !important;
+}
+
+.erp-brand-textarea:focus {
+  border-color: var(--st-primary, #4f46e5) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15) !important;
+  outline: none !important;
+}
+
+.erp-brand-action-btn {
+  width: 26px !important;
+  height: auto !important;
+  min-height: 30px !important;
+  align-self: stretch;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  border-radius: 4px !important;
+}
 
 /* ══ Customer Payment Column & Inline Quick Pay ═════════════════════════ */
 .col-payment {

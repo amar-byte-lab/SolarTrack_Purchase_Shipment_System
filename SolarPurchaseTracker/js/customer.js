@@ -1371,7 +1371,6 @@ function renderList() {
               <input type="text" class="form-control form-control-sm" id="editName" value="${r.Name || ''}" placeholder="Name *" required>
               <input type="text" class="form-control form-control-sm" id="editConsumerNo" value="${r.ConsumerNo || ''}" placeholder="Consumer No">
               <input type="text" class="form-control form-control-sm" id="editMobileNumber" value="${r.MobileNumber || ''}" placeholder="Mobile">
-              <input type="text" class="form-control form-control-sm" id="editCommittedBrand" value="${r.CommittedBrand || ''}" placeholder="Brand">
               <select class="form-select form-select-sm" id="editDistrict">
                 <option value="">-- Select District --</option>
                 ${DISTRICTS.map(d => `<option value="${d}" ${r.District === d ? 'selected' : ''}>${d}</option>`).join('')}
@@ -1386,19 +1385,13 @@ function renderList() {
           <td class="col-payment align-middle text-center text-muted fs-8">
             <span class="badge bg-light text-secondary border">Payment via Toggle</span>
           </td>
-          <td class="col-Partner">
-            <div class="d-flex flex-column gap-1">
-              <div class="dropdown">
-                <input type="text" class="form-control form-control-sm" id="editBrokerName" value="${r.BrokerName || ''}" placeholder="Partner Name" autocomplete="off">
+          <td class="col-brand align-middle">
+            <div class="erp-brand-cell">
+              <div class="erp-brand-partner-label text-truncate text-muted" title="Partner: ${r.BrokerName || 'No Partner'}">
+                ${r.BrokerName || '—'}
               </div>
-              <input type="text" class="form-control form-control-sm" id="editBrokerNumber" value="${(r.BrokerNumber || '').split('|')[0]}" placeholder="Partner Phone">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text" style="font-size:0.7rem;">Comm</span>
-                <input type="number" step="0.01" class="form-control" id="editCommission" value="${comm || ''}" placeholder="Comm Amt">
-              </div>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text" style="font-size:0.7rem;">Partner Price</span>
-                <input type="number" step="0.01" class="form-control expense-calc-inline" id="editPartnerPrice" value="${(expenses && expenses.partner) || 0}" placeholder="Partner Price">
+              <div class="erp-brand-input-row">
+                <textarea class="form-control form-control-sm erp-brand-textarea" id="editCommittedBrand" rows="1" placeholder="Brand / System">${r.CommittedBrand || ''}</textarea>
               </div>
             </div>
           </td>
@@ -1481,6 +1474,8 @@ function renderList() {
       const profit = partnerPrice - comm - vPrice;
       const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
       const isFullyPaid = (price > 0 && total >= price);
+      const brandVal = (r.CommittedBrand || '').trim();
+      const hasBrand = brandVal.length > 0;
 
       return `
         <tr class="${rowClass}">
@@ -1538,16 +1533,18 @@ function renderList() {
               </div>
             `}
           </td>
-          <td class="col-Partner align-middle">
-            <div class="erp-partner-cell">
-              <div class="erp-name-row">
-                <a href="#" class="erp-partner-name" onclick="${isAdmin ? `showTransactionHistory(${r.SlNo}, 'Vendor')` : `showPartnerDetailsPopup(${r.SlNo})`}; return false;" title="${isAdmin ? 'Click to view/edit partner payments' : 'Click to view partner details'}">
+          <td class="col-brand align-middle">
+            <div class="erp-brand-cell" id="brandWrap_${r.SlNo}">
+              <div class="erp-brand-partner-label text-truncate" title="Partner: ${r.BrokerName || 'No Partner'}">
+                <a href="#" onclick="${isAdmin ? `showTransactionHistory(${r.SlNo}, 'Vendor')` : `showPartnerDetailsPopup(${r.SlNo})`}; return false;" title="${isAdmin ? 'Click to view/edit partner payments' : 'Click to view partner details'}">
                   ${r.BrokerName || '—'}
                 </a>
               </div>
-              <div class="erp-meta-row">
-                <span class="erp-price-text">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-                ${vendorPillHtml}
+              <div class="erp-brand-input-row">
+                <textarea class="form-control form-control-sm erp-brand-textarea" id="brandText_${r.SlNo}" rows="1" placeholder="Brand / System..." ${hasBrand ? 'disabled' : ''} onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.saveBrandInline(${r.SlNo}); } else if(event.key==='Escape'){ window.cancelBrandEdit(${r.SlNo}); }">${r.CommittedBrand || ''}</textarea>
+                <button type="button" class="btn btn-sm ${hasBrand ? 'btn-outline-primary' : 'btn-outline-success'} erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnBrandAction_${r.SlNo}" onclick="${hasBrand ? `window.toggleBrandEdit(${r.SlNo})` : `window.saveBrandInline(${r.SlNo})`}" title="${hasBrand ? 'Edit Brand / System' : 'Save Brand / System'}">
+                  ${hasBrand ? UI.icon('pencil', 12) : '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'}
+                </button>
               </div>
             </div>
           </td>
@@ -2015,7 +2012,7 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
   });
 
   if (filteredBreakdown.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '10' : '9'}" class="text-center text-muted py-3">No records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '8' : '7'}" class="text-center text-muted py-3">No records found.</td></tr>`;
     return;
   }
 
@@ -2030,7 +2027,6 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
     const profit = calc.profit;
 
     const custPendingClass = Math.abs(custPending) < 0.01 ? 'text-secondary' : (custPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
-    const partnerPendingClass = Math.abs(partnerPending) < 0.01 ? 'text-secondary' : (partnerPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
     const profitClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
     const meterColorClass = netMeterAmt > 0 ? 'text-primary fw-semibold' : 'text-secondary';
 
@@ -2047,8 +2043,6 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
         <td>
           <div class="text-dark text-truncate" style="max-width: 160px;" title="${r.BrokerName || ''}">${r.BrokerName || '—'}</div>
         </td>
-        <td class="text-end font-monospace text-purple fw-semibold">₹${Math.round(partnerPrice).toLocaleString('en-IN')}</td>
-        <td class="text-end font-monospace ${partnerPendingClass}">₹${Math.round(partnerPending).toLocaleString('en-IN')}</td>
         <td class="text-end font-monospace admin-only-summary-col ${profitClass}" style="${isAdmin ? '' : 'display:none;'}">₹${Math.round(profit).toLocaleString('en-IN')}</td>
       </tr>
     `;
@@ -2112,46 +2106,56 @@ window.saveInline = async function (slNo) {
     creatorSuffix = '|creator:' + currentUser.userid;
   }
 
-  const custPriceVal = Number(document.getElementById('editCommittedPrice').value) || 0;
-  const gstPctVal = Number(document.getElementById('editGSTPercentage').value) || 0;
+  let existingExpenses = null;
+  if (existing && existing.BrokerNumber && existing.BrokerNumber.includes('|expenses:')) {
+    try {
+      const jsonStr = existing.BrokerNumber.split('|expenses:')[1].split('|')[0];
+      existingExpenses = JSON.parse(jsonStr);
+    } catch (e) {
+      console.error("Error parsing existing expenses:", e);
+    }
+  }
+
+  const custPriceVal = document.getElementById('editCommittedPrice') ? (Number(document.getElementById('editCommittedPrice').value) || 0) : (existing ? (Number(existing.CommittedPrice) || 0) : 0);
+  const gstPctVal = document.getElementById('editGSTPercentage') ? (Number(document.getElementById('editGSTPercentage').value) || 0) : (existingExpenses && existingExpenses.gst_pct !== undefined ? Number(existingExpenses.gst_pct) : 18);
   const calculatedGSTAmount = custPriceVal * (gstPctVal / 100);
 
   const expenses = {
-    material: Number(document.getElementById('editMaterialCost').value) || 0,
-    partner: Number(document.getElementById('editPartnerPrice').value) || 0,
-    install: Number(document.getElementById('editInstallationCost').value) || 0,
+    material: document.getElementById('editMaterialCost') ? (Number(document.getElementById('editMaterialCost').value) || 0) : (existingExpenses && existingExpenses.material ? Number(existingExpenses.material) : 0),
+    partner: document.getElementById('editPartnerPrice') ? (Number(document.getElementById('editPartnerPrice').value) || 0) : (existingExpenses && existingExpenses.partner ? Number(existingExpenses.partner) : 0),
+    install: document.getElementById('editInstallationCost') ? (Number(document.getElementById('editInstallationCost').value) || 0) : (existingExpenses && existingExpenses.install ? Number(existingExpenses.install) : 0),
     gst_pct: gstPctVal,
     gst: calculatedGSTAmount,
-    other: Number(document.getElementById('editOtherCost').value) || 0
+    other: document.getElementById('editOtherCost') ? (Number(document.getElementById('editOtherCost').value) || 0) : (existingExpenses && existingExpenses.other ? Number(existingExpenses.other) : 0)
   };
   const calculatedVendorPrice = expenses.material + expenses.install + expenses.gst + expenses.other;
-  const phoneClean = document.getElementById('editBrokerNumber').value.trim().split('|')[0];
+  const phoneClean = document.getElementById('editBrokerNumber') ? document.getElementById('editBrokerNumber').value.trim().split('|')[0] : (existing ? (existing.BrokerNumber || '').split('|')[0] : '');
 
   const row = {
     SlNo: Number(slNo),
     Name: name,
     ConsumerNo: document.getElementById('editConsumerNo') ? document.getElementById('editConsumerNo').value.trim() : (existing ? (existing.ConsumerNo || '') : ''),
     Status: isAddingNew ? 'Active' : currentStatus,
-    District: document.getElementById('editDistrict').value,
+    District: document.getElementById('editDistrict') ? document.getElementById('editDistrict').value : (existing ? (existing.District || '') : ''),
     PinCode: existing ? (existing.PinCode || '') : '',
     State: existing ? (existing.State || 'Odisha') : 'Odisha',
-    Address: document.getElementById('editAddress').value.trim(),
-    MobileNumber: document.getElementById('editMobileNumber').value.trim(),
-    CommittedBrand: document.getElementById('editCommittedBrand').value.trim(),
+    Address: document.getElementById('editAddress') ? document.getElementById('editAddress').value.trim() : (existing ? (existing.Address || '') : ''),
+    MobileNumber: document.getElementById('editMobileNumber') ? document.getElementById('editMobileNumber').value.trim() : (existing ? (existing.MobileNumber || '') : ''),
+    CommittedBrand: document.getElementById('editCommittedBrand') ? document.getElementById('editCommittedBrand').value.trim() : (existing ? (existing.CommittedBrand || '') : ''),
     FirstInstallment: fInst,
     SecondInstallment: sInst,
     ThirdInstallment: tInst,
     Total: total,
-    CommittedPrice: Number(document.getElementById('editCommittedPrice').value) || 0,
+    CommittedPrice: custPriceVal,
     VendorPrice: calculatedVendorPrice,
     VendorPaid: existing ? (Number(existing.VendorPaid) || 0) : 0,
-    LoginDate: document.getElementById('editLoginDate').value,
-    InstallationDate: document.getElementById('editInstallationDate').value,
-    Commission: Number(document.getElementById('editCommission').value) || 0,
+    LoginDate: document.getElementById('editLoginDate') ? document.getElementById('editLoginDate').value : (existing ? (existing.LoginDate || '') : ''),
+    InstallationDate: document.getElementById('editInstallationDate') ? document.getElementById('editInstallationDate').value : (existing ? (existing.InstallationDate || '') : ''),
+    Commission: document.getElementById('editCommission') ? (Number(document.getElementById('editCommission').value) || 0) : (existing ? (Number(existing.Commission) || 0) : 0),
     CommissionPaid: existing ? (Number(existing.CommissionPaid) || 0) : 0,
-    BrokerName: document.getElementById('editBrokerName').value.trim(),
+    BrokerName: document.getElementById('editBrokerName') ? document.getElementById('editBrokerName').value.trim() : (existing ? (existing.BrokerName || '') : ''),
     BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
-    CommissioningDate: document.getElementById('editCommissioningDate').value
+    CommissioningDate: document.getElementById('editCommissioningDate') ? document.getElementById('editCommissioningDate').value : (existing ? (existing.CommissioningDate || '') : '')
   };
 
   UI.showLoading(true);
@@ -2382,6 +2386,64 @@ window.saveCustomerQuickPayment = async function(slNo) {
     UI.toast('Error saving payment: ' + err.message, 'danger');
   } finally {
     UI.showLoading(false);
+  }
+};
+
+window.toggleBrandEdit = function(slNo) {
+  const textarea = document.getElementById(`brandText_${slNo}`);
+  const btn = document.getElementById(`btnBrandAction_${slNo}`);
+  if (!textarea || !btn) return;
+
+  if (textarea.disabled) {
+    textarea.dataset.origVal = textarea.value;
+    textarea.disabled = false;
+    textarea.focus();
+    const val = textarea.value;
+    textarea.value = '';
+    textarea.value = val;
+
+    btn.className = 'btn btn-sm btn-outline-success erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center';
+    btn.title = 'Save Brand / System';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    btn.onclick = () => window.saveBrandInline(slNo);
+  }
+};
+
+window.cancelBrandEdit = function(slNo) {
+  const textarea = document.getElementById(`brandText_${slNo}`);
+  const btn = document.getElementById(`btnBrandAction_${slNo}`);
+  if (!textarea || !btn) return;
+
+  if (textarea.dataset.origVal !== undefined && textarea.dataset.origVal.trim() !== '') {
+    textarea.value = textarea.dataset.origVal;
+    textarea.disabled = true;
+    btn.className = 'btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center';
+    btn.title = 'Edit Brand / System';
+    btn.innerHTML = UI.icon('pencil', 13);
+    btn.onclick = () => window.toggleBrandEdit(slNo);
+  }
+};
+
+window.saveBrandInline = async function(slNo) {
+  const textarea = document.getElementById(`brandText_${slNo}`);
+  const btn = document.getElementById(`btnBrandAction_${slNo}`);
+  if (!textarea) return;
+
+  const newBrand = textarea.value.trim();
+  if (btn) btn.disabled = true;
+
+  try {
+    const existing = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+    await DB.update('installments', r => Number(r.SlNo) === Number(slNo), {
+      ...(existing || {}),
+      CommittedBrand: newBrand
+    });
+    UI.toast('Brand / System updated successfully.', 'success');
+    renderList();
+  } catch (err) {
+    console.error('Error updating Brand / System:', err);
+    UI.toast('Error saving Brand / System: ' + err.message, 'danger');
+    if (btn) btn.disabled = false;
   }
 };
 
