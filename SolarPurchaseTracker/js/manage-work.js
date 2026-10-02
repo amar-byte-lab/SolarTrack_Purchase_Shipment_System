@@ -244,7 +244,31 @@ function updateDistrictStats() {
 
   const allRows = getWorkRows();
   const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
-  const activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+  let activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  // Filter by search text
+  const search = (document.getElementById('fSearch') ? document.getElementById('fSearch').value : '').toLowerCase().trim();
+  if (search) {
+    activeRows = activeRows.filter(r =>
+      String(r.Name || '').toLowerCase().includes(search) ||
+      String(r.ConsumerNo || '').toLowerCase().includes(search) ||
+      String(r.District || '').toLowerCase().includes(search) ||
+      String(r.Address || '').toLowerCase().includes(search) ||
+      String(r.MobileNumber || '').toLowerCase().includes(search) ||
+      String(r.CommittedBrand || '').toLowerCase().includes(search) ||
+      String(r.BrokerName || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Filter by selected partners
+  if (selectedPartners.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const partnerVal = r.BrokerName ? r.BrokerName.trim() : '(No Partner)';
+      const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
+      return selectedPartners.includes(partnerName);
+    });
+  }
+
   const totalCount = activeRows.length;
   const counts = {};
 

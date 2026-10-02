@@ -816,7 +816,43 @@ function updateDistrictStats() {
 
   const allRows = getInstallmentRows();
   const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
-  const activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+  let activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  // Filter by search text
+  const search = (document.getElementById('fSearch') ? document.getElementById('fSearch').value : '').toLowerCase().trim();
+  if (search) {
+    activeRows = activeRows.filter(r =>
+      String(r.Name || '').toLowerCase().includes(search) ||
+      String(r.ConsumerNo || '').toLowerCase().includes(search) ||
+      String(r.District || '').toLowerCase().includes(search) ||
+      String(r.PinCode || '').toLowerCase().includes(search) ||
+      String(r.State || '').toLowerCase().includes(search) ||
+      String(r.Address || '').toLowerCase().includes(search) ||
+      String(r.MobileNumber || '').toLowerCase().includes(search) ||
+      String(r.CommittedBrand || '').toLowerCase().includes(search) ||
+      String(r.LoginDate || '').toLowerCase().includes(search) ||
+      String(r.BrokerName || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Filter by selected partners
+  if (selectedPartners.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const partnerVal = r.BrokerName ? r.BrokerName.trim() : '(No Partner)';
+      const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
+      return selectedPartners.includes(partnerName);
+    });
+  }
+
+  // Filter by selected brands
+  if (selectedBrands && selectedBrands.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const brandVal = r.CommittedBrand ? r.CommittedBrand.trim() : '(No Brand)';
+      const brandName = brandVal === '' ? '(No Brand)' : brandVal;
+      return selectedBrands.includes(brandName);
+    });
+  }
+
   const totalCount = activeRows.length;
   const counts = {};
 
@@ -833,15 +869,6 @@ function updateDistrictStats() {
       if (b === 'No District') return -1;
       return a.localeCompare(b);
     });
-
-  const badgeStyles = [
-    'bg-primary-subtle text-primary-emphasis border border-primary-subtle',
-    'bg-success-subtle text-success-emphasis border border-success-subtle',
-    'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
-    'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
-    'bg-info-subtle text-info-emphasis border border-info-subtle',
-    'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
-  ];
 
   const isTotalActive = selectedDistricts.length === 0;
   const totalBadge = `<button type="button" onclick="window.toggleDistrictBadgeFilter('ALL', event)" class="erp-tag ${isTotalActive ? 'active' : ''}" title="Show all districts">Total: ${totalCount}</button>`;
