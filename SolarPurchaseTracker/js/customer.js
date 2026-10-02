@@ -59,7 +59,8 @@ window.toggleStageBadgeFilter = function(stageKey, event) {
 
 function updateStageStats() {
   const container = document.getElementById('stageStatsContainer');
-  if (!container) return;
+  const modalContainer = document.getElementById('modalStageStatsContainer');
+  if (!container && !modalContainer) return;
 
   const allRows = getInstallmentRows();
   const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
@@ -128,7 +129,9 @@ function updateStageStats() {
     return `<button type="button" onclick="window.toggleStageBadgeFilter('${st.key}', event)" class="stage-filter-tag stage-tag-${st.num} ${isSelected ? 'active' : ''}" title="Filter by Stage ${st.num}: ${st.name}">${st.num}. ${st.name} (${count})</button>`;
   }).join(' ');
 
-  container.innerHTML = totalBadge + ' ' + stageBadges;
+  const html = totalBadge + ' ' + stageBadges;
+  if (container) container.innerHTML = html;
+  if (modalContainer) modalContainer.innerHTML = html;
 }
 
 const DISTRICTS = [
@@ -284,23 +287,62 @@ window.onDbReady = function () {
     });
   });
 
-  document.getElementById('btnClearFilters').addEventListener('click', () => {
-    const fSearch = document.getElementById('fSearch');
-    if (fSearch) fSearch.value = '';
-    const chkDeactive = document.getElementById('chkShowDeactive');
-    if (chkDeactive) chkDeactive.checked = false;
+  // Modal Search & Filter listeners (two-way sync)
+  const fSearchEl = document.getElementById('fSearch');
+  const fSumModalSearchEl = document.getElementById('fSumModalSearch');
+  if (fSumModalSearchEl) {
+    fSumModalSearchEl.addEventListener('input', Utils.debounce(() => {
+      if (fSearchEl) fSearchEl.value = fSumModalSearchEl.value;
+      renderList();
+    }, 200));
+  }
+  if (fSearchEl) {
+    fSearchEl.addEventListener('input', () => {
+      if (fSumModalSearchEl && fSumModalSearchEl.value !== fSearchEl.value) {
+        fSumModalSearchEl.value = fSearchEl.value;
+      }
+    });
+  }
+
+  const chkShowDeactiveEl = document.getElementById('chkShowDeactive');
+  const chkModalShowDeactiveEl = document.getElementById('chkModalShowDeactive');
+  if (chkModalShowDeactiveEl) {
+    chkModalShowDeactiveEl.addEventListener('change', () => {
+      if (chkShowDeactiveEl) chkShowDeactiveEl.checked = chkModalShowDeactiveEl.checked;
+      renderList();
+    });
+  }
+  if (chkShowDeactiveEl) {
+    chkShowDeactiveEl.addEventListener('change', () => {
+      if (chkModalShowDeactiveEl && chkModalShowDeactiveEl.checked !== chkShowDeactiveEl.checked) {
+        chkModalShowDeactiveEl.checked = chkShowDeactiveEl.checked;
+      }
+    });
+  }
+
+  const clearAllFiltersFn = () => {
+    if (fSearchEl) fSearchEl.value = '';
+    if (fSumModalSearchEl) fSumModalSearchEl.value = '';
+    if (chkShowDeactiveEl) chkShowDeactiveEl.checked = false;
+    if (chkModalShowDeactiveEl) chkModalShowDeactiveEl.checked = false;
     selectedDistricts = [];
     selectedBrands = [];
     selectedPartners = [];
     selectedStage = 'ALL';
     document.querySelectorAll('.district-chk').forEach(c => c.checked = false);
     document.querySelectorAll('.brand-chk').forEach(c => c.checked = false);
-    document.querySelectorAll('.partner-chk').forEach(c => c.checked = false);
+    document.querySelectorAll('.main-partner-chk, .modal-partner-chk').forEach(c => c.checked = false);
     updateDistrictDropdownButton();
     updateBrandDropdownButton();
     updatePartnerDropdownButton();
     renderList();
-  });
+  };
+
+  const btnClearFilters = document.getElementById('btnClearFilters');
+  if (btnClearFilters) btnClearFilters.addEventListener('click', clearAllFiltersFn);
+
+  const btnModalClearFilters = document.getElementById('btnModalClearFilters');
+  if (btnModalClearFilters) btnModalClearFilters.addEventListener('click', clearAllFiltersFn);
 
   // Color Customizer listeners
   const colorPickerEl = document.getElementById('ccColorPicker');
@@ -682,29 +724,42 @@ function populateDatalists() {
 
   // 3. Partner multiselect menu (dynamically computed from database)
   const partnerMenu = document.getElementById('partnerMultiselectMenu');
-  if (partnerMenu) {
+  const modalPartnerMenu = document.getElementById('modalPartnerMultiselectMenu');
+  if (partnerMenu || modalPartnerMenu) {
     const allRows = DB.getAll('installments');
     const rawPartners = allRows.map(r => r.BrokerName ? r.BrokerName.trim() : '').filter(Boolean);
     const uniquePartners = [...new Set(rawPartners)].sort();
 
-    partnerMenu.innerHTML = [
+    const renderPartnerCheckboxes = (prefix) => [
       `<div class="form-check mb-1">
-         <input class="form-check-input partner-chk" type="checkbox" value="(No Partner)" id="chk_nopartner" ${selectedPartners.includes('(No Partner)') ? 'checked' : ''}>
-         <label class="form-check-label fs-8" for="chk_nopartner">(No Partner)</label>
+         <input class="form-check-input ${prefix}-partner-chk" type="checkbox" value="(No Partner)" id="${prefix}_nopartner" ${selectedPartners.includes('(No Partner)') ? 'checked' : ''}>
+         <label class="form-check-label fs-8" for="${prefix}_nopartner">(No Partner)</label>
        </div>`
     ].concat(
       uniquePartners.map(p => `
         <div class="form-check mb-1">
-          <input class="form-check-input partner-chk" type="checkbox" value="${p}" id="chk_partner_${p.replace(/\s+/g, '_')}" ${selectedPartners.includes(p) ? 'checked' : ''}>
-          <label class="form-check-label fs-8" for="chk_partner_${p.replace(/\s+/g, '_')}">${p}</label>
+          <input class="form-check-input ${prefix}-partner-chk" type="checkbox" value="${p}" id="${prefix}_partner_${p.replace(/\s+/g, '_')}" ${selectedPartners.includes(p) ? 'checked' : ''}>
+          <label class="form-check-label fs-8" for="${prefix}_partner_${p.replace(/\s+/g, '_')}">${p}</label>
         </div>
       `)
     ).join('');
 
+    if (partnerMenu) partnerMenu.innerHTML = renderPartnerCheckboxes('main');
+    if (modalPartnerMenu) modalPartnerMenu.innerHTML = renderPartnerCheckboxes('modal');
+
     // Checkbox change listener
-    document.querySelectorAll('.partner-chk').forEach(chk => {
+    document.querySelectorAll('.main-partner-chk, .modal-partner-chk').forEach(chk => {
       chk.addEventListener('change', () => {
-        selectedPartners = Array.from(document.querySelectorAll('.partner-chk:checked')).map(c => c.value);
+        const val = chk.value;
+        const isChecked = chk.checked;
+        if (isChecked && !selectedPartners.includes(val)) {
+          selectedPartners.push(val);
+        } else if (!isChecked && selectedPartners.includes(val)) {
+          selectedPartners = selectedPartners.filter(x => x !== val);
+        }
+        document.querySelectorAll(`.main-partner-chk[value="${val}"], .modal-partner-chk[value="${val}"]`).forEach(c => {
+          c.checked = isChecked;
+        });
         updatePartnerDropdownButton();
         renderList();
       });
@@ -813,7 +868,8 @@ window.toggleDistrictBadgeFilter = function(dist, event) {
 
 function updateDistrictStats() {
   const container = document.getElementById('districtStatsContainer');
-  if (!container) return;
+  const modalContainer = document.getElementById('modalDistrictStatsContainer');
+  if (!container && !modalContainer) return;
 
   const allRows = getInstallmentRows();
   const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
@@ -883,7 +939,9 @@ function updateDistrictStats() {
     return `<button type="button" onclick="window.toggleDistrictBadgeFilter('${safeDist}', event)" class="erp-tag ${isSelected ? 'active' : ''}" title="Filter by ${dist}">${dist} (${count})</button>`;
   }).join(' ');
 
-  container.innerHTML = totalBadge + ' ' + districtBadges;
+  const html = totalBadge + ' ' + districtBadges;
+  if (container) container.innerHTML = html;
+  if (modalContainer) modalContainer.innerHTML = html;
 }
 
 function updateBrandDropdownButton() {
@@ -900,14 +958,10 @@ function updateBrandDropdownButton() {
 
 function updatePartnerDropdownButton() {
   const btn = document.getElementById('btnPartnerMultiselect');
-  if (!btn) return;
-  if (selectedPartners.length === 0) {
-    btn.textContent = 'All Partners';
-  } else if (selectedPartners.length === 1) {
-    btn.textContent = selectedPartners[0];
-  } else {
-    btn.textContent = `${selectedPartners.length} Partners`;
-  }
+  const modalBtn = document.getElementById('btnModalPartnerMultiselect');
+  const text = selectedPartners.length === 0 ? 'All Partners' : (selectedPartners.length === 1 ? selectedPartners[0] : `${selectedPartners.length} Partners`);
+  if (btn) btn.textContent = text;
+  if (modalBtn) modalBtn.textContent = text;
 }
 
 function fmtCurrency(val) {
@@ -1950,34 +2004,15 @@ function initSummaryModalSortListeners() {
 
 function renderSummaryModalBreakdown(rows, isAdmin) {
   const tbody = document.querySelector('#sumModalCustomerTable tbody');
-  const tfoot = document.querySelector('#sumModalCustomerTable tfoot');
+  const tfoot = document.querySelector('#sumModalCustomerTableFoot') || document.querySelector('#sumModalCustomerTable tfoot');
   const rowCountBadge = document.getElementById('sumModalRowCount');
-  const searchInput = document.getElementById('fSumModalSearch');
   if (!tbody) return;
 
   initSummaryModalSortListeners();
   updateSummaryModalSortHeadersUI();
 
-  if (searchInput && !searchInput.dataset.bound) {
-    searchInput.dataset.bound = 'true';
-    searchInput.addEventListener('input', () => {
-      const currentRows = (window._lastRenderedRows || getInstallmentRows());
-      const currentUser = Auth.getUser();
-      const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
-      renderSummaryModalBreakdown(currentRows, isAdm);
-    });
-  }
-
-  const searchTerm = searchInput ? (searchInput.value || '').toLowerCase().trim() : '';
   const activeRows = rows.filter(r => Number(r.SlNo) !== Number(editingSlNo));
-  let filteredBreakdown = searchTerm
-    ? activeRows.filter(r =>
-        String(r.Name || '').toLowerCase().includes(searchTerm) ||
-        String(r.BrokerName || '').toLowerCase().includes(searchTerm) ||
-        String(r.District || '').toLowerCase().includes(searchTerm) ||
-        String(r.SlNo || '').includes(searchTerm)
-      )
-    : activeRows.slice();
+  let filteredBreakdown = activeRows.slice();
 
   if (sumModalSortCol) {
     filteredBreakdown.sort((a, b) => {
@@ -2052,8 +2087,15 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
 
   if (filteredBreakdown.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${isAdmin ? '8' : '7'}" class="text-center text-muted py-3">No records found.</td></tr>`;
+    if (tfoot) tfoot.innerHTML = '';
     return;
   }
+
+  let sumRev = 0;
+  let sumColl = 0;
+  let sumPending = 0;
+  let sumMeter = 0;
+  let sumProfit = 0;
 
   tbody.innerHTML = filteredBreakdown.map(r => {
     const calc = getSummaryRowValues(r);
@@ -2064,6 +2106,12 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
     const partnerPending = calc.partnerPending;
     const netMeterAmt = calc.netMeterAmt;
     const profit = calc.profit;
+
+    sumRev += price;
+    sumColl += total;
+    sumPending += custPending;
+    sumMeter += netMeterAmt;
+    sumProfit += profit;
 
     const custPendingClass = Math.abs(custPending) < 0.01 ? 'text-secondary' : (custPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
     const profitClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
@@ -2086,11 +2134,50 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
       </tr>
     `;
   }).join('');
+
+  if (tfoot) {
+    const pendingClass = sumPending > 0 ? 'text-danger fw-bold' : (sumPending < 0 ? 'text-primary fw-bold' : 'text-secondary');
+    const profitClass = sumProfit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+    tfoot.innerHTML = `
+      <tr>
+        <td class="text-center text-muted">Total</td>
+        <td class="text-dark">${filteredBreakdown.length} Customers</td>
+        <td class="text-end text-dark">₹${Math.round(sumRev).toLocaleString('en-IN')}</td>
+        <td class="text-end text-success">₹${Math.round(sumColl).toLocaleString('en-IN')}</td>
+        <td class="text-end ${pendingClass}">₹${Math.round(sumPending).toLocaleString('en-IN')}</td>
+        <td class="text-end text-primary">₹${Math.round(sumMeter).toLocaleString('en-IN')}</td>
+        <td class="text-muted">—</td>
+        <td class="text-end admin-only-summary-col ${profitClass}" style="${isAdmin ? '' : 'display:none;'}">₹${Math.round(sumProfit).toLocaleString('en-IN')}</td>
+      </tr>
+    `;
+  }
 }
 
 window.openCustomerSummaryModal = function() {
   const modalEl = document.getElementById('customerSummaryModal');
   if (!modalEl) return;
+  
+  // Sync search input and deactive checkbox values
+  const fSearch = document.getElementById('fSearch');
+  const fSumModalSearch = document.getElementById('fSumModalSearch');
+  if (fSearch && fSumModalSearch) {
+    fSumModalSearch.value = fSearch.value;
+  }
+  const chkShowDeactive = document.getElementById('chkShowDeactive');
+  const chkModalShowDeactive = document.getElementById('chkModalShowDeactive');
+  if (chkShowDeactive && chkModalShowDeactive) {
+    chkModalShowDeactive.checked = chkShowDeactive.checked;
+  }
+
+  updateDistrictStats();
+  updateStageStats();
+  populateDatalists();
+  
+  const currentRows = (window._lastRenderedRows || getInstallmentRows());
+  const currentUser = Auth.getUser();
+  const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  renderSummaryModalBreakdown(currentRows, isAdm);
+
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
 };
