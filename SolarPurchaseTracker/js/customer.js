@@ -1151,8 +1151,12 @@ function getAllPartnerNames() {
   const vendorPartners = (DB.getAll('vendors') || [])
     .map(v => v.VendorName ? v.VendorName.trim() : '')
     .filter(Boolean);
-  const combined = [...new Set([...installmentPartners, ...vendorPartners])];
-  return combined.sort((a, b) => a.localeCompare(b));
+  const combined = [...new Set([...installmentPartners, ...vendorPartners])].filter(Boolean);
+  combined.sort((a, b) => a.localeCompare(b));
+  return [
+    { value: '', label: '-- No Partner (Clear) --' },
+    ...combined.map(p => ({ value: p, label: p }))
+  ];
 }
 
 function renderList() {
@@ -1604,9 +1608,6 @@ function renderList() {
     if (pInput) {
       Utils.initSearchableDropdown(pInput, allPartners, (val) => {
         window.savePartnerInline(r.SlNo, val);
-      });
-      pInput.addEventListener('change', (e) => {
-        window.savePartnerInline(r.SlNo, e.target.value);
       });
     }
   });
@@ -2490,10 +2491,14 @@ window.saveBrandInline = async function(slNo) {
 };
 
 window.savePartnerInline = async function(slNo, partnerName) {
+  if (window._savingPartner && window._savingPartner[slNo]) return;
+  (window._savingPartner = window._savingPartner || {})[slNo] = true;
   try {
     const existing = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
     if (!existing) return;
     const cleanPartner = (partnerName || '').trim();
+    if ((existing.BrokerName || '').trim() === cleanPartner) return;
+    
     await DB.update('installments', r => Number(r.SlNo) === Number(slNo), {
       ...existing,
       BrokerName: cleanPartner
@@ -2504,6 +2509,10 @@ window.savePartnerInline = async function(slNo, partnerName) {
   } catch (err) {
     console.error('Error updating partner:', err);
     UI.toast('Error saving partner: ' + err.message, 'danger');
+  } finally {
+    if (window._savingPartner) {
+      delete window._savingPartner[slNo];
+    }
   }
 };
 

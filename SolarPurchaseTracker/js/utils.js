@@ -70,20 +70,27 @@ const Utils = (() => {
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   }
 
-  function initSearchableDropdown(inputId, optionsList, onSelectCallback) {
-    const input = document.getElementById(inputId);
+  let activeSearchable = null;
+  let globalDropdownListenersAttached = false;
+
+  function initSearchableDropdown(inputRef, optionsList, onSelectCallback) {
+    const input = (typeof inputRef === 'string') ? document.getElementById(inputRef) : inputRef;
     if (!input) return;
 
-    let menuId = inputId + 'DropdownMenu';
-    let menu = document.getElementById(menuId);
-    if (!menu) {
-      menu = document.createElement('div');
-      menu.id = menuId;
-      menu.className = 'dropdown-menu shadow-lg searchable-dropdown-menu';
-      document.body.appendChild(menu);
-    } else if (menu.parentElement !== document.body) {
-      document.body.appendChild(menu);
+    const actualId = input.id || (typeof inputRef === 'string' ? inputRef : Utils.uid('drop'));
+    if (!input.id) input.id = actualId;
+    let menuId = actualId + 'DropdownMenu';
+    
+    // Clean up any previous menu instance from document.body
+    let existingMenu = document.getElementById(menuId);
+    if (existingMenu) {
+      existingMenu.remove();
     }
+
+    const menu = document.createElement('div');
+    menu.id = menuId;
+    menu.className = 'dropdown-menu shadow-lg searchable-dropdown-menu';
+    document.body.appendChild(menu);
 
     let currentOptions = optionsList || [];
 
@@ -96,18 +103,25 @@ const Utils = (() => {
         .replace(/>/g, '&gt;');
     }
 
-    function renderOptions(filterText = '') {
-      const q = String(filterText || '').toLowerCase().trim();
-      const filtered = currentOptions.filter(opt => 
-        String(opt).toLowerCase().includes(q)
-      );
+    function renderOptions(filterText = '', showAll = false) {
+      const q = showAll ? '' : String(filterText || '').toLowerCase().trim();
+      let filtered = currentOptions;
+      if (q) {
+        filtered = currentOptions.filter(opt => {
+          const val = typeof opt === 'object' && opt !== null ? (opt.label || opt.value || '') : String(opt);
+          return val.toLowerCase().includes(q);
+        });
+      }
 
       if (filtered.length === 0) {
         menu.innerHTML = `<div class="dropdown-item text-muted" style="cursor: default; font-size: 0.82rem; padding: 6px 12px;">No matches found</div>`;
       } else {
-        menu.innerHTML = filtered.map(opt => 
-          `<button type="button" class="dropdown-item text-start text-truncate" data-value="${escapeAttr(opt)}" style="font-size: 0.82rem; border: none; background: none; width: 100%; padding: 6px 12px; cursor: pointer;">${escapeAttr(opt)}</button>`
-        ).join('');
+        menu.innerHTML = filtered.map(opt => {
+          const val = typeof opt === 'object' && opt !== null ? opt.value : String(opt);
+          const label = typeof opt === 'object' && opt !== null ? (opt.label || opt.value) : String(opt);
+          const isSelected = (input.value && input.value.trim().toLowerCase() === String(val).trim().toLowerCase());
+          return `<button type="button" class="dropdown-item text-start text-truncate ${isSelected ? 'active fw-semibold' : ''}" data-value="${escapeAttr(val)}" style="font-size: 0.82rem; border: none; width: 100%; padding: 6px 12px; cursor: pointer;">${escapeAttr(label)}</button>`;
+        }).join('');
       }
     }
 
@@ -115,8 +129,8 @@ const Utils = (() => {
       if (!menu.classList.contains('show')) return;
       const rect = input.getBoundingClientRect();
 
-      // If input is detached or not visible, hide menu
-      if (rect.width === 0 || rect.height === 0 || rect.bottom < 0 || rect.top > window.innerHeight) {
+      // If input is detached or scrolled out of visible view, hide menu
+      if (rect.width === 0 || rect.height === 0 || rect.bottom < 30 || rect.top > window.innerHeight - 30) {
         hideMenu();
         return;
       }
@@ -128,13 +142,12 @@ const Utils = (() => {
       menu.style.position = 'fixed';
       menu.style.zIndex = '10800';
       menu.style.minWidth = `${Math.max(rect.width, 160)}px`;
-      menu.style.width = `${rect.width}px`;
-      menu.style.left = `${rect.left}px`;
+      menu.style.width = `${Math.max(rect.width, 160)}px`;
+      menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - Math.max(rect.width, 160) - 12))}px`;
       menu.style.maxHeight = `${menuMaxHeight}px`;
       menu.style.overflowY = 'auto';
       menu.style.margin = '0';
 
-      // Dropup if space below is too small (< 180px) and above has more space
       if (spaceBelow < 180 && spaceAbove > spaceBelow) {
         menu.style.top = 'auto';
         menu.style.bottom = `${Math.max(0, window.innerHeight - rect.top + 3)}px`;
@@ -144,24 +157,64 @@ const Utils = (() => {
       }
     }
 
-    const showMenu = () => {
-      renderOptions(input.value);
+    function showMenu(showAll = false) {
+      if (activeSearchable && activeSearchable !== selfObj && activeSearchable.hideMenu) {
+        activeSearchable.hideMenu();
+      }
+      renderOptions(input.value, showAll);
       menu.classList.add('show');
       positionMenu();
-    };
+      activeSearchable = selfObj;
+    }
 
-    const hideMenu = () => {
+    function hideMenu() {
       menu.classList.remove('show');
-    };
+      if (activeSearchable === selfObj) {
+        activeSearchable = null;
+      }
+    }
 
-    input.addEventListener('focus', showMenu);
+    function selectValue(val) {
+      input.value = val;
+      hideMenu();
+      if (onSelectCallback) {
+        onSelectCallback(val);
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function navigateItems(dir) {
+      const items = Array.from(menu.querySelectorAll('.dropdown-item[data-value]'));
+      if (!items.length) return;
+      let currentIndex = items.findIndex(item => item.classList.contains('keyboard-focused'));
+      if (currentIndex === -1) {
+        currentIndex = items.findIndex(item => item.classList.contains('active'));
+      }
+      let nextIndex = currentIndex + dir;
+      if (nextIndex < 0) nextIndex = items.length - 1;
+      if (nextIndex >= items.length) nextIndex = 0;
+
+      items.forEach(item => item.classList.remove('keyboard-focused'));
+      const targetItem = items[nextIndex];
+      if (targetItem) {
+        targetItem.classList.add('keyboard-focused');
+        targetItem.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    const selfObj = { input, menu, positionMenu, hideMenu };
+
+    input.addEventListener('focus', () => {
+      showMenu(true);
+    });
+
     input.addEventListener('click', (e) => {
       e.stopPropagation();
-      showMenu();
+      showMenu(true);
     });
 
     input.addEventListener('input', () => {
-      renderOptions(input.value);
+      renderOptions(input.value, false);
       menu.classList.add('show');
       positionMenu();
     });
@@ -170,39 +223,64 @@ const Utils = (() => {
       const item = e.target.closest('.dropdown-item');
       if (item && item.hasAttribute('data-value')) {
         e.preventDefault();
+        e.stopPropagation();
         const val = item.getAttribute('data-value');
-        input.value = val;
-        hideMenu();
-        if (onSelectCallback) {
-          onSelectCallback(val);
-        }
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+        selectValue(val);
+      } else {
+        e.preventDefault();
       }
     });
 
-    document.addEventListener('click', (e) => {
-      if (!input.contains(e.target) && !menu.contains(e.target)) {
-        hideMenu();
-      }
-    });
-
-    document.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         hideMenu();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!menu.classList.contains('show')) {
+          showMenu(true);
+        } else {
+          navigateItems(1);
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (menu.classList.contains('show')) {
+          navigateItems(-1);
+        }
+      } else if (e.key === 'Enter') {
+        if (menu.classList.contains('show')) {
+          const highlighted = menu.querySelector('.dropdown-item.keyboard-focused, .dropdown-item.active');
+          if (highlighted && highlighted.hasAttribute('data-value')) {
+            e.preventDefault();
+            const val = highlighted.getAttribute('data-value');
+            selectValue(val);
+          }
+        }
       }
     });
 
-    window.addEventListener('scroll', positionMenu, { capture: true, passive: true });
-    window.addEventListener('resize', positionMenu, { passive: true });
-
-    // Clean up if modal closes
-    const parentModal = input.closest('.modal');
-    if (parentModal && !parentModal.dataset.hasDropdownCleanup) {
-      parentModal.dataset.hasDropdownCleanup = 'true';
-      parentModal.addEventListener('hidden.bs.modal', () => {
-        document.querySelectorAll('.searchable-dropdown-menu.show').forEach(m => m.classList.remove('show'));
+    // Attach global window/document listeners once only
+    if (!globalDropdownListenersAttached) {
+      globalDropdownListenersAttached = true;
+      document.addEventListener('click', (e) => {
+        if (activeSearchable) {
+          if (!activeSearchable.input.contains(e.target) && !activeSearchable.menu.contains(e.target)) {
+            activeSearchable.hideMenu();
+          }
+        }
       });
+      window.addEventListener('scroll', (e) => {
+        if (activeSearchable) {
+          if (e && e.target && (e.target === activeSearchable.menu || activeSearchable.menu.contains(e.target))) {
+            return;
+          }
+          activeSearchable.positionMenu();
+        }
+      }, { capture: true, passive: true });
+      window.addEventListener('resize', () => {
+        if (activeSearchable) {
+          activeSearchable.positionMenu();
+        }
+      }, { passive: true });
     }
 
     input.updateOptionsList = function(newOptions) {
