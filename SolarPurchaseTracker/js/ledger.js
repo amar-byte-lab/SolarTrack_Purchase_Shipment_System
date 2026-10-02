@@ -1252,13 +1252,81 @@ window.removeBorrower = async function(bid) {
   }
 };
 
-// ── Global expose ──────────────────────────────────────────────────────
-window.openTxnModal       = window.openTxnModal;
-window.deleteTxn          = window.deleteTxn;
-window.confirmDeactivate  = window.confirmDeactivate;
-window.reactivateBorrower = window.reactivateBorrower;
-window.handleAddRowKey    = handleAddRowKey;
-window.saveBorrower       = saveBorrower;
-window.addInlineBorrowerRow = addInlineBorrowerRow;
-window.cancelInlineBorrower = cancelInlineBorrower;
-window.removeBorrower     = window.removeBorrower;
+// ── Inline Borrower Add Functions ──────────────────────────────────────
+window.addInlineBorrowerRow = function() {
+  isAddingNew = true;
+  renderGrid();
+  setTimeout(() => {
+    document.getElementById('addName')?.focus();
+  }, 50);
+};
+
+window.cancelInlineBorrower = function() {
+  isAddingNew = false;
+  renderGrid();
+};
+
+window.handleAddRowKey = function(e, fieldId) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (fieldId === 'addName') {
+      document.getElementById('addMobile')?.focus();
+    } else if (fieldId === 'addMobile') {
+      document.getElementById('addAddress')?.focus();
+    } else if (fieldId === 'addAddress') {
+      window.saveBorrower();
+    }
+  } else if (e.key === 'Escape') {
+    window.cancelInlineBorrower();
+  }
+};
+
+window.saveBorrower = async function() {
+  const name = (document.getElementById('addName')?.value || '').trim();
+  const mobile = (document.getElementById('addMobile')?.value || '').trim();
+  const address = (document.getElementById('addAddress')?.value || '').trim();
+
+  if (!name) {
+    UI.toast('Customer name is required', 'warning');
+    document.getElementById('addName')?.focus();
+    return;
+  }
+  if (_borrowers.some(b => (b.Name || b.name || '').toLowerCase() === name.toLowerCase())) {
+    UI.toast(`"${name}" already exists`, 'warning');
+    document.getElementById('addName')?.focus();
+    return;
+  }
+
+  try {
+    const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const userId = currentUser ? (currentUser.userid || currentUser.username || '').toLowerCase() : '';
+    const resp = await fetch('/api/borrower-add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Name: name, Mobile: mobile, Address: address, CreatedBy: userId })
+    });
+    const data = await resp.json();
+    if (!data.BorrowerID) throw new Error(data.error || 'Failed to save customer');
+
+    const newBorrower = {
+      BorrowerID: data.BorrowerID,
+      Name: name,
+      Mobile: mobile,
+      Address: address,
+      Status: 'Active',
+      CreatedBy: userId,
+      CreatedAt: new Date().toISOString()
+    };
+
+    _borrowers.push(newBorrower);
+    _txnCache[data.BorrowerID] = [];
+    _txnCache[String(data.BorrowerID)] = [];
+    saveToLocalCache();
+    isAddingNew = false;
+    renderKPIs();
+    renderGrid();
+    UI.toast(`✓ "${name}" added successfully`, 'success');
+  } catch (e) {
+    UI.toast('Error: ' + e.message, 'danger');
+  }
+};
