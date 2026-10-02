@@ -259,6 +259,16 @@
   background-color: #10b981;
 }
 
+.mw-switch.switch-delay-red input:checked + .mw-slider {
+  background-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.3) !important;
+}
+
+.mw-switch.switch-delay-yellow input:checked + .mw-slider {
+  background-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3) !important;
+}
+
 .mw-switch input:focus + .mw-slider {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
 }
@@ -279,6 +289,20 @@
   text-align: center;
   color: #0f172a;
   letter-spacing: -0.01em;
+}
+
+.mw-date-input.date-delay-red {
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+  border-color: #f87171 !important;
+  background-color: #fef2f2 !important;
+}
+
+.mw-date-input.date-delay-yellow {
+  color: #d97706 !important;
+  font-weight: 700 !important;
+  border-color: #fcd34d !important;
+  background-color: #fffbeb !important;
 }
 
 .mw-date-input::-webkit-calendar-picker-indicator {
@@ -730,6 +754,20 @@
   border-color: #1d4ed8;
   color: #ffffff;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.mw-stepper-step.stepper-delay-red .mw-stepper-circle {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3) !important;
+}
+
+.mw-stepper-step.stepper-delay-yellow .mw-stepper-circle {
+  background: #f59e0b !important;
+  border-color: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3) !important;
 }
 
 .mw-stepper-col-name {

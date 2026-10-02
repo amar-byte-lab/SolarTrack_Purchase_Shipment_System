@@ -459,7 +459,7 @@ function renderList() {
 
   const tbody = document.querySelector('#manageWorkTable tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted fs-7">No customer workflow records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted fs-7">No customer workflow records found.</td></tr>`;
     window._lastFilteredWorkRows = [];
     return;
   }
@@ -471,8 +471,13 @@ function renderList() {
     const isDeactive = (r.Status === 'Deactive');
 
     // Dates
+    const loginDate = r.LoginDate || '';
+    const hasLogin = Boolean(loginDate);
+    const loginDelay = getDelayInfo(loginDate);
+
     const agreementDate = r.AgreementDate || '';
     const hasAgreement = Boolean(agreementDate);
+    const agrmtDelay = getDelayInfo(agreementDate);
 
     const dispatchedDate = r.MaterialDispatchedDate || '';
     const hasDispatched = Boolean(dispatchedDate);
@@ -493,7 +498,58 @@ function renderList() {
     const subsidyDate = r.CommissioningDate || '';
     const hasSubsidy = Boolean(subsidyDate);
 
-    const isAllComplete = hasAgreement && hasDispatched && hasInstallation && isNetMeterPaid && hasInspection && hasMeterConnected && hasSubsidy;
+    const isAllComplete = hasLogin && hasAgreement && hasDispatched && hasInstallation && isNetMeterPaid && hasInspection && hasMeterConnected && hasSubsidy;
+
+    // Highest reached stage calculation
+    const isNm = isNetMeterPaid || Boolean(r.NetMeterDate);
+    const stages = [
+      hasLogin,
+      hasAgreement,
+      hasDispatched,
+      hasInstallation,
+      isNm,
+      hasInspection,
+      hasMeterConnected,
+      hasSubsidy
+    ];
+    let highestMarkedIdx = -1;
+    stages.forEach((d, stageIdx) => {
+      if (d) highestMarkedIdx = Math.max(highestMarkedIdx, stageIdx);
+    });
+    if (highestMarkedIdx < 0 && hasLogin) highestMarkedIdx = 0;
+
+    // Stage 1 (Login) delay condition: strictly for customers whose highest reached stage is Login (idx === 0)
+    let loginSwitchClass = '';
+    let loginDateClass = '';
+    let loginTitle = 'Toggle Login';
+    if (hasLogin && highestMarkedIdx === 0 && loginDelay) {
+      if (loginDelay.totalDays >= 90) {
+        loginSwitchClass = 'switch-delay-red';
+        loginDateClass = 'date-delay-red';
+        loginTitle = `Login: Delayed >= 3 Months (${loginDelay.text}, ${loginDelay.totalDays} days)`;
+      } else if (loginDelay.totalDays >= 60) {
+        loginSwitchClass = 'switch-delay-yellow';
+        loginDateClass = 'date-delay-yellow';
+        loginTitle = `Login: Delayed >= 2 Months (${loginDelay.text}, ${loginDelay.totalDays} days)`;
+      }
+    }
+
+    // Stage 2 (Agreement) delay condition: for customers whose highest stage is Agreement, Dispatch, Installation, or NetMeter (idx 1-4)
+    let agrmtSwitchClass = '';
+    let agrmtDateClass = '';
+    let agrmtTitle = 'Toggle Agreement';
+    const isEligibleForAgrmtAlert = (highestMarkedIdx >= 1 && highestMarkedIdx <= 4);
+    if (hasAgreement && isEligibleForAgrmtAlert && agrmtDelay) {
+      if (agrmtDelay.totalDays >= 90) {
+        agrmtSwitchClass = 'switch-delay-red';
+        agrmtDateClass = 'date-delay-red';
+        agrmtTitle = `Agreement: Delayed >= 3 Months (${agrmtDelay.text}, ${agrmtDelay.totalDays} days)`;
+      } else if (agrmtDelay.totalDays >= 60) {
+        agrmtSwitchClass = 'switch-delay-yellow';
+        agrmtDateClass = 'date-delay-yellow';
+        agrmtTitle = `Agreement: Delayed >= 2 Months (${agrmtDelay.text}, ${agrmtDelay.totalDays} days)`;
+      }
+    }
 
     // Delay Badge for customer (hidden if Subsidy is ON)
     const delayInfo = !hasSubsidy ? getDelayInfo(r.LoginDate) : null;
@@ -514,20 +570,33 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 2. Aggreement -->
+        <!-- 2. Login -->
         <td>
           <div class="mw-stage-cell">
-            <label class="mw-switch" title="Toggle Agreement">
-              <input type="checkbox" class="mw-stage-toggle" data-stage="AgreementDate" ${hasAgreement ? 'checked' : ''} onchange="handleStageToggle(this, ${slNo}, 'AgreementDate')">
+            <label class="mw-switch ${loginSwitchClass}" title="${loginTitle}">
+              <input type="checkbox" class="mw-stage-toggle" data-stage="LoginDate" ${hasLogin ? 'checked' : ''} onchange="handleStageToggle(this, ${slNo}, 'LoginDate')">
               <span class="mw-slider"></span>
             </label>
-            <div class="mw-stage-input-wrap ${hasAgreement ? '' : 'd-none'}" id="wrap_AgreementDate_${slNo}">
-              <input type="date" class="form-control form-control-sm mw-date-input" value="${agreementDate}" onchange="handleStageDateChange(${slNo}, 'AgreementDate', this.value)">
+            <div class="mw-stage-input-wrap ${hasLogin ? '' : 'd-none'}" id="wrap_LoginDate_${slNo}">
+              <input type="date" class="form-control form-control-sm mw-date-input ${loginDateClass}" value="${loginDate}" onchange="handleStageDateChange(${slNo}, 'LoginDate', this.value)" title="${loginTitle}">
             </div>
           </div>
         </td>
 
-        <!-- 3. MaterialDispatched -->
+        <!-- 3. Aggreement -->
+        <td>
+          <div class="mw-stage-cell">
+            <label class="mw-switch ${agrmtSwitchClass}" title="${agrmtTitle}">
+              <input type="checkbox" class="mw-stage-toggle" data-stage="AgreementDate" ${hasAgreement ? 'checked' : ''} onchange="handleStageToggle(this, ${slNo}, 'AgreementDate')">
+              <span class="mw-slider"></span>
+            </label>
+            <div class="mw-stage-input-wrap ${hasAgreement ? '' : 'd-none'}" id="wrap_AgreementDate_${slNo}">
+              <input type="date" class="form-control form-control-sm mw-date-input ${agrmtDateClass}" value="${agreementDate}" onchange="handleStageDateChange(${slNo}, 'AgreementDate', this.value)" title="${agrmtTitle}">
+            </div>
+          </div>
+        </td>
+
+        <!-- 4. MaterialDispatched -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Dispatched">
@@ -540,7 +609,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 4. InstallationDone (Mapped to InstallationDate) -->
+        <!-- 5. InstallationDone (Mapped to InstallationDate) -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Installation">
@@ -553,7 +622,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 5. NetMeterApplied (Toggle: NetMeterPaid, Date: NetMeterDate, Amount: NetMeterPayment) -->
+        <!-- 6. NetMeterApplied (Toggle: NetMeterPaid, Date: NetMeterDate, Amount: NetMeterPayment) -->
         <td>
           <div class="mw-netmeter-cell">
             <label class="mw-switch" title="Toggle NetMeter">
@@ -570,7 +639,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 6. InspectionDone -->
+        <!-- 7. InspectionDone -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Inspection">
@@ -583,7 +652,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 7. MeterConnected -->
+        <!-- 8. MeterConnected -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Connection">
@@ -596,7 +665,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 8. SubsidyApplied (Mapped to CommissioningDate) -->
+        <!-- 9. SubsidyApplied (Mapped to CommissioningDate) -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Subsidy">
@@ -640,6 +709,7 @@ window.openCustomerDetailsModal = function (slNo) {
 
   // Stage Stepper calculation across columns
   const stageBadges = [
+    { label: 'Login', date: r.LoginDate },
     { label: 'Agreement', date: r.AgreementDate },
     { label: 'Dispatched', date: r.MaterialDispatchedDate },
     { label: 'Installation', date: r.InstallationDate },
@@ -662,6 +732,9 @@ window.openCustomerDetailsModal = function (slNo) {
   } else if (highestMarkedIdx === 0) {
     trackPct = 10;
   }
+
+  const loginDelay = getDelayInfo(r.LoginDate);
+  const agrmtDelay = getDelayInfo(r.AgreementDate);
 
   const modalBody = document.getElementById('cdModalBody');
   if (modalBody) {
@@ -700,8 +773,17 @@ window.openCustomerDetailsModal = function (slNo) {
           </div>
           ${stageBadges.map((st, i) => {
             const isDone = (i <= highestMarkedIdx) || Boolean(st.date);
+            let delayStepClass = '';
+            if (i === 0 && highestMarkedIdx === 0 && loginDelay) {
+              if (loginDelay.totalDays >= 90) delayStepClass = 'stepper-delay-red';
+              else if (loginDelay.totalDays >= 60) delayStepClass = 'stepper-delay-yellow';
+            } else if (i === 1 && (highestMarkedIdx >= 1 && highestMarkedIdx <= 4) && agrmtDelay) {
+              if (agrmtDelay.totalDays >= 90) delayStepClass = 'stepper-delay-red';
+              else if (agrmtDelay.totalDays >= 60) delayStepClass = 'stepper-delay-yellow';
+            }
+
             return `
-              <div class="mw-stepper-step ${isDone ? 'completed' : ''}">
+              <div class="mw-stepper-step ${isDone ? 'completed' : ''} ${delayStepClass}">
                 <div class="mw-stepper-circle">${isDone ? '✓' : (i + 1)}</div>
                 <div class="mw-stepper-col-name">${st.label}</div>
                 <div class="mw-stepper-date">${st.date ? st.date : '&nbsp;'}</div>
@@ -773,6 +855,7 @@ async function saveWorkProgress(slNo, patch, metaUpdates) {
 
 // ══ Toggle and Input Handlers ════════════════════════════════════════════════
 const STAGE_DISPLAY_NAMES = {
+  LoginDate: 'Login',
   AgreementDate: 'Agreement',
   MaterialDispatchedDate: 'Dispatched',
   InstallationDate: 'Installation',
