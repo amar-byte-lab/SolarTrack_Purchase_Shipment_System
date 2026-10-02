@@ -501,6 +501,30 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
+.mw-btn-window-action {
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  padding: 4px !important;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  line-height: 1;
+}
+
+.mw-btn-window-action:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  color: #1e293b !important;
+}
+
+.mw-btn-window-action:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 /* ══ Drag Resize Handle at Bottom-Right ═════════════════════════════ */
 .mw-modal-resize-handle {
   position: absolute;

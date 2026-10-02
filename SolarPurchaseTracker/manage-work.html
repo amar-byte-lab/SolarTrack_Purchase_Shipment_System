@@ -95,9 +95,14 @@
         <div class="d-flex align-items-center gap-2">
           <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="workSummaryModalTitle">Work Progress & Stage Tracking Summary</h6>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-sm btn-outline-secondary p-1 d-flex align-items-center justify-content-center" id="btnToggleSummaryExpand" title="Toggle Expand / Fullscreen" style="width: 26px; height: 26px; border-radius: 4px;">
-            <i class="bi bi-arrows-fullscreen fs-8" id="iconSummaryExpand"></i>
+        <div class="d-flex align-items-center gap-1.5">
+          <button type="button" class="btn btn-sm btn-link text-secondary p-1 d-flex align-items-center justify-content-center text-decoration-none shadow-none mw-btn-window-action" id="btnToggleSummaryExpand" title="Maximize / Fullscreen" style="width: 28px; height: 28px;">
+            <svg id="iconSummaryExpand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
           </button>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -116,7 +121,9 @@
             </div>
             <div class="ms-auto" style="max-width: 200px; min-width: 140px;">
               <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white border-end-0 text-muted py-0.5"><i class="bi bi-search"></i></span>
+                <span class="input-group-text bg-white border-end-0 text-muted py-0.5 ps-2 pe-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
                 <input type="text" class="form-control form-control-sm fs-8 border-start-0 py-1 px-2 bg-white" id="fSumModalSearch" placeholder="Filter customers...">
               </div>
             </div>

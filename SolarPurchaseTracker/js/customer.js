@@ -980,28 +980,30 @@ function getDelayBadgeHtml(dateStr) {
 
 function getDispatchOrHigherDelayBadgeHtml(r) {
   if (!r) return '';
-  // Check MaterialDispatchedDate first, then progressive higher steps, then earlier steps
+  // Check Dispatch date first, then Installation, NetMeter, Inspection, Connection, Subsidy
   const stages = [
-    { key: 'MaterialDispatchedDate', label: 'Material Dispatch' },
-    { key: 'InstallationDate', label: 'Installation' },
-    { key: 'NetMeterDate', label: 'Net Meter' },
-    { key: 'InspectionDate', label: 'Inspection' },
-    { key: 'MeterConnectedDate', label: 'Meter Connection' },
-    { key: 'CommissioningDate', label: 'Commissioning' },
-    { key: 'AgreementDate', label: 'Agreement' },
-    { key: 'LoginDate', label: 'Login' }
+    { keys: ['MaterialDispatchedDate', 'DispatchedDate', 'DispatchDate'], label: 'Material Dispatch' },
+    { keys: ['InstallationDate'], label: 'Installation' },
+    { keys: ['NetMeterDate'], label: 'Net Meter' },
+    { keys: ['InspectionDate'], label: 'Inspection' },
+    { keys: ['MeterConnectedDate', 'ConnectionDate'], label: 'Meter Connection' },
+    { keys: ['CommissioningDate', 'SubsidyDate', 'SubsidyDisbursedDate'], label: 'Subsidy' }
   ];
 
   let matchedStage = null;
   let targetDate = null;
   for (const st of stages) {
-    if (r[st.key] && String(r[st.key]).trim() !== '') {
-      matchedStage = st;
-      targetDate = r[st.key];
-      break;
+    for (const k of st.keys) {
+      if (r[k] && String(r[k]).trim() !== '') {
+        matchedStage = st;
+        targetDate = r[k];
+        break;
+      }
     }
+    if (targetDate) break;
   }
 
+  // If none of Dispatch or higher stages are completed, no delay badge is shown
   if (!targetDate) return '';
   const info = getDelayInfo(targetDate);
   if (!info) return '';
@@ -1414,7 +1416,7 @@ function renderList() {
           <td class="align-middle">
             <div class="erp-customer-cell">
               <div class="erp-name-row">
-                <a href="#" class="erp-cust-name" onclick="showTransactionHistory(${r.SlNo}, 'Customer'); return false;" title="Click to view/edit payment history">
+                <a href="#" class="erp-cust-name" onclick="${isAdmin ? `showTransactionHistory(${r.SlNo}, 'Customer')` : `showCustomerDetailsPopup(${r.SlNo})`}; return false;" title="${isAdmin ? 'Click to view/edit payment history' : 'Click to view customer details'}">
                   ${r.Name || ''}
                 </a>
                 ${netMeterBadgeHtml}
@@ -1427,36 +1429,47 @@ function renderList() {
               ` : ''}
             </div>
           </td>
-          <td class="col-payment align-middle ${isFullyPaid ? 'payment-cell-disabled' : ''}">
-            <div class="erp-payment-cell ${isFullyPaid ? 'opacity-85' : ''}" id="payCell_${r.SlNo}">
-              <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
-                <div class="d-flex align-items-center gap-2">
-                  <label class="mw-switch" title="${isFullyPaid ? 'Fully Paid (Payment Completed)' : (hasPayment ? 'Payment Active (Click to clear payment)' : 'No payment (Click to add payment)')}">
-                    <input type="checkbox" id="chkPayToggle_${r.SlNo}" ${hasPayment ? 'checked' : ''} ${isFullyPaid ? 'disabled' : ''} onchange="handleCustomerPaymentToggle(this, ${r.SlNo})">
-                    <span class="mw-slider"></span>
-                  </label>
-                  <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace" style="font-size: 0.75rem;">
+          <td class="col-payment align-middle ${isAdmin && isFullyPaid ? 'payment-cell-disabled' : ''}">
+            ${isAdmin ? `
+              <div class="erp-payment-cell ${isFullyPaid ? 'opacity-85' : ''}" id="payCell_${r.SlNo}">
+                <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                  <div class="d-flex align-items-center gap-2">
+                    <label class="mw-switch" title="${isFullyPaid ? 'Fully Paid (Payment Completed)' : (hasPayment ? 'Payment Active (Click to clear payment)' : 'No payment (Click to add payment)')}">
+                      <input type="checkbox" id="chkPayToggle_${r.SlNo}" ${hasPayment ? 'checked' : ''} ${isFullyPaid ? 'disabled' : ''} onchange="handleCustomerPaymentToggle(this, ${r.SlNo})">
+                      <span class="mw-slider"></span>
+                    </label>
+                    <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace" style="font-size: 0.75rem;">
+                      ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
+                    </span>
+                  </div>
+                  ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
+                </div>
+                <div class="erp-pay-inputs-wrap ${(hasPayment && !isFullyPaid) ? 'd-flex' : 'd-none'} align-items-center gap-1" id="payInputs_${r.SlNo}">
+                  <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 105px;" ${isFullyPaid ? 'disabled' : ''}>
+                  <div class="input-group input-group-sm" style="width: 105px;">
+                    <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem; height: 26px;">₹</span>
+                    <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="" placeholder="Add Amt" title="Enter new payment amount" style="font-size: 0.75rem; height: 26px;" onkeydown="if(event.key==='Enter') saveCustomerQuickPayment(${r.SlNo})" ${isFullyPaid ? 'disabled' : ''}>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-success p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; flex-shrink: 0;" onclick="saveCustomerQuickPayment(${r.SlNo})" title="Add Payment" ${isFullyPaid ? 'disabled' : ''}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <div class="erp-payment-cell">
+                <div class="d-flex align-items-center justify-content-between gap-1">
+                  <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace" style="font-size: 0.78rem;">
                     ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
                   </span>
+                  ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
                 </div>
-                ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
               </div>
-              <div class="erp-pay-inputs-wrap ${(hasPayment && !isFullyPaid) ? 'd-flex' : 'd-none'} align-items-center gap-1" id="payInputs_${r.SlNo}">
-                <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 105px;" ${isFullyPaid ? 'disabled' : ''}>
-                <div class="input-group input-group-sm" style="width: 105px;">
-                  <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem; height: 26px;">₹</span>
-                  <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="" placeholder="Add Amt" title="Enter new payment amount" style="font-size: 0.75rem; height: 26px;" onkeydown="if(event.key==='Enter') saveCustomerQuickPayment(${r.SlNo})" ${isFullyPaid ? 'disabled' : ''}>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-success p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; flex-shrink: 0;" onclick="saveCustomerQuickPayment(${r.SlNo})" title="Add Payment" ${isFullyPaid ? 'disabled' : ''}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </button>
-              </div>
-            </div>
+            `}
           </td>
           <td class="col-Partner align-middle">
             <div class="erp-partner-cell">
               <div class="erp-name-row">
-                <a href="#" class="erp-partner-name" onclick="showTransactionHistory(${r.SlNo}, 'Vendor'); return false;" title="Click to view/edit partner payments">
+                <a href="#" class="erp-partner-name" onclick="${isAdmin ? `showTransactionHistory(${r.SlNo}, 'Vendor')` : `showPartnerDetailsPopup(${r.SlNo})`}; return false;" title="${isAdmin ? 'Click to view/edit partner payments' : 'Click to view partner details'}">
                   ${r.BrokerName || '—'}
                 </a>
               </div>
@@ -2390,6 +2403,13 @@ window.saveCustomerTxnInline = async function(txnId) {
 };
 
 window.showTransactionHistory = function(slNo, txnType = 'Customer') {
+  const currentUser = Auth.getUser();
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  if (!isAdmin) {
+    UI.toast('Access restricted to Admin & Superadmin.', 'warning');
+    return;
+  }
+
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
 
@@ -2663,6 +2683,13 @@ window.deleteCommissionTxn = async function(txnId) {
 };
 
 window.showCommissionHistory = function(slNo) {
+  const currentUser = Auth.getUser();
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  if (!isAdmin) {
+    UI.toast('Access restricted to Admin & Superadmin.', 'warning');
+    return;
+  }
+
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
 

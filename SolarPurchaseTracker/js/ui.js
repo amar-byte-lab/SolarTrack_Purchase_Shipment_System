@@ -7,14 +7,14 @@ const UI = (() => {
 
   const NAV_ITEMS = [
     { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
-    { href: 'shipment.html',        icon: 'truck',      label: 'Shipments' },
-    { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
-    { href: 'work-note.html',       icon: 'worknote',   label: 'Note' },
+    { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
+    { href: 'shipment.html',        icon: 'truck',      label: 'Shipment' },
     { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
     { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement' },
-    { href: 'demand-note.html',     icon: 'demand',     label: 'NetMeter' },
     { href: 'sizing-calc.html',     icon: 'calculator', label: 'Calculator' },
+    { href: 'demand-note.html',     icon: 'demand',     label: 'NetMeter' },
+    { href: 'work-note.html',       icon: 'worknote',   label: 'Note' },
     { href: 'ledger.html',          icon: 'wallet',     label: 'Ledger' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
@@ -88,7 +88,7 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (isPowerUser) return true;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['dashboard.html', 'manage-work.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
           return ['dashboard.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
