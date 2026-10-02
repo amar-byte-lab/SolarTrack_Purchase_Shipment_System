@@ -63,7 +63,51 @@ function updateStageStats() {
 
   const allRows = getInstallmentRows();
   const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
-  const activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+  let activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  // Filter by search text
+  const search = (document.getElementById('fSearch') ? document.getElementById('fSearch').value : '').toLowerCase().trim();
+  if (search) {
+    activeRows = activeRows.filter(r =>
+      String(r.Name || '').toLowerCase().includes(search) ||
+      String(r.ConsumerNo || '').toLowerCase().includes(search) ||
+      String(r.District || '').toLowerCase().includes(search) ||
+      String(r.PinCode || '').toLowerCase().includes(search) ||
+      String(r.State || '').toLowerCase().includes(search) ||
+      String(r.Address || '').toLowerCase().includes(search) ||
+      String(r.MobileNumber || '').toLowerCase().includes(search) ||
+      String(r.CommittedBrand || '').toLowerCase().includes(search) ||
+      String(r.LoginDate || '').toLowerCase().includes(search) ||
+      String(r.BrokerName || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Filter by selected districts
+  if (selectedDistricts.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const dist = r.District ? r.District.trim() : '(No District)';
+      const distName = dist === '' ? '(No District)' : dist;
+      return selectedDistricts.includes(distName);
+    });
+  }
+
+  // Filter by selected partners
+  if (selectedPartners.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const partnerVal = r.BrokerName ? r.BrokerName.trim() : '(No Partner)';
+      const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
+      return selectedPartners.includes(partnerName);
+    });
+  }
+
+  // Filter by selected brands
+  if (selectedBrands && selectedBrands.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const brandVal = r.CommittedBrand ? r.CommittedBrand.trim() : '(No Brand)';
+      const brandName = brandVal === '' ? '(No Brand)' : brandVal;
+      return selectedBrands.includes(brandName);
+    });
+  }
 
   const stageCounts = [0, 0, 0, 0, 0, 0, 0, 0];
   activeRows.forEach(r => {
@@ -770,8 +814,9 @@ function updateDistrictStats() {
   const container = document.getElementById('districtStatsContainer');
   if (!container) return;
 
-  const allRows = DB.getAll('installments') || [];
-  const activeRows = allRows.filter(r => r.Status !== 'Deactive');
+  const allRows = getInstallmentRows();
+  const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
+  const activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
   const totalCount = activeRows.length;
   const counts = {};
 
