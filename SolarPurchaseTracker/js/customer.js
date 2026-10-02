@@ -1407,10 +1407,9 @@ function renderList() {
             </div>
           </td>
           <td class="col-Partner align-middle">
-            <select class="form-select form-select-sm erp-partner-select" id="editBrokerName">
-              <option value="">-- Select Partner --</option>
-              ${allPartners.map(p => `<option value="${escapeHtml(p)}" ${r.BrokerName === p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
-            </select>
+            <div class="erp-partner-searchable-wrap">
+              <input type="text" class="form-control form-control-sm erp-partner-input" id="editBrokerName" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off">
+            </div>
           </td>
           <td class="col-price admin-only-column">
             <div style="resize: horizontal; overflow: auto; min-width: 145px; max-width: 400px; padding: 2px;">
@@ -1471,7 +1470,7 @@ function renderList() {
       let netMeterBadgeHtml = '';
       if (isNetMeterPaid) {
         netMeterBadgeHtml = `
-          <span class="erp-meter-text" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14v-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>₹${netMeterAmt.toLocaleString('en-IN')}</span>
+          <span class="erp-meter-text font-monospace" title="Net Meter Paid: ₹${netMeterAmt.toLocaleString('en-IN')}" style="font-size: 0.65rem; padding: 1px 4px; line-height: 1.1;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 1px;"><path d="M12 14v-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>₹${Math.round(netMeterAmt).toLocaleString('en-IN')}</span>
         `;
       }
 
@@ -1491,6 +1490,8 @@ function renderList() {
       const profit = partnerPrice - comm - vPrice;
       const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
       const isFullyPaid = (price > 0 && total >= price);
+      const pendingAmt = Math.max(0, price - total);
+      const defaultPayAmt = pendingAmt > 0 ? pendingAmt : '';
       const brandVal = (r.CommittedBrand || '').trim();
       const hasBrand = brandVal.length > 0;
 
@@ -1503,12 +1504,10 @@ function renderList() {
                 <a href="#" class="erp-cust-name" onclick="${isAdmin ? `showTransactionHistory(${r.SlNo}, 'Customer')` : `showCustomerDetailsPopup(${r.SlNo})`}; return false;" title="${isAdmin ? 'Click to view/edit payment history' : 'Click to view customer details'}">
                   ${r.Name || ''}
                 </a>
-                ${netMeterBadgeHtml}
               </div>
-              ${!isFullyPaid ? `
+              ${price > 0 ? `
                 <div class="erp-meta-row">
                   <span class="erp-price-text">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-                  ${custPillHtml}
                 </div>
               ` : ''}
             </div>
@@ -1517,14 +1516,15 @@ function renderList() {
             ${isAdmin ? `
               <div class="erp-payment-cell ${isFullyPaid ? 'opacity-85' : ''}" id="payCell_${r.SlNo}">
                 <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
-                  <div class="d-flex align-items-center gap-2">
+                  <div class="d-flex align-items-center gap-1.5 flex-nowrap">
                     <label class="mw-switch" title="${isFullyPaid ? 'Fully Paid (Payment Completed)' : (hasPayment ? 'Payment Active (Click to clear payment)' : 'No payment (Click to add payment)')}">
                       <input type="checkbox" id="chkPayToggle_${r.SlNo}" ${hasPayment ? 'checked' : ''} ${isFullyPaid ? 'disabled' : ''} onchange="handleCustomerPaymentToggle(this, ${r.SlNo})">
                       <span class="mw-slider"></span>
                     </label>
-                    <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace" style="font-size: 0.75rem;">
+                    <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace text-nowrap" style="font-size: 0.74rem;">
                       ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
                     </span>
+                    ${netMeterBadgeHtml}
                   </div>
                   ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
                 </div>
@@ -1532,7 +1532,7 @@ function renderList() {
                   <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 105px;" ${isFullyPaid ? 'disabled' : ''}>
                   <div class="input-group input-group-sm" style="width: 105px;">
                     <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem; height: 26px;">₹</span>
-                    <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="" placeholder="Add Amt" title="Enter new payment amount" style="font-size: 0.75rem; height: 26px;" onkeydown="if(event.key==='Enter') saveCustomerQuickPayment(${r.SlNo})" ${isFullyPaid ? 'disabled' : ''}>
+                    <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="${defaultPayAmt}" placeholder="${pendingAmt > 0 ? pendingAmt : 'Add Amt'}" title="Pending amount to pay" style="font-size: 0.75rem; height: 26px;" onkeydown="if(event.key==='Enter') saveCustomerQuickPayment(${r.SlNo})" ${isFullyPaid ? 'disabled' : ''}>
                   </div>
                   <button type="button" class="btn btn-sm btn-outline-success p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; flex-shrink: 0;" onclick="saveCustomerQuickPayment(${r.SlNo})" title="Add Payment" ${isFullyPaid ? 'disabled' : ''}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1542,9 +1542,12 @@ function renderList() {
             ` : `
               <div class="erp-payment-cell">
                 <div class="d-flex align-items-center justify-content-between gap-1">
-                  <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace" style="font-size: 0.78rem;">
-                    ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
-                  </span>
+                  <div class="d-flex align-items-center gap-1.5 flex-nowrap">
+                    <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace text-nowrap" style="font-size: 0.75rem;">
+                      ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
+                    </span>
+                    ${netMeterBadgeHtml}
+                  </div>
                   ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
                 </div>
               </div>
@@ -1561,10 +1564,9 @@ function renderList() {
             </div>
           </td>
           <td class="col-Partner align-middle">
-            <select class="form-select form-select-sm erp-partner-select" onchange="window.savePartnerInline(${r.SlNo}, this.value)" title="Select Partner">
-              <option value="">-- No Partner --</option>
-              ${allPartners.map(p => `<option value="${escapeHtml(p)}" ${r.BrokerName === p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
-            </select>
+            <div class="erp-partner-searchable-wrap">
+              <input type="text" class="form-control form-control-sm erp-partner-input" id="partnerInput_${r.SlNo}" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off">
+            </div>
           </td>
           <td class="col-price align-middle font-monospace">
             <div class="erp-expense-cell">
@@ -1595,6 +1597,24 @@ function renderList() {
       `;
     }
   }).join('');
+
+  // Initialize Searchable Dropdowns for Partner cells
+  rows.forEach(r => {
+    const pInput = document.getElementById(`partnerInput_${r.SlNo}`);
+    if (pInput) {
+      Utils.initSearchableDropdown(pInput, allPartners, (val) => {
+        window.savePartnerInline(r.SlNo, val);
+      });
+      pInput.addEventListener('change', (e) => {
+        window.savePartnerInline(r.SlNo, e.target.value);
+      });
+    }
+  });
+
+  const editBrokerEl = document.getElementById('editBrokerName');
+  if (editBrokerEl) {
+    Utils.initSearchableDropdown(editBrokerEl, allPartners);
+  }
 
   const displayCount = isAddingNew ? rows.length - 1 : rows.length;
   // Render Top Executive KPI Grid
@@ -2327,8 +2347,12 @@ window.handleCustomerPaymentToggle = async function(chkEl, slNo) {
     }
     const amtInput = document.getElementById(`payAmt_${slNo}`);
     if (amtInput) {
-      amtInput.value = '';
+      const custPrice = Number(r.CommittedPrice) || 0;
+      const currentPending = Math.max(0, custPrice - total);
+      amtInput.value = currentPending > 0 ? currentPending : '';
+      amtInput.placeholder = currentPending > 0 ? String(currentPending) : 'Add Amt';
       amtInput.focus();
+      amtInput.select();
     }
   } else {
     // Toggled from ON to OFF:

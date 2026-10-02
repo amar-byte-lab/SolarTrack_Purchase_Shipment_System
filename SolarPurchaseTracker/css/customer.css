@@ -960,6 +960,23 @@ body.installments-page .page-body {
   border: 1px solid #bae6fd !important;
 }
 
+.erp-meter-text {
+  font-size: 0.65rem !important;
+  font-weight: 600;
+  font-family: var(--st-font-mono, monospace);
+  color: #0284c7 !important;
+  background-color: #e0f2fe !important;
+  border: 1px solid #bae6fd !important;
+  border-radius: 3px !important;
+  padding: 1px 4px !important;
+  line-height: 1.15 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ══ Enterprise Executive KPI Summary Banner ══════════════════════════ */
 .customer-kpi-grid {
   display: grid;
@@ -1083,81 +1100,88 @@ body.installments-page .page-body {
 
 /* ══ Product Column & Inline Quick Edit ═════════════════════════ */
 .col-brand {
-  min-width: 130px;
-  width: 155px;
+  min-width: 140px;
+  width: 165px;
 }
 
 .table-installments td.col-brand {
-  padding: 4px 6px !important;
+  padding: 0 !important;
   vertical-align: middle;
+  height: 100%;
 }
 
 .erp-brand-cell {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 2px;
+  justify-content: stretch;
   width: 100%;
   height: 100%;
+  min-height: 48px;
   box-sizing: border-box;
 }
 
 .erp-brand-input-row {
   display: flex;
   align-items: stretch;
-  gap: 3px;
   width: 100%;
+  height: 100%;
   flex: 1 1 auto;
 }
 
 .erp-brand-textarea {
-  font-size: 0.76rem !important;
+  font-size: 0.78rem !important;
   line-height: 1.25 !important;
-  padding: 3px 6px !important;
-  border-radius: 4px !important;
-  border: 1px solid #cbd5e1 !important;
-  background-color: #ffffff !important;
+  padding: 4px 6px !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-right: 1px solid #e2e8f0 !important;
+  background-color: transparent !important;
   color: #1e293b !important;
-  min-height: 30px !important;
-  height: 32px !important;
+  min-height: 46px !important;
+  height: 100% !important;
   flex: 1 1 auto;
   width: 100%;
   box-sizing: border-box;
-  resize: vertical;
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  resize: none;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .erp-brand-textarea:disabled,
 .erp-brand-textarea[disabled] {
-  background-color: #f8fafc !important;
+  background-color: transparent !important;
   color: #334155 !important;
-  border-color: #e2e8f0 !important;
   cursor: default !important;
   opacity: 0.95 !important;
 }
 
 .erp-brand-textarea:focus {
-  border-color: var(--st-primary, #4f46e5) !important;
   background-color: #ffffff !important;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15) !important;
+  box-shadow: inset 0 0 0 1.5px var(--st-primary, #4f46e5) !important;
   outline: none !important;
 }
 
 .erp-brand-action-btn {
-  width: 26px !important;
-  height: auto !important;
-  min-height: 30px !important;
+  width: 24px !important;
+  height: 100% !important;
+  min-height: 46px !important;
   align-self: stretch;
   padding: 0 !important;
   flex-shrink: 0 !important;
-  border-radius: 4px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: #f8fafc;
+  transition: background-color 0.15s ease;
 }
 
-/* ══ Partner Column & Inline Dropdown Select ═════════════════════════════ */
+.erp-brand-action-btn:hover {
+  background: #e2e8f0;
+}
+
+/* ══ Partner Column & Inline Searchable Dropdown ═════════════════════════ */
 .col-Partner {
-  min-width: 130px;
-  width: 150px;
+  min-width: 140px;
+  width: 160px;
 }
 
 .table-installments td.col-Partner {
@@ -1165,9 +1189,14 @@ body.installments-page .page-body {
   vertical-align: middle;
 }
 
-.erp-partner-select {
+.erp-partner-searchable-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.erp-partner-input {
   font-size: 0.78rem !important;
-  padding: 3px 6px !important;
+  padding: 4px 8px !important;
   height: 32px !important;
   border-radius: 4px !important;
   border: 1px solid #cbd5e1 !important;
@@ -1177,9 +1206,10 @@ body.installments-page .page-body {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.erp-partner-select:focus {
+.erp-partner-input:focus {
   border-color: var(--st-primary, #4f46e5) !important;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15) !important;
+  cursor: text;
 }
 
 /* ══ Customer Payment Column & Inline Quick Pay ═════════════════════════ */
