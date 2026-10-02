@@ -153,13 +153,13 @@ function populatePartnerDropdown() {
   partnerMenu.innerHTML = [
     `<div class="form-check mb-1">
        <input class="form-check-input dash-partner-chk" type="checkbox" value="(No Partner)" id="chk_dash_nopartner" ${dashSelectedPartners.includes('(No Partner)') ? 'checked' : ''}>
-       <label class="form-check-label w-100 fs-8" for="chk_dash_nopartner">(No Partner)</label>
+       <label class="form-check-label fs-8" for="chk_dash_nopartner">(No Partner)</label>
      </div>`
   ].concat(
     uniquePartners.map(p => `
       <div class="form-check mb-1">
         <input class="form-check-input dash-partner-chk" type="checkbox" value="${p}" id="chk_dash_partner_${p.replace(/\s+/g, '_')}" ${dashSelectedPartners.includes(p) ? 'checked' : ''}>
-        <label class="form-check-label w-100 fs-8" for="chk_dash_partner_${p.replace(/\s+/g, '_')}">${p}</label>
+        <label class="form-check-label fs-8" for="chk_dash_partner_${p.replace(/\s+/g, '_')}">${p}</label>
       </div>
     `)
   ).join('');

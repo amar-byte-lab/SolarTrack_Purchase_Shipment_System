@@ -185,13 +185,13 @@ function populateFilterDatalists() {
     partnerMenu.innerHTML = [
       `<div class="form-check mb-1">
          <input class="form-check-input partner-chk" type="checkbox" value="(No Partner)" id="chk_nopartner" ${selectedPartners.includes('(No Partner)') ? 'checked' : ''}>
-         <label class="form-check-label w-100 fs-8" for="chk_nopartner">(No Partner)</label>
+         <label class="form-check-label fs-8" for="chk_nopartner">(No Partner)</label>
        </div>`
     ].concat(
       uniquePartners.map(p => `
         <div class="form-check mb-1">
           <input class="form-check-input partner-chk" type="checkbox" value="${p}" id="chk_partner_${p.replace(/\s+/g, '_')}" ${selectedPartners.includes(p) ? 'checked' : ''}>
-          <label class="form-check-label w-100 fs-8" for="chk_partner_${p.replace(/\s+/g, '_')}">${p}</label>
+          <label class="form-check-label fs-8" for="chk_partner_${p.replace(/\s+/g, '_')}">${p}</label>
         </div>
       `)
     ).join('');

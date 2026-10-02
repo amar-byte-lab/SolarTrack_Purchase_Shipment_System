@@ -746,35 +746,159 @@ body.installments-page .page-body {
   }
 }
 
-@media (max-width: 767px) {
+/* ══ Partner Multiselect Dropdown ══════════════════════════════════════ */
+#partnerMultiselectMenu {
+  min-width: 180px !important;
+  max-width: 280px !important;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 6px 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  border-radius: 6px !important;
+  background-color: #ffffff !important;
+  z-index: 1055 !important;
+}
+
+#partnerMultiselectMenu .form-check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 4px 6px !important;
+  margin: 0 0 2px 0 !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: background-color 0.15s ease;
+}
+
+#partnerMultiselectMenu .form-check:hover {
+  background-color: #f1f5f9 !important;
+}
+
+#partnerMultiselectMenu .form-check-input {
+  float: none !important;
+  margin: 0 !important;
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+}
+
+#partnerMultiselectMenu .form-check-label {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  flex: 1 1 auto !important;
+  font-size: 0.78rem !important;
+  color: #1e293b !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
+  user-select: none !important;
+}
+
+@media (max-width: 768px) {
   .erp-toolbar {
-    padding: 6px 10px !important;
+    padding: 5px 8px !important;
+    margin-bottom: 6px !important;
+    border-radius: 6px !important;
   }
   .mw-toolbar-top-row {
     flex-direction: column;
     align-items: stretch !important;
-    gap: 6px !important;
+    gap: 4px !important;
   }
   .mw-search-box {
     max-width: 100% !important;
     width: 100% !important;
+    margin-bottom: 2px !important;
+  }
+  .mw-search-box .input-group-sm {
+    height: 26px !important;
+  }
+  .mw-search-box .form-control {
+    font-size: 0.74rem !important;
+    height: 26px !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
   }
   .mw-toolbar-actions {
-    width: 100%;
-    justify-content: space-between;
+    width: 100% !important;
+    justify-content: space-between !important;
     gap: 4px !important;
+    margin-left: 0 !important;
+    margin-top: 1px !important;
+    flex-wrap: nowrap !important;
+  }
+  .mw-toolbar-actions .btn-sm,
+  .mw-toolbar-actions .dropdown button {
+    font-size: 0.67rem !important;
+    height: 23px !important;
+    padding: 1px 5px !important;
+    white-space: nowrap !important;
+  }
+  .mw-toolbar-actions .dropdown {
+    flex: 1 1 auto;
+    min-width: 90px !important;
+    max-width: 130px !important;
+  }
+  .mw-toolbar-actions > .form-check {
+    font-size: 0.66rem !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    flex-shrink: 0 !important;
+  }
+  .mw-toolbar-actions > .form-check .form-check-label {
+    font-size: 0.66rem !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+  }
+  .mw-toolbar-actions > .form-check .form-check-input {
+    width: 12px !important;
+    height: 12px !important;
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
+  }
+  .mw-toolbar-actions #btnClearFilters {
+    white-space: nowrap !important;
+    padding: 1px 4px !important;
+    flex-shrink: 0 !important;
+    font-size: 0.67rem !important;
+  }
+  .mw-toolbar-actions #btnOpenSummaryModal {
+    flex-shrink: 0 !important;
+  }
+  .mw-chips-scroll-strip {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-top: 3px !important;
+    margin-top: 3px !important;
+    gap: 3px !important;
+    -webkit-overflow-scrolling: touch !important;
   }
   .stage-filter-tag {
-    font-size: 0.69rem !important;
-    padding: 2px 7px !important;
-    height: 23px !important;
-    line-height: 19px !important;
+    font-size: 0.61rem !important;
+    padding: 1px 5px !important;
+    height: 20px !important;
+    line-height: 16px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
   }
   .erp-tag {
-    font-size: 0.67rem !important;
+    font-size: 0.61rem !important;
     padding: 1px 5px !important;
-    height: 22px !important;
-    line-height: 20px !important;
+    height: 19px !important;
+    line-height: 15px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
   }
 }
 

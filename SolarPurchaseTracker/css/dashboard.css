@@ -14,42 +14,6 @@
   padding: 3px 8px !important;
 }
 
-/* ══ Show Deactive Toggle Button ═══════════════════════════════════════ */
-.dash-deactive-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  padding: 3px 10px;
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  font-size: 0.76rem;
-  color: #475569;
-  font-weight: 500;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
-  margin-bottom: 0;
-  white-space: nowrap;
-}
-
-.dash-deactive-toggle:hover {
-  background-color: #f8fafc;
-  border-color: #94a3b8;
-  color: #1e293b;
-}
-
-.dash-deactive-toggle input[type="checkbox"] {
-  margin: 0;
-  cursor: pointer;
-  width: 14px;
-  height: 14px;
-  accent-color: #dc2626;
-  vertical-align: middle;
-}
-
 /* ══ District Stats Badges in Toolbar ═════════════════════════════════ */
 .dashboard-page .erp-tag {
   font-size: 0.70rem !important;
@@ -59,6 +23,26 @@
   line-height: 20px !important;
   display: inline-flex;
   align-items: center;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.dashboard-page .erp-tag:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.dashboard-page .erp-tag.active {
+  background: #6b21a8 !important;
+  color: #ffffff !important;
+  border-color: #6b21a8 !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
 }
 
 /* ══ Full-Page Table & Card Layout ════════════════════════════════════ */
@@ -85,15 +69,104 @@
 }
 
 @media (max-width: 768px) {
+  .dashboard-page .page-body {
+    padding: 6px 8px !important;
+  }
+
+  .dashboard-page .erp-toolbar {
+    padding: 5px 8px !important;
+    margin-bottom: 6px !important;
+    border-radius: 6px !important;
+  }
+
+  .mw-toolbar-top-row {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 4px !important;
+  }
+
+  .mw-search-box {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-bottom: 2px !important;
+  }
+
+  .mw-search-box .input-group-sm {
+    height: 26px !important;
+  }
+
+  .mw-search-box .form-control {
+    font-size: 0.74rem !important;
+    height: 26px !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+  }
+
+  .dashboard-page .mw-toolbar-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    margin-left: 0 !important;
+    margin-top: 1px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .dashboard-page .mw-toolbar-actions .btn-sm,
+  .dashboard-page .mw-toolbar-actions .dropdown button {
+    font-size: 0.67rem !important;
+    height: 23px !important;
+    padding: 1px 5px !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-page .mw-toolbar-actions .dropdown {
+    flex: 1 1 auto;
+    min-width: 90px !important;
+    max-width: 130px !important;
+  }
+
+  .dashboard-page .mw-toolbar-actions > .form-check {
+    font-size: 0.66rem !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dashboard-page .mw-toolbar-actions > .form-check .form-check-label {
+    font-size: 0.66rem !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-page .mw-toolbar-actions > .form-check .form-check-input {
+    width: 12px !important;
+    height: 12px !important;
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dashboard-page .mw-toolbar-actions #btnClearDashFilters {
+    white-space: nowrap !important;
+    padding: 1px 4px !important;
+    flex-shrink: 0 !important;
+    font-size: 0.67rem !important;
+  }
+
+  .dashboard-page .erp-tag {
+    font-size: 0.61rem !important;
+    padding: 1px 5px !important;
+    height: 19px !important;
+    line-height: 15px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
   .dash-summary-table-wrap {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     max-height: calc(100vh - 310px);
   }
-
-  .dash-deactive-toggle {
-    height: 26px;
-    padding: 2px 6px;
-    font-size: 0.70rem;
-  }
 }
+
