@@ -143,7 +143,8 @@ const DEFAULT_COLUMN_COLORS = [
   { key: 'col-sl', label: 'Sl.', default: '#ffffff' },
   { key: 'col-customer', label: 'Customer', default: '#ffffff' },
   { key: 'col-payment', label: 'Payment', default: '#ffffff' },
-  { key: 'col-partner', label: 'Partner', default: '#ffffff' },
+  { key: 'col-brand', label: 'Product', default: '#ffffff' },
+  { key: 'col-Partner', label: 'Partner', default: '#ffffff' },
   { key: 'col-price', label: 'Total expense', default: '#ffffff' },
   { key: 'col-actions', label: 'Actions', default: '#ffffff' }
 ];
@@ -1143,6 +1144,17 @@ function calculateCommDelay(commDateStr, instDateStr) {
   return diffDays + ' days';
 }
 
+function getAllPartnerNames() {
+  const installmentPartners = DB.getAll('installments')
+    .map(r => r.BrokerName ? r.BrokerName.trim() : '')
+    .filter(Boolean);
+  const vendorPartners = (DB.getAll('vendors') || [])
+    .map(v => v.VendorName ? v.VendorName.trim() : '')
+    .filter(Boolean);
+  const combined = [...new Set([...installmentPartners, ...vendorPartners])];
+  return combined.sort((a, b) => a.localeCompare(b));
+}
+
 function renderList() {
   updateDistrictStats();
   updateStageStats();
@@ -1287,7 +1299,7 @@ function renderList() {
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
 
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '6' : '5'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '7' : '6'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
     const allDbRows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
     renderTopKpis({
       activeCount: 0,
@@ -1316,6 +1328,8 @@ function renderList() {
   let sumComm = 0;
   let sumCommPaid = 0;
   let sumPartnerPrice = 0;
+
+  const allPartners = getAllPartnerNames();
 
   tbody.innerHTML = rows.map((r) => {
     const isEditing = (Number(r.SlNo) === Number(editingSlNo));
@@ -1368,14 +1382,14 @@ function renderList() {
           <td class="text-center fw-semibold align-middle">${r.SlNo}</td>
           <td>
             <div class="d-flex flex-column gap-1">
-              <input type="text" class="form-control form-control-sm" id="editName" value="${r.Name || ''}" placeholder="Name *" required>
-              <input type="text" class="form-control form-control-sm" id="editConsumerNo" value="${r.ConsumerNo || ''}" placeholder="Consumer No">
-              <input type="text" class="form-control form-control-sm" id="editMobileNumber" value="${r.MobileNumber || ''}" placeholder="Mobile">
+              <input type="text" class="form-control form-control-sm" id="editName" value="${escapeHtml(r.Name || '')}" placeholder="Name *" required>
+              <input type="text" class="form-control form-control-sm" id="editConsumerNo" value="${escapeHtml(r.ConsumerNo || '')}" placeholder="Consumer No">
+              <input type="text" class="form-control form-control-sm" id="editMobileNumber" value="${escapeHtml(r.MobileNumber || '')}" placeholder="Mobile">
               <select class="form-select form-select-sm" id="editDistrict">
                 <option value="">-- Select District --</option>
                 ${DISTRICTS.map(d => `<option value="${d}" ${r.District === d ? 'selected' : ''}>${d}</option>`).join('')}
               </select>
-              <input type="text" class="form-control form-control-sm" id="editAddress" value="${r.Address || ''}" placeholder="Address">
+              <input type="text" class="form-control form-control-sm" id="editAddress" value="${escapeHtml(r.Address || '')}" placeholder="Address">
               <div class="input-group input-group-sm">
                 <span class="input-group-text" style="font-size:0.7rem;">Cust Price</span>
                 <input type="number" step="0.01" class="form-control" id="editCommittedPrice" value="${r.CommittedPrice || ''}" placeholder="Cust Price">
@@ -1387,13 +1401,16 @@ function renderList() {
           </td>
           <td class="col-brand align-middle">
             <div class="erp-brand-cell">
-              <div class="erp-brand-partner-label text-truncate text-muted" title="Partner: ${r.BrokerName || 'No Partner'}">
-                ${r.BrokerName || '—'}
-              </div>
               <div class="erp-brand-input-row">
-                <textarea class="form-control form-control-sm erp-brand-textarea" id="editCommittedBrand" rows="1" placeholder="Brand / System">${r.CommittedBrand || ''}</textarea>
+                <textarea class="form-control form-control-sm erp-brand-textarea" id="editCommittedBrand" rows="1" placeholder="Product details...">${escapeHtml(r.CommittedBrand || '')}</textarea>
               </div>
             </div>
+          </td>
+          <td class="col-Partner align-middle">
+            <select class="form-select form-select-sm erp-partner-select" id="editBrokerName">
+              <option value="">-- Select Partner --</option>
+              ${allPartners.map(p => `<option value="${escapeHtml(p)}" ${r.BrokerName === p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
+            </select>
           </td>
           <td class="col-price admin-only-column">
             <div style="resize: horizontal; overflow: auto; min-width: 145px; max-width: 400px; padding: 2px;">
@@ -1535,18 +1552,19 @@ function renderList() {
           </td>
           <td class="col-brand align-middle">
             <div class="erp-brand-cell" id="brandWrap_${r.SlNo}">
-              <div class="erp-brand-partner-label text-truncate" title="Partner: ${r.BrokerName || 'No Partner'}">
-                <a href="#" onclick="${isAdmin ? `showTransactionHistory(${r.SlNo}, 'Vendor')` : `showPartnerDetailsPopup(${r.SlNo})`}; return false;" title="${isAdmin ? 'Click to view/edit partner payments' : 'Click to view partner details'}">
-                  ${r.BrokerName || '—'}
-                </a>
-              </div>
               <div class="erp-brand-input-row">
-                <textarea class="form-control form-control-sm erp-brand-textarea" id="brandText_${r.SlNo}" rows="1" placeholder="Brand / System..." ${hasBrand ? 'disabled' : ''} onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.saveBrandInline(${r.SlNo}); } else if(event.key==='Escape'){ window.cancelBrandEdit(${r.SlNo}); }">${r.CommittedBrand || ''}</textarea>
-                <button type="button" class="btn btn-sm ${hasBrand ? 'btn-outline-primary' : 'btn-outline-success'} erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnBrandAction_${r.SlNo}" onclick="${hasBrand ? `window.toggleBrandEdit(${r.SlNo})` : `window.saveBrandInline(${r.SlNo})`}" title="${hasBrand ? 'Edit Brand / System' : 'Save Brand / System'}">
+                <textarea class="form-control form-control-sm erp-brand-textarea" id="brandText_${r.SlNo}" rows="1" placeholder="Product details..." ${hasBrand ? 'disabled' : ''} onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.saveBrandInline(${r.SlNo}); } else if(event.key==='Escape'){ window.cancelBrandEdit(${r.SlNo}); }">${escapeHtml(r.CommittedBrand || '')}</textarea>
+                <button type="button" class="btn btn-sm ${hasBrand ? 'btn-outline-primary' : 'btn-outline-success'} erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnBrandAction_${r.SlNo}" onclick="${hasBrand ? `window.toggleBrandEdit(${r.SlNo})` : `window.saveBrandInline(${r.SlNo})`}" title="${hasBrand ? 'Edit Product' : 'Save Product'}">
                   ${hasBrand ? UI.icon('pencil', 12) : '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'}
                 </button>
               </div>
             </div>
+          </td>
+          <td class="col-Partner align-middle">
+            <select class="form-select form-select-sm erp-partner-select" onchange="window.savePartnerInline(${r.SlNo}, this.value)" title="Select Partner">
+              <option value="">-- No Partner --</option>
+              ${allPartners.map(p => `<option value="${escapeHtml(p)}" ${r.BrokerName === p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}
+            </select>
           </td>
           <td class="col-price align-middle font-monospace">
             <div class="erp-expense-cell">
@@ -2403,7 +2421,7 @@ window.toggleBrandEdit = function(slNo) {
     textarea.value = val;
 
     btn.className = 'btn btn-sm btn-outline-success erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center';
-    btn.title = 'Save Brand / System';
+    btn.title = 'Save Product';
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
     btn.onclick = () => window.saveBrandInline(slNo);
   }
@@ -2418,7 +2436,7 @@ window.cancelBrandEdit = function(slNo) {
     textarea.value = textarea.dataset.origVal;
     textarea.disabled = true;
     btn.className = 'btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-inline-flex align-items-center justify-content-center';
-    btn.title = 'Edit Brand / System';
+    btn.title = 'Edit Product';
     btn.innerHTML = UI.icon('pencil', 13);
     btn.onclick = () => window.toggleBrandEdit(slNo);
   }
@@ -2438,12 +2456,30 @@ window.saveBrandInline = async function(slNo) {
       ...(existing || {}),
       CommittedBrand: newBrand
     });
-    UI.toast('Brand / System updated successfully.', 'success');
+    UI.toast('Product updated successfully.', 'success');
     renderList();
   } catch (err) {
-    console.error('Error updating Brand / System:', err);
-    UI.toast('Error saving Brand / System: ' + err.message, 'danger');
+    console.error('Error updating Product:', err);
+    UI.toast('Error saving Product: ' + err.message, 'danger');
     if (btn) btn.disabled = false;
+  }
+};
+
+window.savePartnerInline = async function(slNo, partnerName) {
+  try {
+    const existing = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+    if (!existing) return;
+    const cleanPartner = (partnerName || '').trim();
+    await DB.update('installments', r => Number(r.SlNo) === Number(slNo), {
+      ...existing,
+      BrokerName: cleanPartner
+    });
+    UI.toast(`Partner updated to "${cleanPartner || 'None'}" for customer ${existing.Name || 'record'}.`, 'success');
+    populateDatalists();
+    renderList();
+  } catch (err) {
+    console.error('Error updating partner:', err);
+    UI.toast('Error saving partner: ' + err.message, 'danger');
   }
 };
 

@@ -1081,10 +1081,10 @@ body.installments-page .page-body {
 .text-emerald { color: #059669 !important; }
 .bg-indigo-subtle { background-color: #eef2ff !important; }
 
-/* ══ Brand / System Column & Inline Quick Edit ═════════════════════════ */
+/* ══ Product Column & Inline Quick Edit ═════════════════════════ */
 .col-brand {
-  min-width: 150px;
-  width: 180px;
+  min-width: 130px;
+  width: 155px;
 }
 
 .table-installments td.col-brand {
@@ -1096,34 +1096,11 @@ body.installments-page .page-body {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 3px;
+  justify-content: center;
+  gap: 2px;
   width: 100%;
   height: 100%;
-  min-height: 48px;
   box-sizing: border-box;
-}
-
-.erp-brand-partner-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #1e293b;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-  margin-bottom: 1px;
-}
-
-.erp-brand-partner-label a {
-  color: #0f172a;
-  text-decoration: none;
-}
-
-.erp-brand-partner-label a:hover {
-  color: #2563eb;
-  text-decoration: underline;
 }
 
 .erp-brand-input-row {
@@ -1175,6 +1152,34 @@ body.installments-page .page-body {
   padding: 0 !important;
   flex-shrink: 0 !important;
   border-radius: 4px !important;
+}
+
+/* ══ Partner Column & Inline Dropdown Select ═════════════════════════════ */
+.col-Partner {
+  min-width: 130px;
+  width: 150px;
+}
+
+.table-installments td.col-Partner {
+  padding: 4px 6px !important;
+  vertical-align: middle;
+}
+
+.erp-partner-select {
+  font-size: 0.78rem !important;
+  padding: 3px 6px !important;
+  height: 32px !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.erp-partner-select:focus {
+  border-color: var(--st-primary, #4f46e5) !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15) !important;
 }
 
 /* ══ Customer Payment Column & Inline Quick Pay ═════════════════════════ */
