@@ -1347,7 +1347,7 @@ function renderList() {
           <td class="align-middle">
             <div class="erp-customer-cell">
               <div class="erp-name-row">
-                <a href="#" class="erp-cust-name" onclick="showCustomerDetailsPopup(${r.SlNo}); return false;">
+                <a href="#" class="erp-cust-name" onclick="showTransactionHistory(${r.SlNo}, 'Customer'); return false;" title="Click to view/edit payment history">
                   ${r.Name || ''}
                 </a>
                 ${netMeterBadgeHtml}
@@ -1389,7 +1389,7 @@ function renderList() {
           <td class="col-Partner align-middle">
             <div class="erp-partner-cell">
               <div class="erp-name-row">
-                <a href="#" class="erp-partner-name" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
+                <a href="#" class="erp-partner-name" onclick="showTransactionHistory(${r.SlNo}, 'Vendor'); return false;" title="Click to view/edit partner payments">
                   ${r.BrokerName || '—'}
                 </a>
               </div>
@@ -2256,6 +2256,72 @@ window.deleteInstallmentTxn = async function(txnId) {
   }
 };
 
+let currentEditingTxnId = null;
+
+window.editCustomerTxnInline = function(txnId) {
+  currentEditingTxnId = txnId;
+  const slNo = Number(document.getElementById('txnSlNo').value);
+  const txnType = document.getElementById('txnType').value || 'Customer';
+  showTransactionHistory(slNo, txnType);
+};
+
+window.cancelCustomerTxnInline = function() {
+  currentEditingTxnId = null;
+  const slNo = Number(document.getElementById('txnSlNo').value);
+  const txnType = document.getElementById('txnType').value || 'Customer';
+  showTransactionHistory(slNo, txnType);
+};
+
+window.saveCustomerTxnInline = async function(txnId) {
+  const dateInput = document.getElementById(`editTxnDate_${txnId}`);
+  const amtInput = document.getElementById(`editTxnAmt_${txnId}`);
+  const remInput = document.getElementById(`editTxnRem_${txnId}`);
+  if (!dateInput || !amtInput) return;
+
+  const newDate = dateInput.value;
+  const newAmt = Number(amtInput.value) || 0;
+  const newRem = remInput ? remInput.value.trim() : undefined;
+
+  if (!newDate) {
+    UI.toast('Please enter a valid payment date.', 'warning');
+    dateInput.focus();
+    return;
+  }
+  if (newAmt <= 0) {
+    UI.toast('Please enter an amount greater than 0.', 'warning');
+    amtInput.focus();
+    return;
+  }
+
+  const txn = DB.getAll('installment_txns').find(t => t.TxnID === txnId);
+  if (!txn) return;
+  const slNo = txn.SlNo;
+  const txnType = txn.TxnType || 'Customer';
+
+  UI.showLoading(true);
+  try {
+    const updatePayload = {
+      ...txn,
+      TxnDate: newDate,
+      Amount: newAmt
+    };
+    if (newRem !== undefined) {
+      updatePayload.Remark = newRem;
+    }
+    await DB.update('installment_txns', t => t.TxnID === txnId, updatePayload);
+
+    await syncInstallmentTotal(slNo, txnType);
+    currentEditingTxnId = null;
+    UI.toast(`Payment updated to ₹${Math.round(newAmt).toLocaleString('en-IN')}. Pending balance updated.`, 'success');
+    renderList();
+    showTransactionHistory(slNo, txnType);
+  } catch (err) {
+    UI.toast('Error updating payment: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
 window.showTransactionHistory = function(slNo, txnType = 'Customer') {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
@@ -2287,6 +2353,10 @@ window.showTransactionHistory = function(slNo, txnType = 'Customer') {
   if (addSec) {
     addSec.style.display = isCust ? 'none' : 'block';
   }
+  const footerEl = document.getElementById('txnModalFooter');
+  if (footerEl) {
+    footerEl.style.display = isCust ? 'flex' : 'none';
+  }
 
   // Fetch and display transaction history
   const txns = DB.getAll('installment_txns').filter(t => 
@@ -2299,52 +2369,143 @@ window.showTransactionHistory = function(slNo, txnType = 'Customer') {
   const feed = document.getElementById('txnHistoryFeed');
   if (feed) {
     if (isCust) {
-      // Clean Date and Amount table for Customer
+      // Clean Date and Amount table with inline Modify and Delete for Customer
       if (txns.length === 0) {
-        feed.innerHTML = `<div class="text-center text-muted py-4 fs-8">No payments recorded yet.</div>`;
+        feed.innerHTML = `<div class="text-center text-muted py-4 fs-8">No payment transactions recorded yet.</div>`;
       } else {
         feed.innerHTML = `
           <table class="table table-sm table-hover table-bordered mb-0" style="font-size: 0.82rem;">
             <thead class="table-light">
               <tr>
-                <th class="text-center" style="width: 45px;">Sl.</th>
+                <th class="text-center" style="width: 40px;">Sl.</th>
                 <th>Payment Date</th>
-                <th class="text-end">Amount</th>
-                <th class="text-center no-print" style="width: 35px;"></th>
+                <th class="text-end" style="min-width: 110px;">Amount</th>
+                <th class="text-center no-print" style="width: 70px;">Actions</th>
               </tr>
             </thead>
             <tbody>
-              ${txns.map((t, idx) => `
-                <tr>
-                  <td class="text-center text-secondary align-middle">${idx + 1}</td>
-                  <td class="align-middle font-monospace">${fmtDateExcel(t.TxnDate)}</td>
-                  <td class="align-middle text-end font-monospace fw-bold text-dark">₹${Math.round(Number(t.Amount)).toLocaleString('en-IN')}</td>
-                  <td class="text-center align-middle no-print">
-                    <button type="button" class="btn btn-link text-danger p-0 border-0 fs-8 line-height-1" onclick="deleteInstallmentTxn('${t.TxnID}')" title="Delete Payment" style="text-decoration: none; font-weight: bold;">✕</button>
-                  </td>
-                </tr>
-              `).join('')}
+              ${txns.map((t, idx) => {
+                const isEditingThisTxn = (currentEditingTxnId === t.TxnID);
+                if (isEditingThisTxn) {
+                  return `
+                    <tr class="table-warning">
+                      <td class="text-center align-middle text-secondary fw-semibold">${idx + 1}</td>
+                      <td class="align-middle p-1">
+                        <input type="date" class="form-control form-control-sm fs-8 py-0.5 px-1" id="editTxnDate_${t.TxnID}" value="${t.TxnDate || ''}">
+                      </td>
+                      <td class="align-middle p-1">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem;">₹</span>
+                          <input type="number" step="any" class="form-control form-control-sm fs-8 py-0.5 px-1 text-end font-monospace fw-bold" id="editTxnAmt_${t.TxnID}" value="${Number(t.Amount) || 0}" onkeydown="if(event.key==='Enter') saveCustomerTxnInline('${t.TxnID}')">
+                        </div>
+                      </td>
+                      <td class="text-center align-middle no-print p-1">
+                        <div class="d-flex justify-content-center gap-1">
+                          <button type="button" class="btn btn-sm btn-success p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" onclick="saveCustomerTxnInline('${t.TxnID}')" title="Save">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" onclick="cancelCustomerTxnInline()" title="Cancel">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                } else {
+                  return `
+                    <tr>
+                      <td class="text-center text-secondary align-middle">${idx + 1}</td>
+                      <td class="align-middle font-monospace">${fmtDateExcel(t.TxnDate)}</td>
+                      <td class="align-middle text-end font-monospace fw-bold text-dark">₹${Math.round(Number(t.Amount)).toLocaleString('en-IN')}</td>
+                      <td class="text-center align-middle no-print">
+                        <div class="d-flex justify-content-center gap-1">
+                          <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" onclick="editCustomerTxnInline('${t.TxnID}')" title="Modify Payment">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                          </button>
+                          <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" onclick="deleteInstallmentTxn('${t.TxnID}')" title="Delete Payment">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }
+              }).join('')}
             </tbody>
           </table>
         `;
       }
     } else {
-      // Partner / Vendor view with cards and remarks
+      // Partner / Vendor table with inline Modify and Delete
       if (txns.length === 0) {
-        feed.innerHTML = `<div class="text-center text-muted py-3 fs-8">No payments recorded yet.</div>`;
+        feed.innerHTML = `<div class="text-center text-muted py-3 fs-8">No partner payments recorded yet.</div>`;
       } else {
-        feed.innerHTML = txns.map(t => `
-          <div class="p-2 rounded border bg-white shadow-sm d-flex justify-content-between align-items-start mb-1.5" style="font-size: 0.8rem;">
-            <div class="d-flex flex-column gap-1">
-              <div class="d-flex align-items-center gap-2">
-                <span class="fw-bold text-dark font-monospace">₹${Math.round(Number(t.Amount)).toLocaleString('en-IN')}</span>
-                <span class="badge bg-secondary-subtle text-secondary-emphasis font-monospace" style="font-size: 0.65rem;">${fmtDateExcel(t.TxnDate)}</span>
-              </div>
-              ${t.Remark ? `<div class="text-secondary fs-8 italic-style" style="font-style: italic;">Remark: ${t.Remark}</div>` : ''}
-            </div>
-            <button type="button" class="btn btn-link text-danger p-0 border-0 fs-7 line-height-1" onclick="deleteInstallmentTxn('${t.TxnID}')" title="Delete Payment" style="text-decoration: none; font-weight: bold; line-height: 1;">✕</button>
-          </div>
-        `).join('');
+        feed.innerHTML = `
+          <table class="table table-sm table-hover table-bordered mb-0" style="font-size: 0.82rem;">
+            <thead class="table-light">
+              <tr>
+                <th class="text-center" style="width: 40px;">Sl.</th>
+                <th>Payment Date</th>
+                <th class="text-end" style="min-width: 100px;">Amount</th>
+                <th>Remark</th>
+                <th class="text-center no-print" style="width: 70px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${txns.map((t, idx) => {
+                const isEditingThisTxn = (currentEditingTxnId === t.TxnID);
+                if (isEditingThisTxn) {
+                  return `
+                    <tr class="table-warning">
+                      <td class="text-center align-middle text-secondary fw-semibold">${idx + 1}</td>
+                      <td class="align-middle p-1">
+                        <input type="date" class="form-control form-control-sm fs-8 py-0.5 px-1" id="editTxnDate_${t.TxnID}" value="${t.TxnDate || ''}">
+                      </td>
+                      <td class="align-middle p-1">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem;">₹</span>
+                          <input type="number" step="any" class="form-control form-control-sm fs-8 py-0.5 px-1 text-end font-monospace fw-bold" id="editTxnAmt_${t.TxnID}" value="${Number(t.Amount) || 0}">
+                        </div>
+                      </td>
+                      <td class="align-middle p-1">
+                        <input type="text" class="form-control form-control-sm fs-8 py-0.5 px-1" id="editTxnRem_${t.TxnID}" value="${t.Remark || ''}" placeholder="Remark" onkeydown="if(event.key==='Enter') saveCustomerTxnInline('${t.TxnID}')">
+                      </td>
+                      <td class="text-center align-middle no-print p-1">
+                        <div class="d-flex justify-content-center gap-1">
+                          <button type="button" class="btn btn-sm btn-success p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" onclick="saveCustomerTxnInline('${t.TxnID}')" title="Save">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" onclick="cancelCustomerTxnInline()" title="Cancel">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                } else {
+                  return `
+                    <tr>
+                      <td class="text-center text-secondary align-middle">${idx + 1}</td>
+                      <td class="align-middle font-monospace">${fmtDateExcel(t.TxnDate)}</td>
+                      <td class="align-middle text-end font-monospace fw-bold text-dark">₹${Math.round(Number(t.Amount)).toLocaleString('en-IN')}</td>
+                      <td class="align-middle text-secondary fs-8">${t.Remark || '—'}</td>
+                      <td class="text-center align-middle no-print">
+                        <div class="d-flex justify-content-center gap-1">
+                          <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" onclick="editCustomerTxnInline('${t.TxnID}')" title="Modify Payment">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                          </button>
+                          <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" onclick="deleteInstallmentTxn('${t.TxnID}')" title="Delete Payment">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }
+              }).join('')}
+            </tbody>
+          </table>
+        `;
       }
     }
   }

@@ -179,29 +179,8 @@
           <!-- Injected dynamically -->
         </div>
 
-        <!-- Add Payment Section (shown for Partner/Vendor payments) -->
-        <div class="border rounded-1 p-2.5 bg-light mb-2" id="divAddPaymentSection" style="display: none;">
-          <div class="fw-semibold text-dark fs-8 mb-2">Add New Payment</div>
-          <div class="row g-2 mb-2">
-            <div class="col-6">
-              <label class="form-label fs-8 text-secondary mb-1">Payment Date</label>
-              <input type="date" class="form-control form-control-sm fs-8" id="newTxnDate">
-            </div>
-            <div class="col-6">
-              <label class="form-label fs-8 text-secondary mb-1">Amount (₹) *</label>
-              <input type="number" step="0.01" class="form-control form-control-sm text-end fs-8" id="newTxnAmount" placeholder="0.00">
-            </div>
-          </div>
-          <div class="mb-2">
-            <label class="form-label fs-8 text-secondary mb-1">Remark</label>
-            <input type="text" class="form-control form-control-sm fs-8" id="newTxnRemark" placeholder="e.g. Part payment, Cash, Cheque No...">
-          </div>
-          <div class="text-end">
-            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8" id="btnAddTxn">Add Payment</button>
-          </div>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-3 pt-2.5 border-top">
+        <!-- Total Paid & Pending (below payment table) -->
+        <div class="d-flex justify-content-between align-items-center px-2.5 py-2 bg-light rounded border mb-2">
           <div>
             <span class="fw-semibold text-secondary fs-8 me-1">Total Paid:</span>
             <span class="fw-bold text-success font-monospace fs-7" id="lblTxnTotal">₹0.00</span>
@@ -211,8 +190,31 @@
             <span class="fw-bold font-monospace fs-7" id="lblTxnPending">₹0.00</span>
           </div>
         </div>
+
+        <!-- Add Payment Section (shown for Partner/Vendor payments) -->
+        <div class="border rounded-1 p-2.5 bg-light mb-0" id="divAddPaymentSection" style="display: none;">
+          <div class="fw-semibold text-dark fs-8 mb-2">Add New Payment</div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1">Payment Date</label>
+              <input type="date" class="form-control form-control-sm fs-8" id="newTxnDate">
+            </div>
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1">Amount (₹) *</label>
+              <input type="number" step="0.01" class="form-control form-control-sm text-end fs-8 font-monospace" id="newTxnAmount" placeholder="0.00">
+            </div>
+          </div>
+          <div class="mb-2.5">
+            <label class="form-label fs-8 text-secondary mb-1">Remark</label>
+            <input type="text" class="form-control form-control-sm fs-8" id="newTxnRemark" placeholder="e.g. Part payment, Cash, Cheque No...">
+          </div>
+          <div class="d-flex justify-content-end align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8 fw-semibold" id="btnAddTxn">Add Payment</button>
+          </div>
+        </div>
       </div>
-      <div class="modal-footer bg-light border-top py-1.5 px-3">
+      <div class="modal-footer bg-light border-top py-1.5 px-3" id="txnModalFooter">
         <button type="button" class="btn btn-sm btn-secondary px-3 fs-8" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
