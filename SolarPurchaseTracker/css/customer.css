@@ -840,5 +840,96 @@ body.installments-page .page-body {
 .text-emerald { color: #059669 !important; }
 .bg-indigo-subtle { background-color: #eef2ff !important; }
 
+/* ══ Customer Payment Column & Inline Quick Pay ═════════════════════════ */
+.col-payment {
+  min-width: 210px;
+  width: 210px;
+}
+
+.erp-payment-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mw-switch {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.mw-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.mw-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .18s ease;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.mw-slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .18s ease;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.mw-switch input:checked + .mw-slider {
+  background-color: #10b981;
+}
+
+.mw-switch input:checked + .mw-slider:before {
+  transform: translateX(12px);
+}
+
+.mw-switch input:disabled + .mw-slider {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background-color: #059669 !important;
+}
+
+.mw-switch input:disabled + .mw-slider:before {
+  cursor: not-allowed;
+}
+
+.mw-switch input:focus + .mw-slider {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.erp-pay-inputs-wrap {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: #f8fafc;
+  padding: 3px 4px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.payment-cell-disabled {
+  background-color: #f8fafc !important;
+}
+
+
+
 
 

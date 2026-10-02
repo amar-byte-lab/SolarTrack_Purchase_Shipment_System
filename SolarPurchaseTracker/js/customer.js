@@ -24,6 +24,7 @@ const DISTRICTS = [
 const DEFAULT_COLUMN_COLORS = [
   { key: 'col-sl', label: 'Sl.', default: '#ffffff' },
   { key: 'col-customer', label: 'Customer', default: '#ffffff' },
+  { key: 'col-payment', label: 'Payment', default: '#ffffff' },
   { key: 'col-partner', label: 'Partner', default: '#ffffff' },
   { key: 'col-price', label: 'Total expense', default: '#ffffff' },
   { key: 'col-actions', label: 'Actions', default: '#ffffff' }
@@ -325,52 +326,58 @@ window.onDbReady = function () {
   // Apply column colors on boot
   applyCustomStyles();
 
-  // Add Transaction button listener
-  document.getElementById('btnAddTxn').addEventListener('click', async () => {
-    const slNo = Number(document.getElementById('txnSlNo').value);
-    const txnType = document.getElementById('txnType').value || 'Customer';
-    const date = document.getElementById('newTxnDate').value;
-    const amt = Number(document.getElementById('newTxnAmount').value) || 0;
-    const remark = document.getElementById('newTxnRemark').value.trim();
+  // Add Transaction button listener (if form is present)
+  const btnAddTxn = document.getElementById('btnAddTxn');
+  if (btnAddTxn) {
+    btnAddTxn.addEventListener('click', async () => {
+      const slNo = Number(document.getElementById('txnSlNo').value);
+      const txnType = document.getElementById('txnType').value || 'Customer';
+      const date = document.getElementById('newTxnDate').value;
+      const amt = Number(document.getElementById('newTxnAmount').value) || 0;
+      const remark = document.getElementById('newTxnRemark') ? document.getElementById('newTxnRemark').value.trim() : '';
 
-    if (!date) {
-      UI.toast('Please select a payment date.', 'danger');
-      return;
-    }
-    if (amt <= 0) {
-      UI.toast('Please enter an amount greater than 0.', 'danger');
-      return;
-    }
+      if (!date) {
+        UI.toast('Please select a payment date.', 'danger');
+        return;
+      }
+      if (amt <= 0) {
+        UI.toast('Please enter an amount greater than 0.', 'danger');
+        return;
+      }
 
-    UI.showLoading(true);
-    try {
-      const txn = {
-        TxnID: Utils.uid('TXN'),
-        SlNo: slNo,
-        TxnDate: date,
-        Amount: amt,
-        Remark: remark,
-        TxnType: txnType
-      };
-      await DB.insert('installment_txns', txn);
-      
-      // Update customer installment Total or Vendor Paid
-      await syncInstallmentTotal(slNo, txnType);
-      
-      // Reset inputs
-      document.getElementById('newTxnAmount').value = '';
-      document.getElementById('newTxnRemark').value = '';
-      document.getElementById('newTxnDate').value = UI.todayISO();
+      UI.showLoading(true);
+      try {
+        const txn = {
+          TxnID: Utils.uid('TXN'),
+          SlNo: slNo,
+          TxnDate: date,
+          Amount: amt,
+          Remark: remark,
+          TxnType: txnType
+        };
+        await DB.insert('installment_txns', txn);
+        
+        // Update customer installment Total or Vendor Paid
+        await syncInstallmentTotal(slNo, txnType);
+        
+        // Reset inputs
+        const amtInput = document.getElementById('newTxnAmount');
+        if (amtInput) amtInput.value = '';
+        const remInput = document.getElementById('newTxnRemark');
+        if (remInput) remInput.value = '';
+        const dateInput = document.getElementById('newTxnDate');
+        if (dateInput) dateInput.value = UI.todayISO();
 
-      UI.toast('Payment added successfully.', 'success');
-      renderList();
-      showTransactionHistory(slNo, txnType);
-    } catch (err) {
-      UI.toast('Error adding payment: ' + err.message, 'danger');
-    } finally {
-      UI.showLoading(false);
-    }
-  });
+        UI.toast('Payment added successfully.', 'success');
+        renderList();
+        showTransactionHistory(slNo, txnType);
+      } catch (err) {
+        UI.toast('Error adding payment: ' + err.message, 'danger');
+      } finally {
+        UI.showLoading(false);
+      }
+    });
+  }
 
   // Add Commission Transaction button listener
   document.getElementById('btnAddCommTxn').addEventListener('click', async () => {
@@ -905,6 +912,47 @@ function getDelayBadgeHtml(dateStr) {
   return `<span class="badge erp-delay-badge delay-${info.colorType} ms-1" title="Login Date: ${fmtDateExcel(dateStr)} (${info.totalDays} days ago)">(${info.text})</span>`;
 }
 
+function getDispatchOrHigherDelayBadgeHtml(r) {
+  if (!r) return '';
+  // Check MaterialDispatchedDate first, then progressive higher steps, then earlier steps
+  const stages = [
+    { key: 'MaterialDispatchedDate', label: 'Material Dispatch' },
+    { key: 'InstallationDate', label: 'Installation' },
+    { key: 'NetMeterDate', label: 'Net Meter' },
+    { key: 'InspectionDate', label: 'Inspection' },
+    { key: 'MeterConnectedDate', label: 'Meter Connection' },
+    { key: 'CommissioningDate', label: 'Commissioning' },
+    { key: 'AgreementDate', label: 'Agreement' },
+    { key: 'LoginDate', label: 'Login' }
+  ];
+
+  let matchedStage = null;
+  let targetDate = null;
+  for (const st of stages) {
+    if (r[st.key] && String(r[st.key]).trim() !== '') {
+      matchedStage = st;
+      targetDate = r[st.key];
+      break;
+    }
+  }
+
+  if (!targetDate) return '';
+  const info = getDelayInfo(targetDate);
+  if (!info) return '';
+
+  // Custom threshold: > 1 month (30 days) => red, > 20 days => yellow, otherwise => normal
+  let colorType = 'normal';
+  if (info.totalDays > 30) {
+    colorType = 'red';
+  } else if (info.totalDays > 20) {
+    colorType = 'yellow';
+  } else {
+    colorType = 'normal';
+  }
+
+  return `<span class="badge erp-delay-badge delay-${colorType} font-monospace ms-auto" style="font-size: 0.65rem; padding: 2px 5px;" title="${matchedStage.label}: ${fmtDateExcel(targetDate)} (${info.totalDays} days ago)">(${info.text})</span>`;
+}
+
 function calculateDelay(loginDateStr) {
   const info = getDelayInfo(loginDateStr);
   return info ? info.text : '';
@@ -1098,7 +1146,7 @@ function renderList() {
   const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
 
   if (!rows.length && !isAddingNew) {
-    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '5' : '4'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '6' : '5'}" class="text-center py-4 text-muted">No records found.</td></tr>`;
     const allDbRows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
     renderTopKpis({
       activeCount: 0,
@@ -1148,6 +1196,10 @@ function renderList() {
     const txns = DB.getAll('installment_txns').filter(t => Number(t.SlNo) === Number(r.SlNo) && (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === ''));
     const total = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
     const price = Number(r.CommittedPrice) || 0;
+    const hasPayment = total > 0;
+    const sortedTxns = [...txns].sort((a, b) => new Date(a.TxnDate) - new Date(b.TxnDate));
+    const latestTxn = sortedTxns.length ? sortedTxns[sortedTxns.length - 1] : null;
+    const latestDate = latestTxn && latestTxn.TxnDate ? latestTxn.TxnDate : UI.todayISO();
 
     // Vendor calculations
     const vPrice = Number(r.VendorPrice) || 0;
@@ -1189,6 +1241,9 @@ function renderList() {
                 <input type="number" step="0.01" class="form-control" id="editCommittedPrice" value="${r.CommittedPrice || ''}" placeholder="Cust Price">
               </div>
             </div>
+          </td>
+          <td class="col-payment align-middle text-center text-muted fs-8">
+            <span class="badge bg-light text-secondary border">Payment via Toggle</span>
           </td>
           <td class="col-Partner">
             <div class="d-flex flex-column gap-1">
@@ -1284,6 +1339,7 @@ function renderList() {
       const vendorPillHtml = renderDiffText(price - partnerPrice, vPaid, `showTransactionHistory(${r.SlNo}, 'Vendor')`);
       const profit = partnerPrice - comm - vPrice;
       const profitColorClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+      const isFullyPaid = (price > 0 && total >= price);
 
       return `
         <tr class="${rowClass}">
@@ -1296,9 +1352,37 @@ function renderList() {
                 </a>
                 ${netMeterBadgeHtml}
               </div>
-              <div class="erp-meta-row">
-                <span class="erp-price-text">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
-                ${custPillHtml}
+              ${!isFullyPaid ? `
+                <div class="erp-meta-row">
+                  <span class="erp-price-text">₹${price.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                  ${custPillHtml}
+                </div>
+              ` : ''}
+            </div>
+          </td>
+          <td class="col-payment align-middle ${isFullyPaid ? 'payment-cell-disabled' : ''}">
+            <div class="erp-payment-cell ${isFullyPaid ? 'opacity-85' : ''}" id="payCell_${r.SlNo}">
+              <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                <div class="d-flex align-items-center gap-2">
+                  <label class="mw-switch" title="${isFullyPaid ? 'Fully Paid (Payment Completed)' : (hasPayment ? 'Payment Active (Click to clear payment)' : 'No payment (Click to add payment)')}">
+                    <input type="checkbox" id="chkPayToggle_${r.SlNo}" ${hasPayment ? 'checked' : ''} ${isFullyPaid ? 'disabled' : ''} onchange="handleCustomerPaymentToggle(this, ${r.SlNo})">
+                    <span class="mw-slider"></span>
+                  </label>
+                  <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace" style="font-size: 0.75rem;">
+                    ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
+                  </span>
+                </div>
+                ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
+              </div>
+              <div class="erp-pay-inputs-wrap ${(hasPayment && !isFullyPaid) ? 'd-flex' : 'd-none'} align-items-center gap-1" id="payInputs_${r.SlNo}">
+                <input type="date" class="form-control form-control-sm erp-pay-date" id="payDate_${r.SlNo}" value="${UI.todayISO()}" title="Payment Date" style="font-size: 0.72rem; padding: 2px 4px; height: 26px; width: 105px;" ${isFullyPaid ? 'disabled' : ''}>
+                <div class="input-group input-group-sm" style="width: 105px;">
+                  <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.68rem; height: 26px;">₹</span>
+                  <input type="number" step="any" class="form-control form-control-sm px-1 py-0 font-monospace erp-pay-amt" id="payAmt_${r.SlNo}" value="" placeholder="Add Amt" title="Enter new payment amount" style="font-size: 0.75rem; height: 26px;" onkeydown="if(event.key==='Enter') saveCustomerQuickPayment(${r.SlNo})" ${isFullyPaid ? 'disabled' : ''}>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-success p-0 d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; flex-shrink: 0;" onclick="saveCustomerQuickPayment(${r.SlNo})" title="Add Payment" ${isFullyPaid ? 'disabled' : ''}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>
               </div>
             </div>
           </td>
@@ -1308,7 +1392,6 @@ function renderList() {
                 <a href="#" class="erp-partner-name" onclick="showPartnerDetailsPopup(${r.SlNo}); return false;">
                   ${r.BrokerName || '—'}
                 </a>
-                ${(!isCommissioned && r.LoginDate) ? getDelayBadgeHtml(r.LoginDate) : ''}
               </div>
               <div class="erp-meta-row">
                 <span class="erp-price-text">₹${partnerPrice.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
@@ -2047,6 +2130,109 @@ async function syncInstallmentTotal(slNo, txnType = 'Customer') {
   }
 }
 
+window.handleCustomerPaymentToggle = async function(chkEl, slNo) {
+  const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) return;
+
+  const txns = DB.getAll('installment_txns').filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+  );
+  const total = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
+  const inputsWrap = document.getElementById(`payInputs_${slNo}`);
+
+  if (chkEl.checked) {
+    // Toggled from OFF to ON: Reveal inline inputs with current date ready for new value
+    if (inputsWrap) {
+      inputsWrap.classList.remove('d-none');
+      inputsWrap.classList.add('d-flex');
+    }
+    const dateInput = document.getElementById(`payDate_${slNo}`);
+    if (dateInput) {
+      dateInput.value = UI.todayISO();
+    }
+    const amtInput = document.getElementById(`payAmt_${slNo}`);
+    if (amtInput) {
+      amtInput.value = '';
+      amtInput.focus();
+    }
+  } else {
+    // Toggled from ON to OFF:
+    if (total > 0) {
+      const ok = await UI.confirmDialog(
+        `Clear payment of ₹${Math.round(total).toLocaleString('en-IN')} for customer ${r.Name || 'Sl No ' + slNo}? This will reset paid amount to ₹0 and recalculate the pending price.`,
+        'Clear Customer Payment',
+        'Clear Payment',
+        'btn-danger'
+      );
+      if (!ok) {
+        chkEl.checked = true;
+        return;
+      }
+
+      UI.showLoading(true);
+      try {
+        await DB.remove('installment_txns', t => 
+          Number(t.SlNo) === Number(slNo) && 
+          (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+        );
+        await syncInstallmentTotal(slNo, 'Customer');
+        UI.toast('Customer payments cleared and pending price updated.', 'info');
+        renderList();
+      } catch (err) {
+        UI.toast('Error clearing payment: ' + err.message, 'danger');
+        chkEl.checked = true;
+      } finally {
+        UI.showLoading(false);
+      }
+    } else {
+      // No money was saved yet, simply hide inputs
+      if (inputsWrap) {
+        inputsWrap.classList.add('d-none');
+        inputsWrap.classList.remove('d-flex');
+      }
+    }
+  }
+};
+
+window.saveCustomerQuickPayment = async function(slNo) {
+  const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) return;
+
+  const dateInput = document.getElementById(`payDate_${slNo}`);
+  const amtInput = document.getElementById(`payAmt_${slNo}`);
+
+  const payDate = dateInput ? (dateInput.value || UI.todayISO()) : UI.todayISO();
+  const payAmt = amtInput ? (Number(amtInput.value) || 0) : 0;
+
+  if (payAmt <= 0) {
+    UI.toast('Please enter a valid payment amount greater than 0.', 'warning');
+    if (amtInput) amtInput.focus();
+    return;
+  }
+
+  UI.showLoading(true);
+  try {
+    // Insert new payment transaction
+    await DB.insert('installment_txns', {
+      TxnID: 'CTXN_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      SlNo: Number(slNo),
+      TxnDate: payDate,
+      Amount: payAmt,
+      TxnType: 'Customer',
+      Remark: 'Customer Payment'
+    });
+
+    await syncInstallmentTotal(slNo, 'Customer');
+    UI.toast(`Payment of ₹${Math.round(payAmt).toLocaleString('en-IN')} added. Pending balance updated.`, 'success');
+    renderList();
+  } catch (err) {
+    UI.toast('Error saving payment: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
 window.deleteInstallmentTxn = async function(txnId) {
   const txn = DB.getAll('installment_txns').find(t => t.TxnID === txnId);
   if (!txn) return;
@@ -2074,39 +2260,93 @@ window.showTransactionHistory = function(slNo, txnType = 'Customer') {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) return;
 
-  document.getElementById('txnSlNo').value = slNo;
-  document.getElementById('txnType').value = txnType;
-  document.getElementById('newTxnDate').value = UI.todayISO();
-  document.getElementById('newTxnAmount').value = '';
-  document.getElementById('newTxnRemark').value = '';
+  const txnSlNoEl = document.getElementById('txnSlNo');
+  if (txnSlNoEl) txnSlNoEl.value = slNo;
+  const txnTypeEl = document.getElementById('txnType');
+  if (txnTypeEl) txnTypeEl.value = txnType;
 
-  // Set the title to include customer name
-  document.getElementById('txnModalLabel').textContent = `${txnType} Payments — ${r.Name}`;
+  const newDateEl = document.getElementById('newTxnDate');
+  if (newDateEl) newDateEl.value = UI.todayISO();
+  const newAmtEl = document.getElementById('newTxnAmount');
+  if (newAmtEl) newAmtEl.value = '';
+  const newRemEl = document.getElementById('newTxnRemark');
+  if (newRemEl) newRemEl.value = '';
+
+  const isCust = (txnType === 'Customer');
+
+  // Set the title
+  const titleEl = document.getElementById('txnModalLabel');
+  if (titleEl) {
+    titleEl.textContent = isCust 
+      ? `Customer Payment History — ${r.Name || 'Sl No ' + slNo}`
+      : `Partner Payments — ${r.BrokerName || r.Name || 'Sl No ' + slNo}`;
+  }
+
+  // Toggle Add Payment form visibility: Hidden for Customer, Visible for Partner/Vendor
+  const addSec = document.getElementById('divAddPaymentSection');
+  if (addSec) {
+    addSec.style.display = isCust ? 'none' : 'block';
+  }
 
   // Fetch and display transaction history
   const txns = DB.getAll('installment_txns').filter(t => 
     Number(t.SlNo) === Number(slNo) && 
     (t.TxnType === txnType || (txnType === 'Customer' && (!t.TxnType || t.TxnType === '')))
   );
-  // Sort transactions by date (oldest first for chat feed feel)
+  // Sort transactions by date (oldest first)
   txns.sort((a, b) => new Date(a.TxnDate) - new Date(b.TxnDate));
 
   const feed = document.getElementById('txnHistoryFeed');
-  if (txns.length === 0) {
-    feed.innerHTML = `<div class="text-center text-muted py-3 fs-8">No payments recorded yet.</div>`;
-  } else {
-    feed.innerHTML = txns.map(t => `
-      <div class="p-2 rounded border bg-white shadow-sm d-flex justify-content-between align-items-start" style="font-size: 0.8rem;">
-        <div class="d-flex flex-column gap-1">
-          <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold text-dark font-monospace">₹${Math.round(Number(t.Amount)).toLocaleString('en-IN')}</span>
-            <span class="badge bg-secondary-subtle text-secondary-emphasis font-monospace" style="font-size: 0.65rem;">${fmtDateExcel(t.TxnDate)}</span>
+  if (feed) {
+    if (isCust) {
+      // Clean Date and Amount table for Customer
+      if (txns.length === 0) {
+        feed.innerHTML = `<div class="text-center text-muted py-4 fs-8">No payments recorded yet.</div>`;
+      } else {
+        feed.innerHTML = `
+          <table class="table table-sm table-hover table-bordered mb-0" style="font-size: 0.82rem;">
+            <thead class="table-light">
+              <tr>
+                <th class="text-center" style="width: 45px;">Sl.</th>
+                <th>Payment Date</th>
+                <th class="text-end">Amount</th>
+                <th class="text-center no-print" style="width: 35px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${txns.map((t, idx) => `
+                <tr>
+                  <td class="text-center text-secondary align-middle">${idx + 1}</td>
+                  <td class="align-middle font-monospace">${fmtDateExcel(t.TxnDate)}</td>
+                  <td class="align-middle text-end font-monospace fw-bold text-dark">₹${Math.round(Number(t.Amount)).toLocaleString('en-IN')}</td>
+                  <td class="text-center align-middle no-print">
+                    <button type="button" class="btn btn-link text-danger p-0 border-0 fs-8 line-height-1" onclick="deleteInstallmentTxn('${t.TxnID}')" title="Delete Payment" style="text-decoration: none; font-weight: bold;">✕</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    } else {
+      // Partner / Vendor view with cards and remarks
+      if (txns.length === 0) {
+        feed.innerHTML = `<div class="text-center text-muted py-3 fs-8">No payments recorded yet.</div>`;
+      } else {
+        feed.innerHTML = txns.map(t => `
+          <div class="p-2 rounded border bg-white shadow-sm d-flex justify-content-between align-items-start mb-1.5" style="font-size: 0.8rem;">
+            <div class="d-flex flex-column gap-1">
+              <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold text-dark font-monospace">₹${Math.round(Number(t.Amount)).toLocaleString('en-IN')}</span>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis font-monospace" style="font-size: 0.65rem;">${fmtDateExcel(t.TxnDate)}</span>
+              </div>
+              ${t.Remark ? `<div class="text-secondary fs-8 italic-style" style="font-style: italic;">Remark: ${t.Remark}</div>` : ''}
+            </div>
+            <button type="button" class="btn btn-link text-danger p-0 border-0 fs-7 line-height-1" onclick="deleteInstallmentTxn('${t.TxnID}')" title="Delete Payment" style="text-decoration: none; font-weight: bold; line-height: 1;">✕</button>
           </div>
-          ${t.Remark ? `<div class="text-secondary fs-8 italic-style" style="font-style: italic;">Remark: ${t.Remark}</div>` : ''}
-        </div>
-        <button type="button" class="btn btn-link text-danger p-0 border-0 fs-7 line-height-1" onclick="deleteInstallmentTxn('${t.TxnID}')" title="Delete Payment" style="text-decoration: none; font-weight: bold; line-height: 1;">✕</button>
-      </div>
-    `).join('');
+        `).join('');
+      }
+    }
   }
 
   // Update total label
