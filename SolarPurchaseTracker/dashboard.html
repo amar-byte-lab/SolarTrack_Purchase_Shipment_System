@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="assets/css/bootstrap.min.css">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/manage-work.css">
+<link rel="stylesheet" href="css/customer.css">
 <link rel="stylesheet" href="css/dashboard.css">
 <script src="js/auth.js"></script>
 </head>
@@ -19,6 +20,22 @@
     <div class="topbar" id="topbar"></div>
 
     <div class="page-body">
+
+      <!-- ══ Navigation Tabs Bar ═════════════════════════════════════════ -->
+      <div class="dash-tabs-bar mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <ul class="nav nav-pills gap-1 p-1 bg-white border rounded-2 shadow-xs" id="dashViewTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active py-1.5 px-3 fs-8 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-none" id="tabWorkflowBtn" data-bs-toggle="pill" data-bs-target="#paneWorkflow" type="button" role="tab" aria-controls="paneWorkflow" aria-selected="true">
+              <span>Progress</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link py-1.5 px-3 fs-8 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-none" id="tabFinancialBtn" data-bs-toggle="pill" data-bs-target="#paneFinancial" type="button" role="tab" aria-controls="paneFinancial" aria-selected="false">
+              <span>Financial Breakdown</span>
+            </button>
+          </li>
+        </ul>
+      </div>
 
       <!-- ══ Search & Filters Toolbar (Exact same as Customer / Manage Work) ══ -->
       <div class="st-card erp-toolbar mb-2 no-print py-2 px-3">
@@ -57,53 +74,99 @@
         <div class="mw-chips-scroll-strip mw-district-strip" id="dashDistrictStatsContainer"></div>
       </div>
 
-      <!-- ══ Stage Completion KPI Grid ═══════════════════════════════════ -->
-      <div class="mw-kpi-grid mb-2.5" id="dashWorkKpiGrid">
-        <!-- Injected dynamically by dashboard.js -->
-      </div>
-
-      <!-- ══ Full Page Customer Workflow Progress Table Card ═════════════ -->
-      <div class="card border rounded-3 bg-white shadow-sm overflow-hidden dash-summary-card">
-        <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-white text-secondary border fs-8 fw-normal" id="dashSumRowCount">Loading customers...</span>
-            <button type="button" class="btn btn-sm btn-link text-decoration-none text-primary p-0 fs-8 fw-semibold" id="btnResetDashKpiFilter" style="display: none;">
-              Show All Stages
-            </button>
+      <!-- ══ Tab Panes Content ════════════════════════════════════════════ -->
+      <div class="tab-content" id="dashTabContent">
+        <!-- ══ TAB 1: WORKFLOW PROGRESS ══ -->
+        <div class="tab-pane fade show active" id="paneWorkflow" role="tabpanel" aria-labelledby="tabWorkflowBtn">
+          <!-- Stage Completion KPI Grid -->
+          <div class="mw-kpi-grid mb-2.5" id="dashWorkKpiGrid">
+            <!-- Injected dynamically by dashboard.js -->
           </div>
-          <div class="d-flex align-items-center gap-2 ms-auto" id="dashManageWorkBtnWrap" style="display: none !important;">
-            <a href="manage-work.html" class="btn btn-sm btn-outline-primary fs-8 d-inline-flex align-items-center gap-1 py-1 px-2.5" id="btnDashManageWork">
-              <i class="bi bi-box-arrow-up-right"></i> <span>Manage Work</span>
-            </a>
+
+          <!-- Full Page Customer Workflow Progress Table Card -->
+          <div class="card border rounded-3 bg-white shadow-sm overflow-hidden dash-summary-card">
+            <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-white text-secondary border fs-8 fw-normal" id="dashSumRowCount">Loading customers...</span>
+                <button type="button" class="btn btn-sm btn-link text-decoration-none text-primary p-0 fs-8 fw-semibold" id="btnResetDashKpiFilter" style="display: none;">
+                  Show All Stages
+                </button>
+              </div>
+              <div class="d-flex align-items-center gap-2 ms-auto" id="dashManageWorkBtnWrap" style="display: none !important;">
+                <a href="manage-work.html" class="btn btn-sm btn-outline-primary fs-8 d-inline-flex align-items-center gap-1 py-1 px-2.5" id="btnDashManageWork">
+                  <i class="bi bi-box-arrow-up-right"></i> <span>Manage Work</span>
+                </a>
+              </div>
+            </div>
+            <div class="table-responsive p-0 dash-summary-table-wrap">
+              <table class="table table-sm table-hover align-middle mb-0 table-manage-work-summary" id="dashWorkSummaryTable">
+                <thead class="table-light sticky-top" style="z-index: 2;">
+                  <tr>
+                    <th class="text-center th-col-sl">#</th>
+                    <th class="th-col-cust">Customer</th>
+                    <th class="th-col-partner sortable" id="thDashPartner" title="Click to sort by Partner name">
+                      Partner <i class="bi bi-arrow-down-up fs-9 ms-0.5 opacity-50" id="sortIconDashPartner"></i>
+                    </th>
+                    <th class="text-center th-stage-col sortable" id="thDashLogin" title="Click to sort by Login alert priority (Red -> Yellow -> Blue)">
+                      1. LOGIN <i class="bi bi-arrow-down-up fs-9 ms-0.5 opacity-50" id="sortIconDashLogin"></i>
+                    </th>
+                    <th class="text-center th-stage-col sortable" id="thDashAgreement" title="Click to sort by Agreement alert priority (Red -> Yellow -> Blue)">
+                      2. AGRMT <i class="bi bi-arrow-down-up fs-9 ms-0.5 opacity-50" id="sortIconDashAgreement"></i>
+                    </th>
+                    <th class="text-center th-stage-col">3. DISPATCH</th>
+                    <th class="text-center th-stage-col">4. INSTALL</th>
+                    <th class="text-center th-stage-col">5. NETMETER</th>
+                    <th class="text-center th-stage-col">6. INSPECT</th>
+                    <th class="text-center th-stage-col">7. CONNECT</th>
+                    <th class="text-center th-stage-col">8. SUBSIDY</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Injected dynamically by dashboard.js -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <div class="table-responsive p-0 dash-summary-table-wrap">
-          <table class="table table-sm table-hover align-middle mb-0 table-manage-work-summary" id="dashWorkSummaryTable">
-            <thead class="table-light sticky-top" style="z-index: 2;">
-              <tr>
-                <th class="text-center th-col-sl">#</th>
-                <th class="th-col-cust">Customer</th>
-                <th class="th-col-partner sortable" id="thDashPartner" title="Click to sort by Partner name">
-                  Partner <i class="bi bi-arrow-down-up fs-9 ms-0.5 opacity-50" id="sortIconDashPartner"></i>
-                </th>
-                <th class="text-center th-stage-col sortable" id="thDashLogin" title="Click to sort by Login alert priority (Red -> Yellow -> Blue)">
-                  1. LOGIN <i class="bi bi-arrow-down-up fs-9 ms-0.5 opacity-50" id="sortIconDashLogin"></i>
-                </th>
-                <th class="text-center th-stage-col sortable" id="thDashAgreement" title="Click to sort by Agreement alert priority (Red -> Yellow -> Blue)">
-                  2. AGRMT <i class="bi bi-arrow-down-up fs-9 ms-0.5 opacity-50" id="sortIconDashAgreement"></i>
-                </th>
-                <th class="text-center th-stage-col">3. DISPATCH</th>
-                <th class="text-center th-stage-col">4. INSTALL</th>
-                <th class="text-center th-stage-col">5. NETMETER</th>
-                <th class="text-center th-stage-col">6. INSPECT</th>
-                <th class="text-center th-stage-col">7. CONNECT</th>
-                <th class="text-center th-stage-col">8. SUBSIDY</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Injected dynamically by dashboard.js -->
-            </tbody>
-          </table>
+
+        <!-- ══ TAB 2: FINANCIAL & CUSTOMER BREAKDOWN ══ -->
+        <div class="tab-pane fade" id="paneFinancial" role="tabpanel" aria-labelledby="tabFinancialBtn">
+          <!-- Executive KPI Cards Grid (Total Revenue, Received, Pending, Net Profit) -->
+          <div class="customer-kpi-grid mb-2.5" id="dashFinancialKpiGrid">
+            <!-- Injected dynamically by dashboard.js -->
+          </div>
+
+          <!-- Customer Financial Breakdown Card -->
+          <div class="card border rounded-3 bg-white shadow-sm overflow-hidden dash-summary-card">
+            <div class="card-header py-2 px-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="fw-semibold text-dark fs-8 text-uppercase" style="letter-spacing: 0.04em;">Customer Financial Breakdown</span>
+                <span class="badge bg-white text-secondary border px-2 py-0.5 fs-8" id="dashFinSumRowCount">0 Records</span>
+              </div>
+            </div>
+            <div class="table-responsive p-0 dash-summary-table-wrap">
+              <table class="table table-sm table-hover table-striped align-middle mb-0" id="dashFinBreakdownTable" style="font-size: 0.81rem;">
+                <thead class="table-light sticky-top" style="z-index: 2;">
+                  <tr>
+                    <th class="text-center sortable" data-sort="SlNo" style="width: 45px;">Sl.</th>
+                    <th class="sortable" data-sort="Name" style="min-width: 170px;">Customer</th>
+                    <th class="text-end font-monospace sortable" data-sort="Revenue" style="min-width: 100px;">Revenue</th>
+                    <th class="text-end font-monospace text-success sortable" data-sort="Collected" style="min-width: 100px;">Collected</th>
+                    <th class="text-end font-monospace text-danger sortable" data-sort="CustPending" style="min-width: 100px;">Pending</th>
+                    <th class="text-end font-monospace text-primary sortable" data-sort="Meter" style="min-width: 90px;">Meter</th>
+                    <th class="sortable" data-sort="Partner" style="min-width: 140px;">Partner</th>
+                    <th class="text-end font-monospace admin-only-dash-fin-col sortable" data-sort="NetProfit" style="min-width: 110px;">Net Profit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Injected dynamically by dashboard.js -->
+                </tbody>
+                <tfoot class="table-light sticky-bottom fw-bold font-monospace fs-8" id="dashFinBreakdownTableFoot" style="z-index: 2; border-top: 2px solid #cbd5e1;">
+                  <!-- Injected dynamically by dashboard.js -->
+                </tfoot>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 

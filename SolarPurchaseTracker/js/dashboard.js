@@ -7,6 +7,13 @@ let dashSelectedPartners = [];
 let dashSelectedSummaryStage = 'ALL';
 let dashSumSortCol = null;
 let dashSumSortDir = 'desc';
+let dashFinSortCol = null;
+let dashFinSortDir = 'desc';
+
+function escapeHtml(str) {
+  if (typeof Utils !== 'undefined' && Utils.escapeHtml) return Utils.escapeHtml(str);
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 window.onDbReady = function () {
   UI.renderSidebar('dashboard.html');
@@ -834,6 +841,380 @@ function renderDashboard() {
         </tr>
       `;
     }).join('');
+  }
+
+  // ══ Render Tab 2: Executive Financial Summary & Customer Breakdown ══
+  let sumPrice = 0;
+  let sumTotal = 0;
+  let pendingCust = 0;
+  let sumPartnerPrice = 0;
+  let partnerPending = 0;
+  let sumVendorPrice = 0;
+  let sumComm = 0;
+
+  baseRows.forEach(r => {
+    const calc = getDashSummaryRowValues(r);
+    sumPrice += calc.price;
+    sumTotal += calc.total;
+    pendingCust += calc.custPending;
+    sumPartnerPrice += calc.partnerPrice;
+    partnerPending += calc.partnerPending;
+    sumVendorPrice += calc.vPrice;
+    sumComm += calc.comm;
+  });
+
+  const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
+
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  const isPowerUser = currentUser && (
+    currentUser.role === 'admin' ||
+    currentUser.role === 'superadmin'
+  );
+
+  renderDashFinancialKpis({
+    activeCount: baseRows.length,
+    totalInDb: allWorkRows.length,
+    sumPrice,
+    sumTotal,
+    pendingCust,
+    sumVendorPrice,
+    totalProfit,
+    isAdmin: isPowerUser
+  });
+
+  renderDashFinancialBreakdown(baseRows, isPowerUser);
+}
+
+function getDashSummaryRowValues(r) {
+  let expenses = null;
+  if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+    try {
+      const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+      expenses = JSON.parse(jsonStr);
+    } catch (e) {
+      expenses = null;
+    }
+  }
+
+  const price = Number(r.CommittedPrice || r.TotalPrice || 0);
+  const total = Number(r.Total || 0);
+  const custPending = price - total;
+
+  const partnerPrice = (expenses && expenses.partner) ? Number(expenses.partner) : (Number(r.BrokerShare) || price);
+  const vPaid = Number(r.VendorPaid) || 0;
+  const partnerPending = (price - partnerPrice) - vPaid;
+
+  const netMeterAmt = (r.NetMeterPayment != null && r.NetMeterPayment !== '') 
+    ? Number(r.NetMeterPayment) 
+    : (expenses && expenses.net_meter_payment ? Number(expenses.net_meter_payment) : 0);
+
+  let vPrice = 0;
+  if (r.VendorPrice !== undefined && r.VendorPrice !== null && r.VendorPrice !== '') {
+    vPrice = Number(r.VendorPrice) || 0;
+  } else if (expenses) {
+    const mat = Number(expenses.material) || 0;
+    const inst = Number(expenses.install) || 0;
+    const gst = (expenses.gst !== undefined) ? Number(expenses.gst) : (price * ((Number(expenses.gst_pct) || 0) / 100));
+    const trans = Number(expenses.transport) || 0;
+    const oth = Number(expenses.other) || 0;
+    vPrice = mat + inst + gst + trans + oth;
+  }
+
+  const comm = Number(r.Commission) || 0;
+  const profit = partnerPrice - comm - vPrice;
+
+  return {
+    expenses,
+    price,
+    total,
+    custPending,
+    partnerPrice,
+    partnerPending,
+    netMeterAmt,
+    vPrice,
+    comm,
+    profit
+  };
+}
+
+function updateDashFinSortHeadersUI() {
+  document.querySelectorAll('#dashFinBreakdownTable th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.getAttribute('data-sort') === dashFinSortCol) {
+      th.classList.add(dashFinSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+
+function initDashFinSortListeners() {
+  const table = document.getElementById('dashFinBreakdownTable');
+  if (!table || table.dataset.sortBound) return;
+  table.dataset.sortBound = 'true';
+
+  table.querySelectorAll('thead th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.getAttribute('data-sort');
+      if (dashFinSortCol === col) {
+        dashFinSortDir = dashFinSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        dashFinSortCol = col;
+        dashFinSortDir = (col === 'Name' || col === 'Partner' || col === 'SlNo') ? 'asc' : 'desc';
+      }
+      updateDashFinSortHeadersUI();
+      renderDashboard();
+    });
+  });
+}
+
+function fmtGrandTotal(val) {
+  return '₹' + Math.round(Number(val) || 0).toLocaleString('en-IN');
+}
+
+function renderDashFinancialKpis(metrics) {
+  const container = document.getElementById('dashFinancialKpiGrid');
+  if (!container) return;
+
+  const {
+    activeCount,
+    sumPrice,
+    sumTotal,
+    pendingCust,
+    sumVendorPrice,
+    totalProfit,
+    isAdmin
+  } = metrics;
+
+  const collectionRate = sumPrice > 0 ? ((sumTotal / sumPrice) * 100).toFixed(1) : '0.0';
+  const pendingRate = sumPrice > 0 ? ((pendingCust / sumPrice) * 100).toFixed(1) : '0.0';
+  const profitMargin = sumPrice > 0 ? ((totalProfit / sumPrice) * 100).toFixed(1) : '0.0';
+
+  const rupeeIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>`;
+
+  const cardsHtml = [
+    // 1. Total Revenue Card
+    `
+    <div class="customer-kpi-card kpi-revenue">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Total Revenue</span>
+        <span class="customer-kpi-icon-wrap" title="Total committed revenue">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-sky">${fmtGrandTotal(sumPrice)}</div>
+      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+        <span class="text-secondary">${activeCount} Customers</span>
+        <span class="badge bg-primary-subtle text-primary px-1.5 py-0 fs-8">100%</span>
+      </div>
+    </div>
+    `,
+
+    // 2. Received (Collected) Card
+    `
+    <div class="customer-kpi-card kpi-collected">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Received</span>
+        <span class="customer-kpi-icon-wrap" title="Total collected amount">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-success">${fmtGrandTotal(sumTotal)}</div>
+      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+        <span class="text-secondary">Collected</span>
+        <span class="badge bg-success-subtle text-success px-1.5 py-0 fs-8">${collectionRate}%</span>
+      </div>
+    </div>
+    `,
+
+    // 3. Pending Card
+    `
+    <div class="customer-kpi-card kpi-pending">
+      <div class="customer-kpi-header">
+        <span class="customer-kpi-title">Pending</span>
+        <span class="customer-kpi-icon-wrap" title="Total pending customer amount">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="customer-kpi-value text-danger">${fmtGrandTotal(pendingCust)}</div>
+      <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+        <span class="text-secondary">Due Balance</span>
+        <span class="badge bg-danger-subtle text-danger px-1.5 py-0 fs-8">${pendingRate}%</span>
+      </div>
+    </div>
+    `
+  ];
+
+  if (isAdmin) {
+    const profitColorClass = totalProfit >= 0 ? 'text-emerald' : 'text-danger';
+    const profitBadgeClass = totalProfit >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+    cardsHtml.push(`
+      <div class="customer-kpi-card kpi-profit">
+        <div class="customer-kpi-header">
+          <span class="customer-kpi-title">Net Profit</span>
+          <span class="customer-kpi-icon-wrap" title="Net profit after expenses and commission">
+            ${rupeeIconSvg}
+          </span>
+        </div>
+        <div class="customer-kpi-value ${profitColorClass}">${fmtGrandTotal(totalProfit)}</div>
+        <div class="customer-kpi-footer d-flex justify-content-between align-items-center flex-nowrap font-monospace fs-8">
+          <span class="text-secondary">Exp: ${fmtGrandTotal(sumVendorPrice)}</span>
+          <span class="badge ${profitBadgeClass} px-1.5 py-0 fs-8">${profitMargin}%</span>
+        </div>
+      </div>
+    `);
+  }
+
+  container.innerHTML = cardsHtml.join('');
+}
+
+function renderDashFinancialBreakdown(rows, isAdmin) {
+  const tbody = document.querySelector('#dashFinBreakdownTable tbody');
+  const tfoot = document.querySelector('#dashFinBreakdownTableFoot') || document.querySelector('#dashFinBreakdownTable tfoot');
+  const countBadge = document.getElementById('dashFinSumRowCount');
+  if (!tbody) return;
+
+  initDashFinSortListeners();
+  updateDashFinSortHeadersUI();
+
+  let filteredBreakdown = rows.slice();
+
+  if (dashFinSortCol) {
+    filteredBreakdown.sort((a, b) => {
+      const calcA = getDashSummaryRowValues(a);
+      const calcB = getDashSummaryRowValues(b);
+      let valA, valB;
+
+      switch (dashFinSortCol) {
+        case 'Collected':
+          valA = calcA.total;
+          valB = calcB.total;
+          break;
+        case 'CustPending':
+          valA = calcA.custPending;
+          valB = calcB.custPending;
+          break;
+        case 'Meter':
+          valA = calcA.netMeterAmt;
+          valB = calcB.netMeterAmt;
+          break;
+        case 'PartnerPending':
+          valA = calcA.partnerPending;
+          valB = calcB.partnerPending;
+          break;
+        case 'Revenue':
+          valA = calcA.price;
+          valB = calcB.price;
+          break;
+        case 'PartnerPrice':
+          valA = calcA.partnerPrice;
+          valB = calcB.partnerPrice;
+          break;
+        case 'NetProfit':
+          valA = calcA.profit;
+          valB = calcB.profit;
+          break;
+        case 'Name':
+          valA = String(a.Name || '').toLowerCase();
+          valB = String(b.Name || '').toLowerCase();
+          break;
+        case 'Partner':
+          valA = String(a.BrokerName || '').toLowerCase();
+          valB = String(b.BrokerName || '').toLowerCase();
+          break;
+        case 'SlNo':
+          valA = Number(a.SlNo) || 0;
+          valB = Number(b.SlNo) || 0;
+          break;
+        default:
+          valA = 0;
+          valB = 0;
+      }
+
+      if (typeof valA === 'string' || typeof valB === 'string') {
+        const cmp = String(valA).localeCompare(String(valB));
+        return dashFinSortDir === 'asc' ? cmp : -cmp;
+      }
+
+      const diff = Number(valA) - Number(valB);
+      return dashFinSortDir === 'asc' ? diff : -diff;
+    });
+  }
+
+  if (countBadge) {
+    countBadge.textContent = `${filteredBreakdown.length} Records`;
+  }
+
+  // Handle admin columns visibility
+  document.querySelectorAll('.admin-only-dash-fin-col').forEach(el => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
+
+  if (filteredBreakdown.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${isAdmin ? '8' : '7'}" class="text-center text-muted py-4">No records matching filters.</td></tr>`;
+    if (tfoot) tfoot.innerHTML = '';
+    return;
+  }
+
+  let sumRev = 0;
+  let sumColl = 0;
+  let sumPending = 0;
+  let sumMeter = 0;
+  let sumProfit = 0;
+
+  tbody.innerHTML = filteredBreakdown.map(r => {
+    const calc = getDashSummaryRowValues(r);
+    const price = calc.price;
+    const total = calc.total;
+    const custPending = calc.custPending;
+    const netMeterAmt = calc.netMeterAmt;
+    const profit = calc.profit;
+
+    sumRev += price;
+    sumColl += total;
+    sumPending += custPending;
+    sumMeter += netMeterAmt;
+    sumProfit += profit;
+
+    const custPendingClass = Math.abs(custPending) < 0.01 ? 'text-secondary' : (custPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
+    const profitClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+    const meterColorClass = netMeterAmt > 0 ? 'text-primary fw-semibold' : 'text-secondary';
+    const safeSlNo = encodeURIComponent(String(r.SlNo));
+
+    return `
+      <tr>
+        <td class="text-center text-muted font-monospace">${r.SlNo}</td>
+        <td>
+          <a href="#" class="fw-semibold text-primary text-decoration-none text-truncate d-block" style="max-width: 220px;" onclick="window.openCustomerDetailsFromDash('${safeSlNo}'); return false;" title="${escapeHtml(r.Name || '')} (Click for details)">
+            ${escapeHtml(r.Name || '—')}
+          </a>
+          ${r.MobileNumber ? `<span class="text-secondary font-monospace" style="font-size: 0.72rem;">${escapeHtml(r.MobileNumber)}</span>` : ''}
+        </td>
+        <td class="text-end font-monospace">₹${Math.round(price).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace text-success fw-semibold">₹${Math.round(total).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace ${custPendingClass}">₹${Math.round(custPending).toLocaleString('en-IN')}</td>
+        <td class="text-end font-monospace ${meterColorClass}">₹${Math.round(netMeterAmt).toLocaleString('en-IN')}</td>
+        <td>
+          <span class="badge bg-light text-secondary border fw-normal text-truncate" style="max-width: 140px;" title="${escapeHtml(r.BrokerName || 'Direct')}">${escapeHtml(r.BrokerName || 'Direct')}</span>
+        </td>
+        <td class="text-end font-monospace admin-only-dash-fin-col ${profitClass}" style="${isAdmin ? '' : 'display:none;'}">₹${Math.round(profit).toLocaleString('en-IN')}</td>
+      </tr>
+    `;
+  }).join('');
+
+  if (tfoot) {
+    const pendingClass = sumPending > 0 ? 'text-danger fw-bold' : (sumPending < 0 ? 'text-primary fw-bold' : 'text-secondary');
+    const profitClass = sumProfit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+    tfoot.innerHTML = `
+      <tr>
+        <td class="text-center text-muted">Total</td>
+        <td class="text-dark">${filteredBreakdown.length} Customers</td>
+        <td class="text-end text-dark">₹${Math.round(sumRev).toLocaleString('en-IN')}</td>
+        <td class="text-end text-success">₹${Math.round(sumColl).toLocaleString('en-IN')}</td>
+        <td class="text-end ${pendingClass}">₹${Math.round(sumPending).toLocaleString('en-IN')}</td>
+        <td class="text-end text-primary">₹${Math.round(sumMeter).toLocaleString('en-IN')}</td>
+        <td class="text-muted">—</td>
+        <td class="text-end admin-only-dash-fin-col ${profitClass}" style="${isAdmin ? '' : 'display:none;'}">₹${Math.round(sumProfit).toLocaleString('en-IN')}</td>
+      </tr>
+    `;
   }
 }
 
