@@ -2626,6 +2626,38 @@ window.calcModuleTotalCapacity = function() {
   }
 };
 
+function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
+  let basePhone = '';
+  let expensesJson = '';
+  let creatorId = '';
+  let workObj = {};
+
+  if (currentBrokerNumber) {
+    const parts = currentBrokerNumber.split('|');
+    basePhone = parts[0] || '';
+    parts.slice(1).forEach(p => {
+      if (p.startsWith('expenses:')) {
+        expensesJson = p.slice('expenses:'.length);
+      } else if (p.startsWith('creator:')) {
+        creatorId = p.slice('creator:'.length);
+      } else if (p.startsWith('work:')) {
+        try {
+          workObj = JSON.parse(p.slice('work:'.length));
+        } catch (e) {}
+      }
+    });
+  }
+
+  Object.assign(workObj, updates);
+
+  let result = basePhone;
+  if (expensesJson) result += '|expenses:' + expensesJson;
+  if (creatorId) result += '|creator:' + creatorId;
+  if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
+  return result;
+}
+window.formatBrokerNumberWithWorkMeta = formatBrokerNumberWithWorkMeta;
+
 window.openProductModal = function(slNo) {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) {
@@ -2642,7 +2674,7 @@ window.openProductModal = function(slNo) {
     subTitle.textContent = `Customer: ${r.Name || '—'} | Consumer No: ${r.ConsumerNo || '—'} (Sl. No: ${slNo})`;
   }
 
-  // Parse existing specs if any
+  // Parse existing specs if any (checking both direct property and |work: metadata)
   let specs = {};
   if (r.ProductSpecs) {
     try {
@@ -2650,6 +2682,15 @@ window.openProductModal = function(slNo) {
     } catch (e) {
       specs = {};
     }
+  } else if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
+    try {
+      const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
+      const workData = JSON.parse(workPart);
+      if (workData.ProductSpecs) {
+        r.ProductSpecs = workData.ProductSpecs;
+        specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+      }
+    } catch (e) {}
   }
 
   // General Dates & Site Info: Fallback to existing customer data if not set in specs
@@ -2833,12 +2874,24 @@ window.saveProductPopupSpecs = async function() {
     }
   };
 
+  // Serialize ProductSpecs and work metadata into BrokerNumber
+  const workUpdates = {
+    ProductSpecs: specs,
+    SubDivision: r.SubDivision || '',
+    DivisionName: r.DivisionName || '',
+    CircleName: r.CircleName || '',
+    ApplicationNumber: r.ApplicationNumber || '',
+    ProposedCapacity: r.ProposedCapacity || ''
+  };
+  const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(r.BrokerNumber || '', workUpdates);
+
   UI.showLoading(true);
   try {
     const updatePayload = {
       ...(r || {}),
       CommittedBrand: displayBrand,
       ProductSpecs: specs,
+      BrokerNumber: formattedBrokerNumber,
       Address: siteAddress,
       PinCode: pinCode,
       State: stateVal

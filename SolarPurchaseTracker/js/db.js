@@ -184,7 +184,7 @@ const DB = (() => {
                 const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
                 const workData = JSON.parse(workPart);
                 Object.keys(workData).forEach(k => {
-                    if (r[k] === undefined || r[k] === null || r[k] === '') {
+                    if (r[k] === undefined || r[k] === null || r[k] === '' || k === 'ProductSpecs') {
                         r[k] = workData[k];
                     }
                 });

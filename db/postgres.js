@@ -85,6 +85,43 @@ async function safeUpsert(tableName, row) {
       UpdatedAt: row.UpdatedAt || row.updatedat,
     };
   }
+  if (tableName === 'installments') {
+    const customFields = {};
+    if (row.ProductSpecs !== undefined) customFields.ProductSpecs = row.ProductSpecs;
+    if (row.SubDivision !== undefined) customFields.SubDivision = row.SubDivision;
+    if (row.DivisionName !== undefined) customFields.DivisionName = row.DivisionName;
+    if (row.CircleName !== undefined) customFields.CircleName = row.CircleName;
+    if (row.ApplicationNumber !== undefined) customFields.ApplicationNumber = row.ApplicationNumber;
+    if (row.ProposedCapacity !== undefined) customFields.ProposedCapacity = row.ProposedCapacity;
+
+    if (Object.keys(customFields).length > 0) {
+      let baseBroker = item.BrokerNumber || '';
+      let expensesJson = null;
+      let creatorId = null;
+      let workObj = {};
+
+      if (baseBroker.includes('|')) {
+        const parts = baseBroker.split('|');
+        baseBroker = parts[0];
+        parts.slice(1).forEach(p => {
+          if (p.startsWith('expenses:')) expensesJson = p.slice('expenses:'.length);
+          else if (p.startsWith('creator:')) creatorId = p.slice('creator:'.length);
+          else if (p.startsWith('work:')) {
+            try { workObj = JSON.parse(p.slice('work:'.length)); } catch (_) {}
+          }
+        });
+      }
+
+      Object.assign(workObj, customFields);
+
+      let newBroker = baseBroker;
+      if (expensesJson) newBroker += '|expenses:' + expensesJson;
+      if (creatorId) newBroker += '|creator:' + creatorId;
+      if (Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
+
+      item.BrokerNumber = newBroker;
+    }
+  }
   for (let attempt = 0; attempt < 10; attempt++) {
     try {
       const { error } = await supabase.from(tableName).upsert([item]);
@@ -118,6 +155,43 @@ async function safeUpdate(tableName, matchField, val, newData) {
       CreatedAt: newData.CreatedAt || newData.createdat,
       UpdatedAt: newData.UpdatedAt || newData.updatedat,
     };
+  }
+  if (tableName === 'installments') {
+    const customFields = {};
+    if (newData.ProductSpecs !== undefined) customFields.ProductSpecs = newData.ProductSpecs;
+    if (newData.SubDivision !== undefined) customFields.SubDivision = newData.SubDivision;
+    if (newData.DivisionName !== undefined) customFields.DivisionName = newData.DivisionName;
+    if (newData.CircleName !== undefined) customFields.CircleName = newData.CircleName;
+    if (newData.ApplicationNumber !== undefined) customFields.ApplicationNumber = newData.ApplicationNumber;
+    if (newData.ProposedCapacity !== undefined) customFields.ProposedCapacity = newData.ProposedCapacity;
+
+    if (Object.keys(customFields).length > 0) {
+      let baseBroker = item.BrokerNumber || '';
+      let expensesJson = null;
+      let creatorId = null;
+      let workObj = {};
+
+      if (baseBroker.includes('|')) {
+        const parts = baseBroker.split('|');
+        baseBroker = parts[0];
+        parts.slice(1).forEach(p => {
+          if (p.startsWith('expenses:')) expensesJson = p.slice('expenses:'.length);
+          else if (p.startsWith('creator:')) creatorId = p.slice('creator:'.length);
+          else if (p.startsWith('work:')) {
+            try { workObj = JSON.parse(p.slice('work:'.length)); } catch (_) {}
+          }
+        });
+      }
+
+      Object.assign(workObj, customFields);
+
+      let newBroker = baseBroker;
+      if (expensesJson) newBroker += '|expenses:' + expensesJson;
+      if (creatorId) newBroker += '|creator:' + creatorId;
+      if (Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
+
+      item.BrokerNumber = newBroker;
+    }
   }
   for (let attempt = 0; attempt < 10; attempt++) {
     try {
