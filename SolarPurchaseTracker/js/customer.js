@@ -1591,16 +1591,10 @@ function renderList() {
           <td class="col-brand align-middle">
             <div class="erp-brand-cell" id="brandWrap_${r.SlNo}">
               <div class="erp-brand-input-row">
-                <textarea class="form-control form-control-sm erp-brand-textarea" id="brandText_${r.SlNo}" rows="1" placeholder="Product details..." disabled onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); window.saveBrandInline(${r.SlNo}); } else if(event.key==='Escape'){ window.cancelBrandEdit(${r.SlNo}); }">${escapeHtml(r.CommittedBrand || '')}</textarea>
+                <input type="text" class="form-control form-control-sm erp-brand-textarea erp-brand-input" id="brandText_${r.SlNo}" value="${escapeHtml(r.CommittedBrand || '')}" placeholder="Module / Inverter Make..." readonly onclick="window.openProductModal(${r.SlNo})" title="Click to view/edit technical specifications">
                 <div class="erp-brand-actions-wrap d-flex flex-column">
-                  <button type="button" class="btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-flex align-items-center justify-content-center" id="btnBrandEdit_${r.SlNo}" onclick="window.toggleBrandEdit(${r.SlNo})" title="Edit Product">
+                  <button type="button" class="btn btn-sm btn-outline-primary erp-brand-action-btn p-0 d-flex align-items-center justify-content-center" id="btnBrandEdit_${r.SlNo}" onclick="window.openProductModal(${r.SlNo})" title="Edit Product & Technical Specs">
                     ${UI.icon('pencil', 12)}
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-success erp-brand-action-btn p-0 d-none align-items-center justify-content-center" id="btnBrandSave_${r.SlNo}" onclick="window.saveBrandInline(${r.SlNo})" title="Save Product">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary erp-brand-action-btn p-0 d-none align-items-center justify-content-center" id="btnBrandCancel_${r.SlNo}" onclick="window.cancelBrandEdit(${r.SlNo})" title="Cancel Edit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
               </div>
@@ -2571,96 +2565,286 @@ window.saveCustomerQuickPayment = async function(slNo) {
   }
 };
 
-window.toggleBrandEdit = function(slNo) {
-  const textarea = document.getElementById(`brandText_${slNo}`);
-  const btnEdit = document.getElementById(`btnBrandEdit_${slNo}`);
-  const btnSave = document.getElementById(`btnBrandSave_${slNo}`);
-  const btnCancel = document.getElementById(`btnBrandCancel_${slNo}`);
-  if (!textarea) return;
+window.renderModuleSerialInputs = function() {
+  const countInput = document.getElementById('prodModuleCount');
+  const container = document.getElementById('prodModuleSerialInputsContainer');
+  const badge = document.getElementById('lblModuleSerialCount');
+  if (!countInput || !container) return;
 
-  textarea.dataset.origVal = textarea.value;
-  textarea.disabled = false;
-  textarea.focus();
-  const val = textarea.value;
-  textarea.value = '';
-  textarea.value = val;
+  const count = Math.max(0, parseInt(countInput.value, 10) || 0);
+  if (badge) badge.textContent = `${count} Serial Inputs`;
 
-  if (btnEdit) {
-    btnEdit.classList.add('d-none');
-    btnEdit.classList.remove('d-inline-flex', 'd-flex');
-  }
-  if (btnSave) {
-    btnSave.classList.remove('d-none');
-    btnSave.classList.add('d-flex');
-  }
-  if (btnCancel) {
-    btnCancel.classList.remove('d-none');
-    btnCancel.classList.add('d-flex');
-  }
-};
-
-window.cancelBrandEdit = function(slNo) {
-  const textarea = document.getElementById(`brandText_${slNo}`);
-  const btnEdit = document.getElementById(`btnBrandEdit_${slNo}`);
-  const btnSave = document.getElementById(`btnBrandSave_${slNo}`);
-  const btnCancel = document.getElementById(`btnBrandCancel_${slNo}`);
-  if (!textarea) return;
-
-  if (textarea.dataset.origVal !== undefined) {
-    textarea.value = textarea.dataset.origVal;
-  }
-  textarea.disabled = true;
-
-  if (btnSave) {
-    btnSave.classList.add('d-none');
-    btnSave.classList.remove('d-flex', 'd-inline-flex');
-  }
-  if (btnCancel) {
-    btnCancel.classList.add('d-none');
-    btnCancel.classList.remove('d-flex', 'd-inline-flex');
-  }
-  if (btnEdit) {
-    btnEdit.classList.remove('d-none');
-    btnEdit.classList.add('d-flex');
-  }
-};
-
-window.saveBrandInline = async function(slNo) {
-  const textarea = document.getElementById(`brandText_${slNo}`);
-  const btnSave = document.getElementById(`btnBrandSave_${slNo}`);
-  if (!textarea) return;
-
-  const newBrand = textarea.value.trim();
-  const existing = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
-  const custName = existing?.Name || `Customer #${slNo}`;
-  const consumerNo = existing?.ConsumerNo ? ` (CN: ${existing.ConsumerNo})` : '';
-  const displayBrand = newBrand || 'None / Cleared';
-
-  const confirmed = await UI.confirmDialog(
-    `Are you sure you want to update Product details to "${displayBrand}" for "${custName}"${consumerNo}?`,
-    'Confirm Product Update',
-    'Yes, Save Product',
-    'btn-primary'
-  );
-
-  if (!confirmed) {
-    window.cancelBrandEdit(slNo);
+  if (count === 0) {
+    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic">Enter "No. of Module" above to generate serial number textboxes.</div>';
     return;
   }
 
-  if (btnSave) btnSave.disabled = true;
+  // Preserve existing entered values
+  const existingValues = [];
+  container.querySelectorAll('.prod-module-serial-box').forEach((box, i) => {
+    existingValues[i] = box.value;
+  });
 
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    const prevVal = existingValues[i - 1] || '';
+    html += `
+      <div class="col-md-4 col-6">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light text-muted fs-8" style="min-width: 32px; padding: 2px 6px;">#${i}</span>
+          <input type="text" class="form-control form-control-sm fs-8 font-monospace prod-module-serial-box" id="prodModuleSerial_${i}" data-index="${i}" value="${escapeHtml(prevVal)}" placeholder="Serial No. ${i}">
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+};
+
+window.calcModuleTotalCapacity = function() {
+  const countInput = document.getElementById('prodModuleCount');
+  const capEachInput = document.getElementById('prodModuleCapacityEach');
+  const totalCapInput = document.getElementById('prodModuleTotalCapacity');
+  if (!countInput || !capEachInput || !totalCapInput) return;
+
+  const count = parseInt(countInput.value, 10) || 0;
+  const eachText = capEachInput.value.trim();
+  // Extract number if possible (e.g., 545 Wp or 545)
+  const match = eachText.match(/([0-9.]+)/);
+  if (count > 0 && match) {
+    const eachWatts = parseFloat(match[1]);
+    if (!isNaN(eachWatts) && eachWatts > 0) {
+      if (eachWatts >= 100) {
+        // In Watts, calculate kWp
+        const totalKW = ((count * eachWatts) / 1000).toFixed(2);
+        totalCapInput.value = `${totalKW} kWp (${count * eachWatts} Wp)`;
+      } else {
+        // Already in kW
+        const totalKW = (count * eachWatts).toFixed(2);
+        totalCapInput.value = `${totalKW} kWp`;
+      }
+    }
+  }
+};
+
+window.openProductModal = function(slNo) {
+  const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) {
+    UI.toast('Customer record not found.', 'danger');
+    return;
+  }
+
+  const modalEl = document.getElementById('productModal');
+  if (!modalEl) return;
+
+  document.getElementById('prodSlNo').value = slNo;
+  const subTitle = document.getElementById('productModalSubTitle');
+  if (subTitle) {
+    subTitle.textContent = `Customer: ${r.Name || '—'} | Consumer No: ${r.ConsumerNo || '—'} (Sl. No: ${slNo})`;
+  }
+
+  // Parse existing specs if any
+  let specs = {};
+  if (r.ProductSpecs) {
+    try {
+      specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+    } catch (e) {
+      specs = {};
+    }
+  }
+
+  // General Dates: Fallback to existing customer dates if not set in specs
+  const dateOfInstallation = specs.DateOfInstallation || (r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '');
+  const dateOfCommission = specs.DateOfCommission || (r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '');
+
+  document.getElementById('prodDateOfInstallation').value = dateOfInstallation;
+  document.getElementById('prodDateOfCommission').value = dateOfCommission;
+
+  // Grid Tied Inverter
+  const inv = specs.GridTiedInverter || {};
+  document.getElementById('prodInverterName').value = inv.Name || '';
+  document.getElementById('prodInverterCount').value = inv.TotalNo || '';
+  document.getElementById('prodInverterMake').value = inv.Make || '';
+  document.getElementById('prodInverterSerialNo').value = inv.SerialNo || '';
+  document.getElementById('prodInverterCapacity').value = inv.Capacity || '';
+  document.getElementById('prodInverterInputVoltage').value = inv.InputVoltage || '';
+  document.getElementById('prodInverterOutputVoltage').value = inv.OutputVoltage || '';
+
+  // P.V Module
+  const pv = specs.PvModule || {};
+  document.getElementById('prodModuleMake').value = pv.Make || '';
+  document.getElementById('prodModuleCount').value = pv.NoOfModule || '';
+  document.getElementById('prodModuleTypeModel').value = pv.TypeAndModel || '';
+  document.getElementById('prodModuleCapacityEach').value = pv.CapacityEach || '';
+  document.getElementById('prodModuleTotalCapacity').value = pv.TotalCapacity || '';
+
+  // Render serial boxes for modules
+  const serials = Array.isArray(pv.SerialNumbers) ? pv.SerialNumbers : [];
+  const count = Math.max(0, parseInt(pv.NoOfModule, 10) || 0);
+  const container = document.getElementById('prodModuleSerialInputsContainer');
+  const badge = document.getElementById('lblModuleSerialCount');
+  if (badge) badge.textContent = `${count} Serial Inputs`;
+
+  if (count === 0) {
+    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic">Enter "No. of Module" above to generate serial number textboxes.</div>';
+  } else {
+    let html = '';
+    for (let i = 1; i <= count; i++) {
+      const val = serials[i - 1] || '';
+      html += `
+        <div class="col-md-4 col-6">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light text-muted fs-8" style="min-width: 32px; padding: 2px 6px;">#${i}</span>
+            <input type="text" class="form-control form-control-sm fs-8 font-monospace prod-module-serial-box" id="prodModuleSerial_${i}" data-index="${i}" value="${escapeHtml(val)}" placeholder="Serial No. ${i}">
+          </div>
+        </div>
+      `;
+    }
+    container.innerHTML = html;
+  }
+
+  // Earthing Verification
+  const ev = specs.EarthingVerification || {};
+  document.getElementById('prodDcEarthing').value = ev.DcEarthing || '';
+  document.getElementById('prodAcEarthing').value = ev.AcEarthing || '';
+
+  // Details of Cables: DC
+  const dcCables = specs.DetailsOfCablesDc || {};
+  document.getElementById('prodDcCableMake').value = dcCables.Make || '';
+  document.getElementById('prodDcCableSizeType').value = dcCables.SizeType || '';
+
+  // Details of the DC distribution box
+  const dcdb = specs.DetailsOfDcdb || {};
+  document.getElementById('prodDcdbMake').value = dcdb.Make || '';
+  document.getElementById('prodDcdbSerialNo').value = dcdb.SerialNo || '';
+  document.getElementById('prodDcdbSpdRating').value = dcdb.SpdRating || '';
+  document.getElementById('prodDcdbMcbDetails').value = dcdb.McbDetails || '';
+
+  // Details of AC distribution box
+  const acdb = specs.DetailsOfAcdb || {};
+  document.getElementById('prodAcdbMake').value = acdb.Make || '';
+  document.getElementById('prodAcdbSerialNo').value = acdb.SerialNo || '';
+  document.getElementById('prodAcdbSpdRating').value = acdb.SpdRating || '';
+  document.getElementById('prodAcdbMcbDetails').value = acdb.McbDetails || '';
+
+  // Details of Earthing
+  const earth = specs.DetailsOfEarthing || {};
+  document.getElementById('prodEarthResistance').value = earth.EarthResistance || '';
+  document.getElementById('prodEarthWireSize').value = earth.EarthWireSize || '';
+  document.getElementById('prodLaSizeType').value = earth.LaSizeType || '';
+
+  const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  bsModal.show();
+};
+
+window.saveProductPopupSpecs = async function() {
+  const slNo = Number(document.getElementById('prodSlNo').value);
+  if (!slNo) return;
+
+  const r = DB.getAll('installments').find(x => Number(x.SlNo) === slNo);
+  if (!r) {
+    UI.toast('Customer not found.', 'danger');
+    return;
+  }
+
+  // Extract module serials
+  const moduleSerials = [];
+  document.querySelectorAll('.prod-module-serial-box').forEach(box => {
+    moduleSerials.push(box.value.trim());
+  });
+
+  const moduleMake = document.getElementById('prodModuleMake').value.trim();
+  const inverterMake = document.getElementById('prodInverterMake').value.trim();
+  const dateOfInstallation = document.getElementById('prodDateOfInstallation').value || null;
+  const dateOfCommission = document.getElementById('prodDateOfCommission').value || null;
+
+  // Construct summarized CommittedBrand text for display in table
+  let displayBrand = '';
+  if (moduleMake && inverterMake) {
+    displayBrand = `M: ${moduleMake} | Inv: ${inverterMake}`;
+  } else if (moduleMake) {
+    displayBrand = `M: ${moduleMake}`;
+  } else if (inverterMake) {
+    displayBrand = `Inv: ${inverterMake}`;
+  } else {
+    displayBrand = r.CommittedBrand || '';
+  }
+
+  const specs = {
+    DateOfInstallation: dateOfInstallation,
+    DateOfCommission: dateOfCommission,
+    GridTiedInverter: {
+      Name: document.getElementById('prodInverterName').value.trim(),
+      TotalNo: document.getElementById('prodInverterCount').value.trim(),
+      Make: inverterMake,
+      SerialNo: document.getElementById('prodInverterSerialNo').value.trim(),
+      Capacity: document.getElementById('prodInverterCapacity').value.trim(),
+      InputVoltage: document.getElementById('prodInverterInputVoltage').value.trim(),
+      OutputVoltage: document.getElementById('prodInverterOutputVoltage').value.trim()
+    },
+    PvModule: {
+      Make: moduleMake,
+      NoOfModule: document.getElementById('prodModuleCount').value.trim(),
+      TypeAndModel: document.getElementById('prodModuleTypeModel').value.trim(),
+      CapacityEach: document.getElementById('prodModuleCapacityEach').value.trim(),
+      TotalCapacity: document.getElementById('prodModuleTotalCapacity').value.trim(),
+      SerialNumbers: moduleSerials
+    },
+    EarthingVerification: {
+      DcEarthing: document.getElementById('prodDcEarthing').value.trim(),
+      AcEarthing: document.getElementById('prodAcEarthing').value.trim()
+    },
+    DetailsOfCablesDc: {
+      Make: document.getElementById('prodDcCableMake').value.trim(),
+      SizeType: document.getElementById('prodDcCableSizeType').value.trim()
+    },
+    DetailsOfDcdb: {
+      Make: document.getElementById('prodDcdbMake').value.trim(),
+      SerialNo: document.getElementById('prodDcdbSerialNo').value.trim(),
+      SpdRating: document.getElementById('prodDcdbSpdRating').value.trim(),
+      McbDetails: document.getElementById('prodDcdbMcbDetails').value.trim()
+    },
+    DetailsOfAcdb: {
+      Make: document.getElementById('prodAcdbMake').value.trim(),
+      SerialNo: document.getElementById('prodAcdbSerialNo').value.trim(),
+      SpdRating: document.getElementById('prodAcdbSpdRating').value.trim(),
+      McbDetails: document.getElementById('prodAcdbMcbDetails').value.trim()
+    },
+    DetailsOfEarthing: {
+      EarthResistance: document.getElementById('prodEarthResistance').value.trim(),
+      EarthWireSize: document.getElementById('prodEarthWireSize').value.trim(),
+      LaSizeType: document.getElementById('prodLaSizeType').value.trim()
+    }
+  };
+
+  UI.showLoading(true);
   try {
-    await DB.update('installments', r => Number(r.SlNo) === Number(slNo), {
-      ...(existing || {}),
-      CommittedBrand: newBrand
-    });
-    UI.toast('Product updated successfully.', 'success');
+    const updatePayload = {
+      ...(r || {}),
+      CommittedBrand: displayBrand,
+      ProductSpecs: specs
+    };
+    if (dateOfInstallation) {
+      updatePayload.InstallationDate = dateOfInstallation;
+    }
+    if (dateOfCommission) {
+      updatePayload.CommissioningDate = dateOfCommission;
+    }
+
+    await DB.update('installments', x => Number(x.SlNo) === slNo, updatePayload);
+
+    const modalEl = document.getElementById('productModal');
+    if (modalEl) {
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+    }
+
+    UI.toast('Product details & technical specifications saved successfully.', 'success');
     renderList();
   } catch (err) {
-    console.error('Error updating Product:', err);
-    UI.toast('Error saving Product: ' + err.message, 'danger');
-    if (btnSave) btnSave.disabled = false;
+    console.error('Error saving product specifications:', err);
+    UI.toast('Error saving Product specifications: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
   }
 };
 
@@ -3706,7 +3890,8 @@ async function saveCustomerModal() {
     BrokerNumber: formattedBrokerNumber,
     Commission: Number(document.getElementById('cCommission').value) || 0,
     NetMeterPayment: expenses.net_meter_payment,
-    NetMeterPaid: expenses.net_meter_paid
+    NetMeterPaid: expenses.net_meter_paid,
+    ProductSpecs: existingRow ? (existingRow.ProductSpecs || null) : null
   };
 
   UI.showLoading(true);

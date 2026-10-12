@@ -1157,6 +1157,18 @@ body.installments-page .page-body {
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.erp-brand-input {
+  cursor: pointer !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.erp-brand-input:hover {
+  background-color: #f8fafc !important;
+  color: var(--st-primary, #4f46e5) !important;
+}
+
 .erp-brand-textarea:disabled,
 .erp-brand-textarea[disabled] {
   background-color: transparent !important;

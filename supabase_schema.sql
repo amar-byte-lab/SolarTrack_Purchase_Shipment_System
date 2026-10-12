@@ -75,6 +75,7 @@ ALTER TABLE installments ADD COLUMN IF NOT EXISTS "DivisionName" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "CircleName" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ApplicationNumber" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ProposedCapacity" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ProductSpecs" JSONB;
 
 CREATE TABLE IF NOT EXISTS installment_txns (
   "TxnID" TEXT PRIMARY KEY,
