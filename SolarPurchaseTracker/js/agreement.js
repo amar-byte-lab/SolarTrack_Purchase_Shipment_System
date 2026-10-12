@@ -195,6 +195,9 @@ window.selectCustomerForAgreement = function(slNo) {
   // 2. Populate Form 4 Tab with THIS RESPECTIVE CUSTOMER'S exact data
   populateForm4Fields(r);
 
+  // 3. Populate Form 6 Tab (Inspection Report) with exact customer data
+  populateForm6Fields(r);
+
   UI.toast(`Auto-filled details for ${r.Name}`, 'info');
 };
 
@@ -206,6 +209,7 @@ window.resetAgreementForm = function() {
   const searchQuery = document.getElementById('custSearchInput') ? document.getElementById('custSearchInput').value : '';
   renderCustomerDirectory(searchQuery);
   resetForm4Fields();
+  resetForm6Fields();
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -266,6 +270,15 @@ function getDiscomName(district, circle) {
     return 'TPSODL';
   }
   return 'TPNODL';
+}
+
+function getDiscomFullName(shortName) {
+  const s = String(shortName || '').toUpperCase();
+  if (s.includes('NODL')) return 'TP NORTHERN ODISHA DISTRIBUTION LIMITED';
+  if (s.includes('CODL')) return 'TP CENTRAL ODISHA DISTRIBUTION LIMITED';
+  if (s.includes('WODL')) return 'TP WESTERN ODISHA DISTRIBUTION LIMITED';
+  if (s.includes('SODL')) return 'TP SOUTHERN ODISHA DISTRIBUTION LIMITED';
+  return 'TP NORTHERN ODISHA DISTRIBUTION LIMITED';
 }
 
 function getDiscomCircleByDistrict(district) {
@@ -1463,6 +1476,999 @@ window.generateAgreementDocx = async function() {
   } catch (err) {
     console.error('Error generating agreement docx:', err);
     UI.toast('Error generating Agreement document: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Form 6: Inspection Report for RTS Logic & Vector PDF Generator
+   ════════════════════════════════════════════════════════════════════════════ */
+
+function populateForm6Fields(r) {
+  if (!r) return;
+
+  let specs = {};
+  if (r.ProductSpecs) {
+    try {
+      specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+    } catch (e) {
+      specs = {};
+    }
+  }
+
+  const customerName = (r.Name || '').trim().toUpperCase();
+  const consumerNo = (r.ConsumerNo || '').trim();
+  const district = (r.District || '').trim().toUpperCase();
+  const pinCode = (r.PinCode || specs.PinCode || '').trim();
+  const state = (r.State || specs.State || 'Odisha').trim();
+  const siteAddress = (r.Address || specs.SiteAddress || (district ? `AT/PO ${district}` : 'ODISHA')).trim().toUpperCase();
+
+  // Header Subtitle
+  const headerSub = document.getElementById('f6HeaderSub');
+  if (headerSub) {
+    headerSub.innerHTML = `Auto-filled for <strong class="text-dark">${escapeHtml(customerName || 'Selected Customer')}</strong> (Consumer: ${escapeHtml(consumerNo || '—')}, District: ${escapeHtml(district || '—')})`;
+  }
+
+  // DISCOM Utility Name
+  const discomShort = getDiscomName(district, r.CircleName);
+  const discomFull = getDiscomFullName(discomShort);
+
+  // Capacity & Date
+  const rawCapacity = (specs.PvModule && specs.PvModule.TotalCapacity) || r.ProposedCapacity || '3.32';
+  const capNum = parseFloat(String(rawCapacity).replace(/[^0-9.]/g, '')) || 3.32;
+  const plantCapStr = `${Math.round(capNum)} KWP`;
+  const totalCapModuleStr = `${capNum.toFixed(2)} KWP`;
+
+  const installDateFormatted = formatDateToMonthWord(specs.DateOfInstallation || r.InstallationDate) || formatDateToMonthWord(new Date());
+
+  // Division / SubDivision / Section
+  const sectionVal = (r.Section || (district ? `${district} Section` : 'JAJPUR Section')).trim();
+  const subDivVal = (r.SubDivision || (district ? `RE SDO-I ${district} Sub-Division` : 'RE SDO-I JAJPUR Sub-Division')).trim();
+  const divisionVal = (r.DivisionName || (district ? `CED ${district} Division` : 'CED JAJPUR Division')).trim();
+
+  // Application / Reg No with Date
+  const regNo = (r.ApplicationNumber || (consumerNo ? `NP-ODTN026-${consumerNo.slice(-8)}` : 'NP-ODTN026-10625985')).trim();
+  const regDateDash = formatDateToDash(r.LoginDate) || formatDateToDash(r.InstallationDate) || '05.03.2026';
+  const regNoWithDate = `${regNo}/${regDateDash}`;
+
+  // Top Header Cert
+  setInputVal('f6DiscomOffice', discomFull);
+  setInputVal('f6CertCapacity', plantCapStr);
+  const formattedFullAddr = `${siteAddress}${district ? `, DIST-${district}` : ''}${pinCode ? `, PIN-${pinCode}` : ''}`;
+  setInputVal('f6CertAddress', formattedFullAddr);
+  setInputVal('f6InspectionDate', installDateFormatted);
+  setInputVal('f6Section', sectionVal);
+  setInputVal('f6SubDivision', subDivVal);
+  setInputVal('f6Division', divisionVal);
+
+  // Part A: Applicant Details
+  setInputVal('f6ApplicantName', customerName);
+  setInputVal('f6RegNoDate', regNoWithDate);
+  setInputVal('f6Address', formattedFullAddr);
+  setInputVal('f6ConsumerNo', consumerNo || '612222120269');
+  setInputVal('f6Category', (r.Tariff || r.Category || 'DOMESTIC').toUpperCase());
+  setInputVal('f6ConnectionType', capNum > 5 ? '3PH LT' : '1PH LT');
+  const contractDemand = r.Load || `${Math.round(capNum)} KW`;
+  setInputVal('f6ContractDemand', contractDemand);
+  setInputVal('f6Arrear', r.Arrear || '0');
+
+  // Part B: Distribution Transformer Details (All empty by default as Form 6)
+  setInputVal('f6DtrCapacity', '');
+  setInputVal('f6DtrLocation', '');
+  setInputVal('f6DtrExistingSolar', '');
+  setInputVal('f6DtrAdequate', '');
+
+  // Part C: Solar Rooftop PV Power Plant Details
+  setInputVal('f6PlantCapacity', plantCapStr);
+  setInputVal('f6PlantSiteType', 'SINGLE SITE');
+  setInputVal('f6PlantPointType', 'SINGLE POINT');
+  setInputVal('f6SldStatus', 'YES / NO (if it is no, state reasons for the same and suggest alternate arrangements )');
+
+  // Part D: Grid Tied Inverter
+  const brandInfo = parseBrand(r.CommittedBrand);
+  const inv = specs.GridTiedInverter || {};
+  const invMake = inv.Make || brandInfo.inverterMake || 'LUMINOUS';
+  const invCapacity = inv.Capacity ? (String(inv.Capacity).toUpperCase().includes('KW') ? inv.Capacity : `${inv.Capacity} KW`) : `${Math.round(capNum)} KW`;
+  const invSerialNo = getOrGenerateInverterSerial(r, specs, invMake);
+  const invInputVolt = formatWithUnit(inv.InputVoltage, '300 V DC', 'voltDc');
+  const invOutputVolt = formatWithUnit(inv.OutputVoltage, '220-240V AC', 'voltAc');
+  const invVoltCombined = `${invInputVolt} / ${invOutputVolt}`;
+
+  setInputVal('f6InvMake', invMake);
+  setInputVal('f6InvSerialNo', invSerialNo);
+  setInputVal('f6InvCapacity', invCapacity);
+  setInputVal('f6InvVolt', invVoltCombined);
+  setInputVal('f6InvAntiIslanding', 'Need to be checked practically before charging');
+  setInputVal('f6InvInstallDate', installDateFormatted);
+
+  // Part E: P.V Module
+  const pv = specs.PvModule || {};
+  const moduleMake = pv.Make || brandInfo.moduleMake || 'LUMINOUS';
+  const moduleModel = pv.TypeAndModel || 'Bificial';
+  const moduleCount = pv.NoOfModule ? (String(pv.NoOfModule).includes('NOS') ? pv.NoOfModule : `${pv.NoOfModule} NOS`) : `${calculateModulesCount(capNum).replace(/[^0-9]/g, '')} NOS`;
+  const capEach = pv.CapacityEach || '555 WP - 4pic, 550 WP - 2pic';
+  const serials = getOrGenerateSerials(r, specs, moduleCount, moduleMake);
+
+  setInputVal('f6PvMake', moduleMake);
+  setInputVal('f6PvModel', moduleModel);
+  setInputVal('f6PvTotalCapacity', totalCapModuleStr);
+  setInputVal('f6PvCapacityEach', capEach);
+  setInputVal('f6PvCount', moduleCount);
+  setInputVal('f6PvInstallDate', installDateFormatted);
+  setInputVal('f6PvSerials', serials.join('\n'));
+
+  // Part F & G & H: Earthing & Protective Systems (Values following Form 6)
+  const earth = specs.DetailsOfEarthing || {};
+  setInputVal('f6DcEarthing', earth.DcEarthing || '1.7 in Ohm');
+  setInputVal('f6AcEarthing', earth.AcEarthing || '2.3 in Ohm');
+  setInputVal('f6EarthingLimit', 'Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)');
+  setInputVal('f6AcdcDbStatus', 'Yes / No');
+  setInputVal('f6ManualSwitch', 'Yes / No');
+  setInputVal('f6RelaySwitch', 'Yes / No');
+  setInputVal('f6BackfeedProtection', '');
+
+  // Part I - L: Clearances & Statutory Standards (Exact as Form 6)
+  setInputVal('f6EicApproval', 'Yes / No');
+  setInputVal('f6SafetyCert', 'Yes / No');
+  setInputVal('f6WorkCompletionReport', 'Yes / No');
+  setInputVal('f6TestReportCea', 'Yes / No');
+
+  // Part M: Meters (All fields empty by default as Form 6)
+  setInputVal('f6NmCount', '');
+  setInputVal('f6NmMake', '');
+  setInputVal('f6NmSerialNo', '');
+  setInputVal('f6NmPhase', '');
+  setInputVal('f6NmCapacity', '');
+  setInputVal('f6NmConstant', '');
+
+  setInputVal('f6SmCount', '');
+  setInputVal('f6SmMake', '');
+  setInputVal('f6SmSerialNo', '');
+  setInputVal('f6SmPhase', '');
+  setInputVal('f6SmCapacity', '');
+  setInputVal('f6SmConstant', '');
+
+  // Part N: Remarks & Inspection Clearance (Exact as Form 6)
+  setInputVal('f6Remarks', '');
+  setInputVal('f6GridSatisfactory', 'Yes / No (if it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)');
+  setInputVal('f6Observations', '');
+  setInputVal('f6InspectingAuthority', discomShort);
+}
+
+function getForm6CurrentData() {
+  const currentCust = selectedCustomerSlNo 
+    ? getInstallmentRows().find(x => Number(x.SlNo) === Number(selectedCustomerSlNo))
+    : null;
+
+  const rawSerials = getInputVal('f6PvSerials', '');
+  const serialsList = rawSerials ? rawSerials.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+  const custDist = currentCust ? (currentCust.District || '').toUpperCase() : '';
+  const custCircle = getDiscomName(custDist, currentCust ? currentCust.CircleName : '');
+
+  return {
+    discomOffice: getInputVal('f6DiscomOffice', getDiscomFullName(custCircle)),
+    certCapacity: getInputVal('f6CertCapacity', '3 KWP'),
+    certAddress: getInputVal('f6CertAddress', ''),
+    inspectionDate: getInputVal('f6InspectionDate', ''),
+    section: getInputVal('f6Section', 'JAJPUR Section'),
+    subDivision: getInputVal('f6SubDivision', 'RE SDO-I JAJPUR Sub-Division'),
+    division: getInputVal('f6Division', 'CED JAJPUR Division'),
+
+    applicantName: getInputVal('f6ApplicantName', currentCust ? (currentCust.Name || '').toUpperCase() : ''),
+    regNoDate: getInputVal('f6RegNoDate', ''),
+    address: getInputVal('f6Address', ''),
+    consumerNo: getInputVal('f6ConsumerNo', currentCust ? (currentCust.ConsumerNo || '') : ''),
+    category: getInputVal('f6Category', 'DOMESTIC'),
+    connectionType: getInputVal('f6ConnectionType', '1PH LT'),
+    contractDemand: getInputVal('f6ContractDemand', '3 KW'),
+    arrear: getInputVal('f6Arrear', '0'),
+
+    dtrCapacity: getInputVal('f6DtrCapacity', ''),
+    dtrLocation: getInputVal('f6DtrLocation', ''),
+    dtrExistingSolar: getInputVal('f6DtrExistingSolar', ''),
+    dtrAdequate: getInputVal('f6DtrAdequate', ''),
+
+    plantCapacity: getInputVal('f6PlantCapacity', '3 KWP'),
+    plantSiteType: getInputVal('f6PlantSiteType', 'SINGLE SITE'),
+    plantPointType: getInputVal('f6PlantPointType', 'SINGLE POINT'),
+    sldStatus: getInputVal('f6SldStatus', 'YES / NO (if it is no, state reasons for the same and suggest alternate arrangements )'),
+
+    invMake: getInputVal('f6InvMake', 'LUMINOUS'),
+    invSerialNo: getInputVal('f6InvSerialNo', ''),
+    invCapacity: getInputVal('f6InvCapacity', '3 KW'),
+    invVolt: getInputVal('f6InvVolt', '300 V DC / 220-240V AC'),
+    invAntiIslanding: getInputVal('f6InvAntiIslanding', 'Need to be checked practically before charging'),
+    invInstallDate: getInputVal('f6InvInstallDate', '12 SEP 2026'),
+
+    pvMake: getInputVal('f6PvMake', 'LUMINOUS'),
+    pvModel: getInputVal('f6PvModel', 'Bificial'),
+    pvTotalCapacity: getInputVal('f6PvTotalCapacity', '3.32 KWp'),
+    pvCapacityEach: getInputVal('f6PvCapacityEach', '555 WP - 4pic, 550 WP - 2pic'),
+    pvCount: getInputVal('f6PvCount', '6 NOS'),
+    pvInstallDate: getInputVal('f6PvInstallDate', '2026'),
+    pvSerials: serialsList,
+
+    dcEarthing: getInputVal('f6DcEarthing', '1.7 in Ohm'),
+    acEarthing: getInputVal('f6AcEarthing', '2.3 in Ohm'),
+    earthingLimit: getInputVal('f6EarthingLimit', 'Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)'),
+
+    acdcDbStatus: getInputVal('f6AcdcDbStatus', 'Yes / No'),
+    manualSwitch: getInputVal('f6ManualSwitch', 'Yes / No'),
+    relaySwitch: getInputVal('f6RelaySwitch', 'Yes / No'),
+    backfeedProtection: getInputVal('f6BackfeedProtection', ''),
+
+    eicApproval: getInputVal('f6EicApproval', 'Yes / No'),
+    safetyCert: getInputVal('f6SafetyCert', 'Yes / No'),
+    workCompletionReport: getInputVal('f6WorkCompletionReport', 'Yes / No'),
+    testReportCea: getInputVal('f6TestReportCea', 'Yes / No'),
+
+    nmCount: getInputVal('f6NmCount', ''),
+    nmMake: getInputVal('f6NmMake', ''),
+    nmSerialNo: getInputVal('f6NmSerialNo', ''),
+    nmPhase: getInputVal('f6NmPhase', ''),
+    nmCapacity: getInputVal('f6NmCapacity', ''),
+    nmConstant: getInputVal('f6NmConstant', ''),
+
+    smCount: getInputVal('f6SmCount', ''),
+    smMake: getInputVal('f6SmMake', ''),
+    smSerialNo: getInputVal('f6SmSerialNo', ''),
+    smPhase: getInputVal('f6SmPhase', ''),
+    smCapacity: getInputVal('f6SmCapacity', ''),
+    smConstant: getInputVal('f6SmConstant', ''),
+
+    remarks: getInputVal('f6Remarks', ''),
+    gridSatisfactory: getInputVal('f6GridSatisfactory', 'Yes / No (if it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)'),
+    observations: getInputVal('f6Observations', ''),
+    inspectingAuthority: getInputVal('f6InspectingAuthority', custCircle || 'TPNODL')
+  };
+}
+
+window.resetForm6Fields = function() {
+  if (selectedCustomerSlNo) {
+    const rows = getInstallmentRows();
+    const r = rows.find(x => Number(x.SlNo) === Number(selectedCustomerSlNo));
+    if (r) {
+      populateForm6Fields(r);
+      UI.toast(`Form 6 fields reset to ${r.Name}'s record.`, 'info');
+    }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Form 6: Modal Preview & Print
+   ════════════════════════════════════════════════════════════════════════════ */
+
+window.previewForm6Modal = function() {
+  const d = getForm6CurrentData();
+  const container = document.getElementById('form6PreviewBody');
+  if (!container) return;
+
+  const serialsHtml = d.pvSerials.length > 0
+    ? d.pvSerials.map(s => escapeHtml(s)).join('<br>')
+    : '<span class="text-muted fst-italic">None entered</span>';
+
+  const html = `
+    <!-- Page 1 Preview Sheet -->
+    <div class="form4-preview-sheet shadow-sm mb-4">
+      <div class="text-center mb-2.5">
+        <h5 class="fw-bold mb-0 text-dark" style="font-size: 14px; letter-spacing: 0.02em;">${escapeHtml(d.discomOffice)}</h5>
+        <div class="fw-bold text-dark mt-0.5" style="font-size: 13px;">INSPECTION REPORT FOR RTS (FORM-06)</div>
+      </div>
+
+      <div class="mb-3 text-justify" style="font-size: 10px; line-height: 1.45;">
+        Certified that the ${escapeHtml(d.certCapacity)} SPV system ${escapeHtml(d.certAddress)} under ${escapeHtml(d.section)} Section, ${escapeHtml(d.subDivision)} Sub-Division &amp; ${escapeHtml(d.division)} Division has been inspected on ${escapeHtml(d.inspectionDate)}.<br>
+        The details of inspection report are as below:<br>
+        <strong>Inspection Report for ${escapeHtml(d.certCapacity)} Solar Roof Top PV System (SRTPV) ${escapeHtml(d.certAddress)}</strong>
+      </div>
+
+      <table class="form4-preview-table mb-1">
+        <thead>
+          <tr class="fw-bold bg-light">
+            <th style="width: 35px; text-align: center;">Sl. No.</th>
+            <th style="width: 50%;">Parameter</th>
+            <th style="width: 45%;">Utility Observation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">A. Applicant Details</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">1</td>
+            <td>Name of the Applicant</td>
+            <td>${escapeHtml(d.applicantName)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">2</td>
+            <td>Application No./Registration No. with Date</td>
+            <td>${escapeHtml(d.regNoDate)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;"></td>
+            <td>Address</td>
+            <td>${escapeHtml(d.address)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">3</td>
+            <td>Consumer Number</td>
+            <td style="font-family: monospace;">${escapeHtml(d.consumerNo)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">4</td>
+            <td>Consumer Category</td>
+            <td>${escapeHtml(d.category)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">5</td>
+            <td>Type of Connection: 1ph LT or 3 ph LT/HT</td>
+            <td>${escapeHtml(d.connectionType)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">6</td>
+            <td>Contract demand of consumer</td>
+            <td>${escapeHtml(d.contractDemand)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">7</td>
+            <td>Arrear, if any</td>
+            <td>${escapeHtml(d.arrear)}</td>
+          </tr>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">B. Distribution Transformer Details</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">1</td>
+            <td>Capacity in KVA</td>
+            <td>${escapeHtml(d.dtrCapacity)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">2</td>
+            <td>Location</td>
+            <td>${escapeHtml(d.dtrLocation)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">3</td>
+            <td>Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp</td>
+            <td>${escapeHtml(d.dtrExistingSolar)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">4</td>
+            <td>Whether the transformer capacity is adequate to deliver the proposed Solar rooftop PV system in addition to existing SRTPV systems</td>
+            <td>${escapeHtml(d.dtrAdequate)}</td>
+          </tr>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">C. Solar Rooftop PV Power Plant Details</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">1</td>
+            <td>Details of proposed power plant<br>(a) Capacity of the SPV Power Plant (kWp)<br>(b) Plant proposed at single site/multiple sites<br>(c) Interconnection with the electricity network at single point or multiple point</td>
+            <td>A. ${escapeHtml(d.plantCapacity)}<br>B. ${escapeHtml(d.plantSiteType)}<br>C. ${escapeHtml(d.plantPointType)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">2</td>
+            <td>Whether the Single Line Diagram of the SRTPV System (Submitted by the consumer indicating all the Safety aspects of Grid Connectivity) is OK for grid Connectivity</td>
+            <td>${escapeHtml(d.sldStatus)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="text-end text-muted font-monospace" style="font-size: 9px;">Page 1 of 3</div>
+    </div>
+
+    <!-- Page 2 Preview Sheet -->
+    <div class="form4-preview-sheet shadow-sm mb-4">
+      <table class="form4-preview-table mb-1">
+        <tbody>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">D. Grid Tied Inverter</td>
+          </tr>
+          <tr>
+            <td style="width: 35px; text-align: center;">1</td>
+            <td style="width: 50%;">Make</td>
+            <td style="width: 45%;">${escapeHtml(d.invMake)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">2</td>
+            <td>Serial No.</td>
+            <td style="font-family: monospace;">${escapeHtml(d.invSerialNo)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">3</td>
+            <td>Capacity</td>
+            <td>${escapeHtml(d.invCapacity)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">4</td>
+            <td>Input Voltage/ Output Voltage</td>
+            <td>${escapeHtml(d.invVolt)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">5</td>
+            <td>Whether Anti-islanding feature is in working condition</td>
+            <td>${escapeHtml(d.invAntiIslanding)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">6</td>
+            <td>Date of installation</td>
+            <td>${escapeHtml(d.invInstallDate)}</td>
+          </tr>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">E. P.V Module</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">1</td>
+            <td>Make</td>
+            <td>${escapeHtml(d.pvMake)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center; vertical-align: top;">2</td>
+            <td style="vertical-align: top;">Serial No.</td>
+            <td style="vertical-align: top; font-family: monospace; font-size: 10px;">${serialsHtml}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">3</td>
+            <td>Type of Module &amp; model</td>
+            <td>${escapeHtml(d.pvModel)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">4</td>
+            <td>Capacity of each Module</td>
+            <td>${escapeHtml(d.pvCapacityEach)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">5</td>
+            <td>No. of Module</td>
+            <td>${escapeHtml(d.pvCount)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">6</td>
+            <td>Total capacity of Module</td>
+            <td>${escapeHtml(d.pvTotalCapacity)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">7</td>
+            <td>Date of installation</td>
+            <td>${escapeHtml(d.pvInstallDate)}</td>
+          </tr>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">F. Earthing Verification</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;"></td>
+            <td>(i) D.C Earthing<br>(ii) A.C Earthing</td>
+            <td>(i) ${escapeHtml(d.dcEarthing)}<br>(ii) ${escapeHtml(d.acEarthing)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;"></td>
+            <td>Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)</td>
+            <td>${escapeHtml(d.earthingLimit)}</td>
+          </tr>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">G. Details of protective system available</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;"></td>
+            <td>(i) AC &amp; DC DB: Yes/No<br>(ii) Manual Switch at Solar Side: Yes/No<br>(iii) Relay operated automatic switch at net-meter side: Yes/ No</td>
+            <td>(i) ${escapeHtml(d.acdcDbStatus)}<br>(ii) ${escapeHtml(d.manualSwitch)}<br>(iii) ${escapeHtml(d.relaySwitch)}</td>
+          </tr>
+          <tr class="fw-bold">
+            <td style="text-align: center;">H</td>
+            <td>Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other</td>
+            <td>${escapeHtml(d.backfeedProtection)}</td>
+          </tr>
+          <tr class="fw-bold">
+            <td style="text-align: center;">I</td>
+            <td>EIC inspection and approval letter Submitted by the consumer above 50KVA</td>
+            <td>${escapeHtml(d.eicApproval)}</td>
+          </tr>
+          <tr class="fw-bold">
+            <td style="text-align: center;">J</td>
+            <td>Safety certificate from designated Safety officer of ${escapeHtml(d.inspectingAuthority)} below 50KVA</td>
+            <td>${escapeHtml(d.safetyCert)}</td>
+          </tr>
+          <tr class="fw-bold">
+            <td style="text-align: center;">K</td>
+            <td>Work Completion Report of SRTPV by consumer</td>
+            <td>${escapeHtml(d.workCompletionReport)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="text-end text-muted font-monospace" style="font-size: 9px;">Page 2 of 3</div>
+    </div>
+
+    <!-- Page 3 Preview Sheet -->
+    <div class="form4-preview-sheet shadow-sm mb-2">
+      <table class="form4-preview-table mb-2">
+        <tbody>
+          <tr class="fw-bold">
+            <td style="width: 35px; text-align: center;">L</td>
+            <td style="width: 50%;">Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards</td>
+            <td style="width: 45%;">${escapeHtml(d.testReportCea)}</td>
+          </tr>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">M. Meter Details (If arranged before Inspection)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Meter Sub-Table -->
+      <table class="form4-preview-table mb-2">
+        <thead>
+          <tr class="fw-bold bg-light text-center">
+            <th style="width: 35px;">Sl.</th>
+            <th style="width: 35%;">Parameter</th>
+            <th style="width: 30%;">Net Meter (Bi-directional)</th>
+            <th style="width: 30%;">Solar Generation Meter</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align: center;">1</td>
+            <td>Total Nos. of Meters</td>
+            <td>${escapeHtml(d.nmCount)}</td>
+            <td>${escapeHtml(d.smCount)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">2</td>
+            <td>Meter Make</td>
+            <td>${escapeHtml(d.nmMake)}</td>
+            <td>${escapeHtml(d.smMake)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">3</td>
+            <td>Meter Sl. No.</td>
+            <td style="font-family: monospace;">${escapeHtml(d.nmSerialNo)}</td>
+            <td style="font-family: monospace;">${escapeHtml(d.smSerialNo)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">4</td>
+            <td>1 Ph/ 3Ph</td>
+            <td>${escapeHtml(d.nmPhase)}</td>
+            <td>${escapeHtml(d.smPhase)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">5</td>
+            <td>Capacity</td>
+            <td>${escapeHtml(d.nmCapacity)}</td>
+            <td>${escapeHtml(d.smCapacity)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">6</td>
+            <td>Meter Constant</td>
+            <td>${escapeHtml(d.nmConstant)}</td>
+            <td>${escapeHtml(d.smConstant)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="form4-preview-table mb-3">
+        <tbody>
+          <tr>
+            <td style="width: 35px; text-align: center; font-weight: bold;">N</td>
+            <td style="width: 50%; font-weight: bold;">Any other necessary details with Remarks</td>
+            <td style="width: 45%;">${escapeHtml(d.remarks)}</td>
+          </tr>
+          <tr class="fw-bold bg-light">
+            <td colspan="3">Inspection Report</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;"></td>
+            <td>Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization</td>
+            <td>${escapeHtml(d.gridSatisfactory)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Observations and Signatures Block -->
+      <div class="row g-2 mt-4" style="font-size: 11px;">
+        <div class="col-7">
+          <div class="fw-bold text-decoration-underline mb-1">Observations (If any)</div>
+          <div style="min-height: 45px; font-size: 10px; padding: 4px; border: 1px dashed #cbd5e1; border-radius: 4px;" class="text-dark">
+            ${escapeHtml(d.observations) || '<span class="text-muted fst-italic">None</span>'}
+          </div>
+        </div>
+        <div class="col-5 text-end">
+          <div class="fw-bold">Authorized signatory</div>
+          <div class="fw-semibold">${escapeHtml(d.inspectingAuthority)}</div>
+          <div class="mt-4"><strong>Date - </strong></div>
+        </div>
+      </div>
+
+      <div class="text-end text-muted font-monospace mt-3" style="font-size: 9px;">Page 3 of 3</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  const modalEl = document.getElementById('form6PreviewModal');
+  if (modalEl) {
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+  }
+};
+
+window.printForm6Preview = function() {
+  const container = document.getElementById('form6PreviewBody');
+  if (!container) return;
+
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  if (!printWindow) {
+    UI.toast('Please allow popups to print the Form 6 document.', 'warning');
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Inspection Report for RTS (Form-06)</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 20px; background: #fff; color: #000; }
+        .form4-preview-sheet { max-width: 800px; margin: 0 auto 30px auto; page-break-after: always; }
+        .form4-preview-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .form4-preview-table th, .form4-preview-table td { border: 1px solid #000; padding: 3px 6px; font-size: 11px; vertical-align: top; }
+        .bg-light { background-color: #f8f9fa !important; }
+        .fw-bold { font-weight: bold; }
+        .text-center { text-align: center; }
+        .text-end { text-align: right; }
+        .row { display: flex; flex-wrap: wrap; }
+        .col-6 { width: 50%; box-sizing: border-box; }
+        .offset-6 { margin-left: 50%; }
+        @media print {
+          body { padding: 0; }
+          .form4-preview-sheet { margin: 0; page-break-after: always; }
+        }
+      </style>
+    </head>
+    <body>
+      ${container.innerHTML}
+      <script>
+        window.onload = function() { window.print(); };
+      </script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Form 6: Exact Vector PDF Generator using jsPDF
+   ════════════════════════════════════════════════════════════════════════════ */
+
+window.downloadForm6Pdf = function() {
+  const jsPdfClass = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+  if (!jsPdfClass) {
+    UI.toast('jsPDF library is not loaded. Please refresh the page and try again.', 'danger');
+    return;
+  }
+
+  if (!selectedCustomerSlNo) {
+    const rows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
+    if (rows.length > 0) {
+      selectCustomerForAgreement(rows[0].SlNo);
+    } else {
+      UI.toast('Please select a customer first from the list.', 'warning');
+      return;
+    }
+  }
+
+  UI.showLoading(true);
+
+  try {
+    const d = getForm6CurrentData();
+    const doc = new jsPdfClass({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const marginX = 14;
+    const tableWidth = 182;
+    const col1Width = 12;
+    const col2Width = 86;
+    const col3Width = 84;
+
+    doc.setDrawColor(0, 0, 0);
+    doc.setTextColor(0, 0, 0);
+
+    // Helper: Draw standard 3-column row
+    function drawTableRow(y, slText, labelText, valText, opt = {}) {
+      const fontSize = opt.fontSize || 8.5;
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
+
+      const col2Lines = doc.splitTextToSize(labelText || '', col2Width - 4);
+      const col3Lines = doc.splitTextToSize(valText || '', col3Width - 4);
+
+      const maxLines = Math.max(col2Lines.length, col3Lines.length, 1);
+      const lineHeight = opt.lineHeight || 4.2;
+      const padding = 2.4;
+      const rowHeight = Math.max(opt.minHeight || 5.8, maxLines * lineHeight + padding);
+
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowHeight);
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+      doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+
+      if (slText) {
+        doc.text(String(slText), marginX + (col1Width / 2), y + 4.2, { align: 'center' });
+      }
+
+      doc.text(col2Lines, marginX + col1Width + 2, y + 4.2);
+
+      if (opt.valFontMono) doc.setFont('courier', opt.valBold ? 'bold' : 'normal');
+      doc.text(col3Lines, marginX + col1Width + col2Width + 2, y + 4.2);
+      if (opt.valFontMono) doc.setFont('helvetica', 'normal');
+
+      return y + rowHeight;
+    }
+
+    // Helper: Draw section header row
+    function drawTableHeader(y, headerTitle, headerVal = '', opt = {}) {
+      const fontSize = opt.fontSize || 9;
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', 'bold');
+
+      const titleLines = doc.splitTextToSize(headerTitle || '', (opt.spanAll ? tableWidth : col1Width + col2Width) - 4);
+      const rowHeight = Math.max(opt.minHeight || 6.2, titleLines.length * 4.2 + 2);
+
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowHeight);
+      if (!opt.spanAll) {
+        doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+      }
+
+      doc.text(titleLines, marginX + 2, y + 4.2);
+      if (headerVal) {
+        doc.text(headerVal, marginX + col1Width + col2Width + 2, y + 4.2);
+      }
+      return y + rowHeight;
+    }
+
+    // Helper: Draw 4-column row for Meter details (Section M)
+    function drawTable4ColRow(y, slText, paramText, netVal, solarVal, opt = {}) {
+      const fontSize = opt.fontSize || 8.5;
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
+
+      const pWidth = 50;
+      const nmWidth = 60;
+      const smWidth = 60;
+
+      const pLines = doc.splitTextToSize(paramText || '', pWidth - 4);
+      const nmLines = doc.splitTextToSize(netVal || '', nmWidth - 4);
+      const smLines = doc.splitTextToSize(solarVal || '', smWidth - 4);
+
+      const maxLines = Math.max(pLines.length, nmLines.length, smLines.length, 1);
+      const rowHeight = Math.max(opt.minHeight || 5.8, maxLines * 4.2 + 2.4);
+
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowHeight);
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+      doc.line(marginX + col1Width + pWidth, y, marginX + col1Width + pWidth, y + rowHeight);
+      doc.line(marginX + col1Width + pWidth + nmWidth, y, marginX + col1Width + pWidth + nmWidth, y + rowHeight);
+
+      if (slText) {
+        doc.text(String(slText), marginX + (col1Width / 2), y + 4.2, { align: 'center' });
+      }
+
+      doc.text(pLines, marginX + col1Width + 2, y + 4.2);
+
+      if (opt.mono) doc.setFont('courier', 'normal');
+      doc.text(nmLines, marginX + col1Width + pWidth + 2, y + 4.2);
+      doc.text(smLines, marginX + col1Width + pWidth + nmWidth + 2, y + 4.2);
+      if (opt.mono) doc.setFont('helvetica', 'normal');
+
+      return y + rowHeight;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // PAGE 1
+    // ══════════════════════════════════════════════════════════════════════════
+    let curY = 16;
+
+    // Header Title
+    doc.setFontSize(12.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(d.discomOffice, pageWidth / 2, curY, { align: 'center' });
+    curY += 5.5;
+
+    doc.setFontSize(11);
+    doc.text('INSPECTION REPORT FOR RTS (FORM-06)', pageWidth / 2, curY, { align: 'center' });
+    curY += 6;
+
+    // Inspection Certification Paragraph
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    const certText = `Certified that the ${d.certCapacity} SPV system ${d.certAddress} under ${d.section} Section, ${d.subDivision} Sub-Division & ${d.division} Division has been inspected on ${d.inspectionDate ? d.inspectionDate + '.' : '.'}`;
+    const certLines = doc.splitTextToSize(certText, tableWidth);
+    doc.text(certLines, marginX, curY);
+    curY += (certLines.length * 3.8) + 1.5;
+
+    const subText = `The details of inspection report are as below:\nInspection Report for ${d.certCapacity} Solar Roof Top PV System (SRTPV) ${d.certAddress}`;
+    const subLines = doc.splitTextToSize(subText, tableWidth);
+    doc.setFont('helvetica', 'bold');
+    doc.text(subLines, marginX, curY);
+    curY += (subLines.length * 3.8) + 3;
+
+    // Table Column Headers
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    const headerHeight = 6.2;
+    doc.setLineWidth(0.2);
+    doc.rect(marginX, curY, tableWidth, headerHeight);
+    doc.line(marginX + col1Width, curY, marginX + col1Width, curY + headerHeight);
+    doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + headerHeight);
+    doc.text('Sl. No.', marginX + (col1Width / 2), curY + 4.2, { align: 'center' });
+    doc.text('Parameter', marginX + col1Width + 2, curY + 4.2);
+    doc.text('Utility Observation', marginX + col1Width + col2Width + 2, curY + 4.2);
+    curY += headerHeight;
+
+    // PART A: Applicant Details
+    curY = drawTableHeader(curY, 'A. Applicant Details', '', { spanAll: true });
+    curY = drawTableRow(curY, '1', 'Name of the Applicant', d.applicantName);
+    curY = drawTableRow(curY, '2', 'Application No./Registration No. with Date', d.regNoDate);
+    curY = drawTableRow(curY, '', 'Address', d.address);
+    curY = drawTableRow(curY, '3', 'Consumer Number', d.consumerNo, { valFontMono: true });
+    curY = drawTableRow(curY, '4', 'Consumer Category', d.category);
+    curY = drawTableRow(curY, '5', 'Type of Connection: 1ph LT or 3 ph LT/HT', d.connectionType);
+    curY = drawTableRow(curY, '6', 'Contract demand of consumer', d.contractDemand);
+    curY = drawTableRow(curY, '7', 'Arrear, if any', d.arrear);
+
+    // PART B: Distribution Transformer Details
+    curY = drawTableHeader(curY, 'B. Distribution Transformer Details', '', { spanAll: true });
+    curY = drawTableRow(curY, '1', 'Capacity in KVA', d.dtrCapacity);
+    curY = drawTableRow(curY, '2', 'Location', d.dtrLocation);
+    curY = drawTableRow(curY, '3', 'Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp (individual capacity may be mentioned)', d.dtrExistingSolar);
+    curY = drawTableRow(curY, '4', 'Whether the transformer capacity is adequate to deliver the proposed Solar rooftop PV system in addition to existing SRTPV systems', d.dtrAdequate);
+
+    // PART C: Solar Rooftop PV Power Plant Details
+    curY = drawTableHeader(curY, 'C. Solar Rooftop PV Power Plant Details', '', { spanAll: true });
+    const partC1Label = 'Details of proposed power plant\n(a) Capacity of the SPV Power Plant (kWp)\n(b) Plant proposed at single site/multiple sites\n(c) Interconnection with the electricity network at single point or multiple point';
+    const partC1Val = `A. ${d.plantCapacity}\nB. ${d.plantSiteType}\nC. ${d.plantPointType}`;
+    curY = drawTableRow(curY, '1', partC1Label, partC1Val);
+    curY = drawTableRow(curY, '2', 'Whether the Single Line Diagram of the SRTPV System (Submitted by the consumer indicating all the Safety aspects of Grid Connectivity) is OK for grid Connectivity', d.sldStatus);
+
+    // Page 1 Footer
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Page 1 of 3', marginX + tableWidth, pageHeight - 10, { align: 'right' });
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // PAGE 2
+    // ══════════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    curY = 16;
+
+    // PART D: Grid Tied Inverter
+    curY = drawTableHeader(curY, 'D. Grid Tied Inverter', '', { spanAll: true });
+    curY = drawTableRow(curY, '1', 'Make', d.invMake);
+    curY = drawTableRow(curY, '2', 'Serial No.', d.invSerialNo, { valFontMono: true });
+    curY = drawTableRow(curY, '3', 'Capacity', d.invCapacity);
+    curY = drawTableRow(curY, '4', 'Input Voltage/ Output Voltage', d.invVolt);
+    curY = drawTableRow(curY, '5', 'Whether Anti-islanding feature is in working condition', d.invAntiIslanding);
+    curY = drawTableRow(curY, '6', 'Date of installation', d.invInstallDate);
+
+    // PART E: P.V Module
+    curY = drawTableHeader(curY, 'E. P.V Module', '', { spanAll: true });
+    curY = drawTableRow(curY, '1', 'Make', d.pvMake);
+    const serialsLinesStr = d.pvSerials.length > 0 ? d.pvSerials.join('\n') : '';
+    curY = drawTableRow(curY, '2', 'Serial No.', serialsLinesStr, { valFontMono: true, fontSize: 8 });
+    curY = drawTableRow(curY, '3', 'Type of Module & model', d.pvModel);
+    curY = drawTableRow(curY, '4', 'Capacity of each Module', d.pvCapacityEach);
+    curY = drawTableRow(curY, '5', 'No. of Module', d.pvCount);
+    curY = drawTableRow(curY, '6', 'Total capacity of Module', d.pvTotalCapacity);
+    curY = drawTableRow(curY, '7', 'Date of installation', d.pvInstallDate);
+
+    // PART F: Earthing Verification
+    curY = drawTableHeader(curY, 'F. Earthing Verification', '', { spanAll: true });
+    const earthingLabel = '(i) D.C Earthing\n(ii) A.C Earthing';
+    const earthingVal = `(i) ${d.dcEarthing}\n(ii) ${d.acEarthing}`;
+    curY = drawTableRow(curY, '', earthingLabel, earthingVal);
+    curY = drawTableRow(curY, '', 'Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)', d.earthingLimit);
+
+    // PART G: Protective Systems
+    curY = drawTableHeader(curY, 'G. Details of protective system available', '', { spanAll: true });
+    const protLabel = '(i) AC & DC DB: Yes/No\n(ii) Manual Switch at Solar Side: Yes/No\n(iii) Relay operated automatic switch at net-meter side: Yes/ No';
+    const protVal = `(i) ${d.acdcDbStatus}\n(ii) ${d.manualSwitch}\n(iii) ${d.relaySwitch}`;
+    curY = drawTableRow(curY, '', protLabel, protVal);
+
+    // PART H, I, J, K
+    curY = drawTableRow(curY, 'H', 'Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other', d.backfeedProtection, { isBold: true });
+    curY = drawTableRow(curY, 'I', 'EIC inspection and approval letter Submitted by the consumer above 50KVA', d.eicApproval, { isBold: true });
+    curY = drawTableRow(curY, 'J', `Safety certificate from designated Safety officer of ${d.inspectingAuthority} below 50KVA`, d.safetyCert, { isBold: true });
+    curY = drawTableRow(curY, 'K', 'Work Completion Report of SRTPV by consumer', d.workCompletionReport, { isBold: true });
+
+    // Page 2 Footer
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Page 2 of 3', marginX + tableWidth, pageHeight - 10, { align: 'right' });
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // PAGE 3
+    // ══════════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    curY = 16;
+
+    // PART L: Test Report
+    curY = drawTableRow(curY, 'L', 'Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards', d.testReportCea, { isBold: true });
+
+    // PART M: Meter Details (4-Column Subtable)
+    curY = drawTableHeader(curY, 'M. Meter Details (If arranged before Inspection)', '', { spanAll: true });
+
+    // Meter Subtable Header
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    const pWidth = 50;
+    const nmWidth = 60;
+    const smWidth = 60;
+    const mHeadHeight = 6.2;
+    doc.setLineWidth(0.2);
+    doc.rect(marginX, curY, tableWidth, mHeadHeight);
+    doc.line(marginX + col1Width, curY, marginX + col1Width, curY + mHeadHeight);
+    doc.line(marginX + col1Width + pWidth, curY, marginX + col1Width + pWidth, curY + mHeadHeight);
+    doc.line(marginX + col1Width + pWidth + nmWidth, curY, marginX + col1Width + pWidth + nmWidth, curY + mHeadHeight);
+    doc.text('Sl. No.', marginX + (col1Width / 2), curY + 4.2, { align: 'center' });
+    doc.text('Parameter', marginX + col1Width + 2, curY + 4.2);
+    doc.text('Net Meter (Bi-directional Meter)', marginX + col1Width + pWidth + 2, curY + 4.2);
+    doc.text('Solar Generation Meter (Details)', marginX + col1Width + pWidth + nmWidth + 2, curY + 4.2);
+    curY += mHeadHeight;
+
+    curY = drawTable4ColRow(curY, '1', 'Total Nos. of Meters', d.nmCount, d.smCount);
+    curY = drawTable4ColRow(curY, '2', 'Meter Make', d.nmMake, d.smMake);
+    curY = drawTable4ColRow(curY, '3', 'Meter Sl. No.', d.nmSerialNo, d.smSerialNo, { mono: true });
+    curY = drawTable4ColRow(curY, '4', '1 Ph/ 3Ph', d.nmPhase, d.smPhase);
+    curY = drawTable4ColRow(curY, '5', 'Capacity', d.nmCapacity, d.smCapacity);
+    curY = drawTable4ColRow(curY, '6', 'Meter Constant', d.nmConstant, d.smConstant);
+
+    // PART N: Any other necessary details with Remarks (Row N as in Form 6)
+    curY = drawTableRow(curY, 'N', 'Any other necessary details with Remarks', d.remarks, { isBold: true });
+
+    // Inspection Report Section
+    curY = drawTableHeader(curY, 'Inspection Report', '', { spanAll: true });
+    curY = drawTableRow(curY, '', 'Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization', d.gridSatisfactory);
+
+    // Observations (Left) & Authorized signatory (Right)
+    curY += 14;
+
+    // Left Column: Observations (If any)
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Observations (If any)', marginX + 2, curY);
+    doc.setLineWidth(0.3);
+    doc.line(marginX + 2, curY + 1.2, marginX + 38, curY + 1.2);
+
+    if (d.observations) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      const obsLines = doc.splitTextToSize(d.observations, 95);
+      doc.text(obsLines, marginX + 2, curY + 6);
+    }
+
+    // Right Column: Authorized signatory
+    const sigX = marginX + (tableWidth / 2) + 15;
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Authorized signatory', sigX, curY);
+    curY += 5.5;
+    doc.text(d.inspectingAuthority, sigX, curY);
+    curY += 6.5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date - ', sigX, curY);
+
+    // Page 3 Footer
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Page 3 of 3', marginX + tableWidth, pageHeight - 10, { align: 'right' });
+
+    // Clean Filename
+    const cleanName = (d.applicantName || 'Customer').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanConsumerNo = (d.consumerNo || 'Form6').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `Form_6_${cleanName}_${cleanConsumerNo}.pdf`;
+
+    doc.save(fileName);
+    UI.toast(`Form 6 PDF (${fileName}) downloaded successfully!`, 'success');
+  } catch (err) {
+    console.error('Error generating Form 6 PDF:', err);
+    UI.toast(`Error generating Form 6 PDF: ${err.message}`, 'danger');
   } finally {
     UI.showLoading(false);
   }
