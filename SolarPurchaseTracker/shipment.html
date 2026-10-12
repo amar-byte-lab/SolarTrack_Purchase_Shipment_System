@@ -232,24 +232,33 @@
           <div class="col-12"><hr class="my-1 opacity-25"></div>
           <div class="col-12"><h6 class="fw-bold mb-0 text-primary fs-7">Logistics &amp; Financials</h6></div>
           
-          <div class="col-md">
-            <label class="form-label fs-7 mb-0">Vehicle Number</label>
-            <input type="text" class="form-control form-control-sm" id="editVehicleNumber" autocomplete="off">
+          <!-- Column 1: Vehicle Number (aligned with Purchase Date) -->
+          <div class="col-md-4 col-12">
+            <label class="form-label fs-7 fw-bold text-secondary mb-1">Vehicle Number</label>
+            <input type="text" class="form-control form-control-sm" id="editVehicleNumber" placeholder="Vehicle Number" autocomplete="off">
           </div>
-          <div class="col-md">
-            <label class="form-label fs-7 mb-0">Invoice Number</label>
-            <input type="text" class="form-control form-control-sm" id="editInvoiceNumber" autocomplete="off">
+          
+          <!-- Column 2: Invoice Number (aligned with Shipment Type) -->
+          <div class="col-md-4 col-12">
+            <label class="form-label fs-7 fw-bold text-secondary mb-1">Invoice Number</label>
+            <input type="text" class="form-control form-control-sm font-monospace" id="editInvoiceNumber" placeholder="Invoice Number" autocomplete="off">
           </div>
-          <div class="col-md-3">
-            <label class="form-label fs-7 mb-0">Transport Cost (₹)</label>
-            <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0" autocomplete="off">
-          </div>
-          <div class="col-md-3 d-flex align-items-end pb-1">
-            <div class="form-check">
-              <input class="form-check-input edit-calc-input" type="checkbox" id="editAddToMaterialCost" checked>
-              <label class="form-check-label fs-7 fw-bold text-primary" for="editAddToMaterialCost">
-                Add to Material Cost
-              </label>
+          
+          <!-- Column 3: Transport Cost & Add to Material Cost (aligned with Vendor Name) -->
+          <div class="col-md-4 col-12">
+            <div class="row g-2">
+              <div class="col-7">
+                <label class="form-label fs-7 fw-bold text-secondary mb-1">Transport Cost (₹)</label>
+                <input type="number" min="0" step="0.01" class="form-control form-control-sm edit-calc-input" id="editTransportationCost" value="0" autocomplete="off">
+              </div>
+              <div class="col-5 d-flex align-items-end pb-1">
+                <div class="form-check mb-0">
+                  <input class="form-check-input edit-calc-input" type="checkbox" id="editAddToMaterialCost" checked>
+                  <label class="form-check-label fs-8 fw-bold text-primary text-nowrap" for="editAddToMaterialCost">
+                    Add to Material Cost
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
  

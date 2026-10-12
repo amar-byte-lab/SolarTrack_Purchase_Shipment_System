@@ -507,9 +507,10 @@
         <form id="customerForm">
           <input type="hidden" id="cSlNo">
           <div class="row g-3">
-            <!-- Left Column: General & Contact Info -->
+            <!-- Left Column: General & Contact Info (Clean 2-Column 50/50 Architecture) -->
             <div class="col-md-6 col-12 border-end-md modal-left-column">
               <div class="row g-2">
+                <!-- Row 1: Customer Name & Consumer No. -->
                 <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Customer Name *</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cName" placeholder="Full name" required>
@@ -518,6 +519,8 @@
                   <label class="form-label fs-8 text-secondary mb-1">Consumer No.</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cConsumerNo" placeholder="Consumer No">
                 </div>
+
+                <!-- Row 2: Application Number & Proposed Capacity -->
                 <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Application Number</label>
                   <input type="text" class="form-control form-control-sm fs-8 font-monospace" id="cApplicationNo" placeholder="Application Number">
@@ -526,18 +529,30 @@
                   <label class="form-label fs-8 text-secondary mb-1">Proposed Capacity</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cProposedCapacity" placeholder="e.g. 3.00 kWp">
                 </div>
-                <div class="col-4 mb-1.5">
+
+                <!-- Row 3: Circle Name & Division Name -->
+                <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Circle Name</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cCircle" placeholder="Circle Name">
                 </div>
-                <div class="col-4 mb-1.5">
+                <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Division Name</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cDivision" placeholder="Division Name">
                 </div>
-                <div class="col-4 mb-1.5">
+
+                <!-- Row 4: Sub Division & District -->
+                <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Sub Division</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cSubDivision" placeholder="Sub Division">
                 </div>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">District</label>
+                  <select class="form-select form-select-sm fs-8" id="cDistrict">
+                    <option value="">-- Select District --</option>
+                  </select>
+                </div>
+
+                <!-- Row 5: Mobile Number & Login Date -->
                 <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cMobile" placeholder="Mobile number">
@@ -549,76 +564,75 @@
                   </div>
                   <input type="date" class="form-control form-control-sm fs-8" id="cLoginDate">
                 </div>
-                <div class="col-12 mb-1.5">
-                  <label class="form-label fs-8 text-secondary mb-1">Address / Location</label>
-                  <input type="text" class="form-control form-control-sm fs-8" id="cAddress" placeholder="Village / Locality">
-                </div>
-                <div class="col-md-5 col-12 mb-1.5">
-                  <label class="form-label fs-8 text-secondary mb-1">District</label>
-                  <select class="form-select form-select-sm fs-8" id="cDistrict">
-                    <option value="">-- Select District --</option>
-                  </select>
-                </div>
-                <div class="col-md-4 col-6 mb-1.5">
-                  <label class="form-label fs-8 text-secondary mb-1">Pin Code</label>
-                  <input type="text" class="form-control form-control-sm fs-8" id="cPinCode" placeholder="Pin Code">
-                </div>
-                <div class="col-md-3 col-6 mb-1.5">
-                  <label class="form-label fs-8 text-secondary mb-1">State</label>
-                  <input type="text" class="form-control form-control-sm fs-8 bg-light" id="cState" value="Odisha" readonly>
-                </div>
               </div>
             </div>
 
-            <!-- Right Column: Pricing & Expense Info -->
+            <!-- Right Column: Pricing & Expense Info (Strict 3-Column 33.3% Architecture) -->
             <div class="col-md-6 col-12 admin-only-column">
-              <div class="card border rounded-1 p-3 bg-light">
-                <div class="fw-semibold text-dark fs-7 mb-2.5 pb-1 border-bottom">Pricing & Expenses</div>
-                <div class="row g-2">
-                  <div class="col-6 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1">Customer Price (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8" id="cPrice" placeholder="0.00">
+              <div class="card border rounded-2 p-3 bg-light h-100 d-flex flex-column justify-content-between shadow-xs">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between pb-2 mb-2.5 border-bottom">
+                    <span class="fw-bold text-dark fs-7">Pricing & Expenses</span>
+                    <span class="badge bg-white text-secondary border fs-9 fw-semibold">Financial Analysis</span>
                   </div>
-                  <div class="col-6 mb-1.5 admin-only-column">
-                    <label class="form-label fs-8 text-secondary mb-1">Partner Price (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cPartnerPrice" placeholder="0.00">
-                  </div>
-                  <div class="col-md-4 col-6 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1">Material (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cMaterialCost" placeholder="0.00">
-                  </div>
-                  <div class="col-md-4 col-6 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1">Transport (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cTransportCost" placeholder="0.00">
-                  </div>
-                  <div class="col-md-4 col-12 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1">Other (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cOtherCost" placeholder="0.00">
-                  </div>
+                  <div class="row g-2">
+                    <!-- Row 1: Commercial Terms (Col-4 / Col-4 / Col-4) -->
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Customer Price (₹)">Customer Price (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white" id="cPrice" placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5 admin-only-column">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Partner Price (₹)">Partner Price (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white expense-calc-modal" id="cPartnerPrice" placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Commission (₹)">Commission (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white" id="cCommission" placeholder="0.00">
+                    </div>
 
-                  <div class="col-4 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1">Installation Cost (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 expense-calc-modal" id="cInstallationCost" placeholder="0.00">
-                  </div>
-                  <div class="col-4 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1">GST (%)</label>
-                    <div class="input-group input-group-sm">
-                      <input type="number" step="any" min="0" class="form-control fs-8 expense-calc-modal" id="cGSTPercentage" placeholder="GST %">
-                      <span class="input-group-text bg-white text-dark fw-semibold fs-8" id="lblGSTAmount" style="padding: 2px 4px;">₹0.00</span>
+                    <!-- Row 2: Direct Costs (Col-4 / Col-4 / Col-4) -->
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Material Cost (₹)">Material (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white expense-calc-modal" id="cMaterialCost" placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Transport Cost (₹)">Transport (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white expense-calc-modal" id="cTransportCost" placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Other Expenses (₹)">Other (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white expense-calc-modal" id="cOtherCost" placeholder="0.00">
+                    </div>
+
+                    <!-- Row 3: Installation & Taxes (Col-4 / Col-4 / Col-4) -->
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Installation Cost (₹)">Installation (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white expense-calc-modal" id="cInstallationCost" placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="GST Percentage">GST (%)</label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" step="any" min="0" class="form-control fs-8 expense-calc-modal bg-white" id="cGSTPercentage" placeholder="GST %">
+                        <span class="input-group-text bg-light text-dark fw-semibold fs-8 px-1" id="lblGSTAmount" style="font-size: 0.72rem; min-width: 48px; text-align: center;">₹0.00</span>
+                      </div>
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block fw-bold text-dark" title="Total Expense (₹)">Total Expense (₹)</label>
+                      <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white fw-bold text-dark" id="cVendorPrice" placeholder="0.00" readonly>
                     </div>
                   </div>
-                  <div class="col-4 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Total Expense (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8 bg-white fw-semibold text-dark" id="cVendorPrice" placeholder="0.00" readonly>
-                  </div>
+                </div>
 
-                  <div class="col-6 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Profit (₹)</label>
-                    <input type="number" step="any" class="form-control form-control-sm fs-8 bg-white fw-semibold" id="cProfit" placeholder="0.00" readonly>
-                  </div>
-                  <div class="col-6 mb-1.5">
-                    <label class="form-label fs-8 text-secondary mb-1">Commission Amount (₹)</label>
-                    <input type="number" step="any" min="0" class="form-control form-control-sm fs-8" id="cCommission" placeholder="0.00">
+                <!-- Row 4: Net Estimated Profit Summary Banner -->
+                <div class="mt-2.5 pt-2 border-top">
+                  <div class="p-2 rounded-2 bg-white border d-flex justify-content-between align-items-center shadow-xs">
+                    <div>
+                      <span class="form-label fs-8 text-secondary mb-0 fw-bold d-block">Estimated Profit (₹)</span>
+                      <span class="text-muted" style="font-size: 0.70rem;">Partner − Commission − Expenses</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                      <input type="number" step="any" class="form-control form-control-sm fs-6 fw-bold text-end border-0 bg-transparent p-0" id="cProfit" placeholder="0.00" readonly style="width: 130px; color: #198754;">
+                    </div>
                   </div>
                 </div>
               </div>
@@ -655,7 +669,7 @@
         <li class="nav-item" role="presentation">
           <button type="button" class="nav-link active" id="tabSpecGeneral-btn" data-bs-toggle="tab" data-bs-target="#tabSpecGeneral" role="tab" aria-controls="tabSpecGeneral" aria-selected="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            General Dates
+            Execution & Milestones
           </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -689,22 +703,43 @@
         <input type="hidden" id="prodSlNo">
         <div class="tab-content" id="productSpecsTabContent">
 
-          <!-- 1. General Dates Tab -->
+          <!-- 1. Execution & Milestones Tab -->
           <div class="tab-pane fade show active" id="tabSpecGeneral" role="tabpanel">
             <div class="specs-section-header">
               <div>
                 <div class="specs-section-title">Execution & Milestones</div>
-                <div class="specs-section-subtitle">Record official installation and commissioning timeline as per Form 4 & 6</div>
+                <div class="specs-section-subtitle">Record installation timeline, site location & postal details as per Form 4 & 6</div>
               </div>
             </div>
-            <div class="row g-3">
+            <div class="row g-2.5">
+              <!-- Left Column: Dates (Row 1 & Row 2) -->
               <div class="col-md-6 col-12">
-                <label class="specs-input-label" for="prodDateOfInstallation">Date of Installation</label>
-                <input type="date" class="form-control specs-input-control" id="prodDateOfInstallation">
+                <div class="mb-2">
+                  <label class="specs-input-label" for="prodDateOfInstallation">Date of Installation</label>
+                  <input type="date" class="form-control specs-input-control" id="prodDateOfInstallation">
+                </div>
+                <div>
+                  <label class="specs-input-label" for="prodDateOfCommission">Date of Commission</label>
+                  <input type="date" class="form-control specs-input-control" id="prodDateOfCommission">
+                </div>
               </div>
+
+              <!-- Right Column: Address/Location Textarea covering both rows -->
               <div class="col-md-6 col-12">
-                <label class="specs-input-label" for="prodDateOfCommission">Date of Commission</label>
-                <input type="date" class="form-control specs-input-control" id="prodDateOfCommission">
+                <div class="h-100 d-flex flex-column">
+                  <label class="specs-input-label" for="prodAddress">Address / Location</label>
+                  <textarea class="form-control specs-input-control flex-grow-1" id="prodAddress" rows="3" placeholder="Village / Locality / Site address..." style="resize: vertical;"></textarea>
+                </div>
+              </div>
+
+              <!-- Bottom Row: State & Pin Code -->
+              <div class="col-md-6 col-6">
+                <label class="specs-input-label" for="prodState">State</label>
+                <input type="text" class="form-control specs-input-control bg-light" id="prodState" value="Odisha" readonly>
+              </div>
+              <div class="col-md-6 col-6">
+                <label class="specs-input-label" for="prodPinCode">Pin Code</label>
+                <input type="text" class="form-control specs-input-control" id="prodPinCode" placeholder="Pin Code (e.g. 756001)">
               </div>
             </div>
           </div>
@@ -894,26 +929,26 @@
                 Earthing Verification & System Grounding
               </div>
               <div class="row g-2.5">
-                <!-- Line 1: D.C Earthing | A.C Earthing (50% / 50%) -->
+                <!-- Row 1: Earth Resistance (50%) | D.C Earthing (25%) | A.C Earthing (25%) -->
                 <div class="col-md-6 col-12">
-                  <label class="specs-input-label" for="prodDcEarthing">D.C Earthing</label>
-                  <input type="text" class="form-control specs-input-control" id="prodDcEarthing" placeholder="e.g. 1.7 in Ohm / Verified OK">
-                </div>
-                <div class="col-md-6 col-12">
-                  <label class="specs-input-label" for="prodAcEarthing">A.C Earthing</label>
-                  <input type="text" class="form-control specs-input-control" id="prodAcEarthing" placeholder="e.g. 2.3 in Ohm / Verified OK">
-                </div>
-
-                <!-- Line 2: Earth Resistance (col-4) | Earth Wire Size (col-4) | LA Size & Type (col-4) perfectly aligned -->
-                <div class="col-md-4 col-12">
                   <label class="specs-input-label" for="prodEarthResistance">Earth Resistance (in ohms)</label>
                   <input type="text" class="form-control specs-input-control" id="prodEarthResistance" placeholder="e.g. 3 OHM">
                 </div>
-                <div class="col-md-4 col-12">
+                <div class="col-md-3 col-6">
+                  <label class="specs-input-label" for="prodDcEarthing">D.C Earthing</label>
+                  <input type="text" class="form-control specs-input-control" id="prodDcEarthing" placeholder="e.g. 1.7 in Ohm / OK">
+                </div>
+                <div class="col-md-3 col-6">
+                  <label class="specs-input-label" for="prodAcEarthing">A.C Earthing</label>
+                  <input type="text" class="form-control specs-input-control" id="prodAcEarthing" placeholder="e.g. 2.3 in Ohm / OK">
+                </div>
+
+                <!-- Row 2: Earth Wire / Flat Size (50%) | LA Size & Type (50%) -->
+                <div class="col-md-6 col-12">
                   <label class="specs-input-label" for="prodEarthWireSize">Earth Wire / Flat Size (Copper/Al)</label>
                   <input type="text" class="form-control specs-input-control" id="prodEarthWireSize" placeholder="e.g. 16 SQ MM Aluminum">
                 </div>
-                <div class="col-md-4 col-12">
+                <div class="col-md-6 col-12">
                   <label class="specs-input-label" for="prodLaSizeType">LA Size & Type</label>
                   <input type="text" class="form-control specs-input-control" id="prodLaSizeType" placeholder="e.g. Copper Bonded">
                 </div>

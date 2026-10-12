@@ -2652,12 +2652,18 @@ window.openProductModal = function(slNo) {
     }
   }
 
-  // General Dates: Fallback to existing customer dates if not set in specs
+  // General Dates & Site Info: Fallback to existing customer data if not set in specs
   const dateOfInstallation = specs.DateOfInstallation || (r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '');
   const dateOfCommission = specs.DateOfCommission || (r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '');
+  const siteAddress = specs.SiteAddress || r.Address || '';
+  const pinCodeVal = specs.PinCode || r.PinCode || '';
+  const stateVal = specs.State || r.State || 'Odisha';
 
   document.getElementById('prodDateOfInstallation').value = dateOfInstallation;
   document.getElementById('prodDateOfCommission').value = dateOfCommission;
+  if (document.getElementById('prodAddress')) document.getElementById('prodAddress').value = siteAddress;
+  if (document.getElementById('prodPinCode')) document.getElementById('prodPinCode').value = pinCodeVal;
+  if (document.getElementById('prodState')) document.getElementById('prodState').value = stateVal;
 
   // Grid Tied Inverter
   const inv = specs.GridTiedInverter || {};
@@ -2761,6 +2767,9 @@ window.saveProductPopupSpecs = async function() {
   const inverterMake = document.getElementById('prodInverterMake').value.trim();
   const dateOfInstallation = document.getElementById('prodDateOfInstallation').value || null;
   const dateOfCommission = document.getElementById('prodDateOfCommission').value || null;
+  const siteAddress = document.getElementById('prodAddress') ? document.getElementById('prodAddress').value.trim() : (r.Address || '');
+  const pinCode = document.getElementById('prodPinCode') ? document.getElementById('prodPinCode').value.trim() : (r.PinCode || '');
+  const stateVal = document.getElementById('prodState') ? document.getElementById('prodState').value.trim() : (r.State || 'Odisha');
 
   // Construct summarized CommittedBrand text for display in table
   let displayBrand = '';
@@ -2777,6 +2786,9 @@ window.saveProductPopupSpecs = async function() {
   const specs = {
     DateOfInstallation: dateOfInstallation,
     DateOfCommission: dateOfCommission,
+    SiteAddress: siteAddress,
+    PinCode: pinCode,
+    State: stateVal,
     GridTiedInverter: {
       Name: document.getElementById('prodInverterName').value.trim(),
       TotalNo: document.getElementById('prodInverterCount').value.trim(),
@@ -2826,7 +2838,10 @@ window.saveProductPopupSpecs = async function() {
     const updatePayload = {
       ...(r || {}),
       CommittedBrand: displayBrand,
-      ProductSpecs: specs
+      ProductSpecs: specs,
+      Address: siteAddress,
+      PinCode: pinCode,
+      State: stateVal
     };
     if (dateOfInstallation) {
       updatePayload.InstallationDate = dateOfInstallation;
@@ -3611,7 +3626,7 @@ window.openCustomerModal = function(slNo) {
       document.getElementById('cDistrict').value = r.District || '';
       if (document.getElementById('cPinCode')) document.getElementById('cPinCode').value = r.PinCode || '';
       if (document.getElementById('cState')) document.getElementById('cState').value = r.State || 'Odisha';
-      document.getElementById('cAddress').value = r.Address || '';
+      if (document.getElementById('cAddress')) document.getElementById('cAddress').value = r.Address || '';
       if (document.getElementById('cBrand')) document.getElementById('cBrand').value = r.CommittedBrand || '';
       document.getElementById('cPrice').value = r.CommittedPrice || '';
       document.getElementById('cVendorPrice').value = r.VendorPrice || '';
@@ -3876,9 +3891,9 @@ async function saveCustomerModal() {
     SubDivision: workMeta.SubDivision,
     MobileNumber: document.getElementById('cMobile').value.trim(),
     District: document.getElementById('cDistrict').value,
-    PinCode: document.getElementById('cPinCode') ? document.getElementById('cPinCode').value.trim() : '',
-    State: document.getElementById('cState') ? document.getElementById('cState').value.trim() : 'Odisha',
-    Address: document.getElementById('cAddress').value.trim(),
+    PinCode: document.getElementById('cPinCode') ? document.getElementById('cPinCode').value.trim() : (existingRow ? (existingRow.PinCode || '') : ''),
+    State: document.getElementById('cState') ? document.getElementById('cState').value.trim() : (existingRow ? (existingRow.State || 'Odisha') : 'Odisha'),
+    Address: document.getElementById('cAddress') ? document.getElementById('cAddress').value.trim() : (existingRow ? (existingRow.Address || '') : ''),
     CommittedBrand: document.getElementById('cBrand') ? document.getElementById('cBrand').value.trim() : (existingRow ? (existingRow.CommittedBrand || '') : ''),
     CommittedPrice: Number(document.getElementById('cPrice').value) || 0,
     VendorPrice: calculatedVendorPrice,
