@@ -1518,7 +1518,7 @@ function populateForm6Fields(r) {
   const rawCapacity = (specs.PvModule && specs.PvModule.TotalCapacity) || r.ProposedCapacity || '3.32';
   const capNum = parseFloat(String(rawCapacity).replace(/[^0-9.]/g, '')) || 3.32;
   const plantCapStr = `${Math.round(capNum)} KWP`;
-  const totalCapModuleStr = `${capNum.toFixed(2)} KWP`;
+  let totalCapModuleStr = `${capNum.toFixed(2)} KWp`;
 
   const installDateFormatted = formatDateToMonthWord(specs.DateOfInstallation || r.InstallationDate) || formatDateToMonthWord(new Date());
 
@@ -1537,7 +1537,7 @@ function populateForm6Fields(r) {
   setInputVal('f6CertCapacity', plantCapStr);
   const formattedFullAddr = `${siteAddress}${district ? `, DIST-${district}` : ''}${pinCode ? `, PIN-${pinCode}` : ''}`;
   setInputVal('f6CertAddress', formattedFullAddr);
-  setInputVal('f6InspectionDate', installDateFormatted);
+  setInputVal('f6InspectionDate', '.....................................');
   setInputVal('f6Section', sectionVal);
   setInputVal('f6SubDivision', subDivVal);
   setInputVal('f6Division', divisionVal);
@@ -1553,11 +1553,11 @@ function populateForm6Fields(r) {
   setInputVal('f6ContractDemand', contractDemand);
   setInputVal('f6Arrear', r.Arrear || '0');
 
-  // Part B: Distribution Transformer Details (All empty by default as Form 6)
+  // Part B: Distribution Transformer Details (All empty by default as Form 6, except item 4)
   setInputVal('f6DtrCapacity', '');
   setInputVal('f6DtrLocation', '');
   setInputVal('f6DtrExistingSolar', '');
-  setInputVal('f6DtrAdequate', '');
+  setInputVal('f6DtrAdequate', 'Yes / No');
 
   // Part C: Solar Rooftop PV Power Plant Details
   setInputVal('f6PlantCapacity', plantCapStr);
@@ -1587,7 +1587,14 @@ function populateForm6Fields(r) {
   const moduleMake = pv.Make || brandInfo.moduleMake || 'LUMINOUS';
   const moduleModel = pv.TypeAndModel || 'Bificial';
   const moduleCount = pv.NoOfModule ? (String(pv.NoOfModule).includes('NOS') ? pv.NoOfModule : `${pv.NoOfModule} NOS`) : `${calculateModulesCount(capNum).replace(/[^0-9]/g, '')} NOS`;
-  const capEach = pv.CapacityEach || '555 WP - 4pic, 550 WP - 2pic';
+  let capEach = pv.CapacityEach ? String(pv.CapacityEach).trim() : '555 WP - 4pic, 550 WP - 2pic';
+  if (capEach && !/WP/i.test(capEach)) {
+    capEach = `${capEach} WP`;
+  }
+  totalCapModuleStr = pv.TotalCapacity ? String(pv.TotalCapacity).trim() : `${capNum.toFixed(2)} KWp`;
+  if (totalCapModuleStr && !/KWp/i.test(totalCapModuleStr)) {
+    totalCapModuleStr = `${totalCapModuleStr} KWp`;
+  }
   const serials = getOrGenerateSerials(r, specs, moduleCount, moduleMake);
 
   setInputVal('f6PvMake', moduleMake);
@@ -1651,7 +1658,7 @@ function getForm6CurrentData() {
     discomOffice: getInputVal('f6DiscomOffice', getDiscomFullName(custCircle)),
     certCapacity: getInputVal('f6CertCapacity', '3 KWP'),
     certAddress: getInputVal('f6CertAddress', ''),
-    inspectionDate: getInputVal('f6InspectionDate', ''),
+    inspectionDate: getInputVal('f6InspectionDate', '.....................................') || '.....................................',
     section: getInputVal('f6Section', 'JAJPUR Section'),
     subDivision: getInputVal('f6SubDivision', 'RE SDO-I JAJPUR Sub-Division'),
     division: getInputVal('f6Division', 'CED JAJPUR Division'),
@@ -1668,7 +1675,7 @@ function getForm6CurrentData() {
     dtrCapacity: getInputVal('f6DtrCapacity', ''),
     dtrLocation: getInputVal('f6DtrLocation', ''),
     dtrExistingSolar: getInputVal('f6DtrExistingSolar', ''),
-    dtrAdequate: getInputVal('f6DtrAdequate', ''),
+    dtrAdequate: getInputVal('f6DtrAdequate', 'Yes / No') || 'Yes / No',
 
     plantCapacity: getInputVal('f6PlantCapacity', '3 KWP'),
     plantSiteType: getInputVal('f6PlantSiteType', 'SINGLE SITE'),
@@ -1684,8 +1691,14 @@ function getForm6CurrentData() {
 
     pvMake: getInputVal('f6PvMake', 'LUMINOUS'),
     pvModel: getInputVal('f6PvModel', 'Bificial'),
-    pvTotalCapacity: getInputVal('f6PvTotalCapacity', '3.32 KWp'),
-    pvCapacityEach: getInputVal('f6PvCapacityEach', '555 WP - 4pic, 550 WP - 2pic'),
+    pvTotalCapacity: (() => {
+      let v = getInputVal('f6PvTotalCapacity', '3.32 KWp').trim();
+      return (v && !/KWp/i.test(v)) ? `${v} KWp` : (v || '3.32 KWp');
+    })(),
+    pvCapacityEach: (() => {
+      let v = getInputVal('f6PvCapacityEach', '555 WP - 4pic, 550 WP - 2pic').trim();
+      return (v && !/WP/i.test(v)) ? `${v} WP` : (v || '555 WP - 4pic, 550 WP - 2pic');
+    })(),
     pvCount: getInputVal('f6PvCount', '6 NOS'),
     pvInstallDate: getInputVal('f6PvInstallDate', '2026'),
     pvSerials: serialsList,
@@ -1754,13 +1767,17 @@ window.previewForm6Modal = function() {
     <div class="form4-preview-sheet shadow-sm mb-4">
       <div class="text-center mb-2.5">
         <h5 class="fw-bold mb-0 text-dark" style="font-size: 14px; letter-spacing: 0.02em;">${escapeHtml(d.discomOffice)}</h5>
-        <div class="fw-bold text-dark mt-0.5" style="font-size: 13px;">INSPECTION REPORT FOR RTS (FORM-06)</div>
+        <div class="fw-bold text-dark text-decoration-underline mt-0.5" style="font-size: 13px;">INSPECTION REPORT FOR RTS (FORM-06)</div>
       </div>
 
-      <div class="mb-3 text-justify" style="font-size: 10px; line-height: 1.45;">
-        Certified that the ${escapeHtml(d.certCapacity)} SPV system ${escapeHtml(d.certAddress)} under ${escapeHtml(d.section)} Section, ${escapeHtml(d.subDivision)} Sub-Division &amp; ${escapeHtml(d.division)} Division has been inspected on ${escapeHtml(d.inspectionDate)}.<br>
-        The details of inspection report are as below:<br>
-        <strong>Inspection Report for ${escapeHtml(d.certCapacity)} Solar Roof Top PV System (SRTPV) ${escapeHtml(d.certAddress)}</strong>
+      <div class="mb-3 text-justify" style="font-size: 10px; line-height: 1.5;">
+        Certified that the ${escapeHtml(d.certCapacity)} SPV system ${escapeHtml(d.certAddress)} under ${escapeHtml(d.section)} Section ${escapeHtml(d.subDivision)} Sub-Division &amp; ${escapeHtml(d.division)} Division has been inspected on date${escapeHtml(d.inspectionDate && !d.inspectionDate.startsWith('.') && d.inspectionDate !== '________' ? ' ' + d.inspectionDate : '.....................................')}.<br>
+        <div class="text-center mt-1">
+          <u class="fw-bold">The details of inspection report are as below:</u>
+        </div>
+        <div class="text-center fw-bold mt-0.5">
+          Inspection Report for ${escapeHtml(d.certCapacity)} Solar Roof Top PV System (SRTPV) ${escapeHtml(d.certAddress)}
+        </div>
       </div>
 
       <table class="form4-preview-table mb-1">
@@ -1773,7 +1790,9 @@ window.previewForm6Modal = function() {
         </thead>
         <tbody>
           <tr class="fw-bold bg-light">
-            <td colspan="3">A. Applicant Details</td>
+            <td style="text-align: center;">A</td>
+            <td>Applicant Details</td>
+            <td></td>
           </tr>
           <tr>
             <td style="text-align: center;">1</td>
@@ -1786,7 +1805,7 @@ window.previewForm6Modal = function() {
             <td>${escapeHtml(d.regNoDate)}</td>
           </tr>
           <tr>
-            <td style="text-align: center;"></td>
+            <td style="text-align: center;">2</td>
             <td>Address</td>
             <td>${escapeHtml(d.address)}</td>
           </tr>
@@ -1816,7 +1835,9 @@ window.previewForm6Modal = function() {
             <td>${escapeHtml(d.arrear)}</td>
           </tr>
           <tr class="fw-bold bg-light">
-            <td colspan="3">B. Distribution Transformer Details</td>
+            <td style="text-align: center;">B</td>
+            <td>Distribution Transformer Details</td>
+            <td></td>
           </tr>
           <tr>
             <td style="text-align: center;">1</td>
@@ -1839,7 +1860,9 @@ window.previewForm6Modal = function() {
             <td>${escapeHtml(d.dtrAdequate)}</td>
           </tr>
           <tr class="fw-bold bg-light">
-            <td colspan="3">C. Solar Rooftop PV Power Plant Details</td>
+            <td style="text-align: center;">C</td>
+            <td>Solar Rooftop PV Power Plant Details</td>
+            <td></td>
           </tr>
           <tr>
             <td style="text-align: center;">1</td>
@@ -1861,7 +1884,9 @@ window.previewForm6Modal = function() {
       <table class="form4-preview-table mb-1">
         <tbody>
           <tr class="fw-bold bg-light">
-            <td colspan="3">D. Grid Tied Inverter</td>
+            <td style="text-align: center;">D</td>
+            <td>Grid Tied Inverter</td>
+            <td></td>
           </tr>
           <tr>
             <td style="width: 35px; text-align: center;">1</td>
@@ -1894,7 +1919,9 @@ window.previewForm6Modal = function() {
             <td>${escapeHtml(d.invInstallDate)}</td>
           </tr>
           <tr class="fw-bold bg-light">
-            <td colspan="3">E. P.V Module</td>
+            <td style="text-align: center;">E</td>
+            <td>P.V Module</td>
+            <td></td>
           </tr>
           <tr>
             <td style="text-align: center;">1</td>
@@ -1931,44 +1958,47 @@ window.previewForm6Modal = function() {
             <td>Date of installation</td>
             <td>${escapeHtml(d.pvInstallDate)}</td>
           </tr>
+          <tr class="bg-light">
+            <td style="text-align: center; font-weight: bold;">F</td>
+            <td>
+              <strong class="fw-bold">Earthing Verification</strong><br>
+              (i) D.C Earthing<br>
+              (ii) A.C Earthing
+            </td>
+            <td>
+              (i) ${escapeHtml(d.dcEarthing)}&nbsp;&nbsp;&nbsp;&nbsp;(ii) ${escapeHtml(d.acEarthing)}<br>
+              <div class="mt-1" style="font-size: 10px; line-height: 1.35;">
+                Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)
+              </div>
+            </td>
+          </tr>
           <tr class="fw-bold bg-light">
-            <td colspan="3">F. Earthing Verification</td>
-          </tr>
-          <tr>
-            <td style="text-align: center;"></td>
-            <td>(i) D.C Earthing<br>(ii) A.C Earthing</td>
-            <td>(i) ${escapeHtml(d.dcEarthing)}<br>(ii) ${escapeHtml(d.acEarthing)}</td>
-          </tr>
-          <tr>
-            <td style="text-align: center;"></td>
-            <td>Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)</td>
-            <td>${escapeHtml(d.earthingLimit)}</td>
-          </tr>
-          <tr class="fw-bold bg-light">
-            <td colspan="3">G. Details of protective system available</td>
+            <td style="text-align: center;">G</td>
+            <td>Details of protective system available</td>
+            <td></td>
           </tr>
           <tr>
             <td style="text-align: center;"></td>
             <td>(i) AC &amp; DC DB: Yes/No<br>(ii) Manual Switch at Solar Side: Yes/No<br>(iii) Relay operated automatic switch at net-meter side: Yes/ No</td>
             <td>(i) ${escapeHtml(d.acdcDbStatus)}<br>(ii) ${escapeHtml(d.manualSwitch)}<br>(iii) ${escapeHtml(d.relaySwitch)}</td>
           </tr>
-          <tr class="fw-bold">
-            <td style="text-align: center;">H</td>
+          <tr>
+            <td style="text-align: center; font-weight: bold;">H</td>
             <td>Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other</td>
             <td>${escapeHtml(d.backfeedProtection)}</td>
           </tr>
-          <tr class="fw-bold">
-            <td style="text-align: center;">I</td>
+          <tr>
+            <td style="text-align: center; font-weight: bold;">I</td>
             <td>EIC inspection and approval letter Submitted by the consumer above 50KVA</td>
             <td>${escapeHtml(d.eicApproval)}</td>
           </tr>
-          <tr class="fw-bold">
-            <td style="text-align: center;">J</td>
+          <tr>
+            <td style="text-align: center; font-weight: bold;">J</td>
             <td>Safety certificate from designated Safety officer of ${escapeHtml(d.inspectingAuthority)} below 50KVA</td>
             <td>${escapeHtml(d.safetyCert)}</td>
           </tr>
-          <tr class="fw-bold">
-            <td style="text-align: center;">K</td>
+          <tr>
+            <td style="text-align: center; font-weight: bold;">K</td>
             <td>Work Completion Report of SRTPV by consumer</td>
             <td>${escapeHtml(d.workCompletionReport)}</td>
           </tr>
@@ -1981,97 +2011,115 @@ window.previewForm6Modal = function() {
     <div class="form4-preview-sheet shadow-sm mb-2">
       <table class="form4-preview-table mb-2">
         <tbody>
-          <tr class="fw-bold">
-            <td style="width: 35px; text-align: center;">L</td>
+          <tr>
+            <td style="width: 35px; text-align: center; font-weight: bold;">L</td>
             <td style="width: 50%;">Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards</td>
-            <td style="width: 45%;">${escapeHtml(d.testReportCea)}</td>
+            <td style="width: 45%;">${escapeHtml(d.testReportCea || 'Yes/No')}</td>
           </tr>
           <tr class="fw-bold bg-light">
-            <td colspan="3">M. Meter Details (If arranged before Inspection)</td>
+            <td style="text-align: center;">M</td>
+            <td>Meter Details (If arranged before Inspection)</td>
+            <td class="p-0">
+              <div class="d-flex w-100 h-100" style="margin: 0;">
+                <div style="width: 50%; border-right: 1px solid #000; padding: 3px 6px;" class="fw-bold">Net Meter<br>(Bi-directional Meter)</div>
+                <div style="width: 50%; padding: 3px 6px;" class="fw-bold">Solar Generation Meter<br>(Details)</div>
+              </div>
+            </td>
           </tr>
-        </tbody>
-      </table>
-
-      <!-- Meter Sub-Table -->
-      <table class="form4-preview-table mb-2">
-        <thead>
-          <tr class="fw-bold bg-light text-center">
-            <th style="width: 35px;">Sl.</th>
-            <th style="width: 35%;">Parameter</th>
-            <th style="width: 30%;">Net Meter (Bi-directional)</th>
-            <th style="width: 30%;">Solar Generation Meter</th>
-          </tr>
-        </thead>
-        <tbody>
           <tr>
-            <td style="text-align: center;">1</td>
+            <td style="text-align: center; font-weight: bold;">1</td>
             <td>Total Nos. of Meters</td>
-            <td>${escapeHtml(d.nmCount)}</td>
-            <td>${escapeHtml(d.smCount)}</td>
+            <td class="p-0">
+              <div class="d-flex w-100">
+                <div style="width: 50%; border-right: 1px solid #000; padding: 3px 6px;">${escapeHtml(d.nmCount)}</div>
+                <div style="width: 50%; padding: 3px 6px;">${escapeHtml(d.smCount)}</div>
+              </div>
+            </td>
           </tr>
           <tr>
-            <td style="text-align: center;">2</td>
+            <td style="text-align: center; font-weight: bold;">2</td>
             <td>Meter Make</td>
-            <td>${escapeHtml(d.nmMake)}</td>
-            <td>${escapeHtml(d.smMake)}</td>
+            <td class="p-0">
+              <div class="d-flex w-100">
+                <div style="width: 50%; border-right: 1px solid #000; padding: 3px 6px;">${escapeHtml(d.nmMake)}</div>
+                <div style="width: 50%; padding: 3px 6px;">${escapeHtml(d.smMake)}</div>
+              </div>
+            </td>
           </tr>
           <tr>
-            <td style="text-align: center;">3</td>
+            <td style="text-align: center; font-weight: bold;">3</td>
             <td>Meter Sl. No.</td>
-            <td style="font-family: monospace;">${escapeHtml(d.nmSerialNo)}</td>
-            <td style="font-family: monospace;">${escapeHtml(d.smSerialNo)}</td>
+            <td class="p-0">
+              <div class="d-flex w-100">
+                <div style="width: 50%; border-right: 1px solid #000; padding: 3px 6px; font-family: monospace;">${escapeHtml(d.nmSerialNo)}</div>
+                <div style="width: 50%; padding: 3px 6px; font-family: monospace;">${escapeHtml(d.smSerialNo)}</div>
+              </div>
+            </td>
           </tr>
           <tr>
-            <td style="text-align: center;">4</td>
+            <td style="text-align: center; font-weight: bold;">4</td>
             <td>1 Ph/ 3Ph</td>
-            <td>${escapeHtml(d.nmPhase)}</td>
-            <td>${escapeHtml(d.smPhase)}</td>
+            <td class="p-0">
+              <div class="d-flex w-100">
+                <div style="width: 50%; border-right: 1px solid #000; padding: 3px 6px;">${escapeHtml(d.nmPhase)}</div>
+                <div style="width: 50%; padding: 3px 6px;">${escapeHtml(d.smPhase)}</div>
+              </div>
+            </td>
           </tr>
           <tr>
-            <td style="text-align: center;">5</td>
+            <td style="text-align: center; font-weight: bold;">5</td>
             <td>Capacity</td>
-            <td>${escapeHtml(d.nmCapacity)}</td>
-            <td>${escapeHtml(d.smCapacity)}</td>
+            <td class="p-0">
+              <div class="d-flex w-100">
+                <div style="width: 50%; border-right: 1px solid #000; padding: 3px 6px;">${escapeHtml(d.nmCapacity)}</div>
+                <div style="width: 50%; padding: 3px 6px;">${escapeHtml(d.smCapacity)}</div>
+              </div>
+            </td>
           </tr>
           <tr>
-            <td style="text-align: center;">6</td>
+            <td style="text-align: center; font-weight: bold;">6</td>
             <td>Meter Constant</td>
-            <td>${escapeHtml(d.nmConstant)}</td>
-            <td>${escapeHtml(d.smConstant)}</td>
+            <td class="p-0">
+              <div class="d-flex w-100">
+                <div style="width: 50%; border-right: 1px solid #000; padding: 3px 6px;">${escapeHtml(d.nmConstant)}</div>
+                <div style="width: 50%; padding: 3px 6px;">${escapeHtml(d.smConstant)}</div>
+              </div>
+            </td>
           </tr>
-        </tbody>
-      </table>
-
-      <table class="form4-preview-table mb-3">
-        <tbody>
           <tr>
             <td style="width: 35px; text-align: center; font-weight: bold;">N</td>
-            <td style="width: 50%; font-weight: bold;">Any other necessary details with Remarks</td>
+            <td style="width: 50%;">Any other necessary details with Remarks</td>
             <td style="width: 45%;">${escapeHtml(d.remarks)}</td>
           </tr>
           <tr class="fw-bold bg-light">
-            <td colspan="3">Inspection Report</td>
+            <td colspan="2">Inspection Report</td>
+            <td></td>
           </tr>
-          <tr>
-            <td style="text-align: center;"></td>
-            <td>Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization</td>
-            <td>${escapeHtml(d.gridSatisfactory)}</td>
+          <tr class="fw-bold">
+            <td colspan="2">Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization</td>
+            <td style="font-weight: normal;">
+              <div class="fw-bold">Yes/No</div>
+              <div style="font-size: 9.5px; line-height: 1.35; margin-top: 2px;">
+                (if it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
 
-      <!-- Observations and Signatures Block -->
-      <div class="row g-2 mt-4" style="font-size: 11px;">
-        <div class="col-7">
-          <div class="fw-bold text-decoration-underline mb-1">Observations (If any)</div>
-          <div style="min-height: 45px; font-size: 10px; padding: 4px; border: 1px dashed #cbd5e1; border-radius: 4px;" class="text-dark">
-            ${escapeHtml(d.observations) || '<span class="text-muted fst-italic">None</span>'}
+      <!-- Signatures & Observations Block with ample space matching Image 1 -->
+      <div style="margin-top: 55px; margin-bottom: 25px; font-size: 11px;">
+        <div class="d-flex justify-content-between align-items-start">
+          <div style="width: 52%;">
+            <div class="fw-bold text-decoration-underline mb-2" style="font-size: 11.5px;">Observations (If any)</div>
+            <div style="min-height: 80px; padding-top: 6px; font-size: 10px; color: #222;">
+              ${escapeHtml(d.observations || '')}
+            </div>
           </div>
-        </div>
-        <div class="col-5 text-end">
-          <div class="fw-bold">Authorized signatory</div>
-          <div class="fw-semibold">${escapeHtml(d.inspectingAuthority)}</div>
-          <div class="mt-4"><strong>Date - </strong></div>
+          <div style="width: 45%; text-align: left; padding-left: 20px;">
+            <div class="fw-bold" style="font-size: 11.5px;">Authorized signatory ${escapeHtml(d.inspectingAuthority)}</div>
+            <div class="fw-bold mt-1" style="font-size: 11.5px;">Date-</div>
+          </div>
         </div>
       </div>
 
@@ -2189,7 +2237,9 @@ window.downloadForm6Pdf = function() {
       doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
 
       if (slText) {
+        if (opt.slBold) doc.setFont('helvetica', 'bold');
         doc.text(String(slText), marginX + (col1Width / 2), y + 4.2, { align: 'center' });
+        if (opt.slBold) doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
       }
 
       doc.text(col2Lines, marginX + col1Width + 2, y + 4.2);
@@ -2201,60 +2251,53 @@ window.downloadForm6Pdf = function() {
       return y + rowHeight;
     }
 
-    // Helper: Draw section header row
-    function drawTableHeader(y, headerTitle, headerVal = '', opt = {}) {
+    // Helper: Draw section header row matching Image 2
+    function drawTableHeader(y, slLetter, headerTitle, opt = {}) {
       const fontSize = opt.fontSize || 9;
       doc.setFontSize(fontSize);
       doc.setFont('helvetica', 'bold');
 
-      const titleLines = doc.splitTextToSize(headerTitle || '', (opt.spanAll ? tableWidth : col1Width + col2Width) - 4);
-      const rowHeight = Math.max(opt.minHeight || 6.2, titleLines.length * 4.2 + 2);
+      const rowHeight = opt.minHeight || 6.2;
 
-      doc.setLineWidth(0.2);
-      doc.rect(marginX, y, tableWidth, rowHeight);
-      if (!opt.spanAll) {
-        doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
-      }
-
-      doc.text(titleLines, marginX + 2, y + 4.2);
-      if (headerVal) {
-        doc.text(headerVal, marginX + col1Width + col2Width + 2, y + 4.2);
-      }
-      return y + rowHeight;
-    }
-
-    // Helper: Draw 4-column row for Meter details (Section M)
-    function drawTable4ColRow(y, slText, paramText, netVal, solarVal, opt = {}) {
-      const fontSize = opt.fontSize || 8.5;
-      doc.setFontSize(fontSize);
-      doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
-
-      const pWidth = 50;
-      const nmWidth = 60;
-      const smWidth = 60;
-
-      const pLines = doc.splitTextToSize(paramText || '', pWidth - 4);
-      const nmLines = doc.splitTextToSize(netVal || '', nmWidth - 4);
-      const smLines = doc.splitTextToSize(solarVal || '', smWidth - 4);
-
-      const maxLines = Math.max(pLines.length, nmLines.length, smLines.length, 1);
-      const rowHeight = Math.max(opt.minHeight || 5.8, maxLines * 4.2 + 2.4);
+      // Light grey fill matching Image 2
+      doc.setFillColor(240, 240, 240);
+      doc.rect(marginX, y, tableWidth, rowHeight, 'F');
 
       doc.setLineWidth(0.2);
       doc.rect(marginX, y, tableWidth, rowHeight);
       doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
-      doc.line(marginX + col1Width + pWidth, y, marginX + col1Width + pWidth, y + rowHeight);
-      doc.line(marginX + col1Width + pWidth + nmWidth, y, marginX + col1Width + pWidth + nmWidth, y + rowHeight);
+      doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
 
-      if (slText) {
-        doc.text(String(slText), marginX + (col1Width / 2), y + 4.2, { align: 'center' });
+      if (slLetter) {
+        doc.text(String(slLetter), marginX + (col1Width / 2), y + 4.3, { align: 'center' });
       }
+      doc.text(headerTitle || '', marginX + col1Width + 2, y + 4.3);
+      return y + rowHeight;
+    }
 
-      doc.text(pLines, marginX + col1Width + 2, y + 4.2);
+    // Helper: Draw 4-column meter row matching Image 1
+    function drawMeterItemRow(y, slText, paramText, netVal, solarVal, opt = {}) {
+      const nmWidth = 42;
+      const smWidth = 42;
+      const rowHeight = opt.minHeight || 5.8;
+
+      doc.setFontSize(8.5);
+
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowHeight);
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+      doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+      doc.line(marginX + col1Width + col2Width + nmWidth, y, marginX + col1Width + col2Width + nmWidth, y + rowHeight);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(slText), marginX + (col1Width / 2), y + 4.2, { align: 'center' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.text(paramText || '', marginX + col1Width + 2, y + 4.2);
 
       if (opt.mono) doc.setFont('courier', 'normal');
-      doc.text(nmLines, marginX + col1Width + pWidth + 2, y + 4.2);
-      doc.text(smLines, marginX + col1Width + pWidth + nmWidth + 2, y + 4.2);
+      doc.text(netVal || '', marginX + col1Width + col2Width + 2, y + 4.2);
+      doc.text(solarVal || '', marginX + col1Width + col2Width + nmWidth + 2, y + 4.2);
       if (opt.mono) doc.setFont('helvetica', 'normal');
 
       return y + rowHeight;
@@ -2272,24 +2315,38 @@ window.downloadForm6Pdf = function() {
     curY += 5.5;
 
     doc.setFontSize(11);
-    doc.text('INSPECTION REPORT FOR RTS (FORM-06)', pageWidth / 2, curY, { align: 'center' });
-    curY += 6;
+    const formTitle = 'INSPECTION REPORT FOR RTS (FORM-06)';
+    doc.text(formTitle, pageWidth / 2, curY, { align: 'center' });
+    const formTitleW = doc.getTextWidth(formTitle);
+    doc.setLineWidth(0.3);
+    doc.line((pageWidth - formTitleW) / 2, curY + 1, (pageWidth + formTitleW) / 2, curY + 1);
+    curY += 6.5;
 
-    // Inspection Certification Paragraph
+    // Inspection Certification Paragraph with exact dotted line matching Image 2
     doc.setFontSize(8.5);
     doc.setFont('helvetica', 'normal');
-    const certText = `Certified that the ${d.certCapacity} SPV system ${d.certAddress} under ${d.section} Section, ${d.subDivision} Sub-Division & ${d.division} Division has been inspected on ${d.inspectionDate ? d.inspectionDate + '.' : '.'}`;
+    const dotDateStr = (d.inspectionDate && !d.inspectionDate.startsWith('.') && d.inspectionDate !== '________')
+      ? ' ' + d.inspectionDate
+      : '.....................................';
+    const certText = `Certified that the ${d.certCapacity} SPV system ${d.certAddress} under ${d.section} Section ${d.subDivision} Sub-Division & ${d.division} Division has been inspected on date${dotDateStr}`;
     const certLines = doc.splitTextToSize(certText, tableWidth);
     doc.text(certLines, marginX, curY);
-    curY += (certLines.length * 3.8) + 1.5;
+    curY += (certLines.length * 3.8) + 2.5;
 
-    const subText = `The details of inspection report are as below:\nInspection Report for ${d.certCapacity} Solar Roof Top PV System (SRTPV) ${d.certAddress}`;
-    const subLines = doc.splitTextToSize(subText, tableWidth);
+    const subText1 = 'The details of inspection report are as below:';
     doc.setFont('helvetica', 'bold');
-    doc.text(subLines, marginX, curY);
-    curY += (subLines.length * 3.8) + 3;
+    doc.text(subText1, pageWidth / 2, curY, { align: 'center' });
+    const subText1W = doc.getTextWidth(subText1);
+    doc.setLineWidth(0.25);
+    doc.line((pageWidth - subText1W) / 2, curY + 0.8, (pageWidth + subText1W) / 2, curY + 0.8);
+    curY += 4.5;
 
-    // Table Column Headers
+    const subText2 = `Inspection Report for ${d.certCapacity} Solar Roof Top PV System (SRTPV) ${d.certAddress}`;
+    const subText2Lines = doc.splitTextToSize(subText2, tableWidth);
+    doc.text(subText2Lines, pageWidth / 2, curY, { align: 'center' });
+    curY += (subText2Lines.length * 3.8) + 3;
+
+    // Table Column Headers (All BOLD)
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     const headerHeight = 6.2;
@@ -2302,26 +2359,26 @@ window.downloadForm6Pdf = function() {
     doc.text('Utility Observation', marginX + col1Width + col2Width + 2, curY + 4.2);
     curY += headerHeight;
 
-    // PART A: Applicant Details
-    curY = drawTableHeader(curY, 'A. Applicant Details', '', { spanAll: true });
+    // PART A: Applicant Details (Bold Section Header matching Image 2)
+    curY = drawTableHeader(curY, 'A', 'Applicant Details');
     curY = drawTableRow(curY, '1', 'Name of the Applicant', d.applicantName);
     curY = drawTableRow(curY, '2', 'Application No./Registration No. with Date', d.regNoDate);
-    curY = drawTableRow(curY, '', 'Address', d.address);
+    curY = drawTableRow(curY, '2', 'Address', d.address);
     curY = drawTableRow(curY, '3', 'Consumer Number', d.consumerNo, { valFontMono: true });
     curY = drawTableRow(curY, '4', 'Consumer Category', d.category);
     curY = drawTableRow(curY, '5', 'Type of Connection: 1ph LT or 3 ph LT/HT', d.connectionType);
     curY = drawTableRow(curY, '6', 'Contract demand of consumer', d.contractDemand);
     curY = drawTableRow(curY, '7', 'Arrear, if any', d.arrear);
 
-    // PART B: Distribution Transformer Details
-    curY = drawTableHeader(curY, 'B. Distribution Transformer Details', '', { spanAll: true });
+    // PART B: Distribution Transformer Details (Bold Section Header)
+    curY = drawTableHeader(curY, 'B', 'Distribution Transformer Details');
     curY = drawTableRow(curY, '1', 'Capacity in KVA', d.dtrCapacity);
     curY = drawTableRow(curY, '2', 'Location', d.dtrLocation);
-    curY = drawTableRow(curY, '3', 'Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp (individual capacity may be mentioned)', d.dtrExistingSolar);
+    curY = drawTableRow(curY, '3', 'Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp', d.dtrExistingSolar);
     curY = drawTableRow(curY, '4', 'Whether the transformer capacity is adequate to deliver the proposed Solar rooftop PV system in addition to existing SRTPV systems', d.dtrAdequate);
 
-    // PART C: Solar Rooftop PV Power Plant Details
-    curY = drawTableHeader(curY, 'C. Solar Rooftop PV Power Plant Details', '', { spanAll: true });
+    // PART C: Solar Rooftop PV Power Plant Details (Bold Section Header)
+    curY = drawTableHeader(curY, 'C', 'Solar Rooftop PV Power Plant Details');
     const partC1Label = 'Details of proposed power plant\n(a) Capacity of the SPV Power Plant (kWp)\n(b) Plant proposed at single site/multiple sites\n(c) Interconnection with the electricity network at single point or multiple point';
     const partC1Val = `A. ${d.plantCapacity}\nB. ${d.plantSiteType}\nC. ${d.plantPointType}`;
     curY = drawTableRow(curY, '1', partC1Label, partC1Val);
@@ -2338,8 +2395,8 @@ window.downloadForm6Pdf = function() {
     doc.addPage();
     curY = 16;
 
-    // PART D: Grid Tied Inverter
-    curY = drawTableHeader(curY, 'D. Grid Tied Inverter', '', { spanAll: true });
+    // PART D: Grid Tied Inverter (Bold Section Header)
+    curY = drawTableHeader(curY, 'D', 'Grid Tied Inverter');
     curY = drawTableRow(curY, '1', 'Make', d.invMake);
     curY = drawTableRow(curY, '2', 'Serial No.', d.invSerialNo, { valFontMono: true });
     curY = drawTableRow(curY, '3', 'Capacity', d.invCapacity);
@@ -2347,8 +2404,8 @@ window.downloadForm6Pdf = function() {
     curY = drawTableRow(curY, '5', 'Whether Anti-islanding feature is in working condition', d.invAntiIslanding);
     curY = drawTableRow(curY, '6', 'Date of installation', d.invInstallDate);
 
-    // PART E: P.V Module
-    curY = drawTableHeader(curY, 'E. P.V Module', '', { spanAll: true });
+    // PART E: P.V Module (Bold Section Header)
+    curY = drawTableHeader(curY, 'E', 'P.V Module');
     curY = drawTableRow(curY, '1', 'Make', d.pvMake);
     const serialsLinesStr = d.pvSerials.length > 0 ? d.pvSerials.join('\n') : '';
     curY = drawTableRow(curY, '2', 'Serial No.', serialsLinesStr, { valFontMono: true, fontSize: 8 });
@@ -2358,24 +2415,22 @@ window.downloadForm6Pdf = function() {
     curY = drawTableRow(curY, '6', 'Total capacity of Module', d.pvTotalCapacity);
     curY = drawTableRow(curY, '7', 'Date of installation', d.pvInstallDate);
 
-    // PART F: Earthing Verification
-    curY = drawTableHeader(curY, 'F. Earthing Verification', '', { spanAll: true });
-    const earthingLabel = '(i) D.C Earthing\n(ii) A.C Earthing';
-    const earthingVal = `(i) ${d.dcEarthing}\n(ii) ${d.acEarthing}`;
-    curY = drawTableRow(curY, '', earthingLabel, earthingVal);
-    curY = drawTableRow(curY, '', 'Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)', d.earthingLimit);
+    // PART F: Earthing Verification (Merged single row matching Original Form 6)
+    const earthingLabel = 'Earthing Verification\n(i) D.C Earthing\n(ii) A.C Earthing';
+    const earthingVal = `(i) ${d.dcEarthing}    (ii) ${d.acEarthing}\nWithin permissible limit or Not (Values should be certified by contractor with HV Supervisory license)`;
+    curY = drawTableRow(curY, 'F', earthingLabel, earthingVal, { slBold: true });
 
-    // PART G: Protective Systems
-    curY = drawTableHeader(curY, 'G. Details of protective system available', '', { spanAll: true });
+    // PART G: Protective Systems (Bold Section Header)
+    curY = drawTableHeader(curY, 'G', 'Details of protective system available');
     const protLabel = '(i) AC & DC DB: Yes/No\n(ii) Manual Switch at Solar Side: Yes/No\n(iii) Relay operated automatic switch at net-meter side: Yes/ No';
     const protVal = `(i) ${d.acdcDbStatus}\n(ii) ${d.manualSwitch}\n(iii) ${d.relaySwitch}`;
     curY = drawTableRow(curY, '', protLabel, protVal);
 
     // PART H, I, J, K
-    curY = drawTableRow(curY, 'H', 'Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other', d.backfeedProtection, { isBold: true });
-    curY = drawTableRow(curY, 'I', 'EIC inspection and approval letter Submitted by the consumer above 50KVA', d.eicApproval, { isBold: true });
-    curY = drawTableRow(curY, 'J', `Safety certificate from designated Safety officer of ${d.inspectingAuthority} below 50KVA`, d.safetyCert, { isBold: true });
-    curY = drawTableRow(curY, 'K', 'Work Completion Report of SRTPV by consumer', d.workCompletionReport, { isBold: true });
+    curY = drawTableRow(curY, 'H', 'Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other', d.backfeedProtection, { slBold: true });
+    curY = drawTableRow(curY, 'I', 'EIC inspection and approval letter Submitted by the consumer above 50KVA', d.eicApproval, { slBold: true });
+    curY = drawTableRow(curY, 'J', `Safety certificate from designated Safety officer of ${d.inspectingAuthority} below 50KVA`, d.safetyCert, { slBold: true });
+    curY = drawTableRow(curY, 'K', 'Work Completion Report of SRTPV by consumer', d.workCompletionReport, { slBold: true });
 
     // Page 2 Footer
     doc.setFontSize(8);
@@ -2389,70 +2444,99 @@ window.downloadForm6Pdf = function() {
     curY = 16;
 
     // PART L: Test Report
-    curY = drawTableRow(curY, 'L', 'Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards', d.testReportCea, { isBold: true });
+    curY = drawTableRow(curY, 'L', 'Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards', d.testReportCea || 'Yes/No', { slBold: true });
 
-    // PART M: Meter Details (4-Column Subtable)
-    curY = drawTableHeader(curY, 'M. Meter Details (If arranged before Inspection)', '', { spanAll: true });
+    // PART M: Meter Details (4-Column Subtable integrated matching Image 1)
+    const nmWidth = 42;
+    const smWidth = 42;
+    const mHeadHeight = 9.5;
 
-    // Meter Subtable Header
     doc.setFontSize(8.5);
     doc.setFont('helvetica', 'bold');
-    const pWidth = 50;
-    const nmWidth = 60;
-    const smWidth = 60;
-    const mHeadHeight = 6.2;
+    doc.setFillColor(240, 240, 240);
+    doc.rect(marginX, curY, tableWidth, mHeadHeight, 'F');
+
     doc.setLineWidth(0.2);
     doc.rect(marginX, curY, tableWidth, mHeadHeight);
     doc.line(marginX + col1Width, curY, marginX + col1Width, curY + mHeadHeight);
-    doc.line(marginX + col1Width + pWidth, curY, marginX + col1Width + pWidth, curY + mHeadHeight);
-    doc.line(marginX + col1Width + pWidth + nmWidth, curY, marginX + col1Width + pWidth + nmWidth, curY + mHeadHeight);
-    doc.text('Sl. No.', marginX + (col1Width / 2), curY + 4.2, { align: 'center' });
-    doc.text('Parameter', marginX + col1Width + 2, curY + 4.2);
-    doc.text('Net Meter (Bi-directional Meter)', marginX + col1Width + pWidth + 2, curY + 4.2);
-    doc.text('Solar Generation Meter (Details)', marginX + col1Width + pWidth + nmWidth + 2, curY + 4.2);
+    doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + mHeadHeight);
+    doc.line(marginX + col1Width + col2Width + nmWidth, curY, marginX + col1Width + col2Width + nmWidth, curY + mHeadHeight);
+
+    doc.text('M', marginX + (col1Width / 2), curY + 5.5, { align: 'center' });
+    doc.text('Meter Details (If arranged before Inspection)', marginX + col1Width + 2, curY + 5.5);
+    doc.text(['Net Meter', '(Bi-directional Meter)'], marginX + col1Width + col2Width + 2, curY + 4.2);
+    doc.text(['Solar Generation Meter', '(Details)'], marginX + col1Width + col2Width + nmWidth + 2, curY + 4.2);
     curY += mHeadHeight;
 
-    curY = drawTable4ColRow(curY, '1', 'Total Nos. of Meters', d.nmCount, d.smCount);
-    curY = drawTable4ColRow(curY, '2', 'Meter Make', d.nmMake, d.smMake);
-    curY = drawTable4ColRow(curY, '3', 'Meter Sl. No.', d.nmSerialNo, d.smSerialNo, { mono: true });
-    curY = drawTable4ColRow(curY, '4', '1 Ph/ 3Ph', d.nmPhase, d.smPhase);
-    curY = drawTable4ColRow(curY, '5', 'Capacity', d.nmCapacity, d.smCapacity);
-    curY = drawTable4ColRow(curY, '6', 'Meter Constant', d.nmConstant, d.smConstant);
+    curY = drawMeterItemRow(curY, '1', 'Total Nos. of Meters', d.nmCount, d.smCount);
+    curY = drawMeterItemRow(curY, '2', 'Meter Make', d.nmMake, d.smMake);
+    curY = drawMeterItemRow(curY, '3', 'Meter Sl. No.', d.nmSerialNo, d.smSerialNo, { mono: true });
+    curY = drawMeterItemRow(curY, '4', '1 Ph/ 3Ph', d.nmPhase, d.smPhase);
+    curY = drawMeterItemRow(curY, '5', 'Capacity', d.nmCapacity, d.smCapacity);
+    curY = drawMeterItemRow(curY, '6', 'Meter Constant', d.nmConstant, d.smConstant);
 
-    // PART N: Any other necessary details with Remarks (Row N as in Form 6)
-    curY = drawTableRow(curY, 'N', 'Any other necessary details with Remarks', d.remarks, { isBold: true });
+    // PART N: Any other necessary details with Remarks
+    curY = drawTableRow(curY, 'N', 'Any other necessary details with Remarks', d.remarks, { slBold: true });
 
-    // Inspection Report Section
-    curY = drawTableHeader(curY, 'Inspection Report', '', { spanAll: true });
-    curY = drawTableRow(curY, '', 'Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization', d.gridSatisfactory);
+    // Inspection Report Header Row (Cols 1+2 on left, Col 3 on right) matching Image 1
+    const leftWidth = col1Width + col2Width; // 98
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(240, 240, 240);
+    doc.rect(marginX, curY, tableWidth, 6.2, 'F');
+    doc.setLineWidth(0.2);
+    doc.rect(marginX, curY, tableWidth, 6.2);
+    doc.line(marginX + leftWidth, curY, marginX + leftWidth, curY + 6.2);
+    doc.text('Inspection Report', marginX + 2, curY + 4.3);
+    curY += 6.2;
 
-    // Observations (Left) & Authorized signatory (Right)
-    curY += 14;
+    // Synchronization Row matching Image 1
+    const syncLeftText = 'Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization';
+    const syncRightSubText = '(if it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)';
+    const syncLeftLines = doc.splitTextToSize(syncLeftText, leftWidth - 4);
+    const syncRightLines = doc.splitTextToSize(syncRightSubText, col3Width - 4);
+    const syncRowHeight = Math.max(16, (syncRightLines.length * 3.8) + 8.5);
 
-    // Left Column: Observations (If any)
+    doc.setLineWidth(0.2);
+    doc.rect(marginX, curY, tableWidth, syncRowHeight);
+    doc.line(marginX + leftWidth, curY, marginX + leftWidth, curY + syncRowHeight);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(syncLeftLines, marginX + 2, curY + 5);
+
+    doc.text('Yes/No', marginX + leftWidth + 2, curY + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(syncRightLines, marginX + leftWidth + 2, curY + 9.5);
+    curY += syncRowHeight;
+
+    // Substantial space before Observations & Signatures matching Image 1
+    curY += 28;
+
+    // Right Column: Authorized signatory TPNODL & Date-
+    const sigX = marginX + (tableWidth / 2) + 20;
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'bold');
-    doc.text('Observations (If any)', marginX + 2, curY);
+    doc.text(`Authorized signatory ${d.inspectingAuthority}`, sigX, curY);
+    curY += 5.5;
+    doc.text('Date-', sigX, curY);
+
+    // Left Column: Observations (If any) - matching Image 1
+    const obsY = curY + 6;
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Observations (If any)', marginX + 16, obsY);
+    const obsTextW = doc.getTextWidth('Observations (If any)');
     doc.setLineWidth(0.3);
-    doc.line(marginX + 2, curY + 1.2, marginX + 38, curY + 1.2);
+    doc.line(marginX + 16, obsY + 1.2, marginX + 16 + obsTextW, obsY + 1.2);
 
     if (d.observations) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
-      const obsLines = doc.splitTextToSize(d.observations, 95);
-      doc.text(obsLines, marginX + 2, curY + 6);
+      const obsLines = doc.splitTextToSize(d.observations, 90);
+      doc.text(obsLines, marginX + 16, obsY + 6);
     }
-
-    // Right Column: Authorized signatory
-    const sigX = marginX + (tableWidth / 2) + 15;
-    doc.setFontSize(9.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Authorized signatory', sigX, curY);
-    curY += 5.5;
-    doc.text(d.inspectingAuthority, sigX, curY);
-    curY += 6.5;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Date - ', sigX, curY);
 
     // Page 3 Footer
     doc.setFontSize(8);
