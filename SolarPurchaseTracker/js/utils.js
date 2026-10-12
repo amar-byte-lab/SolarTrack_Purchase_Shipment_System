@@ -125,12 +125,21 @@ const Utils = (() => {
       }
     }
 
+    let isSelecting = false;
+
+    function closeAllSearchableMenus() {
+      document.querySelectorAll('.searchable-dropdown-menu.show').forEach(m => {
+        m.classList.remove('show');
+      });
+      activeSearchable = null;
+    }
+
     function positionMenu() {
       if (!menu.classList.contains('show')) return;
       const rect = input.getBoundingClientRect();
 
-      // If input is detached or scrolled out of visible view, hide menu
-      if (rect.width === 0 || rect.height === 0 || rect.bottom < 30 || rect.top > window.innerHeight - 30) {
+      // If input is detached or hidden or scrolled completely out of visible view, hide menu
+      if (rect.width === 0 || rect.height === 0 || rect.bottom < 10 || rect.top > window.innerHeight - 10) {
         hideMenu();
         return;
       }
@@ -158,9 +167,11 @@ const Utils = (() => {
     }
 
     function showMenu(showAll = false) {
-      if (activeSearchable && activeSearchable !== selfObj && activeSearchable.hideMenu) {
-        activeSearchable.hideMenu();
-      }
+      if (isSelecting) return;
+      // Close any other open dropdowns in the whole application first
+      document.querySelectorAll('.searchable-dropdown-menu.show').forEach(m => {
+        if (m !== menu) m.classList.remove('show');
+      });
       renderOptions(input.value, showAll);
       menu.classList.add('show');
       positionMenu();
@@ -175,12 +186,22 @@ const Utils = (() => {
     }
 
     function selectValue(val) {
+      isSelecting = true;
       input.value = val;
       hideMenu();
       if (onSelectCallback) {
-        onSelectCallback(val);
+        try {
+          onSelectCallback(val);
+        } catch (err) {
+          console.error('Error in dropdown onSelectCallback:', err);
+        }
       }
       input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      setTimeout(() => {
+        isSelecting = false;
+        hideMenu();
+      }, 50);
     }
 
     function navigateItems(dir) {
@@ -205,18 +226,29 @@ const Utils = (() => {
     const selfObj = { input, menu, positionMenu, hideMenu };
 
     input.addEventListener('focus', () => {
-      showMenu(true);
+      if (!isSelecting) showMenu(true);
     });
 
     input.addEventListener('click', (e) => {
       e.stopPropagation();
-      showMenu(true);
+      if (!isSelecting) showMenu(true);
     });
 
     input.addEventListener('input', () => {
+      if (isSelecting) return;
       renderOptions(input.value, false);
       menu.classList.add('show');
       positionMenu();
+      activeSearchable = selfObj;
+    });
+
+    input.addEventListener('blur', () => {
+      // Small timeout to allow mousedown on dropdown item to fire first
+      setTimeout(() => {
+        if (!menu.contains(document.activeElement) && document.activeElement !== input) {
+          hideMenu();
+        }
+      }, 150);
     });
 
     menu.addEventListener('mousedown', (e) => {
@@ -262,10 +294,14 @@ const Utils = (() => {
     if (!globalDropdownListenersAttached) {
       globalDropdownListenersAttached = true;
       document.addEventListener('click', (e) => {
-        if (activeSearchable) {
-          if (!activeSearchable.input.contains(e.target) && !activeSearchable.menu.contains(e.target)) {
-            activeSearchable.hideMenu();
+        // Hide all searchable menus if click occurred outside of any input and menu
+        document.querySelectorAll('.searchable-dropdown-menu.show').forEach(m => {
+          if (!m.contains(e.target) && (!activeSearchable || !activeSearchable.input.contains(e.target))) {
+            m.classList.remove('show');
           }
+        });
+        if (activeSearchable && !activeSearchable.input.contains(e.target) && !activeSearchable.menu.contains(e.target)) {
+          activeSearchable.hideMenu();
         }
       });
       window.addEventListener('scroll', (e) => {
@@ -281,6 +317,10 @@ const Utils = (() => {
           activeSearchable.positionMenu();
         }
       }, { passive: true });
+      // Clean up all open dropdowns whenever any Bootstrap modal is closed or hidden
+      document.addEventListener('hidden.bs.modal', () => {
+        closeAllSearchableMenus();
+      });
     }
 
     input.updateOptionsList = function(newOptions) {
