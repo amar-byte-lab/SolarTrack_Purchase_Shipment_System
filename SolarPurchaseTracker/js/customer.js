@@ -2732,6 +2732,11 @@ window.openProductModal = function(slNo) {
   document.getElementById('prodEarthWireSize').value = earth.EarthWireSize || '';
   document.getElementById('prodLaSizeType').value = earth.LaSizeType || '';
 
+  const firstTabBtn = document.getElementById('tabSpecGeneral-btn') || modalEl.querySelector('#productSpecsNavTabs .nav-link');
+  if (firstTabBtn) {
+    firstTabBtn.click();
+  }
+
   const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
   bsModal.show();
 };
@@ -2832,13 +2837,7 @@ window.saveProductPopupSpecs = async function() {
 
     await DB.update('installments', x => Number(x.SlNo) === slNo, updatePayload);
 
-    const modalEl = document.getElementById('productModal');
-    if (modalEl) {
-      const bsModal = bootstrap.Modal.getInstance(modalEl);
-      if (bsModal) bsModal.hide();
-    }
-
-    UI.toast('Product details & technical specifications saved successfully.', 'success');
+    UI.toast('Specifications saved successfully to database.', 'success');
     renderList();
   } catch (err) {
     console.error('Error saving product specifications:', err);

@@ -634,230 +634,308 @@
   </div>
 </div>
 
-<!-- ══ Product Details & Technical Specification Modal ════════════════════════════════ -->
-<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true" data-bs-backdrop="static">
+<!-- ══ Product Details & Technical Specification Modal (Enterprise Architecture) ════════════════════════════════ -->
+<div class="modal fade product-specs-modal" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-    <div class="modal-content border shadow-sm rounded-2">
-      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
-        <div>
-          <h6 class="modal-title fw-bold fs-6 text-dark mb-0" id="productModalLabel">Product Details & Installation Specs</h6>
-          <small class="text-secondary fs-8" id="productModalSubTitle">Customer: —</small>
+    <div class="modal-content border-0 shadow">
+      
+      <!-- Enterprise Modal Header -->
+      <div class="modal-header py-2.5 px-3.5 border-bottom bg-white d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2.5">
+          <div>
+            <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="productModalLabel">Technical Specifications & RTS Record</h6>
+            <div class="text-secondary fs-8" id="productModalSubTitle" style="font-size: 0.76rem;">Customer: —</div>
+          </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-3">
+
+      <!-- Segmented Navigation Tabs (Standard Bootstrap 5 Tab Structure) -->
+      <ul class="nav nav-tabs product-specs-nav" id="productSpecsNavTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button type="button" class="nav-link active" id="tabSpecGeneral-btn" data-bs-toggle="tab" data-bs-target="#tabSpecGeneral" role="tab" aria-controls="tabSpecGeneral" aria-selected="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            General Dates
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button type="button" class="nav-link" id="tabSpecInverter-btn" data-bs-toggle="tab" data-bs-target="#tabSpecInverter" role="tab" aria-controls="tabSpecInverter" aria-selected="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg>
+            Inverter
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button type="button" class="nav-link" id="tabSpecModule-btn" data-bs-toggle="tab" data-bs-target="#tabSpecModule" role="tab" aria-controls="tabSpecModule" aria-selected="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+            PV Module
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button type="button" class="nav-link" id="tabSpecDistribution-btn" data-bs-toggle="tab" data-bs-target="#tabSpecDistribution" role="tab" aria-controls="tabSpecDistribution" aria-selected="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            DCDB & ACDB
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button type="button" class="nav-link" id="tabSpecCablesEarthing-btn" data-bs-toggle="tab" data-bs-target="#tabSpecCablesEarthing" role="tab" aria-controls="tabSpecCablesEarthing" aria-selected="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
+            Cables & Earthing
+          </button>
+        </li>
+      </ul>
+
+      <!-- Modal Body (Tab Content) -->
+      <div class="modal-body product-specs-body">
         <input type="hidden" id="prodSlNo">
-        <div class="d-flex flex-column gap-3">
-          
-          <!-- General Dates -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="row g-2">
+        <div class="tab-content" id="productSpecsTabContent">
+
+          <!-- 1. General Dates Tab -->
+          <div class="tab-pane fade show active" id="tabSpecGeneral" role="tabpanel">
+            <div class="specs-section-header">
+              <div>
+                <div class="specs-section-title">Execution & Milestones</div>
+                <div class="specs-section-subtitle">Record official installation and commissioning timeline as per Form 4 & 6</div>
+              </div>
+            </div>
+            <div class="row g-3">
               <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Date of Installation</label>
-                <input type="date" class="form-control form-control-sm fs-8" id="prodDateOfInstallation">
+                <label class="specs-input-label" for="prodDateOfInstallation">Date of Installation</label>
+                <input type="date" class="form-control specs-input-control" id="prodDateOfInstallation">
               </div>
               <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Date of Commission</label>
-                <input type="date" class="form-control form-control-sm fs-8" id="prodDateOfCommission">
+                <label class="specs-input-label" for="prodDateOfCommission">Date of Commission</label>
+                <input type="date" class="form-control specs-input-control" id="prodDateOfCommission">
               </div>
             </div>
           </div>
 
-          <!-- Section 1: Grid Tied Inverter -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="fw-bold text-dark fs-7 pb-1.5 mb-2 border-bottom d-flex align-items-center gap-1.5 text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
-              Grid Tied Inverter
+          <!-- 2. Inverter Tab -->
+          <div class="tab-pane fade" id="tabSpecInverter" role="tabpanel">
+            <div class="specs-section-header">
+              <div>
+                <div class="specs-section-title">Grid-Tied Inverter Specifications</div>
+                <div class="specs-section-subtitle">Parameters corresponding to Form 4 (Part C) & Form 6 (Part D)</div>
+              </div>
             </div>
-            <div class="row g-2">
+            <div class="row g-2.5">
               <div class="col-md-4 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Name of the Inverter</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodInverterName" placeholder="e.g. Grid-Tied Inverter">
+                <label class="specs-input-label" for="prodInverterName">Name of the Inverter</label>
+                <input type="text" class="form-control specs-input-control" id="prodInverterName" placeholder="e.g. Grid-Tied Inverter">
               </div>
               <div class="col-md-4 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Total No. of Inverter</label>
-                <input type="number" min="0" class="form-control form-control-sm fs-8" id="prodInverterCount" placeholder="e.g. 1">
+                <label class="specs-input-label" for="prodInverterCount">Total No. of Inverter</label>
+                <input type="number" min="0" class="form-control specs-input-control" id="prodInverterCount" placeholder="e.g. 1">
               </div>
               <div class="col-md-4 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Make</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodInverterMake" placeholder="e.g. LUMINOUS">
+                <label class="specs-input-label" for="prodInverterMake">Make</label>
+                <input type="text" class="form-control specs-input-control" id="prodInverterMake" placeholder="e.g. LUMINOUS">
               </div>
-              <div class="col-md-3 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Serial No.</label>
-                <input type="text" class="form-control form-control-sm fs-8 font-monospace" id="prodInverterSerialNo" placeholder="e.g. G7QGZDB1001678">
+              <div class="col-md-4 col-6">
+                <label class="specs-input-label" for="prodInverterSerialNo">Serial No.</label>
+                <input type="text" class="form-control specs-input-control font-monospace" id="prodInverterSerialNo" placeholder="e.g. G7QGZDB1001678">
               </div>
-              <div class="col-md-3 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Capacity</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodInverterCapacity" placeholder="e.g. 3 KW">
+              <div class="col-md-4 col-6">
+                <label class="specs-input-label" for="prodInverterCapacity">Capacity</label>
+                <input type="text" class="form-control specs-input-control" id="prodInverterCapacity" placeholder="e.g. 3 KW">
               </div>
-              <div class="col-md-3 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Input Voltage</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodInverterInputVoltage" placeholder="e.g. 300V DC">
+              <div class="col-md-2 col-6">
+                <label class="specs-input-label" for="prodInverterInputVoltage">Input Voltage</label>
+                <input type="text" class="form-control specs-input-control" id="prodInverterInputVoltage" placeholder="e.g. 300V DC">
               </div>
-              <div class="col-md-3 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Output Voltage</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodInverterOutputVoltage" placeholder="e.g. 220 - 240V AC">
+              <div class="col-md-2 col-6">
+                <label class="specs-input-label" for="prodInverterOutputVoltage">Output Voltage</label>
+                <input type="text" class="form-control specs-input-control" id="prodInverterOutputVoltage" placeholder="e.g. 220 - 240V AC">
               </div>
             </div>
           </div>
 
-          <!-- Section 2: P.V Module -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="fw-bold text-dark fs-7 pb-1.5 mb-2 border-bottom d-flex align-items-center gap-1.5 text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              P.V Module
+          <!-- 3. PV Module Tab -->
+          <div class="tab-pane fade" id="tabSpecModule" role="tabpanel">
+            <div class="specs-section-header">
+              <div>
+                <div class="specs-section-title">P.V Module Specifications</div>
+                <div class="specs-section-subtitle">Parameters corresponding to Form 4 (Part B) & Form 6 (Part E)</div>
+              </div>
             </div>
-            <div class="row g-2 mb-2">
-              <div class="col-md-4 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Make</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodModuleMake" placeholder="e.g. LUMINOUS">
+            <div class="row g-2.5 mb-3">
+              <!-- Line 1: Make | No. of Module | Type of Module & Model -->
+              <div class="col-md-4 col-12">
+                <label class="specs-input-label" for="prodModuleMake">Make</label>
+                <input type="text" class="form-control specs-input-control" id="prodModuleMake" placeholder="e.g. LUMINOUS">
               </div>
               <div class="col-md-4 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">No. of Module</label>
-                <input type="number" min="0" class="form-control form-control-sm fs-8" id="prodModuleCount" placeholder="e.g. 6" oninput="window.renderModuleSerialInputs()">
+                <label class="specs-input-label" for="prodModuleCount">No. of Module</label>
+                <input type="number" min="0" class="form-control specs-input-control" id="prodModuleCount" placeholder="e.g. 6" oninput="window.renderModuleSerialInputs()">
+              </div>
+              <div class="col-md-4 col-6">
+                <label class="specs-input-label" for="prodModuleTypeModel">Type of Module & Model</label>
+                <input type="text" class="form-control specs-input-control" id="prodModuleTypeModel" placeholder="e.g. BIFICIAL / Mono PERC">
+              </div>
+
+              <!-- Line 2: Capacity of Each Module (col-8) | Total Capacity of Module (col-4) aligned under column boundaries -->
+              <div class="col-md-8 col-12">
+                <label class="specs-input-label" for="prodModuleCapacityEach">Capacity of Each Module</label>
+                <input type="text" class="form-control specs-input-control" id="prodModuleCapacityEach" placeholder="e.g. 555 Wp - 4 Nos, 550 Wp - 2 Nos" oninput="window.calcModuleTotalCapacity()">
               </div>
               <div class="col-md-4 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Type of Module & Model</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodModuleTypeModel" placeholder="e.g. BIFICIAL / Mono PERC">
-              </div>
-              <div class="col-md-6 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Capacity of Each Module</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodModuleCapacityEach" placeholder="e.g. 555 Wp - 4 Nos, 550 Wp - 2 Nos" oninput="window.calcModuleTotalCapacity()">
-              </div>
-              <div class="col-md-6 col-6">
-                <label class="form-label fs-8 text-secondary mb-1">Total Capacity of Module</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodModuleTotalCapacity" placeholder="e.g. 3.32 KWP">
+                <label class="specs-input-label" for="prodModuleTotalCapacity">Total Capacity of Module</label>
+                <input type="text" class="form-control specs-input-control" id="prodModuleTotalCapacity" placeholder="e.g. 3.32 KWP">
               </div>
             </div>
 
             <!-- Dynamic Module Serial Numbers Container -->
-            <div class="p-2 border rounded-1 bg-light">
-              <div class="d-flex justify-content-between align-items-center mb-1.5">
-                <span class="fs-8 fw-semibold text-secondary">Serial No. (Module Serial Numbers)</span>
-                <span class="badge bg-secondary-subtle text-secondary border px-1.5 py-0.5 fs-8" id="lblModuleSerialCount">0 Serial Inputs</span>
+            <div class="specs-serials-card">
+              <div class="specs-serials-header">
+                <div>
+                  <span class="fw-semibold text-dark fs-8">Module Serial Numbers</span>
+                  <span class="text-muted fs-8 d-block" style="font-size: 0.72rem;">Individual barcode / serial identifiers</span>
+                </div>
+                <span class="badge bg-light text-secondary border px-2 py-1 fs-8 font-monospace" id="lblModuleSerialCount">0 Serials</span>
               </div>
-              <div class="row g-1.5" id="prodModuleSerialInputsContainer" style="max-height: 180px; overflow-y: auto;">
+              <div class="row g-2" id="prodModuleSerialInputsContainer" style="max-height: 190px; overflow-y: auto;">
                 <div class="col-12 text-muted fs-8 fst-italic">Enter "No. of Module" above to generate serial number textboxes (e.g. 16QGUBR1244719, 86QJVCR1175725...).</div>
               </div>
             </div>
           </div>
 
-          <!-- Section 3: Earthing Verification -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="fw-bold text-dark fs-7 pb-1.5 mb-2 border-bottom d-flex align-items-center gap-1.5 text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              Earthing Verification
-            </div>
-            <div class="row g-2">
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">D.C Earthing</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodDcEarthing" placeholder="e.g. 1.7 in Ohm / Verified OK">
+          <!-- 4. Distribution Boxes Tab -->
+          <div class="tab-pane fade" id="tabSpecDistribution" role="tabpanel">
+            <div class="specs-section-header">
+              <div>
+                <div class="specs-section-title">Distribution Boxes (DCDB & ACDB)</div>
+                <div class="specs-section-subtitle">Surge protection and switchgear ratings (Form 4 Parts F & G)</div>
               </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">A.C Earthing</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodAcEarthing" placeholder="e.g. 2.3 in Ohm / Verified OK">
+            </div>
+
+            <!-- Subgroup: DCDB -->
+            <div class="specs-card-subgroup">
+              <div class="specs-card-subgroup-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                DC Distribution Box (DCDB)
+              </div>
+              <div class="row g-2.5">
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodDcdbMake">Make</label>
+                  <input type="text" class="form-control specs-input-control" id="prodDcdbMake" placeholder="e.g. HAVELLS">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodDcdbSerialNo">Sl. No.</label>
+                  <input type="text" class="form-control specs-input-control font-monospace" id="prodDcdbSerialNo" placeholder="e.g. DCDB Sl. No.">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodDcdbSpdRating">DC Surge Protection Device Rating</label>
+                  <input type="text" class="form-control specs-input-control" id="prodDcdbSpdRating" placeholder="e.g. 600V DC / 1000V DC Type II">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodDcdbMcbDetails">MCB / Isolator Quantity & Capacity</label>
+                  <input type="text" class="form-control specs-input-control" id="prodDcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
+                </div>
+              </div>
+            </div>
+
+            <!-- Subgroup: ACDB -->
+            <div class="specs-card-subgroup mb-0">
+              <div class="specs-card-subgroup-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M15 21V9"/></svg>
+                AC Distribution Box (ACDB)
+              </div>
+              <div class="row g-2.5">
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodAcdbMake">Make</label>
+                  <input type="text" class="form-control specs-input-control" id="prodAcdbMake" placeholder="e.g. HAVELLS">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodAcdbSerialNo">Sl. No.</label>
+                  <input type="text" class="form-control specs-input-control font-monospace" id="prodAcdbSerialNo" placeholder="e.g. ACDB Sl. No.">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodAcdbSpdRating">AC Surge Protection Device Rating</label>
+                  <input type="text" class="form-control specs-input-control" id="prodAcdbSpdRating" placeholder="e.g. 320V AC / 440V AC Type II">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodAcdbMcbDetails">MCB / MCCB Quantity & Capacity</label>
+                  <input type="text" class="form-control specs-input-control" id="prodAcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Section 4: Details of Cables: DC -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="fw-bold text-dark fs-7 pb-1.5 mb-2 border-bottom d-flex align-items-center gap-1.5 text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              Details of Cables: DC
-            </div>
-            <div class="row g-2">
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Make</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodDcCableMake" placeholder="e.g. KEI">
-              </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Size & Type</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodDcCableSizeType" placeholder="e.g. 4 SQ MM">
+          <!-- 5. Cables & Earthing Tab -->
+          <div class="tab-pane fade" id="tabSpecCablesEarthing" role="tabpanel">
+            <div class="specs-section-header">
+              <div>
+                <div class="specs-section-title">Wiring, Grounding & Safety Systems</div>
+                <div class="specs-section-subtitle">DC cabling, resistance & earthing verification (Form 4 & Form 6)</div>
               </div>
             </div>
-          </div>
 
-          <!-- Section 5: Details of the DC distribution box -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="fw-bold text-dark fs-7 pb-1.5 mb-2 border-bottom d-flex align-items-center gap-1.5 text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-              Details of the DC Distribution Box (DCDB)
-            </div>
-            <div class="row g-2">
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Make</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodDcdbMake" placeholder="e.g. HAVELLS">
+            <!-- DC Cables -->
+            <div class="specs-card-subgroup">
+              <div class="specs-card-subgroup-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Details of Cables: DC
               </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Sl. No.</label>
-                <input type="text" class="form-control form-control-sm fs-8 font-monospace" id="prodDcdbSerialNo" placeholder="e.g. DCDB Sl. No.">
-              </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">DC Surge Protection Device Rating</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodDcdbSpdRating" placeholder="e.g. 600V DC / 1000V DC Type II">
-              </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">MCB / Isolator Quantity & Capacity</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodDcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
+              <div class="row g-2.5">
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodDcCableMake">Make</label>
+                  <input type="text" class="form-control specs-input-control" id="prodDcCableMake" placeholder="e.g. KEI">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodDcCableSizeType">Size & Type</label>
+                  <input type="text" class="form-control specs-input-control" id="prodDcCableSizeType" placeholder="e.g. 4 SQ MM">
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Section 6: Details of AC distribution box -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="fw-bold text-dark fs-7 pb-1.5 mb-2 border-bottom d-flex align-items-center gap-1.5 text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M15 21V9"/></svg>
-              Details of AC Distribution Box (ACDB)
-            </div>
-            <div class="row g-2">
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Make</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodAcdbMake" placeholder="e.g. HAVELLS">
+            <!-- Earthing Verification -->
+            <div class="specs-card-subgroup mb-0">
+              <div class="specs-card-subgroup-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
+                Earthing Verification & System Grounding
               </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Sl. No.</label>
-                <input type="text" class="form-control form-control-sm fs-8 font-monospace" id="prodAcdbSerialNo" placeholder="e.g. ACDB Sl. No.">
-              </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">AC Surge Protection Device Rating</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodAcdbSpdRating" placeholder="e.g. 320V AC / 440V AC Type II">
-              </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">MCB / MCCB Quantity & Capacity</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodAcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
-              </div>
-            </div>
-          </div>
+              <div class="row g-2.5">
+                <!-- Line 1: D.C Earthing | A.C Earthing (50% / 50%) -->
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodDcEarthing">D.C Earthing</label>
+                  <input type="text" class="form-control specs-input-control" id="prodDcEarthing" placeholder="e.g. 1.7 in Ohm / Verified OK">
+                </div>
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodAcEarthing">A.C Earthing</label>
+                  <input type="text" class="form-control specs-input-control" id="prodAcEarthing" placeholder="e.g. 2.3 in Ohm / Verified OK">
+                </div>
 
-          <!-- Section 7: Details of Earthing -->
-          <div class="card border rounded-1 p-2.5 bg-white">
-            <div class="fw-bold text-dark fs-7 pb-1.5 mb-2 border-bottom d-flex align-items-center gap-1.5 text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
-              Details of Earthing
-            </div>
-            <div class="row g-2">
-              <div class="col-md-4 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Earth Resistance (in ohms)</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodEarthResistance" placeholder="e.g. 3 OHM">
-              </div>
-              <div class="col-md-4 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Size of Earth Wire / Flat (Copper/Al)</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodEarthWireSize" placeholder="e.g. 16 SQ MM Aluminum">
-              </div>
-              <div class="col-md-4 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">LA Size & Type</label>
-                <input type="text" class="form-control form-control-sm fs-8" id="prodLaSizeType" placeholder="e.g. Copper Bonded">
+                <!-- Line 2: Earth Resistance (col-4) | Earth Wire Size (col-4) | LA Size & Type (col-4) perfectly aligned -->
+                <div class="col-md-4 col-12">
+                  <label class="specs-input-label" for="prodEarthResistance">Earth Resistance (in ohms)</label>
+                  <input type="text" class="form-control specs-input-control" id="prodEarthResistance" placeholder="e.g. 3 OHM">
+                </div>
+                <div class="col-md-4 col-12">
+                  <label class="specs-input-label" for="prodEarthWireSize">Earth Wire / Flat Size (Copper/Al)</label>
+                  <input type="text" class="form-control specs-input-control" id="prodEarthWireSize" placeholder="e.g. 16 SQ MM Aluminum">
+                </div>
+                <div class="col-md-4 col-12">
+                  <label class="specs-input-label" for="prodLaSizeType">LA Size & Type</label>
+                  <input type="text" class="form-control specs-input-control" id="prodLaSizeType" placeholder="e.g. Copper Bonded">
+                </div>
               </div>
             </div>
           </div>
 
         </div>
       </div>
-      <div class="modal-footer bg-light border-top py-2 px-3">
-        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-sm btn-primary px-4 fs-8 fw-semibold" onclick="window.saveProductPopupSpecs()">Save Product Details</button>
+
+      <!-- Enterprise Modal Footer -->
+      <div class="modal-footer bg-light border-top py-2.5 px-3.5 d-flex justify-content-between align-items-center">
+        <span class="text-secondary fs-8" style="font-size: 0.74rem;">All specifications auto-sync to customer database record</span>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-sm btn-primary px-3.5 fs-8 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="window.saveProductPopupSpecs()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Specifications
+          </button>
+        </div>
       </div>
+
     </div>
   </div>
 </div>

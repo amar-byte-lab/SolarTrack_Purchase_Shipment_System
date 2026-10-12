@@ -1364,6 +1364,248 @@ body.installments-page .page-body {
   background-color: #f8fafc !important;
 }
 
+/* =========================================================================
+   Enterprise Architectural Spec Sheet UI for Product Specs Modal
+   ========================================================================= */
+
+.product-specs-modal .modal-content {
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.22) !important;
+  border-radius: 8px !important;
+}
+
+.product-specs-nav {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 8px 16px 0 16px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.product-specs-nav .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.product-specs-nav .nav-link:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+
+.product-specs-nav .nav-link.active {
+  color: #2563eb !important;
+  background: #ffffff !important;
+  border-color: #e2e8f0 #e2e8f0 transparent #e2e8f0 !important;
+  border-bottom: 2px solid #2563eb !important;
+  font-weight: 600;
+}
+
+.product-specs-body {
+  background-color: #ffffff;
+  padding: 20px;
+}
+
+.specs-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.specs-section-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.specs-section-subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.specs-input-label {
+  display: block;
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.specs-input-control {
+  font-size: 0.81rem;
+  border-radius: 5px;
+  border: 1px solid #cbd5e1;
+  padding: 6px 10px;
+  color: #0f172a;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.specs-input-control:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  outline: none;
+}
+
+.specs-card-subgroup {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.specs-card-subgroup-title {
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.specs-serials-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background-color: #ffffff;
+  padding: 12px;
+}
+
+.specs-serials-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* =========================================================================
+   Mobile Responsiveness for Product Specs Modal (< 768px)
+   ========================================================================= */
+
+@media (max-width: 767.98px) {
+  .product-specs-modal .modal-dialog {
+    margin: 8px !important;
+    max-width: calc(100% - 16px) !important;
+  }
+
+  .product-specs-modal .modal-content {
+    max-height: 92vh !important;
+    border-radius: 8px !important;
+  }
+
+  .product-specs-nav {
+    padding: 6px 8px 0 8px !important;
+    gap: 4px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .product-specs-nav .nav-link {
+    padding: 6px 10px !important;
+    font-size: 0.74rem !important;
+    gap: 4px !important;
+  }
+
+  .product-specs-nav .nav-link svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+
+  .product-specs-body {
+    padding: 12px 10px !important;
+    max-height: calc(92vh - 125px) !important;
+    overflow-y: auto !important;
+  }
+
+  .specs-section-header {
+    margin-bottom: 12px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .specs-section-title {
+    font-size: 0.82rem !important;
+  }
+
+  .specs-section-subtitle {
+    font-size: 0.70rem !important;
+  }
+
+  .specs-card-subgroup {
+    padding: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .specs-card-subgroup-title {
+    font-size: 0.73rem !important;
+    margin-bottom: 8px !important;
+  }
+
+  .specs-input-label {
+    font-size: 0.70rem !important;
+    margin-bottom: 3px !important;
+  }
+
+  .specs-input-control {
+    font-size: 0.76rem !important;
+    padding: 5px 8px !important;
+  }
+
+  .specs-serials-card {
+    padding: 8px !important;
+  }
+
+  .product-specs-modal .modal-footer {
+    padding: 8px 12px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .product-specs-modal .modal-footer > span {
+    width: 100% !important;
+    text-align: center !important;
+    font-size: 0.70rem !important;
+  }
+
+  .product-specs-modal .modal-footer > div {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+  }
+
+  .product-specs-modal .modal-footer .btn {
+    flex: 1 1 auto !important;
+    font-size: 0.76rem !important;
+    padding: 6px 10px !important;
+    justify-content: center !important;
+  }
+}
+
+
 
 
 
