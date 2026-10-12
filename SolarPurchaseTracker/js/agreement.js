@@ -404,7 +404,10 @@ function populateForm4Fields(r) {
   const circleName = (r.CircleName || (district ? `${district} Circle` : `${discomName} Circle`)).trim();
   const division = (r.DivisionName || (district ? `${district} Division` : 'CED Jajpur')).trim();
   const subDiv = (r.SubDivision || '').trim();
-  const officeVal = `${subDiv ? subDiv + ' Subdivision, ' : ''}${division}, ${circleName}`;
+  let officeVal = `${subDiv ? subDiv + ' Subdivision, ' : ''}${division}, ${circleName}`;
+  if (!officeVal.toUpperCase().includes(discomName.toUpperCase())) {
+    officeVal = `${officeVal.trim().replace(/,\s*$/, '')}, ${discomName}`;
+  }
 
   // Application & Ref No
   const regNo = (r.ApplicationNumber || (consumerNo ? `NP-OD-${consumerNo}` : '')).trim();
@@ -550,10 +553,15 @@ function getForm4CurrentData() {
   const rawAuth = getInputVal('f4CertifiedAuthority', custCircle);
   const certifiedAuthority = getDiscomName(custDist, rawAuth);
 
+  let officeVal = getInputVal('f4Office', `${custDist ? custDist + ' Division, ' : ''}${custCircle}`);
+  if (certifiedAuthority && !officeVal.toUpperCase().includes(certifiedAuthority.toUpperCase())) {
+    officeVal = `${officeVal.trim().replace(/,\s*$/, '')}, ${certifiedAuthority}`;
+  }
+
   return {
     customerName: custName,
     consumerNo: custConsumer,
-    office: getInputVal('f4Office', `${custDist ? custDist + ' Division, ' : ''}${custCircle}`),
+    office: officeVal,
     refNo: getInputVal('f4RefNo', currentCust ? (currentCust.ApplicationNumber || `NP-OD-${custConsumer || '1001'}`) : ''),
     appNoDate: getInputVal('f4AppNoDate', currentCust ? (currentCust.ApplicationNumber || custConsumer || '') : ''),
     appFees: getInputVal('f4AppFees', ''),
@@ -989,8 +997,8 @@ window.previewForm4Modal = function() {
         Certified that the above said SPV system was installed by me and the equipment used, comply with the Technical and Safety standards as specified by CEA/MNRE/IEGC/OGC/OERC and ${escapeHtml(d.certifiedAuthority)}’s requirement.
       </div>
 
-      <!-- Spacing between Certification statement and Signatures block -->
-      <div style="height: 40px;"></div>
+      <!-- Spacing between Certification statement and Signatures block (more 4 cm space) -->
+      <div style="height: 40mm;"></div>
 
       <div class="row g-2 mt-2 pt-2" style="font-size: 10.5px;">
         <div class="col-6">
@@ -1004,7 +1012,7 @@ window.previewForm4Modal = function() {
           <div class="fw-bold mb-1">Name and Signature of the System Installer with Seal</div>
           <div><strong>Name of the firm:</strong> ${escapeHtml(d.installerFirm)}</div>
           <div><strong>Address:</strong> ${escapeHtml(d.installerAddress)}</div>
-          <div class="mt-3"><strong>Date:</strong> ${escapeHtml(d.reportDate)}</div>
+          <div class="mt-3"><strong>Date:</strong></div>
         </div>
       </div>
 
@@ -1193,7 +1201,9 @@ window.downloadForm4Pdf = function() {
     doc.setFontSize(8.5);
     doc.text('To,', marginX, curY); curY += 4.2;
     doc.text('The Circle solar executive/SDO/Executive Engineer (Ele),', marginX, curY); curY += 4.2;
-    doc.text(d.office, marginX, curY); curY += 6;
+    const officeLines = doc.splitTextToSize(d.office, tableWidth);
+    doc.text(officeLines, marginX, curY);
+    curY += (officeLines.length * 4.2) + 2;
 
     // Sub & Ref
     doc.setFont('helvetica', 'bold');
@@ -1332,7 +1342,7 @@ window.downloadForm4Pdf = function() {
     const certText = `Certified that the above said SPV system was installed by me and the equipment used, comply with the Technical and Safety standards as specified by CEA/MNRE/IEGC/OGC/OERC and ${d.certifiedAuthority}’s requirement.`;
     const certLines = doc.splitTextToSize(certText, tableWidth);
     doc.text(certLines, marginX, curY);
-    curY += (certLines.length * 4) + 18; // Generous 18mm vertical gap before Signature row
+    curY += (certLines.length * 4) + 42; // Generous 40mm+ (4 cm) vertical gap before Signature row
 
     // Two-Column Signatures Block
     const sigY = curY;
@@ -1370,7 +1380,7 @@ window.downloadForm4Pdf = function() {
 
     const instDateLineY = sigY + 9.5 + (instAddrLines.length * 4);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Date: ${d.reportDate}`, rightColX, instDateLineY + 6);
+    doc.text('Date:', rightColX, instDateLineY + 6);
 
     curY = Math.max(appDistLineY + 14, instDateLineY + 12);
 
