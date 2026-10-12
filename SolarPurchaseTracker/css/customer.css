@@ -1253,6 +1253,16 @@ body.installments-page .page-body {
   cursor: text;
 }
 
+.erp-partner-input:disabled,
+.erp-partner-input[disabled] {
+  background-color: #f1f5f9 !important;
+  background-image: none !important;
+  color: #475569 !important;
+  cursor: not-allowed !important;
+  border-color: #e2e8f0 !important;
+  opacity: 0.9;
+}
+
 /* ══ Customer Payment Column & Inline Quick Pay ═════════════════════════ */
 .col-payment {
   min-width: 235px;

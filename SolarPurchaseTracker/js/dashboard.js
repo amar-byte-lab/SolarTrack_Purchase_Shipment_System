@@ -991,11 +991,11 @@ function renderDashFinancialKpis(metrics) {
   const rupeeIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>`;
 
   const cardsHtml = [
-    // 1. Total Revenue Card
+    // 1. Total Amount Card
     `
     <div class="customer-kpi-card kpi-revenue">
       <div class="customer-kpi-header">
-        <span class="customer-kpi-title">Total Revenue</span>
+        <span class="customer-kpi-title">Total</span>
         <span class="customer-kpi-icon-wrap" title="Total committed revenue">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </span>
@@ -1101,6 +1101,7 @@ function renderDashFinancialBreakdown(rows, isAdmin) {
           valB = calcB.partnerPending;
           break;
         case 'Revenue':
+        case 'Total':
           valA = calcA.price;
           valB = calcB.price;
           break;

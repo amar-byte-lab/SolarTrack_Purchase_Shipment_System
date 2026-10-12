@@ -87,8 +87,9 @@ const UI = (() => {
     const visibleNavItems = user 
       ? NAV_ITEMS.filter(item => {
           if (isPowerUser) return true;
+          if (item.href === 'manage-work.html') return false;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['dashboard.html', 'manage-work.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
           return ['dashboard.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })

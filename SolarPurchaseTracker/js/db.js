@@ -29,7 +29,7 @@ const DB = (() => {
         vendors: ['VendorName', 'Address', 'Phone', 'GSTIN', 'Email', 'Remarks'],
         items: ['ItemName', 'Category', 'Unit', 'HSNCode', 'GSTPercent', 'Status'],
         settings: ['Key', 'Value'],
-        installments: ['SlNo', 'Name', 'ConsumerNo', 'Status', 'District', 'Address', 'MobileNumber', 'CommittedBrand', 'FirstInstallment', 'SecondInstallment', 'ThirdInstallment', 'Total', 'CommittedPrice', 'VendorPrice', 'VendorPaid', 'LoginDate', 'InstallationDate', 'Commission', 'CommissionPaid', 'BrokerName', 'BrokerNumber', 'CommissioningDate', 'PinCode', 'State', 'NetMeterPayment', 'NetMeterPaid'],
+        installments: ['SlNo', 'Name', 'ConsumerNo', 'Status', 'District', 'Address', 'MobileNumber', 'CommittedBrand', 'FirstInstallment', 'SecondInstallment', 'ThirdInstallment', 'Total', 'CommittedPrice', 'VendorPrice', 'VendorPaid', 'LoginDate', 'InstallationDate', 'Commission', 'CommissionPaid', 'BrokerName', 'BrokerNumber', 'CommissioningDate', 'PinCode', 'State', 'NetMeterPayment', 'NetMeterPaid', 'SubDivision', 'DivisionName', 'CircleName', 'ApplicationNumber', 'ProposedCapacity'],
         borrowers: ['BorrowerID', 'Name', 'Mobile', 'Address', 'Status', 'CreatedAt'],
         borrower_txns: ['TxnID', 'BorrowerID', 'TxnDate', 'Amount', 'Type', 'Remarks', 'CreatedAt'],
         installment_txns: ['TxnID', 'SlNo', 'TxnDate', 'Amount', 'Remark', 'TxnType'],

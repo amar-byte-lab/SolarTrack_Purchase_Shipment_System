@@ -160,7 +160,7 @@
                 <tr>
                   <th class="text-center sortable" data-sort="SlNo" style="width: 40px;">SL.</th>
                   <th class="sortable" data-sort="Name" style="min-width: 160px;">Customer</th>
-                  <th class="text-end font-monospace sortable" data-sort="Revenue" style="min-width: 95px;">Revenue</th>
+                  <th class="text-end font-monospace sortable" data-sort="Total" style="min-width: 95px;">Total</th>
                   <th class="text-end font-monospace text-success sortable" data-sort="Collected" style="min-width: 95px;">Collected</th>
                   <th class="text-end font-monospace text-danger sortable" data-sort="CustPending" style="min-width: 95px;">Pending</th>
                   <th class="text-end font-monospace text-primary sortable" data-sort="Meter" style="min-width: 90px;">Meter</th>
@@ -305,6 +305,22 @@
               <div>
                 <span class="text-secondary d-block fs-8 mb-0.5">Consumer No</span>
                 <span class="fw-semibold text-dark fs-7" id="detConsumerNo">—</span>
+              </div>
+              <hr class="my-1 opacity-10">
+              <div class="row g-2">
+                <div class="col-6">
+                  <span class="text-secondary d-block fs-8 mb-0.5">Application Number</span>
+                  <span class="fw-semibold text-dark fs-7 font-monospace" id="detApplicationNo">—</span>
+                </div>
+                <div class="col-6">
+                  <span class="text-secondary d-block fs-8 mb-0.5">Proposed Capacity</span>
+                  <span class="fw-semibold text-dark fs-7" id="detProposedCapacity">—</span>
+                </div>
+              </div>
+              <hr class="my-1 opacity-10">
+              <div>
+                <span class="text-secondary d-block fs-8 mb-0.5">Sub Division / Division / Circle</span>
+                <span class="fw-semibold text-dark fs-7" id="detDiscomInfo">—</span>
               </div>
               <hr class="my-1 opacity-10">
               <div>
@@ -503,6 +519,26 @@
                   <input type="text" class="form-control form-control-sm fs-8" id="cConsumerNo" placeholder="Consumer No">
                 </div>
                 <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Application Number</label>
+                  <input type="text" class="form-control form-control-sm fs-8 font-monospace" id="cApplicationNo" placeholder="Application Number">
+                </div>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Proposed Capacity</label>
+                  <input type="text" class="form-control form-control-sm fs-8" id="cProposedCapacity" placeholder="e.g. 3.00 kWp">
+                </div>
+                <div class="col-4 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Circle Name</label>
+                  <input type="text" class="form-control form-control-sm fs-8" id="cCircle" placeholder="Circle Name">
+                </div>
+                <div class="col-4 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Division Name</label>
+                  <input type="text" class="form-control form-control-sm fs-8" id="cDivision" placeholder="Division Name">
+                </div>
+                <div class="col-4 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Sub Division</label>
+                  <input type="text" class="form-control form-control-sm fs-8" id="cSubDivision" placeholder="Sub Division">
+                </div>
+                <div class="col-6 mb-1.5">
                   <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
                   <input type="text" class="form-control form-control-sm fs-8" id="cMobile" placeholder="Mobile number">
                 </div>
@@ -650,9 +686,12 @@
                   <th class="text-center" style="width: 40px;">
                     <input type="checkbox" id="chkSelectAllImport" checked>
                   </th>
-                  <th class="text-center" style="width: 50px;">SL.</th>
+                  <th class="text-center" style="width: 45px;">SL.</th>
                   <th>Consumer Name</th>
                   <th>Consumer No</th>
+                  <th>Appl. Number</th>
+                  <th>Capacity</th>
+                  <th>Sub Div / Div</th>
                   <th>Mobile Number</th>
                   <th>Submitted On</th>
                   <th>District</th>
@@ -674,9 +713,12 @@
             <table class="table table-sm table-hover align-middle mb-0" id="missingPreviewTable" style="font-size:0.83rem;">
               <thead class="table-light" style="position: sticky; top: 0; z-index: 10;">
                 <tr>
-                  <th class="text-center" style="width: 50px;">SL.</th>
+                  <th class="text-center" style="width: 45px;">SL.</th>
                   <th>Consumer Name</th>
                   <th>Consumer No</th>
+                  <th>Appl. Number</th>
+                  <th>Capacity</th>
+                  <th>Sub Div / Div</th>
                   <th>Mobile Number</th>
                   <th>Login Date</th>
                   <th>District</th>

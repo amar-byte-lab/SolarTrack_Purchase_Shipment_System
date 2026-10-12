@@ -1608,7 +1608,7 @@ function renderList() {
           </td>
           <td class="col-Partner align-middle">
             <div class="erp-partner-searchable-wrap">
-              <input type="text" class="form-control form-control-sm erp-partner-input" id="partnerInput_${r.SlNo}" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off">
+              <input type="text" class="form-control form-control-sm erp-partner-input" id="partnerInput_${r.SlNo}" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off" ${!isAdmin ? 'disabled' : ''}>
             </div>
           </td>
           <td class="no-print text-center align-middle">
@@ -1629,19 +1629,21 @@ function renderList() {
     }
   }).join('');
 
-  // Initialize Searchable Dropdowns for Partner cells
-  rows.forEach(r => {
-    const pInput = document.getElementById(`partnerInput_${r.SlNo}`);
-    if (pInput) {
-      Utils.initSearchableDropdown(pInput, allPartners, (val) => {
-        window.savePartnerInline(r.SlNo, val);
-      });
-    }
-  });
+  // Initialize Searchable Dropdowns for Partner cells only for Admin
+  if (isAdmin) {
+    rows.forEach(r => {
+      const pInput = document.getElementById(`partnerInput_${r.SlNo}`);
+      if (pInput) {
+        Utils.initSearchableDropdown(pInput, allPartners, (val) => {
+          window.savePartnerInline(r.SlNo, val);
+        });
+      }
+    });
 
-  const editBrokerEl = document.getElementById('editBrokerName');
-  if (editBrokerEl) {
-    Utils.initSearchableDropdown(editBrokerEl, allPartners);
+    const editBrokerEl = document.getElementById('editBrokerName');
+    if (editBrokerEl) {
+      Utils.initSearchableDropdown(editBrokerEl, allPartners);
+    }
   }
 
   const displayCount = isAddingNew ? rows.length - 1 : rows.length;
@@ -1812,11 +1814,11 @@ function renderTopKpis(metrics) {
   const rupeeIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>`;
 
   const cardsHtml = [
-    // 1. Total Revenue Card
+    // 1. Total Amount Card
     `
     <div class="customer-kpi-card kpi-revenue">
       <div class="customer-kpi-header">
-        <span class="customer-kpi-title">Total Revenue</span>
+        <span class="customer-kpi-title">Total</span>
         <span class="customer-kpi-icon-wrap" title="Total committed customer amount">
           ${rupeeIconSvg}
         </span>
@@ -2016,6 +2018,7 @@ function renderSummaryModalBreakdown(rows, isAdmin) {
           valB = calcB.partnerPending;
           break;
         case 'Revenue':
+        case 'Total':
           valA = calcA.price;
           valB = calcB.price;
           break;
@@ -2662,6 +2665,12 @@ window.saveBrandInline = async function(slNo) {
 };
 
 window.savePartnerInline = async function(slNo, partnerName) {
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  if (!isAdmin) {
+    UI.toast('Partner cannot be changed.', 'warning');
+    return;
+  }
   if (window._savingPartner && window._savingPartner[slNo]) return;
   (window._savingPartner = window._savingPartner || {})[slNo] = true;
   try {
@@ -3123,6 +3132,15 @@ window.showCustomerDetailsPopup = function(slNo) {
 
   document.getElementById('customerDetailsModalTitle').textContent = `${r.Name} (${r.District || 'No District'})`;
   if (document.getElementById('detConsumerNo')) document.getElementById('detConsumerNo').textContent = r.ConsumerNo || '—';
+  if (document.getElementById('detApplicationNo')) document.getElementById('detApplicationNo').textContent = r.ApplicationNumber || r.ApplicationNo || '—';
+  if (document.getElementById('detProposedCapacity')) document.getElementById('detProposedCapacity').textContent = r.ProposedCapacity || r.Capacity || '—';
+  if (document.getElementById('detDiscomInfo')) {
+    const discomParts = [];
+    if (r.SubDivision) discomParts.push(`Sub-Div: ${r.SubDivision}`);
+    if (r.DivisionName || r.Division) discomParts.push(`Div: ${r.DivisionName || r.Division}`);
+    if (r.CircleName || r.Circle) discomParts.push(`Circle: ${r.CircleName || r.Circle}`);
+    document.getElementById('detDiscomInfo').textContent = discomParts.length > 0 ? discomParts.join(' | ') : '—';
+  }
   document.getElementById('detMobile').textContent = r.MobileNumber || '—';
   document.getElementById('detBrand').textContent = r.CommittedBrand || '—';
   const addrParts = [];
@@ -3401,6 +3419,11 @@ window.openCustomerModal = function(slNo) {
     if (r) {
       document.getElementById('cName').value = r.Name || '';
       if (document.getElementById('cConsumerNo')) document.getElementById('cConsumerNo').value = r.ConsumerNo || '';
+      if (document.getElementById('cApplicationNo')) document.getElementById('cApplicationNo').value = r.ApplicationNumber || r.ApplicationNo || '';
+      if (document.getElementById('cProposedCapacity')) document.getElementById('cProposedCapacity').value = r.ProposedCapacity || r.Capacity || '';
+      if (document.getElementById('cCircle')) document.getElementById('cCircle').value = r.CircleName || r.Circle || '';
+      if (document.getElementById('cDivision')) document.getElementById('cDivision').value = r.DivisionName || r.Division || '';
+      if (document.getElementById('cSubDivision')) document.getElementById('cSubDivision').value = r.SubDivision || r.Subdivision || '';
       document.getElementById('cMobile').value = r.MobileNumber || '';
       document.getElementById('cDistrict').value = r.District || '';
       if (document.getElementById('cPinCode')) document.getElementById('cPinCode').value = r.PinCode || '';
@@ -3445,7 +3468,7 @@ window.openCustomerModal = function(slNo) {
       }
     }
   } else {
-    ['cName', 'cConsumerNo', 'cMobile', 'cAddress', 'cBrand', 'cPinCode', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit', 'cNetMeterPayment'].forEach(id => {
+    ['cName', 'cConsumerNo', 'cApplicationNo', 'cProposedCapacity', 'cCircle', 'cDivision', 'cSubDivision', 'cMobile', 'cAddress', 'cBrand', 'cPinCode', 'cPrice', 'cVendorPrice', 'cLoginDate', 'cInstallationDate', 'cCommissioningDate', 'cBrokerName', 'cBrokerNumber', 'cCommission', 'cMaterialCost', 'cPartnerPrice', 'cInstallationCost', 'cTransportCost', 'cGSTPercentage', 'cOtherCost', 'cProfit', 'cNetMeterPayment'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -3480,7 +3503,8 @@ window.openCustomerModal = function(slNo) {
   }
 
   const currentUser = Auth.getUser();
-  if (currentUser && (currentUser.role === 'partner' || currentUser.role === 'associates')) {
+  const isPartnerRole = currentUser && (currentUser.role === 'partner' || currentUser.role === 'associates');
+  if (isPartnerRole) {
     if (cBrokerEl && !slNo) {
       cBrokerEl.value = currentUser.username;
     }
@@ -3491,9 +3515,13 @@ window.openCustomerModal = function(slNo) {
         if (phoneInput) phoneInput.value = foundVendor.Phone;
       }
     }
-  }
-  if (cBrokerEl) {
-    cBrokerEl.disabled = false;
+    if (cBrokerEl) {
+      cBrokerEl.disabled = true;
+    }
+  } else {
+    if (cBrokerEl) {
+      cBrokerEl.disabled = false;
+    }
   }
 
   const updateModalCalculations = () => {
@@ -3614,9 +3642,55 @@ async function saveCustomerModal() {
     }
   }
 
+  function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
+    let basePhone = '';
+    let expensesJson = '';
+    let creatorId = '';
+    let workObj = {};
+
+    if (currentBrokerNumber) {
+      const parts = currentBrokerNumber.split('|');
+      basePhone = parts[0] || '';
+      parts.slice(1).forEach(p => {
+        if (p.startsWith('expenses:')) {
+          expensesJson = p.slice('expenses:'.length);
+        } else if (p.startsWith('creator:')) {
+          creatorId = p.slice('creator:'.length);
+        } else if (p.startsWith('work:')) {
+          try {
+            workObj = JSON.parse(p.slice('work:'.length));
+          } catch (e) {}
+        }
+      });
+    }
+
+    Object.assign(workObj, updates);
+
+    let result = basePhone;
+    if (expensesJson) result += '|expenses:' + expensesJson;
+    if (creatorId) result += '|creator:' + creatorId;
+    if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
+    return result;
+  }
+
+  const workMeta = {
+    SubDivision: document.getElementById('cSubDivision') ? document.getElementById('cSubDivision').value.trim() : (existingRow ? (existingRow.SubDivision || '') : ''),
+    DivisionName: document.getElementById('cDivision') ? document.getElementById('cDivision').value.trim() : (existingRow ? (existingRow.DivisionName || '') : ''),
+    CircleName: document.getElementById('cCircle') ? document.getElementById('cCircle').value.trim() : (existingRow ? (existingRow.CircleName || '') : ''),
+    ApplicationNumber: document.getElementById('cApplicationNo') ? document.getElementById('cApplicationNo').value.trim() : (existingRow ? (existingRow.ApplicationNumber || '') : ''),
+    ProposedCapacity: document.getElementById('cProposedCapacity') ? document.getElementById('cProposedCapacity').value.trim() : (existingRow ? (existingRow.ProposedCapacity || '') : '')
+  };
+
+  const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses), workMeta);
+
   const rowData = {
     Name: name,
     ConsumerNo: document.getElementById('cConsumerNo') ? document.getElementById('cConsumerNo').value.trim() : '',
+    ApplicationNumber: workMeta.ApplicationNumber,
+    ProposedCapacity: workMeta.ProposedCapacity,
+    CircleName: workMeta.CircleName,
+    DivisionName: workMeta.DivisionName,
+    SubDivision: workMeta.SubDivision,
     MobileNumber: document.getElementById('cMobile').value.trim(),
     District: document.getElementById('cDistrict').value,
     PinCode: document.getElementById('cPinCode') ? document.getElementById('cPinCode').value.trim() : '',
@@ -3629,7 +3703,7 @@ async function saveCustomerModal() {
     InstallationDate: document.getElementById('cInstallationDate') ? (document.getElementById('cInstallationDate').value || null) : (existingRow ? (existingRow.InstallationDate || null) : null),
     CommissioningDate: document.getElementById('cCommissioningDate') ? (document.getElementById('cCommissioningDate').value || null) : (existingRow ? (existingRow.CommissioningDate || null) : null),
     BrokerName: document.getElementById('cBrokerName') ? document.getElementById('cBrokerName').value.trim() : (existingRow ? (existingRow.BrokerName || '') : ''),
-    BrokerNumber: phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses),
+    BrokerNumber: formattedBrokerNumber,
     Commission: Number(document.getElementById('cCommission').value) || 0,
     NetMeterPayment: expenses.net_meter_payment,
     NetMeterPaid: expenses.net_meter_paid
@@ -3770,6 +3844,32 @@ async function handleExcelImport(e) {
         return lk === 'submitted on' || lk === 'submitted_on' || lk === 'submitted date' || lk === 'submission date' || lk === 'submission on' || lk === 'login date' || lk === 'logindate' || lk === 'login_date' || lk === 'application date' || lk === 'applied on' || lk === 'submission_date';
       });
 
+      const subDivisionKey = keys.find(k => {
+        const lk = k.toLowerCase().replace(/[\s\-_]/g, '').trim();
+        return lk === 'subdivision' || lk === 'subdivisionname' || lk === 'subdiv';
+      });
+
+      const divisionKey = keys.find(k => {
+        const lk = k.toLowerCase().replace(/[\s\-_]/g, '').trim();
+        return (lk === 'divisionname' || lk === 'division' || lk === 'divname' || lk === 'discomdivision') && !lk.includes('sub');
+      });
+
+      const circleKey = keys.find(k => {
+        const lk = k.toLowerCase().replace(/[\s\-_]/g, '').trim();
+        return lk === 'circlename' || lk === 'circle' || lk === 'discomcircle';
+      });
+
+      const applicationNoKey = keys.find(k => {
+        const lk = k.toLowerCase().replace(/[\s\-_.]/g, '').trim();
+        return lk === 'applicationnumber' || lk === 'applicationno' || lk === 'applicationid' || lk === 'applno' || lk === 'appno' || lk === 'application' || lk === 'referenceno' || lk === 'referencenumber' || lk === 'refno';
+      });
+
+      const proposedCapacityKey = keys.find(k => {
+        const raw = k.toLowerCase().trim();
+        const lk = raw.replace(/[\s\-_.]/g, '');
+        return lk.includes('proposedcapacity') || lk.includes('plantcapacity') || lk.includes('solarcapacity') || lk === 'capacity' || lk.startsWith('capacity(') || lk.startsWith('capacitykw') || lk === 'requestedload' || lk === 'sanctionedload' || lk === 'proposedload' || (lk.includes('capacity') && !lk.includes('battery'));
+      });
+
       if (!nameKey) {
         UI.toast('Invalid format! Could not find "Consumer Name" or "Name" column.', 'danger');
         return;
@@ -3797,6 +3897,11 @@ async function handleExcelImport(e) {
         const rawBroker = brokerKey ? String(row[brokerKey] || '').trim() : '';
         const rawAddress = addressKey ? String(row[addressKey] || '').trim() : '';
         const rawLoginDate = loginDateKey ? parseExcelDate(row[loginDateKey]) : '';
+        const rawSubDivision = subDivisionKey ? String(row[subDivisionKey] || '').trim() : '';
+        const rawDivision = divisionKey ? String(row[divisionKey] || '').trim() : '';
+        const rawCircle = circleKey ? String(row[circleKey] || '').trim() : '';
+        const rawApplicationNo = applicationNoKey ? String(row[applicationNoKey] || '').trim() : '';
+        const rawProposedCapacity = proposedCapacityKey ? String(row[proposedCapacityKey] || '').trim() : '';
 
         const cleanNameVal = cleanName(rawName);
         excelNamesSet.add(cleanNameVal);
@@ -3812,8 +3917,13 @@ async function handleExcelImport(e) {
           const brokerDiff = norm(gridMatch.BrokerName) !== norm(rawBroker) && Boolean(rawBroker);
           const addrDiff = norm(gridMatch.Address) !== norm(rawAddress) && Boolean(rawAddress);
           const loginDiff = rawLoginDate && gridMatch.LoginDate && norm(gridMatch.LoginDate) !== norm(rawLoginDate);
+          const subDivDiff = norm(gridMatch.SubDivision) !== norm(rawSubDivision) && Boolean(rawSubDivision);
+          const divDiff = norm(gridMatch.DivisionName) !== norm(rawDivision) && Boolean(rawDivision);
+          const circleDiff = norm(gridMatch.CircleName) !== norm(rawCircle) && Boolean(rawCircle);
+          const appNoDiff = norm(gridMatch.ApplicationNumber) !== norm(rawApplicationNo) && Boolean(rawApplicationNo);
+          const capDiff = norm(gridMatch.ProposedCapacity) !== norm(rawProposedCapacity) && Boolean(rawProposedCapacity);
 
-          const hasDifferences = cNoDiff || mobDiff || distDiff || brokerDiff || addrDiff || loginDiff;
+          const hasDifferences = cNoDiff || mobDiff || distDiff || brokerDiff || addrDiff || loginDiff || subDivDiff || divDiff || circleDiff || appNoDiff || capDiff;
 
           if (!hasDifferences) {
             // BOTH ARE 100% IDENTICAL! Auto-skip (do not display 2 times or show checkbox)
@@ -3825,6 +3935,11 @@ async function handleExcelImport(e) {
               Name: gridMatch.Name,
               GridData: {
                 ConsumerNo: gridMatch.ConsumerNo || '',
+                ApplicationNumber: gridMatch.ApplicationNumber || '',
+                ProposedCapacity: gridMatch.ProposedCapacity || '',
+                SubDivision: gridMatch.SubDivision || '',
+                DivisionName: gridMatch.DivisionName || '',
+                CircleName: gridMatch.CircleName || '',
                 MobileNumber: gridMatch.MobileNumber || '',
                 District: gridMatch.District || '',
                 BrokerName: gridMatch.BrokerName || '',
@@ -3833,6 +3948,11 @@ async function handleExcelImport(e) {
               },
               ExcelData: {
                 ConsumerNo: rawConsumerNo || gridMatch.ConsumerNo || '',
+                ApplicationNumber: rawApplicationNo || gridMatch.ApplicationNumber || '',
+                ProposedCapacity: rawProposedCapacity || gridMatch.ProposedCapacity || '',
+                SubDivision: rawSubDivision || gridMatch.SubDivision || '',
+                DivisionName: rawDivision || gridMatch.DivisionName || '',
+                CircleName: rawCircle || gridMatch.CircleName || '',
                 MobileNumber: rawMobile || gridMatch.MobileNumber || '',
                 District: rawDistrict || gridMatch.District || '',
                 BrokerName: rawBroker || gridMatch.BrokerName || '',
@@ -3841,6 +3961,11 @@ async function handleExcelImport(e) {
               },
               Diffs: {
                 ConsumerNo: cNoDiff,
+                ApplicationNumber: appNoDiff,
+                ProposedCapacity: capDiff,
+                SubDivision: subDivDiff,
+                DivisionName: divDiff,
+                CircleName: circleDiff,
                 MobileNumber: mobDiff,
                 District: distDiff,
                 BrokerName: brokerDiff,
@@ -3856,6 +3981,11 @@ async function handleExcelImport(e) {
           parsedCustomers.push({
             Name: rawName,
             ConsumerNo: rawConsumerNo,
+            ApplicationNumber: rawApplicationNo,
+            ProposedCapacity: rawProposedCapacity,
+            SubDivision: rawSubDivision,
+            DivisionName: rawDivision,
+            CircleName: rawCircle,
             MobileNumber: rawMobile,
             District: rawDistrict,
             BrokerName: rawBroker,
@@ -3869,6 +3999,11 @@ async function handleExcelImport(e) {
           parsedCustomers.push({
             Name: rawName,
             ConsumerNo: rawConsumerNo,
+            ApplicationNumber: rawApplicationNo,
+            ProposedCapacity: rawProposedCapacity,
+            SubDivision: rawSubDivision,
+            DivisionName: rawDivision,
+            CircleName: rawCircle,
             MobileNumber: rawMobile,
             District: rawDistrict,
             BrokerName: rawBroker,
@@ -3886,6 +4021,11 @@ async function handleExcelImport(e) {
           parsedMissingCustomers.push({
             Name: r.Name,
             ConsumerNo: r.ConsumerNo || '',
+            ApplicationNumber: r.ApplicationNumber || '',
+            ProposedCapacity: r.ProposedCapacity || '',
+            SubDivision: r.SubDivision || '',
+            DivisionName: r.DivisionName || '',
+            CircleName: r.CircleName || '',
             MobileNumber: r.MobileNumber || '',
             District: r.District || '',
             BrokerName: r.BrokerName || '',
@@ -3992,6 +4132,11 @@ function renderImportPreviewModal() {
                   </div>
                   <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2" style="font-size:0.78rem;">
                     <div><strong>Consumer No:</strong> ${fmtVal(item.Diffs.ConsumerNo, item.ExcelData.ConsumerNo)}</div>
+                    <div><strong>Application No:</strong> ${fmtVal(item.Diffs.ApplicationNumber, item.ExcelData.ApplicationNumber)}</div>
+                    <div><strong>Proposed Capacity:</strong> ${fmtVal(item.Diffs.ProposedCapacity, item.ExcelData.ProposedCapacity)}</div>
+                    <div><strong>Sub Division:</strong> ${fmtVal(item.Diffs.SubDivision, item.ExcelData.SubDivision)}</div>
+                    <div><strong>Division:</strong> ${fmtVal(item.Diffs.DivisionName, item.ExcelData.DivisionName)}</div>
+                    <div><strong>Circle:</strong> ${fmtVal(item.Diffs.CircleName, item.ExcelData.CircleName)}</div>
                     <div><strong>Mobile Number:</strong> ${fmtVal(item.Diffs.MobileNumber, item.ExcelData.MobileNumber)}</div>
                     <div><strong>Submitted On (Login Date):</strong> ${fmtVal(item.Diffs.LoginDate, item.ExcelData.LoginDate ? fmtDateExcel(item.ExcelData.LoginDate) : '—')}</div>
                     <div><strong>District:</strong> ${fmtVal(item.Diffs.District, item.ExcelData.District)}</div>
@@ -4011,6 +4156,11 @@ function renderImportPreviewModal() {
                   </div>
                   <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2" style="font-size:0.78rem;">
                     <div><strong>Consumer No:</strong> ${escapeHtml(item.GridData.ConsumerNo || '—')}</div>
+                    <div><strong>Application No:</strong> ${escapeHtml(item.GridData.ApplicationNumber || '—')}</div>
+                    <div><strong>Proposed Capacity:</strong> ${escapeHtml(item.GridData.ProposedCapacity || '—')}</div>
+                    <div><strong>Sub Division:</strong> ${escapeHtml(item.GridData.SubDivision || '—')}</div>
+                    <div><strong>Division:</strong> ${escapeHtml(item.GridData.DivisionName || '—')}</div>
+                    <div><strong>Circle:</strong> ${escapeHtml(item.GridData.CircleName || '—')}</div>
                     <div><strong>Mobile Number:</strong> ${escapeHtml(item.GridData.MobileNumber || '—')}</div>
                     <div><strong>Login Date:</strong> ${escapeHtml(item.GridData.LoginDate ? fmtDateExcel(item.GridData.LoginDate) : '—')}</div>
                     <div><strong>District:</strong> ${escapeHtml(item.GridData.District || '—')}</div>
@@ -4041,6 +4191,7 @@ function renderImportPreviewModal() {
       parsedCustomers.forEach((c, index) => {
         if (c.IsDuplicate) return;
 
+        const discomBadge = [c.SubDivision, c.DivisionName, c.CircleName].filter(Boolean).join(' / ') || '—';
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="text-center">
@@ -4049,6 +4200,9 @@ function renderImportPreviewModal() {
           <td class="text-center">${index + 1}</td>
           <td class="fw-semibold">${escapeHtml(c.Name)}</td>
           <td class="font-monospace">${escapeHtml(c.ConsumerNo || '—')}</td>
+          <td class="font-monospace text-nowrap">${escapeHtml(c.ApplicationNumber || '—')}</td>
+          <td>${escapeHtml(c.ProposedCapacity || '—')}</td>
+          <td class="text-truncate" style="max-width: 150px;" title="${escapeHtml(discomBadge)}">${escapeHtml(discomBadge)}</td>
           <td>${escapeHtml(c.MobileNumber || '—')}</td>
           <td>${c.LoginDate ? `<span class="font-monospace">${fmtDateExcel(c.LoginDate)}</span> ${getDelayBadgeHtml(c.LoginDate)}` : '—'}</td>
           <td>
@@ -4105,12 +4259,16 @@ function renderImportPreviewModal() {
     } else {
       missingCustomersSection.style.display = 'block';
       parsedMissingCustomers.forEach((c, index) => {
+        const discomBadge = [c.SubDivision, c.DivisionName, c.CircleName].filter(Boolean).join(' / ') || '—';
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
         tr.innerHTML = `
           <td class="text-center" style="background-color: #fff3cd !important; color: #664d03 !important;">${index + 1}</td>
           <td class="fw-semibold" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.Name)}</td>
           <td class="font-monospace" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.ConsumerNo || '—')}</td>
+          <td class="font-monospace text-nowrap" style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.ApplicationNumber || '—')}</td>
+          <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.ProposedCapacity || '—')}</td>
+          <td class="text-truncate" style="max-width: 150px; background-color: #fff3cd !important; color: #664d03 !important;" title="${escapeHtml(discomBadge)}">${escapeHtml(discomBadge)}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.MobileNumber || '—')}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${c.LoginDate ? `<span class="font-monospace">${fmtDateExcel(c.LoginDate)}</span> ${getDelayBadgeHtml(c.LoginDate)}` : '—'}</td>
           <td style="background-color: #fff3cd !important; color: #664d03 !important;">${escapeHtml(c.District || '—')}</td>
@@ -4139,21 +4297,21 @@ function downloadTxtReport() {
   parsedConflictingCustomers.forEach((c, idx) => {
     txt += `${idx + 1}. Consumer: ${c.Name} (Sl. #${c.SlNo})\n`;
     txt += `   Selected Choice: ${c.SelectedChoice === 'EXCEL' ? 'Excel Data (Overwrite)' : 'Grid Data (Keep Previous)'}\n`;
-    txt += `   Excel Values -> ConsumerNo: ${c.ExcelData.ConsumerNo || 'N/A'}, Mobile: ${c.ExcelData.MobileNumber || 'N/A'}, Submitted On: ${c.ExcelData.LoginDate || 'N/A'}, District: ${c.ExcelData.District || 'N/A'}, Partner: ${c.ExcelData.BrokerName || 'N/A'}\n`;
-    txt += `   Grid Values  -> ConsumerNo: ${c.GridData.ConsumerNo || 'N/A'}, Mobile: ${c.GridData.MobileNumber || 'N/A'}, Login Date: ${c.GridData.LoginDate || 'N/A'}, District: ${c.GridData.District || 'N/A'}, Partner: ${c.GridData.BrokerName || 'N/A'}\n\n`;
+    txt += `   Excel Values -> ConsumerNo: ${c.ExcelData.ConsumerNo || 'N/A'}, ApplNo: ${c.ExcelData.ApplicationNumber || 'N/A'}, Capacity: ${c.ExcelData.ProposedCapacity || 'N/A'}, SubDiv: ${c.ExcelData.SubDivision || 'N/A'}, Div: ${c.ExcelData.DivisionName || 'N/A'}, Circle: ${c.ExcelData.CircleName || 'N/A'}, Mobile: ${c.ExcelData.MobileNumber || 'N/A'}, Submitted On: ${c.ExcelData.LoginDate || 'N/A'}, District: ${c.ExcelData.District || 'N/A'}, Partner: ${c.ExcelData.BrokerName || 'N/A'}\n`;
+    txt += `   Grid Values  -> ConsumerNo: ${c.GridData.ConsumerNo || 'N/A'}, ApplNo: ${c.GridData.ApplicationNumber || 'N/A'}, Capacity: ${c.GridData.ProposedCapacity || 'N/A'}, SubDiv: ${c.GridData.SubDivision || 'N/A'}, Div: ${c.GridData.DivisionName || 'N/A'}, Circle: ${c.GridData.CircleName || 'N/A'}, Mobile: ${c.GridData.MobileNumber || 'N/A'}, Login Date: ${c.GridData.LoginDate || 'N/A'}, District: ${c.GridData.District || 'N/A'}, Partner: ${c.GridData.BrokerName || 'N/A'}\n\n`;
   });
 
   txt += 'SECTION 2: NEW EXCEL RECORDS TO ADD\n';
   txt += '----------------------------------------------------------------------\n';
   parsedCustomers.filter(c => !c.IsDuplicate).forEach((c, idx) => {
-    txt += `${idx + 1}. | ${c.Name} | ${c.ConsumerNo || 'N/A'} | ${c.MobileNumber || 'N/A'} | ${c.LoginDate || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
+    txt += `${idx + 1}. | ${c.Name} | ${c.ConsumerNo || 'N/A'} | ${c.ApplicationNumber || 'N/A'} | ${c.ProposedCapacity || 'N/A'} | ${c.SubDivision || 'N/A'} | ${c.DivisionName || 'N/A'} | ${c.CircleName || 'N/A'} | ${c.MobileNumber || 'N/A'} | ${c.LoginDate || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
   });
 
   txt += '\n======================================================================\n';
   txt += 'SECTION 3: GRID RECORDS MISSING IN EXCEL FILE\n';
   txt += '----------------------------------------------------------------------\n';
   parsedMissingCustomers.forEach((c, idx) => {
-    txt += `${idx + 1}. | ${c.Name} | ${c.MobileNumber || 'N/A'} | ${c.LoginDate || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
+    txt += `${idx + 1}. | ${c.Name} | ${c.ConsumerNo || 'N/A'} | ${c.ApplicationNumber || 'N/A'} | ${c.ProposedCapacity || 'N/A'} | ${c.SubDivision || 'N/A'} | ${c.DivisionName || 'N/A'} | ${c.CircleName || 'N/A'} | ${c.MobileNumber || 'N/A'} | ${c.LoginDate || 'N/A'} | ${c.District || 'N/A'} | ${c.BrokerName || 'N/A'}\n`;
   });
 
   txt += '\n======================================================================\n';
@@ -4184,6 +4342,37 @@ async function saveImportedCustomers() {
     return;
   }
 
+  function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
+    let basePhone = '';
+    let expensesJson = '';
+    let creatorId = '';
+    let workObj = {};
+
+    if (currentBrokerNumber) {
+      const parts = currentBrokerNumber.split('|');
+      basePhone = parts[0] || '';
+      parts.slice(1).forEach(p => {
+        if (p.startsWith('expenses:')) {
+          expensesJson = p.slice('expenses:'.length);
+        } else if (p.startsWith('creator:')) {
+          creatorId = p.slice('creator:'.length);
+        } else if (p.startsWith('work:')) {
+          try {
+            workObj = JSON.parse(p.slice('work:'.length));
+          } catch (e) {}
+        }
+      });
+    }
+
+    Object.assign(workObj, updates);
+
+    let result = basePhone;
+    if (expensesJson) result += '|expenses:' + expensesJson;
+    if (creatorId) result += '|creator:' + creatorId;
+    if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
+    return result;
+  }
+
   UI.showLoading(true);
   try {
     const allRows = DB.getAll('installments') || [];
@@ -4208,12 +4397,24 @@ async function saveImportedCustomers() {
 
         const foundVendor = vendors.find(v => v.VendorName === customer.BrokerName);
         const vendorPhone = foundVendor ? (foundVendor.Phone || '').trim() : '';
-        const brokerNumberVal = vendorPhone + creatorSuffix + '|expenses:' + JSON.stringify(defaultExpenses);
+        const workMeta = {
+          SubDivision: customer.SubDivision || '',
+          DivisionName: customer.DivisionName || '',
+          CircleName: customer.CircleName || '',
+          ApplicationNumber: customer.ApplicationNumber || '',
+          ProposedCapacity: customer.ProposedCapacity || ''
+        };
+        const brokerNumberVal = formatBrokerNumberWithWorkMeta(vendorPhone + creatorSuffix + '|expenses:' + JSON.stringify(defaultExpenses), workMeta);
 
         const rowData = {
           SlNo: currentMaxSl,
           Name: customer.Name,
           ConsumerNo: customer.ConsumerNo || '',
+          ApplicationNumber: customer.ApplicationNumber || '',
+          ProposedCapacity: customer.ProposedCapacity || '',
+          CircleName: customer.CircleName || '',
+          DivisionName: customer.DivisionName || '',
+          SubDivision: customer.SubDivision || '',
           MobileNumber: customer.MobileNumber || '',
           Status: 'Active',
           District: customer.District || '',
@@ -4245,14 +4446,29 @@ async function saveImportedCustomers() {
         excelUpdateCount++;
         const existingRow = allRows.find(r => Number(r.SlNo) === Number(c.SlNo));
         if (existingRow) {
+          const workMetaUpdates = {
+            SubDivision: c.ExcelData.SubDivision || existingRow.SubDivision || '',
+            DivisionName: c.ExcelData.DivisionName || existingRow.DivisionName || '',
+            CircleName: c.ExcelData.CircleName || existingRow.CircleName || '',
+            ApplicationNumber: c.ExcelData.ApplicationNumber || existingRow.ApplicationNumber || '',
+            ProposedCapacity: c.ExcelData.ProposedCapacity || existingRow.ProposedCapacity || ''
+          };
+          const newBrokerNum = formatBrokerNumberWithWorkMeta(existingRow.BrokerNumber || '', workMetaUpdates);
+
           const updatedRow = {
             ...existingRow,
             ConsumerNo: c.ExcelData.ConsumerNo || existingRow.ConsumerNo || '',
+            ApplicationNumber: workMetaUpdates.ApplicationNumber,
+            ProposedCapacity: workMetaUpdates.ProposedCapacity,
+            CircleName: workMetaUpdates.CircleName,
+            DivisionName: workMetaUpdates.DivisionName,
+            SubDivision: workMetaUpdates.SubDivision,
             MobileNumber: c.ExcelData.MobileNumber || existingRow.MobileNumber || '',
             District: c.ExcelData.District || existingRow.District || '',
             BrokerName: c.ExcelData.BrokerName || existingRow.BrokerName || '',
             Address: c.ExcelData.Address || existingRow.Address || '',
-            LoginDate: c.ExcelData.LoginDate || existingRow.LoginDate || null
+            LoginDate: c.ExcelData.LoginDate || existingRow.LoginDate || null,
+            BrokerNumber: newBrokerNum
           };
           promises.push(DB.update('installments', r => Number(r.SlNo) === Number(c.SlNo), updatedRow));
         }

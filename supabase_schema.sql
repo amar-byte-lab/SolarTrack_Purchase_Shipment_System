@@ -70,6 +70,11 @@ ALTER TABLE installments ADD COLUMN IF NOT EXISTS "MaterialDispatchedDate" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "NetMeterDate" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "InspectionDate" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "MeterConnectedDate" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "SubDivision" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "DivisionName" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "CircleName" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ApplicationNumber" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ProposedCapacity" TEXT;
 
 CREATE TABLE IF NOT EXISTS installment_txns (
   "TxnID" TEXT PRIMARY KEY,

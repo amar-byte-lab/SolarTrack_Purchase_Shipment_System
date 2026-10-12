@@ -158,8 +158,12 @@ const Auth = (() => {
     const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
     
     if (!isPowerUser) {
+      if (page === 'manage-work.html') {
+        window.location.href = 'dashboard.html';
+        return;
+      }
       if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        const allowed = ['dashboard.html', 'customer.html', 'manage-work.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+        const allowed = ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'dashboard.html';
           return;
