@@ -11,7 +11,7 @@ const UI = (() => {
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipment' },
     { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
-    { href: 'agreement.html',       icon: 'agreement',  label: 'Agreement' },
+    { href: 'document.html',        icon: 'agreement',  label: 'Document' },
     { href: 'sizing-calc.html',     icon: 'calculator', label: 'Calculator' },
     { href: 'demand-note.html',     icon: 'demand',     label: 'NetMeter' },
     { href: 'work-note.html',       icon: 'worknote',   label: 'Note' },
@@ -89,9 +89,9 @@ const UI = (() => {
           if (isPowerUser) return true;
           if (item.href === 'manage-work.html') return false;
           if (user.role === 'partner' || user.role === 'associates') {
-            return ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['dashboard.html', 'quotation.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['dashboard.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : [];
 

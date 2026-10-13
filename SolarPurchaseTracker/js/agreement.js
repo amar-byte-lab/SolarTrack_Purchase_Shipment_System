@@ -17,7 +17,7 @@ function escapeHtml(str) {
 window.escapeHtml = escapeHtml;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  UI.renderSidebar('agreement.html');
+  UI.renderSidebar('document.html');
   UI.renderTopbar('Documents & Forms');
 
   UI.showLoading(true);
@@ -201,6 +201,16 @@ window.selectCustomerForAgreement = function(slNo) {
   populateForm6Fields(r);
 
   UI.toast(`Auto-filled details for ${r.Name}`, 'info');
+
+  // Mobile UX: smoothly scroll to document tab so user doesn't have to scroll past the directory
+  if (window.innerWidth < 992) {
+    const tabsEl = document.getElementById('docTabs');
+    if (tabsEl) {
+      setTimeout(() => {
+        tabsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }
 };
 
 window.resetAgreementForm = function() {

@@ -1,0 +1,492 @@
+/* =========================================================================
+   agreement.css — Mobile-First, Compact SaaS Styles for Agreement & Forms
+   Follows SolarTrack Enterprise Design System (common.css & components.css)
+   ========================================================================= */
+
+/* ══ 1. Page Shell & Body Spacing ════════════════════════════════════════ */
+.agreement-page .page-body {
+  padding: 10px 12px;
+}
+
+@media (max-width: 575.98px) {
+  .agreement-page .page-body {
+    padding: 4px 5px !important;
+  }
+  .agreement-page .st-card.h-100 {
+    padding: 6px 7px !important;
+  }
+}
+
+/* ══ 2. Customer Directory (Left Column) ═════════════════════════════════ */
+.customer-list-item {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border-left: 3px solid transparent;
+  padding: 0.35rem 0.55rem;
+  border-bottom: 1px solid var(--st-gray-100, #f1f5f9);
+  font-size: 0.76rem;
+}
+.customer-list-item:last-child {
+  border-bottom: none;
+}
+.customer-list-item:hover {
+  background-color: var(--st-gray-50, #f8fafc);
+  border-left-color: var(--st-primary, #4338ca);
+}
+.customer-list-item.active {
+  background-color: rgba(67, 56, 202, 0.08);
+  border-left-color: var(--st-primary, #4338ca);
+  font-weight: 600;
+}
+.customer-scroll-list {
+  max-height: 480px;
+  min-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--st-gray-200, #e2e8f0);
+  background: #fff;
+}
+@media (max-width: 991.98px) {
+  .customer-scroll-list {
+    max-height: 140px;
+    min-height: 90px;
+  }
+}
+
+/* District Chips Horizontal Scrollable Strip */
+.mw-chips-scroll-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  gap: 4px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+}
+.mw-chips-scroll-strip::-webkit-scrollbar {
+  height: 3px;
+}
+.mw-chips-scroll-strip::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+.mw-chips-scroll-strip .erp-tag {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.66rem !important;
+  height: 22px !important;
+  line-height: 20px !important;
+  padding: 1px 6px !important;
+}
+
+/* ══ 3. Segmented Navigation Tabs Bar ════════════════════════════════════ */
+.custom-doc-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  list-style: none;
+  margin-bottom: 8px !important;
+}
+.custom-doc-tabs::-webkit-scrollbar {
+  display: none;
+}
+.custom-doc-tabs .nav-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.custom-doc-tabs .nav-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+.custom-doc-tabs .nav-link:hover {
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.6);
+}
+.custom-doc-tabs .nav-link.active {
+  color: #4338ca;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+@media (max-width: 575.98px) {
+  .custom-doc-tabs {
+    padding: 2px;
+    gap: 3px;
+    margin-bottom: 6px !important;
+  }
+  .custom-doc-tabs .nav-link {
+    padding: 4px 4px;
+    font-size: 0.71rem;
+    gap: 3px;
+  }
+  .custom-doc-tabs .nav-link svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+}
+
+/* ══ 4. Responsive Consumer Name Toolbar ═════════════════════════════════ */
+.doc-tab-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+.doc-consumer-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.doc-consumer-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  background: #e0e7ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.doc-consumer-meta {
+  min-width: 0;
+}
+.doc-consumer-meta .doc-consumer-label {
+  font-size: 0.60rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  line-height: 1;
+  display: block;
+  margin-bottom: 1px;
+}
+.doc-consumer-meta .doc-consumer-name {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.doc-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.doc-actions-group .btn {
+  height: 28px !important;
+  font-size: 0.74rem !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+@media (max-width: 575.98px) {
+  .doc-tab-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 6px 7px;
+    margin-bottom: 6px;
+  }
+  .doc-consumer-pill {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .doc-consumer-meta .doc-consumer-name {
+    font-size: 0.77rem;
+    max-width: none !important;
+  }
+  .doc-actions-group {
+    width: 100%;
+    display: flex;
+    gap: 4px;
+  }
+  .doc-actions-group .btn {
+    flex: 1 1 0;
+    justify-content: center;
+    text-align: center;
+    height: 27px !important;
+    font-size: 0.70rem !important;
+    padding: 2px 4px !important;
+  }
+  .doc-actions-group .btn svg {
+    width: 11px;
+    height: 11px;
+  }
+}
+
+/* ══ 5. Form Scroll Container ════════════════════════════════════════════ */
+.form4-editor-container {
+  max-height: calc(100vh - 215px);
+  overflow-y: auto;
+  padding-right: 3px;
+}
+@media (max-width: 767.98px) {
+  .form4-editor-container {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+}
+
+/* ══ 6. Form Section Cards & Headers ═════════════════════════════════════ */
+.f4-section-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 7px;
+  padding: 8px 11px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.f4-section-card:hover {
+  border-color: #cbd5e1;
+}
+.f4-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.f4-section-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: -0.01em;
+}
+.f4-section-title svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+.f4-section-tag {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid #e2e8f0;
+  letter-spacing: 0.02em;
+}
+@media (max-width: 575.98px) {
+  .f4-section-card {
+    padding: 6px 7px;
+    margin-bottom: 6px;
+    border-radius: 5px;
+  }
+  .f4-section-header {
+    margin-bottom: 5px;
+    padding-bottom: 3px;
+  }
+  .f4-section-title {
+    font-size: 0.73rem;
+    gap: 4px;
+  }
+  .f4-section-tag {
+    font-size: 0.58rem;
+    padding: 1px 4px;
+  }
+}
+
+/* ══ 7. Form Grid Gutter (Responsive & Compact) ══════════════════════════ */
+.row.g-2\.5 {
+  --bs-gutter-x: 0.55rem;
+  --bs-gutter-y: 0.50rem;
+}
+@media (max-width: 575.98px) {
+  .row.g-2\.5 {
+    --bs-gutter-x: 0.40rem;
+    --bs-gutter-y: 0.40rem;
+  }
+}
+
+/* ══ 8. Compact Form Controls & Textbox Heights ══════════════════════════ */
+.f4-label {
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 2px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.f4-input {
+  font-size: 0.78rem !important;
+  font-weight: 500;
+  height: 31px !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 2px 7px !important;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  line-height: 1.25;
+}
+.f4-input:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.12) !important;
+  outline: none !important;
+}
+.f4-textarea {
+  font-size: 0.77rem !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 4px 7px !important;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  line-height: 1.35 !important;
+  resize: vertical;
+}
+.f4-textarea:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.12) !important;
+  outline: none !important;
+}
+.f4-subgroup-title {
+  font-size: 0.69rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #4f46e5;
+  margin-bottom: 0.40rem;
+  display: flex;
+  align-items: center;
+  gap: 0.30rem;
+}
+@media (max-width: 575.98px) {
+  .f4-label {
+    font-size: 0.66rem;
+    margin-bottom: 2px;
+  }
+  .f4-input {
+    font-size: 0.74rem !important;
+    height: 29px !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+  }
+  .f4-textarea {
+    font-size: 0.73rem !important;
+    padding: 3px 6px !important;
+  }
+}
+
+/* ══ 9. Dynamic Module Serial & Capacity Row Groups ══════════════════════ */
+.f4-module-row-group, .f6-module-row-group {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.f4-module-row-group .input-group-text, .f6-module-row-group .input-group-text {
+  font-size: 0.70rem;
+  background-color: #f8fafc;
+  color: #64748b;
+  border-color: #cbd5e1;
+  padding: 2px 6px;
+  height: 29px;
+  line-height: 25px;
+}
+.f4-module-row-group .f4-module-serial-box, .f6-module-row-group .f6-module-serial-box {
+  font-size: 0.76rem !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  border-color: #cbd5e1;
+  height: 29px !important;
+  padding: 2px 6px !important;
+}
+.f4-module-row-group .f4-module-cap-box, .f6-module-row-group .f6-module-cap-box {
+  font-size: 0.76rem !important;
+  font-weight: 600;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  max-width: 74px;
+  height: 29px !important;
+  padding: 2px 5px !important;
+}
+@media (max-width: 575.98px) {
+  .f4-module-row-group .input-group-text, .f6-module-row-group .input-group-text {
+    font-size: 0.66rem;
+    padding: 1px 4px !important;
+    height: 28px;
+    line-height: 24px;
+  }
+  .f4-module-row-group .f4-module-serial-box, .f6-module-row-group .f6-module-serial-box {
+    font-size: 0.72rem !important;
+    height: 28px !important;
+    padding: 1px 5px !important;
+  }
+  .f4-module-row-group .f4-module-cap-box, .f6-module-row-group .f6-module-cap-box {
+    font-size: 0.72rem !important;
+    max-width: 62px !important;
+    height: 28px !important;
+    padding: 1px 4px !important;
+  }
+}
+
+/* ══ 10. Printable Form 4 Preview Page Styles ═════════════════════════════ */
+.form4-preview-page {
+  background: #ffffff;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 20px auto;
+  padding: 30px 35px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #000;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.form4-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+.form4-preview-table th, .form4-preview-table td {
+  border: 1px solid #000;
+  padding: 3px 6px;
+  vertical-align: middle;
+  font-size: 10.5px;
+}

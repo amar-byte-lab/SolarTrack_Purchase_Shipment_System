@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Generator — Solar Purchase Tracker</title>
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/agreement.css">
+</head>
+<body class="agreement-page">
+
+  <div class="app-shell">
+    <!-- Sidebar loaded dynamically -->
+    <div id="sidebar"></div>
+
+    <div class="main-content">
+      <!-- Topbar loaded dynamically -->
+      <div class="topbar" id="topbar"></div>
+
+      <div class="page-body">
+        <!-- Main Content Grid -->
+        <div class="row g-3">
+          
+          <!-- Left Column: Customer Directory & Search (Preserved as requested) -->
+          <div class="col-lg-5 col-xl-4">
+            <div class="st-card h-100 p-3">
+              
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="st-card-title">Select Customer</span>
+                <span class="erp-tag" id="customerCountBadge" style="cursor: default;">0 Customers</span>
+              </div>
+
+              <!-- Search Input Box & District Badges -->
+              <div class="mb-2">
+                <div class="input-group input-group-sm mb-2">
+                  <span class="input-group-text bg-white border-end-0 text-muted">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </span>
+                  <input type="text" id="custSearchInput" class="form-control border-start-0 ps-1" placeholder="Search customer, district, consumer no..." oninput="onAgreementSearchInput()">
+                </div>
+                <!-- District Stats Badges (Single-line horizontal scroll strip) -->
+                <div id="districtStatsContainer" class="mw-chips-scroll-strip p-1 bg-light rounded border mb-2" style="font-size: 0.75rem;">
+                  <!-- Injected dynamically by JS -->
+                </div>
+              </div>
+
+              <!-- Scrollable Customer List -->
+              <div class="customer-scroll-list rounded" id="customerListContainer">
+                <div class="text-center text-muted py-4 fs-8">Loading customer list...</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right Column: Documents Tabs (Agreement, Form 4, Form 6) -->
+          <div class="col-lg-7 col-xl-8">
+            <div class="st-card h-100 p-3 p-md-3.5">
+              
+              <!-- ══ Document Navigation Tabs (3 Tabs) ═════════════════════════ -->
+              <ul class="nav custom-doc-tabs mb-3" id="docTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="tabAgreement-btn" data-bs-toggle="tab" data-bs-target="#tabAgreement" type="button" role="tab" aria-controls="tabAgreement" aria-selected="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                    <span>Agreement</span>
+                    <span class="d-none d-sm-inline">(.docx)</span>
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tabForm4-btn" data-bs-toggle="tab" data-bs-target="#tabForm4" type="button" role="tab" aria-controls="tabForm4" aria-selected="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span>Form 4</span>
+                    <span class="d-none d-sm-inline">(Completion)</span>
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tabForm6-btn" data-bs-toggle="tab" data-bs-target="#tabForm6" type="button" role="tab" aria-controls="tabForm6" aria-selected="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    <span>Form 6</span>
+                    <span class="d-none d-sm-inline">(Inspection)</span>
+                  </button>
+                </li>
+              </ul>
+
+              <!-- ══ Tab Panes ══════════════════════════════════════════════════ -->
+              <div class="tab-content" id="docTabsContent">
+                
+                <!-- ── TAB 1: Agreement (.docx) ────────────────────────────────── -->
+                <div class="tab-pane fade show active" id="tabAgreement" role="tabpanel" aria-labelledby="tabAgreement-btn">
+                  <!-- Header Toolbar: Consumer Name, Reset & Download (.docx) -->
+                  <div class="doc-tab-toolbar">
+                    <div class="doc-consumer-pill">
+                      <div class="doc-consumer-avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <div class="doc-consumer-meta">
+                        <span class="doc-consumer-label">Consumer Name</span>
+                        <span class="doc-consumer-name" id="agrConsumerNameLabel">—</span>
+                      </div>
+                    </div>
+                    <div class="doc-actions-group">
+                      <button type="button" class="btn btn-outline-secondary btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="resetAgreementForm()" title="Reset fields">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        <span>Reset</span>
+                      </button>
+                      <button type="button" id="btnGenerateAgreement" class="btn btn-primary btn-sm px-3 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" onclick="generateAgreementDocx()" title="Download Agreement as Word Document">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                        <span>Download (.docx)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <form id="agreementForm" onsubmit="event.preventDefault(); generateAgreementDocx();">
+                    <!-- Hidden fields to preserve sync with docx generator -->
+                    <input type="hidden" id="agrName" value="">
+                    <input type="hidden" id="agrConsumerNo" value="">
+
+                    <!-- Full Address Section Card -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          <span>Full Address</span>
+                        </div>
+                        <span class="f4-section-tag">Address</span>
+                      </div>
+                      <div>
+                        <label for="agrAddress" class="f4-label mb-1.5" title="Full Address">Full Address <span class="text-danger">*</span></label>
+                        <textarea id="agrAddress" class="form-control f4-textarea fw-semibold text-uppercase font-monospace" rows="3" placeholder="e.g. AT/PO KESINGA, DISTRICT: KALAHANDI, STATE: ODISHA, PIN: 766012" required></textarea>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                <!-- ── TAB 2: Form 4 (Work Completion Report) ───────────────────── -->
+                <div class="tab-pane fade" id="tabForm4" role="tabpanel" aria-labelledby="tabForm4-btn">
+                  <!-- Header Toolbar: Consumer Name, Reset, Preview & Download PDF -->
+                  <div class="doc-tab-toolbar">
+                    <div class="doc-consumer-pill">
+                      <div class="doc-consumer-avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <div class="doc-consumer-meta">
+                        <span class="doc-consumer-label">Consumer Name</span>
+                        <span class="doc-consumer-name" id="f4ConsumerNameLabel">—</span>
+                      </div>
+                    </div>
+                    <div class="doc-actions-group">
+                      <button type="button" class="btn btn-outline-secondary btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="resetForm4Fields()" title="Reset fields to customer database values">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        <span>Reset</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-primary btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="previewForm4Modal()" title="Preview Form 4 document">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span>Preview</span>
+                      </button>
+                      <button type="button" class="btn btn-primary btn-sm px-3 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" onclick="downloadForm4Pdf()" title="Download exact Form 4 as PDF">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>Download PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Form 4 Scrollable Inputs Accordion / Cards -->
+                  <div class="form4-editor-container">
+                    
+                    <!-- Section A: Application & Authority Header -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                          <span>A. Details of Application &amp; Authority</span>
+                        </div>
+                        <span class="f4-section-tag">Part A</span>
+                      </div>
+                      <div class="row g-2.5">
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f4Office" title="DISCOM / Circle Office">DISCOM / Circle Office</label>
+                          <input type="text" id="f4Office" class="form-control f4-input" placeholder="e.g. CED Jajpur, Subdivision/Division/Circle, TPNODL">
+                        </div>
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f4RefNo" title="PMSGY Reg. No.">PMSGY Reg. No.</label>
+                          <input type="text" id="f4RefNo" class="form-control f4-input font-monospace" placeholder="e.g. NP-ODTN026-10625985/05-03-2026">
+                        </div>
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f4AppNoDate" title="Application No. / Date">Application No. / Date</label>
+                          <input type="text" id="f4AppNoDate" class="form-control f4-input font-monospace" placeholder="e.g. 31312092606481/12-09-2026">
+                        </div>
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f4AppFees" title="Application Fees (₹)">Application Fees (₹)</label>
+                          <input type="text" id="f4AppFees" class="form-control f4-input" placeholder="Optional / As per challan">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section B: Solar PV Module Details -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                          <span>B. Details of Solar PV Modules</span>
+                        </div>
+                        <span class="f4-section-tag">Part B</span>
+                      </div>
+                      <div class="row g-2.5">
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4ModuleMake" title="Make">Make</label>
+                          <input type="text" id="f4ModuleMake" class="form-control f4-input" placeholder="e.g. LUMINOUS">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4ModuleModel" title="Model No.">Model No.</label>
+                          <input type="text" id="f4ModuleModel" class="form-control f4-input" placeholder="e.g. BIFACIAL">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4ModuleCount" title="No. of Modules">No. of Modules</label>
+                          <input type="text" id="f4ModuleCount" class="form-control f4-input" placeholder="e.g. 6 Nos" oninput="window.handleF4ModuleCountChange()">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4ModuleTotalCapacity" title="Total Capacity">Total Capacity</label>
+                          <input type="text" id="f4ModuleTotalCapacity" class="form-control f4-input fw-semibold text-primary" placeholder="e.g. 3.32 KWP">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4ModuleInstallDate" title="Installation Date">Installation Date</label>
+                          <input type="text" id="f4ModuleInstallDate" class="form-control f4-input" placeholder="e.g. 12 SEP 2026">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4ModuleCommissionDate" title="Commission Date">Commission Date</label>
+                          <input type="text" id="f4ModuleCommissionDate" class="form-control f4-input" placeholder="e.g. 12 SEP 2026">
+                        </div>
+
+                        <!-- Hidden fields to preserve sync with backend & PDF generator -->
+                        <input type="hidden" id="f4ModuleCapacityEach" value="550 Wp">
+                        <textarea id="f4ModuleSerials" style="display: none;"></textarea>
+
+                        <!-- Dynamic PV Module Serials with Capacity beside each -->
+                        <div class="col-12 mt-2 pt-2 border-top">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="f4-label mb-0 fw-semibold text-dark">PV Module Serial Numbers &amp; Capacity</span>
+                              <span class="badge bg-light text-dark border font-monospace fs-8" id="lblF4ModuleSerialCountBadge">0 Modules</span>
+                            </div>
+                          </div>
+                          <div class="row g-2" id="f4ModuleSerialInputsContainer" style="max-height: 240px; overflow-y: auto;">
+                            <!-- Dynamically generated module serial and capacity inputs -->
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section C: Inverter Details -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                          <span>C. Details of the Inverter</span>
+                        </div>
+                        <span class="f4-section-tag">Part C</span>
+                      </div>
+                      <!-- Total No of Inverter is always 1 (hidden) -->
+                      <input type="hidden" id="f4InverterCount" value="1 Nos">
+
+                      <div class="row g-2.5">
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4InverterMake" title="Make">Make</label>
+                          <input type="text" id="f4InverterMake" class="form-control f4-input" placeholder="e.g. LUMINOUS">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4InverterName" title="Inverter Name / Type">Name / Type</label>
+                          <input type="text" id="f4InverterName" class="form-control f4-input" placeholder="e.g. Grid-Tied Inverter">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4InverterSerialNo" title="Serial No.">Serial No.</label>
+                          <input type="text" id="f4InverterSerialNo" class="form-control f4-input font-monospace" placeholder="e.g. G7QGZDB1001678">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4InverterCapacity" title="Capacity">Capacity</label>
+                          <input type="text" id="f4InverterCapacity" class="form-control f4-input" placeholder="e.g. 3 KW">
+                        </div>
+                        <div class="col-12">
+                          <label class="f4-label" for="f4InverterModel" title="Model No.">Model No.</label>
+                          <input type="text" id="f4InverterModel" class="form-control f4-input" placeholder="e.g. NXIT130 3KW/1P-230V,50Hz">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4InverterInputVolt" title="Input Voltage (V DC)">Input Voltage (V DC)</label>
+                          <input type="text" id="f4InverterInputVolt" class="form-control f4-input" placeholder="e.g. 300V DC">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f4InverterOutputVolt" title="Output Voltage (V AC)">Output Voltage (V AC)</label>
+                          <input type="text" id="f4InverterOutputVolt" class="form-control f4-input" placeholder="e.g. 220-240V AC">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section D, E, F, G: Cables, AC Wiring & Distribution Boxes -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                          <span>D, E, F, G. Cables, Wiring &amp; Boxes</span>
+                        </div>
+                        <span class="f4-section-tag">Parts D–G</span>
+                      </div>
+
+                      <!-- Subgroup 1: Cables & Wiring -->
+                      <div class="f4-subgroup-title">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        DC &amp; AC Cables
+                      </div>
+                      <div class="row g-2.5 mb-2.5">
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4DcCableMake" title="DC Cable Make">DC Cable Make</label>
+                          <input type="text" id="f4DcCableMake" class="form-control f4-input" placeholder="e.g. KEI">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4DcCableSize" title="DC Cable Size">DC Cable Size</label>
+                          <input type="text" id="f4DcCableSize" class="form-control f4-input" placeholder="e.g. 4 SQ MM">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4AcWiringMake" title="AC Cable Make">AC Cable Make</label>
+                          <input type="text" id="f4AcWiringMake" class="form-control f4-input" placeholder="e.g. KEI">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4AcWiringSize" title="AC Cable Size">AC Cable Size</label>
+                          <input type="text" id="f4AcWiringSize" class="form-control f4-input" placeholder="e.g. 4 SQ MM">
+                        </div>
+                      </div>
+
+                      <!-- Subgroup 2: Distribution Boxes -->
+                      <div class="f4-subgroup-title">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                        DC &amp; AC Distribution Boxes
+                      </div>
+                      <div class="row g-2.5">
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4DcdbMake" title="DCDB Make">DCDB Make</label>
+                          <input type="text" id="f4DcdbMake" class="form-control f4-input" placeholder="e.g. HAVELLS">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4DcdbMcb" title="DCDB MCB">DCDB MCB</label>
+                          <input type="text" id="f4DcdbMcb" class="form-control f4-input" placeholder="e.g. 32 AMP">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4AcdbMake" title="ACDB Make">ACDB Make</label>
+                          <input type="text" id="f4AcdbMake" class="form-control f4-input" placeholder="e.g. HAVELLS">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f4AcdbMcb" title="ACDB MCB">ACDB MCB</label>
+                          <input type="text" id="f4AcdbMcb" class="form-control f4-input" placeholder="e.g. 32 AMP">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section H: Earthing Details -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><line x1="12" y1="2" x2="12" y2="12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
+                          <span>H. Details of Earthing &amp; Protection</span>
+                        </div>
+                        <span class="f4-section-tag">Part H</span>
+                      </div>
+                      <div class="row g-2.5">
+                        <div class="col-md-4 col-6">
+                          <label class="f4-label" for="f4EarthResistance" title="Earth Resistance">Earth Resistance</label>
+                          <input type="text" id="f4EarthResistance" class="form-control f4-input" placeholder="e.g. 3 OHM">
+                        </div>
+                        <div class="col-md-4 col-6">
+                          <label class="f4-label" for="f4EarthWireSize" title="Earth Wire Size">Earth Wire Size</label>
+                          <input type="text" id="f4EarthWireSize" class="form-control f4-input" placeholder="e.g. 16 SQ MM Aluminum">
+                        </div>
+                        <div class="col-md-4 col-12">
+                          <label class="f4-label" for="f4LaSizeType" title="LA Size & Type">LA Size &amp; Type</label>
+                          <input type="text" id="f4LaSizeType" class="form-control f4-input" placeholder="e.g. Copper Bonded">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section: Applicant & Installer Signatures Info -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                          <span>Applicant &amp; System Installer</span>
+                        </div>
+                        <span class="f4-section-tag">Verification</span>
+                      </div>
+                      <div class="row g-3">
+                        <!-- Applicant Column -->
+                        <div class="col-lg-6 col-12">
+                          <div class="f4-subgroup-title">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Applicant Information
+                          </div>
+                          <div class="mb-2">
+                            <label class="f4-label" for="f4ApplicantName">Applicant Name</label>
+                            <input type="text" id="f4ApplicantName" class="form-control f4-input" placeholder="e.g. SAROJ KUMAR MAHAPATRA">
+                          </div>
+                          <div class="mb-2">
+                            <label class="f4-label" for="f4ApplicantAddress">Site Address</label>
+                            <input type="text" id="f4ApplicantAddress" class="form-control f4-input" placeholder="e.g. AT-MANGALPUR, JAJPUR TOWN-II">
+                          </div>
+                          <div class="row g-2">
+                            <div class="col-6">
+                              <label class="f4-label" for="f4ApplicantDist">District</label>
+                              <input type="text" id="f4ApplicantDist" class="form-control f4-input" placeholder="e.g. JAJPUR">
+                            </div>
+                            <div class="col-6">
+                              <label class="f4-label" for="f4ApplicantPin">PIN Code</label>
+                              <input type="text" id="f4ApplicantPin" class="form-control f4-input font-monospace" placeholder="e.g. 755011">
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- System Installer Column -->
+                        <div class="col-lg-6 col-12">
+                          <div class="f4-subgroup-title">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                            System Installer &amp; DISCOM
+                          </div>
+                          <div class="mb-2">
+                            <label class="f4-label" for="f4InstallerFirm">Firm Name</label>
+                            <input type="text" id="f4InstallerFirm" class="form-control f4-input fw-semibold" value="Shri Trutiyadev Solar Enterprises">
+                          </div>
+                          <div class="mb-2">
+                            <label class="f4-label" for="f4InstallerAddress">Firm Address</label>
+                            <input type="text" id="f4InstallerAddress" class="form-control f4-input" value="AT-Talamundali,PO- Kankadajodi, PS-Maniabandha, Dist-Cuttack PIN-754035">
+                          </div>
+                          <div class="row g-2">
+                            <div class="col-6">
+                              <label class="f4-label" for="f4ReportDate">Report Date</label>
+                              <input type="text" id="f4ReportDate" class="form-control f4-input">
+                            </div>
+                            <div class="col-6">
+                              <label class="f4-label" for="f4CertifiedAuthority">Certified Authority</label>
+                              <input type="text" id="f4CertifiedAuthority" class="form-control f4-input fw-semibold" value="TPNODL">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- ── TAB 3: Form 6 (Inspection Report) ───────────────────── -->
+                <div class="tab-pane fade" id="tabForm6" role="tabpanel" aria-labelledby="tabForm6-btn">
+                  <!-- Header Toolbar: Consumer Name, Reset, Preview & Download Form 6 -->
+                  <div class="doc-tab-toolbar">
+                    <div class="doc-consumer-pill">
+                      <div class="doc-consumer-avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <div class="doc-consumer-meta">
+                        <span class="doc-consumer-label">Consumer Name</span>
+                        <span class="doc-consumer-name" id="f6ConsumerNameLabel">—</span>
+                      </div>
+                    </div>
+                    <div class="doc-actions-group">
+                      <button type="button" class="btn btn-outline-secondary btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="resetForm6Fields()" title="Reset fields to customer database values">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        <span>Reset</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-primary btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="previewForm6Modal()" title="Preview Form 6 document">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span>Preview</span>
+                      </button>
+                      <button type="button" class="btn btn-success btn-sm px-3 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" onclick="downloadForm6Pdf()" title="Download exact Form 6 as PDF">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>Download (PDF)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Form 6 Scrollable Inputs Container -->
+                  <div class="form4-editor-container">
+
+                    <!-- Header & Inspection Top Line Info (Inspection Date hidden) -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                          <span>Utility Inspection Certification Header</span>
+                        </div>
+                        <span class="f4-section-tag">Header</span>
+                      </div>
+                      <!-- Inspection Date hidden as requested -->
+                      <input type="hidden" id="f6InspectionDate" value=".....................................">
+
+                      <div class="row g-2.5">
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f6DiscomOffice" title="DISCOM Utility Name">DISCOM Utility Name</label>
+                          <input type="text" id="f6DiscomOffice" class="form-control f4-input fw-semibold" placeholder="e.g. TP NORTHERN ODISHA DISTRIBUTION LIMITED">
+                        </div>
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f6CertCapacity" title="Certified Plant Capacity">Certified Plant Capacity (kWp)</label>
+                          <input type="text" id="f6CertCapacity" class="form-control f4-input" placeholder="e.g. 3 KWP">
+                        </div>
+                        <div class="col-12">
+                          <label class="f4-label" for="f6CertAddress" title="Installation Site Address">Installation Site Address</label>
+                          <input type="text" id="f6CertAddress" class="form-control f4-input" placeholder="e.g. AT-MANGALPUR, DIST-JAJPUR, PIN-755011">
+                        </div>
+                        <div class="col-md-4 col-12">
+                          <label class="f4-label" for="f6Section" title="Section">Section</label>
+                          <input type="text" id="f6Section" class="form-control f4-input" placeholder="e.g. ESO JAJPUR Section">
+                        </div>
+                        <div class="col-md-4 col-6">
+                          <label class="f4-label" for="f6SubDivision" title="Sub-Division">Sub-Division</label>
+                          <input type="text" id="f6SubDivision" class="form-control f4-input" placeholder="e.g. RE SDO-I JAJPUR Sub-Division">
+                        </div>
+                        <div class="col-md-4 col-6">
+                          <label class="f4-label" for="f6Division" title="Division">Division</label>
+                          <input type="text" id="f6Division" class="form-control f4-input" placeholder="e.g. CED JAJPUR Division">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section A: Applicant Details -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          <span>A. Applicant Details</span>
+                        </div>
+                        <span class="f4-section-tag">Part A</span>
+                      </div>
+                      <div class="row g-2.5">
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f6ApplicantName" title="Name of Applicant">1. Name of Applicant</label>
+                          <input type="text" id="f6ApplicantName" class="form-control f4-input" placeholder="e.g. SAROJ KUMAR MAHAPATRA">
+                        </div>
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f6ConsumerNo" title="Consumer Number">3. Consumer Number</label>
+                          <input type="text" id="f6ConsumerNo" class="form-control f4-input font-monospace" placeholder="e.g. 612222120269">
+                        </div>
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f6RegNoDate" title="Reg No. with Date">2. Reg No. with Date</label>
+                          <input type="text" id="f6RegNoDate" class="form-control f4-input font-monospace" placeholder="e.g. NP-ODTN026-10625985/05.03.2026">
+                        </div>
+                        <div class="col-md-6 col-12">
+                          <label class="f4-label" for="f6Category" title="Consumer Category">4. Consumer Category</label>
+                          <input type="text" id="f6Category" class="form-control f4-input" placeholder="e.g. DOMESTIC">
+                        </div>
+                        <div class="col-12">
+                          <label class="f4-label" for="f6Address" title="Address">Address</label>
+                          <input type="text" id="f6Address" class="form-control f4-input" placeholder="e.g. AT-MANGALPUR DIST-JAJPUR, PIN-755011">
+                        </div>
+                        <div class="col-md-4 col-6">
+                          <label class="f4-label" for="f6ConnectionType" title="Type of Connection">5. Connection Type</label>
+                          <input type="text" id="f6ConnectionType" class="form-control f4-input" placeholder="e.g. 1PH LT">
+                        </div>
+                        <div class="col-md-4 col-6">
+                          <label class="f4-label" for="f6ContractDemand" title="Contract Demand">6. Contract Demand</label>
+                          <input type="text" id="f6ContractDemand" class="form-control f4-input" placeholder="e.g. 3 KW">
+                        </div>
+                        <div class="col-md-4 col-12">
+                          <label class="f4-label" for="f6Arrear" title="Arrear, if any">7. Arrear, if any</label>
+                          <input type="text" id="f6Arrear" class="form-control f4-input" placeholder="e.g. 0">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Hidden Section B: Distribution Transformer (DTR) Details -->
+                    <div style="display: none;">
+                      <input type="hidden" id="f6DtrCapacity" value="">
+                      <input type="hidden" id="f6DtrLocation" value="">
+                      <input type="hidden" id="f6DtrExistingSolar" value="">
+                      <input type="hidden" id="f6DtrAdequate" value="Yes / No">
+                    </div>
+
+                    <!-- Section C: Solar Rooftop PV Power Plant Details -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+                          <span>B. Solar Rooftop PV Power Plant Details</span>
+                        </div>
+                        <span class="f4-section-tag">Part B</span>
+                      </div>
+                      <!-- Hidden fields for Interconnection Point and Single Line Diagram OK -->
+                      <input type="hidden" id="f6PlantPointType" value="SINGLE POINT">
+                      <input type="hidden" id="f6SldStatus" value="YES / NO (if it is no, state reasons for the same and suggest alternate arrangements )">
+
+                      <div class="row g-2.5">
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6PlantCapacity" title="Plant Capacity (kWp)">1. Plant Capacity</label>
+                          <input type="text" id="f6PlantCapacity" class="form-control f4-input" placeholder="e.g. 3 KWP">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6PlantSiteType" title="Site Configuration">2. Site Config</label>
+                          <input type="text" id="f6PlantSiteType" class="form-control f4-input" placeholder="e.g. SINGLE SITE">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section D: Grid Tied Inverter -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/></svg>
+                          <span>C. Grid Tied Inverter</span>
+                        </div>
+                        <span class="f4-section-tag">Part C</span>
+                      </div>
+                      <!-- Hidden field for Anti-islanding -->
+                      <input type="hidden" id="f6InvAntiIslanding" value="Need to be checked practically before charging">
+
+                      <div class="row g-2.5">
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6InvMake" title="Make">1. Make</label>
+                          <input type="text" id="f6InvMake" class="form-control f4-input" placeholder="e.g. LUMINOUS">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6InvCapacity" title="Capacity">2. Capacity</label>
+                          <input type="text" id="f6InvCapacity" class="form-control f4-input" placeholder="e.g. 3 KW">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6InvSerialNo" title="Serial No.">3. Serial No.</label>
+                          <input type="text" id="f6InvSerialNo" class="form-control f4-input font-monospace" placeholder="e.g. G7QGZDB1001678">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6InvInstallDate" title="Date of Installation">4. Installation Date</label>
+                          <input type="text" id="f6InvInstallDate" class="form-control f4-input" placeholder="e.g. 12 SEP 2026">
+                        </div>
+                        <div class="col-12">
+                          <label class="f4-label" for="f6InvVolt" title="Input / Output Voltage">5. Voltage (In/Out)</label>
+                          <input type="text" id="f6InvVolt" class="form-control f4-input" placeholder="e.g. 300 V DC / 220-240V AC">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section E: P.V Module Details (Capacity right side of Serial No.) -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                          <span>D. P.V Module Details</span>
+                        </div>
+                        <span class="f4-section-tag">Part D</span>
+                      </div>
+                      <div class="row g-2.5">
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f6PvMake" title="Make">1. Make</label>
+                          <input type="text" id="f6PvMake" class="form-control f4-input" placeholder="e.g. LUMINOUS">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f6PvModel" title="Type of Module & Model">2. Type &amp; Model</label>
+                          <input type="text" id="f6PvModel" class="form-control f4-input" placeholder="e.g. Bificial">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f6PvCount" title="No. of Module">3. No. of Module</label>
+                          <input type="text" id="f6PvCount" class="form-control f4-input" placeholder="e.g. 6 NOS" oninput="window.handleF6PvCountChange()">
+                        </div>
+                        <div class="col-md-3 col-6">
+                          <label class="f4-label" for="f6PvTotalCapacity" title="Total Capacity of Module">4. Total Capacity</label>
+                          <input type="text" id="f6PvTotalCapacity" class="form-control f4-input fw-semibold text-primary" placeholder="e.g. 3.32 KWp">
+                        </div>
+                        <div class="col-12">
+                          <label class="f4-label" for="f6PvInstallDate" title="Date of Installation">5. Installation Date</label>
+                          <input type="text" id="f6PvInstallDate" class="form-control f4-input" placeholder="e.g. 2026">
+                        </div>
+
+                        <!-- Hidden fields to preserve sync with backend & PDF generator -->
+                        <input type="hidden" id="f6PvCapacityEach" value="550 WP">
+                        <textarea id="f6PvSerials" style="display: none;"></textarea>
+
+                        <!-- Dynamic PV Module Serials with Capacity beside each -->
+                        <div class="col-12 mt-2 pt-2 border-top">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="f4-label mb-0 fw-semibold text-dark">PV Module Serial Numbers &amp; Capacity</span>
+                              <span class="badge bg-light text-dark border font-monospace fs-8" id="lblF6PvSerialCountBadge">0 Modules</span>
+                            </div>
+                          </div>
+                          <div class="row g-2" id="f6PvSerialInputsContainer" style="max-height: 240px; overflow-y: auto;">
+                            <!-- Dynamically generated module serial and capacity inputs -->
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section F: Earthing Verification -->
+                    <div class="f4-section-card">
+                      <div class="f4-section-header">
+                        <div class="f4-section-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary"><line x1="12" y1="2" x2="12" y2="12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
+                          <span>E. Earthing Verification</span>
+                        </div>
+                        <span class="f4-section-tag">Part E</span>
+                      </div>
+                      <!-- Hidden field for Permissible Limit Status -->
+                      <input type="hidden" id="f6EarthingLimit" value="Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)">
+
+                      <div class="row g-2.5">
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6DcEarthing" title="D.C Earthing (in Ohm)">(i) D.C Earthing (Ohm)</label>
+                          <input type="text" id="f6DcEarthing" class="form-control f4-input" placeholder="e.g. 1.7 in Ohm">
+                        </div>
+                        <div class="col-md-6 col-6">
+                          <label class="f4-label" for="f6AcEarthing" title="A.C Earthing (in Ohm)">(ii) A.C Earthing (Ohm)</label>
+                          <input type="text" id="f6AcEarthing" class="form-control f4-input" placeholder="e.g. 2.3 in Ohm">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Hidden Protective Systems & Back-feeding (G & H) -->
+                    <div style="display: none;">
+                      <input type="hidden" id="f6AcdcDbStatus" value="Yes / No">
+                      <input type="hidden" id="f6ManualSwitch" value="Yes / No">
+                      <input type="hidden" id="f6RelaySwitch" value="Yes / No">
+                      <input type="hidden" id="f6BackfeedProtection" value="">
+                    </div>
+
+                    <!-- Hidden Statutory Clearances & Component Standards (I - L) -->
+                    <div style="display: none;">
+                      <input type="hidden" id="f6EicApproval" value="Yes / No">
+                      <input type="hidden" id="f6SafetyCert" value="Yes / No">
+                      <input type="hidden" id="f6WorkCompletionReport" value="Yes / No">
+                      <input type="hidden" id="f6TestReportCea" value="Yes / No">
+                    </div>
+
+                    <!-- Hidden Meter Details (M) -->
+                    <div style="display: none;">
+                      <input type="hidden" id="f6NmCount" value="">
+                      <input type="hidden" id="f6NmMake" value="">
+                      <input type="hidden" id="f6NmSerialNo" value="">
+                      <input type="hidden" id="f6NmPhase" value="">
+                      <input type="hidden" id="f6NmCapacity" value="">
+                      <input type="hidden" id="f6NmConstant" value="">
+
+                      <input type="hidden" id="f6SmCount" value="">
+                      <input type="hidden" id="f6SmMake" value="">
+                      <input type="hidden" id="f6SmSerialNo" value="">
+                      <input type="hidden" id="f6SmPhase" value="">
+                      <input type="hidden" id="f6SmCapacity" value="">
+                      <input type="hidden" id="f6SmConstant" value="">
+                    </div>
+
+                    <!-- Hidden Any other necessary details & Inspection Report (N) -->
+                    <div style="display: none;">
+                      <input type="hidden" id="f6Remarks" value="">
+                      <input type="hidden" id="f6GridSatisfactory" value="Yes / No (if it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)">
+                      <input type="hidden" id="f6InspectingAuthority" value="TPNODL">
+                      <textarea id="f6Observations" style="display: none;"></textarea>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Form 4 Modal Preview ═════════════════════════════════════════════════ -->
+  <div class="modal fade" id="form4PreviewModal" tabindex="-1" aria-labelledby="form4PreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header py-2.5 px-3 bg-light border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="form4PreviewModalLabel">Document Preview — Work Completion Report (Form-4)</h6>
+            <span class="badge bg-white text-secondary border fs-9">A4 Format</span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 p-md-4 bg-secondary bg-opacity-10" id="form4PreviewBody" style="min-height: 480px;">
+          <!-- Injected dynamically by agreement.js -->
+        </div>
+        <div class="modal-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="window.printForm4Preview()">Print Form 4</button>
+            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="downloadForm4Pdf()">Download Form 4 (PDF)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Form 6 Modal Preview ═════════════════════════════════════════════════ -->
+  <div class="modal fade" id="form6PreviewModal" tabindex="-1" aria-labelledby="form6PreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header py-2.5 px-3 bg-light border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="form6PreviewModalLabel">Document Preview — Inspection Report for RTS (Form-06)</h6>
+            <span class="badge bg-white text-secondary border fs-9">A4 Format</span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3 p-md-4 bg-secondary bg-opacity-10" id="form6PreviewBody" style="min-height: 480px;">
+          <!-- Injected dynamically by agreement.js -->
+        </div>
+        <div class="modal-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="window.printForm6Preview()">Print Form 6</button>
+            <button type="button" class="btn btn-success btn-sm px-4 fw-semibold" onclick="downloadForm6Pdf()">Download PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/jszip.min.js"></script>
+  <script src="js/jspdf.umd.min.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/connect.js"></script>
+  <script src="js/agreement.js"></script>
+</body>
+</html>
