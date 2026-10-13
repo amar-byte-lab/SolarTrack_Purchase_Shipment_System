@@ -18,7 +18,7 @@ window.escapeHtml = escapeHtml;
 
 document.addEventListener('DOMContentLoaded', async () => {
   UI.renderSidebar('agreement.html');
-  UI.renderTopbar('Agreement Generator');
+  UI.renderTopbar('Documents & Forms');
 
   UI.showLoading(true);
 
@@ -182,6 +182,8 @@ window.selectCustomerForAgreement = function(slNo) {
   // 1. Populate Agreement Tab (.docx)
   document.getElementById('agrName').value = r.Name || '';
   document.getElementById('agrConsumerNo').value = r.ConsumerNo || '';
+  const agrConsumerLabel = document.getElementById('agrConsumerNameLabel');
+  if (agrConsumerLabel) agrConsumerLabel.textContent = r.Name || '—';
 
   const addrParts = [];
   if (r.Address) addrParts.push(r.Address);
@@ -206,6 +208,8 @@ window.resetAgreementForm = function() {
   selectedDistrict = 'ALL';
   updateDistrictStats();
   document.getElementById('agreementForm').reset();
+  const agrConsumerLabel = document.getElementById('agrConsumerNameLabel');
+  if (agrConsumerLabel) agrConsumerLabel.textContent = '—';
   const searchQuery = document.getElementById('custSearchInput') ? document.getElementById('custSearchInput').value : '';
   renderCustomerDirectory(searchQuery);
   resetForm4Fields();
@@ -374,6 +378,172 @@ function getOrGenerateInverterSerial(r, specs, inverterMake) {
   return `G7QG${prefix}${seed}`;
 }
 
+/* ── Form 4 Dynamic Module Serials & Capacities ───────────────────────────── */
+
+window.renderF4ModuleSerialInputs = function(initialSerials = null, initialCapacities = null, fallbackCap = null) {
+  const countInput = document.getElementById('f4ModuleCount');
+  const container = document.getElementById('f4ModuleSerialInputsContainer');
+  const badge = document.getElementById('lblF4ModuleSerialCountBadge');
+  if (!container) return;
+
+  const count = Math.max(0, parseInt(String(countInput?.value || '').replace(/[^0-9]/g, ''), 10) || 0);
+  if (badge) badge.textContent = `${count} Module${count === 1 ? '' : 's'}`;
+
+  if (count === 0) {
+    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic py-2 text-center">Enter "No. of Modules" above to generate serial number and capacity textboxes.</div>';
+    window.syncF4ModuleSerialsAndCaps();
+    return;
+  }
+
+  // Preserve existing entered values if not provided
+  let existingSerials = [];
+  let existingCaps = [];
+  if (initialSerials && Array.isArray(initialSerials)) {
+    existingSerials = initialSerials;
+  } else {
+    container.querySelectorAll('.f4-module-serial-box').forEach((box, i) => {
+      existingSerials[i] = box.value;
+    });
+  }
+
+  if (initialCapacities && Array.isArray(initialCapacities)) {
+    existingCaps = initialCapacities;
+  } else {
+    container.querySelectorAll('.f4-module-cap-box').forEach((box, i) => {
+      existingCaps[i] = box.value;
+    });
+  }
+
+  // Fallback capacity extraction from argument or hidden input
+  let defaultCapVal = '';
+  const capSrc = fallbackCap || document.getElementById('f4ModuleCapacityEach')?.value || '';
+  const match = String(capSrc).match(/([0-9.]+)/);
+  if (match) defaultCapVal = match[1];
+
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    const sVal = existingSerials[i - 1] || '';
+    let cVal = existingCaps[i - 1] || '';
+    if (!cVal && defaultCapVal) {
+      cVal = defaultCapVal;
+    }
+
+    html += `
+      <div class="col-md-6 col-12">
+        <div class="input-group input-group-sm f4-module-row-group">
+          <span class="input-group-text bg-light text-muted fs-8 font-monospace px-2" style="min-width: 32px; justify-content: center;">#${i}</span>
+          <input type="text" class="form-control form-control-sm fs-8 font-monospace f4-module-serial-box" id="f4ModuleSerial_${i}" data-index="${i}" value="${escapeHtml(sVal)}" placeholder="Serial No. ${i}" title="Module ${i} Serial Number" oninput="window.syncF4ModuleSerialsAndCaps()">
+          <input type="number" min="0" step="any" class="form-control form-control-sm fs-8 f4-module-cap-box text-end fw-semibold" id="f4ModuleCap_${i}" data-index="${i}" value="${escapeHtml(cVal)}" placeholder="550" style="max-width: 82px;" oninput="window.handleF4ModuleCapChange(${i})" title="Module ${i} Capacity in Wp">
+          <span class="input-group-text bg-light text-muted fs-8 px-1.5 border-start-0" style="font-size: 0.70rem; min-width: 32px; justify-content: center;">Wp</span>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+  window.syncF4ModuleSerialsAndCaps();
+};
+
+window.handleF4ModuleCapChange = function(index) {
+  if (index === 1) {
+    const firstBox = document.getElementById('f4ModuleCap_1');
+    const val = firstBox ? firstBox.value.trim() : '';
+    const allBoxes = document.querySelectorAll('.f4-module-cap-box');
+    let allOthersEmpty = true;
+    for (let i = 1; i < allBoxes.length; i++) {
+      if (allBoxes[i].value && allBoxes[i].value.trim() !== '') {
+        allOthersEmpty = false;
+        break;
+      }
+    }
+    if (allOthersEmpty && val !== '') {
+      for (let i = 1; i < allBoxes.length; i++) {
+        allBoxes[i].value = val;
+      }
+    }
+  }
+  window.syncF4ModuleSerialsAndCaps();
+};
+
+window.applyF4ModuleCapToAll = function() {
+  const firstBox = document.getElementById('f4ModuleCap_1');
+  if (!firstBox) return;
+  const val = firstBox.value.trim();
+  if (!val) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Please enter a capacity in Module #1 first.', 'info');
+    }
+    return;
+  }
+  document.querySelectorAll('.f4-module-cap-box').forEach(box => {
+    box.value = val;
+  });
+  window.syncF4ModuleSerialsAndCaps();
+};
+
+window.handleF4ModuleCountChange = function() {
+  const countInput = document.getElementById('f4ModuleCount');
+  if (!countInput) return;
+  window.renderF4ModuleSerialInputs();
+};
+
+window.syncF4ModuleSerialsAndCaps = function() {
+  const serialBoxes = document.querySelectorAll('.f4-module-serial-box');
+  const capBoxes = document.querySelectorAll('.f4-module-cap-box');
+  const serialsTextarea = document.getElementById('f4ModuleSerials');
+  const capEachInput = document.getElementById('f4ModuleCapacityEach');
+  const totalCapInput = document.getElementById('f4ModuleTotalCapacity');
+  const badge = document.getElementById('lblF4ModuleSerialCountBadge');
+
+  const count = serialBoxes.length;
+  if (badge) {
+    badge.textContent = `${count} Module${count === 1 ? '' : 's'}`;
+  }
+
+  // 1. Sync Serials into hidden f4ModuleSerials
+  const serialList = [];
+  serialBoxes.forEach(box => {
+    const val = (box.value || '').trim();
+    if (val) serialList.push(val);
+  });
+  if (serialsTextarea) {
+    serialsTextarea.value = serialList.join('\n');
+  }
+
+  // 2. Calculate Capacities (in Wp)
+  let totalWatts = 0;
+  let filledCount = 0;
+  const capCounts = {};
+
+  capBoxes.forEach(box => {
+    const raw = (box.value || '').trim();
+    if (!raw) return;
+    const match = raw.match(/([0-9.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      if (!isNaN(num) && num > 0) {
+        filledCount++;
+        totalWatts += num;
+        const displayLabel = `${num} Wp`;
+        capCounts[displayLabel] = (capCounts[displayLabel] || 0) + 1;
+      }
+    }
+  });
+
+  if (filledCount > 0 && totalWatts > 0) {
+    const totalKW = (totalWatts / 1000).toFixed(2);
+    if (totalCapInput) {
+      totalCapInput.value = `${totalKW} KWP`;
+    }
+    if (capEachInput) {
+      if (Object.keys(capCounts).length === 1) {
+        capEachInput.value = Object.keys(capCounts)[0];
+      } else {
+        capEachInput.value = Object.entries(capCounts).map(([lbl, c]) => `${lbl} - ${c} Nos`).join(', ');
+      }
+    }
+  }
+};
+
 function populateForm4Fields(r) {
   if (!r) return;
 
@@ -393,10 +563,10 @@ function populateForm4Fields(r) {
   const state = (r.State || specs.State || 'Odisha').trim();
   const siteAddress = (r.Address || specs.SiteAddress || '').trim().toUpperCase();
 
-  // Header Subtitle
-  const headerSub = document.getElementById('f4HeaderSub');
-  if (headerSub) {
-    headerSub.innerHTML = `Auto-filled for <strong class="text-dark">${escapeHtml(customerName || 'Selected Customer')}</strong> (Consumer: ${escapeHtml(consumerNo || '—')}, District: ${escapeHtml(district || '—')})`;
+  // Header: Only keep Consumer Name
+  const consumerLabel = document.getElementById('f4ConsumerNameLabel');
+  if (consumerLabel) {
+    consumerLabel.textContent = customerName || '—';
   }
 
   // DISCOM Utility Name & Offices
@@ -446,7 +616,9 @@ function populateForm4Fields(r) {
   setInputVal('f4ModuleCommissionDate', commissionDateFormatted);
 
   const serials = getOrGenerateSerials(r, specs, moduleCount, moduleMake);
+  const capacities = Array.isArray(pv.ModuleCapacities) ? pv.ModuleCapacities : [];
   setInputVal('f4ModuleSerials', serials.join('\n'));
+  window.renderF4ModuleSerialInputs(serials, capacities, capEach);
 
   // Inverter Details
   const inv = specs.GridTiedInverter || {};
@@ -529,12 +701,18 @@ window.resetForm4Fields = function() {
     'f4InstallerFirm', 'f4InstallerAddress', 'f4ReportDate', 'f4CertifiedAuthority'
   ];
   ids.forEach(id => setInputVal(id, ''));
-  const headerSub = document.getElementById('f4HeaderSub');
-  if (headerSub) headerSub.textContent = 'Pre-populated from customer database & product specifications';
+  const consumerLabel = document.getElementById('f4ConsumerNameLabel');
+  if (consumerLabel) consumerLabel.textContent = '—';
+  if (typeof window.renderF4ModuleSerialInputs === 'function') {
+    window.renderF4ModuleSerialInputs([], []);
+  }
   UI.toast('Form 4 inputs cleared.', 'info');
 };
 
 function getForm4CurrentData() {
+  if (typeof window.syncF4ModuleSerialsAndCaps === 'function') {
+    window.syncF4ModuleSerialsAndCaps();
+  }
   const serialsRaw = getInputVal('f4ModuleSerials');
   const serialsList = serialsRaw.split('\n').map(s => s.trim()).filter(Boolean);
 
@@ -1430,8 +1608,8 @@ window.generateAgreementDocx = async function() {
   const consumerNoVal = document.getElementById('agrConsumerNo').value.trim();
   const addressVal = document.getElementById('agrAddress').value.trim().toUpperCase();
 
-  if (!nameVal || !consumerNoVal || !addressVal) {
-    UI.toast('Please fill in Customer Name, Consumer Number, and Full Address.', 'warning');
+  if (!nameVal || !addressVal) {
+    UI.toast('Please select a customer and provide Full Address.', 'warning');
     return;
   }
 
@@ -1457,7 +1635,7 @@ window.generateAgreementDocx = async function() {
     docXml = docXml
       .replaceAll('{{NAME}}', nameVal)
       .replaceAll('{{ADDRESS}}', addressVal)
-      .replaceAll('{{CONSUMERNO}}', consumerNoVal);
+      .replaceAll('{{CONSUMERNO}}', consumerNoVal || '');
 
     zip.file('word/document.xml', docXml);
 
@@ -1468,8 +1646,8 @@ window.generateAgreementDocx = async function() {
 
     // Clean filenames for download
     const cleanName = nameVal.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const cleanConsumerNo = consumerNoVal.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const fileName = `Agreement_${cleanName}_${cleanConsumerNo}.docx`;
+    const cleanConsumerNo = consumerNoVal ? consumerNoVal.replace(/[^a-zA-Z0-9_-]/g, '_') : '';
+    const fileName = cleanConsumerNo ? `Agreement_${cleanName}_${cleanConsumerNo}.docx` : `Agreement_${cleanName}.docx`;
 
     // Trigger browser file download
     const a = document.createElement('a');
@@ -1495,6 +1673,172 @@ window.generateAgreementDocx = async function() {
    Form 6: Inspection Report for RTS Logic & Vector PDF Generator
    ════════════════════════════════════════════════════════════════════════════ */
 
+/* ── Form 6 Dynamic PV Module Serials & Capacities ────────────────────────── */
+
+window.renderF6PvSerialInputs = function(initialSerials = null, initialCapacities = null, fallbackCap = null) {
+  const countInput = document.getElementById('f6PvCount');
+  const container = document.getElementById('f6PvSerialInputsContainer');
+  const badge = document.getElementById('lblF6PvSerialCountBadge');
+  if (!container) return;
+
+  const count = Math.max(0, parseInt(String(countInput?.value || '').replace(/[^0-9]/g, ''), 10) || 0);
+  if (badge) badge.textContent = `${count} Module${count === 1 ? '' : 's'}`;
+
+  if (count === 0) {
+    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic py-2 text-center">Enter "No. of Module" above to generate serial number and capacity textboxes.</div>';
+    window.syncF6PvSerialsAndCaps();
+    return;
+  }
+
+  // Preserve existing entered values if not provided
+  let existingSerials = [];
+  let existingCaps = [];
+  if (initialSerials && Array.isArray(initialSerials)) {
+    existingSerials = initialSerials;
+  } else {
+    container.querySelectorAll('.f6-module-serial-box').forEach((box, i) => {
+      existingSerials[i] = box.value;
+    });
+  }
+
+  if (initialCapacities && Array.isArray(initialCapacities)) {
+    existingCaps = initialCapacities;
+  } else {
+    container.querySelectorAll('.f6-module-cap-box').forEach((box, i) => {
+      existingCaps[i] = box.value;
+    });
+  }
+
+  // Fallback capacity extraction from argument or hidden input
+  let defaultCapVal = '';
+  const capSrc = fallbackCap || document.getElementById('f6PvCapacityEach')?.value || '';
+  const match = String(capSrc).match(/([0-9.]+)/);
+  if (match) defaultCapVal = match[1];
+
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    const sVal = existingSerials[i - 1] || '';
+    let cVal = existingCaps[i - 1] || '';
+    if (!cVal && defaultCapVal) {
+      cVal = defaultCapVal;
+    }
+
+    html += `
+      <div class="col-md-6 col-12">
+        <div class="input-group input-group-sm f6-module-row-group">
+          <span class="input-group-text bg-light text-muted fs-8 font-monospace px-2" style="min-width: 32px; justify-content: center;">#${i}</span>
+          <input type="text" class="form-control form-control-sm fs-8 font-monospace f6-module-serial-box" id="f6PvSerial_${i}" data-index="${i}" value="${escapeHtml(sVal)}" placeholder="Serial No. ${i}" title="Module ${i} Serial Number" oninput="window.syncF6PvSerialsAndCaps()">
+          <input type="number" min="0" step="any" class="form-control form-control-sm fs-8 f6-module-cap-box text-end fw-semibold" id="f6PvCap_${i}" data-index="${i}" value="${escapeHtml(cVal)}" placeholder="550" style="max-width: 82px;" oninput="window.handleF6PvCapChange(${i})" title="Module ${i} Capacity in Wp">
+          <span class="input-group-text bg-light text-muted fs-8 px-1.5 border-start-0" style="font-size: 0.70rem; min-width: 32px; justify-content: center;">Wp</span>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+  window.syncF6PvSerialsAndCaps();
+};
+
+window.handleF6PvCapChange = function(index) {
+  if (index === 1) {
+    const firstBox = document.getElementById('f6PvCap_1');
+    const val = firstBox ? firstBox.value.trim() : '';
+    const allBoxes = document.querySelectorAll('.f6-module-cap-box');
+    let allOthersEmpty = true;
+    for (let i = 1; i < allBoxes.length; i++) {
+      if (allBoxes[i].value && allBoxes[i].value.trim() !== '') {
+        allOthersEmpty = false;
+        break;
+      }
+    }
+    if (allOthersEmpty && val !== '') {
+      for (let i = 1; i < allBoxes.length; i++) {
+        allBoxes[i].value = val;
+      }
+    }
+  }
+  window.syncF6PvSerialsAndCaps();
+};
+
+window.applyF6PvCapToAll = function() {
+  const firstBox = document.getElementById('f6PvCap_1');
+  if (!firstBox) return;
+  const val = firstBox.value.trim();
+  if (!val) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Please enter a capacity in Module #1 first.', 'info');
+    }
+    return;
+  }
+  document.querySelectorAll('.f6-module-cap-box').forEach(box => {
+    box.value = val;
+  });
+  window.syncF6PvSerialsAndCaps();
+};
+
+window.handleF6PvCountChange = function() {
+  const countInput = document.getElementById('f6PvCount');
+  if (!countInput) return;
+  window.renderF6PvSerialInputs();
+};
+
+window.syncF6PvSerialsAndCaps = function() {
+  const serialBoxes = document.querySelectorAll('.f6-module-serial-box');
+  const capBoxes = document.querySelectorAll('.f6-module-cap-box');
+  const serialsTextarea = document.getElementById('f6PvSerials');
+  const capEachInput = document.getElementById('f6PvCapacityEach');
+  const totalCapInput = document.getElementById('f6PvTotalCapacity');
+  const badge = document.getElementById('lblF6PvSerialCountBadge');
+
+  const count = serialBoxes.length;
+  if (badge) {
+    badge.textContent = `${count} Module${count === 1 ? '' : 's'}`;
+  }
+
+  // 1. Sync Serials into hidden f6PvSerials
+  const serialList = [];
+  serialBoxes.forEach(box => {
+    const val = (box.value || '').trim();
+    if (val) serialList.push(val);
+  });
+  if (serialsTextarea) {
+    serialsTextarea.value = serialList.join('\n');
+  }
+
+  // 2. Calculate Capacities (in Wp)
+  let totalWatts = 0;
+  let filledCount = 0;
+  const capCounts = {};
+
+  capBoxes.forEach(box => {
+    const raw = (box.value || '').trim();
+    if (!raw) return;
+    const match = raw.match(/([0-9.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      if (!isNaN(num) && num > 0) {
+        filledCount++;
+        totalWatts += num;
+        const displayLabel = `${num} WP`;
+        capCounts[displayLabel] = (capCounts[displayLabel] || 0) + 1;
+      }
+    }
+  });
+
+  if (filledCount > 0 && totalWatts > 0) {
+    const totalKW = (totalWatts / 1000).toFixed(2);
+    if (totalCapInput) {
+      totalCapInput.value = `${totalKW} KWp`;
+    }
+    if (capEachInput) {
+      if (Object.keys(capCounts).length === 1) {
+        capEachInput.value = Object.keys(capCounts)[0];
+      } else {
+        capEachInput.value = Object.entries(capCounts).map(([lbl, c]) => `${lbl} - ${c}pic`).join(', ');
+      }
+    }
+  }
+};
+
 function populateForm6Fields(r) {
   if (!r) return;
 
@@ -1514,10 +1858,10 @@ function populateForm6Fields(r) {
   const state = (r.State || specs.State || 'Odisha').trim();
   const siteAddress = (r.Address || specs.SiteAddress || (district ? `AT/PO ${district}` : 'ODISHA')).trim().toUpperCase();
 
-  // Header Subtitle
-  const headerSub = document.getElementById('f6HeaderSub');
-  if (headerSub) {
-    headerSub.innerHTML = `Auto-filled for <strong class="text-dark">${escapeHtml(customerName || 'Selected Customer')}</strong> (Consumer: ${escapeHtml(consumerNo || '—')}, District: ${escapeHtml(district || '—')})`;
+  // Header: Only keep Consumer Name
+  const consumerLabel = document.getElementById('f6ConsumerNameLabel');
+  if (consumerLabel) {
+    consumerLabel.textContent = customerName || '—';
   }
 
   // DISCOM Utility Name
@@ -1597,7 +1941,7 @@ function populateForm6Fields(r) {
   const moduleMake = pv.Make || brandInfo.moduleMake || 'LUMINOUS';
   const moduleModel = pv.TypeAndModel || 'Bificial';
   const moduleCount = pv.NoOfModule ? (String(pv.NoOfModule).includes('NOS') ? pv.NoOfModule : `${pv.NoOfModule} NOS`) : `${calculateModulesCount(capNum).replace(/[^0-9]/g, '')} NOS`;
-  let capEach = pv.CapacityEach ? String(pv.CapacityEach).trim() : '555 WP - 4pic, 550 WP - 2pic';
+  let capEach = pv.CapacityEach ? String(pv.CapacityEach).trim() : '550 WP';
   if (capEach && !/WP/i.test(capEach)) {
     capEach = `${capEach} WP`;
   }
@@ -1606,6 +1950,7 @@ function populateForm6Fields(r) {
     totalCapModuleStr = `${totalCapModuleStr} KWp`;
   }
   const serials = getOrGenerateSerials(r, specs, moduleCount, moduleMake);
+  const capacities = Array.isArray(pv.ModuleCapacities) ? pv.ModuleCapacities : [];
 
   setInputVal('f6PvMake', moduleMake);
   setInputVal('f6PvModel', moduleModel);
@@ -1614,6 +1959,7 @@ function populateForm6Fields(r) {
   setInputVal('f6PvCount', moduleCount);
   setInputVal('f6PvInstallDate', installDateFormatted);
   setInputVal('f6PvSerials', serials.join('\n'));
+  window.renderF6PvSerialInputs(serials, capacities, capEach);
 
   // Part F & G & H: Earthing & Protective Systems (Values following Form 6)
   const earth = specs.DetailsOfEarthing || {};
@@ -1654,6 +2000,9 @@ function populateForm6Fields(r) {
 }
 
 function getForm6CurrentData() {
+  if (typeof window.syncF6PvSerialsAndCaps === 'function') {
+    window.syncF6PvSerialsAndCaps();
+  }
   const currentCust = selectedCustomerSlNo 
     ? getInstallmentRows().find(x => Number(x.SlNo) === Number(selectedCustomerSlNo))
     : null;
@@ -1755,7 +2104,13 @@ window.resetForm6Fields = function() {
     if (r) {
       populateForm6Fields(r);
       UI.toast(`Form 6 fields reset to ${r.Name}'s record.`, 'info');
+      return;
     }
+  }
+  const consumerLabel = document.getElementById('f6ConsumerNameLabel');
+  if (consumerLabel) consumerLabel.textContent = '—';
+  if (typeof window.renderF6PvSerialInputs === 'function') {
+    window.renderF6PvSerialInputs([], []);
   }
 };
 
