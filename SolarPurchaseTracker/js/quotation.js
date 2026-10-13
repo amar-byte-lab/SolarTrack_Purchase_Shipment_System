@@ -262,19 +262,29 @@ function syncPrintLabels() {
     printLogo.style.display = 'inline-block';
   }
 
+  // 3. Stamp in Print Template
+  const printStamp = document.getElementById('printCompanyStamp');
+  if (printStamp) {
+    printStamp.src = 'assets/sampleFiles/CompanyStamp.jpeg';
+    printStamp.style.display = 'inline-block';
+  }
+
   // 4. Quote Metadata Box
   const qNoVal = document.getElementById('qQuoteNo') ? document.getElementById('qQuoteNo').value.trim() : '';
   const qDateVal = document.getElementById('qDate') ? document.getElementById('qDate').value : '';
+  const qValVal = document.getElementById('qValidity') ? document.getElementById('qValidity').value.trim() : '10 Days';
   const qDelVal = document.getElementById('qDeliveryDate') ? document.getElementById('qDeliveryDate').value.trim() : '';
   const qPayVal = document.getElementById('qPaymentTerms') ? document.getElementById('qPaymentTerms').value.trim() : '';
 
   const elQuoteNo = document.getElementById('printQuoteNo');
   const elQuoteDate = document.getElementById('printQuoteDate');
+  const elValidity = document.getElementById('printValidity');
   const elDelDate = document.getElementById('printDeliveryDate');
   const elPayTerms = document.getElementById('printPaymentTerms');
 
   if (elQuoteNo) elQuoteNo.textContent = qNoVal || '-';
   if (elQuoteDate) elQuoteDate.textContent = formatQuoteDate(qDateVal);
+  if (elValidity) elValidity.textContent = qValVal || '10 Days';
   if (elDelDate) elDelDate.textContent = qDelVal || '-';
   if (elPayTerms) elPayTerms.textContent = qPayVal || '-';
 
@@ -480,16 +490,16 @@ function generatePrintItemsGrid() {
       const totalValText = `₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       rowspanHtml = `
         ${totalValueMode === 'merged' ? `
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold; font-family: monospace;">
+        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.8pt; padding: 4px 6px;">
           ${totalValText}
         </td>` : ''}
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold;">
+        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-size: 8.8pt; padding: 4px 6px;">
           ${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
         </td>
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold;">
+        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-size: 8.8pt; padding: 4px 6px;">
           ${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
         </td>
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold;">
+        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold; font-size: 9.2pt; padding: 4px 6px;">
           ₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
         </td>
       `;
@@ -498,15 +508,15 @@ function generatePrintItemsGrid() {
     let itemValueHtml = '';
     if (totalValueMode === 'each') {
       itemValueHtml = `
-        <td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace;">${priceText}</td>
+        <td style="border: 1px solid #000; text-align: right; padding: 3.5px 4.5px; font-family: monospace; font-size: 8.5pt;">${priceText}</td>
       `;
     }
 
     html.push(`
       <tr>
-        <td style="border: 1px solid #000; text-align: center; padding: 4px;">${slNo}</td>
-        <td style="border: 1px solid #000; text-align: left; padding: 4px; ${r.type === 'adj' ? 'font-style: italic; font-weight: 500;' : ''}">${r.desc}</td>
-        <td style="border: 1px solid #000; text-align: center; padding: 4px;">${r.qty}</td>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22;">${slNo}</td>
+        <td style="border: 1px solid #000; text-align: left; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22; ${r.type === 'adj' ? 'font-style: italic; font-weight: 500;' : ''}">${r.desc}</td>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22;">${r.qty}</td>
         ${itemValueHtml}
         ${rowspanHtml}
       </tr>
@@ -516,13 +526,13 @@ function generatePrintItemsGrid() {
   // Add Total row
   html.push(`
     <tr style="font-weight: bold; background-color: #fafafa;">
-      <td style="border: 1px solid #000; padding: 4px;"></td>
-      <td style="border: 1px solid #000; text-align: left; padding: 4px;">Grand Total</td>
-      <td style="border: 1px solid #000; padding: 4px;"></td>
-      ${totalValueMode === 'each' ? `<td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace;">₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>` : ''}
-      <td style="border: 1px solid #000; text-align: center; padding: 4px; font-family: monospace;">${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-      <td style="border: 1px solid #000; text-align: center; padding: 4px; font-family: monospace;">${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-      <td style="border: 1px solid #000; text-align: right; padding: 4px; font-family: monospace; font-size: 9.5pt;">₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+      <td style="border: 1px solid #000; padding: 4px 5px;"></td>
+      <td style="border: 1px solid #000; text-align: left; padding: 4px 5px; font-size: 8.8pt;">Grand Total</td>
+      <td style="border: 1px solid #000; padding: 4px 5px;"></td>
+      ${totalValueMode === 'each' ? `<td style="border: 1px solid #000; text-align: right; padding: 4px 5px; font-family: monospace; font-size: 8.8pt;">₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>` : ''}
+      <td style="border: 1px solid #000; text-align: center; padding: 4px 5px; font-family: monospace; font-size: 8.8pt;">${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+      <td style="border: 1px solid #000; text-align: center; padding: 4px 5px; font-family: monospace; font-size: 8.8pt;">${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+      <td style="border: 1px solid #000; text-align: right; padding: 4px 5px; font-family: monospace; font-size: 9.5pt;">₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
     </tr>
   `);
 
@@ -545,10 +555,10 @@ function createPrintPageShell() {
   const header = document.createElement('div');
   header.className = 'print-page-header';
   header.innerHTML = `
-    <div class="text-center mb-3">
-      <h3 class="fw-bold mb-1 text-dark" style="font-size: 18pt; letter-spacing: 0.5px;">QUOTATION</h3>
-      <h5 class="fw-bold mb-1 text-dark" style="font-size: 12pt; text-transform: uppercase;" id="printHeadingTitle">FOR 3 KW PM SURYAGHAR YOJANA ON-GRID SYSTEM</h5>
-      <span style="font-size: 9pt; font-style: italic; color: #333;">(ORIGINAL FOR RECIPIENT)</span>
+    <div class="text-center mb-1" style="margin-bottom: 4px !important;">
+      <h3 class="fw-bold mb-0 text-dark" style="font-size: 14pt; letter-spacing: 0.6px; line-height: 1.15; margin: 0 0 2px 0;">QUOTATION</h3>
+      <h5 class="fw-bold mb-0 text-dark" style="font-size: 9.8pt; text-transform: uppercase; line-height: 1.15; margin: 0 0 2px 0;" id="printHeadingTitle">FOR 3 KW PM SURYAGHAR YOJANA ON-GRID SYSTEM</h5>
+      <span style="font-size: 7.8pt; font-style: italic; color: #444; line-height: 1;">(ORIGINAL FOR RECIPIENT)</span>
     </div>
   `;
 
@@ -556,8 +566,8 @@ function createPrintPageShell() {
   content.className = 'print-page-content';
 
   const footer = document.createElement('div');
-  footer.className = 'print-page-footer text-center mt-3 fw-bold text-dark';
-  footer.style.cssText = 'font-size: 11pt; color: #000 !important; font-style: italic; border-top: 1px solid #000; padding-top: 6px;';
+  footer.className = 'print-page-footer text-center mt-2 fw-bold text-dark';
+  footer.style.cssText = 'font-size: 7.5pt; color: #000 !important; font-style: italic; border-top: 1px solid #000; padding-top: 2.5px; margin-top: 5px !important; line-height: 1.1;';
   footer.textContent = 'This is a Computer-Generated Copy';
 
   page.appendChild(header);
@@ -573,170 +583,109 @@ function renderPaginatedPrintView() {
   if (!root || !template) return;
 
   root.innerHTML = '';
+  const pageData = createPrintPageShell();
 
-  const measureHost = document.createElement('div');
-  measureHost.style.cssText = [
-    'position: fixed',
-    'left: -10000px',
-    'top: 0',
-    'width: 180mm',
-    'visibility: hidden',
-    'pointer-events: none',
-    'z-index: -1',
-    'box-sizing: border-box'
-  ].join(';');
-  document.body.appendChild(measureHost);
+  // All sections are appended into a single page shell to strictly guarantee 1 page
+  const sectionIds = [
+    'printSellerQuoteBlock',
+    'printBuyerBlock',
+    'printItemsTable',
+    'printSpecialNotesBox',
+    'printAmountInWords',
+    'printSubsidyBankBlock',
+    'printSignatureBlock'
+  ];
 
-  const pageContentHeight = 273 * 3.7795275591;
-  const gapAllowance = 8;
-  const usableHeight = pageContentHeight - gapAllowance;
-
-  const templateBlocks = {
-    sellerQuote: template.querySelector('#printSellerQuoteBlock'),
-    buyer: template.querySelector('#printBuyerBlock'),
-    items: template.querySelector('#printItemsTable'),
-    notes: template.querySelector('#printSpecialNotesBox'),
-    amount: template.querySelector('#printAmountInWords'),
-    terms: template.querySelector('#printTermsBlock'),
-    subsidyBank: template.querySelector('#printSubsidyBankBlock'),
-    signature: template.querySelector('#printSignatureBlock')
-  };
-
-  const makeMeasuredClone = (node) => {
-    const clone = node.cloneNode(true);
-    clone.style.display = 'block';
-    clone.style.breakInside = 'avoid';
-    clone.style.pageBreakInside = 'avoid';
-    clone.style.boxSizing = 'border-box';
-    clone.classList.add('print-block');
-    return clone;
-  };
-
-  const measureHeight = (node) => {
-    measureHost.innerHTML = '';
-    const probe = makeMeasuredClone(node);
-    measureHost.appendChild(probe);
-    return probe.getBoundingClientRect().height;
-  };
-
-  const finalizePage = (pageData) => {
-    if (!pageData || !pageData.content.children.length) return;
-    root.appendChild(pageData.shell);
-  };
-
-  const pages = [];
-  let currentPage = createPrintPageShell();
-  pages.push(currentPage);
-  measureHost.appendChild(currentPage.shell);
-  let remaining = usableHeight;
-
-  const addSection = (node) => {
-    if (!node) return;
-    const block = makeMeasuredClone(node);
-    const height = measureHeight(node);
-    if (height > remaining && currentPage.content.children.length) {
-      finalizePage(currentPage);
-      currentPage = createPrintPageShell();
-      pages.push(currentPage);
-      measureHost.appendChild(currentPage.shell);
-      remaining = usableHeight;
+  sectionIds.forEach(id => {
+    const el = template.querySelector('#' + id);
+    if (el) {
+      const clone = el.cloneNode(true);
+      clone.classList.add('print-block');
+      pageData.content.appendChild(clone);
     }
-    currentPage.content.appendChild(block);
-    remaining -= height;
-  };
+  });
 
-  addSection(templateBlocks.sellerQuote);
-  addSection(templateBlocks.buyer);
-
-  // Items table is split only between rows, never inside a row.
-  const itemsTable = templateBlocks.items;
-  if (itemsTable) {
-    const sourceHeader = itemsTable.querySelector('thead')?.cloneNode(true);
-    const sourceRows = Array.from(itemsTable.querySelectorAll('tbody tr'));
-    const tableBase = document.createElement('table');
-    tableBase.className = itemsTable.className;
-    tableBase.id = itemsTable.id;
-    tableBase.style.cssText = itemsTable.style.cssText;
-    tableBase.setAttribute('data-print-block', 'table');
-
-    const startTableOnPage = () => {
-      const table = tableBase.cloneNode(false);
-      if (sourceHeader) table.appendChild(sourceHeader.cloneNode(true));
-      const tbody = document.createElement('tbody');
-      table.appendChild(tbody);
-      currentPage.content.appendChild(table);
-      const headerHeight = table.getBoundingClientRect().height;
-      remaining -= headerHeight;
-      return { table, tbody };
-    };
-
-    let tablePage = null;
-    const ensureTablePage = () => {
-      if (!tablePage) {
-        if (measureHeight(itemsTable) > remaining && currentPage.content.children.length) {
-          finalizePage(currentPage);
-          currentPage = createPrintPageShell();
-          pages.push(currentPage);
-          measureHost.appendChild(currentPage.shell);
-          remaining = usableHeight;
-        }
-        tablePage = startTableOnPage();
-      }
-    };
-
-    sourceRows.forEach(row => {
-      const rowClone = row.cloneNode(true);
-      measureHost.innerHTML = '';
-      const probeTable = tableBase.cloneNode(false);
-      if (sourceHeader) probeTable.appendChild(sourceHeader.cloneNode(true));
-      const probeBody = document.createElement('tbody');
-      probeTable.appendChild(probeBody);
-      probeBody.appendChild(rowClone.cloneNode(true));
-      measureHost.appendChild(probeTable);
-      const probeHeader = probeTable.querySelector('thead');
-      const rowHeight = probeTable.getBoundingClientRect().height - (probeHeader ? probeHeader.getBoundingClientRect().height : 0);
-
-      ensureTablePage();
-      if (tablePage.tbody.children.length > 0 && rowHeight > remaining) {
-        finalizePage(currentPage);
-        currentPage = createPrintPageShell();
-        pages.push(currentPage);
-        measureHost.appendChild(currentPage.shell);
-        remaining = usableHeight;
-        tablePage = startTableOnPage();
-      }
-
-      tablePage.tbody.appendChild(rowClone);
-      remaining -= rowHeight;
+  const headingTitle = document.getElementById('printHeadingTitle')?.textContent;
+  if (headingTitle) {
+    pageData.shell.querySelectorAll('#printHeadingTitle').forEach(el => {
+      el.textContent = headingTitle;
     });
   }
 
-  addSection(templateBlocks.notes);
-  addSection(templateBlocks.amount);
-  addSection(templateBlocks.terms);
-  addSection(templateBlocks.subsidyBank);
-  addSection(templateBlocks.signature);
-
-  finalizePage(currentPage);
-  measureHost.remove();
-
-  root.innerHTML = '';
-  pages.forEach(pageData => {
-    const shell = pageData.shell;
-    shell.querySelectorAll('#printHeadingTitle').forEach(el => {
-      el.textContent = document.getElementById('printHeadingTitle')?.textContent || el.textContent;
-    });
-    root.appendChild(shell);
-  });
+  root.appendChild(pageData.shell);
 }
 
+// ── Export Quotation to Compact 1-Page PDF ────────────────────────────────────
+window.exportQuotationToPdf = function() {
+  const custNameInput = document.getElementById('qCustName');
+  const custName = custNameInput ? custNameInput.value.trim() : '';
+
+  if (!custName) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Please enter the customer name before generating PDF.', 'warning');
+    }
+    const collapseAddr = document.getElementById('collapseAddresses');
+    const iconAddr = document.getElementById('iconAddresses');
+    if (collapseAddr && collapseAddr.style.display === 'none') {
+      collapseAddr.style.display = 'block';
+      if (iconAddr) iconAddr.textContent = '▲';
+    }
+    if (custNameInput) custNameInput.focus();
+    return;
+  }
+
+  // 1. Format clean customer name for filename (Quot_CustomerName)
+  const cleanCustName = custName.replace(/[/\\?%*:|"<>]/g, '').trim().replace(/\s+/g, '_');
+  const pdfFileName = `Quot_${cleanCustName || 'Customer'}`;
+
+  // 2. Set document title so browser "Save as PDF" dialog defaults to Quot_CustomerName.pdf
+  const originalTitle = 'SolarTrack - Quotation Generator';
+  document.title = pdfFileName;
+
+  // 3. Sync all print labels (including Validity and Stamp) & prepare compact 1-page view
+  syncPrintLabels();
+  renderPaginatedPrintView();
+
+  // 4. Restore document title after print is closed / saved
+  let titleRestored = false;
+  const restoreTitle = () => {
+    if (titleRestored) return;
+    titleRestored = true;
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 2000);
+  };
+  window.addEventListener('afterprint', restoreTitle, { once: true });
+
+  // 5. Trigger browser native vector print dialog (Destination: Save as PDF)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        window.print();
+      } finally {
+        setTimeout(restoreTitle, 5000);
+      }
+    });
+  });
+};
+
 window.addEventListener('beforeprint', () => {
+  const custNameInput = document.getElementById('qCustName');
+  const custName = custNameInput ? custNameInput.value.trim() : '';
+  if (custName) {
+    const cleanCustName = custName.replace(/[/\\?%*:|"<>]/g, '').trim().replace(/\s+/g, '_');
+    document.title = `Quot_${cleanCustName}`;
+  }
+  syncPrintLabels();
   renderPaginatedPrintView();
 });
 
 window.addEventListener('afterprint', () => {
   const root = document.getElementById('printPaginationRoot');
   if (root) root.innerHTML = '';
+  setTimeout(() => {
+    document.title = 'SolarTrack - Quotation Generator';
+  }, 1500);
 });
 
 function loadCompanyProfileSettings() {
@@ -775,6 +724,11 @@ function loadCompanyProfileSettings() {
     } else {
       stampImg.style.display = 'none';
     }
+  }
+  const printStampImg = document.getElementById('printCompanyStamp');
+  if (printStampImg && stampBase64) {
+    printStampImg.src = stampBase64;
+    printStampImg.style.display = 'inline-block';
   }
 
   // 4. Populate Editable Contact Fields under Seller details
@@ -1681,7 +1635,7 @@ window.exportQuotationToDocx = async function() {
           width: { size: 1965, type: WidthType.DXA }
         }),
         new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: "10 Days", size: 20, font: "Times New Roman" })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: document.getElementById('qValidity')?.value.trim() || document.getElementById('printValidity')?.textContent || "10 Days", size: 20, font: "Times New Roman" })] })],
           width: { size: 2403, type: WidthType.DXA }
         })
       ]

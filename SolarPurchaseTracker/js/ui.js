@@ -13,8 +13,6 @@ const UI = (() => {
     { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
     { href: 'document.html',        icon: 'agreement',  label: 'Document' },
     { href: 'sizing-calc.html',     icon: 'calculator', label: 'Calculator' },
-    { href: 'demand-note.html',     icon: 'demand',     label: 'NetMeter' },
-    { href: 'work-note.html',       icon: 'worknote',   label: 'Note' },
     { href: 'ledger.html',          icon: 'wallet',     label: 'Ledger' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];

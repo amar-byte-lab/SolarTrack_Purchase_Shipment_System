@@ -45,9 +45,9 @@ body.offer-page .page-body {
 }
 
 #printSellerLogo {
-  height: 100px !important;
+  height: 56px !important;
   width: auto;
-  max-width: 230px !important;
+  max-width: 150px !important;
   object-fit: contain;
 }
 
@@ -153,7 +153,24 @@ body.offer-page .page-body {
   }
 
   @page {
-    margin: 1.5cm;
+    size: A4 portrait;
+    margin: 5mm 7mm !important;
+  }
+
+  #printCompanyStamp {
+    height: 96px !important;
+    width: 96px !important;
+    max-width: 120px !important;
+    object-fit: contain !important;
+    display: inline-block !important;
+    opacity: 0.92 !important;
+  }
+
+  .print-page-shell {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 }
 
