@@ -111,15 +111,20 @@ const SizingCalc = (() => {
 
       // Check if appliance is designated for emergency battery backup
       const isBackup = app.isBackup !== undefined ? !!app.isBackup : true;
+      const backupQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
+        ? Math.min(qty, Number(app.backupQty))
+        : qty;
+      const totalBackupAppWatts = watts * backupQty;
+
       if (isBackup) {
-        backupLoadW += totalAppWatts;
+        backupLoadW += totalBackupAppWatts;
       }
 
       const hours = Math.max(0.1, Number(app.hours || app.defaultHours) || 4);
       const appDailyWh = totalAppWatts * hours;
       totalApplianceDailyWh += appDailyWh;
       if (isBackup) {
-        backupApplianceDailyWh += appDailyWh;
+        backupApplianceDailyWh += totalBackupAppWatts * hours;
       }
       estimatedDailyKwh += appDailyWh / 1000;
 
@@ -129,7 +134,8 @@ const SizingCalc = (() => {
         watts,
         hours,
         totalAppWatts,
-        isBackup
+        isBackup,
+        backupQty
       });
     });
 

@@ -113,14 +113,6 @@ window.onDbReady = function () {
         return;
       }
 
-      // If clicked on customer button, allow modal to open and select this row
-      if (e.target.closest('.mw-customer-btn')) {
-        document.querySelectorAll('#manageWorkTable tbody tr').forEach(r => {
-          if (r !== tr) r.classList.remove('selected-row');
-        });
-        tr.classList.add('selected-row');
-        return;
-      }
 
       const isAlreadySelected = tr.classList.contains('selected-row');
 
@@ -615,13 +607,13 @@ function renderList() {
 
     return `
       <tr data-slno="${slNo}" class="${isDeactive ? 'deactive-row' : ''} ${isAllComplete ? 'stage-complete-all' : ''}">
-        <!-- 1. Customer Cell (Click name for modal) -->
+        <!-- 1. Customer Cell -->
         <td>
           <div class="mw-customer-cell">
             <span class="mw-sl-badge">${idx + 1}</span>
-            <button type="button" class="mw-customer-btn" onclick="openCustomerDetailsModal(${slNo})" title="Click to view full details of ${r.Name || ''}">
+            <span class="mw-customer-name" title="${r.Name || ''}">
               ${r.Name || 'Unnamed Customer'}
-            </button>
+            </span>
             ${delayBadgeHtml}
           </div>
         </td>
@@ -1071,6 +1063,9 @@ window.toggleNetMeterEdit = function (slNo) {
   const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
   if (!input) return;
 
+  const group = input.closest('.mw-netmeter-pay-group');
+  if (group) group.classList.add('is-editing');
+
   input.dataset.origVal = input.value;
   input.disabled = false;
   input.focus();
@@ -1093,6 +1088,9 @@ window.cancelNetMeterEdit = function (slNo) {
   const btnSave = document.getElementById(`btnNmSave_${slNo}`);
   const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
   if (!input) return;
+
+  const group = input.closest('.mw-netmeter-pay-group');
+  if (group) group.classList.remove('is-editing');
 
   if (input.dataset.origVal !== undefined) {
     input.value = input.dataset.origVal;
@@ -1118,6 +1116,9 @@ window.saveNetMeterPayment = async function (slNo) {
   const btnSave = document.getElementById(`btnNmSave_${slNo}`);
   const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
   if (!input) return;
+
+  const group = input.closest('.mw-netmeter-pay-group');
+  if (group) group.classList.remove('is-editing');
 
   const paymentVal = input.value.trim();
   const numVal = paymentVal ? Number(paymentVal) : 0;

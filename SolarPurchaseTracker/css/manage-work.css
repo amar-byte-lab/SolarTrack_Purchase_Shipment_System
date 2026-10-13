@@ -189,8 +189,8 @@
 }
 
 .table-manage-work th.th-netmeter {
-  min-width: 228px;
-  width: 228px;
+  min-width: 275px;
+  width: 275px;
 }
 
 .table-manage-work td {
@@ -254,26 +254,35 @@
   transition: all 0.15s ease;
 }
 
-.mw-customer-btn {
+.mw-customer-name {
   font-weight: 600;
-  color: #1d4ed8;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
+  color: #0f172a;
   font-size: 0.76rem;
   text-align: left;
-  text-decoration: underline text-decoration-color 0.2s;
-  text-underline-offset: 2px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
   white-space: nowrap;
+  user-select: text;
 }
 
-.mw-customer-btn:hover {
-  color: #1e40af;
-  text-decoration: underline;
+.table-manage-work tbody tr.selected-row .mw-customer-name {
+  color: #1e3a8a !important;
+}
+
+.mw-customer-btn {
+  font-weight: 600;
+  color: #0f172a;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: default;
+  font-size: 0.76rem;
+  text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
 }
 
 /* ══ Stage Cells (Compact Inline Switch + Datepicker) ══════════════════ */
@@ -422,13 +431,30 @@
 }
 
 .mw-netmeter-pay-group input {
-  font-size: 0.69rem !important;
-  padding: 1px 3px !important;
+  font-size: 0.70rem !important;
+  padding: 1px 4px !important;
   height: 23px !important;
   border-color: #cbd5e1 !important;
   border-radius: 0 !important;
   text-align: right;
-  width: 54px !important;
+  width: 80px !important;
+  min-width: 78px !important;
+  -moz-appearance: textfield;
+}
+
+.mw-netmeter-pay-group input::-webkit-outer-spin-button,
+.mw-netmeter-pay-group input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.mw-netmeter-pay-group input:not(:disabled),
+.mw-netmeter-pay-group.is-editing input {
+  width: 88px !important;
+  min-width: 85px !important;
+  background-color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.25) !important;
 }
 
 .mw-netmeter-pay-group .btn {
@@ -1316,8 +1342,31 @@
     font-size: 0.64rem !important;
   }
 
+  .table-manage-work th.th-netmeter {
+    min-width: 275px !important;
+    width: 275px !important;
+  }
+
   .mw-netmeter-pay-group {
-    width: 65px !important;
+    width: auto !important;
+    min-width: 112px !important;
+  }
+
+  .mw-netmeter-pay-group.is-editing {
+    min-width: 144px !important;
+  }
+
+  .mw-netmeter-pay-group input {
+    width: 80px !important;
+    min-width: 78px !important;
+    font-size: 0.70rem !important;
+    padding: 1px 3px !important;
+  }
+
+  .mw-netmeter-pay-group input:not(:disabled),
+  .mw-netmeter-pay-group.is-editing input {
+    width: 88px !important;
+    min-width: 85px !important;
   }
 
   .table-manage-work-summary thead th.th-col-sl,

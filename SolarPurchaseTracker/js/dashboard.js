@@ -825,13 +825,11 @@ function renderDashboard() {
         `;
       }).join('');
 
-      const safeId = encodeURIComponent(r.ConsumerNo || r.SlNo || i);
-
       return `
-        <tr onclick="openCustomerDetailsFromDash('${safeId}')" title="Click to view Customer Details">
+        <tr>
           <td class="td-col-sl text-center text-muted">${i + 1}</td>
           <td class="td-col-cust">
-            <span class="mw-sum-cust-name text-primary fw-bold" title="${r.Name || '-'}">${r.Name || '-'}</span>
+            <span class="mw-sum-cust-name text-dark fw-bold" title="${r.Name || '-'}">${r.Name || '-'}</span>
             ${r.ConsumerNo ? `<small class="text-muted d-block fs-9">${r.ConsumerNo}</small>` : ''}
           </td>
           <td class="td-col-partner">
@@ -1178,15 +1176,13 @@ function renderDashFinancialBreakdown(rows, isAdmin) {
     const custPendingClass = Math.abs(custPending) < 0.01 ? 'text-secondary' : (custPending > 0 ? 'text-danger fw-bold' : 'text-primary fw-bold');
     const profitClass = profit >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
     const meterColorClass = netMeterAmt > 0 ? 'text-primary fw-semibold' : 'text-secondary';
-    const safeSlNo = encodeURIComponent(String(r.SlNo));
-
     return `
       <tr>
         <td class="text-center text-muted font-monospace">${i + 1}</td>
         <td>
-          <a href="#" class="fw-semibold text-primary text-decoration-none text-truncate d-block" style="max-width: 220px; font-size: 0.70rem;" onclick="window.openCustomerDetailsFromDash('${safeSlNo}'); return false;" title="${escapeHtml(r.Name || '')} (Click for details)">
+          <span class="fw-semibold text-dark text-truncate d-block" style="max-width: 220px; font-size: 0.70rem;" title="${escapeHtml(r.Name || '')}">
             ${escapeHtml(r.Name || '—')}
-          </a>
+          </span>
           ${r.MobileNumber ? `<span class="text-secondary font-monospace" style="font-size: 0.66rem;">${escapeHtml(r.MobileNumber)}</span>` : ''}
         </td>
         <td class="text-end font-monospace">₹${Math.round(price).toLocaleString('en-IN')}</td>

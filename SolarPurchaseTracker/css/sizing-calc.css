@@ -269,13 +269,15 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
-/* Appliance Configuration Table (Compact & Clean) */
-.appliance-config-table {
+/* Appliance & Backup Configuration Tables (Compact & Clean) */
+.appliance-config-table,
+.backup-config-table {
   font-size: 0.82rem;
   width: 100%;
 }
 
-.appliance-config-table th {
+.appliance-config-table th,
+.backup-config-table th {
   padding: 8px 6px !important;
   background: #f8fafc;
   color: #475569;
@@ -287,13 +289,15 @@
   white-space: nowrap;
 }
 
-.appliance-config-table td {
+.appliance-config-table td,
+.backup-config-table td {
   padding: 6px 5px !important;
   vertical-align: middle;
   border-bottom: none !important;
 }
 
-.appliance-config-table tfoot td {
+.appliance-config-table tfoot td,
+.backup-config-table tfoot td {
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   padding: 8px 6px !important;
@@ -303,16 +307,27 @@
   background-color: #f8faff !important;
 }
 
+.backup-config-table tr.table-success-subtle {
+  background-color: #f0fdf4 !important;
+}
+
 .appliance-config-table tr.table-primary-subtle:hover {
   background-color: #f0f4ff !important;
 }
 
-.appliance-config-table tr.opacity-75 {
+.backup-config-table tr.table-success-subtle:hover {
+  background-color: #dcfce7 !important;
+}
+
+.appliance-config-table tr.opacity-75,
+.backup-config-table tr.opacity-60 {
   background-color: #fafafa;
 }
 
 .appliance-config-table .form-control-sm,
-.appliance-config-table .form-select-sm {
+.appliance-config-table .form-select-sm,
+.backup-config-table .form-control-sm,
+.backup-config-table .form-select-sm {
   padding: 3px 6px !important;
   font-size: 0.78rem !important;
   height: 28px !important;
@@ -322,7 +337,9 @@
 }
 
 .appliance-config-table .form-control-sm:focus,
-.appliance-config-table .form-select-sm:focus {
+.appliance-config-table .form-select-sm:focus,
+.backup-config-table .form-control-sm:focus,
+.backup-config-table .form-select-sm:focus {
   border-color: var(--st-primary);
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
@@ -815,12 +832,14 @@
     padding: 8px !important;
   }
 
-  .appliance-config-table th {
+  .appliance-config-table th,
+  .backup-config-table th {
     padding: 5px 3px !important;
     font-size: 0.65rem !important;
   }
 
-  .appliance-config-table td {
+  .appliance-config-table td,
+  .backup-config-table td {
     padding: 4px 3px !important;
     font-size: 0.72rem !important;
   }

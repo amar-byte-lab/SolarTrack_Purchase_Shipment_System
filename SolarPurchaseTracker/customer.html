@@ -842,11 +842,9 @@
                   <label class="specs-input-label" for="prodDcdbSerialNo" title="Sl. No.">Sl. No.</label>
                   <input type="text" class="form-control specs-input-control font-monospace" id="prodDcdbSerialNo" placeholder="e.g. DCDB Sl. No.">
                 </div>
-                <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodDcdbSpdRating" title="DC Surge Protection Device Rating">DC Surge Protection Device Rating</label>
-                  <input type="text" class="form-control specs-input-control" id="prodDcdbSpdRating" placeholder="e.g. 600V DC / 1000V DC">
-                </div>
-                <div class="col-md-6 col-6">
+                <!-- Hidden input to preserve DC Surge Protection Device Rating for sync -->
+                <input type="hidden" id="prodDcdbSpdRating">
+                <div class="col-12">
                   <label class="specs-input-label" for="prodDcdbMcbDetails" title="MCB / Isolator Quantity & Capacity">MCB / Isolator Quantity & Capacity</label>
                   <input type="text" class="form-control specs-input-control" id="prodDcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
                 </div>
@@ -868,11 +866,9 @@
                   <label class="specs-input-label" for="prodAcdbSerialNo" title="Sl. No.">Sl. No.</label>
                   <input type="text" class="form-control specs-input-control font-monospace" id="prodAcdbSerialNo" placeholder="e.g. ACDB Sl. No.">
                 </div>
-                <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodAcdbSpdRating" title="AC Surge Protection Device Rating">AC Surge Protection Device Rating</label>
-                  <input type="text" class="form-control specs-input-control" id="prodAcdbSpdRating" placeholder="e.g. 320V AC / 440V AC">
-                </div>
-                <div class="col-md-6 col-6">
+                <!-- Hidden input to preserve AC Surge Protection Device Rating for sync -->
+                <input type="hidden" id="prodAcdbSpdRating">
+                <div class="col-12">
                   <label class="specs-input-label" for="prodAcdbMcbDetails" title="MCB / MCCB Quantity & Capacity">MCB / MCCB Quantity & Capacity</label>
                   <input type="text" class="form-control specs-input-control" id="prodAcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
                 </div>

@@ -261,6 +261,11 @@ const SizingUI = (() => {
       el.style.display = showSolarParams ? '' : 'none';
     });
 
+    const btnHeaderBackup = document.getElementById('btnHeaderBackupLoad');
+    if (btnHeaderBackup) {
+      btnHeaderBackup.style.display = isGrid ? 'none' : 'inline-flex';
+    }
+
     // Cost Recovery / Solar Payback Container (Hidden for without-solar, shown for solar systems)
     const secCostRecovery = document.getElementById('secCostRecoveryContainer');
     if (secCostRecovery) {
@@ -516,16 +521,21 @@ const SizingUI = (() => {
         totalDailyWh += itemDailyWh;
 
         const isBackup = app.isBackup !== false;
+        const backupQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
+          ? Math.min(qty, Number(app.backupQty))
+          : qty;
+        const backupItemW = watts * backupQty;
+
         if (isBackup) {
-          totalBackupWatts += totalItemW;
-          backupDailyWh += (totalItemW * (state.energyCalculationBasis === 'backup_duration' ? backupHrs : hours));
+          totalBackupWatts += backupItemW;
+          backupDailyWh += (backupItemW * (state.energyCalculationBasis === 'backup_duration' ? backupHrs : hours));
         }
 
         activeApps.push(app);
       }
     });
 
-    const activeBackupW = totalBackupWatts > 0 ? totalBackupWatts : totalConnectedWatts;
+    const activeBackupW = totalBackupWatts;
     const loadText = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
     const backupLoadText = `${activeBackupW} W`;
 
@@ -555,25 +565,47 @@ const SizingUI = (() => {
 
     const badgesContainer = document.getElementById('applianceSummaryBadges');
     if (badgesContainer) {
-      const displayApps = isBackupContext 
-        ? state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0 && a.isBackup !== false)
-        : state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0);
+      const displayApps = state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0);
+      const backupApps = state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0 && a.isBackup !== false);
+
+      let summaryHtml = '';
+      summaryHtml += `
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
+          <div class="d-flex align-items-center gap-1.5 flex-wrap">
+            <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-8 fw-semibold rounded-pill d-inline-flex align-items-center gap-1 shadow-2xs" onclick="SizingUI.openApplianceModal()" title="Click to view & configure appliances load">
+              <span>🏠</span> Connected Load: <strong>${loadText}</strong>
+            </button>
+            ${isBackupContext ? `
+            <button type="button" class="btn btn-xs btn-outline-success py-0.5 px-2 fs-8 fw-semibold rounded-pill d-inline-flex align-items-center gap-1 shadow-2xs" onclick="SizingUI.openBackupModal()" title="Click to view & configure battery backup loads">
+              <span>🔋</span> Backup Load: <strong>${backupLoadText}</strong>
+            </button>
+            ` : ''}
+          </div>
+          <span class="text-muted fs-9 fst-italic">Click any badge to modify</span>
+        </div>
+      `;
 
       if (displayApps.length === 0) {
-        badgesContainer.innerHTML = isBackupContext
-          ? `<span class="text-muted fs-8 fst-italic">No backup appliances selected. Click here to select backup loads.</span>`
-          : `<span class="text-muted fs-8 fst-italic">No appliances selected. Click here to select loads.</span>`;
+        summaryHtml += `<div class="text-muted fs-8 fst-italic py-1 cursor-pointer" onclick="SizingUI.openApplianceModal()">No appliances configured yet. Click here to select appliances.</div>`;
       } else {
-        badgesContainer.innerHTML = displayApps.map(app => {
-          const itemHours = isBackupContext ? (Number(app.defaultHours) || backupHrs) : (Number(app.defaultHours) || 1);
-          const itemWh = (app.watts || 0) * itemHours * (app.defaultQty || 1);
-          return `<span class="d-inline-flex align-items-center gap-1 text-dark fs-8 fw-medium flex-shrink-0 text-nowrap"><span>${app.name} × <strong>${app.defaultQty}</strong></span> <span class="text-primary fw-semibold">(${formatEnergy(itemWh)})</span></span>`;
+        const itemsList = (isBackupContext ? backupApps : displayApps).map(app => {
+          const itemHours = Number(app.defaultHours) || 1;
+          const effQty = (isBackupContext && app.backupQty) ? app.backupQty : app.defaultQty;
+          const itemWh = (app.watts || 0) * itemHours * effQty;
+          return `<span class="d-inline-flex align-items-center gap-1 text-dark fs-8 fw-medium flex-shrink-0 text-nowrap">
+            <span>${app.name} × <strong>${effQty}</strong></span>
+            <span class="text-primary fw-semibold">(${formatEnergy(itemWh)})</span>
+          </span>`;
         }).join('<span class="text-muted opacity-50 flex-shrink-0 mx-1.5">•</span>');
+
+        summaryHtml += `<div class="d-flex flex-wrap align-items-center py-0.5">${itemsList}</div>`;
       }
+
+      badgesContainer.innerHTML = summaryHtml;
     }
   }
 
-  /* ---------------- Appliance Configuration Modal ---------------- */
+  /* ---------------- 1. Connected Appliances Configuration Modal ---------------- */
   function openApplianceModal() {
     renderModalApplianceList();
     updateModalStats();
@@ -597,7 +629,7 @@ const SizingUI = (() => {
 
     tbody.innerHTML = state.appliances.map((app, index) => {
       let wattInputHtml = `
-        <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1" style="width: 66px; font-size: 0.75rem; height: 26px;" 
+        <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 70px; height: 26px;" 
           value="${app.watts}" 
           oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
           onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
@@ -606,7 +638,7 @@ const SizingUI = (() => {
       if (app.id === 'ac') {
         const ton = state.acConfig.ton || '1.5';
         wattInputHtml = `
-          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center" style="width: 66px; font-size: 0.72rem; height: 26px;" onchange="SizingUI.updateAcTon(this.value)">
+          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 70px; height: 26px;" onchange="SizingUI.updateAcTon(this.value)">
             <option value="0.5" ${ton === '0.5' ? 'selected' : ''}>0.5T</option>
             <option value="1" ${ton === '1' ? 'selected' : ''}>1.0T</option>
             <option value="1.5" ${ton === '1.5' ? 'selected' : ''}>1.5T</option>
@@ -616,7 +648,7 @@ const SizingUI = (() => {
       } else if (app.id === 'pump') {
         const hp = state.pumpConfig.hp || '1';
         wattInputHtml = `
-          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center" style="width: 66px; font-size: 0.72rem; height: 26px;" onchange="SizingUI.updatePumpHp(this.value)">
+          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 70px; height: 26px;" onchange="SizingUI.updatePumpHp(this.value)">
             <option value="0.5" ${hp === '0.5' ? 'selected' : ''}>0.5HP</option>
             <option value="1" ${hp === '1' ? 'selected' : ''}>1.0HP</option>
             <option value="1.5" ${hp === '1.5' ? 'selected' : ''}>1.5HP</option>
@@ -626,33 +658,33 @@ const SizingUI = (() => {
       }
 
       const hoursHtml = `
-        <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fw-semibold mx-auto p-1" style="width: 44px; font-size: 0.75rem; height: 26px;" 
+        <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 44px; height: 26px;" 
           value="${app.defaultHours || 4}" 
           oninput="SizingUI.updateApplianceHours(${index}, this.value)"
           onchange="SizingUI.updateApplianceHours(${index}, this.value)">
       `;
 
       const qtyHtml = `
-        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold mx-auto p-1" style="width: 38px; font-size: 0.75rem; height: 26px;" 
+        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold mx-auto p-1 fs-8" style="width: 38px; height: 26px;" 
           value="${app.defaultQty}" 
           oninput="SizingUI.setQty(${index}, this.value)"
           onchange="SizingUI.setQty(${index}, this.value)">
       `;
 
       const isChecked = !!app.checked;
-      const isBackup = app.isBackup !== false;
 
       return `
         <tr class="${isChecked ? 'table-primary-subtle' : 'opacity-75 bg-light-subtle'}" id="rowApp_${index}">
           <!-- Checkbox -->
-          <td class="text-center p-1" style="width: 28px;">
+          <td class="text-center p-1" style="width: 32px;">
             <input class="form-check-input mt-0" type="checkbox" id="chkApp_${index}" ${isChecked ? 'checked' : ''} 
               onchange="SizingUI.toggleApplianceChecked(${index}, this.checked)" style="width: 15px; height: 15px; cursor: pointer;">
           </td>
-          <!-- Appliance Name + Superscript Energy (strictly within appliance cell boundary) -->
-          <td class="p-1" style="max-width: 145px; overflow: hidden;">
+          <!-- Appliance Name + Superscript Energy -->
+          <td class="p-1" style="min-width: 120px; overflow: hidden;">
             <label class="form-check-label d-flex align-items-center justify-content-between gap-1 mb-0 w-100" for="chkApp_${index}" style="cursor: pointer;" title="${app.name}">
               <span class="d-inline-flex align-items-center text-truncate" style="min-width: 0;">
+                <span class="me-1 fs-7.5">${app.icon || '⚡'}</span>
                 <span class="fw-semibold ${isChecked ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
               </span>
               <sup class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill py-0 px-1 fw-bold flex-shrink-0 align-self-start" id="bracketEnergy_${index}" style="font-size: 0.62rem; line-height: 1.1; margin-top: 1px;">
@@ -661,21 +693,16 @@ const SizingUI = (() => {
             </label>
           </td>
           <!-- Qty -->
-          <td class="text-center p-1" style="width: 44px;">
+          <td class="text-center p-1" style="width: 48px;">
             ${qtyHtml}
           </td>
-          <!-- Watt (6-digit visible) -->
-          <td class="text-center p-1" style="width: 74px;">
+          <!-- Watt -->
+          <td class="text-center p-1" style="width: 78px;">
             ${wattInputHtml}
           </td>
-          <!-- Time -->
-          <td class="text-center p-1" style="width: 68px;">
+          <!-- Daily Time -->
+          <td class="text-center p-1" style="width: 70px;">
             ${hoursHtml}
-          </td>
-          <!-- Emergency Battery Backup Enabled Toggle -->
-          <td class="text-center p-1" style="width: 40px;">
-            <input class="form-check-input mt-0" type="checkbox" id="chkBackup_${index}" ${isBackup ? 'checked' : ''} 
-              onchange="SizingUI.toggleApplianceBackup(${index}, this.checked)" title="Enable battery backup during power cut" style="width: 15px; height: 15px; cursor: pointer;">
           </td>
         </tr>
       `;
@@ -696,16 +723,6 @@ const SizingUI = (() => {
     }
 
     renderModalApplianceList();
-    updateModalStats();
-    renderApplianceSummaryCard();
-    calculateAndRender();
-  }
-
-  function toggleApplianceBackup(index, isBackup) {
-    const app = state.appliances[index];
-    if (!app) return;
-
-    app.isBackup = isBackup;
     updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -754,7 +771,6 @@ const SizingUI = (() => {
   function updateModalStats() {
     let totalConnectedWatts = 0;
     let totalDailyWh = 0;
-    let totalBackupWatts = 0;
 
     state.appliances.forEach(app => {
       if (app.checked && Number(app.defaultQty) > 0) {
@@ -764,22 +780,233 @@ const SizingUI = (() => {
         const totalW = watts * qty;
         totalConnectedWatts += totalW;
         totalDailyWh += totalW * hours;
-        if (app.isBackup !== false) {
-          totalBackupWatts += totalW;
-        }
       }
     });
 
     const modalConnectedBadge = document.getElementById('modalConnectedLoadBadge');
     if (modalConnectedBadge) {
-      modalConnectedBadge.textContent = `${totalConnectedWatts} W (Backup: ${totalBackupWatts} W)`;
+      modalConnectedBadge.textContent = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
+    }
+
+    const modalDailyDemandBadge = document.getElementById('modalDailyDemandBadge');
+    if (modalDailyDemandBadge) {
+      modalDailyDemandBadge.textContent = `${(totalDailyWh / 1000).toFixed(2)} kWh/day`;
     }
 
     const footConnected = document.getElementById('modalFooterConnectedLoad');
     if (footConnected) footConnected.textContent = `${totalConnectedWatts} W`;
 
     const footEnergy = document.getElementById('modalFooterDailyEnergy');
-    if (footEnergy) footEnergy.textContent = `${Math.round(totalDailyWh).toLocaleString()} Wh/day`;
+    if (footEnergy) footEnergy.textContent = `${Math.round(totalDailyWh).toLocaleString()} Wh/day (${(totalDailyWh / 1000).toFixed(2)} kWh)`;
+  }
+
+  /* ---------------- 2. Dedicated Emergency Backup Load Configuration Modal ---------------- */
+  function openBackupModal() {
+    renderBackupModalList();
+    updateBackupModalStats();
+
+    const modalEl = document.getElementById('backupLoadModal');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  }
+
+  function renderBackupModalList() {
+    const tbody = document.getElementById('modalBackupTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = state.appliances.map((app, index) => {
+      const isCheckedInHouse = app.checked && (Number(app.defaultQty) || 0) > 0;
+      const isBackup = app.isBackup !== false && isCheckedInHouse;
+      const houseQty = isCheckedInHouse ? Number(app.defaultQty) : 0;
+      const backupQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
+        ? Math.min(houseQty || 1, Number(app.backupQty))
+        : (houseQty > 0 ? houseQty : 1);
+
+      const isHeavy = !!app.isHeavy || ['ac', 'pump', 'geyser', 'wm', 'iron', 'induction'].includes(app.id);
+      const categoryBadge = isHeavy
+        ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-0 px-1 fs-9">Heavy</span>`
+        : `<span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1 fs-9">Essential</span>`;
+
+      const unitWatts = Number(app.watts) || 0;
+      const itemBackupWatts = isBackup ? (unitWatts * backupQty) : 0;
+
+      return `
+        <tr class="${isBackup ? 'table-success-subtle' : (isCheckedInHouse ? 'bg-white' : 'opacity-60 bg-light-subtle')}" id="rowBackup_${index}">
+          <!-- Backup Toggle Checkbox -->
+          <td class="text-center p-1" style="width: 40px;">
+            <input class="form-check-input mt-0" type="checkbox" id="chkBackupModal_${index}" ${isBackup ? 'checked' : ''}
+              onchange="SizingUI.toggleBackupAppliance(${index}, this.checked)" title="Enable battery backup during power cut" style="width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <!-- Appliance Name & Category -->
+          <td class="p-1" style="min-width: 140px;">
+            <label class="form-check-label d-flex align-items-center justify-content-between gap-1 mb-0 w-100" for="chkBackupModal_${index}" style="cursor: pointer;">
+              <span class="d-inline-flex align-items-center gap-1 text-truncate" style="min-width: 0;">
+                <span class="fs-7.5">${app.icon || '⚡'}</span>
+                <span class="fw-semibold ${isBackup ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
+              </span>
+              ${categoryBadge}
+            </label>
+          </td>
+          <!-- Household Qty -->
+          <td class="text-center p-1 text-muted fs-8 fw-semibold" style="width: 55px;">
+            ${houseQty > 0 ? houseQty : '<span class="text-muted opacity-50">-</span>'}
+          </td>
+          <!-- Backup Qty Input -->
+          <td class="text-center p-1" style="width: 65px;">
+            <input type="number" min="1" max="${houseQty > 0 ? houseQty : 99}" class="form-control form-control-sm text-center fw-bold mx-auto p-1 fs-8" 
+              style="width: 46px; height: 26px;" 
+              value="${backupQty}"
+              ${!isBackup ? 'disabled' : ''}
+              onchange="SizingUI.setBackupQty(${index}, this.value)"
+              oninput="SizingUI.setBackupQty(${index}, this.value)">
+          </td>
+          <!-- Unit Watt -->
+          <td class="text-center p-1 text-secondary fs-8 fw-semibold" style="width: 75px;">
+            ${unitWatts} W
+          </td>
+          <!-- Total Backup Load -->
+          <td class="text-end p-1 pe-2 fw-bold ${isBackup ? 'text-success' : 'text-muted'} fs-8" style="width: 85px;">
+            ${isBackup ? itemBackupWatts + ' W' : '0 W'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function updateBackupModalStats() {
+    let totalBackupWatts = 0;
+    const backupHrs = Number(state.backupHours) || 4;
+
+    state.appliances.forEach(app => {
+      if (app.checked && Number(app.defaultQty) > 0 && app.isBackup !== false) {
+        const qty = Number(app.defaultQty);
+        const backupQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
+          ? Math.min(qty, Number(app.backupQty))
+          : qty;
+        const watts = Number(app.watts) || 0;
+        totalBackupWatts += watts * backupQty;
+      }
+    });
+
+    const kwVal = (totalBackupWatts / 1000).toFixed(2);
+    const energyKwh = ((totalBackupWatts * backupHrs) / 1000).toFixed(2);
+
+    const badgeWatts = document.getElementById('modalBackupTotalWattsBadge');
+    if (badgeWatts) {
+      badgeWatts.textContent = `${totalBackupWatts} W (${kwVal} kW)`;
+    }
+
+    const badgeEnergy = document.getElementById('modalBackupEnergyBadge');
+    if (badgeEnergy) {
+      badgeEnergy.textContent = `${energyKwh} kWh (${backupHrs} hr)`;
+    }
+
+    const footLoad = document.getElementById('modalFooterBackupLoad');
+    if (footLoad) {
+      footLoad.textContent = `${totalBackupWatts} W (${kwVal} kW)`;
+    }
+
+    const footEnergy = document.getElementById('modalFooterBackupEnergy');
+    if (footEnergy) {
+      footEnergy.textContent = `${energyKwh} kWh`;
+    }
+  }
+
+  function toggleBackupAppliance(index, isChecked) {
+    const app = state.appliances[index];
+    if (!app) return;
+
+    app.isBackup = isChecked;
+    if (isChecked) {
+      if (!app.checked || (Number(app.defaultQty) || 0) <= 0) {
+        app.checked = true;
+        app.defaultQty = app.initialQty || 1;
+      }
+      if (!app.backupQty || app.backupQty <= 0) {
+        app.backupQty = app.defaultQty || 1;
+      }
+    }
+
+    renderBackupModalList();
+    updateBackupModalStats();
+  }
+
+  function setBackupQty(index, val) {
+    const app = state.appliances[index];
+    if (!app) return;
+    let num = parseInt(val, 10);
+    if (isNaN(num) || num < 1) num = 1;
+    if (app.defaultQty > 0 && num > app.defaultQty) {
+      num = app.defaultQty;
+    }
+    app.backupQty = num;
+    renderBackupModalList();
+    updateBackupModalStats();
+  }
+
+  function presetBackup(type) {
+    if (type === 'essential') {
+      state.appliances.forEach(app => {
+        const isHeavy = !!app.isHeavy || ['ac', 'pump', 'geyser', 'wm', 'iron', 'induction'].includes(app.id);
+        if (isHeavy) {
+          app.isBackup = false;
+        } else {
+          app.isBackup = true;
+          if (!app.checked || (Number(app.defaultQty) || 0) <= 0) {
+            if (['led', 'fan', 'tv', 'fridge'].includes(app.id)) {
+              app.checked = true;
+              app.defaultQty = app.initialQty || 1;
+            }
+          }
+          app.backupQty = app.defaultQty || 1;
+        }
+      });
+      UI.toast('Preset: Essential backup loads activated', 'info');
+    } else if (type === 'all') {
+      state.appliances.forEach(app => {
+        if (app.checked && (Number(app.defaultQty) || 0) > 0) {
+          app.isBackup = true;
+          app.backupQty = app.defaultQty;
+        }
+      });
+      UI.toast('Preset: All household appliances enabled for backup', 'info');
+    } else if (type === 'clear') {
+      state.appliances.forEach(app => {
+        app.isBackup = false;
+      });
+      UI.toast('Preset: All backup loads cleared', 'info');
+    }
+    renderBackupModalList();
+    updateBackupModalStats();
+  }
+
+  function resetBackupToDefault() {
+    state.appliances.forEach(app => {
+      const def = COMMON_APPLIANCES.find(d => d.id === app.id);
+      if (def) {
+        app.isBackup = def.isBackup !== false;
+        app.backupQty = def.defaultQty;
+      } else {
+        app.isBackup = false;
+      }
+    });
+    renderBackupModalList();
+    updateBackupModalStats();
+    UI.toast('Backup loads reset to default essential configuration', 'info');
+  }
+
+  function applyBackupModalChanges() {
+    renderApplianceSummaryCard();
+    calculateAndRender();
+    UI.toast('Emergency backup load configuration applied!', 'success');
+  }
+
+  function toggleApplianceBackup(index, isBackup) {
+    toggleBackupAppliance(index, isBackup);
+    renderApplianceSummaryCard();
+    calculateAndRender();
   }
 
   /* ---------------- Appliance Actions & Value Updates ---------------- */
@@ -1428,16 +1655,16 @@ const SizingUI = (() => {
           <div class="row g-2.5 mb-3 text-center">
             <!-- 1. Total Connected Load -->
             <div class="col-md-3 col-6 d-flex flex-column">
-              <div class="p-2.5 bg-white rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs">
-                <span class="text-muted fs-8 fw-semibold d-block mb-1">ସମୁଦାୟ ସଂଯୁକ୍ତ ଲୋଡ୍</span>
+              <div class="p-2.5 bg-white rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs cursor-pointer" onclick="SizingUI.openApplianceModal()" style="cursor: pointer;" title="କ୍ଲିକ୍ କରି ଉପକରଣ ଲୋଡ୍ ବଦଳାନ୍ତୁ (Configure Appliances Load)">
+                <span class="text-muted fs-8 fw-semibold d-block mb-1">ସମୁଦାୟ ସଂଯୁକ୍ତ ଲୋଡ୍ <i class="bi bi-pencil-square text-primary fs-9 ms-1"></i></span>
                 <span class="fs-5 fw-bold text-dark">${connectedWatts} W</span>
                 <span class="fs-9 text-muted d-block mt-0.5">ଘରର ସମସ୍ତ ଉପକରଣ (${connectedKw} kW)</span>
               </div>
             </div>
             <!-- 2. Essential Backup Load -->
             <div class="col-md-3 col-6 d-flex flex-column">
-              <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs" style="background: #eff6ff; border-color: #bfdbfe !important;">
-                <span class="text-primary fs-8 fw-semibold d-block mb-1">ଜରୁରୀ ବ୍ୟାକଅପ୍ ଲୋଡ୍</span>
+              <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs cursor-pointer" onclick="SizingUI.openBackupModal()" style="background: #eff6ff; border-color: #bfdbfe !important; cursor: pointer;" title="କ୍ଲିକ୍ କରି ବ୍ୟାକଅପ୍ ଲୋଡ୍ ବଦଳାନ୍ତୁ (Configure Backup Load)">
+                <span class="text-primary fs-8 fw-semibold d-block mb-1">ଜରୁରୀ ବ୍ୟାକଅପ୍ ଲୋଡ୍ <i class="bi bi-pencil-square text-primary fs-9 ms-1"></i></span>
                 <span class="fs-5 fw-extrabold text-primary">${backupWatts} W</span>
                 <span class="fs-9 text-primary d-block mt-0.5">${backupSubText} (${backupKw} kW)</span>
               </div>
@@ -2055,7 +2282,13 @@ Generated by Shri Trutiyadev Solar Enterprise Calculate System Variables`;
     onBackupHoursChange,
     onHybridBackupHoursChange,
     onEnergyBasisChange,
-    toggleApplianceBackup
+    toggleApplianceBackup,
+    openBackupModal,
+    applyBackupModalChanges,
+    toggleBackupAppliance,
+    setBackupQty,
+    presetBackup,
+    resetBackupToDefault
   };
 
 })();

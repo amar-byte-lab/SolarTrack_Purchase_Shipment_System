@@ -170,6 +170,14 @@
                   <div>
                     <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
                   </div>
+                  <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary btn-sm fs-8 py-1 px-2.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs" onclick="SizingUI.openApplianceModal()" title="Configure household appliances & connected load">
+                      <span>🏠</span> Appliances Load
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm fs-8 py-1 px-2.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs" id="btnHeaderBackupLoad" onclick="SizingUI.openBackupModal()" title="Configure emergency battery backup loads">
+                      <span>🔋</span> Backup Load
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Sizing Calculation Basis (Monthly Units, Configured Appliances Load, Backup Duration) -->
@@ -220,8 +228,9 @@
                     <div class="row g-2 align-items-center">
                       <div class="col-6">
                         <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Connected Load</label>
-                        <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
+                        <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center cursor-pointer" style="height: 38px; cursor: pointer;" onclick="SizingUI.openApplianceModal()" title="Click to view & configure appliances load">
                           <strong class="text-dark fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblApplianceBasisConnectedLoad">0 W (0.00 kW)</strong>
+                          <i class="bi bi-pencil-square ms-1 text-primary fs-8"></i>
                         </div>
                       </div>
                       <div class="col-6">
@@ -247,8 +256,9 @@
                       </div>
                       <div class="col-4">
                         <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Backup Load</label>
-                        <div class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
-                          <strong class="text-dark fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblBackupBasisConnectedLoad">0 W</strong>
+                        <div class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center cursor-pointer" style="height: 38px; cursor: pointer;" onclick="SizingUI.openBackupModal()" title="Click to view & configure backup appliances">
+                          <strong class="text-success fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblBackupBasisConnectedLoad">0 W</strong>
+                          <i class="bi bi-pencil-square ms-1 text-success fs-9"></i>
                         </div>
                       </div>
                       <div class="col-4">
@@ -274,8 +284,9 @@
                       </div>
                       <div class="col-4">
                         <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Backup Load</label>
-                        <div class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
-                          <strong class="text-dark fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblHybridBackupLoad">0 W</strong>
+                        <div class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center cursor-pointer" style="height: 38px; cursor: pointer;" onclick="SizingUI.openBackupModal()" title="Click to view & configure backup appliances">
+                          <strong class="text-success fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblHybridBackupLoad">0 W</strong>
+                          <i class="bi bi-pencil-square ms-1 text-success fs-9"></i>
                         </div>
                       </div>
                       <div class="col-4">
@@ -290,7 +301,7 @@
 
                 <!-- Selected Appliances Summary -->
                 <div class="mt-2.5 mb-0" id="wrapSelectedAppliancesSummary">
-                  <div class="fs-8 text-secondary lh-base cursor-pointer py-0.5" id="applianceSummaryBadges" onclick="SizingUI.openApplianceModal()" style="cursor: pointer;" title="Click to view & configure appliances">
+                  <div class="fs-8 text-secondary lh-base py-0.5" id="applianceSummaryBadges">
                     <!-- Rendered dynamically as inline text labels -->
                   </div>
                 </div>
@@ -387,33 +398,39 @@
     </div>
   </div>
 
-  <!-- APPLIANCE CONFIGURATION MODAL -->
+  <!-- 1. APPLIANCES LOAD CONFIGURATION MODAL (TOTAL CONNECTED LOAD) -->
   <div class="modal fade" id="applianceConfigModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header bg-light border-bottom py-3">
-          <div>
-            <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Configure Daily Usage</h5>
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-light border-bottom py-2.5 px-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="fs-5">🏠</span>
+            <div>
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Appliances & Connected Load</h5>
+              <div class="text-muted fs-8">Configure household appliances, quantities & daily operating hours</div>
+            </div>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-2 p-md-3">
+        <div class="modal-body p-2.5 p-md-3">
           
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5 px-1">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 px-1">
             <h6 class="fw-bold text-dark mb-0 fs-7">Appliances List & Usage Hours</h6>
-            <div class="badge bg-primary fs-8 px-2 py-1" id="modalConnectedLoadBadge">0 W (0 kW)</div>
+            <div class="d-flex align-items-center gap-1.5">
+              <span class="badge bg-primary fs-8 px-2.5 py-1" id="modalConnectedLoadBadge">0 W (0.00 kW)</span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8 px-2 py-1" id="modalDailyDemandBadge">0.00 kWh/day</span>
+            </div>
           </div>
-          <!-- Appliance Configuration Table (Screen-Fit with Essential Backup Toggle) -->
+          <!-- Appliance Configuration Table (Screen-Fit, Clean Connected Load) -->
           <div class="table-responsive border rounded-3 mb-2.5" style="max-height: 480px; overflow-y: auto;">
             <table class="table table-hover align-middle mb-0 appliance-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 28px;" class="text-center p-1" title="Select Appliance"></th>
-                  <th style="min-width: 105px;" class="p-1">Appliance</th>
-                  <th style="width: 44px;" class="text-center p-1">Qty</th>
-                  <th style="width: 74px;" class="text-center p-1">Watt</th>
-                  <th style="width: 68px;" class="text-center p-1">Time</th>
-                  <th style="width: 40px;" class="text-center p-1" title="Emergency Battery Backup Enabled">🔋</th>
+                  <th style="width: 32px;" class="text-center p-1" title="Select Appliance"></th>
+                  <th style="min-width: 120px;" class="p-1">Appliance</th>
+                  <th style="width: 48px;" class="text-center p-1">Qty</th>
+                  <th style="width: 78px;" class="text-center p-1">Watt</th>
+                  <th style="width: 70px;" class="text-center p-1">Daily Time</th>
                 </tr>
               </thead>
               <tbody id="modalApplianceTableBody">
@@ -421,29 +438,30 @@
               </tbody>
               <tfoot class="table-light border-top sticky-bottom" style="z-index: 2;">
                 <tr class="bg-light">
-                  <td colspan="2" class="p-1">
-                    <input type="text" class="form-control form-control-sm p-1" id="txtCustomAppName" 
-                      placeholder="Add custom appliance..." style="font-size: 0.75rem; height: 26px; width: 100%;">
+                  <td class="text-center p-1" style="width: 32px;">
+                    <span class="text-muted fs-8">➕</span>
                   </td>
-                  <td class="text-center p-1" style="width: 44px;">
-                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-bold mx-auto" id="txtCustomAppQty" 
-                      value="1" title="Quantity" style="width: 38px; font-size: 0.75rem; height: 26px;">
+                  <td class="p-1" style="min-width: 120px;">
+                    <input type="text" class="form-control form-control-sm p-1 fs-8" id="txtCustomAppName" 
+                      placeholder="Add custom appliance..." style="height: 28px; width: 100%;">
                   </td>
-                  <td class="text-center p-1" style="width: 74px;">
-                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-semibold mx-auto" id="txtCustomAppWatts" 
-                      placeholder="Watts" style="width: 66px; font-size: 0.75rem; height: 26px;">
+                  <td class="text-center p-1" style="width: 48px;">
+                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-bold mx-auto fs-8" id="txtCustomAppQty" 
+                      value="1" title="Quantity" style="width: 42px; height: 28px;">
                   </td>
-                  <td class="text-center p-1" style="width: 68px;">
+                  <td class="text-center p-1" style="width: 78px;">
+                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-semibold mx-auto fs-8" id="txtCustomAppWatts" 
+                      placeholder="Watts" style="width: 72px; height: 28px;">
+                  </td>
+                  <td class="text-center p-1" style="width: 70px;">
                     <div class="d-flex align-items-center justify-content-center gap-1">
-                      <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center p-1 fw-semibold" id="txtCustomAppHours" 
-                        value="4" title="Daily running hours" style="width: 34px; font-size: 0.75rem; height: 26px;">
+                      <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center p-1 fw-semibold fs-8" id="txtCustomAppHours" 
+                        value="4" title="Daily running hours" style="width: 38px; height: 28px;">
+                      <button type="button" class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs" id="btnAddCustomApp" 
+                        style="width: 24px; height: 24px; font-size: 1rem; font-weight: bold; line-height: 1;" title="Add Custom Appliance" onclick="SizingUI.addCustomAppliance()">
+                        +
+                      </button>
                     </div>
-                  </td>
-                  <td class="text-center p-1" style="width: 40px;">
-                    <button type="button" class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs mx-auto" id="btnAddCustomApp" 
-                      style="width: 24px; height: 24px; font-size: 1rem; font-weight: bold; line-height: 1;" title="Add Custom Appliance" onclick="SizingUI.addCustomAppliance()">
-                      +
-                    </button>
                   </td>
                 </tr>
               </tfoot>
@@ -496,14 +514,93 @@
         </div>
         <div class="modal-footer bg-light d-flex justify-content-between align-items-center flex-nowrap py-2.5 px-3">
           <div class="fs-8 text-secondary text-nowrap">
-            Daily Energy: <strong class="text-dark fs-7.5 fw-bold" id="modalFooterDailyEnergy">0 Wh/day</strong>
+            Connected: <strong class="text-dark fs-7.5 fw-bold" id="modalFooterConnectedLoad">0 W</strong> • Daily: <strong class="text-primary fs-7.5 fw-bold" id="modalFooterDailyEnergy">0 Wh/day</strong>
           </div>
-          <div class="modal-footer-action-group">
+          <div class="modal-footer-action-group d-flex gap-2">
             <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-1.5 fs-8 text-nowrap" id="btnResetAppliances" onclick="SizingUI.resetAppliancesToDefault()" title="Reset appliances to default">
               ↺ Reset
             </button>
             <button type="button" class="btn btn-sm btn-primary fw-bold px-3.5 py-1.5 fs-8 text-nowrap" data-bs-dismiss="modal" onclick="SizingUI.applyModalChanges()">
               Apply
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. EMERGENCY BACKUP LOAD CONFIGURATION MODAL (POWER CUT / BATTERY LOAD) -->
+  <div class="modal fade" id="backupLoadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-light border-bottom py-2.5 px-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="fs-5">🔋</span>
+            <div>
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Emergency Battery Backup Load</h5>
+              <div class="text-muted fs-8">Configure essential appliances running during grid power outages / cuts</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2.5 p-md-3">
+          
+          <!-- Presets and Stats Row -->
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 px-1">
+            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+              <span class="fs-8 fw-semibold text-secondary me-1">Presets:</span>
+              <button type="button" class="btn btn-xs btn-outline-success py-1 px-2 fs-8 fw-semibold rounded-pill" onclick="SizingUI.presetBackup('essential')">
+                ⚡ Essential Only
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-primary py-1 px-2 fs-8 fw-semibold rounded-pill" onclick="SizingUI.presetBackup('all')">
+                ✅ All Active
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 fs-8 fw-semibold rounded-pill" onclick="SizingUI.presetBackup('clear')">
+                ❌ Clear All
+              </button>
+            </div>
+            <div class="d-flex align-items-center gap-1.5 ms-auto">
+              <span class="badge bg-success fs-8 px-2.5 py-1" id="modalBackupTotalWattsBadge">0 W (0.00 kW)</span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle fs-8 px-2 py-1" id="modalBackupEnergyBadge">0.00 kWh</span>
+            </div>
+          </div>
+
+          <!-- Advisory note about heavy loads -->
+          <div class="alert alert-info py-1.5 px-2.5 mb-2.5 d-flex align-items-center gap-2 fs-8 mb-2 border-0 bg-info-subtle text-info-emphasis rounded-2">
+            <span class="fs-7">💡</span>
+            <span>Heavy appliances (AC, Pump, Geyser) require very large inverter & battery capacity. Keeping essential loads (Lights, Fans, Refrigerator, WiFi) gives optimal battery backup duration.</span>
+          </div>
+
+          <!-- Backup Configuration Table -->
+          <div class="table-responsive border rounded-3 mb-2.5" style="max-height: 450px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0 backup-config-table">
+              <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
+                <tr>
+                  <th style="width: 40px;" class="text-center p-1" title="Enable Battery Backup">🔋 Backup</th>
+                  <th style="min-width: 140px;" class="p-1">Appliance & Type</th>
+                  <th style="width: 55px;" class="text-center p-1" title="Household active quantity">Total Qty</th>
+                  <th style="width: 65px;" class="text-center p-1" title="Quantity running on battery during power outage">Backup Qty</th>
+                  <th style="width: 75px;" class="text-center p-1">Unit Watt</th>
+                  <th style="width: 85px;" class="text-end p-1 pe-2">Backup Load</th>
+                </tr>
+              </thead>
+              <tbody id="modalBackupTableBody">
+                <!-- Rendered dynamically by sizing-ui.js -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light d-flex justify-content-between align-items-center flex-nowrap py-2.5 px-3">
+          <div class="fs-8 text-secondary text-nowrap">
+            Backup Load: <strong class="text-success fs-7.5 fw-bold" id="modalFooterBackupLoad">0 W</strong> • Required Energy: <strong class="text-dark fs-7.5 fw-bold" id="modalFooterBackupEnergy">0.00 kWh</strong>
+          </div>
+          <div class="modal-footer-action-group d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-1.5 fs-8 text-nowrap" onclick="SizingUI.resetBackupToDefault()" title="Reset backup to default essential loads">
+              ↺ Reset
+            </button>
+            <button type="button" class="btn btn-sm btn-success fw-bold px-3.5 py-1.5 fs-8 text-nowrap" data-bs-dismiss="modal" onclick="SizingUI.applyBackupModalChanges()">
+              Apply Backup
             </button>
           </div>
         </div>

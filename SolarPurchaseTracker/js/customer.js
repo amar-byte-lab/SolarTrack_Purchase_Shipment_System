@@ -2857,17 +2857,17 @@ window.openProductModal = function(slNo) {
 
   // Details of the DC distribution box
   const dcdb = specs.DetailsOfDcdb || {};
-  document.getElementById('prodDcdbMake').value = dcdb.Make || '';
-  document.getElementById('prodDcdbSerialNo').value = dcdb.SerialNo || '';
-  document.getElementById('prodDcdbSpdRating').value = dcdb.SpdRating || '';
-  document.getElementById('prodDcdbMcbDetails').value = dcdb.McbDetails || '';
+  if (document.getElementById('prodDcdbMake')) document.getElementById('prodDcdbMake').value = dcdb.Make || '';
+  if (document.getElementById('prodDcdbSerialNo')) document.getElementById('prodDcdbSerialNo').value = dcdb.SerialNo || '';
+  if (document.getElementById('prodDcdbSpdRating')) document.getElementById('prodDcdbSpdRating').value = dcdb.SpdRating || '';
+  if (document.getElementById('prodDcdbMcbDetails')) document.getElementById('prodDcdbMcbDetails').value = dcdb.McbDetails || '';
 
   // Details of AC distribution box
   const acdb = specs.DetailsOfAcdb || {};
-  document.getElementById('prodAcdbMake').value = acdb.Make || '';
-  document.getElementById('prodAcdbSerialNo').value = acdb.SerialNo || '';
-  document.getElementById('prodAcdbSpdRating').value = acdb.SpdRating || '';
-  document.getElementById('prodAcdbMcbDetails').value = acdb.McbDetails || '';
+  if (document.getElementById('prodAcdbMake')) document.getElementById('prodAcdbMake').value = acdb.Make || '';
+  if (document.getElementById('prodAcdbSerialNo')) document.getElementById('prodAcdbSerialNo').value = acdb.SerialNo || '';
+  if (document.getElementById('prodAcdbSpdRating')) document.getElementById('prodAcdbSpdRating').value = acdb.SpdRating || '';
+  if (document.getElementById('prodAcdbMcbDetails')) document.getElementById('prodAcdbMcbDetails').value = acdb.McbDetails || '';
 
   // Details of Earthing
   const earth = specs.DetailsOfEarthing || {};
@@ -2960,16 +2960,16 @@ window.saveProductPopupSpecs = async function() {
       SizeType: document.getElementById('prodDcCableSizeType').value.trim()
     },
     DetailsOfDcdb: {
-      Make: document.getElementById('prodDcdbMake').value.trim(),
-      SerialNo: document.getElementById('prodDcdbSerialNo').value.trim(),
-      SpdRating: document.getElementById('prodDcdbSpdRating').value.trim(),
-      McbDetails: document.getElementById('prodDcdbMcbDetails').value.trim()
+      Make: (document.getElementById('prodDcdbMake')?.value || '').trim(),
+      SerialNo: (document.getElementById('prodDcdbSerialNo')?.value || '').trim(),
+      SpdRating: (document.getElementById('prodDcdbSpdRating')?.value || '').trim(),
+      McbDetails: (document.getElementById('prodDcdbMcbDetails')?.value || '').trim()
     },
     DetailsOfAcdb: {
-      Make: document.getElementById('prodAcdbMake').value.trim(),
-      SerialNo: document.getElementById('prodAcdbSerialNo').value.trim(),
-      SpdRating: document.getElementById('prodAcdbSpdRating').value.trim(),
-      McbDetails: document.getElementById('prodAcdbMcbDetails').value.trim()
+      Make: (document.getElementById('prodAcdbMake')?.value || '').trim(),
+      SerialNo: (document.getElementById('prodAcdbSerialNo')?.value || '').trim(),
+      SpdRating: (document.getElementById('prodAcdbSpdRating')?.value || '').trim(),
+      McbDetails: (document.getElementById('prodAcdbMcbDetails')?.value || '').trim()
     },
     DetailsOfEarthing: {
       EarthResistance: document.getElementById('prodEarthResistance').value.trim(),
