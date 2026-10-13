@@ -844,3 +844,25 @@
     font-size: 0.72rem !important;
   }
 }
+
+/* Clickable Appliance and Backup Load Items in Step 2 */
+.app-load-clickable-item {
+  cursor: pointer;
+  transition: color 0.15s ease;
+  user-select: none;
+}
+.app-load-clickable-item:hover .text-dark {
+  color: #2563eb !important;
+  text-decoration: underline;
+}
+
+.app-backup-clickable-item {
+  cursor: pointer;
+  transition: color 0.15s ease;
+  user-select: none;
+}
+.app-backup-clickable-item:hover .text-dark {
+  color: #16a34a !important;
+  text-decoration: underline;
+}
+

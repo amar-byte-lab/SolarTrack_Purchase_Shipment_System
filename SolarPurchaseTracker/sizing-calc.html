@@ -57,7 +57,7 @@
                           <div class="min-w-0 flex-grow-1">
                             <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>Off-Grid</span>
-                              <span class="badge bg-primary-subtle text-primary fs-9">PCU</span>
+                              <span class="text-secondary fs-8 fw-normal ms-1">(PCU)</span>
                             </div>
                             <div class="text-muted fs-8 text-truncate">Battery backup for off-grid solar</div>
                           </div>
@@ -74,7 +74,7 @@
                           <div class="min-w-0 flex-grow-1">
                             <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>On-Grid</span>
-                              <span class="badge bg-warning-subtle text-warning fs-9">GTI</span>
+                              <span class="text-secondary fs-8 fw-normal ms-1">(GTI)</span>
                             </div>
                             <div class="text-muted fs-8 text-truncate">Direct grid tie solar (no battery)</div>
                           </div>
@@ -91,7 +91,7 @@
                           <div class="min-w-0 flex-grow-1">
                             <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>Hybrid</span>
-                              <span class="badge bg-info-subtle text-info fs-9">Bi-Directional</span>
+                              <span class="text-secondary fs-8 fw-normal ms-1">(Bi-Directional)</span>
                             </div>
                             <div class="text-muted fs-8 text-truncate">Solar + Grid + Battery backup</div>
                           </div>
@@ -108,7 +108,7 @@
                           <div class="min-w-0 flex-grow-1">
                             <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
                               <span>Without Solar</span>
-                              <span class="badge bg-secondary-subtle text-secondary fs-9">Home UPS</span>
+                              <span class="text-secondary fs-8 fw-normal ms-1">(Home UPS)</span>
                             </div>
                             <div class="text-muted fs-8 text-truncate">Battery backup Home UPS Inverter</div>
                           </div>
@@ -170,14 +170,6 @@
                   <div>
                     <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
                   </div>
-                  <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                    <button type="button" class="btn btn-outline-primary btn-sm fs-8 py-1 px-2.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs" onclick="SizingUI.openApplianceModal()" title="Configure household appliances & connected load">
-                      <span>🏠</span> Appliances Load
-                    </button>
-                    <button type="button" class="btn btn-outline-success btn-sm fs-8 py-1 px-2.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs" id="btnHeaderBackupLoad" onclick="SizingUI.openBackupModal()" title="Configure emergency battery backup loads">
-                      <span>🔋</span> Backup Load
-                    </button>
-                  </div>
                 </div>
 
                 <!-- Sizing Calculation Basis (Monthly Units, Configured Appliances Load, Backup Duration) -->
@@ -227,7 +219,7 @@
                   <div id="wrapBasisApplianceLoadInputs" class="pt-2 mt-1" style="display:none;">
                     <div class="row g-2 align-items-center">
                       <div class="col-6">
-                        <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Connected Load</label>
+                        <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block">Appliances Load</label>
                         <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center cursor-pointer" style="height: 38px; cursor: pointer;" onclick="SizingUI.openApplianceModal()" title="Click to view & configure appliances load">
                           <strong class="text-dark fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblApplianceBasisConnectedLoad">0 W (0.00 kW)</strong>
                           <i class="bi bi-pencil-square ms-1 text-primary fs-8"></i>
@@ -240,6 +232,8 @@
                         </div>
                       </div>
                     </div>
+                    <!-- Appliances load equipment list directly under Appliances Load section -->
+                    <div class="mt-2 text-secondary fs-8" id="applianceLoadListContainer"></div>
                   </div>
 
                   <!-- Dynamic Sub-panel for Standalone Backup Duration (Offgrid & Without-Solar) -->
@@ -268,6 +262,8 @@
                         </div>
                       </div>
                     </div>
+                    <!-- Backup Load equipment list directly under Standalone Backup section -->
+                    <div class="mt-2 text-secondary fs-8" id="standaloneBackupLoadListContainer"></div>
                   </div>
 
                   <!-- Dynamic Sub-panel for Hybrid: Backup Duration section placed below Monthly Units/Appliances Load -->
@@ -296,14 +292,14 @@
                         </div>
                       </div>
                     </div>
+                    <!-- Backup Load equipment list directly under Backup Hours section -->
+                    <div class="mt-2 text-secondary fs-8" id="hybridBackupLoadListContainer"></div>
                   </div>
                 </div>
 
-                <!-- Selected Appliances Summary -->
-                <div class="mt-2.5 mb-0" id="wrapSelectedAppliancesSummary">
-                  <div class="fs-8 text-secondary lh-base py-0.5" id="applianceSummaryBadges">
-                    <!-- Rendered dynamically as inline text labels -->
-                  </div>
+                <!-- Fallback container if needed -->
+                <div id="wrapSelectedAppliancesSummary" style="display:none;">
+                  <div id="applianceSummaryBadges"></div>
                 </div>
               </div>
             </div>
@@ -416,9 +412,10 @@
           
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 px-1">
             <h6 class="fw-bold text-dark mb-0 fs-7">Appliances List & Usage Hours</h6>
-            <div class="d-flex align-items-center gap-1.5">
-              <span class="badge bg-primary fs-8 px-2.5 py-1" id="modalConnectedLoadBadge">0 W (0.00 kW)</span>
-              <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8 px-2 py-1" id="modalDailyDemandBadge">0.00 kWh/day</span>
+            <div class="d-flex align-items-center gap-2 fs-8">
+              <span class="text-secondary">Load: <strong class="text-dark" id="modalConnectedLoadBadge">0 W</strong></span>
+              <span class="text-muted">•</span>
+              <span class="text-secondary">Daily: <strong class="text-primary" id="modalDailyDemandBadge">0.00 kWh/day</strong></span>
             </div>
           </div>
           <!-- Appliance Configuration Table (Screen-Fit, Clean Connected Load) -->
@@ -559,9 +556,10 @@
                 ❌ Clear All
               </button>
             </div>
-            <div class="d-flex align-items-center gap-1.5 ms-auto">
-              <span class="badge bg-success fs-8 px-2.5 py-1" id="modalBackupTotalWattsBadge">0 W (0.00 kW)</span>
-              <span class="badge bg-success-subtle text-success border border-success-subtle fs-8 px-2 py-1" id="modalBackupEnergyBadge">0.00 kWh</span>
+            <div class="d-flex align-items-center gap-2 ms-auto fs-8">
+              <span class="text-secondary">Load: <strong class="text-dark" id="modalBackupTotalWattsBadge">0 W</strong></span>
+              <span class="text-muted">•</span>
+              <span class="text-secondary">Energy: <strong class="text-success" id="modalBackupEnergyBadge">0.00 kWh</strong></span>
             </div>
           </div>
 
@@ -576,12 +574,13 @@
             <table class="table table-hover align-middle mb-0 backup-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 40px;" class="text-center p-1" title="Enable Battery Backup">🔋 Backup</th>
-                  <th style="min-width: 140px;" class="p-1">Appliance & Type</th>
-                  <th style="width: 55px;" class="text-center p-1" title="Household active quantity">Total Qty</th>
-                  <th style="width: 65px;" class="text-center p-1" title="Quantity running on battery during power outage">Backup Qty</th>
-                  <th style="width: 75px;" class="text-center p-1">Unit Watt</th>
-                  <th style="width: 85px;" class="text-end p-1 pe-2">Backup Load</th>
+                  <th style="width: 36px;" class="text-center p-1" title="Enable Battery Backup">🔋 Backup</th>
+                  <th style="min-width: 120px;" class="p-1">Appliance</th>
+                  <th style="width: 45px;" class="text-center p-1" title="Household active quantity">Total Qty</th>
+                  <th style="width: 55px;" class="text-center p-1" title="Quantity running on battery during power outage">Backup Qty</th>
+                  <th style="width: 65px;" class="text-center p-1">Unit Watt</th>
+                  <th style="width: 65px;" class="text-center p-1" title="Backup duration hours for this appliance">Backup Hr</th>
+                  <th style="width: 80px;" class="text-end p-1 pe-2">Energy</th>
                 </tr>
               </thead>
               <tbody id="modalBackupTableBody">

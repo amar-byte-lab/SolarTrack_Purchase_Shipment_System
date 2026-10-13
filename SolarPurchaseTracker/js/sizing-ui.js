@@ -140,37 +140,21 @@ const SizingUI = (() => {
   }
 
   /**
-   * Overrides appliance Time column with backup hours when in Backup Duration mode,
-   * or resets back to individual schedule hours when switching away from Backup Duration.
+   * Initializes backupHours per appliance without touching appliance daily operating hours (defaultHours).
+   * Restores scheduleHours to defaultHours if it was previously overwritten.
    */
   function applyBackupHoursOverrideOrReset() {
     const backupHrs = Number(state.backupHours) || 4;
-    const isDurationBasis = state.energyCalculationBasis === 'backup_duration';
-    const isHybrid = state.systemType === 'hybrid';
-    const isOffGrid = state.systemType === 'off-grid';
-    const isWithoutSolar = state.systemType === 'without-solar';
-
-    if (isDurationBasis || isOffGrid || isWithoutSolar || isHybrid) {
-      state.appliances.forEach(app => {
-        if (app.scheduleHours === undefined) {
-          const defaultDef = COMMON_APPLIANCES.find(d => d.id === app.id);
-          app.scheduleHours = defaultDef ? (defaultDef.scheduleHours || defaultDef.defaultHours) : (Number(app.defaultHours) || 4);
-        }
-        if (app.isBackup !== false) {
-          app.defaultHours = backupHrs;
-        }
-      });
-    } else {
-      state.appliances.forEach(app => {
-        if (app.scheduleHours !== undefined) {
-          app.defaultHours = app.scheduleHours;
-        } else {
-          const defaultDef = COMMON_APPLIANCES.find(d => d.id === app.id);
-          app.defaultHours = defaultDef ? (defaultDef.scheduleHours || defaultDef.defaultHours) : 4;
-          app.scheduleHours = app.defaultHours;
-        }
-      });
-    }
+    state.appliances.forEach(app => {
+      // Ensure daily running hours (defaultHours) remains normal household schedule hours.
+      if (app.scheduleHours !== undefined) {
+        app.defaultHours = app.scheduleHours;
+      }
+      // Initialize backupHours if not already set
+      if (app.backupHours === undefined) {
+        app.backupHours = backupHrs;
+      }
+    });
   }
 
   /* ---------------- System Type Handler (Rich Dropdown) ---------------- */
@@ -227,10 +211,14 @@ const SizingUI = (() => {
     const txtHybridHours = document.getElementById('txtHybridBackupHours');
     if (txtHybridHours && Number(txtHybridHours.value) !== state.backupHours) txtHybridHours.value = state.backupHours;
     
-    // Always apply backup hours override to all backup appliances
-    applyBackupHoursOverrideOrReset();
+    // Update backup hours across appliances (do not touch app.defaultHours)
+    state.appliances.forEach(app => {
+      app.backupHours = state.backupHours;
+    });
     renderModalApplianceList();
+    renderBackupModalList();
     updateModalStats();
+    updateBackupModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
     renderCostRecovery();
@@ -294,49 +282,79 @@ const SizingUI = (() => {
     const lblRadDuration = document.getElementById('lblRadBasisBackupDuration');
 
     if (isOffGrid) {
-      // Off-Grid: ONLY Backup duration part rahiba. Hide Monthly units & AppliancesLoad choices.
+      // Off-Grid: Hide Monthly Units tab. Appliances Load (Backup time) calculation.
       if (lblBasisTitle) lblBasisTitle.textContent = 'Backup Duration (Off-Grid Solar & Battery)';
-      if (grpRadios) grpRadios.style.display = 'none';
-      if (radMonthly) { radMonthly.style.display = 'none'; if (lblRadMonthly) lblRadMonthly.style.display = 'none'; }
-      if (radAppliance) { radAppliance.style.display = 'none'; if (lblRadAppliance) lblRadAppliance.style.display = 'none'; }
-      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
+      if (grpRadios) grpRadios.style.display = '';
+      if (radMonthly) { radMonthly.style.display = 'none'; }
+      if (lblRadMonthly) { lblRadMonthly.style.display = 'none'; }
+      if (radAppliance) { 
+        radAppliance.style.display = ''; 
+        radAppliance.checked = true; 
+      }
+      if (lblRadAppliance) { 
+        lblRadAppliance.style.display = ''; 
+        lblRadAppliance.textContent = 'Appliances Load'; 
+      }
+      if (radDuration) { radDuration.style.display = 'none'; }
+      if (lblRadDuration) { lblRadDuration.style.display = 'none'; }
+
+      state.energyCalculationBasis = 'backup_duration';
+      applyBackupHoursOverrideOrReset();
+    } else if (isWithoutSolar) {
+      // Without Solar: Hide Monthly Units tab. Backup time calculation.
+      if (lblBasisTitle) lblBasisTitle.textContent = 'Backup Duration (Home UPS Inverter & Battery)';
+      if (grpRadios) grpRadios.style.display = '';
+      if (radMonthly) { radMonthly.style.display = 'none'; }
+      if (lblRadMonthly) { lblRadMonthly.style.display = 'none'; }
+      if (radAppliance) { 
+        radAppliance.style.display = ''; 
+        radAppliance.checked = true; 
+      }
+      if (lblRadAppliance) { 
+        lblRadAppliance.style.display = ''; 
+        lblRadAppliance.textContent = 'Appliances Load'; 
+      }
+      if (radDuration) { radDuration.style.display = 'none'; }
+      if (lblRadDuration) { lblRadDuration.style.display = 'none'; }
 
       state.energyCalculationBasis = 'backup_duration';
       applyBackupHoursOverrideOrReset();
     } else if (isHybrid) {
-      // Hybrid: Show Monthly Units or Appliances load options; Backup duration section will be open below it!
+      // Hybrid: Show Monthly Units and Appliances Load options. Backup duration section shown below for both!
       if (lblBasisTitle) lblBasisTitle.textContent = 'Solar Sizing Basis (Monthly Units / Load)';
       if (grpRadios) grpRadios.style.display = '';
-      if (radMonthly) { radMonthly.style.display = ''; if (lblRadMonthly) lblRadMonthly.style.display = ''; }
-      if (radAppliance) { radAppliance.style.display = ''; if (lblRadAppliance) lblRadAppliance.style.display = ''; }
-      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
+      if (radMonthly) { radMonthly.style.display = ''; }
+      if (lblRadMonthly) { lblRadMonthly.style.display = ''; }
+      if (radAppliance) { radAppliance.style.display = ''; }
+      if (lblRadAppliance) { 
+        lblRadAppliance.style.display = ''; 
+        lblRadAppliance.textContent = 'Appliances Load'; 
+      }
+      if (radDuration) { radDuration.style.display = 'none'; }
+      if (lblRadDuration) { lblRadDuration.style.display = 'none'; }
 
       if (state.energyCalculationBasis === 'backup_duration') {
         state.energyCalculationBasis = 'monthly_units';
         applyBackupHoursOverrideOrReset();
       }
     } else if (isGrid) {
-      // On-Grid: Show Monthly Units & Appliances load. Hide Backup Duration.
+      // On-Grid: Show Monthly Units & Appliances Load options. Hide Backup Duration.
       if (lblBasisTitle) lblBasisTitle.textContent = 'Sizing Calculation Basis';
       if (grpRadios) grpRadios.style.display = '';
-      if (radMonthly) { radMonthly.style.display = ''; if (lblRadMonthly) lblRadMonthly.style.display = ''; }
-      if (radAppliance) { radAppliance.style.display = ''; if (lblRadAppliance) lblRadAppliance.style.display = ''; }
-      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
+      if (radMonthly) { radMonthly.style.display = ''; }
+      if (lblRadMonthly) { lblRadMonthly.style.display = ''; }
+      if (radAppliance) { radAppliance.style.display = ''; }
+      if (lblRadAppliance) { 
+        lblRadAppliance.style.display = ''; 
+        lblRadAppliance.textContent = 'Appliances Load'; 
+      }
+      if (radDuration) { radDuration.style.display = 'none'; }
+      if (lblRadDuration) { lblRadDuration.style.display = 'none'; }
 
       if (state.energyCalculationBasis === 'backup_duration') {
         state.energyCalculationBasis = 'monthly_units';
         applyBackupHoursOverrideOrReset();
       }
-    } else if (isWithoutSolar) {
-      // Without Solar: ONLY Backup duration part rahiba. Hide Monthly units & AppliancesLoad choices.
-      if (lblBasisTitle) lblBasisTitle.textContent = 'Backup Duration (Home UPS Inverter & Battery)';
-      if (grpRadios) grpRadios.style.display = 'none';
-      if (radMonthly) { radMonthly.style.display = 'none'; if (lblRadMonthly) lblRadMonthly.style.display = 'none'; }
-      if (radAppliance) { radAppliance.style.display = 'none'; if (lblRadAppliance) lblRadAppliance.style.display = 'none'; }
-      if (radDuration) { radDuration.style.display = 'none'; if (lblRadDuration) lblRadDuration.style.display = 'none'; }
-
-      state.energyCalculationBasis = 'backup_duration';
-      applyBackupHoursOverrideOrReset();
     }
 
     const txtBackupHours = document.getElementById('txtBackupHours');
@@ -409,13 +427,8 @@ const SizingUI = (() => {
 
     // Show summary whenever Backup Duration is active OR when in Hybrid/OffGrid/WithoutSolar OR Appliance Load mode.
     // Only hide if On-Grid AND Monthly Units!
-    const isGrid = state.systemType === 'on-grid';
-    const hideSummary = (isGrid && isMonthly);
-
     const wrapSummary = document.getElementById('wrapSelectedAppliancesSummary');
-    const btnCustomize = document.getElementById('btnEditApplianceSchedule');
-    if (wrapSummary) wrapSummary.style.display = hideSummary ? 'none' : 'block';
-    if (btnCustomize) btnCustomize.style.display = hideSummary ? 'none' : 'inline-flex';
+    if (wrapSummary) wrapSummary.style.display = 'none';
 
     // Step 2 contains Sizing Calculation Basis and Appliances summary - keep both columns visible (col-lg-6)
     const step2Col = document.getElementById('colStep2Wrapper');
@@ -432,7 +445,11 @@ const SizingUI = (() => {
   }
 
   function onEnergyBasisChange(val) {
-    state.energyCalculationBasis = val || 'monthly_units';
+    if (state.systemType === 'off-grid' || state.systemType === 'without-solar') {
+      state.energyCalculationBasis = 'backup_duration';
+    } else {
+      state.energyCalculationBasis = val || 'monthly_units';
+    }
     applyBackupHoursOverrideOrReset();
     updateEnergyBasisVisibility();
     renderModalApplianceList();
@@ -504,10 +521,8 @@ const SizingUI = (() => {
     let totalBackupWatts = 0;
     let totalDailyWh = 0;
     let backupDailyWh = 0;
-    const activeApps = [];
 
     const backupHrs = Number(state.backupHours) || 4;
-    const isBackupContext = (state.systemType === 'hybrid' || state.systemType === 'off-grid' || state.systemType === 'without-solar' || state.energyCalculationBasis === 'backup_duration');
 
     state.appliances.forEach(app => {
       if (app.checked && Number(app.defaultQty) > 0) {
@@ -525,32 +540,31 @@ const SizingUI = (() => {
           ? Math.min(qty, Number(app.backupQty))
           : qty;
         const backupItemW = watts * backupQty;
+        const itemBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : backupHrs) || 4);
 
         if (isBackup) {
           totalBackupWatts += backupItemW;
-          backupDailyWh += (backupItemW * (state.energyCalculationBasis === 'backup_duration' ? backupHrs : hours));
+          backupDailyWh += (backupItemW * itemBackupHours);
         }
-
-        activeApps.push(app);
       }
     });
 
     const activeBackupW = totalBackupWatts;
     const loadText = `${totalConnectedWatts} W (${(totalConnectedWatts / 1000).toFixed(2)} kW)`;
-    const backupLoadText = `${activeBackupW} W`;
+    const backupLoadText = `${activeBackupW} W (${(activeBackupW / 1000).toFixed(2)} kW)`;
 
     const kwhVal = (totalDailyWh / 1000).toFixed(2);
     const demandText = `${kwhVal} kWh / day`;
 
-    const backupEnergyKwhVal = ((activeBackupW * backupHrs) / 1000).toFixed(2);
+    const backupEnergyKwhVal = (backupDailyWh / 1000).toFixed(2);
     const backupEnergyText = `${backupEnergyKwhVal} kWh`;
 
     const lblAppLoad = document.getElementById('lblApplianceBasisConnectedLoad');
     if (lblAppLoad) lblAppLoad.textContent = loadText;
     const lblBackupLoad = document.getElementById('lblBackupBasisConnectedLoad');
-    if (lblBackupLoad) lblBackupLoad.textContent = backupLoadText;
+    if (lblBackupLoad) lblBackupLoad.textContent = `${activeBackupW} W`;
     const lblHybridLoad = document.getElementById('lblHybridBackupLoad');
-    if (lblHybridLoad) lblHybridLoad.textContent = backupLoadText;
+    if (lblHybridLoad) lblHybridLoad.textContent = `${activeBackupW} W`;
     const lblHybridEnergy = document.getElementById('lblHybridBackupEnergy');
     if (lblHybridEnergy) lblHybridEnergy.textContent = backupEnergyText;
     const lblLoad = document.getElementById('lblTotalConnectedLoad');
@@ -563,50 +577,79 @@ const SizingUI = (() => {
     const lblEnergy = document.getElementById('lblTotalCalculatedEnergy');
     if (lblEnergy) lblEnergy.textContent = demandText;
 
+    const displayApps = state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0);
+    const backupApps = state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0 && a.isBackup !== false);
+
+    // Helper to generate clickable item for an appliance in Appliances Load
+    function renderApplianceLoadPill(app) {
+      const itemHours = Number(app.defaultHours) || 1;
+      const effQty = Number(app.defaultQty) || 1;
+      const itemWh = (app.watts || 0) * itemHours * effQty;
+      return `
+        <span class="app-load-clickable-item d-inline-flex align-items-center py-0.5" 
+          onclick="SizingUI.openApplianceModal('${app.id}')" title="Click to edit ${app.name} (${app.watts}W × ${effQty})">
+          <span class="text-secondary me-1">${app.icon || '⚡'}</span>
+          <span class="fw-semibold text-dark fs-8">${app.name}</span>
+          <span class="text-muted fs-8 ms-1">×${effQty}</span>
+          <span class="text-primary fw-semibold fs-8 ms-1">(${formatEnergy(itemWh)})</span>
+        </span>
+      `;
+    }
+
+    // Helper to generate clickable item for an appliance in Backup Load
+    function renderBackupLoadPill(app) {
+      const effQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
+        ? Math.min(Number(app.defaultQty), Number(app.backupQty))
+        : Number(app.defaultQty);
+      const itemBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : backupHrs) || 4);
+      const itemWh = (app.watts || 0) * itemBackupHours * effQty;
+      return `
+        <span class="app-backup-clickable-item d-inline-flex align-items-center py-0.5" 
+          onclick="SizingUI.openBackupModal('${app.id}')" title="Click to edit ${app.name} backup (${app.watts}W × ${effQty}, ${itemBackupHours}h)">
+          <span class="text-success me-1">${app.icon || '⚡'}</span>
+          <span class="fw-semibold text-dark fs-8">${app.name}</span>
+          <span class="text-muted fs-8 ms-1">×${effQty}</span>
+          <span class="text-success fw-semibold fs-8 ms-1">(${formatEnergy(itemWh)})</span>
+        </span>
+      `;
+    }
+
+    const bulletSep = '<span class="text-muted opacity-50 mx-1.5">•</span>';
+
+    const applianceItemsHtml = displayApps.length > 0 
+      ? `<div class="d-flex flex-wrap align-items-center">${displayApps.map(renderApplianceLoadPill).join(bulletSep)}</div>`
+      : `<div class="text-muted fs-8 fst-italic cursor-pointer" onclick="SizingUI.openApplianceModal()">No appliances configured. Click here to select appliances.</div>`;
+
+    const backupItemsHtml = backupApps.length > 0 
+      ? `<div class="d-flex flex-wrap align-items-center">${backupApps.map(renderBackupLoadPill).join(bulletSep)}</div>`
+      : `<div class="text-muted fs-8 fst-italic cursor-pointer" onclick="SizingUI.openBackupModal()">No backup loads configured. Click here to select backup appliances.</div>`;
+
+    // 1. Appliances load list (Directly under wrapBasisApplianceLoadInputs)
+    const appListEl = document.getElementById('applianceLoadListContainer');
+    if (appListEl) {
+      appListEl.innerHTML = applianceItemsHtml;
+    }
+
+    // 2. Hybrid backup load list (Directly under wrapHybridBackupSection)
+    const hybridBackupListEl = document.getElementById('hybridBackupLoadListContainer');
+    if (hybridBackupListEl) {
+      hybridBackupListEl.innerHTML = backupItemsHtml;
+    }
+
+    // 3. Standalone backup load list (Directly under wrapBasisBackupDurationInputs)
+    const standaloneBackupListEl = document.getElementById('standaloneBackupLoadListContainer');
+    if (standaloneBackupListEl) {
+      standaloneBackupListEl.innerHTML = backupItemsHtml;
+    }
+
     const badgesContainer = document.getElementById('applianceSummaryBadges');
     if (badgesContainer) {
-      const displayApps = state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0);
-      const backupApps = state.appliances.filter(a => a.checked && Number(a.defaultQty) > 0 && a.isBackup !== false);
-
-      let summaryHtml = '';
-      summaryHtml += `
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
-          <div class="d-flex align-items-center gap-1.5 flex-wrap">
-            <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-8 fw-semibold rounded-pill d-inline-flex align-items-center gap-1 shadow-2xs" onclick="SizingUI.openApplianceModal()" title="Click to view & configure appliances load">
-              <span>🏠</span> Connected Load: <strong>${loadText}</strong>
-            </button>
-            ${isBackupContext ? `
-            <button type="button" class="btn btn-xs btn-outline-success py-0.5 px-2 fs-8 fw-semibold rounded-pill d-inline-flex align-items-center gap-1 shadow-2xs" onclick="SizingUI.openBackupModal()" title="Click to view & configure battery backup loads">
-              <span>🔋</span> Backup Load: <strong>${backupLoadText}</strong>
-            </button>
-            ` : ''}
-          </div>
-          <span class="text-muted fs-9 fst-italic">Click any badge to modify</span>
-        </div>
-      `;
-
-      if (displayApps.length === 0) {
-        summaryHtml += `<div class="text-muted fs-8 fst-italic py-1 cursor-pointer" onclick="SizingUI.openApplianceModal()">No appliances configured yet. Click here to select appliances.</div>`;
-      } else {
-        const itemsList = (isBackupContext ? backupApps : displayApps).map(app => {
-          const itemHours = Number(app.defaultHours) || 1;
-          const effQty = (isBackupContext && app.backupQty) ? app.backupQty : app.defaultQty;
-          const itemWh = (app.watts || 0) * itemHours * effQty;
-          return `<span class="d-inline-flex align-items-center gap-1 text-dark fs-8 fw-medium flex-shrink-0 text-nowrap">
-            <span>${app.name} × <strong>${effQty}</strong></span>
-            <span class="text-primary fw-semibold">(${formatEnergy(itemWh)})</span>
-          </span>`;
-        }).join('<span class="text-muted opacity-50 flex-shrink-0 mx-1.5">•</span>');
-
-        summaryHtml += `<div class="d-flex flex-wrap align-items-center py-0.5">${itemsList}</div>`;
-      }
-
-      badgesContainer.innerHTML = summaryHtml;
+      badgesContainer.innerHTML = '';
     }
   }
 
   /* ---------------- 1. Connected Appliances Configuration Modal ---------------- */
-  function openApplianceModal() {
+  function openApplianceModal(targetAppId) {
     renderModalApplianceList();
     updateModalStats();
 
@@ -614,6 +657,20 @@ const SizingUI = (() => {
     if (modalEl) {
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.show();
+
+      if (targetAppId) {
+        setTimeout(() => {
+          const targetIndex = state.appliances.findIndex(a => a.id === targetAppId);
+          if (targetIndex !== -1) {
+            const rowEl = document.getElementById(`rowApp_${targetIndex}`);
+            if (rowEl) {
+              rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              rowEl.classList.add('table-warning');
+              setTimeout(() => rowEl.classList.remove('table-warning'), 1500);
+            }
+          }
+        }, 250);
+      }
     }
   }
 
@@ -680,16 +737,16 @@ const SizingUI = (() => {
             <input class="form-check-input mt-0" type="checkbox" id="chkApp_${index}" ${isChecked ? 'checked' : ''} 
               onchange="SizingUI.toggleApplianceChecked(${index}, this.checked)" style="width: 15px; height: 15px; cursor: pointer;">
           </td>
-          <!-- Appliance Name + Superscript Energy -->
+          <!-- Appliance Name + Energy -->
           <td class="p-1" style="min-width: 120px; overflow: hidden;">
             <label class="form-check-label d-flex align-items-center justify-content-between gap-1 mb-0 w-100" for="chkApp_${index}" style="cursor: pointer;" title="${app.name}">
               <span class="d-inline-flex align-items-center text-truncate" style="min-width: 0;">
                 <span class="me-1 fs-7.5">${app.icon || '⚡'}</span>
                 <span class="fw-semibold ${isChecked ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
               </span>
-              <sup class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill py-0 px-1 fw-bold flex-shrink-0 align-self-start" id="bracketEnergy_${index}" style="font-size: 0.62rem; line-height: 1.1; margin-top: 1px;">
-                ${getItemBracketText(app, false)}
-              </sup>
+              <span class="text-primary fs-8 fw-semibold flex-shrink-0 align-self-center ms-1" id="bracketEnergy_${index}">
+                (${getItemBracketText(app, false)})
+              </span>
             </label>
           </td>
           <!-- Qty -->
@@ -733,7 +790,7 @@ const SizingUI = (() => {
     if (!app) return;
     const el = document.getElementById(`bracketEnergy_${index}`);
     if (el) {
-      el.textContent = getItemBracketText(app, false);
+      el.textContent = `(${getItemBracketText(app, false)})`;
       el.title = `Daily Energy Calculation: ${app.watts}W × ${app.defaultHours}h ${app.defaultQty > 1 ? '× ' + app.defaultQty + ' qty' : ''}`;
     }
   }
@@ -801,7 +858,7 @@ const SizingUI = (() => {
   }
 
   /* ---------------- 2. Dedicated Emergency Backup Load Configuration Modal ---------------- */
-  function openBackupModal() {
+  function openBackupModal(targetAppId) {
     renderBackupModalList();
     updateBackupModalStats();
 
@@ -809,6 +866,20 @@ const SizingUI = (() => {
     if (modalEl) {
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.show();
+
+      if (targetAppId) {
+        setTimeout(() => {
+          const targetIndex = state.appliances.findIndex(a => a.id === targetAppId);
+          if (targetIndex !== -1) {
+            const rowEl = document.getElementById(`rowBackup_${targetIndex}`);
+            if (rowEl) {
+              rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              rowEl.classList.add('table-warning');
+              setTimeout(() => rowEl.classList.remove('table-warning'), 1500);
+            }
+          }
+        }, 250);
+      }
     }
   }
 
@@ -824,51 +895,55 @@ const SizingUI = (() => {
         ? Math.min(houseQty || 1, Number(app.backupQty))
         : (houseQty > 0 ? houseQty : 1);
 
-      const isHeavy = !!app.isHeavy || ['ac', 'pump', 'geyser', 'wm', 'iron', 'induction'].includes(app.id);
-      const categoryBadge = isHeavy
-        ? `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-0 px-1 fs-9">Heavy</span>`
-        : `<span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1 fs-9">Essential</span>`;
-
       const unitWatts = Number(app.watts) || 0;
+      const itemBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : state.backupHours) || 4);
       const itemBackupWatts = isBackup ? (unitWatts * backupQty) : 0;
+      const itemBackupEnergyWh = isBackup ? (itemBackupWatts * itemBackupHours) : 0;
 
       return `
         <tr class="${isBackup ? 'table-success-subtle' : (isCheckedInHouse ? 'bg-white' : 'opacity-60 bg-light-subtle')}" id="rowBackup_${index}">
           <!-- Backup Toggle Checkbox -->
-          <td class="text-center p-1" style="width: 40px;">
+          <td class="text-center p-1" style="width: 36px;">
             <input class="form-check-input mt-0" type="checkbox" id="chkBackupModal_${index}" ${isBackup ? 'checked' : ''}
-              onchange="SizingUI.toggleBackupAppliance(${index}, this.checked)" title="Enable battery backup during power cut" style="width: 16px; height: 16px; cursor: pointer;">
+              onchange="SizingUI.toggleBackupAppliance(${index}, this.checked)" title="Enable battery backup during power cut" style="width: 15px; height: 15px; cursor: pointer;">
           </td>
-          <!-- Appliance Name & Category -->
-          <td class="p-1" style="min-width: 140px;">
-            <label class="form-check-label d-flex align-items-center justify-content-between gap-1 mb-0 w-100" for="chkBackupModal_${index}" style="cursor: pointer;">
-              <span class="d-inline-flex align-items-center gap-1 text-truncate" style="min-width: 0;">
-                <span class="fs-7.5">${app.icon || '⚡'}</span>
-                <span class="fw-semibold ${isBackup ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
-              </span>
-              ${categoryBadge}
+          <!-- Appliance Name -->
+          <td class="p-1" style="min-width: 120px;">
+            <label class="form-check-label d-flex align-items-center gap-1.5 mb-0 w-100" for="chkBackupModal_${index}" style="cursor: pointer;">
+              <span class="fs-7.5">${app.icon || '⚡'}</span>
+              <span class="fw-semibold ${isBackup ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
             </label>
           </td>
           <!-- Household Qty -->
-          <td class="text-center p-1 text-muted fs-8 fw-semibold" style="width: 55px;">
+          <td class="text-center p-1 text-muted fs-8 fw-semibold" style="width: 45px;">
             ${houseQty > 0 ? houseQty : '<span class="text-muted opacity-50">-</span>'}
           </td>
           <!-- Backup Qty Input -->
-          <td class="text-center p-1" style="width: 65px;">
+          <td class="text-center p-1" style="width: 55px;">
             <input type="number" min="1" max="${houseQty > 0 ? houseQty : 99}" class="form-control form-control-sm text-center fw-bold mx-auto p-1 fs-8" 
-              style="width: 46px; height: 26px;" 
+              style="width: 44px; height: 26px;" 
               value="${backupQty}"
               ${!isBackup ? 'disabled' : ''}
               onchange="SizingUI.setBackupQty(${index}, this.value)"
               oninput="SizingUI.setBackupQty(${index}, this.value)">
           </td>
           <!-- Unit Watt -->
-          <td class="text-center p-1 text-secondary fs-8 fw-semibold" style="width: 75px;">
+          <td class="text-center p-1 text-secondary fs-8 fw-semibold" style="width: 65px;">
             ${unitWatts} W
           </td>
-          <!-- Total Backup Load -->
-          <td class="text-end p-1 pe-2 fw-bold ${isBackup ? 'text-success' : 'text-muted'} fs-8" style="width: 85px;">
-            ${isBackup ? itemBackupWatts + ' W' : '0 W'}
+          <!-- Backup Hr Input -->
+          <td class="text-center p-1" style="width: 65px;">
+            <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fw-bold mx-auto p-1 fs-8" 
+              style="width: 48px; height: 26px;" 
+              value="${itemBackupHours}"
+              ${!isBackup ? 'disabled' : ''}
+              title="Backup duration in hours for ${app.name}"
+              onchange="SizingUI.setApplianceBackupHours(${index}, this.value)"
+              oninput="SizingUI.setApplianceBackupHours(${index}, this.value)">
+          </td>
+          <!-- Total Backup Energy -->
+          <td class="text-end p-1 pe-2 fw-bold ${isBackup ? 'text-success' : 'text-muted'} fs-8" style="width: 80px;" id="backupEnergy_${index}">
+            ${isBackup ? formatEnergy(itemBackupEnergyWh) : '0 Wh'}
           </td>
         </tr>
       `;
@@ -877,7 +952,8 @@ const SizingUI = (() => {
 
   function updateBackupModalStats() {
     let totalBackupWatts = 0;
-    const backupHrs = Number(state.backupHours) || 4;
+    let totalBackupWh = 0;
+    const globalBackupHrs = Number(state.backupHours) || 4;
 
     state.appliances.forEach(app => {
       if (app.checked && Number(app.defaultQty) > 0 && app.isBackup !== false) {
@@ -886,12 +962,17 @@ const SizingUI = (() => {
           ? Math.min(qty, Number(app.backupQty))
           : qty;
         const watts = Number(app.watts) || 0;
-        totalBackupWatts += watts * backupQty;
+        const appBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : globalBackupHrs) || 4);
+        const itemW = watts * backupQty;
+
+        totalBackupWatts += itemW;
+        totalBackupWh += itemW * appBackupHours;
       }
     });
 
     const kwVal = (totalBackupWatts / 1000).toFixed(2);
-    const energyKwh = ((totalBackupWatts * backupHrs) / 1000).toFixed(2);
+    const energyKwh = (totalBackupWh / 1000).toFixed(2);
+    const avgBackupHours = totalBackupWatts > 0 ? (totalBackupWh / totalBackupWatts).toFixed(1) : globalBackupHrs;
 
     const badgeWatts = document.getElementById('modalBackupTotalWattsBadge');
     if (badgeWatts) {
@@ -900,7 +981,7 @@ const SizingUI = (() => {
 
     const badgeEnergy = document.getElementById('modalBackupEnergyBadge');
     if (badgeEnergy) {
-      badgeEnergy.textContent = `${energyKwh} kWh (${backupHrs} hr)`;
+      badgeEnergy.textContent = `${energyKwh} kWh (${avgBackupHours}h avg)`;
     }
 
     const footLoad = document.getElementById('modalFooterBackupLoad');
@@ -927,6 +1008,9 @@ const SizingUI = (() => {
       if (!app.backupQty || app.backupQty <= 0) {
         app.backupQty = app.defaultQty || 1;
       }
+      if (app.backupHours === undefined) {
+        app.backupHours = Number(state.backupHours) || 4;
+      }
     }
 
     renderBackupModalList();
@@ -942,11 +1026,46 @@ const SizingUI = (() => {
       num = app.defaultQty;
     }
     app.backupQty = num;
-    renderBackupModalList();
+
+    const energyCell = document.getElementById(`backupEnergy_${index}`);
+    if (energyCell) {
+      const isCheckedInHouse = app.checked && (Number(app.defaultQty) || 0) > 0;
+      const isBackup = app.isBackup !== false && isCheckedInHouse;
+      const appBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : state.backupHours) || 4);
+      const unitWatts = Number(app.watts) || 0;
+      const itemWh = isBackup ? (unitWatts * num * appBackupHours) : 0;
+      energyCell.textContent = isBackup ? formatEnergy(itemWh) : '0 Wh';
+    }
+
+    updateBackupModalStats();
+  }
+
+  function setApplianceBackupHours(index, val) {
+    const app = state.appliances[index];
+    if (!app) return;
+    let hrs = parseFloat(val);
+    if (isNaN(hrs) || hrs <= 0) hrs = 1;
+    if (hrs > 24) hrs = 24;
+    app.backupHours = hrs;
+
+    const energyCell = document.getElementById(`backupEnergy_${index}`);
+    if (energyCell) {
+      const isCheckedInHouse = app.checked && (Number(app.defaultQty) || 0) > 0;
+      const isBackup = app.isBackup !== false && isCheckedInHouse;
+      const houseQty = isCheckedInHouse ? Number(app.defaultQty) : 0;
+      const backupQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
+        ? Math.min(houseQty || 1, Number(app.backupQty))
+        : (houseQty > 0 ? houseQty : 1);
+      const unitWatts = Number(app.watts) || 0;
+      const itemWh = isBackup ? (unitWatts * backupQty * hrs) : 0;
+      energyCell.textContent = isBackup ? formatEnergy(itemWh) : '0 Wh';
+    }
+
     updateBackupModalStats();
   }
 
   function presetBackup(type) {
+    const defHrs = Number(state.backupHours) || 4;
     if (type === 'essential') {
       state.appliances.forEach(app => {
         const isHeavy = !!app.isHeavy || ['ac', 'pump', 'geyser', 'wm', 'iron', 'induction'].includes(app.id);
@@ -961,6 +1080,7 @@ const SizingUI = (() => {
             }
           }
           app.backupQty = app.defaultQty || 1;
+          if (app.backupHours === undefined) app.backupHours = defHrs;
         }
       });
       UI.toast('Preset: Essential backup loads activated', 'info');
@@ -969,6 +1089,7 @@ const SizingUI = (() => {
         if (app.checked && (Number(app.defaultQty) || 0) > 0) {
           app.isBackup = true;
           app.backupQty = app.defaultQty;
+          if (app.backupHours === undefined) app.backupHours = defHrs;
         }
       });
       UI.toast('Preset: All household appliances enabled for backup', 'info');
@@ -983,13 +1104,16 @@ const SizingUI = (() => {
   }
 
   function resetBackupToDefault() {
+    const defHrs = Number(state.backupHours) || 4;
     state.appliances.forEach(app => {
       const def = COMMON_APPLIANCES.find(d => d.id === app.id);
       if (def) {
         app.isBackup = def.isBackup !== false;
         app.backupQty = def.defaultQty;
+        app.backupHours = defHrs;
       } else {
         app.isBackup = false;
+        app.backupHours = defHrs;
       }
     });
     renderBackupModalList();
@@ -1541,202 +1665,15 @@ const SizingUI = (() => {
       <div class="${colClass} d-flex flex-column">${c}</div>
     `).join('');
 
-    const odiaSummaryHtml = buildOdiaBackupSummary(res);
-
     container.innerHTML = `
       <div class="row g-3 g-xl-4 align-items-stretch">
         ${validationBannerHtml}
         ${cardsHtml}
-        ${odiaSummaryHtml}
       </div>
     `;
 
     // Save summary globally for clipboard copy
     state.currentResult = res;
-  }
-
-  /**
-   * Build Customer-Friendly Odia Summary & Advisory Card for Battery Backup & Load Correlation
-   * @param {Object} res 
-   * @returns {string} HTML string
-   */
-  function buildOdiaBackupSummary(res) {
-    if (!res) return '';
-
-    const isBatterySystem = !!res.battery;
-    const curBat = state.selectedBatteryType || 'lithium';
-    const activeBat = curBat === 'tubular' 
-      ? (res.batteryTubular || res.battery) 
-      : (curBat === 'flat-plate' ? (res.batteryFlatPlate || res.battery) : (res.batteryLithium || res.battery));
-
-    const connectedWatts = res.connectedLoadW || 0;
-    const connectedKw = (connectedWatts / 1000).toFixed(2);
-    const backupWatts = res.backupLoadW || 0;
-    const backupKw = (backupWatts / 1000).toFixed(2);
-    const backupHrs = Number(res.backupHours) || 4;
-    const isScheduleBasis = res.energyCalculationBasis === 'appliance_load' || res.energyCalculationBasis === 'appliance_schedule';
-    const isMonthlyBasis = res.energyCalculationBasis === 'monthly_units';
-    const targetEnergyWh = res.targetBackupEnergyWh || (backupWatts * backupHrs);
-    const backupKwh = (targetEnergyWh / 1000).toFixed(2);
-
-    if (!isBatterySystem) {
-      return `
-        <div class="col-12 mt-2">
-          <div class="p-3.5 p-md-4 rounded-3 border bg-white shadow-2xs">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 mb-2.5 border-bottom">
-              <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2 fs-7">
-                <span>On-Grid System & Power Backup Guide</span>
-              </h6>
-            </div>
-            <div class="fs-8 text-secondary lh-base">
-              <p class="mb-2">
-              <strong>On-Grid Solar:</strong> ଏହି ସିଷ୍ଟମରେ ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବ୍ୟବହାର ହୁଏ ନାହିଁ। ଦିନବେଳା ସୌର ପ୍ୟାନେଲରୁ ଉତ୍ପାଦିତ ବିଦ୍ୟୁତ୍ ଆପଣଙ୍କ ଘରୋଇ ଲୋଡ୍ <strong>${connectedWatts} Watts / ${connectedKw} kW</strong> କୁ ଚଳାଇବା ସହିତ ଅତିରିକ୍ତ ବିଦ୍ୟୁତ୍ DISCOM Grid କୁ Net-metering ମାଧ୍ୟମରେ ପଠାଇ Electric Bill 0 କରେ।
-              </p>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    const batChemistryLabel = curBat === 'lithium' 
-      ? 'Lithium LFP - 90% DoD' 
-      : (curBat === 'tubular' ? 'Tall Tubular Lead-Acid - 75% DoD' : 'Flat Plate Lead-Acid - 65% DoD');
-
-    let basisBadgeLabel = `${backupHrs} ଘଣ୍ଟା Backup Duration Basis`;
-    if (isScheduleBasis) {
-      basisBadgeLabel = 'Configured Appliances Load Basis';
-    } else if (isMonthlyBasis) {
-      basisBadgeLabel = res.systemType === 'off-grid' ? 'Off-Grid 24-Hr Continuous Basis' : 'Monthly Units Basis';
-    }
-
-    const dailyUnitsNum = (Number(res.monthlyUnits || 300)/30).toFixed(2);
-    let formulaDescription = `ଜରୁରୀ ଲୋଡ୍ (${backupKw} kW) × ନିର୍ଦ୍ଦିଷ୍ଟ ବ୍ୟାକଅପ୍ ସମୟ (${backupHrs} ଘଣ୍ଟା) = <strong>${backupKwh} kWh (ୟୁନିଟ୍)</strong>`;
-    if (isScheduleBasis) {
-      formulaDescription = `Step 2 ରେ କନଫିଗର୍ ହୋଇଥିବା ଜରୁରୀ ଉପକରଣର ଦୈନିକ ଚାଲିବା ସମୟ (Hours) ର ସମଷ୍ଟି = <strong>${backupKwh} kWh (${targetEnergyWh} Wh / ୟୁନିଟ୍)</strong>`;
-    } else if (isMonthlyBasis) {
-      if (res.systemType === 'off-grid') {
-        formulaDescription = `୨୪ ଘଣ୍ଟା ଅଫ୍-ଗ୍ରୀଡ୍ ସିଷ୍ଟମରେ ଦୈନିକ ${dailyUnitsNum} ୟୁନିଟ୍ ବ୍ୟବହାର ପାଇଁ, ରାତି/ଅଣ-ସୌର ସମୟ (~୧୭ ଘଣ୍ଟା) ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ = <strong>${backupKwh} kWh (${targetEnergyWh} Wh)</strong>`;
-      } else {
-        formulaDescription = `ଦୈନିକ ବିଦ୍ୟୁତ୍ ବ୍ୟବହାର (${dailyUnitsNum} kWh) + ଜରୁରୀ ବ୍ୟାକଅପ୍ (${backupKw} kW × ${backupHrs} ଘଣ୍ଟା = ${backupKwh} kWh)`;
-      }
-    }
-
-    const backupSubText = (res.systemType === 'off-grid' && isMonthlyBasis) 
-      ? 'ରାତି ଓ ଅଣ-ସୌର ସମୟ (~17 ଘଣ୍ଟା)' 
-      : 'ପାୱାରକଟ୍ ସମୟରେ ଚାଲିବା ଲୋଡ୍';
-
-    const backupDurationSubText = (res.systemType === 'off-grid' && isMonthlyBasis)
-      ? 'ରାତି ଅବଧି (~୧୭ ଘଣ୍ଟା ସମ୍ପୂର୍ଣ୍ଣ ବ୍ୟାକଅପ୍)'
-      : (isScheduleBasis ? 'ଉପକରଣର ଦୈନିକ ସମୟ' : 'ନିରବଚ୍ଛିନ୍ନ ବିଦ୍ୟୁତ୍ ଯୋଗାଣ');
-
-    const batExplanationText = (res.systemType === 'off-grid' && isMonthlyBasis)
-      ? `୨୪ ଘଣ୍ଟା ଅଫ୍-ଗ୍ରୀଡ୍ ${dailyUnitsNum} ୟୁନିଟ୍ ଲୋଡ୍ ଚଳାଇବା ପାଇଁ ଆପଣଙ୍କୁ <strong>${activeBat.systemVoltage}V ${activeBat.systemBankAh}Ah (${activeBat.totalInstalledKwh} kWh)</strong> ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ପ୍ରସ୍ତାବ ଦିଆଯାଇଛି, ଯାହାକି ରାତି ଓ ସକାଳର ୧୭ ଘଣ୍ଟା (~${activeBat.actualBackupHours} ଘଣ୍ଟା) ନିରବଚ୍ଛିନ୍ନ ବିଦ୍ୟୁତ୍ ଯୋଗାଇବ। ଦିନବେଳା ସୋଲାର ପ୍ୟାନେଲ୍ ଏହାକୁ ପୁନର୍ବାର ସମ୍ପୂର୍ଣ୍ଣ ଚାର୍ଜ କରିଦେବ।`
-      : `ବ୍ୟାଟେରୀର ଡିସଚାର୍ଜ ଦକ୍ଷତା (DoD) ଏବଂ ଇନଭର୍ଟର କନଭର୍ସନ ଲସ୍ (Loss) କୁ ହିସାବ କରି ଆପଣଙ୍କୁ <strong>${activeBat.systemVoltage}V ${activeBat.systemBankAh}Ah (${activeBat.totalInstalledKwh} kWh)</strong> ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ପ୍ରସ୍ତାବ ଦିଆଯାଇଛି, ଯାହାକି <strong>${backupWatts} Watts</strong> ଲୋଡ୍ କୁ ସମ୍ପୂର୍ଣ୍ଣ <strong>~${activeBat.actualBackupHours} ଘଣ୍ଟା</strong> ପର୍ଯ୍ୟନ୍ତ ନିରବଚ୍ଛିନ୍ନ ଶକ୍ତି ଯୋଗାଇବ।`;
-
-    return `
-      <div class="col-12 mt-2">
-        <div class="step-card p-3.5 p-md-4 mb-0 border shadow-2xs" style="background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);">
-          
-          <!-- Header with Title & Badge -->
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 mb-3 border-bottom">
-            <div>
-              <h5 class="fw-bold text-dark mb-0.5 d-flex align-items-center gap-2 fs-6">
-                <span>🔋</span>
-                <span>Battery Backup & Connected Load Correlation</span>
-              </h5>
-              <span class="text-muted fs-8">ଆପଣଙ୍କ ଦୈନିକ ଲୋଡ୍, ବିଦ୍ୟୁତ୍ କାଟ ସମୟରେ ଜରୁରୀ ବ୍ୟାକଅପ୍ ଏବଂ ବ୍ୟାଟେରୀ କ୍ଷମତାର ସରଳ ବିବରଣୀ</span>
-            </div>
-            <span class="badge bg-primary-subtle text-primary fw-bold fs-8 py-1 px-2.5">
-              ${basisBadgeLabel}
-            </span>
-          </div>
-
-          <!-- 4 Visual Key Metrics Row -->
-          <div class="row g-2.5 mb-3 text-center">
-            <!-- 1. Total Connected Load -->
-            <div class="col-md-3 col-6 d-flex flex-column">
-              <div class="p-2.5 bg-white rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs cursor-pointer" onclick="SizingUI.openApplianceModal()" style="cursor: pointer;" title="କ୍ଲିକ୍ କରି ଉପକରଣ ଲୋଡ୍ ବଦଳାନ୍ତୁ (Configure Appliances Load)">
-                <span class="text-muted fs-8 fw-semibold d-block mb-1">ସମୁଦାୟ ସଂଯୁକ୍ତ ଲୋଡ୍ <i class="bi bi-pencil-square text-primary fs-9 ms-1"></i></span>
-                <span class="fs-5 fw-bold text-dark">${connectedWatts} W</span>
-                <span class="fs-9 text-muted d-block mt-0.5">ଘରର ସମସ୍ତ ଉପକରଣ (${connectedKw} kW)</span>
-              </div>
-            </div>
-            <!-- 2. Essential Backup Load -->
-            <div class="col-md-3 col-6 d-flex flex-column">
-              <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs cursor-pointer" onclick="SizingUI.openBackupModal()" style="background: #eff6ff; border-color: #bfdbfe !important; cursor: pointer;" title="କ୍ଲିକ୍ କରି ବ୍ୟାକଅପ୍ ଲୋଡ୍ ବଦଳାନ୍ତୁ (Configure Backup Load)">
-                <span class="text-primary fs-8 fw-semibold d-block mb-1">ଜରୁରୀ ବ୍ୟାକଅପ୍ ଲୋଡ୍ <i class="bi bi-pencil-square text-primary fs-9 ms-1"></i></span>
-                <span class="fs-5 fw-extrabold text-primary">${backupWatts} W</span>
-                <span class="fs-9 text-primary d-block mt-0.5">${backupSubText} (${backupKw} kW)</span>
-              </div>
-            </div>
-            <!-- 3. Target Backup Duration -->
-            <div class="col-md-3 col-6 d-flex flex-column">
-              <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
-                <span class="text-success fs-8 fw-semibold d-block mb-1">${isScheduleBasis ? 'ଦୈନିକ ଚାଲିବା ସମୟ' : 'ଆବଶ୍ୟକୀୟ ବ୍ୟାକଅପ୍'}</span>
-                <span class="fs-5 fw-extrabold text-success">~${backupHrs} ଘଣ୍ଟା</span>
-                <span class="fs-9 text-success d-block mt-0.5">${backupDurationSubText}</span>
-              </div>
-            </div>
-            <!-- 4. Required Energy -->
-            <div class="col-md-3 col-6 d-flex flex-column">
-              <div class="p-2.5 bg-white rounded-3 border h-100 d-flex flex-column justify-content-center shadow-2xs">
-                <span class="text-muted fs-8 fw-semibold d-block mb-1">ଆବଶ୍ୟକୀୟ ଶକ୍ତି (Energy)</span>
-                <span class="fs-5 fw-bold text-dark">${backupKwh} ୟୁନିଟ୍</span>
-                <span class="fs-9 text-muted d-block mt-0.5">${backupKwh} kWh (${targetEnergyWh} Wh)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Explanation & Calculations Box (In Pure Odia) -->
-          <div class="p-3 bg-white rounded-3 border mb-3">
-            <h6 class="fw-bold text-dark fs-7 mb-2 d-flex align-items-center gap-1.5">
-              <span>ଏହି ହିସାବ କିପରି କାମ କରେ? (How Sizing Works)</span>
-            </h6>
-            <div class="fs-8 text-secondary lh-base">
-              <div class="mb-2">
-                <strong>୧. Energy Formula (${isScheduleBasis ? '24-Hr Appliance Schedule Mode' : (res.systemType === 'off-grid' && isMonthlyBasis ? 'Off-Grid 24-Hr Cycle Mode' : 'Backup Duration Mode')}):</strong><br>
-                <div class="my-1.5 p-2 bg-light rounded border text-dark fs-8">
-                  <code>ଆବଶ୍ୟକୀୟ ଶକ୍ତି (kWh) = ${formulaDescription}</code>
-                </div>
-              </div>
-              <div>
-                <strong>୨. Battery Selection (${batChemistryLabel}):</strong><br>
-                ${batExplanationText}
-              </div>
-            </div>
-          </div>
-
-          <!-- Important Customer Advisory / Guidelines (In Polite Odia) -->
-          <div class="p-3 rounded-3 border" style="background: #fffbeb; border-color: #fef3c7 !important;">
-            <h6 class="fw-bold text-dark fs-7 mb-2 d-flex align-items-center gap-1.5 text-warning-emphasis">
-              <span>💡</span>
-              <span>ଗ୍ରାହକଙ୍କ ପାଇଁ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ପରାମର୍ଶ (Customer Advisory):</span>
-            </h6>
-            <ul class="list-unstyled fs-8 text-dark mb-0 d-flex flex-column gap-2 ps-1">
-              <li class="d-flex align-items-start gap-2">
-                <span class="text-success fs-7">✔️</span>
-                <div>
-                  <strong>କେବଳ ଜରୁରୀ ଲୋଡ୍ ବ୍ୟବହାର କରନ୍ତୁ:</strong> ବିଦ୍ୟୁତ୍ କାଟ (Power Cut) ସମୟରେ କେବଳ ଲାଇଟ୍, ଫ୍ୟାନ୍, ଟିଭି, ଫ୍ରିଜ୍ ଏବଂ ୱାଇ-ଫାଇ ରାଉଟର୍ ଭଳି ଜରୁରୀ ଉପକରଣ (${backupWatts} W ମଧ୍ୟରେ) ଚଳାଇଲେ ଆପଣଙ୍କୁ ପୂର୍ଣ୍ଣ <strong>~${backupHrs} ଘଣ୍ଟା</strong> ବ୍ୟାକଅପ୍ ମିଳିବ।
-                </div>
-              </li>
-              <li class="d-flex align-items-start gap-2">
-                <span class="text-danger fs-7">⚠️</span>
-                <div>
-                  <strong>ଭାରୀ ଯନ୍ତ୍ରାଂଶ (Heavy Appliances) ବନ୍ଦ ରଖନ୍ତୁ:</strong> ପାୱାରକଟ୍ ସମୟରେ AC (ଏୟାର କଣ୍ଡିସନର), ଗିଜର କିମ୍ବା ପାଣି ମୋଟର ଭଳି ଭାରୀ ଲୋଡ୍ ଚଳାଇଲେ ବ୍ୟାଟେରୀ ବହୁତ ଶୀଘ୍ର ଡିସଚାର୍ଜ (Drain) ହୋଇଯିବ ଏବଂ ବ୍ୟାକଅପ୍ ସମୟ କମିଯିବ।
-                </div>
-              </li>
-              <li class="d-flex align-items-start gap-2">
-                <span class="text-primary fs-7">☀️</span>
-                <div>
-                  <strong>ଦିନବେଳା ସୌର ଶକ୍ତିର ଲାଭ:</strong> ସୋଲାର୍ ସିଷ୍ଟମରେ ଦିନବେଳା ସୂର୍ଯ୍ୟ କିରଣରୁ ଘରୋଇ ଲୋଡ୍ ଚାଲିବା ସହିତ ବ୍ୟାଟେରୀ ସମ୍ପୂର୍ଣ୍ଣ ଚାର୍ଜ ହୋଇଯାଏ, ଯାହାଦ୍ୱାରା ରାତିରେ ବିଦ୍ୟୁତ୍ କଟିଲେ ପୂର୍ଣ୍ଣ ~${backupHrs} ଘଣ୍ଟାର ବ୍ୟାକଅପ୍ ମିଳିଥାଏ।
-                </div>
-              </li>
-            </ul>
-          </div>
-
-        </div>
-      </div>
-    `;
   }
 
   function copySummary() {
@@ -1833,6 +1770,22 @@ Generated by Shri Trutiyadev Solar Enterprise Calculate System Variables`;
     const btnOpenAdvanced = document.getElementById('btnOpenAdvanced');
     if (btnOpenAdvanced) {
       btnOpenAdvanced.addEventListener('click', openAdvancedSettingsModal);
+    }
+
+    // Modal dismiss listeners to keep summary card and calculations synchronized
+    const modalBackupEl = document.getElementById('backupLoadModal');
+    if (modalBackupEl) {
+      modalBackupEl.addEventListener('hidden.bs.modal', () => {
+        renderApplianceSummaryCard();
+        calculateAndRender();
+      });
+    }
+    const modalAppEl = document.getElementById('applianceConfigModal');
+    if (modalAppEl) {
+      modalAppEl.addEventListener('hidden.bs.modal', () => {
+        renderApplianceSummaryCard();
+        calculateAndRender();
+      });
     }
   }
 
@@ -2287,6 +2240,7 @@ Generated by Shri Trutiyadev Solar Enterprise Calculate System Variables`;
     applyBackupModalChanges,
     toggleBackupAppliance,
     setBackupQty,
+    setApplianceBackupHours,
     presetBackup,
     resetBackupToDefault
   };

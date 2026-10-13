@@ -123,8 +123,12 @@ const SizingCalc = (() => {
       const hours = Math.max(0.1, Number(app.hours || app.defaultHours) || 4);
       const appDailyWh = totalAppWatts * hours;
       totalApplianceDailyWh += appDailyWh;
+
+      // Appliance battery backup duration hours (customizable per appliance)
+      const appBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : backupHours) || 4);
+      const appBackupWh = totalBackupAppWatts * appBackupHours;
       if (isBackup) {
-        backupApplianceDailyWh += totalBackupAppWatts * hours;
+        backupApplianceDailyWh += appBackupWh;
       }
       estimatedDailyKwh += appDailyWh / 1000;
 
@@ -133,6 +137,7 @@ const SizingCalc = (() => {
         qty,
         watts,
         hours,
+        backupHours: appBackupHours,
         totalAppWatts,
         isBackup,
         backupQty
@@ -165,16 +170,16 @@ const SizingCalc = (() => {
         targetBackupEnergyWh = Math.round(dailyKwh * 1000 * (17 / 24));
         effectiveBackupHours = 17;
       } else {
-        // For Hybrid & Without Solar in monthly units mode: size for essential backup load * backup hours
-        targetBackupEnergyWh = activeBackupW * backupHours;
-        effectiveBackupHours = backupHours;
+        // For Hybrid & Without Solar in monthly units mode:
+        targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
+        effectiveBackupHours = backupLoadW > 0 ? (targetBackupEnergyWh / backupLoadW) : backupHours;
       }
     } else if (isApplianceScheduleBasis) {
       targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
-      effectiveBackupHours = Math.round((targetBackupEnergyWh / Math.max(1, activeBackupW)) * 10) / 10;
+      effectiveBackupHours = backupLoadW > 0 ? (targetBackupEnergyWh / backupLoadW) : backupHours;
     } else {
-      targetBackupEnergyWh = activeBackupW * backupHours;
-      effectiveBackupHours = backupHours;
+      targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
+      effectiveBackupHours = backupLoadW > 0 ? (targetBackupEnergyWh / backupLoadW) : backupHours;
     }
 
     const estBatteryRechargeKwh = targetBackupEnergyWh / (0.88 * 1000); // 88% battery roundtrip charging efficiency
