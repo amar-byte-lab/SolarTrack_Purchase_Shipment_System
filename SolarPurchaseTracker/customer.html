@@ -658,7 +658,7 @@
         <div class="d-flex align-items-center gap-2.5">
           <div>
             <h6 class="modal-title fw-bold fs-7 text-dark mb-0" id="productModalLabel">Technical Specifications & RTS Record</h6>
-            <div class="text-secondary fs-8" id="productModalSubTitle" style="font-size: 0.76rem;">Customer: —</div>
+            <div class="text-secondary fs-8" id="productModalSubTitle" style="font-size: 0.76rem;">Consumer Name: —</div>
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -669,7 +669,7 @@
         <li class="nav-item" role="presentation">
           <button type="button" class="nav-link active" id="tabSpecGeneral-btn" data-bs-toggle="tab" data-bs-target="#tabSpecGeneral" role="tab" aria-controls="tabSpecGeneral" aria-selected="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Execution & Milestones
+            <span class="d-none d-sm-inline">Execution &amp; </span>Milestones
           </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -687,13 +687,13 @@
         <li class="nav-item" role="presentation">
           <button type="button" class="nav-link" id="tabSpecDistribution-btn" data-bs-toggle="tab" data-bs-target="#tabSpecDistribution" role="tab" aria-controls="tabSpecDistribution" aria-selected="false">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-            DCDB & ACDB
+            DCDB &amp; ACDB
           </button>
         </li>
         <li class="nav-item" role="presentation">
           <button type="button" class="nav-link" id="tabSpecCablesEarthing-btn" data-bs-toggle="tab" data-bs-target="#tabSpecCablesEarthing" role="tab" aria-controls="tabSpecCablesEarthing" aria-selected="false">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
-            Cables & Earthing
+            <span class="d-none d-sm-inline">Cables &amp; </span>Earthing
           </button>
         </li>
       </ul>
@@ -705,79 +705,68 @@
 
           <!-- 1. Execution & Milestones Tab -->
           <div class="tab-pane fade show active" id="tabSpecGeneral" role="tabpanel">
-            <div class="specs-section-header">
-              <div>
-                <div class="specs-section-title">Execution & Milestones</div>
-                <div class="specs-section-subtitle">Record installation timeline, site location & postal details as per Form 4 & 6</div>
-              </div>
-            </div>
-            <div class="row g-2.5">
-              <!-- Left Column: Dates (Row 1 & Row 2) -->
-              <div class="col-md-6 col-12">
-                <div class="mb-2">
+            <!-- Hidden field for Date of Commission (hidden as not required) -->
+            <input type="hidden" id="prodDateOfCommission">
+
+            <div class="row g-2.5 align-items-stretch">
+              <!-- Left Column: Date of Installation (Top) & State / Pin Code (split column-wise below) -->
+              <div class="col-md-6 col-12 d-flex flex-column justify-content-between">
+                <div>
                   <label class="specs-input-label" for="prodDateOfInstallation">Date of Installation</label>
                   <input type="date" class="form-control specs-input-control" id="prodDateOfInstallation">
                 </div>
-                <div>
-                  <label class="specs-input-label" for="prodDateOfCommission">Date of Commission</label>
-                  <input type="date" class="form-control specs-input-control" id="prodDateOfCommission">
+                <div class="row g-2 mt-2">
+                  <div class="col-6">
+                    <label class="specs-input-label" for="prodState">State</label>
+                    <input type="text" class="form-control specs-input-control bg-light" id="prodState" value="Odisha" readonly>
+                  </div>
+                  <div class="col-6">
+                    <label class="specs-input-label" for="prodPinCode">Pin Code</label>
+                    <input type="text" class="form-control specs-input-control" id="prodPinCode" placeholder="Pin Code (e.g. 756001)">
+                  </div>
                 </div>
               </div>
 
-              <!-- Right Column: Address/Location Textarea covering both rows -->
-              <div class="col-md-6 col-12">
-                <div class="h-100 d-flex flex-column">
-                  <label class="specs-input-label" for="prodAddress">Address / Location</label>
-                  <textarea class="form-control specs-input-control flex-grow-1" id="prodAddress" rows="3" placeholder="Village / Locality / Site address..." style="resize: vertical;"></textarea>
-                </div>
-              </div>
-
-              <!-- Bottom Row: State & Pin Code -->
-              <div class="col-md-6 col-6">
-                <label class="specs-input-label" for="prodState">State</label>
-                <input type="text" class="form-control specs-input-control bg-light" id="prodState" value="Odisha" readonly>
-              </div>
-              <div class="col-md-6 col-6">
-                <label class="specs-input-label" for="prodPinCode">Pin Code</label>
-                <input type="text" class="form-control specs-input-control" id="prodPinCode" placeholder="Pin Code (e.g. 756001)">
+              <!-- Right Column: Address/Location Textarea with height matching bottom of last row -->
+              <div class="col-md-6 col-12 d-flex flex-column">
+                <label class="specs-input-label" for="prodAddress">Address / Location</label>
+                <textarea class="form-control specs-input-control flex-grow-1" id="prodAddress" placeholder="Village / Locality / Site address..." style="resize: none;"></textarea>
               </div>
             </div>
           </div>
 
           <!-- 2. Inverter Tab -->
           <div class="tab-pane fade" id="tabSpecInverter" role="tabpanel">
-            <div class="specs-section-header">
-              <div>
-                <div class="specs-section-title">Grid-Tied Inverter Specifications</div>
-                <div class="specs-section-subtitle">Parameters corresponding to Form 4 (Part C) & Form 6 (Part D)</div>
-              </div>
-            </div>
+            <!-- Total No. of Inverter is always 1 (hidden) -->
+            <input type="hidden" id="prodInverterCount" value="1">
+
             <div class="row g-2.5">
-              <div class="col-md-4 col-12">
-                <label class="specs-input-label" for="prodInverterName">Name of the Inverter</label>
-                <input type="text" class="form-control specs-input-control" id="prodInverterName" placeholder="e.g. Grid-Tied Inverter">
-              </div>
-              <div class="col-md-4 col-6">
-                <label class="specs-input-label" for="prodInverterCount">Total No. of Inverter</label>
-                <input type="number" min="0" class="form-control specs-input-control" id="prodInverterCount" placeholder="e.g. 1">
-              </div>
-              <div class="col-md-4 col-6">
+              <!-- Row 1: Make & Name of Inverter (2 equal columns) -->
+              <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterMake">Make</label>
                 <input type="text" class="form-control specs-input-control" id="prodInverterMake" placeholder="e.g. LUMINOUS">
               </div>
-              <div class="col-md-4 col-6">
+              <div class="col-md-6 col-6">
+                <label class="specs-input-label" for="prodInverterName">Name of Inverter</label>
+                <input type="text" class="form-control specs-input-control" id="prodInverterName" placeholder="e.g. Grid-Tied Inverter">
+              </div>
+
+              <!-- Row 2: Serial No. & Capacity (side-by-side) -->
+              <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterSerialNo">Serial No.</label>
                 <input type="text" class="form-control specs-input-control font-monospace" id="prodInverterSerialNo" placeholder="e.g. G7QGZDB1001678">
               </div>
-              <div class="col-md-4 col-6">
+              <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterCapacity">Capacity</label>
-                <input type="text" class="form-control specs-input-control" id="prodInverterCapacity" placeholder="e.g. 3 KW">
+                <input type="text" class="form-control specs-input-control" id="prodInverterCapacity" placeholder="e.g. 3 kW">
               </div>
-              <div class="col-md-2 col-6">
+
+              <!-- Row 3: Input Voltage & Output Voltage (2 equal columns) -->
+              <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterInputVoltage">Input Voltage (in V DC)</label>
                 <input type="text" class="form-control specs-input-control" id="prodInverterInputVoltage" placeholder="e.g. 300 V DC">
               </div>
-              <div class="col-md-2 col-6">
+              <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterOutputVoltage">Output Voltage (in V AC)</label>
                 <input type="text" class="form-control specs-input-control" id="prodInverterOutputVoltage" placeholder="e.g. 220-240 V AC">
               </div>
@@ -786,61 +775,57 @@
 
           <!-- 3. PV Module Tab -->
           <div class="tab-pane fade" id="tabSpecModule" role="tabpanel">
-            <div class="specs-section-header">
-              <div>
-                <div class="specs-section-title">P.V Module Specifications</div>
-                <div class="specs-section-subtitle">Parameters corresponding to Form 4 (Part B) & Form 6 (Part E)</div>
-              </div>
-            </div>
-            <div class="row g-2.5 mb-3">
-              <!-- Line 1: Make | No. of Module | Type of Module & Model -->
-              <div class="col-md-4 col-12">
+            <div class="row g-2 mb-2.5" style="margin-bottom: 12px;">
+              <!-- Row 1: Make & No. of Module divide 50/50 column-wise on both mobile and PC -->
+              <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodModuleMake">Make</label>
                 <input type="text" class="form-control specs-input-control" id="prodModuleMake" placeholder="e.g. LUMINOUS">
               </div>
-              <div class="col-md-4 col-6">
+              <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodModuleCount">No. of Module</label>
                 <input type="number" min="0" class="form-control specs-input-control" id="prodModuleCount" placeholder="e.g. 6" oninput="window.renderModuleSerialInputs()">
               </div>
-              <div class="col-md-4 col-6">
+
+              <!-- Row 2: Type of Module & Model below row (full width col-12 on mobile and PC) -->
+              <div class="col-12">
                 <label class="specs-input-label" for="prodModuleTypeModel">Type of Module & Model</label>
                 <input type="text" class="form-control specs-input-control" id="prodModuleTypeModel" placeholder="e.g. BIFICIAL / Mono PERC">
               </div>
-
-              <!-- Line 2: Capacity of Each Module (col-8) | Total Capacity of Module (col-4) aligned under column boundaries -->
-              <div class="col-md-8 col-12">
-                <label class="specs-input-label" for="prodModuleCapacityEach">Capacity of each Module (in kWp / Wp)</label>
-                <input type="text" class="form-control specs-input-control" id="prodModuleCapacityEach" placeholder="e.g. 555 Wp - 4 Nos, 550 Wp - 2 Nos (0.55 kWp)" oninput="window.calcModuleTotalCapacity()">
-              </div>
-              <div class="col-md-4 col-12">
-                <label class="specs-input-label" for="prodModuleTotalCapacity">Total Capacity of Module</label>
-                <input type="text" class="form-control specs-input-control" id="prodModuleTotalCapacity" placeholder="e.g. 3.32 KWP">
-              </div>
             </div>
 
-            <!-- Dynamic Module Serial Numbers Container -->
+            <!-- Hidden input to preserve CapacityEach summary for database/form sync -->
+            <input type="hidden" id="prodModuleCapacityEach">
+
+            <!-- Dynamic Module Serial Numbers & Capacity Card -->
             <div class="specs-serials-card">
-              <div class="specs-serials-header">
-                <div>
-                  <span class="fw-semibold text-dark fs-8">Module Serial Numbers</span>
-                  <span class="text-muted fs-8 d-block" style="font-size: 0.72rem;">Individual barcode / serial identifiers</span>
-                </div>
-                <span class="badge bg-light text-secondary border px-2 py-1 fs-8 font-monospace" id="lblModuleSerialCount">0 Serials</span>
+              <!-- Serials & Capacities Container (Scrollable) -->
+              <div class="row g-2" id="prodModuleSerialInputsContainer" style="max-height: 220px; overflow-y: auto;">
+                <div class="col-12 text-muted fs-8 fst-italic py-2">Enter "No. of Module" above to generate serial number and capacity textboxes.</div>
               </div>
-              <div class="row g-2" id="prodModuleSerialInputsContainer" style="max-height: 190px; overflow-y: auto;">
-                <div class="col-12 text-muted fs-8 fst-italic">Enter "No. of Module" above to generate serial number textboxes (e.g. 16QGUBR1244719, 86QJVCR1175725...).</div>
+
+              <!-- End Row: Total Capacity auto calculated -->
+              <div class="specs-serials-end-row mt-2 pt-2 border-top" id="prodModuleEndRow">
+                <div class="row align-items-center g-2">
+                  <div class="col-sm-5 col-12">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="fw-semibold text-secondary fs-8">Total Modules:</span>
+                      <span class="badge bg-light text-dark border font-monospace fs-8" id="lblModuleTotalCountBadge">0</span>
+                      <span class="text-muted fs-8" id="lblModuleCapSummaryText" style="font-size: 0.73rem;"></span>
+                    </div>
+                  </div>
+                  <div class="col-sm-7 col-12">
+                    <div class="d-flex align-items-center justify-content-sm-end gap-2">
+                      <label class="specs-input-label mb-0 fw-bold text-dark text-nowrap" for="prodModuleTotalCapacity">Total Capacity of Module:</label>
+                      <input type="text" class="form-control specs-input-control text-primary fw-bold bg-light" id="prodModuleTotalCapacity" placeholder="0.00 kWp" readonly style="max-width: 220px;">
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- 4. Distribution Boxes Tab -->
           <div class="tab-pane fade" id="tabSpecDistribution" role="tabpanel">
-            <div class="specs-section-header">
-              <div>
-                <div class="specs-section-title">Distribution Boxes (DCDB & ACDB)</div>
-                <div class="specs-section-subtitle">Surge protection and switchgear ratings (Form 4 Parts F & G)</div>
-              </div>
-            </div>
 
             <!-- Subgroup: DCDB -->
             <div class="specs-card-subgroup">
@@ -897,12 +882,6 @@
 
           <!-- 5. Cables & Earthing Tab -->
           <div class="tab-pane fade" id="tabSpecCablesEarthing" role="tabpanel">
-            <div class="specs-section-header">
-              <div>
-                <div class="specs-section-title">Wiring, Grounding & Safety Systems</div>
-                <div class="specs-section-subtitle">DC cabling, resistance & earthing verification (Form 4 & Form 6)</div>
-              </div>
-            </div>
 
             <!-- DC Cables -->
             <div class="specs-card-subgroup">

@@ -2565,64 +2565,174 @@ window.saveCustomerQuickPayment = async function(slNo) {
   }
 };
 
-window.renderModuleSerialInputs = function() {
+window.renderModuleSerialInputs = function(initialSerials = null, initialCapacities = null) {
   const countInput = document.getElementById('prodModuleCount');
   const container = document.getElementById('prodModuleSerialInputsContainer');
   const badge = document.getElementById('lblModuleSerialCount');
   if (!countInput || !container) return;
 
   const count = Math.max(0, parseInt(countInput.value, 10) || 0);
-  if (badge) badge.textContent = `${count} Serial Inputs`;
+  if (badge) badge.textContent = `${count} Serial${count === 1 ? '' : 's'}`;
 
   if (count === 0) {
-    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic">Enter "No. of Module" above to generate serial number textboxes.</div>';
+    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic py-2">Enter "No. of Module" above to generate serial number and capacity textboxes.</div>';
+    window.calcModuleTotalCapacity();
     return;
   }
 
-  // Preserve existing entered values
-  const existingValues = [];
-  container.querySelectorAll('.prod-module-serial-box').forEach((box, i) => {
-    existingValues[i] = box.value;
-  });
+  // Preserve existing entered values if initial arrays are not provided
+  let existingSerials = [];
+  let existingCaps = [];
+  if (initialSerials && Array.isArray(initialSerials)) {
+    existingSerials = initialSerials;
+  } else {
+    container.querySelectorAll('.prod-module-serial-box').forEach((box, i) => {
+      existingSerials[i] = box.value;
+    });
+  }
+
+  if (initialCapacities && Array.isArray(initialCapacities)) {
+    existingCaps = initialCapacities;
+  } else {
+    container.querySelectorAll('.prod-module-cap-box').forEach((box, i) => {
+      existingCaps[i] = box.value;
+    });
+  }
+
+  // Fallback: If no capacities yet, check hidden prodModuleCapacityEach (from DB)
+  const defaultCap = (document.getElementById('prodModuleCapacityEach')?.value || '').trim();
 
   let html = '';
   for (let i = 1; i <= count; i++) {
-    const prevVal = existingValues[i - 1] || '';
+    const sVal = existingSerials[i - 1] || '';
+    let cVal = existingCaps[i - 1] || '';
+    if (!cVal && defaultCap) {
+      const m = defaultCap.match(/([0-9.]+)/);
+      if (m) {
+        cVal = m[1];
+      }
+    }
     html += `
-      <div class="col-md-4 col-6">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text bg-light text-muted fs-8" style="min-width: 32px; padding: 2px 6px;">#${i}</span>
-          <input type="text" class="form-control form-control-sm fs-8 font-monospace prod-module-serial-box" id="prodModuleSerial_${i}" data-index="${i}" value="${escapeHtml(prevVal)}" placeholder="Serial No. ${i}">
+      <div class="col-md-6 col-12">
+        <div class="input-group input-group-sm specs-module-row-group">
+          <span class="input-group-text bg-light text-muted fs-8 font-monospace px-2" style="min-width: 34px; justify-content: center;">#${i}</span>
+          <input type="text" class="form-control form-control-sm fs-8 font-monospace prod-module-serial-box" id="prodModuleSerial_${i}" data-index="${i}" value="${escapeHtml(sVal)}" placeholder="Serial No. ${i}" title="Module ${i} Serial Number">
+          <input type="number" min="0" step="any" class="form-control form-control-sm fs-8 prod-module-cap-box text-end fw-semibold" id="prodModuleCap_${i}" data-index="${i}" value="${escapeHtml(cVal)}" placeholder="555" style="max-width: 82px;" oninput="window.handleModuleCapChange(${i})" title="Module ${i} Capacity in Wp">
+          <span class="input-group-text bg-light text-muted fs-8 px-1.5 border-start-0" style="font-size: 0.70rem; min-width: 32px; justify-content: center;">Wp</span>
         </div>
       </div>
     `;
   }
   container.innerHTML = html;
+  window.calcModuleTotalCapacity();
+};
+
+window.handleModuleCapChange = function(index) {
+  if (index === 1) {
+    const firstBox = document.getElementById('prodModuleCap_1');
+    const val = firstBox ? firstBox.value.trim() : '';
+    // If other boxes are currently empty, auto-propagate Module 1's capacity
+    const allBoxes = document.querySelectorAll('.prod-module-cap-box');
+    let allOthersEmpty = true;
+    for (let i = 1; i < allBoxes.length; i++) {
+      if (allBoxes[i].value && allBoxes[i].value.trim() !== '') {
+        allOthersEmpty = false;
+        break;
+      }
+    }
+    if (allOthersEmpty && val !== '') {
+      for (let i = 1; i < allBoxes.length; i++) {
+        allBoxes[i].value = val;
+      }
+    }
+  }
+  window.calcModuleTotalCapacity();
+};
+
+window.applyModuleCapToAll = function() {
+  const firstBox = document.getElementById('prodModuleCap_1');
+  if (!firstBox) return;
+  const val = firstBox.value.trim();
+  if (!val) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Please enter a capacity in Module #1 first.', 'info');
+    }
+    return;
+  }
+  document.querySelectorAll('.prod-module-cap-box').forEach(box => {
+    box.value = val;
+  });
+  window.calcModuleTotalCapacity();
 };
 
 window.calcModuleTotalCapacity = function() {
-  const countInput = document.getElementById('prodModuleCount');
-  const capEachInput = document.getElementById('prodModuleCapacityEach');
+  const capBoxes = document.querySelectorAll('.prod-module-cap-box');
   const totalCapInput = document.getElementById('prodModuleTotalCapacity');
-  if (!countInput || !capEachInput || !totalCapInput) return;
+  const countBadge = document.getElementById('lblModuleTotalCountBadge');
+  const summaryText = document.getElementById('lblModuleCapSummaryText');
+  const hiddenCapEach = document.getElementById('prodModuleCapacityEach');
+  const countInput = document.getElementById('prodModuleCount');
 
-  const count = parseInt(countInput.value, 10) || 0;
-  const eachText = capEachInput.value.trim();
-  // Extract number if possible (e.g., 545 Wp or 545)
-  const match = eachText.match(/([0-9.]+)/);
-  if (count > 0 && match) {
-    const eachWatts = parseFloat(match[1]);
-    if (!isNaN(eachWatts) && eachWatts > 0) {
-      if (eachWatts >= 100) {
-        // In Watts, calculate kWp
-        const totalKW = ((count * eachWatts) / 1000).toFixed(2);
-        totalCapInput.value = `${totalKW} kWp (${count * eachWatts} Wp)`;
-      } else {
-        // Already in kW
-        const totalKW = (count * eachWatts).toFixed(2);
-        totalCapInput.value = `${totalKW} kWp`;
+  const count = capBoxes.length > 0 ? capBoxes.length : (parseInt(countInput?.value, 10) || 0);
+
+  if (countBadge) {
+    countBadge.textContent = `${count}`;
+  }
+
+  if (capBoxes.length === 0) {
+    if (totalCapInput) totalCapInput.value = '';
+    if (summaryText) summaryText.textContent = '';
+    if (hiddenCapEach) hiddenCapEach.value = '';
+    return;
+  }
+
+  let totalWatts = 0;
+  let filledCount = 0;
+  const capCounts = {};
+
+  capBoxes.forEach(box => {
+    const raw = (box.value || '').trim();
+    if (!raw) return;
+
+    const match = raw.match(/([0-9.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      if (!isNaN(num) && num > 0) {
+        filledCount++;
+        // Module capacity input is strictly in Wp
+        const watts = num;
+        totalWatts += watts;
+
+        const displayLabel = `${num} Wp`;
+        capCounts[displayLabel] = (capCounts[displayLabel] || 0) + 1;
       }
     }
+  });
+
+  if (filledCount > 0 && totalWatts > 0) {
+    const totalKW = (totalWatts / 1000).toFixed(2);
+    const formattedTotal = `${totalKW} kWp (${Math.round(totalWatts)} Wp)`;
+    if (totalCapInput) totalCapInput.value = formattedTotal;
+
+    const summaryParts = Object.entries(capCounts).map(([label, cnt]) => {
+      return cnt === 1 && filledCount === 1 ? label : `${label} (${cnt} Nos)`;
+    });
+    const summaryStr = summaryParts.join(', ');
+    if (summaryText) {
+      summaryText.textContent = summaryStr ? `• ${summaryStr}` : '';
+    }
+
+    if (hiddenCapEach) {
+      if (Object.keys(capCounts).length === 1) {
+        hiddenCapEach.value = Object.keys(capCounts)[0];
+      } else {
+        hiddenCapEach.value = Object.entries(capCounts).map(([lbl, c]) => `${lbl} - ${c} Nos`).join(', ');
+      }
+    }
+  } else {
+    if (totalCapInput) totalCapInput.value = '';
+    if (summaryText) summaryText.textContent = '';
+    if (hiddenCapEach) hiddenCapEach.value = '';
   }
 };
 
@@ -2671,7 +2781,7 @@ window.openProductModal = function(slNo) {
   document.getElementById('prodSlNo').value = slNo;
   const subTitle = document.getElementById('productModalSubTitle');
   if (subTitle) {
-    subTitle.textContent = `Customer: ${r.Name || '—'} | Consumer No: ${r.ConsumerNo || '—'} (Sl. No: ${slNo})`;
+    subTitle.textContent = r.Name ? `Consumer Name: ${r.Name}` : 'Consumer Name: —';
   }
 
   // Parse existing specs if any (checking both direct property and |work: metadata)
@@ -2709,7 +2819,7 @@ window.openProductModal = function(slNo) {
   // Grid Tied Inverter
   const inv = specs.GridTiedInverter || {};
   document.getElementById('prodInverterName').value = inv.Name || '';
-  document.getElementById('prodInverterCount').value = inv.TotalNo || '';
+  document.getElementById('prodInverterCount').value = inv.TotalNo || '1';
   document.getElementById('prodInverterMake').value = inv.Make || '';
   document.getElementById('prodInverterSerialNo').value = inv.SerialNo || '';
   document.getElementById('prodInverterCapacity').value = inv.Capacity || '';
@@ -2721,32 +2831,18 @@ window.openProductModal = function(slNo) {
   document.getElementById('prodModuleMake').value = pv.Make || '';
   document.getElementById('prodModuleCount').value = pv.NoOfModule || '';
   document.getElementById('prodModuleTypeModel').value = pv.TypeAndModel || '';
-  document.getElementById('prodModuleCapacityEach').value = pv.CapacityEach || '';
-  document.getElementById('prodModuleTotalCapacity').value = pv.TotalCapacity || '';
+  if (document.getElementById('prodModuleCapacityEach')) {
+    document.getElementById('prodModuleCapacityEach').value = pv.CapacityEach || '';
+  }
 
-  // Render serial boxes for modules
+  // Render serial boxes & capacities for modules
   const serials = Array.isArray(pv.SerialNumbers) ? pv.SerialNumbers : [];
-  const count = Math.max(0, parseInt(pv.NoOfModule, 10) || 0);
-  const container = document.getElementById('prodModuleSerialInputsContainer');
-  const badge = document.getElementById('lblModuleSerialCount');
-  if (badge) badge.textContent = `${count} Serial Inputs`;
+  const capacities = Array.isArray(pv.ModuleCapacities) ? pv.ModuleCapacities : [];
+  window.renderModuleSerialInputs(serials, capacities);
 
-  if (count === 0) {
-    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic">Enter "No. of Module" above to generate serial number textboxes.</div>';
-  } else {
-    let html = '';
-    for (let i = 1; i <= count; i++) {
-      const val = serials[i - 1] || '';
-      html += `
-        <div class="col-md-4 col-6">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-light text-muted fs-8" style="min-width: 32px; padding: 2px 6px;">#${i}</span>
-            <input type="text" class="form-control form-control-sm fs-8 font-monospace prod-module-serial-box" id="prodModuleSerial_${i}" data-index="${i}" value="${escapeHtml(val)}" placeholder="Serial No. ${i}">
-          </div>
-        </div>
-      `;
-    }
-    container.innerHTML = html;
+  // If saved TotalCapacity exists and auto-calc didn't fill it (e.g. no capacities were stored), fallback
+  if (pv.TotalCapacity && document.getElementById('prodModuleTotalCapacity') && !document.getElementById('prodModuleTotalCapacity').value) {
+    document.getElementById('prodModuleTotalCapacity').value = pv.TotalCapacity;
   }
 
   // Earthing Verification
@@ -2798,11 +2894,18 @@ window.saveProductPopupSpecs = async function() {
     return;
   }
 
-  // Extract module serials
+  // Extract module serials & individual capacities
   const moduleSerials = [];
   document.querySelectorAll('.prod-module-serial-box').forEach(box => {
     moduleSerials.push(box.value.trim());
   });
+  const moduleCapacities = [];
+  document.querySelectorAll('.prod-module-cap-box').forEach(box => {
+    moduleCapacities.push(box.value.trim());
+  });
+
+  // Ensure calculations are up to date
+  window.calcModuleTotalCapacity();
 
   const moduleMake = document.getElementById('prodModuleMake').value.trim();
   const inverterMake = document.getElementById('prodInverterMake').value.trim();
@@ -2832,7 +2935,7 @@ window.saveProductPopupSpecs = async function() {
     State: stateVal,
     GridTiedInverter: {
       Name: document.getElementById('prodInverterName').value.trim(),
-      TotalNo: document.getElementById('prodInverterCount').value.trim(),
+      TotalNo: (document.getElementById('prodInverterCount')?.value || '').trim() || '1',
       Make: inverterMake,
       SerialNo: document.getElementById('prodInverterSerialNo').value.trim(),
       Capacity: document.getElementById('prodInverterCapacity').value.trim(),
@@ -2843,9 +2946,10 @@ window.saveProductPopupSpecs = async function() {
       Make: moduleMake,
       NoOfModule: document.getElementById('prodModuleCount').value.trim(),
       TypeAndModel: document.getElementById('prodModuleTypeModel').value.trim(),
-      CapacityEach: document.getElementById('prodModuleCapacityEach').value.trim(),
-      TotalCapacity: document.getElementById('prodModuleTotalCapacity').value.trim(),
-      SerialNumbers: moduleSerials
+      CapacityEach: (document.getElementById('prodModuleCapacityEach')?.value || '').trim(),
+      TotalCapacity: (document.getElementById('prodModuleTotalCapacity')?.value || '').trim(),
+      SerialNumbers: moduleSerials,
+      ModuleCapacities: moduleCapacities
     },
     EarthingVerification: {
       DcEarthing: document.getElementById('prodDcEarthing').value.trim(),
