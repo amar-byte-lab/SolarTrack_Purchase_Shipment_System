@@ -1535,6 +1535,7 @@ const SizingUI = (() => {
       let heroStatHtml = '';
       let specBoxHtml = '';
       let activeBatObj = curBat === 'tubular' ? batLa : (curBat === 'flat-plate' ? batFp : batLi);
+      const activeBackupWatts = (activeBatObj && activeBatObj.backupLoadW) || res.backupLoadW || res.connectedLoadW;
 
       if (curBat === 'lithium') {
         heroStatHtml = `
@@ -1560,7 +1561,7 @@ const SizingUI = (() => {
               <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
                 <li>• Continuous Discharge: <strong>0.5C (~${Math.round(batLi.systemBankAh * 0.5)}A)</strong></li>
                 <li>• Peak Surge Draw: <strong>1.0C (~${batLi.systemBankAh}A)</strong></li>
-                <li>• Backup Duration: <strong>~${batLi.actualBackupHours} Hours</strong> at ${res.backupLoadW || res.connectedLoadW}W backup load</li>
+                <li>• Backup Duration: <strong>~${batLi.actualBackupHours} Hours</strong> at ${activeBackupWatts}W backup load</li>
               </ul>
             </div>
           </div>
@@ -1589,7 +1590,7 @@ const SizingUI = (() => {
               <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer Rating & Backup:</div>
               <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
                 <li>• <strong>Battery Rating:</strong> C10 Solar Tubular (${batLa.singleBatteryAh}Ah @ 12V)</li>
-                <li>• <strong>Backup Duration:</strong> <strong>~${batLa.actualBackupHours} Hours</strong> at ${res.backupLoadW || res.connectedLoadW}W backup load</li>
+                <li>• <strong>Backup Duration:</strong> <strong>~${batLa.actualBackupHours} Hours</strong> at ${activeBackupWatts}W backup load</li>
               </ul>
             </div>
           </div>
@@ -1618,7 +1619,7 @@ const SizingUI = (() => {
               <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer Rating & Backup:</div>
               <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
                 <li>• <strong>Battery Rating:</strong> C20 Flat Plate (${batFp.singleBatteryAh}Ah @ 12V)</li>
-                <li>• <strong>Backup Duration:</strong> <strong>~${batFp.actualBackupHours} Hours</strong> at ${res.backupLoadW || res.connectedLoadW}W backup load</li>
+                <li>• <strong>Backup Duration:</strong> <strong>~${batFp.actualBackupHours} Hours</strong> at ${activeBackupWatts}W backup load</li>
               </ul>
             </div>
           </div>

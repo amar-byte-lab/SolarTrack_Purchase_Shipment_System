@@ -89,8 +89,11 @@ const SizingCalc = (() => {
 
         // Individual motor starting surge delta (IEEE 1562 standard diversity: single largest inrush)
         const singleMotorSurgeDelta = Math.round(watts * (surgeMultiplier - 1));
-        motorSurgeDeltas.push(singleMotorSurgeDelta);
-        acWarnings.push(`AC motor inrush surge (${acType === 'inverter' ? 'Inverter AC' : 'Non-Inverter AC'}, ${surgeMultiplier}x) factored into inverter peak rating.`);
+        const isBackupApp = app.isBackup !== undefined ? !!app.isBackup : true;
+        if (sysTypeKey !== 'without-solar' || isBackupApp) {
+          motorSurgeDeltas.push(singleMotorSurgeDelta);
+          acWarnings.push(`AC motor inrush surge (${acType === 'inverter' ? 'Inverter AC' : 'Non-Inverter AC'}, ${surgeMultiplier}x) factored into inverter peak rating.`);
+        }
       }
 
       // Handle Heavy Load Overrides & Starting Surge Calculation (Water Pump)
@@ -102,8 +105,11 @@ const SizingCalc = (() => {
         }
         const surgeMultiplier = Number(params.pumpSurgeFactor) || 3.5;
         const singleMotorSurgeDelta = Math.round(watts * (surgeMultiplier - 1));
-        motorSurgeDeltas.push(singleMotorSurgeDelta);
-        pumpWarnings.push(`Pump motor starting surge (${surgeMultiplier}x) factored into inverter peak rating.`);
+        const isBackupApp = app.isBackup !== undefined ? !!app.isBackup : true;
+        if (sysTypeKey !== 'without-solar' || isBackupApp) {
+          motorSurgeDeltas.push(singleMotorSurgeDelta);
+          pumpWarnings.push(`Pump motor starting surge (${surgeMultiplier}x) factored into inverter peak rating.`);
+        }
       }
 
       const totalAppWatts = watts * qty;
@@ -205,21 +211,24 @@ const SizingCalc = (() => {
 
     // 3. Base Load & Continuous/Peak Requirements
     const safetyMarginPct = Math.max(0, Number(params.safetyMarginPct) || 25);
-    let baseRunningLoadW = connectedLoadW;
+    // In Without-Solar (Home UPS), inverter only powers the backup circuit. Non-backup loads are on grid bypass.
+    let baseRunningLoadW = sysTypeKey === 'without-solar'
+      ? (backupLoadW > 0 ? backupLoadW : connectedLoadW)
+      : connectedLoadW;
     let requiredContinuousW = Math.round(baseRunningLoadW * (1 + safetyMarginPct / 100));
 
-    // For On-Grid (GTI), Hybrid & Off-Grid: Inverter continuous capacity must satisfy Solar PV Array AC rating
+    // For On-Grid (GTI), Hybrid & Off-Grid: Inverter continuous capacity must satisfy Solar PV Array AC rating (Standard ILR <= 1.15)
     if (sysTypeKey === 'on-grid' && solarResult && solarResult.actualArrayKwp > 0) {
-      const targetInverterKw = Math.max(1, Math.round(solarResult.actualArrayKwp / 1.12));
+      const targetInverterKw = Math.max(1, Math.ceil(solarResult.actualArrayKwp / 1.15));
       const solarArrayContinuousW = targetInverterKw * 1000;
       requiredContinuousW = Math.max(requiredContinuousW, solarArrayContinuousW);
     } else if (sysTypeKey === 'hybrid' && solarResult && solarResult.actualArrayKwp > 0) {
-      const targetInverterKw = Math.max(1, Math.round(solarResult.actualArrayKwp / 1.12));
+      const targetInverterKw = Math.max(1, Math.ceil(solarResult.actualArrayKwp / 1.15));
       const solarArrayContinuousW = targetInverterKw * 1000;
       requiredContinuousW = Math.max(requiredContinuousW, solarArrayContinuousW);
     } else if (sysTypeKey === 'off-grid' && solarResult && solarResult.actualArrayKwp > 0) {
       // Off-Grid PCU continuous rating must comfortably process solar input
-      const targetPcuKw = Math.max(1, Math.round(solarResult.actualArrayKwp / 1.25));
+      const targetPcuKw = Math.max(1, Math.ceil(solarResult.actualArrayKwp / 1.25));
       requiredContinuousW = Math.max(requiredContinuousW, targetPcuKw * 1000);
     }
 
@@ -239,7 +248,7 @@ const SizingCalc = (() => {
       connectionPhase,
       isSinglePhase,
       sanctionedLoadKw,
-      requiredKw: Math.max(rawRequiredKw, Math.round(effectiveSolarKw / 1.12)),
+      requiredKw: Math.max(rawRequiredKw, Math.ceil(effectiveSolarKw / 1.15)),
       effectiveSolarKw,
       maxAllowedSinglePhaseKw: SINGLE_PHASE_MAX_LIMIT_KW,
       exceedsSinglePhase,
@@ -482,15 +491,7 @@ const SizingCalc = (() => {
       return contCap >= requiredContinuousW && surgeCap >= requiredPeakSurgeW;
     });
 
-    // If PV input requirement exists, prioritize candidates that satisfy maxPvInput
-    if (reqPvInputW > 0 && candidates.length > 0) {
-      const pvCompliant = candidates.filter(inv => (inv.maxPvInput || 0) >= reqPvInputW);
-      if (pvCompliant.length > 0) {
-        candidates = pvCompliant;
-      }
-    }
-
-    // Filter by supply phase
+    // Filter by supply phase FIRST (Hard electrical constraint)
     if (isSinglePhase) {
       candidates = candidates.filter(c => c.phase === '1-Phase' || !c.phase);
     } else {
@@ -498,6 +499,14 @@ const SizingCalc = (() => {
       const threePhaseCandidates = candidates.filter(c => c.phase === '3-Phase');
       if (threePhaseCandidates.length > 0) {
         candidates = threePhaseCandidates;
+      }
+    }
+
+    // If PV input requirement exists, prioritize candidates that satisfy maxPvInput
+    if (reqPvInputW > 0 && candidates.length > 0) {
+      const pvCompliant = candidates.filter(inv => (inv.maxPvInput || 0) >= reqPvInputW);
+      if (pvCompliant.length > 0) {
+        candidates = pvCompliant;
       }
     }
 
@@ -785,6 +794,7 @@ const SizingCalc = (() => {
 
     return {
       energyCalculationBasis,
+      backupLoadW: Math.round(loadKw * 1000),
       backupEnergyWh,
       backupEnergyKwh,
       requiredBatteryWh,
@@ -858,11 +868,11 @@ const SizingCalc = (() => {
       if (energyCalculationBasis === 'backup_duration') {
         const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : (dailyDemandKwh / 0.88);
         const daytimeDirectKwh = Math.max(0.5, dailyDemandKwh * 0.4);
-        totalSolarDailyTargetKwh = daytimeDirectKwh + batteryChargeNeedKwh;
+        totalSolarDailyTargetKwh = Math.max(dailyDemandKwh * 1.10, daytimeDirectKwh + batteryChargeNeedKwh);
       } else {
         const daytimeDirectKwh = dailyDemandKwh * (7 / 24);
         const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : ((dailyDemandKwh * (17 / 24)) / 0.88);
-        totalSolarDailyTargetKwh = daytimeDirectKwh + batteryChargeNeedKwh;
+        totalSolarDailyTargetKwh = Math.max(dailyDemandKwh * 1.10, daytimeDirectKwh + batteryChargeNeedKwh);
       }
     }
 
