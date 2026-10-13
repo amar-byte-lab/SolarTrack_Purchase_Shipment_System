@@ -866,3 +866,32 @@
   text-decoration: underline;
 }
 
+/* Row-based Standard Load Calculator Button & Modal */
+.btn-calc-row {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: var(--st-primary);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-calc-row:hover {
+  background: var(--st-primary-light);
+  border-color: var(--st-primary);
+  color: var(--st-primary);
+  transform: translateY(-1px);
+}
+.btn-calc-row.is-calculated {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+

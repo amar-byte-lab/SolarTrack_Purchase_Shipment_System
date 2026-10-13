@@ -112,22 +112,28 @@ const SizingCalc = (() => {
         }
       }
 
-      const totalAppWatts = watts * qty;
-      connectedLoadW += totalAppWatts;
+      const runningWatts = watts;
+      const ratedWatts = (app.ratedWatts !== undefined && Number(app.ratedWatts) > 0)
+        ? Number(app.ratedWatts)
+        : runningWatts;
+
+      const totalAppWatts = runningWatts * qty;
+      const totalConnectedAppWatts = ratedWatts * qty;
+      connectedLoadW += totalConnectedAppWatts;
 
       // Check if appliance is designated for emergency battery backup
       const isBackup = app.isBackup !== undefined ? !!app.isBackup : true;
       const backupQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
         ? Math.min(qty, Number(app.backupQty))
         : qty;
-      const totalBackupAppWatts = watts * backupQty;
+      const totalBackupAppWatts = runningWatts * backupQty;
 
       if (isBackup) {
         backupLoadW += totalBackupAppWatts;
       }
 
       const hours = Math.max(0.1, Number(app.hours || app.defaultHours) || 4);
-      const appDailyWh = totalAppWatts * hours;
+      const appDailyWh = (runningWatts * qty) * hours;
       totalApplianceDailyWh += appDailyWh;
 
       // Appliance battery backup duration hours (customizable per appliance)
@@ -141,7 +147,8 @@ const SizingCalc = (() => {
       sanitizedAppliances.push({
         ...app,
         qty,
-        watts,
+        watts: runningWatts,
+        ratedWatts,
         hours,
         backupHours: appBackupHours,
         totalAppWatts,
@@ -1146,6 +1153,542 @@ const SizingCalc = (() => {
     };
   }
 
+  /* =========================================================================
+     Standard Electrical Load Calculation Engine (BEE & Engineering Standards)
+     ========================================================================= */
+  const StandardLoadCalc = {
+
+    /**
+     * TV Load Calculator
+     */
+    calculateTv(p = {}) {
+      const screenSize = String(p.screenSize || '43');
+      const displayType = p.displayType || 'led';
+      const resolution = p.resolution || '4k';
+      const brightness = p.brightness || 'standard';
+      const hdr = p.hdr === 'on' || p.hdr === true;
+      const dailyHours = Math.max(0.1, Number(p.dailyHours !== undefined ? p.dailyHours : 4) || 4);
+      const manualWatts = Number(p.manualWatts) || 0;
+
+      const baseWattsMap = { '32': 40, '43': 65, '50': 85, '55': 100, '65': 140, '75': 190 };
+      const baseWatts = baseWattsMap[screenSize] || 65;
+
+      const displayMult = { led: 1.0, qled: 1.15, oled: 1.25 }[displayType] || 1.0;
+      const resMult = { hd: 0.85, fhd: 0.95, '4k': 1.0, '8k': 1.30 }[resolution] || 1.0;
+      const brightMult = { low: 0.85, standard: 1.0, high: 1.20 }[brightness] || 1.0;
+      const hdrMult = hdr ? 1.20 : 1.0;
+
+      let averageWatts = 0;
+      let ratedWatts = 0;
+
+      if (manualWatts > 0) {
+        averageWatts = manualWatts;
+        ratedWatts = Math.round(manualWatts * 1.25);
+      } else {
+        averageWatts = Math.round(baseWatts * displayMult * resMult * brightMult * hdrMult);
+        ratedWatts = Math.round(baseWatts * displayMult * resMult * 1.25);
+      }
+
+      const dailyWh = Math.round(averageWatts * dailyHours);
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'tv',
+        appName: 'TV',
+        ratedWatts,
+        averageWatts,
+        dailyHours: Number(dailyHours.toFixed(1)),
+        dailyWh,
+        dailyKwh,
+        explanation: `${screenSize}" ${displayType.toUpperCase()} (${resolution.toUpperCase()}) TV at ${brightness} brightness${hdr ? ' + HDR' : ''}. Estimated average power: ${averageWatts}W.`,
+        params: { screenSize, displayType, resolution, brightness, hdr: hdr ? 'on' : 'off', dailyHours, manualWatts: manualWatts || '' }
+      };
+    },
+
+    /**
+     * Refrigerator Load Calculator (BEE 24-hr Standard Model)
+     * NOTE: Does NOT multiply compressor wattage by 24h! Uses daily cycling Wh / 24.
+     */
+    calculateFridge(p = {}) {
+      const capacityL = Math.max(50, Number(p.capacityL) || 240);
+      const doorType = p.doorType || 'double'; // 'single', 'double', 'sideBySide'
+      const starRating = Math.max(1, Math.min(5, Number(p.starRating) || 3));
+      const compressorType = p.compressorType || 'inverter'; // 'inverter', 'nonInverter'
+      const ambientTemp = p.ambientTemp || 'normal'; // 'mild', 'normal', 'hot'
+      const usageCondition = p.usageCondition || 'normal'; // 'low', 'normal', 'heavy'
+      const manufacturerKwhDay = Number(p.manufacturerKwhDay) || 0;
+
+      const ambientMult = { mild: 0.85, normal: 1.0, hot: 1.20 }[ambientTemp] || 1.0;
+      const usageMult = { low: 0.90, normal: 1.0, heavy: 1.15 }[usageCondition] || 1.0;
+
+      let dailyKwh = 0;
+
+      if (manufacturerKwhDay > 0) {
+        dailyKwh = manufacturerKwhDay * ambientMult * usageMult;
+      } else {
+        let baseDailyKwh = 0.75;
+        let baseCap = 260;
+
+        if (doorType === 'single') {
+          baseDailyKwh = 0.55;
+          baseCap = 200;
+        } else if (doorType === 'sideBySide') {
+          baseDailyKwh = 1.35;
+          baseCap = 550;
+        }
+
+        const capScale = Math.pow(capacityL / baseCap, 0.6);
+        const starFactor = { 5: 0.72, 4: 0.84, 3: 1.00, 2: 1.20, 1: 1.45 }[starRating] || 1.0;
+        const compFactor = compressorType === 'nonInverter' ? 1.25 : 1.0;
+
+        dailyKwh = baseDailyKwh * capScale * starFactor * compFactor * ambientMult * usageMult;
+      }
+
+      const dailyWh = Math.round(dailyKwh * 1000);
+      const dailyHours = 24.0;
+      // Effective average operating power = Daily Wh / 24 hrs
+      const averageWatts = Math.max(15, Math.round(dailyWh / 24));
+
+      // Compressor instantaneous rated power for connected load / starting inrush
+      let ratedWatts = 160;
+      if (doorType === 'single') ratedWatts = 110;
+      else if (doorType === 'sideBySide') ratedWatts = 240;
+      if (compressorType === 'nonInverter') ratedWatts = Math.round(ratedWatts * 1.2);
+      if (capacityL > 350) ratedWatts = Math.round(ratedWatts * 1.15);
+
+      return {
+        appId: 'fridge',
+        appName: 'Refrigerator',
+        ratedWatts,
+        averageWatts,
+        dailyHours: 24.0,
+        dailyWh,
+        dailyKwh: Number((dailyWh / 1000).toFixed(3)),
+        explanation: `${capacityL}L ${doorType === 'single' ? 'Single Door' : (doorType === 'sideBySide' ? 'Side-by-Side' : 'Double Door')} ${starRating}-Star (${compressorType === 'inverter' ? 'Inverter' : 'Non-Inverter'}). Refrigerator runs 24h with intermittent compressor cycling (avg: ${averageWatts}W, rated: ${ratedWatts}W).`,
+        params: { capacityL, doorType, starRating, compressorType, ambientTemp, usageCondition, manufacturerKwhDay: manufacturerKwhDay || '', dailyHours: 24 }
+      };
+    },
+
+    /**
+     * Computer / Laptop Load Calculator
+     */
+    calculateComputer(p = {}) {
+      const deviceType = p.deviceType || 'laptop';
+      const gpuType = p.gpuType || 'integrated'; // 'integrated', 'dedicatedMid', 'dedicatedHigh'
+      const monitorCount = Math.max(0, Number(p.monitorCount) || (deviceType === 'laptop' ? 0 : 1));
+      const intensity = p.intensity || 'moderate'; // 'light', 'moderate', 'heavy'
+      const dailyHours = Math.max(0.1, Number(p.dailyHours !== undefined ? p.dailyHours : 6) || 6);
+      const manualWatts = Number(p.manualWatts) || 0;
+
+      const intensityMult = { light: 0.70, moderate: 1.0, heavy: 1.60 }[intensity] || 1.0;
+
+      let baseAvg = 28;
+      let baseRated = 65;
+
+      if (deviceType === 'laptop') {
+        if (gpuType === 'dedicatedMid') { baseAvg = 75; baseRated = 150; }
+        else if (gpuType === 'dedicatedHigh') { baseAvg = 130; baseRated = 240; }
+        else { baseAvg = 28; baseRated = 65; }
+      } else {
+        if (gpuType === 'dedicatedMid') { baseAvg = 160; baseRated = 550; }
+        else if (gpuType === 'dedicatedHigh') { baseAvg = 320; baseRated = 850; }
+        else { baseAvg = 65; baseRated = 300; }
+      }
+
+      const monitorOperating = monitorCount * 25;
+      const monitorRated = monitorCount * 35;
+
+      let averageWatts = 0;
+      let ratedWatts = 0;
+
+      if (manualWatts > 0) {
+        averageWatts = manualWatts;
+        ratedWatts = Math.round(manualWatts * 1.5);
+      } else {
+        averageWatts = Math.round((baseAvg * intensityMult) + monitorOperating);
+        ratedWatts = Math.round(baseRated + monitorRated);
+      }
+
+      const dailyWh = Math.round(averageWatts * dailyHours);
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'comp',
+        appName: 'Computer / Laptop',
+        ratedWatts,
+        averageWatts,
+        dailyHours: Number(dailyHours.toFixed(1)),
+        dailyWh,
+        dailyKwh,
+        explanation: `${deviceType === 'laptop' ? 'Laptop' : 'Desktop PC'} (${gpuType === 'integrated' ? 'Integrated GPU' : (gpuType === 'dedicatedHigh' ? 'High-End GPU' : 'Dedicated GPU')}) with ${monitorCount} monitor(s) at ${intensity} workload. Average: ${averageWatts}W, PSU rated: ${ratedWatts}W.`,
+        params: { deviceType, gpuType, monitorCount, intensity, dailyHours, manualWatts: manualWatts || '' }
+      };
+    },
+
+    /**
+     * Washing Machine Load Calculator
+     * NOTE: Does NOT assume heater is on continuously for entire wash cycle!
+     */
+    calculateWashingMachine(p = {}) {
+      const wmType = p.wmType || 'topLoad'; // 'semi', 'topLoad', 'frontLoad'
+      const capacityKg = Math.max(5, Number(p.capacityKg) || 7);
+      const waterHeater = p.waterHeater === 'enabled' || p.waterHeater === true;
+      const program = p.program || 'normal'; // 'quick', 'normal', 'heavy'
+      const cyclesPerDay = Math.max(0.1, Number(p.cyclesPerDay !== undefined ? p.cyclesPerDay : 1) || 1);
+      const defaultDuration = wmType === 'frontLoad' ? 60 : 45;
+      const cycleDurationMin = Math.max(15, Number(p.cycleDurationMin) || defaultDuration);
+      const manufacturerKwhCycle = Number(p.manufacturerKwhCycle) || 0;
+
+      const programMult = { quick: 0.75, normal: 1.0, heavy: 1.35 }[program] || 1.0;
+      const capScale = Math.pow(capacityKg / 7, 0.5);
+
+      let cycleKwh = 0;
+      let ratedWatts = 450;
+
+      if (manufacturerKwhCycle > 0) {
+        cycleKwh = manufacturerKwhCycle * programMult;
+        ratedWatts = (waterHeater && wmType === 'frontLoad') ? 2050 : 500;
+      } else {
+        let baseColdCycleKwh = 0.18; // Top load
+        if (wmType === 'semi') {
+          baseColdCycleKwh = 0.12;
+          ratedWatts = 380;
+        } else if (wmType === 'frontLoad') {
+          baseColdCycleKwh = 0.24;
+          ratedWatts = waterHeater ? 2050 : 480;
+        } else {
+          ratedWatts = 450;
+        }
+
+        // Internal water heater heats water for ~15-20 min in front load
+        const heaterKwh = (waterHeater && wmType === 'frontLoad') ? 0.65 : 0;
+        cycleKwh = (baseColdCycleKwh * capScale + heaterKwh) * programMult;
+      }
+
+      const dailyKwh = cycleKwh * cyclesPerDay;
+      const dailyWh = Math.round(dailyKwh * 1000);
+      const dailyHours = Number(((cycleDurationMin * cyclesPerDay) / 60).toFixed(2));
+      const averageWatts = Math.max(50, Math.round(dailyWh / Math.max(0.1, dailyHours)));
+
+      return {
+        appId: 'wm',
+        appName: 'Washing Machine',
+        ratedWatts,
+        averageWatts,
+        dailyHours,
+        dailyWh,
+        dailyKwh: Number((dailyWh / 1000).toFixed(3)),
+        explanation: `${capacityKg}kg ${wmType === 'frontLoad' ? 'Front Load' : (wmType === 'semi' ? 'Semi-Automatic' : 'Top Load')} (${waterHeater ? 'Hot Wash 60°C' : 'Cold Wash'}). Average running power: ${averageWatts}W across ${cyclesPerDay} cycle(s)/day (${cycleDurationMin} min/cycle).`,
+        params: { wmType, capacityKg, waterHeater: waterHeater ? 'enabled' : 'disabled', program, cyclesPerDay, cycleDurationMin, manufacturerKwhCycle: manufacturerKwhCycle || '', dailyHours }
+      };
+    },
+
+    /**
+     * Geyser (Water Heater) Load Calculator
+     */
+    calculateGeyser(p = {}) {
+      const ratedWatts = Math.max(500, Number(p.ratedWatts) || 2000);
+      const capacityL = Number(p.capacityL) || 15;
+      const sessionsPerDay = Math.max(0.5, Number(p.sessionsPerDay) || 1);
+      const sessionDurationMin = Math.max(5, Number(p.sessionDurationMin) || 20);
+      const standbyLoss = p.standbyLoss || 'switchedOff'; // 'switchedOff', 'keptOn'
+
+      const operatingHours = (sessionsPerDay * sessionDurationMin) / 60;
+      const activeWh = ratedWatts * operatingHours;
+      const standbyWh = standbyLoss === 'keptOn' ? 500 : 0;
+      const dailyWh = Math.round(activeWh + standbyWh);
+      const dailyHours = Number(operatingHours.toFixed(2));
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'geyser',
+        appName: 'Geyser',
+        ratedWatts,
+        averageWatts: ratedWatts,
+        dailyHours,
+        dailyWh,
+        dailyKwh,
+        explanation: `${capacityL}L Geyser with ${ratedWatts}W heating element running for ${sessionsPerDay} session(s) (${sessionDurationMin} min/session)${standbyLoss === 'keptOn' ? ' + 0.5 kWh standing loss' : ''}.`,
+        params: { ratedWatts, capacityL, sessionsPerDay, sessionDurationMin, standbyLoss, dailyHours }
+      };
+    },
+
+    /**
+     * Iron Load Calculator
+     */
+    calculateIron(p = {}) {
+      const ironType = p.ironType || 'dry';
+      const defaultRated = ironType === 'steam' ? 1600 : 1000;
+      const ratedWatts = Math.max(500, Number(p.ratedWatts) || defaultRated);
+      const thermostatDuty = p.thermostatDuty || 'medium'; // 'low' (35%), 'medium' (50%), 'high' (65%)
+      const sessionDurationMin = Math.max(5, Number(p.sessionDurationMin) || 30);
+      const daysPerWeek = Math.max(1, Math.min(7, Number(p.daysPerWeek) || 7));
+
+      const dutyFactor = { low: 0.35, medium: 0.50, high: 0.65 }[thermostatDuty] || 0.50;
+      const activeOperatingWatts = Math.round(ratedWatts * dutyFactor);
+
+      const sessionHours = sessionDurationMin / 60;
+      const weeklyDaysRatio = daysPerWeek / 7;
+      const effectiveDailyHours = Number((sessionHours * weeklyDaysRatio).toFixed(2));
+      const sessionWh = activeOperatingWatts * sessionHours;
+      const dailyWh = Math.round(sessionWh * weeklyDaysRatio);
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'iron',
+        appName: 'Iron',
+        ratedWatts,
+        averageWatts: activeOperatingWatts,
+        dailyHours: effectiveDailyHours,
+        dailyWh,
+        dailyKwh,
+        explanation: `${ironType === 'steam' ? 'Steam' : 'Dry'} Iron (${ratedWatts}W) with ${Math.round(dutyFactor * 100)}% thermostat duty cycle. Operating power: ${activeOperatingWatts}W. Ironing ${daysPerWeek} day(s)/week for ${sessionDurationMin} min.`,
+        params: { ironType, ratedWatts, thermostatDuty, sessionDurationMin, daysPerWeek, dailyHours: effectiveDailyHours }
+      };
+    },
+
+    /**
+     * Induction Cooker Load Calculator
+     */
+    calculateInduction(p = {}) {
+      const ratedWatts = Math.max(800, Number(p.ratedWatts) || 2000);
+      const powerLevel = p.powerLevel || 'mixed'; // 'low', 'medium', 'high', 'mixed'
+      const sessionsPerDay = Math.max(0.5, Number(p.sessionsPerDay) || 2);
+      const durationPerSessionMin = Math.max(5, Number(p.durationPerSessionMin) || 30);
+
+      const powerRatio = { low: 0.35, medium: 0.60, high: 0.90, mixed: 0.58 }[powerLevel] || 0.58;
+      const averageWatts = Math.round(ratedWatts * powerRatio);
+
+      const dailyHours = Number(((sessionsPerDay * durationPerSessionMin) / 60).toFixed(2));
+      const dailyWh = Math.round(averageWatts * dailyHours);
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'induction',
+        appName: 'Induction Cooker',
+        ratedWatts,
+        averageWatts,
+        dailyHours,
+        dailyWh,
+        dailyKwh,
+        explanation: `${ratedWatts}W Induction Cooker at ${powerLevel} heat setting (~${averageWatts}W average power). Cooking ${sessionsPerDay} session(s)/day (${durationPerSessionMin} min each).`,
+        params: { ratedWatts, powerLevel, sessionsPerDay, durationPerSessionMin, dailyHours }
+      };
+    },
+
+    /**
+     * Air Conditioner (AC) Load Calculator (BEE Modulation & ISEER Model)
+     */
+    calculateAc(p = {}) {
+      const ton = String(p.ton || '1.5');
+      const starRating = p.starRating || '3'; // '1-2', '3', '5'
+      const technology = p.technology || 'inverter'; // 'inverter', 'nonInverter'
+      const ambientTemp = p.ambientTemp || 'normal'; // 'mild' (0.88), 'normal' (1.0), 'peak' (1.25)
+      const setpoint = p.setpoint || '24'; // '24' (1.0), '20' (1.24), '26' (0.88)
+      const roomSize = p.roomSize || 'medium'; // 'small' (0.9), 'medium' (1.0), 'large' (1.18)
+      const insulation = p.insulation || 'average'; // 'good' (0.9), 'average' (1.0), 'poor' (1.25)
+      const dailyHours = Math.max(0.5, Number(p.dailyHours !== undefined ? p.dailyHours : 8) || 8);
+      const manualWatts = Number(p.manualWatts) || 0;
+
+      const baseRatedMap = {
+        inverter: { '0.5': 550, '1': 1050, '1.5': 1450, '2': 1950 },
+        nonInverter: { '0.5': 650, '1': 1200, '1.5': 1800, '2': 2400 }
+      };
+      const ratedWatts = (baseRatedMap[technology] || baseRatedMap.inverter)[ton] || 1450;
+
+      const tonRatio = { '0.5': 0.38, '1': 0.68, '1.5': 1.0, '2': 1.35 }[ton] || 1.0;
+      let starFactor = 1.0;
+      if (technology === 'inverter') {
+        starFactor = starRating === '5' ? 0.85 : (starRating === '1-2' ? 1.15 : 1.0);
+      } else {
+        starFactor = starRating === '5' ? 1.25 : (starRating === '3' ? 1.40 : 1.55);
+      }
+
+      const ambientFactor = { mild: 0.88, normal: 1.0, peak: 1.25 }[ambientTemp] || 1.0;
+      const setpointFactor = { '26': 0.88, '24': 1.0, '20': 1.24 }[setpoint] || 1.0;
+      const roomFactor = { small: 0.90, medium: 1.0, large: 1.18 }[roomSize] || 1.0;
+      const insulFactor = { good: 0.90, average: 1.0, poor: 1.25 }[insulation] || 1.0;
+
+      let averageWatts = 0;
+      if (manualWatts > 0) {
+        averageWatts = manualWatts;
+      } else {
+        // Benchmark baseline average power for 1.5T 3-Star Inverter AC running at 24°C = 850W
+        const combinedMult = tonRatio * starFactor * ambientFactor * setpointFactor * roomFactor * insulFactor;
+        averageWatts = Math.round(850 * combinedMult);
+      }
+
+      const dailyWh = Math.round(averageWatts * dailyHours);
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'ac',
+        appName: 'Air Conditioner',
+        ratedWatts,
+        averageWatts,
+        dailyHours: Number(dailyHours.toFixed(1)),
+        dailyWh,
+        dailyKwh,
+        explanation: `${ton} Ton ${starRating}-Star (${technology === 'inverter' ? 'Inverter' : 'Fixed Speed'}) AC at ${setpoint}°C setpoint. Rated peak input: ${ratedWatts}W, estimated modulated operating average: ${averageWatts}W.`,
+        params: { ton, starRating, technology, ambientTemp, setpoint, roomSize, insulation, dailyHours, manualWatts: manualWatts || '' }
+      };
+    },
+
+    /**
+     * Water Pump Load Calculator (Hydraulic & Motor Model)
+     * Electrical Input W = Motor HP * 746 / Motor Efficiency
+     */
+    calculatePump(p = {}) {
+      const motorHp = String(p.motorHp || '1');
+      const hpVal = { '0.5': 0.5, '0.75': 0.75, '1': 1.0, '1.5': 1.5, '2': 2.0 }[motorHp] || 1.0;
+      const pumpType = p.pumpType || 'monoblock'; // 'monoblock', 'submersible'
+      const motorEfficiency = Math.max(50, Math.min(90, Number(p.motorEfficiency) || 70));
+      const totalHeadM = Number(p.totalHeadM) || 25;
+      const dailyHours = Math.max(0.1, Number(p.dailyHours !== undefined ? p.dailyHours : 1) || 1);
+      const manualWatts = Number(p.manualWatts) || 0;
+
+      // Electrical Input W = HP * 746 / Efficiency
+      const electricalInputW = Math.round((hpVal * 746) / (motorEfficiency / 100));
+
+      const headFactor = totalHeadM > 35 ? 1.05 : (totalHeadM < 20 ? 0.90 : 1.0);
+      let averageWatts = manualWatts > 0 ? manualWatts : Math.round(electricalInputW * headFactor);
+      let ratedWatts = manualWatts > 0 ? manualWatts : electricalInputW;
+
+      const dailyWh = Math.round(averageWatts * dailyHours);
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'pump',
+        appName: 'Water Pump',
+        ratedWatts,
+        averageWatts,
+        dailyHours: Number(dailyHours.toFixed(1)),
+        dailyWh,
+        dailyKwh,
+        explanation: `${motorHp} HP ${pumpType === 'submersible' ? 'Submersible' : 'Monoblock'} Pump (${motorEfficiency}% motor efficiency, ${totalHeadM}m head). Calculated electrical input: ${electricalInputW}W (~${(electricalInputW/1000).toFixed(2)} kW).`,
+        params: { motorHp, pumpType, motorEfficiency, totalHeadM, dailyHours, manualWatts: manualWatts || '' }
+      };
+    },
+
+    /**
+     * LED Light Calculator
+     */
+    calculateLed(p = {}) {
+      const bulbWatts = Math.max(1, Number(p.bulbWatts) || 10);
+      const dailyHours = Math.max(0.1, Number(p.dailyHours !== undefined ? p.dailyHours : 14) || 14);
+      const dailyWh = Math.round(bulbWatts * dailyHours);
+      return {
+        appId: 'led',
+        appName: 'LED Light',
+        ratedWatts: bulbWatts,
+        averageWatts: bulbWatts,
+        dailyHours: Number(dailyHours.toFixed(1)),
+        dailyWh,
+        dailyKwh: Number((dailyWh / 1000).toFixed(3)),
+        explanation: `${bulbWatts}W LED lighting operating for ${dailyHours} hrs/day.`,
+        params: { bulbWatts, dailyHours }
+      };
+    },
+
+    /**
+     * Fan Load Calculator
+     */
+    calculateFan(p = {}) {
+      const fanType = p.fanType || 'induction'; // 'induction' (70W), 'bldc' (30W)
+      const speed = p.speed || 'medium'; // 'low', 'medium', 'high'
+      const dailyHours = Math.max(0.1, Number(p.dailyHours !== undefined ? p.dailyHours : 14) || 14);
+
+      let ratedWatts = fanType === 'bldc' ? 32 : 75;
+      let averageWatts = fanType === 'bldc'
+        ? { low: 14, medium: 24, high: 32 }[speed] || 24
+        : { low: 35, medium: 55, high: 75 }[speed] || 55;
+
+      const dailyWh = Math.round(averageWatts * dailyHours);
+      return {
+        appId: 'fan',
+        appName: 'Fan',
+        ratedWatts,
+        averageWatts,
+        dailyHours: Number(dailyHours.toFixed(1)),
+        dailyWh,
+        dailyKwh: Number((dailyWh / 1000).toFixed(3)),
+        explanation: `${fanType === 'bldc' ? 'BLDC Energy-Saving' : 'Standard Ceiling'} Fan at ${speed} speed setting (Avg: ${averageWatts}W, Rated: ${ratedWatts}W).`,
+        params: { fanType, speed, dailyHours }
+      };
+    },
+
+    /**
+     * Generic / Other / Custom Appliance Calculator
+     */
+    calculateOther(p = {}) {
+      const appName = p.appName || 'Other Load';
+      const ratedWatts = Math.max(1, Number(p.ratedWatts) || 100);
+      const operatingWatts = Math.max(1, Number(p.operatingWatts !== undefined ? p.operatingWatts : ratedWatts) || ratedWatts);
+      const dailyHours = Math.max(0.1, Number(p.dailyHours !== undefined ? p.dailyHours : 4) || 4);
+      const daysPerWeek = Math.max(1, Math.min(7, Number(p.daysPerWeek) || 7));
+
+      const effectiveDailyHours = Number((dailyHours * (daysPerWeek / 7)).toFixed(2));
+      const dailyWh = Math.round(operatingWatts * effectiveDailyHours);
+      const dailyKwh = Number((dailyWh / 1000).toFixed(3));
+
+      return {
+        appId: 'other',
+        appName,
+        ratedWatts,
+        averageWatts: operatingWatts,
+        dailyHours: effectiveDailyHours,
+        dailyWh,
+        dailyKwh,
+        explanation: `${appName} with ${ratedWatts}W rated power and ${operatingWatts}W operating average power used ${daysPerWeek} day(s)/week for ${dailyHours} hrs/day.`,
+        params: { appName, ratedWatts, operatingWatts, dailyHours, daysPerWeek }
+      };
+    },
+
+    /**
+     * Master Dispatcher: maps any appliance ID or keyword to the right calculator
+     */
+    calculate(appId, appName = '', params = {}) {
+      const id = String(appId || '').toLowerCase();
+      const name = String(appName || '').toLowerCase();
+
+      if (id === 'tv' || name.includes('tv') || name.includes('television')) {
+        return this.calculateTv(params);
+      }
+      if (id === 'fridge' || name.includes('fridge') || name.includes('refrigerator')) {
+        return this.calculateFridge(params);
+      }
+      if (id === 'comp' || name.includes('computer') || name.includes('laptop') || name.includes('pc')) {
+        return this.calculateComputer(params);
+      }
+      if (id === 'wm' || name.includes('washing') || name.includes('washer')) {
+        return this.calculateWashingMachine(params);
+      }
+      if (id === 'geyser' || name.includes('geyser') || name.includes('water heater')) {
+        return this.calculateGeyser(params);
+      }
+      if (id === 'iron' || name.includes('iron')) {
+        return this.calculateIron(params);
+      }
+      if (id === 'induction' || name.includes('induction') || name.includes('cooker')) {
+        return this.calculateInduction(params);
+      }
+      if (id === 'ac' || name.includes('ac') || name.includes('air conditioner') || name.includes('cooler')) {
+        return this.calculateAc(params);
+      }
+      if (id === 'pump' || name.includes('pump') || name.includes('motor')) {
+        return this.calculatePump(params);
+      }
+      if (id === 'led' || name.includes('light') || name.includes('led') || name.includes('tube')) {
+        return this.calculateLed(params);
+      }
+      if (id === 'fan' || name.includes('fan')) {
+        return this.calculateFan(params);
+      }
+
+      return this.calculateOther({ ...params, appName: appName || 'Custom Appliance' });
+    }
+  };
+
   // Backward compatibility wrapper
   function calculateOdishaTariffAndPayback(opts) {
     return calculateTariffAndPayback(opts);
@@ -1153,6 +1696,8 @@ const SizingCalc = (() => {
 
   return {
     SYSTEM_TYPE_MAP,
+    StandardLoadCalc,
+    calculateStandardLoad: (appId, appName, params) => StandardLoadCalc.calculate(appId, appName, params),
     calculateSystem,
     selectInverter,
     selectBattery,

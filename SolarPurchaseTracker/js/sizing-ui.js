@@ -685,17 +685,20 @@ const SizingUI = (() => {
     if (!tbody) return;
 
     tbody.innerHTML = state.appliances.map((app, index) => {
-      let wattInputHtml = `
-        <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 70px; height: 26px;" 
-          value="${app.watts}" 
-          oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
-          onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
-      `;
+      let wattInputHtml = '';
 
-      if (app.id === 'ac') {
+      if (app.isCalculated) {
+        wattInputHtml = `
+          <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8 text-primary" style="width: 68px; height: 26px;" 
+            value="${app.watts}" 
+            title="Calculated Load: ${app.watts}W operating avg (${app.ratedWatts || app.watts}W rated). Click 🧮 or edit manually."
+            oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
+            onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
+        `;
+      } else if (app.id === 'ac') {
         const ton = state.acConfig.ton || '1.5';
         wattInputHtml = `
-          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 70px; height: 26px;" onchange="SizingUI.updateAcTon(this.value)">
+          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 68px; height: 26px;" onchange="SizingUI.updateAcTon(this.value)">
             <option value="0.5" ${ton === '0.5' ? 'selected' : ''}>0.5T</option>
             <option value="1" ${ton === '1' ? 'selected' : ''}>1.0T</option>
             <option value="1.5" ${ton === '1.5' ? 'selected' : ''}>1.5T</option>
@@ -705,12 +708,19 @@ const SizingUI = (() => {
       } else if (app.id === 'pump') {
         const hp = state.pumpConfig.hp || '1';
         wattInputHtml = `
-          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 70px; height: 26px;" onchange="SizingUI.updatePumpHp(this.value)">
+          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 68px; height: 26px;" onchange="SizingUI.updatePumpHp(this.value)">
             <option value="0.5" ${hp === '0.5' ? 'selected' : ''}>0.5HP</option>
             <option value="1" ${hp === '1' ? 'selected' : ''}>1.0HP</option>
             <option value="1.5" ${hp === '1.5' ? 'selected' : ''}>1.5HP</option>
             <option value="2" ${hp === '2' ? 'selected' : ''}>2.0HP</option>
           </select>
+        `;
+      } else {
+        wattInputHtml = `
+          <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 68px; height: 26px;" 
+            value="${app.watts}" 
+            oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
+            onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
         `;
       }
 
@@ -753,9 +763,16 @@ const SizingUI = (() => {
           <td class="text-center p-1" style="width: 48px;">
             ${qtyHtml}
           </td>
-          <!-- Watt -->
-          <td class="text-center p-1" style="width: 78px;">
-            ${wattInputHtml}
+          <!-- Watt + Calculator Button -->
+          <td class="text-center p-1" style="width: 104px;">
+            <div class="d-flex align-items-center justify-content-center gap-1">
+              ${wattInputHtml}
+              <button type="button" class="btn-calc-row ${app.isCalculated ? 'is-calculated' : ''}" 
+                onclick="event.stopPropagation(); SizingUI.openLoadCalculator(${index})" 
+                title="Calculate Standard Load">
+                🧮
+              </button>
+            </div>
           </td>
           <!-- Daily Time -->
           <td class="text-center p-1" style="width: 70px;">
@@ -855,6 +872,979 @@ const SizingUI = (() => {
 
     const footEnergy = document.getElementById('modalFooterDailyEnergy');
     if (footEnergy) footEnergy.textContent = `${Math.round(totalDailyWh).toLocaleString()} Wh/day (${(totalDailyWh / 1000).toFixed(2)} kWh)`;
+  }
+
+  /* ---------------- 1.B Appliance Standard Electrical Load Calculator Controller ---------------- */
+  let calcModalState = {
+    appIndex: -1,
+    appId: '',
+    appName: '',
+    currentParams: {},
+    lastResult: null,
+    returnToConfigModal: false
+  };
+
+  function getAppTypeCategory(appId, appName = '') {
+    const id = String(appId || '').toLowerCase();
+    const name = String(appName || '').toLowerCase();
+    if (id === 'tv' || name.includes('tv') || name.includes('television')) return 'tv';
+    if (id === 'fridge' || name.includes('fridge') || name.includes('refrigerator')) return 'fridge';
+    if (id === 'comp' || name.includes('computer') || name.includes('laptop') || name.includes('pc')) return 'comp';
+    if (id === 'wm' || name.includes('washing') || name.includes('washer')) return 'wm';
+    if (id === 'geyser' || name.includes('geyser') || name.includes('water heater')) return 'geyser';
+    if (id === 'iron' || name.includes('iron')) return 'iron';
+    if (id === 'induction' || name.includes('induction') || name.includes('cooker')) return 'induction';
+    if (id === 'ac' || name.includes('ac') || name.includes('air conditioner') || name.includes('cooler')) return 'ac';
+    if (id === 'pump' || name.includes('pump') || name.includes('motor')) return 'pump';
+    if (id === 'led' || name.includes('light') || name.includes('led') || name.includes('tube')) return 'led';
+    if (id === 'fan' || name.includes('fan')) return 'fan';
+    return 'other';
+  }
+
+  function getDefaultCalcParams(app, forcePristine = false) {
+    if (!forcePristine && app.calcParams) {
+      return JSON.parse(JSON.stringify(app.calcParams));
+    }
+
+    const cat = getAppTypeCategory(app.id, app.name);
+    const defHours = Number(app.defaultHours) || 4;
+
+    switch (cat) {
+      case 'tv':
+        return {
+          screenSize: '43',
+          displayType: 'led',
+          resolution: '4k',
+          brightness: 'standard',
+          hdr: 'off',
+          dailyHours: defHours || 4,
+          manualWatts: ''
+        };
+      case 'fridge':
+        return {
+          capacityL: 240,
+          doorType: 'double',
+          starRating: 3,
+          compressorType: 'inverter',
+          ambientTemp: 'normal',
+          usageCondition: 'normal',
+          manufacturerKwhDay: '',
+          dailyHours: 24
+        };
+      case 'comp':
+        return {
+          deviceType: 'laptop',
+          gpuType: 'integrated',
+          monitorCount: 0,
+          intensity: 'moderate',
+          dailyHours: defHours || 6,
+          manualWatts: ''
+        };
+      case 'wm':
+        return {
+          wmType: 'topLoad',
+          capacityKg: 7,
+          waterHeater: 'disabled',
+          program: 'normal',
+          cyclesPerDay: 1,
+          cycleDurationMin: 45,
+          manufacturerKwhCycle: '',
+          dailyHours: defHours || 1
+        };
+      case 'geyser':
+        return {
+          ratedWatts: Number(app.watts) || 2000,
+          capacityL: 15,
+          sessionsPerDay: 1,
+          sessionDurationMin: 20,
+          standbyLoss: 'switchedOff',
+          dailyHours: defHours || 1
+        };
+      case 'iron':
+        return {
+          ironType: 'dry',
+          ratedWatts: Number(app.watts) || 1000,
+          thermostatDuty: 'medium',
+          sessionDurationMin: 30,
+          daysPerWeek: 7,
+          dailyHours: defHours || 0.5
+        };
+      case 'induction':
+        return {
+          ratedWatts: Number(app.watts) || 2000,
+          powerLevel: 'mixed',
+          sessionsPerDay: 2,
+          durationPerSessionMin: 30,
+          dailyHours: defHours || 2
+        };
+      case 'ac':
+        return {
+          ton: state.acConfig.ton || '1.5',
+          starRating: '3',
+          technology: state.acConfig.acType || 'inverter',
+          ambientTemp: 'normal',
+          setpoint: '24',
+          roomSize: 'medium',
+          insulation: 'average',
+          dailyHours: defHours || 8,
+          manualWatts: state.acConfig.actualWatts || ''
+        };
+      case 'pump':
+        return {
+          motorHp: state.pumpConfig.hp || '1',
+          pumpType: 'monoblock',
+          motorEfficiency: 70,
+          totalHeadM: 25,
+          dailyHours: defHours || 1,
+          manualWatts: ''
+        };
+      case 'led':
+        return {
+          bulbWatts: Number(app.watts) || 10,
+          dailyHours: defHours || 14
+        };
+      case 'fan':
+        return {
+          fanType: 'induction',
+          speed: 'medium',
+          dailyHours: defHours || 14
+        };
+      default:
+        return {
+          appName: app.name || 'Other Load',
+          ratedWatts: Number(app.watts) || 100,
+          operatingWatts: Number(app.watts) || 100,
+          dailyHours: defHours || 4,
+          daysPerWeek: 7
+        };
+    }
+  }
+
+  function getBadgeTextForApp(cat) {
+    const map = {
+      tv: 'Display & Resolution Standard',
+      fridge: 'BEE 24h Cycling Standard',
+      comp: 'Workload & PSU Rating',
+      wm: 'Cycle & Thermal Duty Model',
+      geyser: 'Thermal Element Model',
+      iron: 'Thermostat Duty Cycle',
+      induction: 'Power Modulation Model',
+      ac: 'BEE ISEER Inverter Model',
+      pump: 'Hydraulic HP × 746 / η Formula',
+      led: 'Solid State Lighting Rating',
+      fan: 'Induction / BLDC Model',
+      other: 'Configurable Standard'
+    };
+    return map[cat] || 'Standard Electrical Model';
+  }
+
+  function openLoadCalculator(index) {
+    const app = state.appliances[index];
+    if (!app) return;
+
+    calcModalState.appIndex = index;
+    calcModalState.appId = app.id;
+    calcModalState.appName = app.name;
+    calcModalState.currentParams = getDefaultCalcParams(app);
+
+    const titleEl = document.getElementById('calcModalTitle');
+    const subtitleEl = document.getElementById('calcModalSubtitle');
+    const iconEl = document.getElementById('calcModalIcon');
+    if (titleEl) titleEl.textContent = `${app.name} — Standard Load Calculator`;
+    if (subtitleEl) subtitleEl.textContent = `Configure engineering parameters for ${app.name} & calculate accurate rated and operating energy.`;
+    if (iconEl) iconEl.textContent = app.icon || '🧮';
+
+    renderCalcModalInputs();
+    calculateCurrentModalLoad();
+
+    const calcModalEl = document.getElementById('applianceLoadCalcModal');
+    if (!calcModalEl) return;
+
+    const configModalEl = document.getElementById('applianceConfigModal');
+    const isConfigOpen = configModalEl && (configModalEl.classList.contains('show') || configModalEl.style.display === 'block');
+    calcModalState.returnToConfigModal = !!isConfigOpen;
+
+    if (isConfigOpen) {
+      const configBsModal = bootstrap.Modal.getInstance(configModalEl) || bootstrap.Modal.getOrCreateInstance(configModalEl);
+      const onConfigHidden = () => {
+        configModalEl.removeEventListener('hidden.bs.modal', onConfigHidden);
+        const calcModal = bootstrap.Modal.getOrCreateInstance(calcModalEl);
+        calcModal.show();
+      };
+      configModalEl.addEventListener('hidden.bs.modal', onConfigHidden, { once: true });
+      configBsModal.hide();
+    } else {
+      const calcModal = bootstrap.Modal.getOrCreateInstance(calcModalEl);
+      calcModal.show();
+    }
+  }
+
+  function renderCalcModalInputs() {
+    const specsContainer = document.getElementById('calcSecSpecsContainer');
+    const usageContainer = document.getElementById('calcSecUsageContainer');
+    const specBadge = document.getElementById('calcSpecBadge');
+    const usageBadge = document.getElementById('calcUsageBadge');
+
+    if (!specsContainer || !usageContainer) return;
+
+    const cat = getAppTypeCategory(calcModalState.appId, calcModalState.appName);
+    const p = calcModalState.currentParams;
+
+    if (specBadge) specBadge.textContent = `${cat.toUpperCase()} Technical Specs`;
+    if (usageBadge) usageBadge.textContent = 'Daily Schedule';
+
+    let specsHtml = '';
+    let usageHtml = '';
+
+    if (cat === 'tv') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Screen Size</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('screenSize', this.value)">
+              <option value="32" ${p.screenSize === '32' ? 'selected' : ''}>32" (40W base)</option>
+              <option value="43" ${p.screenSize === '43' ? 'selected' : ''}>43" (65W base)</option>
+              <option value="50" ${p.screenSize === '50' ? 'selected' : ''}>50" (85W base)</option>
+              <option value="55" ${p.screenSize === '55' ? 'selected' : ''}>55" (100W base)</option>
+              <option value="65" ${p.screenSize === '65' ? 'selected' : ''}>65" (140W base)</option>
+              <option value="75" ${p.screenSize === '75' ? 'selected' : ''}>75" (190W base)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Display Technology</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('displayType', this.value)">
+              <option value="led" ${p.displayType === 'led' ? 'selected' : ''}>LED (Standard)</option>
+              <option value="qled" ${p.displayType === 'qled' ? 'selected' : ''}>QLED (+15%)</option>
+              <option value="oled" ${p.displayType === 'oled' ? 'selected' : ''}>OLED (+25%)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Resolution</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('resolution', this.value)">
+              <option value="hd" ${p.resolution === 'hd' ? 'selected' : ''}>HD (720p)</option>
+              <option value="fhd" ${p.resolution === 'fhd' ? 'selected' : ''}>Full HD (1080p)</option>
+              <option value="4k" ${p.resolution === '4k' ? 'selected' : ''}>4K Ultra HD</option>
+              <option value="8k" ${p.resolution === '8k' ? 'selected' : ''}>8K UHD (+30%)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Brightness & HDR</label>
+            <div class="d-flex gap-1">
+              <select class="form-select form-select-sm" style="width: 58%;" onchange="SizingUI.onCalcParamChange('brightness', this.value)">
+                <option value="low" ${p.brightness === 'low' ? 'selected' : ''}>Low (Eco)</option>
+                <option value="standard" ${p.brightness === 'standard' ? 'selected' : ''}>Std</option>
+                <option value="high" ${p.brightness === 'high' ? 'selected' : ''}>High</option>
+              </select>
+              <select class="form-select form-select-sm" style="width: 42%;" onchange="SizingUI.onCalcParamChange('hdr', this.value)">
+                <option value="off" ${p.hdr === 'off' ? 'selected' : ''}>SDR</option>
+                <option value="on" ${p.hdr === 'on' ? 'selected' : ''}>HDR</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Manual Rated Watts (Optional Override)</label>
+            <input type="number" min="10" max="800" class="form-control form-control-sm" value="${p.manualWatts || ''}" 
+              placeholder="Leave empty to use engineering model" 
+              oninput="SizingUI.onCalcParamChange('manualWatts', this.value)" onchange="SizingUI.onCalcParamChange('manualWatts', this.value)">
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Daily Usage Time</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="24" step="0.5" class="form-control" value="${p.dailyHours || 4}"
+                oninput="SizingUI.onCalcParamChange('dailyHours', this.value)" onchange="SizingUI.onCalcParamChange('dailyHours', this.value)">
+              <span class="input-group-text fs-8">hours / day</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'fridge') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Capacity (Litres)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="50" max="850" class="form-control" value="${p.capacityL || 240}"
+                oninput="SizingUI.onCalcParamChange('capacityL', this.value)" onchange="SizingUI.onCalcParamChange('capacityL', this.value)">
+              <span class="input-group-text fs-8">L</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Door Configuration</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('doorType', this.value)">
+              <option value="single" ${p.doorType === 'single' ? 'selected' : ''}>Single Door (Direct Cool)</option>
+              <option value="double" ${p.doorType === 'double' ? 'selected' : ''}>Double Door (Frost Free)</option>
+              <option value="sideBySide" ${p.doorType === 'sideBySide' ? 'selected' : ''}>Side-by-Side (French Door)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">BEE Star Rating</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('starRating', this.value)">
+              <option value="1" ${p.starRating == 1 ? 'selected' : ''}>1 Star (Least Efficient)</option>
+              <option value="2" ${p.starRating == 2 ? 'selected' : ''}>2 Star</option>
+              <option value="3" ${p.starRating == 3 ? 'selected' : ''}>3 Star (Standard)</option>
+              <option value="4" ${p.starRating == 4 ? 'selected' : ''}>4 Star</option>
+              <option value="5" ${p.starRating == 5 ? 'selected' : ''}>5 Star (Super Efficient)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Compressor Type</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('compressorType', this.value)">
+              <option value="inverter" ${p.compressorType === 'inverter' ? 'selected' : ''}>Smart Inverter</option>
+              <option value="nonInverter" ${p.compressorType === 'nonInverter' ? 'selected' : ''}>Fixed Speed</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Ambient Temperature</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('ambientTemp', this.value)">
+              <option value="mild" ${p.ambientTemp === 'mild' ? 'selected' : ''}>Mild (&lt;28°C)</option>
+              <option value="normal" ${p.ambientTemp === 'normal' ? 'selected' : ''}>Normal (28-35°C)</option>
+              <option value="hot" ${p.ambientTemp === 'hot' ? 'selected' : ''}>Hot Summer (&gt;35°C)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Usage / Openings</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('usageCondition', this.value)">
+              <option value="low" ${p.usageCondition === 'low' ? 'selected' : ''}>Low (Infrequent Openings)</option>
+              <option value="normal" ${p.usageCondition === 'normal' ? 'selected' : ''}>Normal Household</option>
+              <option value="heavy" ${p.usageCondition === 'heavy' ? 'selected' : ''}>Heavy Openings</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Manufacturer Energy Label (Optional)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.1" max="5" step="0.05" class="form-control" value="${p.manufacturerKwhDay || ''}"
+                placeholder="e.g. 0.68 (from BEE star label sticker)"
+                oninput="SizingUI.onCalcParamChange('manufacturerKwhDay', this.value)" onchange="SizingUI.onCalcParamChange('manufacturerKwhDay', this.value)">
+              <span class="input-group-text fs-8">kWh / day</span>
+            </div>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="alert alert-info py-2 px-2.5 mb-0 fs-8 d-flex align-items-center justify-content-between">
+          <div>
+            <strong>Continuous Operation:</strong> 24 Hours / Day
+            <div class="fs-9 text-muted">Compressor cycles automatically. Operating avg = Daily Wh ÷ 24h</div>
+          </div>
+          <span class="badge bg-primary text-white fs-8">24 Hours</span>
+        </div>
+      `;
+    } else if (cat === 'comp') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Device Form Factor</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('deviceType', this.value)">
+              <option value="laptop" ${p.deviceType === 'laptop' ? 'selected' : ''}>Laptop / Notebook</option>
+              <option value="desktop" ${p.deviceType === 'desktop' ? 'selected' : ''}>Desktop Workstation / PC</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">GPU Specification</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('gpuType', this.value)">
+              <option value="integrated" ${p.gpuType === 'integrated' ? 'selected' : ''}>Integrated GPU</option>
+              <option value="dedicatedMid" ${p.gpuType === 'dedicatedMid' ? 'selected' : ''}>Mid Dedicated (RTX 3060/4060)</option>
+              <option value="dedicatedHigh" ${p.gpuType === 'dedicatedHigh' ? 'selected' : ''}>High-End GPU (RTX 4080/4090)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">External Monitors</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('monitorCount', this.value)">
+              <option value="0" ${Number(p.monitorCount) === 0 ? 'selected' : ''}>0 (Laptop Display Only)</option>
+              <option value="1" ${Number(p.monitorCount) === 1 ? 'selected' : ''}>1 External Monitor (~25W)</option>
+              <option value="2" ${Number(p.monitorCount) === 2 ? 'selected' : ''}>2 Monitors (~50W)</option>
+              <option value="3" ${Number(p.monitorCount) === 3 ? 'selected' : ''}>3 Monitors (~75W)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Workload Intensity</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('intensity', this.value)">
+              <option value="light" ${p.intensity === 'light' ? 'selected' : ''}>Light (Web & Docs)</option>
+              <option value="moderate" ${p.intensity === 'moderate' ? 'selected' : ''}>Moderate (Coding/Multitasking)</option>
+              <option value="heavy" ${p.intensity === 'heavy' ? 'selected' : ''}>Heavy (Gaming/3D/Simulation)</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Manual Power Override (Optional)</label>
+            <input type="number" min="15" max="1500" class="form-control form-control-sm" value="${p.manualWatts || ''}" 
+              placeholder="e.g. 65 (Leave blank for standard estimate)" 
+              oninput="SizingUI.onCalcParamChange('manualWatts', this.value)" onchange="SizingUI.onCalcParamChange('manualWatts', this.value)">
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Daily Operating Time</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="24" step="0.5" class="form-control" value="${p.dailyHours || 6}"
+                oninput="SizingUI.onCalcParamChange('dailyHours', this.value)" onchange="SizingUI.onCalcParamChange('dailyHours', this.value)">
+              <span class="input-group-text fs-8">hours / day</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'wm') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Machine Architecture</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('wmType', this.value)">
+              <option value="topLoad" ${p.wmType === 'topLoad' ? 'selected' : ''}>Top Load Fully Automatic</option>
+              <option value="semi" ${p.wmType === 'semi' ? 'selected' : ''}>Semi-Automatic</option>
+              <option value="frontLoad" ${p.wmType === 'frontLoad' ? 'selected' : ''}>Front Load Fully Automatic</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Drum Capacity</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('capacityKg', this.value)">
+              <option value="6" ${Number(p.capacityKg) === 6 ? 'selected' : ''}>6.0 kg</option>
+              <option value="7" ${Number(p.capacityKg) === 7 ? 'selected' : ''}>7.0 kg</option>
+              <option value="8" ${Number(p.capacityKg) === 8 ? 'selected' : ''}>8.0 kg</option>
+              <option value="9" ${Number(p.capacityKg) === 9 ? 'selected' : ''}>9.0 kg</option>
+              <option value="10" ${Number(p.capacityKg) === 10 ? 'selected' : ''}>10.0 kg</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Inbuilt Water Heater</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('waterHeater', this.value)">
+              <option value="disabled" ${p.waterHeater === 'disabled' ? 'selected' : ''}>Disabled / Cold Wash</option>
+              <option value="enabled" ${p.waterHeater === 'enabled' ? 'selected' : ''}>Enabled / 60°C Hot Wash</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Wash Cycle Program</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('program', this.value)">
+              <option value="quick" ${p.program === 'quick' ? 'selected' : ''}>Quick (15-30m)</option>
+              <option value="normal" ${p.program === 'normal' ? 'selected' : ''}>Normal Standard</option>
+              <option value="heavy" ${p.program === 'heavy' ? 'selected' : ''}>Heavy / Intensive</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Manufacturer Energy / Cycle (Optional)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.05" max="3" step="0.01" class="form-control" value="${p.manufacturerKwhCycle || ''}"
+                placeholder="e.g. 0.22 (BEE label per cycle)"
+                oninput="SizingUI.onCalcParamChange('manufacturerKwhCycle', this.value)" onchange="SizingUI.onCalcParamChange('manufacturerKwhCycle', this.value)">
+              <span class="input-group-text fs-8">kWh / cycle</span>
+            </div>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Daily Wash Cycles</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="6" step="0.5" class="form-control" value="${p.cyclesPerDay || 1}"
+                oninput="SizingUI.onCalcParamChange('cyclesPerDay', this.value)" onchange="SizingUI.onCalcParamChange('cyclesPerDay', this.value)">
+              <span class="input-group-text fs-8">cycle(s)</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Cycle Duration</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="15" max="180" step="5" class="form-control" value="${p.cycleDurationMin || 45}"
+                oninput="SizingUI.onCalcParamChange('cycleDurationMin', this.value)" onchange="SizingUI.onCalcParamChange('cycleDurationMin', this.value)">
+              <span class="input-group-text fs-8">mins</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'geyser') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Heating Element Rating</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('ratedWatts', this.value)">
+              <option value="1000" ${Number(p.ratedWatts) === 1000 ? 'selected' : ''}>1000 W (Low)</option>
+              <option value="1500" ${Number(p.ratedWatts) === 1500 ? 'selected' : ''}>1500 W</option>
+              <option value="2000" ${Number(p.ratedWatts) === 2000 ? 'selected' : ''}>2000 W (Standard Storage)</option>
+              <option value="3000" ${Number(p.ratedWatts) === 3000 ? 'selected' : ''}>3000 W (Instant Geyser)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Tank Capacity (Litres)</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('capacityL', this.value)">
+              <option value="6" ${Number(p.capacityL) === 6 ? 'selected' : ''}>6 Litres</option>
+              <option value="10" ${Number(p.capacityL) === 10 ? 'selected' : ''}>10 Litres</option>
+              <option value="15" ${Number(p.capacityL) === 15 ? 'selected' : ''}>15 Litres</option>
+              <option value="25" ${Number(p.capacityL) === 25 ? 'selected' : ''}>25 Litres</option>
+              <option value="35" ${Number(p.capacityL) === 35 ? 'selected' : ''}>35 Litres</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Thermostat & Standby Behaviour</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('standbyLoss', this.value)">
+              <option value="switchedOff" ${p.standbyLoss === 'switchedOff' ? 'selected' : ''}>Switched off immediately after bath (Zero standing loss)</option>
+              <option value="keptOn" ${p.standbyLoss === 'keptOn' ? 'selected' : ''}>Kept on continuously all day (+0.50 kWh standing heat loss)</option>
+            </select>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Heating Sessions / Day</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="6" step="0.5" class="form-control" value="${p.sessionsPerDay || 1}"
+                oninput="SizingUI.onCalcParamChange('sessionsPerDay', this.value)" onchange="SizingUI.onCalcParamChange('sessionsPerDay', this.value)">
+              <span class="input-group-text fs-8">sessions</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Duration per Session</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="5" max="90" step="5" class="form-control" value="${p.sessionDurationMin || 20}"
+                oninput="SizingUI.onCalcParamChange('sessionDurationMin', this.value)" onchange="SizingUI.onCalcParamChange('sessionDurationMin', this.value)">
+              <span class="input-group-text fs-8">mins</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'iron') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Iron Type</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('ironType', this.value)">
+              <option value="dry" ${p.ironType === 'dry' ? 'selected' : ''}>Dry Iron (1000W)</option>
+              <option value="steam" ${p.ironType === 'steam' ? 'selected' : ''}>Steam Iron (1600W)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Rated Wattage (W)</label>
+            <input type="number" min="500" max="3000" class="form-control form-control-sm" value="${p.ratedWatts || (p.ironType === 'steam' ? 1600 : 1000)}"
+              oninput="SizingUI.onCalcParamChange('ratedWatts', this.value)" onchange="SizingUI.onCalcParamChange('ratedWatts', this.value)">
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Thermostat Duty-Cycle Setting</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('thermostatDuty', this.value)">
+              <option value="low" ${p.thermostatDuty === 'low' ? 'selected' : ''}>Low / Delicates & Synthetics (35% duty cycle)</option>
+              <option value="medium" ${p.thermostatDuty === 'medium' ? 'selected' : ''}>Medium / Cotton Standard (50% duty cycle)</option>
+              <option value="high" ${p.thermostatDuty === 'high' ? 'selected' : ''}>High / Heavy Linen & Denim (65% duty cycle)</option>
+            </select>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Ironing Duration</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="5" max="120" step="5" class="form-control" value="${p.sessionDurationMin || 30}"
+                oninput="SizingUI.onCalcParamChange('sessionDurationMin', this.value)" onchange="SizingUI.onCalcParamChange('sessionDurationMin', this.value)">
+              <span class="input-group-text fs-8">mins</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Days Used per Week</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('daysPerWeek', this.value)">
+              <option value="1" ${Number(p.daysPerWeek) === 1 ? 'selected' : ''}>1 Day / Week (Weekend)</option>
+              <option value="2" ${Number(p.daysPerWeek) === 2 ? 'selected' : ''}>2 Days / Week</option>
+              <option value="3" ${Number(p.daysPerWeek) === 3 ? 'selected' : ''}>3 Days / Week</option>
+              <option value="4" ${Number(p.daysPerWeek) === 4 ? 'selected' : ''}>4 Days / Week</option>
+              <option value="5" ${Number(p.daysPerWeek) === 5 ? 'selected' : ''}>5 Days / Week</option>
+              <option value="7" ${Number(p.daysPerWeek) === 7 ? 'selected' : ''}>7 Days (Daily)</option>
+            </select>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'induction') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Rated Maximum Wattage</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('ratedWatts', this.value)">
+              <option value="1200" ${Number(p.ratedWatts) === 1200 ? 'selected' : ''}>1200 W</option>
+              <option value="1600" ${Number(p.ratedWatts) === 1600 ? 'selected' : ''}>1600 W</option>
+              <option value="1800" ${Number(p.ratedWatts) === 1800 ? 'selected' : ''}>1800 W</option>
+              <option value="2000" ${Number(p.ratedWatts) === 2000 ? 'selected' : ''}>2000 W (Standard)</option>
+              <option value="2200" ${Number(p.ratedWatts) === 2200 ? 'selected' : ''}>2200 W</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Typical Operating Power Level</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('powerLevel', this.value)">
+              <option value="low" ${p.powerLevel === 'low' ? 'selected' : ''}>Low Simmer (~35% power)</option>
+              <option value="medium" ${p.powerLevel === 'medium' ? 'selected' : ''}>Medium Boiling (~60% power)</option>
+              <option value="high" ${p.powerLevel === 'high' ? 'selected' : ''}>High Sear / Fry (~90% power)</option>
+              <option value="mixed" ${p.powerLevel === 'mixed' ? 'selected' : ''}>Mixed Daily Cooking (~58% avg)</option>
+            </select>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Cooking Sessions / Day</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="6" step="0.5" class="form-control" value="${p.sessionsPerDay || 2}"
+                oninput="SizingUI.onCalcParamChange('sessionsPerDay', this.value)" onchange="SizingUI.onCalcParamChange('sessionsPerDay', this.value)">
+              <span class="input-group-text fs-8">sessions</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Duration per Session</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="5" max="120" step="5" class="form-control" value="${p.durationPerSessionMin || 30}"
+                oninput="SizingUI.onCalcParamChange('durationPerSessionMin', this.value)" onchange="SizingUI.onCalcParamChange('durationPerSessionMin', this.value)">
+              <span class="input-group-text fs-8">mins</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'ac') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Cooling Capacity</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('ton', this.value)">
+              <option value="0.5" ${p.ton === '0.5' ? 'selected' : ''}>0.5 Ton</option>
+              <option value="1" ${p.ton === '1' ? 'selected' : ''}>1.0 Ton</option>
+              <option value="1.5" ${p.ton === '1.5' ? 'selected' : ''}>1.5 Ton (Standard)</option>
+              <option value="2" ${p.ton === '2' ? 'selected' : ''}>2.0 Ton</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Technology</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('technology', this.value)">
+              <option value="inverter" ${p.technology === 'inverter' ? 'selected' : ''}>Inverter AC (Modulating)</option>
+              <option value="nonInverter" ${p.technology === 'nonInverter' ? 'selected' : ''}>Non-Inverter / Fixed Speed</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">BEE Star Rating</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('starRating', this.value)">
+              <option value="1-2" ${p.starRating === '1-2' ? 'selected' : ''}>1–2 Star</option>
+              <option value="3" ${p.starRating === '3' ? 'selected' : ''}>3 Star (Standard)</option>
+              <option value="5" ${p.starRating === '5' ? 'selected' : ''}>5 Star (Super-Efficient)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Temperature Setpoint</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('setpoint', this.value)">
+              <option value="26" ${p.setpoint === '26' ? 'selected' : ''}>26°C (BEE Recommended Eco)</option>
+              <option value="24" ${p.setpoint === '24' ? 'selected' : ''}>24°C (Standard Comfort)</option>
+              <option value="20" ${p.setpoint === '20' ? 'selected' : ''}>20°C (Deep Chilling)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Ambient Outside Temp</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('ambientTemp', this.value)">
+              <option value="mild" ${p.ambientTemp === 'mild' ? 'selected' : ''}>Mild (&lt;32°C)</option>
+              <option value="normal" ${p.ambientTemp === 'normal' ? 'selected' : ''}>Normal (32–38°C)</option>
+              <option value="peak" ${p.ambientTemp === 'peak' ? 'selected' : ''}>Peak Summer (&gt;40°C)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Room Size & Insulation</label>
+            <div class="d-flex gap-1">
+              <select class="form-select form-select-sm" style="width: 50%;" onchange="SizingUI.onCalcParamChange('roomSize', this.value)">
+                <option value="small" ${p.roomSize === 'small' ? 'selected' : ''}>Small</option>
+                <option value="medium" ${p.roomSize === 'medium' ? 'selected' : ''}>Med</option>
+                <option value="large" ${p.roomSize === 'large' ? 'selected' : ''}>Large</option>
+              </select>
+              <select class="form-select form-select-sm" style="width: 50%;" onchange="SizingUI.onCalcParamChange('insulation', this.value)">
+                <option value="good" ${p.insulation === 'good' ? 'selected' : ''}>Good</option>
+                <option value="average" ${p.insulation === 'average' ? 'selected' : ''}>Avg</option>
+                <option value="poor" ${p.insulation === 'poor' ? 'selected' : ''}>Poor</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Manual Input Watts (Optional Override)</label>
+            <input type="number" min="400" max="3500" class="form-control form-control-sm" value="${p.manualWatts || ''}" 
+              placeholder="e.g. 1450 (Leave blank for modulated estimation)" 
+              oninput="SizingUI.onCalcParamChange('manualWatts', this.value)" onchange="SizingUI.onCalcParamChange('manualWatts', this.value)">
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Daily AC Running Hours</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="24" step="0.5" class="form-control" value="${p.dailyHours || 8}"
+                oninput="SizingUI.onCalcParamChange('dailyHours', this.value)" onchange="SizingUI.onCalcParamChange('dailyHours', this.value)">
+              <span class="input-group-text fs-8">hours / day</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'pump') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Motor Capacity (HP)</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('motorHp', this.value)">
+              <option value="0.5" ${p.motorHp === '0.5' ? 'selected' : ''}>0.5 HP (373 W shaft)</option>
+              <option value="0.75" ${p.motorHp === '0.75' ? 'selected' : ''}>0.75 HP (560 W shaft)</option>
+              <option value="1" ${p.motorHp === '1' ? 'selected' : ''}>1.0 HP (746 W shaft)</option>
+              <option value="1.5" ${p.motorHp === '1.5' ? 'selected' : ''}>1.5 HP (1119 W shaft)</option>
+              <option value="2" ${p.motorHp === '2' ? 'selected' : ''}>2.0 HP (1492 W shaft)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Pump Type</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('pumpType', this.value)">
+              <option value="monoblock" ${p.pumpType === 'monoblock' ? 'selected' : ''}>Monoblock Surface Pump</option>
+              <option value="submersible" ${p.pumpType === 'submersible' ? 'selected' : ''}>Borewell Submersible</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Motor Efficiency (%)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="50" max="92" class="form-control" value="${p.motorEfficiency || 70}"
+                oninput="SizingUI.onCalcParamChange('motorEfficiency', this.value)" onchange="SizingUI.onCalcParamChange('motorEfficiency', this.value)">
+              <span class="input-group-text fs-8">%</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Total Dynamic Head (m)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="5" max="150" class="form-control" value="${p.totalHeadM || 25}"
+                oninput="SizingUI.onCalcParamChange('totalHeadM', this.value)" onchange="SizingUI.onCalcParamChange('totalHeadM', this.value)">
+              <span class="input-group-text fs-8">m</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Manual Electrical Input Watts (Optional Override)</label>
+            <input type="number" min="200" max="4000" class="form-control form-control-sm" value="${p.manualWatts || ''}" 
+              placeholder="e.g. 1066 (Formula: HP × 746 ÷ Efficiency)" 
+              oninput="SizingUI.onCalcParamChange('manualWatts', this.value)" onchange="SizingUI.onCalcParamChange('manualWatts', this.value)">
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Daily Pumping Duration</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.1" max="24" step="0.25" class="form-control" value="${p.dailyHours || 1}"
+                oninput="SizingUI.onCalcParamChange('dailyHours', this.value)" onchange="SizingUI.onCalcParamChange('dailyHours', this.value)">
+              <span class="input-group-text fs-8">hours / day</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'led') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Bulb Power Rating (Watts)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="1" max="100" class="form-control" value="${p.bulbWatts || 10}"
+                oninput="SizingUI.onCalcParamChange('bulbWatts', this.value)" onchange="SizingUI.onCalcParamChange('bulbWatts', this.value)">
+              <span class="input-group-text fs-8">W</span>
+            </div>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Daily Lighting Hours</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="24" step="0.5" class="form-control" value="${p.dailyHours || 14}"
+                oninput="SizingUI.onCalcParamChange('dailyHours', this.value)" onchange="SizingUI.onCalcParamChange('dailyHours', this.value)">
+              <span class="input-group-text fs-8">hours / day</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (cat === 'fan') {
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Motor Architecture</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('fanType', this.value)">
+              <option value="induction" ${p.fanType === 'induction' ? 'selected' : ''}>Standard Induction (75W)</option>
+              <option value="bldc" ${p.fanType === 'bldc' ? 'selected' : ''}>BLDC Energy Saver (32W)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Operating Speed</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('speed', this.value)">
+              <option value="low" ${p.speed === 'low' ? 'selected' : ''}>Low Speed (1–2)</option>
+              <option value="medium" ${p.speed === 'medium' ? 'selected' : ''}>Medium Speed (3)</option>
+              <option value="high" ${p.speed === 'high' ? 'selected' : ''}>High Speed (4–5)</option>
+            </select>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Daily Running Hours</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.5" max="24" step="0.5" class="form-control" value="${p.dailyHours || 14}"
+                oninput="SizingUI.onCalcParamChange('dailyHours', this.value)" onchange="SizingUI.onCalcParamChange('dailyHours', this.value)">
+              <span class="input-group-text fs-8">hours / day</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      // Other / Custom Appliance
+      specsHtml = `
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label fs-8 text-secondary mb-1">Appliance Name</label>
+            <input type="text" class="form-control form-control-sm" value="${p.appName || calcModalState.appName}"
+              oninput="SizingUI.onCalcParamChange('appName', this.value)" onchange="SizingUI.onCalcParamChange('appName', this.value)">
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Rated Peak Power (W)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="1" max="15000" class="form-control" value="${p.ratedWatts || 100}"
+                oninput="SizingUI.onCalcParamChange('ratedWatts', this.value)" onchange="SizingUI.onCalcParamChange('ratedWatts', this.value)">
+              <span class="input-group-text fs-8">W</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Operating Avg Power (W)</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="1" max="15000" class="form-control" value="${p.operatingWatts || p.ratedWatts || 100}"
+                oninput="SizingUI.onCalcParamChange('operatingWatts', this.value)" onchange="SizingUI.onCalcParamChange('operatingWatts', this.value)">
+              <span class="input-group-text fs-8">W</span>
+            </div>
+          </div>
+        </div>
+      `;
+      usageHtml = `
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Daily Usage Hours</label>
+            <div class="input-group input-group-sm">
+              <input type="number" min="0.1" max="24" step="0.5" class="form-control" value="${p.dailyHours || 4}"
+                oninput="SizingUI.onCalcParamChange('dailyHours', this.value)" onchange="SizingUI.onCalcParamChange('dailyHours', this.value)">
+              <span class="input-group-text fs-8">hrs</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1">Days Used / Week</label>
+            <select class="form-select form-select-sm" onchange="SizingUI.onCalcParamChange('daysPerWeek', this.value)">
+              <option value="1" ${Number(p.daysPerWeek) === 1 ? 'selected' : ''}>1 Day</option>
+              <option value="2" ${Number(p.daysPerWeek) === 2 ? 'selected' : ''}>2 Days</option>
+              <option value="3" ${Number(p.daysPerWeek) === 3 ? 'selected' : ''}>3 Days</option>
+              <option value="4" ${Number(p.daysPerWeek) === 4 ? 'selected' : ''}>4 Days</option>
+              <option value="5" ${Number(p.daysPerWeek) === 5 ? 'selected' : ''}>5 Days</option>
+              <option value="6" ${Number(p.daysPerWeek) === 6 ? 'selected' : ''}>6 Days</option>
+              <option value="7" ${Number(p.daysPerWeek) === 7 ? 'selected' : ''}>7 Days (Daily)</option>
+            </select>
+          </div>
+        </div>
+      `;
+    }
+
+    specsContainer.innerHTML = specsHtml;
+    usageContainer.innerHTML = usageHtml;
+  }
+
+  function onCalcParamChange(key, value) {
+    if (!calcModalState.currentParams) calcModalState.currentParams = {};
+    calcModalState.currentParams[key] = value;
+
+    // Intelligent linkages
+    if (key === 'ironType') {
+      calcModalState.currentParams.ratedWatts = value === 'steam' ? 1600 : 1000;
+      const ratedInput = document.querySelector('#calcSecSpecsContainer input[type="number"]');
+      if (ratedInput) ratedInput.value = calcModalState.currentParams.ratedWatts;
+    } else if (key === 'wmType') {
+      calcModalState.currentParams.cycleDurationMin = value === 'frontLoad' ? 60 : 45;
+      const durInput = document.querySelector('#calcSecUsageContainer input[step="5"]');
+      if (durInput) durInput.value = calcModalState.currentParams.cycleDurationMin;
+    }
+
+    calculateCurrentModalLoad();
+  }
+
+  function calculateCurrentModalLoad() {
+    const res = SizingCalc.StandardLoadCalc.calculate(calcModalState.appId, calcModalState.appName, calcModalState.currentParams);
+    calcModalState.lastResult = res;
+
+    const ratedEl = document.getElementById('resPreviewRatedWatts');
+    const avgEl = document.getElementById('resPreviewAvgWatts');
+    const hoursEl = document.getElementById('resPreviewDailyHours');
+    const whEl = document.getElementById('resPreviewDailyWh');
+    const kwhEl = document.getElementById('resPreviewDailyKwh');
+    const explEl = document.getElementById('calcExplNote');
+    const badgeEl = document.getElementById('calcFormulaBadge');
+
+    if (ratedEl) ratedEl.textContent = `${res.ratedWatts} W`;
+    if (avgEl) avgEl.textContent = `${res.averageWatts} W`;
+    if (hoursEl) hoursEl.textContent = `${res.dailyHours} hr`;
+    if (whEl) whEl.textContent = `${Math.round(res.dailyWh).toLocaleString()} Wh/day`;
+    if (kwhEl) kwhEl.textContent = `${res.dailyKwh.toFixed(2)}`;
+    if (explEl) explEl.textContent = res.explanation || '';
+    if (badgeEl) badgeEl.textContent = getBadgeTextForApp(getAppTypeCategory(calcModalState.appId, calcModalState.appName));
+  }
+
+  function applyLoadCalculation() {
+    if (!calcModalState.lastResult) {
+      calculateCurrentModalLoad();
+    }
+    const res = calcModalState.lastResult;
+    if (!res || calcModalState.appIndex < 0) return;
+
+    const app = state.appliances[calcModalState.appIndex];
+    if (!app) return;
+
+    // Apply calculated results
+    app.watts = res.averageWatts;
+    app.ratedWatts = res.ratedWatts;
+    app.defaultHours = res.dailyHours;
+    if (state.energyCalculationBasis !== 'backup_duration') {
+      app.scheduleHours = res.dailyHours;
+    }
+
+    // Sync heavy config if applicable
+    if (app.id === 'ac') {
+      if (calcModalState.currentParams.ton) state.acConfig.ton = calcModalState.currentParams.ton;
+      if (calcModalState.currentParams.technology) state.acConfig.acType = calcModalState.currentParams.technology;
+      if (calcModalState.currentParams.manualWatts) state.acConfig.actualWatts = calcModalState.currentParams.manualWatts;
+    } else if (app.id === 'pump') {
+      if (calcModalState.currentParams.motorHp) state.pumpConfig.hp = calcModalState.currentParams.motorHp;
+    }
+
+    app.isCalculated = true;
+    app.calcParams = JSON.parse(JSON.stringify(calcModalState.currentParams));
+    app.calcResult = JSON.parse(JSON.stringify(res));
+
+    // Close calculator modal
+    const modalEl = document.getElementById('applianceLoadCalcModal');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    }
+
+    // Refresh UI
+    renderModalApplianceList();
+    updateModalStats();
+    updateItemBracketDom(calcModalState.appIndex);
+    renderApplianceSummaryCard();
+    calculateAndRender();
+    UI.toast(`Applied calculated load: ${res.averageWatts}W (${res.dailyHours}h) to ${app.name}!`, 'success');
+  }
+
+  function cancelLoadCalculation() {
+    const modalEl = document.getElementById('applianceLoadCalcModal');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    }
+  }
+
+  function resetCalcParameters() {
+    calcModalState.currentParams = getDefaultCalcParams({ id: calcModalState.appId, name: calcModalState.appName }, true);
+    renderCalcModalInputs();
+    calculateCurrentModalLoad();
+    UI.toast('Calculator parameters reset to standard defaults', 'info');
   }
 
   /* ---------------- 2. Dedicated Emergency Backup Load Configuration Modal ---------------- */
@@ -1788,6 +2778,21 @@ Generated by Shri Trutiyadev Solar Enterprise Calculate System Variables`;
         calculateAndRender();
       });
     }
+    const modalCalcEl = document.getElementById('applianceLoadCalcModal');
+    if (modalCalcEl) {
+      modalCalcEl.addEventListener('hidden.bs.modal', () => {
+        if (calcModalState.returnToConfigModal) {
+          calcModalState.returnToConfigModal = false;
+          const targetId = calcModalState.appId;
+          setTimeout(() => {
+            openApplianceModal(targetId);
+          }, 80);
+        } else {
+          renderApplianceSummaryCard();
+          calculateAndRender();
+        }
+      });
+    }
   }
 
   /* ---------------- Cost Recovery & Investment Calculator (Odisha Tariff) ---------------- */
@@ -2243,7 +3248,13 @@ Generated by Shri Trutiyadev Solar Enterprise Calculate System Variables`;
     setBackupQty,
     setApplianceBackupHours,
     presetBackup,
-    resetBackupToDefault
+    resetBackupToDefault,
+    openLoadCalculator,
+    calculateCurrentModalLoad,
+    applyLoadCalculation,
+    cancelLoadCalculation,
+    resetCalcParameters,
+    onCalcParamChange
   };
 
 })();

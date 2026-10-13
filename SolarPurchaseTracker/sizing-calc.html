@@ -426,7 +426,7 @@
                   <th style="width: 32px;" class="text-center p-1" title="Select Appliance"></th>
                   <th style="min-width: 120px;" class="p-1">Appliance</th>
                   <th style="width: 48px;" class="text-center p-1">Qty</th>
-                  <th style="width: 78px;" class="text-center p-1">Watt</th>
+                  <th style="width: 104px;" class="text-center p-1">Watt</th>
                   <th style="width: 70px;" class="text-center p-1">Daily Time</th>
                 </tr>
               </thead>
@@ -446,7 +446,7 @@
                     <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-bold mx-auto fs-8" id="txtCustomAppQty" 
                       value="1" title="Quantity" style="width: 42px; height: 28px;">
                   </td>
-                  <td class="text-center p-1" style="width: 78px;">
+                  <td class="text-center p-1" style="width: 104px;">
                     <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-semibold mx-auto fs-8" id="txtCustomAppWatts" 
                       placeholder="Watts" style="width: 72px; height: 28px;">
                   </td>
@@ -519,6 +519,125 @@
             </button>
             <button type="button" class="btn btn-sm btn-primary fw-bold px-3.5 py-1.5 fs-8 text-nowrap" data-bs-dismiss="modal" onclick="SizingUI.applyModalChanges()">
               Apply
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1.B APPLIANCE STANDARD ELECTRICAL LOAD CALCULATOR MODAL -->
+  <div class="modal fade" id="applianceLoadCalcModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 580px;">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-light border-bottom py-2.5 px-3">
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <span class="fs-5 flex-shrink-0" id="calcModalIcon">🧮</span>
+            <div class="min-w-0">
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0 text-truncate" id="calcModalTitle">
+                Standard Electrical Load Calculator
+              </h5>
+              <div class="text-muted fs-8 text-truncate" id="calcModalSubtitle">
+                Configure technical parameters & calculate standard energy consumption
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" aria-label="Close" onclick="SizingUI.cancelLoadCalculation()"></button>
+        </div>
+
+        <div class="modal-body p-3 p-md-3.5">
+          <!-- SECTION 1: Appliance Specifications -->
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <h6 class="fw-bold text-dark fs-7 mb-0 d-flex align-items-center gap-1.5">
+                <span class="badge bg-primary text-white fs-9 px-1.5 py-0.5 rounded-1">1</span>
+                <span>Appliance Specifications</span>
+              </h6>
+              <span class="text-muted fs-9" id="calcSpecBadge">Technical Parameters</span>
+            </div>
+            <div id="calcSecSpecsContainer" class="p-2.5 bg-light rounded-3 border">
+              <!-- Rendered dynamically by sizing-ui.js -->
+            </div>
+          </div>
+
+          <!-- SECTION 2: Usage Pattern -->
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <h6 class="fw-bold text-dark fs-7 mb-0 d-flex align-items-center gap-1.5">
+                <span class="badge bg-primary text-white fs-9 px-1.5 py-0.5 rounded-1">2</span>
+                <span>Usage Pattern</span>
+              </h6>
+              <span class="text-muted fs-9" id="calcUsageBadge">Operating Schedule</span>
+            </div>
+            <div id="calcSecUsageContainer" class="p-2.5 bg-light rounded-3 border">
+              <!-- Rendered dynamically by sizing-ui.js -->
+            </div>
+          </div>
+
+          <!-- SECTION 3: Calculated Results Preview -->
+          <div>
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <h6 class="fw-bold text-dark fs-7 mb-0 d-flex align-items-center gap-1.5">
+                <span class="badge bg-success text-white fs-9 px-1.5 py-0.5 rounded-1">3</span>
+                <span>Calculated Results Preview</span>
+              </h6>
+              <span class="text-success fw-semibold fs-9" id="calcFormulaBadge">Standard Estimation</span>
+            </div>
+            <div class="p-2.5 rounded-3 border border-success-subtle" style="background: #f0fdf4;">
+              <div class="row g-2 text-center">
+                <div class="col-4">
+                  <div class="p-2 bg-white rounded-2 border shadow-2xs h-100">
+                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Rated Power</div>
+                    <div class="fw-bold text-dark fs-7" id="resPreviewRatedWatts">0 W</div>
+                    <div class="fs-9 text-muted">Simultaneous Load</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="p-2 bg-white rounded-2 border shadow-2xs h-100">
+                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Est. Avg Power</div>
+                    <div class="fw-bold text-primary fs-7" id="resPreviewAvgWatts">0 W</div>
+                    <div class="fs-9 text-muted">Operating Average</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="p-2 bg-white rounded-2 border shadow-2xs h-100">
+                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Daily Time</div>
+                    <div class="fw-bold text-dark fs-7" id="resPreviewDailyHours">0 hr</div>
+                    <div class="fs-9 text-muted">Operating Hours</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between p-2 mt-2 bg-white rounded-2 border">
+                <div>
+                  <span class="fs-8 fw-semibold text-secondary">Estimated Daily Energy:</span>
+                </div>
+                <div class="text-end">
+                  <strong class="text-success fs-7" id="resPreviewDailyWh">0 Wh/day</strong>
+                  <span class="text-muted fs-8 ms-1">(<span id="resPreviewDailyKwh">0.00</span> kWh/day)</span>
+                </div>
+              </div>
+
+              <div class="mt-2 text-secondary fs-9 fst-italic px-1" id="calcExplNote">
+                <!-- Explanation note per appliance -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light d-flex justify-content-between align-items-center py-2.5 px-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold fs-8 px-2.5 py-1.5" onclick="SizingUI.resetCalcParameters()" title="Reset this appliance calculator to default">
+            ↺ Reset Parameters
+          </button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold fs-8 px-2.5 py-1.5" onclick="SizingUI.calculateCurrentModalLoad()" title="Recalculate preview">
+              ⚡ Calculate
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary fw-semibold fs-8 px-3 py-1.5" onclick="SizingUI.cancelLoadCalculation()">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-sm btn-primary fw-bold fs-8 px-3.5 py-1.5" onclick="SizingUI.applyLoadCalculation()">
+              ✓ Apply Calculation
             </button>
           </div>
         </div>
