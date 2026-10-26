@@ -2809,12 +2809,26 @@ window.openProductModal = function(slNo) {
   const siteAddress = specs.SiteAddress || r.Address || '';
   const pinCodeVal = specs.PinCode || r.PinCode || '';
   const stateVal = specs.State || r.State || 'Odisha';
+  const districtVal = specs.District || r.District || '';
+  const capNum = parseFloat(String(r.ProposedCapacity || r.Capacity || '3').replace(/[^0-9.]/g, '')) || 3;
+  const connectionTypeVal = specs.ConnectionType || (capNum > 5 ? '3ph LT' : '1ph LT');
 
   document.getElementById('prodDateOfInstallation').value = dateOfInstallation;
   document.getElementById('prodDateOfCommission').value = dateOfCommission;
-  if (document.getElementById('prodAddress')) document.getElementById('prodAddress').value = siteAddress;
-  if (document.getElementById('prodPinCode')) document.getElementById('prodPinCode').value = pinCodeVal;
+  if (document.getElementById('prodConnectionType')) {
+    const connEl = document.getElementById('prodConnectionType');
+    if (connectionTypeVal && !Array.from(connEl.options).some(o => o.value === connectionTypeVal)) {
+      const opt = document.createElement('option');
+      opt.value = connectionTypeVal;
+      opt.textContent = connectionTypeVal;
+      connEl.appendChild(opt);
+    }
+    connEl.value = connectionTypeVal;
+  }
   if (document.getElementById('prodState')) document.getElementById('prodState').value = stateVal;
+  if (document.getElementById('prodDistrict')) document.getElementById('prodDistrict').value = districtVal;
+  if (document.getElementById('prodPinCode')) document.getElementById('prodPinCode').value = pinCodeVal;
+  if (document.getElementById('prodAddress')) document.getElementById('prodAddress').value = siteAddress;
 
   // Grid Tied Inverter
   const inv = specs.GridTiedInverter || {};
@@ -2911,7 +2925,9 @@ window.saveProductPopupSpecs = async function() {
   const inverterMake = document.getElementById('prodInverterMake').value.trim();
   const dateOfInstallation = document.getElementById('prodDateOfInstallation').value || null;
   const dateOfCommission = document.getElementById('prodDateOfCommission').value || null;
+  const connectionType = document.getElementById('prodConnectionType') ? document.getElementById('prodConnectionType').value.trim() : '1ph LT';
   const siteAddress = document.getElementById('prodAddress') ? document.getElementById('prodAddress').value.trim() : (r.Address || '');
+  const districtVal = document.getElementById('prodDistrict') ? document.getElementById('prodDistrict').value.trim() : (r.District || '');
   const pinCode = document.getElementById('prodPinCode') ? document.getElementById('prodPinCode').value.trim() : (r.PinCode || '');
   const stateVal = document.getElementById('prodState') ? document.getElementById('prodState').value.trim() : (r.State || 'Odisha');
 
@@ -2930,7 +2946,9 @@ window.saveProductPopupSpecs = async function() {
   const specs = {
     DateOfInstallation: dateOfInstallation,
     DateOfCommission: dateOfCommission,
+    ConnectionType: connectionType,
     SiteAddress: siteAddress,
+    District: districtVal,
     PinCode: pinCode,
     State: stateVal,
     GridTiedInverter: {
@@ -2997,6 +3015,7 @@ window.saveProductPopupSpecs = async function() {
       ProductSpecs: specs,
       BrokerNumber: formattedBrokerNumber,
       Address: siteAddress,
+      District: districtVal,
       PinCode: pinCode,
       State: stateVal
     };

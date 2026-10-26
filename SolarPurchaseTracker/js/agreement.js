@@ -194,10 +194,16 @@ window.selectCustomerForAgreement = function(slNo) {
   const fullAddressUpper = (addrParts.join(', ') || '').toUpperCase();
   document.getElementById('agrAddress').value = fullAddressUpper;
 
-  // 2. Populate Form 4 Tab with THIS RESPECTIVE CUSTOMER'S exact data
+  // 2. Populate Form 1 Tab (Application) with customer data
+  if (typeof populateForm1Fields === 'function') populateForm1Fields(r);
+
+  // 3. Populate Form 3 Tab (Inspection Report) with customer data
+  if (typeof populateForm3Fields === 'function') populateForm3Fields(r);
+
+  // 4. Populate Form 4 Tab with THIS RESPECTIVE CUSTOMER'S exact data
   populateForm4Fields(r);
 
-  // 3. Populate Form 6 Tab (Inspection Report) with exact customer data
+  // 5. Populate Form 6 Tab (Inspection Report) with exact customer data
   populateForm6Fields(r);
 
   UI.toast(`Auto-filled details for ${r.Name}`, 'info');
@@ -222,6 +228,8 @@ window.resetAgreementForm = function() {
   if (agrConsumerLabel) agrConsumerLabel.textContent = '—';
   const searchQuery = document.getElementById('custSearchInput') ? document.getElementById('custSearchInput').value : '';
   renderCustomerDirectory(searchQuery);
+  if (typeof resetForm1Fields === 'function') resetForm1Fields();
+  if (typeof resetForm3Fields === 'function') resetForm3Fields();
   resetForm4Fields();
   resetForm6Fields();
 };
@@ -254,6 +262,8 @@ function formatDateToMonthWord(dStr) {
     return dStr;
   }
 }
+
+function formatDateToDdMmYyyy(dStr) { return formatDateToDash(dStr); }
 
 function formatDateToDash(dStr) {
   if (!dStr) return '';
@@ -2928,6 +2938,1560 @@ window.downloadForm6Pdf = function() {
   } catch (err) {
     console.error('Error generating Form 6 PDF:', err);
     UI.toast(`Error generating Form 6 PDF: ${err.message}`, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Form 1: Application for Net Metering Connection Logic & Generators
+   ════════════════════════════════════════════════════════════════════════════ */
+
+function formatDateToInputDate(dStr) {
+  if (!dStr) return '';
+  try {
+    const d = new Date(dStr);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  } catch (_) {
+    return '';
+  }
+}
+
+window.updateF1MeterProcurementUI = function() {
+  const isBen = document.getElementById('f1MeterProcBeneficiary')?.checked;
+  const hiddenInput = document.getElementById('f1MeterProcurement');
+  if (hiddenInput) {
+    hiddenInput.value = isBen ? 'Beneficiary' : 'DISCOM';
+  }
+  const benBadge = document.getElementById('f1ProcBeneficiaryBadge');
+  const discomBadge = document.getElementById('f1ProcDiscomBadge');
+  if (benBadge && discomBadge) {
+    if (isBen) {
+      benBadge.textContent = '☑';
+      benBadge.className = 'badge bg-success bg-opacity-10 text-success border ms-1';
+      discomBadge.textContent = '□';
+      discomBadge.className = 'badge bg-light text-secondary border ms-1';
+    } else {
+      discomBadge.textContent = '☑';
+      discomBadge.className = 'badge bg-success bg-opacity-10 text-success border ms-1';
+      benBadge.textContent = '□';
+      benBadge.className = 'badge bg-light text-secondary border ms-1';
+    }
+  }
+};
+
+window.populateForm1Fields = function(r) {
+  if (!r) return;
+  const f1Label = document.getElementById('f1ConsumerNameLabel');
+  if (f1Label) f1Label.textContent = r.Name || '—';
+
+  let specs = {};
+  if (r.ProductSpecs) {
+    try {
+      specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+    } catch (e) { specs = {}; }
+  } else if (r.Specifications) {
+    try {
+      specs = typeof r.Specifications === 'string' ? JSON.parse(r.Specifications) : r.Specifications;
+    } catch (e) { specs = {}; }
+  }
+
+  const district = (specs.District || r.District || '').trim();
+  const circle = (r.CircleName || r.Circle || '').trim();
+  const discomShort = getDiscomName(district, circle);
+  const discomOffice = `The Designated Officer ${discomShort}`;
+
+  const appDate = r.LoginDate || r.InstallationDate || r.CreatedDate || new Date();
+  const todayInput = formatDateToInputDate(appDate);
+
+  const applicantName = r.Name ? (r.Name.startsWith('Mr.') || r.Name.startsWith('Mrs.') || r.Name.startsWith('Ms.') ? r.Name : 'Mr. ' + r.Name) : '';
+
+  const siteAddress = (specs.SiteAddress || r.Address || '').trim();
+  const pinCode = (specs.PinCode || r.PinCode || '').trim();
+  const addrParts = [];
+  if (siteAddress) addrParts.push(siteAddress);
+  if (district) addrParts.push(`Dist-${district}`);
+  if (pinCode) addrParts.push(pinCode);
+  const fullAddr = addrParts.join(', ');
+
+  const pv = specs.PvModule || {};
+  const capRaw = pv.TotalCapacity || r.ProposedCapacity || r.Capacity || '3';
+  const capNum = parseFloat(String(capRaw).replace(/[^0-9.]/g, '')) || 3;
+  const reTypeCapacity = `Solar – ${capNum.toFixed(1)}kwp`;
+  const sanctionLoad = r.SanctionLoad || Math.round(capNum) || 3;
+  const category = r.ConsumerCategory || r.Category || 'Domestic';
+  const connectionType = (specs.ConnectionType || (capNum > 5 ? '3ph LT' : '1ph LT')).trim();
+  const voltage = connectionType.toLowerCase().includes('3') ? '415 V' : '230 V';
+  const brandInfo = parseBrand(r.CommittedBrand);
+  const inv = specs.GridTiedInverter || {};
+  const invMake = inv.Make || brandInfo.inverterMake || 'V-GUARD';
+
+  setInputVal('f1DiscomOffice', discomOffice);
+  setInputVal('f1Date', todayInput);
+  setInputVal('f1ApplicantName', applicantName);
+  setInputVal('f1ConsumerNo', r.ConsumerNo || '');
+  setInputVal('f1Address', fullAddr);
+  setInputVal('f1Mobile', r.MobileNumber || r.Phone || r.Mobile || '');
+  setInputVal('f1Email', r.Email || '');
+  setInputVal('f1ReTypeCapacity', reTypeCapacity);
+  setInputVal('f1SanctionLoad', String(sanctionLoad));
+
+  // Meter procurement default: DISCOM selected
+  const discomRadio = document.getElementById('f1MeterProcDiscom');
+  const benRadio = document.getElementById('f1MeterProcBeneficiary');
+  if (discomRadio) discomRadio.checked = true;
+  if (benRadio) benRadio.checked = false;
+  setInputVal('f1MeterProcurement', 'DISCOM');
+  if (typeof window.updateF1MeterProcurementUI === 'function') {
+    window.updateF1MeterProcurementUI();
+  }
+
+  setInputVal('f1Location', fullAddr);
+  setInputVal('f1InverterMakeType', invMake);
+  setInputVal('f1InverterAutoIso', 'Yes');
+  setInputVal('f1ExistingPlants', 'No');
+  setInputVal('f1ExistingCapacity', '0');
+  setInputVal('f1CommissionDays', '30 Days');
+  setInputVal('f1Category', category);
+  setInputVal('f1VoltageLevel', voltage);
+  setInputVal('f1SignApplicant', applicantName);
+};
+
+window.resetForm1Fields = function() {
+  const f1Label = document.getElementById('f1ConsumerNameLabel');
+  if (f1Label) f1Label.textContent = '—';
+  const ids = [
+    'f1DiscomOffice', 'f1Date', 'f1ApplicantName', 'f1ConsumerNo', 'f1Address',
+    'f1Mobile', 'f1Email', 'f1ReTypeCapacity', 'f1SanctionLoad', 'f1MeterProcurement',
+    'f1Location', 'f1InverterMakeType', 'f1InverterAutoIso', 'f1ExistingPlants',
+    'f1ExistingCapacity', 'f1CommissionDays', 'f1Category', 'f1VoltageLevel', 'f1SignApplicant'
+  ];
+  ids.forEach(id => setInputVal(id, ''));
+
+  setInputVal('f1Date', formatDateToInputDate(new Date()));
+
+  const discomRadio = document.getElementById('f1MeterProcDiscom');
+  const benRadio = document.getElementById('f1MeterProcBeneficiary');
+  if (discomRadio) discomRadio.checked = true;
+  if (benRadio) benRadio.checked = false;
+  setInputVal('f1MeterProcurement', 'DISCOM');
+  if (typeof window.updateF1MeterProcurementUI === 'function') {
+    window.updateF1MeterProcurementUI();
+  }
+
+  setInputVal('f1InverterAutoIso', 'Yes');
+  setInputVal('f1ExistingPlants', 'No');
+  setInputVal('f1ExistingCapacity', '0');
+  setInputVal('f1CommissionDays', '30 Days');
+  setInputVal('f1Category', 'Domestic');
+  setInputVal('f1VoltageLevel', '230 V');
+};
+
+function getForm1CurrentData() {
+  const isBen = document.getElementById('f1MeterProcBeneficiary')?.checked || 
+                getInputVal('f1MeterProcurement', 'DISCOM').toUpperCase().includes('BENEFICIARY');
+  const meterProcChoice = isBen ? 'Beneficiary' : 'DISCOM';
+  const meterProcText = isBen ? 'Beneficiary ☑\nDISCOM □' : 'Beneficiary □\nDISCOM ☑';
+
+  const rawDate = getInputVal('f1Date', '');
+  const displayDate = rawDate ? (formatDateToMonthWord(rawDate) || rawDate) : '';
+
+  return {
+    discomOffice: getInputVal('f1DiscomOffice', 'The Designated Officer TPCODL'),
+    date: rawDate,
+    displayDate: displayDate,
+    applicantName: getInputVal('f1ApplicantName', ''),
+    consumerNo: getInputVal('f1ConsumerNo', ''),
+    address: getInputVal('f1Address', ''),
+    mobile: getInputVal('f1Mobile', ''),
+    email: getInputVal('f1Email', ''),
+    reTypeCapacity: getInputVal('f1ReTypeCapacity', 'Solar – 3.0kwp'),
+    sanctionLoad: getInputVal('f1SanctionLoad', '3'),
+    meterProcChoice: meterProcChoice,
+    meterProcText: meterProcText,
+    meterProcurement: meterProcText,
+    location: getInputVal('f1Location', ''),
+    inverterMakeType: getInputVal('f1InverterMakeType', 'V-GUARD'),
+    inverterAutoIso: getInputVal('f1InverterAutoIso', 'Yes'),
+    existingPlants: getInputVal('f1ExistingPlants', 'No'),
+    existingCapacity: getInputVal('f1ExistingCapacity', '0'),
+    commissionDays: getInputVal('f1CommissionDays', '30 Days'),
+    category: getInputVal('f1Category', 'Domestic'),
+    voltageLevel: getInputVal('f1VoltageLevel', '230 V'),
+    declarationText: getInputVal('f1DeclarationText', 'I hereby request you to provide grid connectivity to the solar Rooftop PV system installed or planning to install at premises owned/occupied by me. I do hereby declare that the information furnished above for NM/BD/GM have been checked & verified to the best of my knowledge and belief.'),
+    signApplicant: getInputVal('f1SignApplicant', '')
+  };
+}
+
+window.previewForm1Modal = function() {
+  const d = getForm1CurrentData();
+  const container = document.getElementById('form1PreviewBody');
+  if (!container) return;
+
+  const html = `
+    <div class="form4-preview-sheet shadow-sm mb-4">
+      <div class="text-center mb-3">
+        <h5 class="fw-bold mb-1 text-dark" style="font-size: 15px; letter-spacing: 0.02em;">Form - 1</h5>
+        <div class="fw-bold text-dark text-decoration-underline" style="font-size: 13px;">Application form - Net Metering/Bi-directional/Gross Metering Connection</div>
+      </div>
+
+      <div class="mb-2" style="font-size: 11px; line-height: 1.4;">
+        <div><strong>To,</strong></div>
+        <div>${escapeHtml(d.discomOffice)},</div>
+        <div class="mt-1"><strong>Date:</strong> ${escapeHtml(d.displayDate || '')}</div>
+      </div>
+
+      <div class="mb-3 text-justify" style="font-size: 10.5px; line-height: 1.5;">
+        I/we intend to connect Renewable Energy System through net-metering/ bi-directional/ Gross metering arrangement in compliance to order dated 19.08.2016 or OERC on Net Metering/bi-directional metering and their connectivity with respect to Solar PV projects as amended on 05.05.2022 and subsequent amendments from time to time. The details are given below:
+      </div>
+
+      <table class="form4-preview-table mb-3">
+        <thead>
+          <tr class="fw-bold bg-light">
+            <th style="width: 45px; text-align: center;">Sl. No.</th>
+            <th style="width: 55%;">Parameter</th>
+            <th style="width: 40%;">Particulars / Observations</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="text-align: center;">1.</td><td>Name of the Registered applicant/consumer</td><td>${escapeHtml(d.applicantName)}</td></tr>
+          <tr><td style="text-align: center;">2.</td><td>Address of the Registered applicant/consumer</td><td>${escapeHtml(d.address)}</td></tr>
+          <tr><td style="text-align: center;">3.</td><td>Consumer No.</td><td style="font-family: monospace;">${escapeHtml(d.consumerNo)}</td></tr>
+          <tr><td style="text-align: center;">4.</td><td>Telephone number(s) of Consumer/Applicant (Mobile No.)</td><td style="font-family: monospace;">${escapeHtml(d.mobile)}</td></tr>
+          <tr><td style="text-align: center;">5.</td><td>Email ID of Consumer/Applicant</td><td>${escapeHtml(d.email)}</td></tr>
+          <tr><td style="text-align: center;">6.</td><td>Type of RE (Solar/Wind) &amp; Capacity of RE system (Watts)</td><td class="fw-semibold text-primary">${escapeHtml(d.reTypeCapacity)}</td></tr>
+          <tr><td style="text-align: center;">7.</td><td>Sanction load as per latest electricity bill (kW)</td><td>${escapeHtml(d.sanctionLoad)}</td></tr>
+          <tr>
+            <td style="text-align: center;">8.</td>
+            <td>Meter procurement by<br><small class="text-muted">(Please Tick)</small></td>
+            <td class="fw-bold" style="line-height: 1.6;">
+              <div>Beneficiary ${d.meterProcChoice === 'Beneficiary' ? '☑' : '□'}</div>
+              <div>DISCOM ${d.meterProcChoice === 'Beneficiary' ? '□' : '☑'}</div>
+            </td>
+          </tr>
+          <tr><td style="text-align: center;">9.</td><td>Location of proposed RE system (RTS system/Ground mounted system)</td><td>${escapeHtml(d.location)}</td></tr>
+          <tr><td style="text-align: center;">10.</td><td>Solar PV Project inverter make and type</td><td>${escapeHtml(d.inverterMakeType)}</td></tr>
+          <tr><td style="text-align: center;">11.</td><td>Solar PV Project inverter has automatic isolation protection (Y/N)?</td><td>${escapeHtml(d.inverterAutoIso)}</td></tr>
+          <tr><td style="text-align: center;">12.</td><td>Are there any existing Solar or Renewable Energy plants currently installed? (Y/N)</td><td>${escapeHtml(d.existingPlants)}</td></tr>
+          <tr><td style="text-align: center;">13.</td><td>Capacity of existing Solar/RE plant.</td><td>${escapeHtml(d.existingCapacity)}</td></tr>
+          <tr><td style="text-align: center;">14</td><td>Expected date of commissioning of solar PV Project.</td><td>${escapeHtml(d.commissionDays)}</td></tr>
+          <tr><td style="text-align: center;">15</td><td>Category of consumer (Domestic/ Industrial/ Commercial/ Govt. establishment etc.)</td><td>${escapeHtml(d.category)}</td></tr>
+          <tr><td style="text-align: center;">16</td><td>Supply voltage level of RE system proposed to be connected [230 V (1-phase)/ 415 V (3- phase/11 kV &amp; above (3–phase)]</td><td>${escapeHtml(d.voltageLevel)}</td></tr>
+        </tbody>
+      </table>
+
+      <div class="mt-3">
+        <div class="fw-bold mb-1" style="font-size: 11.5px;">DECLARATION</div>
+        <div class="text-justify mb-4" style="font-size: 10.5px; line-height: 1.5;">
+          ${escapeHtml(d.declarationText)}
+        </div>
+
+        <div class="d-flex justify-content-end mt-4 pt-3">
+          <div class="text-end" style="font-size: 11px;">
+            <div class="mb-3">_______________________________________</div>
+            <div class="fw-bold">Signature with Name of the applicant /consumer:</div>
+            <div>${escapeHtml(d.signApplicant || d.applicantName)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  const modalEl = document.getElementById('form1PreviewModal');
+  if (modalEl && typeof bootstrap !== 'undefined') {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+};
+
+window.printForm1Preview = function() {
+  const container = document.getElementById('form1PreviewBody');
+  if (!container || !container.innerHTML.trim()) {
+    previewForm1Modal();
+  }
+  const content = document.getElementById('form1PreviewBody').innerHTML;
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  if (!printWindow) {
+    UI.toast('Please allow popups to print the Form 1 document.', 'warning');
+    return;
+  }
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Application Form (Form-1)</title>
+      <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+      <link rel="stylesheet" href="css/style.css">
+      <link rel="stylesheet" href="css/agreement.css">
+      <style>
+        @page { size: A4 portrait; margin: 10mm; }
+        body { background: #fff !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .form4-preview-sheet { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+      </style>
+    </head>
+    <body onload="window.print(); window.close();">
+      ${content}
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+window.downloadForm1Pdf = function() {
+  const jsPdfClass = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+  if (!jsPdfClass) {
+    UI.toast('jsPDF library is not loaded. Please refresh the page and try again.', 'danger');
+    return;
+  }
+  if (!selectedCustomerSlNo) {
+    const rows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
+    if (rows.length > 0) {
+      selectCustomerForAgreement(rows[0].SlNo);
+    } else {
+      UI.toast('Please select a customer first from the list.', 'warning');
+      return;
+    }
+  }
+
+  UI.showLoading(true);
+  try {
+    const d = getForm1CurrentData();
+    const doc = new jsPdfClass({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const marginX = 14;
+    const tableWidth = 182;
+    const col1Width = 12;
+    const col2Width = 100;
+    const col3Width = 70;
+
+    doc.setDrawColor(0, 0, 0);
+    doc.setTextColor(0, 0, 0);
+
+    let curY = 14;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Form - 1', pageWidth / 2, curY, { align: 'center' });
+    curY += 5;
+
+    doc.setFontSize(9.5);
+    doc.text('Application form - Net Metering/Bi-directional/Gross Metering Connection', pageWidth / 2, curY, { align: 'center' });
+    curY += 7;
+
+    doc.setFontSize(8.5);
+    doc.text('To,', marginX, curY); curY += 4.2;
+    doc.text(`${d.discomOffice},`, marginX, curY); curY += 4.2;
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${d.displayDate || ''}`, marginX, curY); curY += 5;
+
+    const preamble = 'I/we intend to connect Renewable Energy System through net-metering/ bi-directional/ Gross metering arrangement in compliance to order dated 19.08.2016 or OERC on Net Metering/bi-directional metering and their connectivity with respect to Solar PV projects as amended on 05.05.2022 and subsequent amendments from time to time. The details are given below:';
+    const preLines = doc.splitTextToSize(preamble, tableWidth);
+    doc.setFontSize(8.2);
+    doc.text(preLines, marginX, curY);
+    curY += (preLines.length * 3.8) + 2.5;
+
+    function drawTableRow(y, slText, labelText, valText, opt = {}) {
+      const fontSize = opt.fontSize || 8.2;
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
+
+      const col2Lines = doc.splitTextToSize(labelText || '', col2Width - 4);
+      const col3Lines = doc.splitTextToSize(valText || '', col3Width - 4);
+      const maxLines = Math.max(col2Lines.length, col3Lines.length, 1);
+      const lineHeight = opt.lineHeight || 3.9;
+      const padding = 2.0;
+      const rowHeight = Math.max(opt.minHeight || 5.2, maxLines * lineHeight + padding);
+
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowHeight);
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+      doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+
+      if (slText) {
+        doc.text(String(slText), marginX + (col1Width / 2), y + 3.8, { align: 'center' });
+      }
+      doc.text(col2Lines, marginX + col1Width + 2, y + 3.8);
+      doc.text(col3Lines, marginX + col1Width + col2Width + 2, y + 3.8);
+
+      return rowHeight;
+    }
+
+    const rows = [
+      ['1.', 'Name of the Registered applicant/consumer', d.applicantName],
+      ['2.', 'Address of the Registered applicant/consumer', d.address],
+      ['3.', 'Consumer No.', d.consumerNo],
+      ['4.', 'Telephone number(s) of Consumer/Applicant (Mobile No.)', d.mobile],
+      ['5.', 'Email ID of Consumer/Applicant', d.email],
+      ['6.', 'Type of RE (Solar/Wind) & Capacity of RE system (Watts)', d.reTypeCapacity],
+      ['7.', 'Sanction load as per latest electricity bill (kW)', d.sanctionLoad],
+      ['8.', 'Meter procurement by (Please Tick)', d.meterProcurement, { isMeterProc: true }],
+      ['9.', 'Location of proposed RE system (RTS system/Ground mounted system)', d.location],
+      ['10.', 'Solar PV Project inverter make and type', d.inverterMakeType],
+      ['11.', 'Solar PV Project inverter has automatic isolation protection (Y/N)?', d.inverterAutoIso],
+      ['12.', 'Are there any existing Solar or Renewable Energy plants currently installed? (Y/N)', d.existingPlants],
+      ['13.', 'Capacity of existing Solar/RE plant.', d.existingCapacity],
+      ['14', 'Expected date of commissioning of solar PV Project.', d.commissionDays],
+      ['15', 'Category of consumer (Domestic/ Industrial/ Commercial/ Govt. establishment etc.)', d.category],
+      ['16', 'Supply voltage level of RE system proposed to be connected [230 V (1-phase)/ 415 V (3- phase/11 kV & above (3–phase)]', d.voltageLevel]
+    ];
+
+    rows.forEach(r => {
+      if (r[0] === '8.' || (r[3] && r[3].isMeterProc)) {
+        const rowHeight = 10.5;
+        doc.setLineWidth(0.2);
+        doc.rect(marginX, curY, tableWidth, rowHeight);
+        doc.line(marginX + col1Width, curY, marginX + col1Width, curY + rowHeight);
+        doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + rowHeight);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.2);
+        doc.text('8.', marginX + (col1Width / 2), curY + 3.8, { align: 'center' });
+        doc.text('Meter procurement by', marginX + col1Width + 2, curY + 3.8);
+        doc.text('(Please Tick)', marginX + col1Width + 2, curY + 7.8);
+
+        doc.setFont('helvetica', 'bold');
+        const c3x = marginX + col1Width + col2Width + 3;
+        
+        // Beneficiary row
+        doc.text('Beneficiary', c3x, curY + 3.8);
+        const box1X = c3x + 24;
+        const box1Y = curY + 1.2;
+        doc.rect(box1X, box1Y, 3.2, 3.2);
+        if (d.meterProcChoice === 'Beneficiary') {
+          doc.setLineWidth(0.4);
+          doc.line(box1X + 0.6, box1Y + 1.6, box1X + 1.3, box1Y + 2.5);
+          doc.line(box1X + 1.3, box1Y + 2.5, box1X + 2.6, box1Y + 0.7);
+          doc.setLineWidth(0.2);
+        }
+
+        // DISCOM row
+        doc.text('DISCOM', c3x, curY + 8.0);
+        const box2X = c3x + 24;
+        const box2Y = curY + 5.4;
+        doc.rect(box2X, box2Y, 3.2, 3.2);
+        if (d.meterProcChoice !== 'Beneficiary') {
+          doc.setLineWidth(0.4);
+          doc.line(box2X + 0.6, box2Y + 1.6, box2X + 1.3, box2Y + 2.5);
+          doc.line(box2X + 1.3, box2Y + 2.5, box2X + 2.6, box2Y + 0.7);
+          doc.setLineWidth(0.2);
+        }
+
+        doc.setFont('helvetica', 'normal');
+        curY += rowHeight;
+      } else {
+        const h = drawTableRow(curY, r[0], r[1], r[2]);
+        curY += h;
+      }
+    });
+
+    curY += 4;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.8);
+    doc.text('DECLARATION', marginX, curY); curY += 4.2;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    const decLines = doc.splitTextToSize(d.declarationText, tableWidth);
+    doc.text(decLines, marginX, curY);
+    curY += (decLines.length * 3.6) + 14;
+
+    const signX = marginX + tableWidth - 80;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.2);
+    doc.text('Signature with Name of the applicant /consumer:', signX, curY); curY += 4.5;
+    doc.setFont('helvetica', 'normal');
+    doc.text(d.signApplicant || d.applicantName || '', signX, curY);
+
+    const cleanName = (d.applicantName || 'Customer').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanConsumerNo = (d.consumerNo || 'Form1').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `Form_1_${cleanName}_${cleanConsumerNo}.pdf`;
+
+    doc.save(fileName);
+    UI.toast(`Form 1 PDF (${fileName}) downloaded successfully!`, 'success');
+  } catch (err) {
+    console.error('Error generating Form 1 PDF:', err);
+    UI.toast(`Error generating Form 1 PDF: ${err.message}`, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+window.downloadForm1Docx = async function() {
+  if (typeof JSZip === 'undefined') {
+    UI.toast('JSZip library is not loaded. Please refresh the page and try again.', 'danger');
+    return;
+  }
+  UI.showLoading(true);
+  try {
+    const d = getForm1CurrentData();
+    const templateUrl = 'assets/sampleFiles/Form 1.docx';
+    const response = await fetch(templateUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to load template file (${response.status} ${response.statusText})`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    let docXml = await zip.file('word/document.xml').async('text');
+
+    // Replace DISCOM & Date in header
+    docXml = docXml.replace('The Designated Officer TPCODL,', `${d.discomOffice},`);
+    if (d.displayDate) {
+      docXml = docXml.replace('<w:t>Date:</w:t>', `<w:t>Date: ${d.displayDate}</w:t>`);
+    }
+
+    // Replace Customer and specs
+    docXml = docXml
+      .replaceAll('Mr. BASANTA KUMAR SAHU', d.applicantName || '')
+      .replaceAll('At/Po-Kankadajodi, Dist-Cuttack, 754035', d.address || '')
+      .replaceAll('80044799825', d.consumerNo || '')
+      .replaceAll('7749881422', d.mobile || '')
+      .replaceAll('aksahoo246@gmail.com', d.email || '')
+      .replaceAll('Solar – 3.0kwp', d.reTypeCapacity || '')
+      .replaceAll('V-GUARD', d.inverterMakeType || '')
+      .replaceAll('230 V', d.voltageLevel || '')
+      .replace(/<w:t xml:space="preserve">\s*3<\/w:t>/, `<w:t xml:space="preserve">  ${d.sanctionLoad}</w:t>`);
+
+    // Meter procurement tick swap if Beneficiary selected
+    if (d.meterProcChoice === 'Beneficiary') {
+      docXml = docXml.replace(
+        /(<w:t>Beneficiary<\/w:t>[\s\S]*?<w:t>)□(<\/w:t>[\s\S]*?<w:t>DISCOM<\/w:t>[\s\S]*?<w:t>)☑(<\/w:t>)/,
+        '$1☑$2□$3'
+      );
+    }
+
+    // Signature name
+    const signName = d.signApplicant || d.applicantName || '';
+    if (signName) {
+      docXml = docXml.replace(
+        '<w:t>Signature with Name of the applicant /consumer:</w:t>',
+        `<w:t>Signature with Name of the applicant /consumer: ${signName}</w:t>`
+      );
+    }
+
+    zip.file('word/document.xml', docXml);
+    const docxBlob = await zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+    const cleanName = (d.applicantName || 'Customer').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `Form_1_Application_${cleanName}.docx`;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(docxBlob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 1000);
+    UI.toast(`Form 1 Word Document (${fileName}) downloaded!`, 'success');
+  } catch (err) {
+    console.error('Error generating Form 1 docx:', err);
+    UI.toast('Error generating Form 1 Word document: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Form 3: Work Completion & Inspection Report Logic & Vector PDF Generator
+   ════════════════════════════════════════════════════════════════════════════ */
+
+window.renderF3PvSerialInputs = function(serials, capacities = [], defaultCap = '620WP') {
+  const container = document.getElementById('f3PvSerialsContainer');
+  if (!container) return;
+
+  if (!serials || serials.length === 0) {
+    container.innerHTML = '<div class="text-muted fs-8 fst-italic py-1">No PV module serial numbers. Click "+ Add Serial" to create rows.</div>';
+    return;
+  }
+
+  container.innerHTML = serials.map((serial, idx) => {
+    const rowNum = idx + 1;
+    const cap = capacities[idx] || defaultCap;
+    return `
+      <div class="f3-module-row-group input-group input-group-sm" data-f3-index="${idx}">
+        <span class="input-group-text font-monospace fw-bold text-secondary">#${rowNum}</span>
+        <input type="text" class="form-control f3-module-serial-box" 
+               placeholder="Module Serial No." value="${escapeHtml(serial)}"
+               oninput="window.syncF3PvSerialsAndCaps()" title="PV Module #${rowNum} Serial">
+        <input type="text" class="form-control f3-module-cap-box text-center" 
+               placeholder="620WP" value="${escapeHtml(cap)}"
+               oninput="window.syncF3PvSerialsAndCaps()" title="PV Module #${rowNum} Capacity">
+        <button type="button" class="btn btn-outline-danger btn-sm px-2 d-flex align-items-center" 
+                onclick="window.removeF3PvSerial(${idx})" title="Remove serial">
+          ${UI.icon('x', 12)}
+        </button>
+      </div>
+    `;
+  }).join('');
+};
+
+window.addF3PvSerial = function() {
+  window.syncF3PvSerialsAndCaps();
+  const raw = getInputVal('f3PvSerials', '');
+  const serials = raw ? raw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+  const count = serials.length + 1;
+  const seed = String(count).padStart(2, '0');
+  const make = getInputVal('f3PvMake', 'ADANI');
+  const prefix = make.slice(0, 3).toUpperCase();
+  serials.push(`AS2609251A${seed}81`);
+  setInputVal('f3PvSerials', serials.join('\n'));
+  setInputVal('f3PvCount', `${serials.length} NOS.`);
+  window.renderF3PvSerialInputs(serials);
+};
+
+window.removeF3PvSerial = function(idx) {
+  window.syncF3PvSerialsAndCaps();
+  const raw = getInputVal('f3PvSerials', '');
+  const serials = raw ? raw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+  if (idx >= 0 && idx < serials.length) {
+    serials.splice(idx, 1);
+  }
+  setInputVal('f3PvSerials', serials.join('\n'));
+  setInputVal('f3PvCount', `${serials.length} NOS.`);
+  window.renderF3PvSerialInputs(serials);
+};
+
+window.syncF3PvSerialsAndCaps = function() {
+  const container = document.getElementById('f3PvSerialsContainer');
+  if (!container) return;
+  const rows = container.querySelectorAll('.f3-module-row-group');
+  const serials = [];
+  rows.forEach(r => {
+    const sInput = r.querySelector('.f3-module-serial-box');
+    if (sInput && sInput.value.trim()) {
+      serials.push(sInput.value.trim());
+    }
+  });
+  setInputVal('f3PvSerials', serials.join('\n'));
+};
+
+window.handleF3ModuleCountChange = function() {
+  const countStr = getInputVal('f3PvCount', '5 NOS.');
+  const count = parseInt(countStr.replace(/[^0-9]/g, ''), 10) || 5;
+  const currentCust = selectedCustomerSlNo 
+    ? getInstallmentRows().find(x => Number(x.SlNo) === Number(selectedCustomerSlNo))
+    : null;
+  const specs = currentCust && currentCust.Specifications ? JSON.parse(currentCust.Specifications) : {};
+  const make = getInputVal('f3PvMake', 'ADANI');
+  const newSerials = getOrGenerateSerials(currentCust || {}, specs, count, make);
+  setInputVal('f3PvSerials', newSerials.join('\n'));
+  window.renderF3PvSerialInputs(newSerials);
+};
+
+window.populateForm3Fields = function(r) {
+  if (!r) return;
+  const f3Label = document.getElementById('f3ConsumerNameLabel');
+  if (f3Label) f3Label.textContent = r.Name || '—';
+
+  let specs = {};
+  if (r.ProductSpecs) {
+    try {
+      specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+    } catch (_) { specs = {}; }
+  } else if (r.Specifications) {
+    try {
+      specs = typeof r.Specifications === 'string' ? JSON.parse(r.Specifications) : r.Specifications;
+    } catch (_) { specs = {}; }
+  }
+
+  const customerName = r.Name ? (r.Name.startsWith('Mr.') || r.Name.startsWith('Mrs.') || r.Name.startsWith('Ms.') ? r.Name : 'Mr. ' + r.Name) : '';
+  const district = (specs.District || r.District || '').trim();
+  const circle = (r.CircleName || r.Circle || '').trim();
+  const discomShort = getDiscomName(district, circle);
+  const discomFull = getDiscomFullName(discomShort);
+  const division = (r.DivisionName || circle || (district ? `${district} Division` : 'Cuttack Division')).trim();
+
+  const siteAddress = (specs.SiteAddress || r.Address || '').trim();
+  const pinCode = (specs.PinCode || r.PinCode || '').trim();
+  const addrParts = [];
+  if (siteAddress) addrParts.push(siteAddress);
+  if (district) addrParts.push(`Dist-${district}`);
+  if (pinCode) addrParts.push(pinCode);
+  const fullSiteAddress = addrParts.join(', ');
+
+  const pv = specs.PvModule || {};
+  const capRaw = pv.TotalCapacity || r.ProposedCapacity || r.Capacity || '3';
+  const capNum = parseFloat(String(capRaw).replace(/[^0-9.]/g, '')) || 3;
+  const plantCapStr = `${capNum.toFixed(1)} KW`;
+  const sanctionLoadNum = r.SanctionLoad || Math.round(capNum) || 3;
+  const connectionType = (specs.ConnectionType || (capNum > 5 ? '3ph LT' : '1ph LT')).trim();
+
+  const regDate = r.LoginDate || r.CreatedDate || r.RegistrationDate || '10-07-2026';
+  const regDateFormatted = formatDateToDdMmYyyy(regDate);
+  const regNo = r.ApplicationNumber || (r.ConsumerNo ? `NP-OD-${r.ConsumerNo}` : 'NP-ODTCO26-13685899');
+  const regNoDate = `${regNo} / ${regDateFormatted}`;
+  const installDateFormatted = r.InstallationDate ? formatDateToMonthWord(r.InstallationDate) : formatDateToMonthWord(new Date());
+
+  // Header & Certification Info
+  setInputVal('f3DiscomOffice', discomFull);
+  setInputVal('f3Division', division);
+  setInputVal('f3CertCapacity', `${capNum.toFixed(1)} Kwp`);
+  setInputVal('f3CertAddress', fullSiteAddress);
+  setInputVal('f3InspectionDate', '.....................................');
+
+  // Part A: Applicant Details
+  setInputVal('f3ApplicantName', customerName);
+  setInputVal('f3RegNoDate', regNoDate);
+  setInputVal('f3Address', fullSiteAddress);
+  setInputVal('f3ConsumerNo', r.ConsumerNo || '');
+  setInputVal('f3Category', r.ConsumerCategory || r.Category || 'DOMESTIC');
+  setInputVal('f3ConnectionType', connectionType);
+  setInputVal('f3ContractDemand', `${sanctionLoadNum} KW`);
+  setInputVal('f3Arrear', '0');
+  setInputVal('f3VendorName', 'Shri Trutiyadev Solar Enterprises');
+  setInputVal('f3InstallDate', installDateFormatted);
+
+  // Part B: Distribution Transformer Details (Empty as sample)
+  setInputVal('f3DtCapacity', '');
+  setInputVal('f3DtLocation', '');
+  setInputVal('f3DtTotalConnected', '');
+  setInputVal('f3DtAdequate', 'Yes');
+
+  // Part C: Solar Rooftop PV Power Plant Details
+  setInputVal('f3PlantCapacity', plantCapStr);
+  setInputVal('f3PlantSiteType', 'SINGLE SITE');
+  setInputVal('f3PlantPointType', 'SINGLE POINT');
+  setInputVal('f3SldStatus', 'YES/NO\n(if it is no, state reasons for the same and suggest alternate arrangements )');
+
+  // Part D: Grid Tied Inverter
+  const brandInfo = parseBrand(r.CommittedBrand);
+  const inv = specs.GridTiedInverter || {};
+  const invMake = inv.Make || brandInfo.inverterMake || 'V-GUARD';
+  const invCapacity = inv.Capacity ? (String(inv.Capacity).toUpperCase().includes('KW') ? inv.Capacity : `${inv.Capacity} KW`) : `${Math.round(capNum)} KW`;
+  const invSerialNo = getOrGenerateInverterSerial(r, specs, invMake);
+  const invVolt = (inv.InputVoltage && inv.OutputVoltage) ? `${inv.InputVoltage}/${inv.OutputVoltage}` : (inv.InputVoltage ? `${inv.InputVoltage}/220-240V AC` : '550 V DC/220-240V AC');
+
+  setInputVal('f3InvMake', invMake);
+  setInputVal('f3InvSerialNo', invSerialNo);
+  setInputVal('f3InvCapacity', invCapacity);
+  setInputVal('f3InvVolt', invVolt);
+  setInputVal('f3InvAntiIslanding', 'YES/NO (Need to be checked practically  before charging)');
+
+  // Part E: P.V Module
+  const moduleMake = pv.Make || brandInfo.moduleMake || 'ADANI';
+  const moduleModel = pv.TypeAndModel || 'TOPCON';
+  const moduleCount = pv.NoOfModule ? (String(pv.NoOfModule).includes('NOS') ? pv.NoOfModule : `${pv.NoOfModule} NOS.`) : `${calculateModulesCount(capNum).replace(/[^0-9]/g, '')} NOS.`;
+  let capEach = pv.CapacityEach ? String(pv.CapacityEach).trim() : '620WP';
+  if (capEach && !/WP/i.test(capEach)) capEach = `${capEach}WP`;
+  let totalCapModuleStr = pv.TotalCapacity ? String(pv.TotalCapacity).trim() : `${capNum.toFixed(3)}KW`;
+  if (totalCapModuleStr && !/KW/i.test(totalCapModuleStr)) totalCapModuleStr = `${totalCapModuleStr}KW`;
+
+  const serials = getOrGenerateSerials(r, specs, moduleCount, moduleMake);
+  const capacities = Array.isArray(pv.ModuleCapacities) ? pv.ModuleCapacities : [];
+
+  setInputVal('f3PvMake', moduleMake);
+  setInputVal('f3PvModel', moduleModel);
+  setInputVal('f3PvTotalCapacity', totalCapModuleStr);
+  setInputVal('f3PvCapacityEach', capEach);
+  setInputVal('f3PvCount', moduleCount);
+  setInputVal('f3PvInstallDate', installDateFormatted);
+  setInputVal('f3PvSerials', serials.join('\n'));
+  window.renderF3PvSerialInputs(serials, capacities, capEach);
+
+  // Part F & G & H: Earthing & Protective Systems
+  const ev = specs.EarthingVerification || {};
+  const dcEarth = ev.DcEarthing ? (String(ev.DcEarthing).includes('Ohm') ? ev.DcEarthing : `${ev.DcEarthing} in Ohm`) : '1.7 in Ohm';
+  const acEarth = ev.AcEarthing ? (String(ev.AcEarthing).includes('Ohm') ? ev.AcEarthing : `${ev.AcEarthing} in Ohm`) : '2.3 in Ohm';
+  setInputVal('f3DcEarthing', dcEarth);
+  setInputVal('f3AcEarthing', acEarth);
+  setInputVal('f3EarthingLimit', `Within permissible limit or Not (Values should be certified by ${discomShort} official)`);
+  setInputVal('f3AcdcDbStatus', 'Yes/No');
+  setInputVal('f3ManualSwitch', 'Yes/No');
+  setInputVal('f3LightningArrestor', 'Yes/No');
+  setInputVal('f3Spds', 'Yes/No');
+  setInputVal('f3RelaySwitch', 'Yes/ No');
+  setInputVal('f3BackfeedProtection', '');
+
+  // Part I - L: Statutory Standards
+  setInputVal('f3EicApproval', 'Yes/ No');
+  setInputVal('f3SafetyCert', 'Yes/No');
+  setInputVal('f3SldDiagram', 'Yes/ No');
+  setInputVal('f3TestReportCea', 'Yes/NO');
+
+  // Part M: Meters (All empty by default as sample)
+  setInputVal('f3NmCount', '');
+  setInputVal('f3NmMake', '');
+  setInputVal('f3NmSerialNo', '');
+  setInputVal('f3NmPhase', '');
+  setInputVal('f3NmCapacity', '');
+  setInputVal('f3NmConstant', '');
+
+  setInputVal('f3SmCount', '');
+  setInputVal('f3SmMake', '');
+  setInputVal('f3SmSerialNo', '');
+  setInputVal('f3SmPhase', '');
+  setInputVal('f3SmCapacity', '');
+  setInputVal('f3SmConstant', '');
+
+  // Part N: Remarks & Clearance
+  setInputVal('f3Remarks', '');
+  setInputVal('f3GridSatisfactory', 'Yes/No ( if  it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)');
+  setInputVal('f3ManualAutoSwitch', 'Yes / No');
+  setInputVal('f3OmInfo', 'Yes*/ No*');
+
+  // Signatures
+  setInputVal('f3ApplicantSignName', customerName);
+  setInputVal('f3VendorFirm', 'Shri Trutiyadev Solar Enterprises');
+  setInputVal('f3VendorAddress', 'AT-TALAMUNDALI, PO-KANKADAJODI, DIST-CUTTACK, PIN-754035, Odisha');
+  setInputVal('f3CertAuthority', `Designated officer ${discomShort}`);
+};
+
+window.resetForm3Fields = function() {
+  const f3Label = document.getElementById('f3ConsumerNameLabel');
+  if (f3Label) f3Label.textContent = '—';
+  const ids = [
+    'f3DiscomOffice', 'f3Division', 'f3CertCapacity', 'f3CertAddress',
+    'f3ApplicantName', 'f3RegNoDate', 'f3Address', 'f3ConsumerNo', 'f3Category',
+    'f3ConnectionType', 'f3ContractDemand', 'f3Arrear', 'f3VendorName', 'f3InstallDate',
+    'f3DtCapacity', 'f3DtLocation', 'f3DtTotalConnected', 'f3DtAdequate',
+    'f3PlantCapacity', 'f3PlantSiteType', 'f3PlantPointType', 'f3SldStatus',
+    'f3InvMake', 'f3InvSerialNo', 'f3InvCapacity', 'f3InvVolt', 'f3InvAntiIslanding',
+    'f3PvMake', 'f3PvModel', 'f3PvTotalCapacity', 'f3PvCapacityEach', 'f3PvCount', 'f3PvSerials',
+    'f3DcEarthing', 'f3AcEarthing', 'f3EarthingLimit', 'f3AcdcDbStatus', 'f3ManualSwitch',
+    'f3LightningArrestor', 'f3Spds', 'f3RelaySwitch', 'f3BackfeedProtection',
+    'f3EicApproval', 'f3SafetyCert', 'f3SldDiagram', 'f3TestReportCea',
+    'f3NmCount', 'f3NmMake', 'f3NmSerialNo', 'f3NmPhase', 'f3NmCapacity', 'f3NmConstant',
+    'f3SmCount', 'f3SmMake', 'f3SmSerialNo', 'f3SmPhase', 'f3SmCapacity', 'f3SmConstant',
+    'f3Remarks', 'f3GridSatisfactory', 'f3ManualAutoSwitch', 'f3OmInfo',
+    'f3ApplicantSignName', 'f3VendorFirm', 'f3VendorAddress', 'f3CertAuthority'
+  ];
+  ids.forEach(id => setInputVal(id, ''));
+  const container = document.getElementById('f3PvSerialsContainer');
+  if (container) container.innerHTML = '';
+};
+
+function getForm3CurrentData() {
+  if (typeof window.syncF3PvSerialsAndCaps === 'function') {
+    window.syncF3PvSerialsAndCaps();
+  }
+  const rawSerials = getInputVal('f3PvSerials', '');
+  const pvSerials = rawSerials ? rawSerials.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+  return {
+    discomOffice: getInputVal('f3DiscomOffice', 'TP CENTRAL ODISHA DISTRIBUTION LIMITED'),
+    discomShort: getDiscomName(getInputVal('f3Address', ''), ''),
+    division: getInputVal('f3Division', 'Cuttack Division'),
+    certCapacity: getInputVal('f3CertCapacity', '3.0 Kwp'),
+    certAddress: getInputVal('f3CertAddress', ''),
+    inspectionDate: getInputVal('f3InspectionDate', '.....................................'),
+    applicantName: getInputVal('f3ApplicantName', ''),
+    regNoDate: getInputVal('f3RegNoDate', ''),
+    address: getInputVal('f3Address', ''),
+    consumerNo: getInputVal('f3ConsumerNo', ''),
+    category: getInputVal('f3Category', 'DOMESTIC'),
+    connectionType: getInputVal('f3ConnectionType', '1ph LT'),
+    contractDemand: getInputVal('f3ContractDemand', '3 KW'),
+    arrear: getInputVal('f3Arrear', '0'),
+    vendorName: getInputVal('f3VendorName', 'Shri Trutiyadev Solar Enterprises'),
+    installDate: getInputVal('f3InstallDate', '19 October 2026'),
+    dtCapacity: getInputVal('f3DtCapacity', ''),
+    dtLocation: getInputVal('f3DtLocation', ''),
+    dtTotalConnected: getInputVal('f3DtTotalConnected', ''),
+    dtAdequate: getInputVal('f3DtAdequate', 'Yes'),
+    plantCapacity: getInputVal('f3PlantCapacity', '3.0 KW'),
+    plantSiteType: getInputVal('f3PlantSiteType', 'SINGLE SITE'),
+    plantPointType: getInputVal('f3PlantPointType', 'SINGLE POINT'),
+    sldStatus: getInputVal('f3SldStatus', 'YES/NO (if it is no, state reasons for the same and suggest alternate arrangements )'),
+    invMake: getInputVal('f3InvMake', 'V-GUARD'),
+    invSerialNo: getInputVal('f3InvSerialNo', ''),
+    invCapacity: getInputVal('f3InvCapacity', '3 KW'),
+    invVolt: getInputVal('f3InvVolt', '550 V DC/220-240V AC'),
+    invAntiIslanding: getInputVal('f3InvAntiIslanding', 'YES/NO (Need to be checked practically before charging)'),
+    pvMake: getInputVal('f3PvMake', 'ADANI'),
+    pvModel: getInputVal('f3PvModel', 'TOPCON'),
+    pvCapacityEach: getInputVal('f3PvCapacityEach', '620WP'),
+    pvCount: getInputVal('f3PvCount', '5 NOS.'),
+    pvTotalCapacity: getInputVal('f3PvTotalCapacity', '3.100KW'),
+    pvSerials: pvSerials,
+    dcEarthing: getInputVal('f3DcEarthing', '1.7 in Ohm'),
+    acEarthing: getInputVal('f3AcEarthing', '2.3 in Ohm'),
+    earthingLimit: getInputVal('f3EarthingLimit', 'Within permissible limit or Not (Values should be certified by TPCODL official)'),
+    acdcDbStatus: getInputVal('f3AcdcDbStatus', 'Yes/No'),
+    manualSwitch: getInputVal('f3ManualSwitch', 'Yes/No'),
+    lightningArrestor: getInputVal('f3LightningArrestor', 'Yes/No'),
+    spds: getInputVal('f3Spds', 'Yes/No'),
+    relaySwitch: getInputVal('f3RelaySwitch', 'Yes/ No'),
+    backfeedProtection: getInputVal('f3BackfeedProtection', ''),
+    eicApproval: getInputVal('f3EicApproval', 'Yes/ No'),
+    safetyCert: getInputVal('f3SafetyCert', 'Yes/No'),
+    sldDiagram: getInputVal('f3SldDiagram', 'Yes/ No'),
+    testReportCea: getInputVal('f3TestReportCea', 'Yes/NO'),
+    nmCount: getInputVal('f3NmCount', ''),
+    nmMake: getInputVal('f3NmMake', ''),
+    nmSerialNo: getInputVal('f3NmSerialNo', ''),
+    nmPhase: getInputVal('f3NmPhase', ''),
+    nmCapacity: getInputVal('f3NmCapacity', ''),
+    nmConstant: getInputVal('f3NmConstant', ''),
+    smCount: getInputVal('f3SmCount', ''),
+    smMake: getInputVal('f3SmMake', ''),
+    smSerialNo: getInputVal('f3SmSerialNo', ''),
+    smPhase: getInputVal('f3SmPhase', ''),
+    smCapacity: getInputVal('f3SmCapacity', ''),
+    smConstant: getInputVal('f3SmConstant', ''),
+    remarks: getInputVal('f3Remarks', ''),
+    gridSatisfactory: getInputVal('f3GridSatisfactory', 'Yes/No ( if  it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)'),
+    manualAutoSwitch: getInputVal('f3ManualAutoSwitch', 'Yes / No'),
+    omInfo: getInputVal('f3OmInfo', 'Yes*/ No*'),
+    applicantSignName: getInputVal('f3ApplicantSignName', ''),
+    vendorFirm: getInputVal('f3VendorFirm', 'Shri Trutiyadev Solar Enterprises'),
+    vendorAddress: getInputVal('f3VendorAddress', 'AT-TALAMUNDALI, PO-KANKADAJODI, DIST-CUTTACK, PIN-754035, Odisha'),
+    certAuthority: getInputVal('f3CertAuthority', 'Designated officer TPCODL')
+  };
+}
+
+window.previewForm3Modal = function() {
+  const d = getForm3CurrentData();
+  const container = document.getElementById('form3PreviewBody');
+  if (!container) return;
+
+  const serialsHtml = d.pvSerials.length > 0
+    ? d.pvSerials.map(s => escapeHtml(s)).join('<br>')
+    : '<span class="text-muted fst-italic">None entered</span>';
+
+  const html = `
+    <!-- Page 1 Preview Sheet -->
+    <div class="form4-preview-sheet shadow-sm mb-4">
+      <div class="text-center mb-2.5">
+        <h5 class="fw-bold mb-0 text-dark" style="font-size: 14px; letter-spacing: 0.02em;">FORM- 3 : Work completion and Inspection Report</h5>
+        <div class="fw-bold text-dark mt-0.5" style="font-size: 13px;">${escapeHtml(d.discomOffice)}</div>
+      </div>
+
+      <div class="mb-3 text-justify" style="font-size: 10px; line-height: 1.5;">
+        Certified that I Designated officer, ${escapeHtml(d.division)}, ${escapeHtml(d.discomShort)} along MRT have personally inspected the ${escapeHtml(d.certCapacity)} SRTPV system ${escapeHtml(d.certAddress)} the details of SRTPV system and inspection report are as below:<br>
+        <div class="text-center fw-bold mt-1">
+          Work Completion and Inspection Report for ${escapeHtml(d.certCapacity)} Solar Roof Top PV System(SRTPV) ${escapeHtml(d.certAddress)}
+        </div>
+      </div>
+
+      <table class="form4-preview-table mb-1">
+        <thead>
+          <tr class="fw-bold bg-light">
+            <th style="width: 35px; text-align: center;">Sl. No.</th>
+            <th style="width: 50%;">Parameter</th>
+            <th style="width: 45%;">Utility Observation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="fw-bold bg-light"><td style="text-align: center;">A</td><td>Applicant Details</td><td></td></tr>
+          <tr><td style="text-align: center;">1</td><td>Name of the Applicant</td><td>${escapeHtml(d.applicantName)}</td></tr>
+          <tr><td style="text-align: center;">2</td><td>Application No./Registration No. with Date</td><td>${escapeHtml(d.regNoDate)}</td></tr>
+          <tr><td style="text-align: center;">2</td><td>Address</td><td>${escapeHtml(d.address)}</td></tr>
+          <tr><td style="text-align: center;">3</td><td>Consumer Number</td><td style="font-family: monospace;">${escapeHtml(d.consumerNo)}</td></tr>
+          <tr><td style="text-align: center;">4</td><td>Consumer Category</td><td>${escapeHtml(d.category)}</td></tr>
+          <tr><td style="text-align: center;">5</td><td>Type of Connection: 1ph LT or 3 ph LT/HT</td><td>${escapeHtml(d.connectionType)}</td></tr>
+          <tr><td style="text-align: center;">6</td><td>contract demand of consumer</td><td>${escapeHtml(d.contractDemand)}</td></tr>
+          <tr><td style="text-align: center;">7</td><td>Arrear, if any</td><td>${escapeHtml(d.arrear)}</td></tr>
+          <tr><td style="text-align: center;">8</td><td>Name of Developer/Vendor</td><td>${escapeHtml(d.vendorName)}</td></tr>
+          <tr><td style="text-align: center;">9</td><td>Date of Installation</td><td>${escapeHtml(d.installDate)}</td></tr>
+
+          <tr class="fw-bold bg-light"><td style="text-align: center;">B</td><td>Distribution Transformer Details</td><td></td></tr>
+          <tr><td style="text-align: center;">1</td><td>Capacity in KVA</td><td>${escapeHtml(d.dtCapacity)}</td></tr>
+          <tr><td style="text-align: center;">2</td><td>Location</td><td>${escapeHtml(d.dtLocation)}</td></tr>
+          <tr><td style="text-align: center;">3</td><td>Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp (individual capacity may be mentioned)</td><td>${escapeHtml(d.dtTotalConnected)}</td></tr>
+          <tr><td style="text-align: center;">4</td><td>Whether the transformer capacity is adequate to deliver the proposed Solar rooftop PV system in addition to existing SRTPV systems</td><td>${escapeHtml(d.dtAdequate)}</td></tr>
+
+          <tr class="fw-bold bg-light"><td style="text-align: center;">C</td><td>Solar Rooftop PV Power Plant Details</td><td></td></tr>
+          <tr>
+            <td style="text-align: center;">1</td>
+            <td>Details of proposed power plant<br>Capacity of the SPV Power Plant (kWp)<br>Plant proposed at single site/multiple sites<br>Interconnection with the electricity network at single point or multiple point</td>
+            <td>${escapeHtml(d.plantCapacity)}<br>${escapeHtml(d.plantSiteType)}<br>${escapeHtml(d.plantPointType)}</td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">2</td>
+            <td>Whether the Single Line Diagram of the SRTPV System (Submitted by the consumer indicating all the Safety aspects of Grid Connectivity) is OK for grid Connectivity</td>
+            <td>${escapeHtml(d.sldStatus).replace(/\n/g, '<br>')}</td>
+          </tr>
+
+          <tr class="fw-bold bg-light"><td style="text-align: center;">D</td><td>Grid Tied Inverter</td><td></td></tr>
+          <tr><td style="text-align: center;">1</td><td>Make</td><td>${escapeHtml(d.invMake)}</td></tr>
+          <tr><td style="text-align: center;">2</td><td>Serial No.</td><td style="font-family: monospace;">${escapeHtml(d.invSerialNo)}</td></tr>
+          <tr><td style="text-align: center;">3</td><td>Capacity</td><td>${escapeHtml(d.invCapacity)}</td></tr>
+          <tr><td style="text-align: center;">4</td><td>Input Voltage/ Output Voltage</td><td>${escapeHtml(d.invVolt)}</td></tr>
+          <tr><td style="text-align: center;">5</td><td>Whether Anti-islanding feature is in working condition</td><td>${escapeHtml(d.invAntiIslanding)}</td></tr>
+        </tbody>
+      </table>
+      <div class="text-end text-muted mt-2" style="font-size: 9px;">Page 1 of 3</div>
+    </div>
+
+    <!-- Page 2 Preview Sheet -->
+    <div class="form4-preview-sheet shadow-sm mb-4">
+      <table class="form4-preview-table mb-1">
+        <thead>
+          <tr class="fw-bold bg-light">
+            <th style="width: 35px; text-align: center;">Sl. No.</th>
+            <th style="width: 50%;">Parameter</th>
+            <th style="width: 45%;">Utility Observation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="fw-bold bg-light"><td style="text-align: center;">E</td><td>P.V Module</td><td></td></tr>
+          <tr><td style="text-align: center;">1</td><td>Make</td><td>${escapeHtml(d.pvMake)}</td></tr>
+          <tr><td style="text-align: center;">2</td><td>Serial No.</td><td style="font-family: monospace;">${serialsHtml}</td></tr>
+          <tr><td style="text-align: center;">3</td><td>Type of Module</td><td>${escapeHtml(d.pvModel)}</td></tr>
+          <tr><td style="text-align: center;">4</td><td>Capacity of each Module</td><td>${escapeHtml(d.pvCapacityEach)}</td></tr>
+          <tr><td style="text-align: center;">5</td><td>No. of Module</td><td>${escapeHtml(d.pvCount)}</td></tr>
+          <tr><td style="text-align: center;">6</td><td>Total capacity of PV array</td><td>${escapeHtml(d.pvTotalCapacity)}</td></tr>
+
+          <tr class="fw-bold bg-light"><td style="text-align: center;">F</td><td>Earthing Verification (i)D.C Earthing (ii)A.C Earthing</td><td>${escapeHtml(d.dcEarthing)}<br>${escapeHtml(d.acEarthing)}<br>${escapeHtml(d.earthingLimit)}</td></tr>
+
+          <tr class="fw-bold bg-light"><td style="text-align: center;">G</td><td>Details of protective system available</td><td>AC &amp; DC DB: ${escapeHtml(d.acdcDbStatus)}<br>Manual Switch at Solar Side: ${escapeHtml(d.manualSwitch)}<br>lightening arrestor: ${escapeHtml(d.lightningArrestor)}<br>SPDs: ${escapeHtml(d.spds)}<br>Relay operated automatic switch at net- meter side: ${escapeHtml(d.relaySwitch)}</td></tr>
+
+          <tr class="fw-bold bg-light"><td style="text-align: center;">H</td><td>Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other</td><td>${escapeHtml(d.backfeedProtection)}</td></tr>
+          <tr><td style="text-align: center;">I</td><td>EIC inspection and approval letter Submitted by the consumer above 50KVA</td><td>${escapeHtml(d.eicApproval)}</td></tr>
+          <tr><td style="text-align: center;">J</td><td>Safety certificate from designated Safety officer of ${escapeHtml(d.discomShort)} below 50KVA</td><td>${escapeHtml(d.safetyCert)}</td></tr>
+          <tr><td style="text-align: center;">K</td><td>Actual Single line wiring diagram of the SPV System.</td><td>${escapeHtml(d.sldDiagram)}</td></tr>
+          <tr><td style="text-align: center;">L</td><td>Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards</td><td>${escapeHtml(d.testReportCea)}</td></tr>
+
+          <tr class="fw-bold bg-light"><td style="text-align: center;">M</td><td>Meter Details</td><td>Net Meter (Bi-directional Meter) / Solar Generation Meter</td></tr>
+          <tr><td style="text-align: center;">1</td><td>Total Nos. of Meters</td><td>${escapeHtml(d.nmCount || '')}</td></tr>
+          <tr><td style="text-align: center;">2</td><td>Meter Make</td><td>${escapeHtml(d.nmMake || '')}</td></tr>
+          <tr><td style="text-align: center;">3</td><td>Meter Sl. No.</td><td>${escapeHtml(d.nmSerialNo || '')}</td></tr>
+          <tr><td style="text-align: center;">4</td><td>1 Ph/ 3Ph</td><td>${escapeHtml(d.nmPhase || '')}</td></tr>
+          <tr><td style="text-align: center;">5</td><td>Capacity</td><td>${escapeHtml(d.nmCapacity || '')}</td></tr>
+          <tr><td style="text-align: center;">6</td><td>Meter Constant</td><td>${escapeHtml(d.nmConstant || '')}</td></tr>
+        </tbody>
+      </table>
+      <div class="text-end text-muted mt-2" style="font-size: 9px;">Page 2 of 3</div>
+    </div>
+
+    <!-- Page 3 Preview Sheet -->
+    <div class="form4-preview-sheet shadow-sm mb-4">
+      <table class="form4-preview-table mb-2">
+        <tbody>
+          <tr class="fw-bold bg-light"><td style="width: 35px; text-align: center;">N</td><td style="width: 50%;">Any other necessary details with Remarks</td><td style="width: 45%;">${escapeHtml(d.remarks)}</td></tr>
+          <tr class="fw-bold bg-light"><td colspan="3" class="text-center">Inspection Report</td></tr>
+          <tr>
+            <td colspan="2">Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization</td>
+            <td>${escapeHtml(d.gridSatisfactory).replace(/\n/g, '<br>')}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="my-2" style="font-size: 10px; line-height: 1.5;">
+        <div>Provision of manual and automatic switches: <strong>${escapeHtml(d.manualAutoSwitch)}</strong></div>
+        <div class="mt-1">Whether Operation and Maintenance information: Such as Do’s and Don’ts are provided by the System Installer: <strong>${escapeHtml(d.omInfo)}</strong></div>
+      </div>
+
+      <!-- Spacing before Signatures row (Pen signing space) -->
+      <div style="height: 35mm;"></div>
+
+      <div class="row g-2 mt-2 pt-2" style="font-size: 10.5px;">
+        <div class="col-6">
+          <div class="fw-bold mb-1">Signature of the Applicant</div>
+          <div><strong>Name:</strong> ${escapeHtml(d.applicantSignName || d.applicantName)}</div>
+          <div class="mt-2"><strong>Date:</strong></div>
+        </div>
+        <div class="col-6">
+          <div class="fw-bold mb-1">Name and Signature of the System Installer with Seal</div>
+          <div><strong>Name of the firm and address:</strong></div>
+          <div>${escapeHtml(d.vendorFirm)}</div>
+          <div>${escapeHtml(d.vendorAddress)}</div>
+          <div class="mt-2"><strong>Date:</strong></div>
+        </div>
+      </div>
+
+      <div class="mt-3 pt-2" style="font-size: 10px; line-height: 1.4;">
+        <div class="fw-bold">Certified by</div>
+        <div>${escapeHtml(d.certAuthority)}</div>
+        <div><strong>Date:</strong></div>
+        <div class="fw-bold mt-2">Enclosures:</div>
+        <ol class="mb-0 ps-3">
+          <li>Copy of the IEC/IS Test reports/ certificate of PV modules, Inverter, Cable etc.</li>
+          <li>Data sheets/Drawing for the array mounting System.</li>
+          <li>Actual Single line wiring diagram of the SPV System.</li>
+          <li>Copy of Maintenance &amp; Operation information provided by the System Installer.</li>
+        </ol>
+      </div>
+      <div class="text-end text-muted mt-2" style="font-size: 9px;">Page 3 of 3</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  const modalEl = document.getElementById('form3PreviewModal');
+  if (modalEl && typeof bootstrap !== 'undefined') {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+};
+
+window.printForm3Preview = function() {
+  const container = document.getElementById('form3PreviewBody');
+  if (!container || !container.innerHTML.trim()) {
+    previewForm3Modal();
+  }
+  const content = document.getElementById('form3PreviewBody').innerHTML;
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  if (!printWindow) {
+    UI.toast('Please allow popups to print the Form 3 document.', 'warning');
+    return;
+  }
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Work Completion &amp; Inspection Report (Form-3)</title>
+      <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+      <link rel="stylesheet" href="css/style.css">
+      <link rel="stylesheet" href="css/agreement.css">
+      <style>
+        @page { size: A4 portrait; margin: 10mm; }
+        body { background: #fff !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .form4-preview-sheet { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 0 20mm 0 !important; page-break-after: always; }
+        .form4-preview-sheet:last-child { page-break-after: auto; }
+      </style>
+    </head>
+    <body onload="window.print(); window.close();">
+      ${content}
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+window.downloadForm3Pdf = function() {
+  const jsPdfClass = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+  if (!jsPdfClass) {
+    UI.toast('jsPDF library is not loaded. Please refresh the page and try again.', 'danger');
+    return;
+  }
+  if (!selectedCustomerSlNo) {
+    const rows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
+    if (rows.length > 0) {
+      selectCustomerForAgreement(rows[0].SlNo);
+    } else {
+      UI.toast('Please select a customer first from the list.', 'warning');
+      return;
+    }
+  }
+
+  UI.showLoading(true);
+  try {
+    const d = getForm3CurrentData();
+    const doc = new jsPdfClass({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const marginX = 14;
+    const tableWidth = 182;
+    const col1Width = 12;
+    const col2Width = 86;
+    const col3Width = 84;
+
+    doc.setDrawColor(0, 0, 0);
+    doc.setTextColor(0, 0, 0);
+
+    function drawTableRow(y, slText, labelText, valText, opt = {}) {
+      const fontSize = opt.fontSize || 8.5;
+      doc.setFontSize(fontSize);
+      doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
+
+      const col2Lines = doc.splitTextToSize(labelText || '', col2Width - 4);
+      const col3Lines = doc.splitTextToSize(valText || '', col3Width - 4);
+      const maxLines = Math.max(col2Lines.length, col3Lines.length, 1);
+      const lineHeight = opt.lineHeight || 4.2;
+      const padding = 2.4;
+      const rowHeight = Math.max(opt.minHeight || 5.8, maxLines * lineHeight + padding);
+
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowHeight);
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+      doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+
+      if (slText) {
+        if (opt.slBold) doc.setFont('helvetica', 'bold');
+        doc.text(String(slText), marginX + (col1Width / 2), y + 4.2, { align: 'center' });
+        if (opt.slBold) doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
+      }
+      doc.text(col2Lines, marginX + col1Width + 2, y + 4.2);
+      doc.text(col3Lines, marginX + col1Width + col2Width + 2, y + 4.2);
+
+      return rowHeight;
+    }
+
+    function drawSectionHeaderRow(y, slText, headerTitle) {
+      const rowHeight = 6.2;
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowHeight);
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+      doc.setFillColor(242, 244, 247);
+      doc.rect(marginX, y, tableWidth, rowHeight, 'F');
+      doc.rect(marginX, y, tableWidth, rowHeight, 'S');
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      if (slText) {
+        doc.text(String(slText), marginX + (col1Width / 2), y + 4.2, { align: 'center' });
+      }
+      doc.text(headerTitle, marginX + col1Width + 2, y + 4.2);
+      return rowHeight;
+    }
+
+    // ══ PAGE 1 ══
+    let curY = 12;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('FORM- 3 : Work completion and Inspection Report', pageWidth / 2, curY, { align: 'center' });
+    curY += 5;
+
+    doc.setFontSize(9.5);
+    doc.text(d.discomOffice, pageWidth / 2, curY, { align: 'center' });
+    curY += 6;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    const certNotice = `Certified that I Designated officer, ${d.division}, ${d.discomShort} along MRT have personally inspected the ${d.certCapacity} SRTPV system ${d.certAddress} the details of SRTPV system and inspection report are as below:`;
+    const certNoticeLines = doc.splitTextToSize(certNotice, tableWidth);
+    doc.text(certNoticeLines, marginX, curY);
+    curY += (certNoticeLines.length * 3.8) + 2;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.2);
+    doc.text(`Work Completion and Inspection Report for ${d.certCapacity} Solar Roof Top PV System(SRTPV) ${d.certAddress}`, pageWidth / 2, curY, { align: 'center' });
+    curY += 5.5;
+
+    // Table Header
+    doc.setFillColor(242, 244, 247);
+    doc.rect(marginX, curY, tableWidth, 6, 'FD');
+    doc.line(marginX + col1Width, curY, marginX + col1Width, curY + 6);
+    doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + 6);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text('Sl. No.', marginX + (col1Width / 2), curY + 4.2, { align: 'center' });
+    doc.text('Parameter', marginX + col1Width + 2, curY + 4.2);
+    doc.text('Utility Observation', marginX + col1Width + col2Width + 2, curY + 4.2);
+    curY += 6;
+
+    // PART A
+    curY += drawSectionHeaderRow(curY, 'A', 'Applicant Details');
+    curY += drawTableRow(curY, '1', 'Name of the Applicant', d.applicantName);
+    curY += drawTableRow(curY, '2', 'Application No./Registration No. with Date', d.regNoDate);
+    curY += drawTableRow(curY, '2', 'Address', d.address);
+    curY += drawTableRow(curY, '3', 'Consumer Number', d.consumerNo);
+    curY += drawTableRow(curY, '4', 'Consumer Category', d.category);
+    curY += drawTableRow(curY, '5', 'Type of Connection: 1ph LT or 3 ph LT/HT', d.connectionType);
+    curY += drawTableRow(curY, '6', 'contract demand of consumer', d.contractDemand);
+    curY += drawTableRow(curY, '7', 'Arrear, if any', d.arrear);
+    curY += drawTableRow(curY, '8', 'Name of Developer/Vendor', d.vendorName);
+    curY += drawTableRow(curY, '9', 'Date of Installation', d.installDate);
+
+    // PART B
+    curY += drawSectionHeaderRow(curY, 'B', 'Distribution Transformer Details');
+    curY += drawTableRow(curY, '1', 'Capacity in KVA', d.dtCapacity);
+    curY += drawTableRow(curY, '2', 'Location', d.dtLocation);
+    curY += drawTableRow(curY, '3', 'Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp (individual capacity may be mentioned)', d.dtTotalConnected);
+    curY += drawTableRow(curY, '4', 'Whether the transformer capacity is adequate to deliver the proposed Solar rooftop PV system in addition to existing SRTPV systems', d.dtAdequate);
+
+    // PART C
+    curY += drawSectionHeaderRow(curY, 'C', 'Solar Rooftop PV Power Plant Details');
+    curY += drawTableRow(curY, '1', 'Details of proposed power plant\nCapacity of the SPV Power Plant (kWp)\nPlant proposed at single site/multiple sites\nInterconnection with the electricity network at single point or multiple point', `${d.plantCapacity}\n${d.plantSiteType}\n${d.plantPointType}`);
+    curY += drawTableRow(curY, '2', 'Whether the Single Line Diagram of the SRTPV System (Submitted by the consumer indicating all the Safety aspects of Grid Connectivity) is OK for grid Connectivity', d.sldStatus);
+
+    // PART D
+    curY += drawSectionHeaderRow(curY, 'D', 'Grid Tied Inverter');
+    curY += drawTableRow(curY, '1', 'Make', d.invMake);
+    curY += drawTableRow(curY, '2', 'Serial No.', d.invSerialNo);
+    curY += drawTableRow(curY, '3', 'Capacity', d.invCapacity);
+    curY += drawTableRow(curY, '4', 'Input Voltage/ Output Voltage', d.invVolt);
+    curY += drawTableRow(curY, '5', 'Whether Anti-islanding feature is in working condition', d.invAntiIslanding);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Page 1 of 3', marginX + tableWidth, pageHeight - 10, { align: 'right' });
+
+    // ══ PAGE 2 ══
+    doc.addPage();
+    curY = 12;
+
+    doc.setFillColor(242, 244, 247);
+    doc.rect(marginX, curY, tableWidth, 6, 'FD');
+    doc.line(marginX + col1Width, curY, marginX + col1Width, curY + 6);
+    doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + 6);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text('Sl. No.', marginX + (col1Width / 2), curY + 4.2, { align: 'center' });
+    doc.text('Parameter', marginX + col1Width + 2, curY + 4.2);
+    doc.text('Utility Observation', marginX + col1Width + col2Width + 2, curY + 4.2);
+    curY += 6;
+
+    // PART E: PV Module
+    curY += drawSectionHeaderRow(curY, 'E', 'P.V Module');
+    curY += drawTableRow(curY, '1', 'Make', d.pvMake);
+    curY += drawTableRow(curY, '2', 'Serial No.', d.pvSerials.join('\n'));
+    curY += drawTableRow(curY, '3', 'Type of Module', d.pvModel);
+    curY += drawTableRow(curY, '4', 'Capacity of each Module', d.pvCapacityEach);
+    curY += drawTableRow(curY, '5', 'No. of Module', d.pvCount);
+    curY += drawTableRow(curY, '6', 'Total capacity of PV array', d.pvTotalCapacity);
+
+    // PART F: Earthing
+    const earthVal = `${d.dcEarthing}\n${d.acEarthing}\n${d.earthingLimit}`;
+    curY += drawTableRow(curY, 'F', 'Earthing Verification (i)D.C Earthing (ii)A.C Earthing', earthVal, { slBold: true });
+
+    // PART G: Protective System
+    const protVal = `AC & DC DB: ${d.acdcDbStatus}\nManual Switch at Solar Side: ${d.manualSwitch}\nlightening arrestor: ${d.lightningArrestor}\nSPDs: ${d.spds}\nRelay operated automatic switch at net- meter side: ${d.relaySwitch}`;
+    curY += drawTableRow(curY, 'G', 'Details of protective system available', protVal, { slBold: true });
+
+    // PART H - L
+    curY += drawTableRow(curY, 'H', 'Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other', d.backfeedProtection, { slBold: true });
+    curY += drawTableRow(curY, 'I', 'EIC inspection and approval letter Submitted by the consumer above 50KVA', d.eicApproval, { slBold: true });
+    curY += drawTableRow(curY, 'J', `Safety certificate from designated Safety officer of ${d.discomShort} below 50KVA`, d.safetyCert, { slBold: true });
+    curY += drawTableRow(curY, 'K', 'Actual Single line wiring diagram of the SPV System.', d.sldDiagram, { slBold: true });
+    curY += drawTableRow(curY, 'L', 'Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards', d.testReportCea, { slBold: true });
+
+    // PART M: Meter Details Table
+    const meterHeaderH = 10;
+    doc.setLineWidth(0.2);
+    doc.rect(marginX, curY, tableWidth, meterHeaderH);
+    doc.line(marginX + col1Width, curY, marginX + col1Width, curY + meterHeaderH);
+    doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + meterHeaderH);
+    const mSubColW = col3Width / 2;
+    doc.line(marginX + col1Width + col2Width + mSubColW, curY, marginX + col1Width + col2Width + mSubColW, curY + meterHeaderH);
+
+    doc.setFillColor(242, 244, 247);
+    doc.rect(marginX, curY, col1Width + col2Width, meterHeaderH, 'F');
+    doc.rect(marginX, curY, col1Width + col2Width, meterHeaderH, 'S');
+    doc.line(marginX + col1Width, curY, marginX + col1Width, curY + meterHeaderH);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text('M', marginX + (col1Width / 2), curY + 6.5, { align: 'center' });
+    doc.text('Meter Details', marginX + col1Width + 2, curY + 6.5);
+
+    doc.setFontSize(7.5);
+    const nmHeadLines = doc.splitTextToSize('Net Meter (Bi-directional Meter)', mSubColW - 3);
+    doc.text(nmHeadLines, marginX + col1Width + col2Width + 2, curY + 4);
+
+    const smHeadLines = doc.splitTextToSize('Solar Generation Meter (Details of all Solar meters)', mSubColW - 3);
+    doc.text(smHeadLines, marginX + col1Width + col2Width + mSubColW + 2, curY + 4);
+    curY += meterHeaderH;
+
+    function drawMeterRow(y, slNum, paramName, nmVal, smVal) {
+      const rowH = 5.6;
+      doc.setLineWidth(0.2);
+      doc.rect(marginX, y, tableWidth, rowH);
+      doc.line(marginX + col1Width, y, marginX + col1Width, y + rowH);
+      doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowH);
+      doc.line(marginX + col1Width + col2Width + mSubColW, y, marginX + col1Width + col2Width + mSubColW, y + rowH);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(String(slNum), marginX + (col1Width / 2), y + 4, { align: 'center' });
+      doc.text(paramName, marginX + col1Width + 2, y + 4);
+      doc.text(String(nmVal || ''), marginX + col1Width + col2Width + 2, y + 4);
+      doc.text(String(smVal || ''), marginX + col1Width + col2Width + mSubColW + 2, y + 4);
+      return rowH;
+    }
+
+    curY += drawMeterRow(curY, 1, 'Total Nos. of Meters', d.nmCount, d.smCount);
+    curY += drawMeterRow(curY, 2, 'Meter Make', d.nmMake, d.smMake);
+    curY += drawMeterRow(curY, 3, 'Meter Sl. No.', d.nmSerialNo, d.smSerialNo);
+    curY += drawMeterRow(curY, 4, '1 Ph/ 3Ph', d.nmPhase, d.smPhase);
+    curY += drawMeterRow(curY, 5, 'Capacity', d.nmCapacity, d.smCapacity);
+    curY += drawMeterRow(curY, 6, 'Meter Constant', d.nmConstant, d.smConstant);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Page 2 of 3', marginX + tableWidth, pageHeight - 10, { align: 'right' });
+
+    // ══ PAGE 3 ══
+    doc.addPage();
+    curY = 14;
+
+    // PART N
+    curY += drawTableRow(curY, 'N', 'Any other necessary details with Remarks', d.remarks, { slBold: true });
+
+    // Inspection Report Header
+    const inspH = 6;
+    doc.setLineWidth(0.2);
+    doc.setFillColor(242, 244, 247);
+    doc.rect(marginX, curY, tableWidth, inspH, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text('Inspection Report', pageWidth / 2, curY + 4.2, { align: 'center' });
+    curY += inspH;
+
+    // Satisfactory row
+    const satLines = doc.splitTextToSize('Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization', col2Width + col1Width - 4);
+    const satValLines = doc.splitTextToSize(d.gridSatisfactory, col3Width - 4);
+    const satRowH = Math.max(satLines.length * 4.2, satValLines.length * 4.2) + 3;
+
+    doc.rect(marginX, curY, tableWidth, satRowH);
+    doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + satRowH);
+    doc.setFont('helvetica', 'normal');
+    doc.text(satLines, marginX + 3, curY + 4.2);
+    doc.text(satValLines, marginX + col1Width + col2Width + 2, curY + 4.2);
+    curY += satRowH + 4;
+
+    // Operating condition lines
+    doc.setFontSize(8.5);
+    doc.text(`Provision of manual and automatic switches: ${d.manualAutoSwitch}`, marginX, curY); curY += 4.5;
+    doc.text('Whether Operation and Maintenance information:', marginX, curY); curY += 4;
+    doc.text(`Such as Do’s and Don’ts are provided by the System Installer: ${d.omInfo}`, marginX, curY); curY += 40; // 4 cm gap before Signatures
+
+    // Two-Column Signatures
+    const sigY = curY;
+    const colHalfWidth = tableWidth / 2;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Signature of the Applicant', marginX, sigY);
+    doc.setFontSize(8.5);
+    doc.text(`Name: ${d.applicantSignName || d.applicantName}`, marginX, sigY + 5);
+    doc.text('Date:', marginX, sigY + 11);
+
+    const rightColX = marginX + colHalfWidth + 4;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Name and Signature of the System Installer with Seal', rightColX, sigY);
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Name of the firm and address:', rightColX, sigY + 5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(d.vendorFirm, rightColX, sigY + 9.5);
+    doc.setFont('helvetica', 'normal');
+    const vAddrLines = doc.splitTextToSize(d.vendorAddress, colHalfWidth - 6);
+    doc.text(vAddrLines, rightColX, sigY + 14);
+
+    const vDateLineY = sigY + 14 + (vAddrLines.length * 4);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date:', rightColX, vDateLineY + 2);
+
+    curY = Math.max(sigY + 22, vDateLineY + 10);
+
+    // Certified by
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Certified by', marginX, curY); curY += 4.5;
+    doc.setFont('helvetica', 'normal');
+    doc.text(d.certAuthority, marginX, curY); curY += 4.5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date:', marginX, curY); curY += 6;
+
+    // Enclosures
+    doc.setFont('helvetica', 'bold');
+    doc.text('Enclosures:', marginX, curY); curY += 4.5;
+    doc.setFont('helvetica', 'normal');
+    const encList = [
+      'Copy of the IEC/IS Test reports/ certificate of PV modules, Inverter, Cable etc.',
+      'Data sheets/Drawing for the array mounting System.',
+      'Actual Single line wiring diagram of the SPV System.',
+      'Copy of Maintenance & Operation information provided by the System Installer.'
+    ];
+    encList.forEach((enc) => {
+      doc.text(enc, marginX + 3, curY);
+      curY += 4.2;
+    });
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Page 3 of 3', marginX + tableWidth, pageHeight - 10, { align: 'right' });
+
+    const cleanName = (d.applicantName || 'Customer').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanConsumerNo = (d.consumerNo || 'Form3').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `Form_3_${cleanName}_${cleanConsumerNo}.pdf`;
+
+    doc.save(fileName);
+    UI.toast(`Form 3 PDF (${fileName}) downloaded successfully!`, 'success');
+  } catch (err) {
+    console.error('Error generating Form 3 PDF:', err);
+    UI.toast(`Error generating Form 3 PDF: ${err.message}`, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+window.downloadForm3Docx = async function() {
+  if (typeof JSZip === 'undefined') {
+    UI.toast('JSZip library is not loaded. Please refresh the page and try again.', 'danger');
+    return;
+  }
+  UI.showLoading(true);
+  try {
+    const d = getForm3CurrentData();
+    const templateUrl = 'assets/sampleFiles/Form 3.docx';
+    const response = await fetch(templateUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to load template file (${response.status} ${response.statusText})`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    let docXml = await zip.file('word/document.xml').async('text');
+
+    docXml = docXml
+      .replaceAll('TP CENTRAL ODISHA DISTRIBUTION LIMIT', d.discomOffice || 'TP CENTRAL ODISHA DISTRIBUTION LIMITED')
+      .replaceAll('TPCODL', d.discomShort || 'TPCODL')
+      .replaceAll('Mr. BASANTA KUMAR SAHU', d.applicantName || '')
+      .replaceAll('NP-ODTCO26-13685899 / 10-07-2026', d.regNoDate || '')
+      .replaceAll('At/Po-Kankadajodi, Dist-Cuttack, 754035', d.address || '')
+      .replaceAll('80044799825', d.consumerNo || '')
+      .replaceAll('3.0 Kwp', d.certCapacity || '')
+      .replaceAll('3.0 KW', d.plantCapacity || '')
+      .replaceAll('19 October 2026', d.installDate || '')
+      .replaceAll('V-GUARD', d.invMake || '')
+      .replaceAll('3TVS3020649A068', d.invSerialNo || '')
+      .replaceAll('3KW', d.invCapacity || '')
+      .replaceAll('ADANI', d.pvMake || '')
+      .replaceAll('620WP', d.pvCapacityEach || '')
+      .replaceAll('5NOS.', d.pvCount || '')
+      .replaceAll('3.100KW', d.pvTotalCapacity || '')
+      .replaceAll('TOPCON', d.pvModel || '');
+
+    // Remove the large space gap after "Designated officer," and inject division + discom
+    docXml = docXml.replace(
+      /officer,[\s\S]*?Division[\s\S]*?, TPCODL along MRT/,
+      `officer, ${d.division || ''}, ${d.discomShort || ''} along MRT`
+    );
+
+    // Replace connection type (1ph LT)
+    docXml = docXml.replace(
+      /(LT\/HT<\/w:t>[\s\S]*?<w:tc>[\s\S]*?<w:t>)1ph<\/w:t>[\s\S]*?<w:t>LT(<\/w:t>)/,
+      `$1${d.connectionType || '1ph LT'}$2`
+    );
+
+    // Replace sample PV Module serials with dynamic ones if available
+    const origSerials = [
+      'AS2609251A4481',
+      'AS2609251A4477',
+      'AS2609261A0052',
+      'AS2609251A4462',
+      'AS2609251A4527'
+    ];
+    if (d.pvSerials && d.pvSerials.length > 0) {
+      origSerials.forEach((origS, idx) => {
+        if (d.pvSerials[idx]) {
+          docXml = docXml.replaceAll(origS, d.pvSerials[idx]);
+        }
+      });
+    }
+
+    if (d.vendorFirm && d.vendorFirm !== 'Shri Trutiyadev Solar Enterprises') {
+      docXml = docXml.replaceAll('Shri Trutiyadev Solar Enterprises', d.vendorFirm);
+    }
+
+    zip.file('word/document.xml', docXml);
+    const docxBlob = await zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+    const cleanName = (d.applicantName || 'Customer').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `Form_3_Inspection_${cleanName}.docx`;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(docxBlob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 1000);
+    UI.toast(`Form 3 Word Document (${fileName}) downloaded!`, 'success');
+  } catch (err) {
+    console.error('Error generating Form 3 docx:', err);
+    UI.toast('Error generating Form 3 Word document: ' + err.message, 'danger');
   } finally {
     UI.showLoading(false);
   }

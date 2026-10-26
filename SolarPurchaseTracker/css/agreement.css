@@ -416,12 +416,12 @@
 }
 
 /* ══ 9. Dynamic Module Serial & Capacity Row Groups ══════════════════════ */
-.f4-module-row-group, .f6-module-row-group {
+.f4-module-row-group, .f6-module-row-group, .f3-module-row-group {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   border-radius: 4px;
   overflow: hidden;
 }
-.f4-module-row-group .input-group-text, .f6-module-row-group .input-group-text {
+.f4-module-row-group .input-group-text, .f6-module-row-group .input-group-text, .f3-module-row-group .input-group-text {
   font-size: 0.70rem;
   background-color: #f8fafc;
   color: #64748b;
@@ -430,14 +430,14 @@
   height: 29px;
   line-height: 25px;
 }
-.f4-module-row-group .f4-module-serial-box, .f6-module-row-group .f6-module-serial-box {
+.f4-module-row-group .f4-module-serial-box, .f6-module-row-group .f6-module-serial-box, .f3-module-row-group .f3-module-serial-box {
   font-size: 0.76rem !important;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   border-color: #cbd5e1;
   height: 29px !important;
   padding: 2px 6px !important;
 }
-.f4-module-row-group .f4-module-cap-box, .f6-module-row-group .f6-module-cap-box {
+.f4-module-row-group .f4-module-cap-box, .f6-module-row-group .f6-module-cap-box, .f3-module-row-group .f3-module-cap-box {
   font-size: 0.76rem !important;
   font-weight: 600;
   color: #0f172a;
@@ -447,18 +447,18 @@
   padding: 2px 5px !important;
 }
 @media (max-width: 575.98px) {
-  .f4-module-row-group .input-group-text, .f6-module-row-group .input-group-text {
+  .f4-module-row-group .input-group-text, .f6-module-row-group .input-group-text, .f3-module-row-group .input-group-text {
     font-size: 0.66rem;
     padding: 1px 4px !important;
     height: 28px;
     line-height: 24px;
   }
-  .f4-module-row-group .f4-module-serial-box, .f6-module-row-group .f6-module-serial-box {
+  .f4-module-row-group .f4-module-serial-box, .f6-module-row-group .f6-module-serial-box, .f3-module-row-group .f3-module-serial-box {
     font-size: 0.72rem !important;
     height: 28px !important;
     padding: 1px 5px !important;
   }
-  .f4-module-row-group .f4-module-cap-box, .f6-module-row-group .f6-module-cap-box {
+  .f4-module-row-group .f4-module-cap-box, .f6-module-row-group .f6-module-cap-box, .f3-module-row-group .f3-module-cap-box {
     font-size: 0.72rem !important;
     max-width: 62px !important;
     height: 28px !important;
