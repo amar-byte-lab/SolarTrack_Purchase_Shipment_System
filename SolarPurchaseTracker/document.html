@@ -169,10 +169,6 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         <span>Preview</span>
                       </button>
-                      <button type="button" class="btn btn-outline-success btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="downloadForm1Docx()" title="Download Form 1 as Word Document (.docx)">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-                        <span>Word (.docx)</span>
-                      </button>
                       <button type="button" class="btn btn-primary btn-sm px-3 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" onclick="downloadForm1Pdf()" title="Download exact Form 1 as PDF">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         <span>Download PDF</span>
@@ -349,10 +345,6 @@
                       <button type="button" class="btn btn-outline-primary btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="previewForm3Modal()" title="Preview Form 3 document">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         <span>Preview</span>
-                      </button>
-                      <button type="button" class="btn btn-outline-success btn-sm px-2.5 py-1 fs-8 d-inline-flex align-items-center gap-1" onclick="downloadForm3Docx()" title="Download Form 3 as Word Document (.docx)">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-                        <span>Word (.docx)</span>
                       </button>
                       <button type="button" class="btn btn-success btn-sm px-3 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs" onclick="downloadForm3Pdf()" title="Download exact Form 3 as PDF">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -569,14 +561,16 @@
                           <input type="text" id="f3PvTotalCapacity" class="form-control f4-input fw-semibold text-primary" placeholder="e.g. 3.100KW">
                         </div>
 
-                        <!-- Dynamic Module Serials List Container -->
-                        <div class="col-12 mt-2">
-                          <div class="d-flex justify-content-between align-items-center mb-1.5">
-                            <label class="f4-label mb-0" title="2. Serial No. for each module">2. Module Serial Numbers (Individual Units):</label>
-                            <button type="button" class="btn btn-outline-primary btn-xs py-0.5 px-2 fs-8" onclick="window.addF3PvSerial()">+ Add Serial</button>
+                        <!-- Dynamic PV Module Serials with Capacity beside each (following Form 4 style) -->
+                        <div class="col-12 mt-2 pt-2 border-top">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="f4-label mb-0 fw-semibold text-dark">2. Module Serial Numbers (Individual Units):</span>
+                              <span class="badge bg-light text-dark border font-monospace fs-8" id="lblF3PvSerialCountBadge">0 Modules</span>
+                            </div>
                           </div>
-                          <div id="f3PvSerialsContainer" class="d-flex flex-column gap-1.5 p-2 bg-light rounded border">
-                            <!-- Injected dynamically by agreement.js -->
+                          <div class="row g-2" id="f3PvSerialInputsContainer" style="max-height: 240px; overflow-y: auto;">
+                            <!-- Dynamically generated module serial and capacity inputs -->
                           </div>
                           <textarea id="f3PvSerials" style="display: none;"></textarea>
                         </div>
@@ -1406,7 +1400,6 @@
           <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
           <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="window.printForm1Preview()">Print Form 1</button>
-            <button type="button" class="btn btn-outline-success btn-sm px-3" onclick="downloadForm1Docx()">Download Word (.docx)</button>
             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" onclick="downloadForm1Pdf()">Download Form 1 (PDF)</button>
           </div>
         </div>
@@ -1432,7 +1425,6 @@
           <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
           <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="window.printForm3Preview()">Print Form 3</button>
-            <button type="button" class="btn btn-outline-success btn-sm px-3" onclick="downloadForm3Docx()">Download Word (.docx)</button>
             <button type="button" class="btn btn-success btn-sm px-4 fw-semibold" onclick="downloadForm3Pdf()">Download PDF</button>
           </div>
         </div>

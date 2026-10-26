@@ -708,39 +708,46 @@
             <!-- Hidden field for Date of Commission (hidden as not required) -->
             <input type="hidden" id="prodDateOfCommission">
 
-            <div class="row g-2.5">
-              <!-- Top Row: Date of Installation (Left) & Type of Connection (Right side of Date of Installation) -->
-              <div class="col-md-6 col-12">
-                <label class="specs-input-label" for="prodDateOfInstallation">Date of Installation</label>
-                <input type="date" class="form-control specs-input-control" id="prodDateOfInstallation">
-              </div>
-              <div class="col-md-6 col-12">
-                <label class="specs-input-label" for="prodConnectionType">Type of Connection</label>
-                <select class="form-select specs-input-control" id="prodConnectionType">
-                  <option value="1ph LT">1ph LT</option>
-                  <option value="3ph LT">3ph LT</option>
-                  <option value="3ph HT">3ph HT</option>
-                </select>
+            <div class="row g-2.5 align-items-stretch">
+              <!-- Left Column: Dates, Connection Type & Location fields -->
+              <div class="col-md-6 col-12 d-flex flex-column justify-content-between">
+                <!-- Top Row: Date of Installation & Type of Connection -->
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="specs-input-label" for="prodDateOfInstallation">Date of Installation</label>
+                    <input type="date" class="form-control specs-input-control" id="prodDateOfInstallation">
+                  </div>
+                  <div class="col-6">
+                    <label class="specs-input-label" for="prodConnectionType">Type of Connection</label>
+                    <select class="form-select specs-input-control" id="prodConnectionType">
+                      <option value="1ph LT">1ph LT</option>
+                      <option value="3ph LT">3ph LT</option>
+                      <option value="3ph HT">3ph HT</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Bottom Row: State, District, Pin Code -->
+                <div class="row g-2 mt-2">
+                  <div class="col-4">
+                    <label class="specs-input-label" for="prodState">State</label>
+                    <input type="text" class="form-control specs-input-control bg-light" id="prodState" value="Odisha" readonly>
+                  </div>
+                  <div class="col-4">
+                    <label class="specs-input-label" for="prodDistrict">District</label>
+                    <input type="text" class="form-control specs-input-control" id="prodDistrict" placeholder="e.g. Balasore">
+                  </div>
+                  <div class="col-4">
+                    <label class="specs-input-label" for="prodPinCode">Pin Code</label>
+                    <input type="text" class="form-control specs-input-control" id="prodPinCode" placeholder="e.g. 756001">
+                  </div>
+                </div>
               </div>
 
-              <!-- Middle Row: State, District (after State), Pin Code -->
-              <div class="col-md-4 col-sm-4 col-12">
-                <label class="specs-input-label" for="prodState">State</label>
-                <input type="text" class="form-control specs-input-control bg-light" id="prodState" value="Odisha" readonly>
-              </div>
-              <div class="col-md-4 col-sm-4 col-12">
-                <label class="specs-input-label" for="prodDistrict">District</label>
-                <input type="text" class="form-control specs-input-control" id="prodDistrict" placeholder="e.g. Balasore">
-              </div>
-              <div class="col-md-4 col-sm-4 col-12">
-                <label class="specs-input-label" for="prodPinCode">Pin Code</label>
-                <input type="text" class="form-control specs-input-control" id="prodPinCode" placeholder="Pin Code (e.g. 756001)">
-              </div>
-
-              <!-- Bottom Row: Address/Location -->
-              <div class="col-12">
+              <!-- Right Column: Address/Location Textarea with height matching bottom of last row -->
+              <div class="col-md-6 col-12 d-flex flex-column mt-2.5 mt-md-0">
                 <label class="specs-input-label" for="prodAddress">Address / Location</label>
-                <textarea class="form-control specs-input-control" id="prodAddress" rows="2" placeholder="Village / Locality / Site address..." style="resize: none;"></textarea>
+                <textarea class="form-control specs-input-control flex-grow-1" id="prodAddress" placeholder="Village / Locality / Site address..." style="resize: none; min-height: 80px;"></textarea>
               </div>
             </div>
           </div>

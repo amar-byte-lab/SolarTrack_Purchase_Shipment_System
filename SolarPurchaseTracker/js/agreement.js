@@ -3502,87 +3502,182 @@ window.downloadForm1Docx = async function() {
    Form 3: Work Completion & Inspection Report Logic & Vector PDF Generator
    ════════════════════════════════════════════════════════════════════════════ */
 
-window.renderF3PvSerialInputs = function(serials, capacities = [], defaultCap = '620WP') {
-  const container = document.getElementById('f3PvSerialsContainer');
+window.renderF3PvSerialInputs = function(initialSerials = null, initialCapacities = null, fallbackCap = null) {
+  const countInput = document.getElementById('f3PvCount');
+  const container = document.getElementById('f3PvSerialInputsContainer') || document.getElementById('f3PvSerialsContainer');
+  const badge = document.getElementById('lblF3PvSerialCountBadge');
   if (!container) return;
 
-  if (!serials || serials.length === 0) {
-    container.innerHTML = '<div class="text-muted fs-8 fst-italic py-1">No PV module serial numbers. Click "+ Add Serial" to create rows.</div>';
+  const count = Math.max(0, parseInt(String(countInput?.value || '').replace(/[^0-9]/g, ''), 10) || 0);
+  if (badge) badge.textContent = `${count} Module${count === 1 ? '' : 's'}`;
+
+  if (count === 0) {
+    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic py-2 text-center">Enter "No. of Module" above to generate serial number and capacity textboxes.</div>';
+    window.syncF3PvSerialsAndCaps();
     return;
   }
 
-  container.innerHTML = serials.map((serial, idx) => {
-    const rowNum = idx + 1;
-    const cap = capacities[idx] || defaultCap;
-    return `
-      <div class="f3-module-row-group input-group input-group-sm" data-f3-index="${idx}">
-        <span class="input-group-text font-monospace fw-bold text-secondary">#${rowNum}</span>
-        <input type="text" class="form-control f3-module-serial-box" 
-               placeholder="Module Serial No." value="${escapeHtml(serial)}"
-               oninput="window.syncF3PvSerialsAndCaps()" title="PV Module #${rowNum} Serial">
-        <input type="text" class="form-control f3-module-cap-box text-center" 
-               placeholder="620WP" value="${escapeHtml(cap)}"
-               oninput="window.syncF3PvSerialsAndCaps()" title="PV Module #${rowNum} Capacity">
-        <button type="button" class="btn btn-outline-danger btn-sm px-2 d-flex align-items-center" 
-                onclick="window.removeF3PvSerial(${idx})" title="Remove serial">
-          ${UI.icon('x', 12)}
-        </button>
+  // Preserve existing entered values if not provided
+  let existingSerials = [];
+  let existingCaps = [];
+  if (initialSerials && Array.isArray(initialSerials)) {
+    existingSerials = initialSerials;
+  } else {
+    container.querySelectorAll('.f3-module-serial-box').forEach((box, i) => {
+      existingSerials[i] = box.value;
+    });
+  }
+
+  if (initialCapacities && Array.isArray(initialCapacities)) {
+    existingCaps = initialCapacities;
+  } else {
+    container.querySelectorAll('.f3-module-cap-box').forEach((box, i) => {
+      existingCaps[i] = box.value;
+    });
+  }
+
+  // Fallback capacity extraction from argument or input
+  let defaultCapVal = '';
+  const capSrc = fallbackCap || document.getElementById('f3PvCapacityEach')?.value || '';
+  const match = String(capSrc).match(/([0-9.]+)/);
+  if (match) defaultCapVal = match[1];
+
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    const sVal = existingSerials[i - 1] || '';
+    let cVal = existingCaps[i - 1] || '';
+    if (!cVal && defaultCapVal) {
+      cVal = defaultCapVal;
+    }
+
+    html += `
+      <div class="col-md-6 col-12">
+        <div class="input-group input-group-sm f3-module-row-group">
+          <span class="input-group-text bg-light text-muted fs-8 font-monospace px-2" style="min-width: 32px; justify-content: center;">#${i}</span>
+          <input type="text" class="form-control form-control-sm fs-8 font-monospace f3-module-serial-box" id="f3PvSerial_${i}" data-index="${i}" value="${escapeHtml(sVal)}" placeholder="Serial No. ${i}" title="Module ${i} Serial Number" oninput="window.syncF3PvSerialsAndCaps()">
+          <input type="number" min="0" step="any" class="form-control form-control-sm fs-8 f3-module-cap-box text-end fw-semibold" id="f3PvCap_${i}" data-index="${i}" value="${escapeHtml(cVal)}" placeholder="620" style="max-width: 82px;" oninput="window.handleF3PvCapChange(${i})" title="Module ${i} Capacity in Wp">
+          <span class="input-group-text bg-light text-muted fs-8 px-1.5 border-start-0" style="font-size: 0.70rem; min-width: 32px; justify-content: center;">Wp</span>
+        </div>
       </div>
     `;
-  }).join('');
-};
-
-window.addF3PvSerial = function() {
-  window.syncF3PvSerialsAndCaps();
-  const raw = getInputVal('f3PvSerials', '');
-  const serials = raw ? raw.split('\n').map(s => s.trim()).filter(Boolean) : [];
-  const count = serials.length + 1;
-  const seed = String(count).padStart(2, '0');
-  const make = getInputVal('f3PvMake', 'ADANI');
-  const prefix = make.slice(0, 3).toUpperCase();
-  serials.push(`AS2609251A${seed}81`);
-  setInputVal('f3PvSerials', serials.join('\n'));
-  setInputVal('f3PvCount', `${serials.length} NOS.`);
-  window.renderF3PvSerialInputs(serials);
-};
-
-window.removeF3PvSerial = function(idx) {
-  window.syncF3PvSerialsAndCaps();
-  const raw = getInputVal('f3PvSerials', '');
-  const serials = raw ? raw.split('\n').map(s => s.trim()).filter(Boolean) : [];
-  if (idx >= 0 && idx < serials.length) {
-    serials.splice(idx, 1);
   }
-  setInputVal('f3PvSerials', serials.join('\n'));
-  setInputVal('f3PvCount', `${serials.length} NOS.`);
-  window.renderF3PvSerialInputs(serials);
+  container.innerHTML = html;
+  window.syncF3PvSerialsAndCaps();
 };
 
-window.syncF3PvSerialsAndCaps = function() {
-  const container = document.getElementById('f3PvSerialsContainer');
-  if (!container) return;
-  const rows = container.querySelectorAll('.f3-module-row-group');
-  const serials = [];
-  rows.forEach(r => {
-    const sInput = r.querySelector('.f3-module-serial-box');
-    if (sInput && sInput.value.trim()) {
-      serials.push(sInput.value.trim());
+window.handleF3PvCapChange = function(index) {
+  if (index === 1) {
+    const firstBox = document.getElementById('f3PvCap_1');
+    const val = firstBox ? firstBox.value.trim() : '';
+    const allBoxes = document.querySelectorAll('.f3-module-cap-box');
+    let allOthersEmpty = true;
+    for (let i = 1; i < allBoxes.length; i++) {
+      if (allBoxes[i].value && allBoxes[i].value.trim() !== '') {
+        allOthersEmpty = false;
+        break;
+      }
     }
+    if (allOthersEmpty && val !== '') {
+      for (let i = 1; i < allBoxes.length; i++) {
+        allBoxes[i].value = val;
+      }
+    }
+  }
+  window.syncF3PvSerialsAndCaps();
+};
+
+window.applyF3PvCapToAll = function() {
+  const firstBox = document.getElementById('f3PvCap_1');
+  if (!firstBox) return;
+  const val = firstBox.value.trim();
+  if (!val) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Please enter a capacity in Module #1 first.', 'info');
+    }
+    return;
+  }
+  document.querySelectorAll('.f3-module-cap-box').forEach(box => {
+    box.value = val;
   });
-  setInputVal('f3PvSerials', serials.join('\n'));
+  window.syncF3PvSerialsAndCaps();
 };
 
 window.handleF3ModuleCountChange = function() {
-  const countStr = getInputVal('f3PvCount', '5 NOS.');
-  const count = parseInt(countStr.replace(/[^0-9]/g, ''), 10) || 5;
-  const currentCust = selectedCustomerSlNo 
-    ? getInstallmentRows().find(x => Number(x.SlNo) === Number(selectedCustomerSlNo))
-    : null;
-  const specs = currentCust && currentCust.Specifications ? JSON.parse(currentCust.Specifications) : {};
-  const make = getInputVal('f3PvMake', 'ADANI');
-  const newSerials = getOrGenerateSerials(currentCust || {}, specs, count, make);
-  setInputVal('f3PvSerials', newSerials.join('\n'));
-  window.renderF3PvSerialInputs(newSerials);
+  const countInput = document.getElementById('f3PvCount');
+  if (!countInput) return;
+  window.renderF3PvSerialInputs();
+};
+
+window.addF3PvSerial = function() {
+  const countInput = document.getElementById('f3PvCount');
+  const count = (parseInt(String(countInput?.value || '').replace(/[^0-9]/g, ''), 10) || 0) + 1;
+  if (countInput) countInput.value = `${count} NOS.`;
+  window.renderF3PvSerialInputs();
+};
+
+window.removeF3PvSerial = function(idx) {
+  const countInput = document.getElementById('f3PvCount');
+  const count = Math.max(0, (parseInt(String(countInput?.value || '').replace(/[^0-9]/g, ''), 10) || 0) - 1);
+  if (countInput) countInput.value = `${count} NOS.`;
+  window.renderF3PvSerialInputs();
+};
+
+window.syncF3PvSerialsAndCaps = function() {
+  const serialBoxes = document.querySelectorAll('.f3-module-serial-box');
+  const capBoxes = document.querySelectorAll('.f3-module-cap-box');
+  const serialsTextarea = document.getElementById('f3PvSerials');
+  const capEachInput = document.getElementById('f3PvCapacityEach');
+  const totalCapInput = document.getElementById('f3PvTotalCapacity');
+  const badge = document.getElementById('lblF3PvSerialCountBadge');
+
+  const count = serialBoxes.length;
+  if (badge) {
+    badge.textContent = `${count} Module${count === 1 ? '' : 's'}`;
+  }
+
+  // 1. Sync Serials into hidden f3PvSerials
+  const serialList = [];
+  serialBoxes.forEach(box => {
+    const val = (box.value || '').trim();
+    if (val) serialList.push(val);
+  });
+  if (serialsTextarea) {
+    serialsTextarea.value = serialList.join('\n');
+  }
+
+  // 2. Calculate Capacities (in Wp)
+  let totalWatts = 0;
+  let filledCount = 0;
+  const capCounts = {};
+
+  capBoxes.forEach(box => {
+    const raw = (box.value || '').trim();
+    if (!raw) return;
+    const match = raw.match(/([0-9.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      if (!isNaN(num) && num > 0) {
+        filledCount++;
+        totalWatts += num;
+        const displayLabel = `${num}WP`;
+        capCounts[displayLabel] = (capCounts[displayLabel] || 0) + 1;
+      }
+    }
+  });
+
+  if (filledCount > 0 && totalWatts > 0) {
+    const totalKW = (totalWatts / 1000).toFixed(3);
+    if (totalCapInput) {
+      totalCapInput.value = `${totalKW}KW`;
+    }
+    if (capEachInput) {
+      if (Object.keys(capCounts).length === 1) {
+        capEachInput.value = Object.keys(capCounts)[0];
+      } else {
+        capEachInput.value = Object.entries(capCounts).map(([lbl, c]) => `${lbl} - ${c}pic`).join(', ');
+      }
+    }
+  }
 };
 
 window.populateForm3Fields = function(r) {
@@ -3763,8 +3858,10 @@ window.resetForm3Fields = function() {
     'f3ApplicantSignName', 'f3VendorFirm', 'f3VendorAddress', 'f3CertAuthority'
   ];
   ids.forEach(id => setInputVal(id, ''));
-  const container = document.getElementById('f3PvSerialsContainer');
+  const container = document.getElementById('f3PvSerialInputsContainer') || document.getElementById('f3PvSerialsContainer');
   if (container) container.innerHTML = '';
+  const badge = document.getElementById('lblF3PvSerialCountBadge');
+  if (badge) badge.textContent = '0 Modules';
 };
 
 function getForm3CurrentData() {
