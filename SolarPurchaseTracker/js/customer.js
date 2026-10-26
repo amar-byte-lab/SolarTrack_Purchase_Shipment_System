@@ -2768,6 +2768,48 @@ function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
 }
 window.formatBrokerNumberWithWorkMeta = formatBrokerNumberWithWorkMeta;
 
+// Helper to extract numeric part from strings like "32 AMP", "300 V DC", "1.7 in Ohm", "4 SQ MM"
+function extractNumFromSpec(val, fallback = '') {
+  if (val === undefined || val === null) return fallback;
+  const str = String(val).trim();
+  if (!str) return fallback;
+  const m = str.match(/([0-9]+(\.[0-9]+)?)/);
+  return m ? m[1] : fallback;
+}
+
+function extractVoltAcFromSpec(val, fallback = '220 - 240') {
+  if (val === undefined || val === null) return fallback;
+  let str = String(val).trim();
+  if (!str) return fallback;
+  str = str.replace(/V\s*AC/gi, '').replace(/V/gi, '').trim();
+  return str || fallback;
+}
+
+function toUpperSpec(val) {
+  if (val === undefined || val === null) return '';
+  return String(val).trim().toUpperCase();
+}
+
+function parseCustomerBrandForSpecs(committedBrand) {
+  if (!committedBrand) return { moduleMake: '', inverterMake: '' };
+  const str = String(committedBrand).trim();
+  let moduleMake = '';
+  let inverterMake = '';
+  if (str.includes('M:') || str.includes('Inv:')) {
+    const mMatch = str.match(/M:\s*([^|]+)/i);
+    const invMatch = str.match(/Inv:\s*([^|]+)/i);
+    if (mMatch) moduleMake = mMatch[1].trim();
+    if (invMatch) inverterMake = invMatch[1].trim();
+  } else {
+    moduleMake = str;
+    inverterMake = str;
+  }
+  return {
+    moduleMake: moduleMake || '',
+    inverterMake: inverterMake || ''
+  };
+}
+
 window.openProductModal = function(slNo) {
   const r = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
   if (!r) {
@@ -2778,10 +2820,28 @@ window.openProductModal = function(slNo) {
   const modalEl = document.getElementById('productModal');
   if (!modalEl) return;
 
+  // Real-time automatic uppercase listener on modal inputs
+  if (!modalEl.dataset.upperBound) {
+    modalEl.dataset.upperBound = 'true';
+    modalEl.addEventListener('input', function(e) {
+      const target = e.target;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        if (target.type !== 'date' && target.type !== 'number' && target.type !== 'file') {
+          const start = target.selectionStart;
+          const end = target.selectionEnd;
+          target.value = target.value.toUpperCase();
+          if (start !== null && end !== null) {
+            try { target.setSelectionRange(start, end); } catch (err) {}
+          }
+        }
+      }
+    });
+  }
+
   document.getElementById('prodSlNo').value = slNo;
   const subTitle = document.getElementById('productModalSubTitle');
   if (subTitle) {
-    subTitle.textContent = r.Name ? `Consumer Name: ${r.Name}` : 'Consumer Name: —';
+    subTitle.textContent = r.Name ? `Consumer Name: ${r.Name.toUpperCase()}` : 'Consumer Name: —';
   }
 
   // Parse existing specs if any (checking both direct property and |work: metadata)
@@ -2803,27 +2863,37 @@ window.openProductModal = function(slNo) {
     } catch (e) {}
   }
 
+  const brandInfo = parseCustomerBrandForSpecs(r.CommittedBrand);
+  const capNum = parseFloat(String(r.ProposedCapacity || r.Capacity || '3').replace(/[^0-9.]/g, '')) || 3;
+
   // General Dates & Site Info: Fallback to existing customer data if not set in specs
   const dateOfInstallation = specs.DateOfInstallation || (r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '');
   const dateOfCommission = specs.DateOfCommission || (r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '');
-  const siteAddress = specs.SiteAddress || r.Address || '';
-  const pinCodeVal = specs.PinCode || r.PinCode || '';
-  const stateVal = specs.State || r.State || 'Odisha';
-  const districtVal = specs.District || r.District || '';
-  const capNum = parseFloat(String(r.ProposedCapacity || r.Capacity || '3').replace(/[^0-9.]/g, '')) || 3;
-  const connectionTypeVal = specs.ConnectionType || (capNum > 5 ? '3ph LT' : '1ph LT');
+  const siteAddress = toUpperSpec(specs.SiteAddress || r.Address || '');
+  const pinCodeVal = toUpperSpec(specs.PinCode || r.PinCode || '');
+  const stateVal = toUpperSpec(specs.State || r.State || 'ODISHA');
+  const districtVal = toUpperSpec(specs.District || r.District || '');
+  const connectionTypeVal = toUpperSpec(specs.ConnectionType || (capNum > 5 ? '3PH LT' : '1PH LT'));
 
   document.getElementById('prodDateOfInstallation').value = dateOfInstallation;
   document.getElementById('prodDateOfCommission').value = dateOfCommission;
   if (document.getElementById('prodConnectionType')) {
     const connEl = document.getElementById('prodConnectionType');
-    if (connectionTypeVal && !Array.from(connEl.options).some(o => o.value === connectionTypeVal)) {
+    let matched = false;
+    for (const opt of connEl.options) {
+      if (opt.value.toUpperCase() === connectionTypeVal.toUpperCase()) {
+        opt.selected = true;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && connectionTypeVal) {
       const opt = document.createElement('option');
       opt.value = connectionTypeVal;
       opt.textContent = connectionTypeVal;
+      opt.selected = true;
       connEl.appendChild(opt);
     }
-    connEl.value = connectionTypeVal;
   }
   if (document.getElementById('prodState')) document.getElementById('prodState').value = stateVal;
   if (document.getElementById('prodDistrict')) document.getElementById('prodDistrict').value = districtVal;
@@ -2832,62 +2902,76 @@ window.openProductModal = function(slNo) {
 
   // Grid Tied Inverter
   const inv = specs.GridTiedInverter || {};
-  document.getElementById('prodInverterName').value = inv.Name || '';
-  document.getElementById('prodInverterCount').value = inv.TotalNo || '1';
-  document.getElementById('prodInverterMake').value = inv.Make || '';
-  document.getElementById('prodInverterSerialNo').value = inv.SerialNo || '';
-  document.getElementById('prodInverterCapacity').value = inv.Capacity || '';
-  document.getElementById('prodInverterInputVoltage').value = inv.InputVoltage || '';
-  document.getElementById('prodInverterOutputVoltage').value = inv.OutputVoltage || '';
+  const invNameEl = document.getElementById('prodInverterName');
+  if (invNameEl) {
+    const desiredInvName = toUpperSpec(inv.Name || 'GRID-TIED');
+    let matched = false;
+    for (const opt of invNameEl.options) {
+      if (opt.value.toUpperCase() === desiredInvName) {
+        opt.selected = true;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      invNameEl.value = 'GRID-TIED';
+    }
+  }
+  document.getElementById('prodInverterCount').value = '1';
+  document.getElementById('prodInverterMake').value = toUpperSpec(inv.Make || brandInfo.inverterMake || '');
+  document.getElementById('prodInverterSerialNo').value = toUpperSpec(inv.SerialNo || '');
+  document.getElementById('prodInverterCapacity').value = extractNumFromSpec(inv.Capacity, '3');
+  document.getElementById('prodInverterInputVoltage').value = extractNumFromSpec(inv.InputVoltage, '300');
+  document.getElementById('prodInverterOutputVoltage').value = extractVoltAcFromSpec(inv.OutputVoltage, '220 - 240');
 
   // P.V Module
   const pv = specs.PvModule || {};
-  document.getElementById('prodModuleMake').value = pv.Make || '';
+  document.getElementById('prodModuleMake').value = toUpperSpec(pv.Make || brandInfo.moduleMake || '');
   document.getElementById('prodModuleCount').value = pv.NoOfModule || '';
-  document.getElementById('prodModuleTypeModel').value = pv.TypeAndModel || '';
+  document.getElementById('prodModuleTypeModel').value = toUpperSpec(pv.TypeAndModel || '');
   if (document.getElementById('prodModuleCapacityEach')) {
-    document.getElementById('prodModuleCapacityEach').value = pv.CapacityEach || '';
+    document.getElementById('prodModuleCapacityEach').value = toUpperSpec(pv.CapacityEach || '');
   }
 
   // Render serial boxes & capacities for modules
-  const serials = Array.isArray(pv.SerialNumbers) ? pv.SerialNumbers : [];
+  const serials = (Array.isArray(pv.SerialNumbers) ? pv.SerialNumbers : []).map(s => toUpperSpec(s));
   const capacities = Array.isArray(pv.ModuleCapacities) ? pv.ModuleCapacities : [];
   window.renderModuleSerialInputs(serials, capacities);
 
   // If saved TotalCapacity exists and auto-calc didn't fill it (e.g. no capacities were stored), fallback
   if (pv.TotalCapacity && document.getElementById('prodModuleTotalCapacity') && !document.getElementById('prodModuleTotalCapacity').value) {
-    document.getElementById('prodModuleTotalCapacity').value = pv.TotalCapacity;
+    document.getElementById('prodModuleTotalCapacity').value = toUpperSpec(pv.TotalCapacity);
   }
 
-  // Earthing Verification
+  // Earthing Verification & System Grounding
   const ev = specs.EarthingVerification || {};
-  document.getElementById('prodDcEarthing').value = ev.DcEarthing || '';
-  document.getElementById('prodAcEarthing').value = ev.AcEarthing || '';
+  const earth = specs.DetailsOfEarthing || {};
+  document.getElementById('prodDcEarthing').value = extractNumFromSpec(ev.DcEarthing || earth.DcEarthing, '1.7');
+  document.getElementById('prodAcEarthing').value = extractNumFromSpec(ev.AcEarthing || earth.AcEarthing, '2.3');
 
   // Details of Cables: DC
   const dcCables = specs.DetailsOfCablesDc || {};
-  document.getElementById('prodDcCableMake').value = dcCables.Make || '';
-  document.getElementById('prodDcCableSizeType').value = dcCables.SizeType || '';
+  document.getElementById('prodDcCableMake').value = toUpperSpec(dcCables.Make || '');
+  document.getElementById('prodDcCableSizeType').value = extractNumFromSpec(dcCables.SizeType, '4');
 
   // Details of the DC distribution box
   const dcdb = specs.DetailsOfDcdb || {};
-  if (document.getElementById('prodDcdbMake')) document.getElementById('prodDcdbMake').value = dcdb.Make || '';
-  if (document.getElementById('prodDcdbSerialNo')) document.getElementById('prodDcdbSerialNo').value = dcdb.SerialNo || '';
-  if (document.getElementById('prodDcdbSpdRating')) document.getElementById('prodDcdbSpdRating').value = dcdb.SpdRating || '';
-  if (document.getElementById('prodDcdbMcbDetails')) document.getElementById('prodDcdbMcbDetails').value = dcdb.McbDetails || '';
+  if (document.getElementById('prodDcdbMake')) document.getElementById('prodDcdbMake').value = toUpperSpec(dcdb.Make || '');
+  if (document.getElementById('prodDcdbSerialNo')) document.getElementById('prodDcdbSerialNo').value = toUpperSpec(dcdb.SerialNo || '');
+  if (document.getElementById('prodDcdbSpdRating')) document.getElementById('prodDcdbSpdRating').value = toUpperSpec(dcdb.SpdRating || '');
+  if (document.getElementById('prodDcdbMcbDetails')) document.getElementById('prodDcdbMcbDetails').value = extractNumFromSpec(dcdb.McbDetails, '32');
 
   // Details of AC distribution box
   const acdb = specs.DetailsOfAcdb || {};
-  if (document.getElementById('prodAcdbMake')) document.getElementById('prodAcdbMake').value = acdb.Make || '';
-  if (document.getElementById('prodAcdbSerialNo')) document.getElementById('prodAcdbSerialNo').value = acdb.SerialNo || '';
-  if (document.getElementById('prodAcdbSpdRating')) document.getElementById('prodAcdbSpdRating').value = acdb.SpdRating || '';
-  if (document.getElementById('prodAcdbMcbDetails')) document.getElementById('prodAcdbMcbDetails').value = acdb.McbDetails || '';
+  if (document.getElementById('prodAcdbMake')) document.getElementById('prodAcdbMake').value = toUpperSpec(acdb.Make || '');
+  if (document.getElementById('prodAcdbSerialNo')) document.getElementById('prodAcdbSerialNo').value = toUpperSpec(acdb.SerialNo || '');
+  if (document.getElementById('prodAcdbSpdRating')) document.getElementById('prodAcdbSpdRating').value = toUpperSpec(acdb.SpdRating || '');
+  if (document.getElementById('prodAcdbMcbDetails')) document.getElementById('prodAcdbMcbDetails').value = extractNumFromSpec(acdb.McbDetails, '32');
 
   // Details of Earthing
-  const earth = specs.DetailsOfEarthing || {};
-  document.getElementById('prodEarthResistance').value = earth.EarthResistance || '';
-  document.getElementById('prodEarthWireSize').value = earth.EarthWireSize || '';
-  document.getElementById('prodLaSizeType').value = earth.LaSizeType || '';
+  document.getElementById('prodEarthResistance').value = extractNumFromSpec(earth.EarthResistance, '3');
+  document.getElementById('prodEarthWireSize').value = extractNumFromSpec(earth.EarthWireSize, '16');
+  document.getElementById('prodLaSizeType').value = toUpperSpec(earth.LaSizeType || 'COPPER BONDED');
 
   const firstTabBtn = document.getElementById('tabSpecGeneral-btn') || modalEl.querySelector('#productSpecsNavTabs .nav-link');
   if (firstTabBtn) {
@@ -2908,10 +2992,15 @@ window.saveProductPopupSpecs = async function() {
     return;
   }
 
+  function formatUnitVal(rawVal, unit, fallback = '') {
+    const num = extractNumFromSpec(rawVal, fallback);
+    return num ? `${num} ${unit}`.trim().toUpperCase() : '';
+  }
+
   // Extract module serials & individual capacities
   const moduleSerials = [];
   document.querySelectorAll('.prod-module-serial-box').forEach(box => {
-    moduleSerials.push(box.value.trim());
+    moduleSerials.push(toUpperSpec(box.value));
   });
   const moduleCapacities = [];
   document.querySelectorAll('.prod-module-cap-box').forEach(box => {
@@ -2921,15 +3010,16 @@ window.saveProductPopupSpecs = async function() {
   // Ensure calculations are up to date
   window.calcModuleTotalCapacity();
 
-  const moduleMake = document.getElementById('prodModuleMake').value.trim();
-  const inverterMake = document.getElementById('prodInverterMake').value.trim();
+  const capNum = parseFloat(String(r.ProposedCapacity || r.Capacity || '3').replace(/[^0-9.]/g, '')) || 3;
+  const moduleMake = toUpperSpec(document.getElementById('prodModuleMake').value);
+  const inverterMake = toUpperSpec(document.getElementById('prodInverterMake').value);
   const dateOfInstallation = document.getElementById('prodDateOfInstallation').value || null;
   const dateOfCommission = document.getElementById('prodDateOfCommission').value || null;
-  const connectionType = document.getElementById('prodConnectionType') ? document.getElementById('prodConnectionType').value.trim() : '1ph LT';
-  const siteAddress = document.getElementById('prodAddress') ? document.getElementById('prodAddress').value.trim() : (r.Address || '');
-  const districtVal = document.getElementById('prodDistrict') ? document.getElementById('prodDistrict').value.trim() : (r.District || '');
-  const pinCode = document.getElementById('prodPinCode') ? document.getElementById('prodPinCode').value.trim() : (r.PinCode || '');
-  const stateVal = document.getElementById('prodState') ? document.getElementById('prodState').value.trim() : (r.State || 'Odisha');
+  const connectionType = toUpperSpec(document.getElementById('prodConnectionType') ? document.getElementById('prodConnectionType').value : (capNum > 5 ? '3PH LT' : '1PH LT'));
+  const siteAddress = toUpperSpec(document.getElementById('prodAddress') ? document.getElementById('prodAddress').value : (r.Address || ''));
+  const districtVal = toUpperSpec(document.getElementById('prodDistrict') ? document.getElementById('prodDistrict').value : (r.District || ''));
+  const pinCode = toUpperSpec(document.getElementById('prodPinCode') ? document.getElementById('prodPinCode').value : (r.PinCode || ''));
+  const stateVal = toUpperSpec(document.getElementById('prodState') ? document.getElementById('prodState').value : (r.State || 'ODISHA')) || 'ODISHA';
 
   // Construct summarized CommittedBrand text for display in table
   let displayBrand = '';
@@ -2942,6 +3032,20 @@ window.saveProductPopupSpecs = async function() {
   } else {
     displayBrand = r.CommittedBrand || '';
   }
+  displayBrand = toUpperSpec(displayBrand);
+
+  function formatVoltAcVal(rawVal, fallback = '220 - 240') {
+    const str = extractVoltAcFromSpec(rawVal, fallback);
+    return str ? `${str} V AC`.toUpperCase() : '';
+  }
+
+  const invName = toUpperSpec(document.getElementById('prodInverterName')?.value) || 'GRID-TIED';
+  const invCapacity = formatUnitVal(document.getElementById('prodInverterCapacity')?.value, 'KW', '3');
+  const invInputVoltage = formatUnitVal(document.getElementById('prodInverterInputVoltage')?.value, 'V DC', '300');
+  const invOutputVoltage = formatVoltAcVal(document.getElementById('prodInverterOutputVoltage')?.value, '220 - 240');
+
+  const dcEarthingVal = formatUnitVal(document.getElementById('prodDcEarthing')?.value, 'OHM', '1.7');
+  const acEarthingVal = formatUnitVal(document.getElementById('prodAcEarthing')?.value, 'OHM', '2.3');
 
   const specs = {
     DateOfInstallation: dateOfInstallation,
@@ -2952,47 +3056,49 @@ window.saveProductPopupSpecs = async function() {
     PinCode: pinCode,
     State: stateVal,
     GridTiedInverter: {
-      Name: document.getElementById('prodInverterName').value.trim(),
-      TotalNo: (document.getElementById('prodInverterCount')?.value || '').trim() || '1',
+      Name: invName,
+      TotalNo: '1',
       Make: inverterMake,
-      SerialNo: document.getElementById('prodInverterSerialNo').value.trim(),
-      Capacity: document.getElementById('prodInverterCapacity').value.trim(),
-      InputVoltage: document.getElementById('prodInverterInputVoltage').value.trim(),
-      OutputVoltage: document.getElementById('prodInverterOutputVoltage').value.trim()
+      SerialNo: toUpperSpec(document.getElementById('prodInverterSerialNo')?.value),
+      Capacity: invCapacity,
+      InputVoltage: invInputVoltage,
+      OutputVoltage: invOutputVoltage
     },
     PvModule: {
       Make: moduleMake,
-      NoOfModule: document.getElementById('prodModuleCount').value.trim(),
-      TypeAndModel: document.getElementById('prodModuleTypeModel').value.trim(),
-      CapacityEach: (document.getElementById('prodModuleCapacityEach')?.value || '').trim(),
-      TotalCapacity: (document.getElementById('prodModuleTotalCapacity')?.value || '').trim(),
+      NoOfModule: toUpperSpec(document.getElementById('prodModuleCount')?.value),
+      TypeAndModel: toUpperSpec(document.getElementById('prodModuleTypeModel')?.value),
+      CapacityEach: toUpperSpec(document.getElementById('prodModuleCapacityEach')?.value),
+      TotalCapacity: toUpperSpec(document.getElementById('prodModuleTotalCapacity')?.value),
       SerialNumbers: moduleSerials,
       ModuleCapacities: moduleCapacities
     },
     EarthingVerification: {
-      DcEarthing: document.getElementById('prodDcEarthing').value.trim(),
-      AcEarthing: document.getElementById('prodAcEarthing').value.trim()
+      DcEarthing: dcEarthingVal,
+      AcEarthing: acEarthingVal
     },
     DetailsOfCablesDc: {
-      Make: document.getElementById('prodDcCableMake').value.trim(),
-      SizeType: document.getElementById('prodDcCableSizeType').value.trim()
+      Make: toUpperSpec(document.getElementById('prodDcCableMake')?.value),
+      SizeType: formatUnitVal(document.getElementById('prodDcCableSizeType')?.value, 'SQ MM', '4')
     },
     DetailsOfDcdb: {
-      Make: (document.getElementById('prodDcdbMake')?.value || '').trim(),
-      SerialNo: (document.getElementById('prodDcdbSerialNo')?.value || '').trim(),
-      SpdRating: (document.getElementById('prodDcdbSpdRating')?.value || '').trim(),
-      McbDetails: (document.getElementById('prodDcdbMcbDetails')?.value || '').trim()
+      Make: toUpperSpec(document.getElementById('prodDcdbMake')?.value),
+      SerialNo: toUpperSpec(document.getElementById('prodDcdbSerialNo')?.value),
+      SpdRating: toUpperSpec(document.getElementById('prodDcdbSpdRating')?.value),
+      McbDetails: formatUnitVal(document.getElementById('prodDcdbMcbDetails')?.value, 'AMP (1 NO)', '32')
     },
     DetailsOfAcdb: {
-      Make: (document.getElementById('prodAcdbMake')?.value || '').trim(),
-      SerialNo: (document.getElementById('prodAcdbSerialNo')?.value || '').trim(),
-      SpdRating: (document.getElementById('prodAcdbSpdRating')?.value || '').trim(),
-      McbDetails: (document.getElementById('prodAcdbMcbDetails')?.value || '').trim()
+      Make: toUpperSpec(document.getElementById('prodAcdbMake')?.value),
+      SerialNo: toUpperSpec(document.getElementById('prodAcdbSerialNo')?.value),
+      SpdRating: toUpperSpec(document.getElementById('prodAcdbSpdRating')?.value),
+      McbDetails: formatUnitVal(document.getElementById('prodAcdbMcbDetails')?.value, 'AMP (1 NO)', '32')
     },
     DetailsOfEarthing: {
-      EarthResistance: document.getElementById('prodEarthResistance').value.trim(),
-      EarthWireSize: document.getElementById('prodEarthWireSize').value.trim(),
-      LaSizeType: document.getElementById('prodLaSizeType').value.trim()
+      EarthResistance: formatUnitVal(document.getElementById('prodEarthResistance')?.value, 'OHM', '3'),
+      EarthWireSize: formatUnitVal(document.getElementById('prodEarthWireSize')?.value, 'SQ MM ALUMINUM', '16'),
+      LaSizeType: toUpperSpec(document.getElementById('prodLaSizeType')?.value) || 'COPPER BONDED',
+      DcEarthing: dcEarthingVal,
+      AcEarthing: acEarthingVal
     }
   };
 

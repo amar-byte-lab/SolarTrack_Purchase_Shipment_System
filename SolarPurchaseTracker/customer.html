@@ -761,11 +761,16 @@
               <!-- Row 1: Make & Name of Inverter (2 equal columns) -->
               <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterMake">Make</label>
-                <input type="text" class="form-control specs-input-control" id="prodInverterMake" placeholder="e.g. LUMINOUS">
+                <input type="text" class="form-control specs-input-control" id="prodInverterMake" placeholder="e.g. V-GUARD">
               </div>
               <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterName">Name of Inverter</label>
-                <input type="text" class="form-control specs-input-control" id="prodInverterName" placeholder="e.g. Grid-Tied Inverter">
+                <select class="form-select specs-input-control" id="prodInverterName">
+                  <option value="GRID-TIED" selected>GRID-TIED</option>
+                  <option value="HYBRID">HYBRID</option>
+                  <option value="SOLAR PCU">SOLAR PCU</option>
+                  <option value="PURE SINE WAVE UPS">PURE SINE WAVE UPS</option>
+                </select>
               </div>
 
               <!-- Row 2: Serial No. & Capacity (side-by-side) -->
@@ -775,17 +780,26 @@
               </div>
               <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterCapacity">Capacity</label>
-                <input type="text" class="form-control specs-input-control" id="prodInverterCapacity" placeholder="e.g. 3 kW">
+                <div class="input-group">
+                  <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodInverterCapacity" placeholder="3" value="3">
+                  <span class="input-group-text bg-light text-muted fs-8 font-monospace">KW</span>
+                </div>
               </div>
 
               <!-- Row 3: Input Voltage & Output Voltage (2 equal columns) -->
               <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterInputVoltage">Input Voltage (in V DC)</label>
-                <input type="text" class="form-control specs-input-control" id="prodInverterInputVoltage" placeholder="e.g. 300 V DC">
+                <div class="input-group">
+                  <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodInverterInputVoltage" placeholder="300" value="300">
+                  <span class="input-group-text bg-light text-muted fs-8 font-monospace">V DC</span>
+                </div>
               </div>
               <div class="col-md-6 col-6">
                 <label class="specs-input-label" for="prodInverterOutputVoltage">Output Voltage (in V AC)</label>
-                <input type="text" class="form-control specs-input-control" id="prodInverterOutputVoltage" placeholder="e.g. 220-240 V AC">
+                <div class="input-group">
+                  <input type="text" class="form-control specs-input-control text-end fw-semibold" id="prodInverterOutputVoltage" placeholder="220 - 240" value="220 - 240">
+                  <span class="input-group-text bg-light text-muted fs-8 font-monospace">V AC</span>
+                </div>
               </div>
             </div>
           </div>
@@ -806,7 +820,7 @@
               <!-- Row 2: Type of Module & Model below row (full width col-12 on mobile and PC) -->
               <div class="col-12">
                 <label class="specs-input-label" for="prodModuleTypeModel">Type of Module & Model</label>
-                <input type="text" class="form-control specs-input-control" id="prodModuleTypeModel" placeholder="e.g. BIFICIAL / Mono PERC">
+                <input type="text" class="form-control specs-input-control" id="prodModuleTypeModel" placeholder="e.g. BIFACIAL / TOPCON">
               </div>
             </div>
 
@@ -862,8 +876,11 @@
                 <!-- Hidden input to preserve DC Surge Protection Device Rating for sync -->
                 <input type="hidden" id="prodDcdbSpdRating">
                 <div class="col-12">
-                  <label class="specs-input-label" for="prodDcdbMcbDetails" title="MCB / Isolator Quantity & Capacity">MCB / Isolator Quantity & Capacity</label>
-                  <input type="text" class="form-control specs-input-control" id="prodDcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
+                  <label class="specs-input-label" for="prodDcdbMcbDetails" title="MCB / Isolator Quantity &amp; Capacity (in AMP)">MCB / Isolator Quantity &amp; Capacity (in AMP)</label>
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodDcdbMcbDetails" placeholder="32" value="32">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">AMP (1 NO)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -886,8 +903,11 @@
                 <!-- Hidden input to preserve AC Surge Protection Device Rating for sync -->
                 <input type="hidden" id="prodAcdbSpdRating">
                 <div class="col-12">
-                  <label class="specs-input-label" for="prodAcdbMcbDetails" title="MCB / MCCB Quantity & Capacity">MCB / MCCB Quantity & Capacity</label>
-                  <input type="text" class="form-control specs-input-control" id="prodAcdbMcbDetails" placeholder="e.g. 32 AMP (1 No)">
+                  <label class="specs-input-label" for="prodAcdbMcbDetails" title="MCB / MCCB Quantity &amp; Capacity (in AMP)">MCB / MCCB Quantity &amp; Capacity (in AMP)</label>
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodAcdbMcbDetails" placeholder="32" value="32">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">AMP (1 NO)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -908,8 +928,11 @@
                   <input type="text" class="form-control specs-input-control" id="prodDcCableMake" placeholder="e.g. KEI">
                 </div>
                 <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodDcCableSizeType" title="Size & Type (in SQ MM)">Size & Type (in SQ MM)</label>
-                  <input type="text" class="form-control specs-input-control" id="prodDcCableSizeType" placeholder="e.g. 4 SQ MM">
+                  <label class="specs-input-label" for="prodDcCableSizeType" title="Size &amp; Type (in SQ MM)">Size &amp; Type (in SQ MM)</label>
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodDcCableSizeType" placeholder="4" value="4">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">SQ MM</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -918,31 +941,43 @@
             <div class="specs-card-subgroup mb-0">
               <div class="specs-card-subgroup-title">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
-                Earthing Verification & System Grounding
+                Earthing Verification &amp; System Grounding
               </div>
               <div class="row g-2">
-                <!-- Row 1: Earth Resistance (50%) | D.C Earthing (25%) | A.C Earthing (25%) -->
-                <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodEarthResistance" title="Earth Resistance (in Ohms / Ω)">Earth Resistance (in Ohms / Ω)</label>
-                  <input type="text" class="form-control specs-input-control" id="prodEarthResistance" placeholder="e.g. 3 OHM">
+                <!-- Row 1: Earth Resistance | D.C Earthing | A.C Earthing -->
+                <div class="col-md-4 col-12">
+                  <label class="specs-input-label" for="prodEarthResistance" title="Earth Resistance (in Ohms / Ω)">Earth Resistance (in OHM)</label>
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodEarthResistance" placeholder="3" value="3">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">OHM</span>
+                  </div>
                 </div>
-                <div class="col-md-3 col-3">
-                  <label class="specs-input-label" for="prodDcEarthing" title="D.C Earthing">D.C Earthing</label>
-                  <input type="text" class="form-control specs-input-control" id="prodDcEarthing" placeholder="e.g. 1.7 Ω / OK">
+                <div class="col-md-4 col-6">
+                  <label class="specs-input-label" for="prodDcEarthing" title="D.C Earthing">D.C Earthing (in OHM)</label>
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodDcEarthing" placeholder="1.7" value="1.7">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">OHM</span>
+                  </div>
                 </div>
-                <div class="col-md-3 col-3">
-                  <label class="specs-input-label" for="prodAcEarthing" title="A.C Earthing">A.C Earthing</label>
-                  <input type="text" class="form-control specs-input-control" id="prodAcEarthing" placeholder="e.g. 2.3 Ω / OK">
+                <div class="col-md-4 col-6">
+                  <label class="specs-input-label" for="prodAcEarthing" title="A.C Earthing">A.C Earthing (in OHM)</label>
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodAcEarthing" placeholder="2.3" value="2.3">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">OHM</span>
+                  </div>
                 </div>
 
-                <!-- Row 2: Earth Wire / Flat Size (50%) | LA Size & Type (50%) -->
-                <div class="col-md-6 col-6">
+                <!-- Row 2: Earth Wire / Flat Size | LA Size & Type -->
+                <div class="col-md-6 col-12">
                   <label class="specs-input-label" for="prodEarthWireSize" title="Earth Wire / Flat Size (in SQ MM - Copper/Al)">Earth Wire / Flat Size (in SQ MM)</label>
-                  <input type="text" class="form-control specs-input-control" id="prodEarthWireSize" placeholder="e.g. 16 SQ MM Aluminum">
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodEarthWireSize" placeholder="16" value="16">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">SQ MM ALUMINUM</span>
+                  </div>
                 </div>
-                <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodLaSizeType" title="LA Size & Type">LA Size & Type</label>
-                  <input type="text" class="form-control specs-input-control" id="prodLaSizeType" placeholder="e.g. Copper Bonded">
+                <div class="col-md-6 col-12">
+                  <label class="specs-input-label" for="prodLaSizeType" title="LA Size &amp; Type">LA Size &amp; Type</label>
+                  <input type="text" class="form-control specs-input-control" id="prodLaSizeType" placeholder="e.g. COPPER BONDED" value="COPPER BONDED">
                 </div>
               </div>
             </div>

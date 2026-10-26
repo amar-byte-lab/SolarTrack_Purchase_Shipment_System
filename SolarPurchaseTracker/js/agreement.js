@@ -1983,8 +1983,9 @@ function populateForm6Fields(r) {
 
   // Part F & G & H: Earthing & Protective Systems (Values following Form 6)
   const earth = specs.DetailsOfEarthing || {};
-  setInputVal('f6DcEarthing', earth.DcEarthing || '1.7 in Ohm');
-  setInputVal('f6AcEarthing', earth.AcEarthing || '2.3 in Ohm');
+  const ev = specs.EarthingVerification || {};
+  setInputVal('f6DcEarthing', ev.DcEarthing || earth.DcEarthing || '1.7 in Ohm');
+  setInputVal('f6AcEarthing', ev.AcEarthing || earth.AcEarthing || '2.3 in Ohm');
   setInputVal('f6EarthingLimit', 'Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)');
   setInputVal('f6AcdcDbStatus', 'Yes / No');
   setInputVal('f6ManualSwitch', 'Yes / No');
@@ -3052,7 +3053,8 @@ window.populateForm1Fields = function(r) {
   }
 
   setInputVal('f1Location', fullAddr);
-  setInputVal('f1InverterMakeType', invMake);
+  const invTypeMake = (invMake && inv.Name) ? `${invMake} / ${inv.Name}` : (invMake || 'V-GUARD');
+  setInputVal('f1InverterMakeType', invTypeMake);
   setInputVal('f1InverterAutoIso', 'Yes');
   setInputVal('f1ExistingPlants', 'No');
   setInputVal('f1ExistingCapacity', '0');
@@ -3761,7 +3763,7 @@ window.populateForm3Fields = function(r) {
   const invMake = inv.Make || brandInfo.inverterMake || 'V-GUARD';
   const invCapacity = inv.Capacity ? (String(inv.Capacity).toUpperCase().includes('KW') ? inv.Capacity : `${inv.Capacity} KW`) : `${Math.round(capNum)} KW`;
   const invSerialNo = getOrGenerateInverterSerial(r, specs, invMake);
-  const invVolt = (inv.InputVoltage && inv.OutputVoltage) ? `${inv.InputVoltage}/${inv.OutputVoltage}` : (inv.InputVoltage ? `${inv.InputVoltage}/220-240V AC` : '550 V DC/220-240V AC');
+  const invVolt = (inv.InputVoltage && inv.OutputVoltage) ? `${inv.InputVoltage}/${inv.OutputVoltage}` : (inv.InputVoltage ? `${inv.InputVoltage}/220 - 240 V AC` : '300 V DC/220 - 240 V AC');
 
   setInputVal('f3InvMake', invMake);
   setInputVal('f3InvSerialNo', invSerialNo);
@@ -3791,9 +3793,9 @@ window.populateForm3Fields = function(r) {
   window.renderF3PvSerialInputs(serials, capacities, capEach);
 
   // Part F & G & H: Earthing & Protective Systems
-  const ev = specs.EarthingVerification || {};
-  const dcEarth = ev.DcEarthing ? (String(ev.DcEarthing).includes('Ohm') ? ev.DcEarthing : `${ev.DcEarthing} in Ohm`) : '1.7 in Ohm';
-  const acEarth = ev.AcEarthing ? (String(ev.AcEarthing).includes('Ohm') ? ev.AcEarthing : `${ev.AcEarthing} in Ohm`) : '2.3 in Ohm';
+  const ev = specs.EarthingVerification || specs.DetailsOfEarthing || {};
+  const dcEarth = ev.DcEarthing ? (/ohm/i.test(String(ev.DcEarthing)) ? ev.DcEarthing : `${ev.DcEarthing} in Ohm`) : '1.7 in Ohm';
+  const acEarth = ev.AcEarthing ? (/ohm/i.test(String(ev.AcEarthing)) ? ev.AcEarthing : `${ev.AcEarthing} in Ohm`) : '2.3 in Ohm';
   setInputVal('f3DcEarthing', dcEarth);
   setInputVal('f3AcEarthing', acEarth);
   setInputVal('f3EarthingLimit', `Within permissible limit or Not (Values should be certified by ${discomShort} official)`);

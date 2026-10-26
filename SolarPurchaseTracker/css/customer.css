@@ -1460,7 +1460,23 @@ body.installments-page .page-body {
   padding: 6px 10px;
   color: #0f172a;
   background-color: #ffffff;
+  text-transform: uppercase;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-group > .specs-input-control:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.input-group > .specs-input-control:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.product-specs-modal input,
+.product-specs-modal textarea,
+.product-specs-modal select {
+  text-transform: uppercase;
 }
 
 .specs-input-control:focus {
