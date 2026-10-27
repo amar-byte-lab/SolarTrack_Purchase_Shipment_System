@@ -1,5 +1,28 @@
 const SERVER_START_TIME = performance.now();
 require('dotenv').config();
+const dns = require('dns');
+
+// Patch DNS lookup for Cloudflare / Supabase to bypass unreachable IP 104.18.38.10 on certain Indian ISPs
+const origLookup = dns.lookup;
+dns.lookup = function(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  origLookup(hostname, options, (err, address, family) => {
+    if (!err && typeof hostname === 'string' && hostname.includes('supabase.co')) {
+      if (Array.isArray(address)) {
+        const filtered = address.filter(a => (a.address || a) !== '104.18.38.10');
+        if (filtered.length > 0) address = filtered;
+        else address = [{ address: '172.64.149.246', family: 4 }];
+      } else if (address === '104.18.38.10') {
+        address = '172.64.149.246';
+      }
+    }
+    callback(err, address, family);
+  });
+};
+
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -11,6 +34,70 @@ const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'SolarPurchaseTracker');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const BILLS_DIR = path.join(UPLOADS_DIR, 'bills');
+if (!fs.existsSync(BILLS_DIR)) fs.mkdirSync(BILLS_DIR, { recursive: true });
+const BILLS_INDEX_FILE = path.join(BILLS_DIR, 'bills.json');
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getBillsList() {
+  let list = [];
+  if (fs.existsSync(BILLS_INDEX_FILE)) {
+    try {
+      const raw = fs.readFileSync(BILLS_INDEX_FILE, 'utf-8');
+      list = JSON.parse(raw);
+      if (!Array.isArray(list)) list = [];
+    } catch (err) {
+      console.error('Error reading bills.json:', err);
+      list = [];
+    }
+  }
+
+  // Deduplicate by storedFileName and ensure extension is in fileName
+  const seenStored = new Set();
+  const deduped = [];
+  let hadDuplicates = false;
+  for (const item of list) {
+    if (item && item.storedFileName) {
+      if (!seenStored.has(item.storedFileName)) {
+        seenStored.add(item.storedFileName);
+        if (item.ext && item.fileName && !item.fileName.toLowerCase().endsWith(item.ext.toLowerCase())) {
+          item.fileName += item.ext.toLowerCase();
+          hadDuplicates = true;
+        }
+        deduped.push(item);
+      } else {
+        hadDuplicates = true;
+      }
+    }
+  }
+
+  // Remove entries whose files are no longer on disk
+  const validList = deduped.filter(item => {
+    return fs.existsSync(path.join(BILLS_DIR, item.storedFileName));
+  });
+
+  if (hadDuplicates || validList.length !== list.length) {
+    saveBillsList(validList);
+  }
+
+  return validList;
+}
+
+function saveBillsList(list) {
+  try {
+    fs.writeFileSync(BILLS_INDEX_FILE, JSON.stringify(list, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving bills.json:', err);
+  }
+}
 
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -186,20 +273,142 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-
+  // 1c. Serve uploaded file documents: GET /bills/<filename> or /files/<filename>
+  if (req.method === 'GET' && (pathname.startsWith('/bills/') || pathname.startsWith('/files/'))) {
+    const rawFileName = pathname.startsWith('/files/') ? pathname.slice('/files/'.length) : pathname.slice('/bills/'.length);
+    const safePath = path.join(BILLS_DIR, path.basename(rawFileName));
+    if (fs.existsSync(safePath)) {
+      const ext = path.extname(safePath).toLowerCase();
+      const mime = MIME_TYPES[ext] || 'application/octet-stream';
+      res.setHeader('Content-Type', mime);
+      const isDownload = parsedUrl.searchParams.get('download') === '1';
+      const downloadName = parsedUrl.searchParams.get('name') || rawFileName;
+      const inlineExts = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.txt'];
+      const disposition = (!isDownload && inlineExts.includes(ext))
+        ? 'inline'
+        : `attachment; filename="${encodeURIComponent(downloadName)}"`;
+      res.setHeader('Content-Disposition', disposition);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.statusCode = 200;
+      fs.createReadStream(safePath).pipe(res);
+    } else {
+      res.statusCode = 404;
+      res.end('File document not found');
+    }
+    return;
+  }
 
   // 2. REST API endpoints
   if (pathname.startsWith('/api/')) {
     const dbStartTime = performance.now();
     try {
+      if (pathname === '/api/bills' || pathname === '/api/files') {
+        try {
+          const files = getBillsList();
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, files, bills: files })), 'no-cache, no-store');
+        } catch (e) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && (pathname === '/api/bills/upload' || pathname === '/api/files/upload')) {
+        try {
+          const rawFileName = parsedUrl.searchParams.get('fileName') || '';
+          const originalName = parsedUrl.searchParams.get('originalName') || 'file';
+          const fileDate = parsedUrl.searchParams.get('fileDate') || parsedUrl.searchParams.get('billDate') || new Date().toISOString().slice(0, 10);
+
+          const fileBody = await getRawBody(req);
+          if (!fileBody || fileBody.length === 0) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'File content is empty' }));
+            return;
+          }
+
+          const files = getBillsList();
+
+          const ext = path.extname(originalName) || '';
+          const storedFileName = Date.now() + '_' + Math.random().toString(36).substring(2, 7) + ext;
+          const destPath = path.join(BILLS_DIR, storedFileName);
+          fs.writeFileSync(destPath, fileBody);
+
+          let displayName = rawFileName.trim() || path.parse(originalName).name;
+          if (ext && !displayName.toLowerCase().endsWith(ext.toLowerCase())) {
+            displayName += ext.toLowerCase();
+          }
+
+          const newFile = {
+            id: 'file_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            fileName: displayName,
+            storedFileName: storedFileName,
+            ext: ext.toLowerCase(),
+            size: fileBody.length,
+            sizeFormatted: formatBytes(fileBody.length),
+            fileDate: fileDate,
+            billDate: fileDate,
+            createdAt: new Date().toISOString(),
+            url: `/files/${storedFileName}`
+          };
+
+          files.unshift(newFile);
+          saveBillsList(files);
+
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, file: newFile, bill: newFile })), 'no-cache, no-store');
+        } catch (e) {
+          console.error('File upload error:', e);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && (pathname === '/api/bills/delete' || pathname === '/api/files/delete')) {
+        try {
+          const payload = await getRequestBody(req);
+          const fileId = payload?.id || parsedUrl.searchParams.get('id');
+          if (!fileId) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Missing file ID' }));
+            return;
+          }
+
+          let files = getBillsList();
+          const targetFile = files.find(b => b.id === fileId || b.storedFileName === fileId);
+          if (targetFile) {
+            const filePath = path.join(BILLS_DIR, targetFile.storedFileName);
+            if (fs.existsSync(filePath)) {
+              try { fs.unlinkSync(filePath); } catch (err) { console.error('Error unlinking file:', err); }
+            }
+            files = files.filter(b => b.id !== targetFile.id);
+            saveBillsList(files);
+          }
+
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
+        } catch (e) {
+          console.error('File delete error:', e);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: e.message }));
+        }
+        return;
+      }
       if (pathname === '/api/login') {
         const payload = await getRequestBody(req);
         const inputId = (payload?.userid || payload?.username || '').trim().toLowerCase();
-        const inputPass = payload?.password || '';
+        const inputPass = (payload?.password || '').toString();
 
-        const users = await db.getTable('users');
-        if (!Array.isArray(users) || users.length === 0) {
-          console.warn(`[Auth Warning] Login attempted for "${inputId}", but database users table returned 0 records.`);
+        if (!inputId || !inputPass) {
+          sendResponse(req, res, 400, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'User ID and Password are required' })), 'no-cache, no-store');
+          return;
+        }
+
+        let users = [];
+        try {
+          users = await db.getTable('users');
+        } catch (dbErr) {
+          console.error('[Auth Error] Error querying users table from database:', dbErr.message);
+          sendResponse(req, res, 500, 'application/json', Buffer.from(JSON.stringify({ success: false, error: 'Database service unavailable. Please try again.' })), 'no-cache, no-store');
+          return;
         }
 
         const foundUser = (Array.isArray(users) ? users : []).find(u => {

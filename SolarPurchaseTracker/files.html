@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" class="shipment-page">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Files — SolarTrack</title>
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/files.css">
+  <script src="js/auth.js"></script>
+</head>
+<body class="shipment-page">
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <div id="sidebar"></div>
+
+  <!-- Main Content Shell -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <div class="topbar" id="topbar"></div>
+
+    <!-- Page Body Container -->
+    <div class="page-body">
+
+      <!-- 1. Search & Filters Card (Collapsible, Enterprise Alignment) -->
+      <div class="st-card mb-2 py-2 px-3" id="fileSearchFilterCard">
+        <div class="d-flex justify-content-between align-items-center collapse-trigger-header" data-bs-toggle="collapse" data-bs-target="#fileSearchCollapse" aria-expanded="false" aria-controls="fileSearchCollapse" id="btnToggleSearchCollapse">
+          <div class="d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-secondary"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="fw-semibold text-secondary" style="font-size:0.83rem;">Search &amp; Filters</span>
+          </div>
+          <span class="collapse-arrow text-muted" id="fileSearchCollapseIndicator">▼</span>
+        </div>
+        <div class="collapse" id="fileSearchCollapse">
+          <div class="pt-2.5 pb-1">
+            <div class="row g-2 align-items-end">
+              <!-- Search query input -->
+              <div class="col-md-5 col-12">
+                <label class="form-label fs-8 fw-semibold text-secondary mb-1" for="fileSearchQuery">File Name</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </span>
+                  <input type="text" class="form-control border-start-0 ps-1" id="fileSearchQuery" placeholder="Search by file name..." style="font-size:0.83rem;">
+                </div>
+              </div>
+              <!-- From Date -->
+              <div class="col-md-3 col-6">
+                <label class="form-label fs-8 fw-semibold text-secondary mb-1" for="fileFilterDateFrom">From Date</label>
+                <input type="date" class="form-control form-control-sm" id="fileFilterDateFrom">
+              </div>
+              <!-- To Date -->
+              <div class="col-md-3 col-6">
+                <label class="form-label fs-8 fw-semibold text-secondary mb-1" for="fileFilterDateTo">To Date</label>
+                <input type="date" class="form-control form-control-sm" id="fileFilterDateTo">
+              </div>
+              <!-- Clear Action -->
+              <div class="col-md-1 col-12 text-md-end">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-1 fs-8" id="btnClearFileFilters" title="Clear all search filters">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Saved Files Table Card -->
+      <div class="st-card p-0 overflow-hidden shadow-xs" id="fileSavedFilesCard">
+        <!-- Card Header Toolbar -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-light">
+          <div class="d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-secondary"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="fw-bold text-dark fs-7">Saved Files</span>
+            <span class="badge bg-primary-subtle text-primary border fs-8 fw-semibold" id="lblFilesCount">0 Files</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2.5 d-flex align-items-center gap-1.5 fs-8" id="btnRefreshFiles" onclick="FilesApp.loadFiles()" title="Reload list">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive files-table-container" style="min-height: 280px; max-height: calc(100vh - 270px); overflow-y: auto;">
+          <table class="table st-table table-hover align-middle mb-0 text-nowrap" id="filesTable">
+            <thead class="table-light sticky-top" style="z-index: 2;">
+              <tr>
+                <th class="text-start py-2 fs-8 fw-bold text-secondary cursor-pointer ps-3" onclick="FilesApp.toggleSort('name')" style="cursor: pointer;">
+                  <div class="d-flex align-items-center gap-1.5">
+                    <span>File Name</span>
+                    <span id="sortIcon_name" class="fs-9 text-muted">↕</span>
+                  </div>
+                </th>
+                <th style="width: 140px;" class="text-center py-2 fs-8 fw-bold text-secondary cursor-pointer" onclick="FilesApp.toggleSort('date')" style="cursor: pointer;">
+                  <div class="d-flex align-items-center justify-content-center gap-1.5">
+                    <span>Date</span>
+                    <span id="sortIcon_date" class="fs-9 text-primary fw-bold">▼</span>
+                  </div>
+                </th>
+                <th style="width: 120px;" class="text-center py-2 fs-8 fw-bold text-secondary no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="filesTableTbody">
+              <tr>
+                <td colspan="3" class="text-center py-5 text-muted">
+                  <div class="d-flex flex-column align-items-center justify-content-center">
+                    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                    <span class="fs-8">Loading files...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /.page-body -->
+  </div><!-- /.main-content -->
+</div><!-- /.app-shell -->
+
+<!-- 4. File Preview Modal (Interactive In-App Rendering) -->
+<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 92vw;">
+    <div class="modal-content shadow-lg border-0">
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+          <h6 class="modal-title fw-bold text-dark text-truncate mb-0 fs-7" id="filePreviewModalLabel">File Preview</h6>
+          <span class="badge bg-light text-secondary border font-monospace fs-8" id="filePreviewSizeBadge">0 B</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-xs btn-outline-success py-1 px-2.5 d-flex align-items-center gap-1 fs-8" id="btnFilePreviewDownload" title="Download file">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button type="button" class="btn-close ms-1" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-0" id="filePreviewModalBody" style="min-height: 480px; max-height: 82vh; overflow: auto; background-color: #f8fafc;">
+        <!-- Injected dynamically based on file type -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Upload File Modal (Interactive, Symmetrical Alignment) -->
+<div class="modal fade" id="fileUploadModal" tabindex="-1" aria-labelledby="fileUploadModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0">
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <div class="bg-primary-subtle text-primary rounded p-1.5 d-flex align-items-center justify-content-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <h6 class="modal-title fw-bold text-dark mb-0 fs-7" id="fileUploadModalLabel">Upload Documents</h6>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Hidden Native File Input -->
+      <input type="file" id="fileInputEl" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp,.bmp,.txt" style="display:none;" onchange="FilesApp.onFilesSelected(this)">
+
+      <!-- Modal Body (Symmetrically aligned dropzone & pending files list) -->
+      <div class="modal-body p-3" id="fileUploadModalBody">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-between align-items-center" id="fileUploadModalFooter">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/xlsx.full.min.js"></script>
+<script src="assets/js/mammoth.browser.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/files.js"></script>
+</body>
+</html>

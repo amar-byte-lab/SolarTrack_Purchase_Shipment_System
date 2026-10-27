@@ -1,4 +1,27 @@
 require('dotenv').config();
+const dns = require('dns');
+
+// Patch DNS lookup for Cloudflare / Supabase to bypass unreachable IP 104.18.38.10 on certain Indian ISPs
+const origLookup = dns.lookup;
+dns.lookup = function(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  origLookup(hostname, options, (err, address, family) => {
+    if (!err && typeof hostname === 'string' && hostname.includes('supabase.co')) {
+      if (Array.isArray(address)) {
+        const filtered = address.filter(a => (a.address || a) !== '104.18.38.10');
+        if (filtered.length > 0) address = filtered;
+        else address = [{ address: '172.64.149.246', family: 4 }];
+      } else if (address === '104.18.38.10') {
+        address = '172.64.149.246';
+      }
+    }
+    callback(err, address, family);
+  });
+};
+
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = (process.env.SUPABASE_URL || 'https://fqhsegrisdkclnocpqqb.supabase.co').replace(/\/rest\/v1\/?$/, '');

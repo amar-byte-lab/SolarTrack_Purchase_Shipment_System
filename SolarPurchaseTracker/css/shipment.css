@@ -45,6 +45,7 @@ body.shipment-page .page-body {
   overflow: hidden;
 }
 
+
 .st-card.mb-3 {
   flex-shrink: 0;
   margin-bottom: 0 !important;
@@ -455,6 +456,8 @@ th.sort-desc::after { content: ' ▼'; color: var(--st-primary); }
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
 }
+
+
 
 
 

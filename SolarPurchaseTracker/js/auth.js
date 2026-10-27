@@ -83,22 +83,6 @@ const Auth = (() => {
     window.location.href = 'login.html';
   }
 
-  function fallbackLogin(userid, password) {
-    clearAllCacheAndStorage();
-    const id = (userid || '').trim().toLowerCase();
-    if (id === 'admin' && password === 'adminpassword') {
-      const u = { userid: 'admin', username: 'Admin', role: 'admin' };
-      setUser(u);
-      return { success: true, user: u };
-    }
-    if (id === 'user' && password === 'userpassword') {
-      const u = { userid: 'user', username: 'Normal User', role: 'user' };
-      setUser(u);
-      return { success: true, user: u };
-    }
-    return { success: false, error: 'Invalid User ID or Password' };
-  }
-
   async function login(userid, password) {
     clearAllCacheAndStorage();
     try {
@@ -111,14 +95,11 @@ const Auth = (() => {
       if (res.ok && data.success) {
         setUser(data.user);
         return { success: true, user: data.user };
-      } else if (res.status === 404 || data.error === 'Endpoint not found') {
-        // Fallback for when server process is running older code before restart
-        return fallbackLogin(userid, password);
       } else {
         return { success: false, error: data.error || 'Invalid User ID or Password' };
       }
     } catch (e) {
-      return fallbackLogin(userid, password);
+      return { success: false, error: 'Server connection error. Please try again.' };
     }
   }
 
@@ -158,7 +139,7 @@ const Auth = (() => {
     const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
     
     if (!isPowerUser) {
-      if (page === 'manage-work.html') {
+      if (page === 'manage-work.html' || page === 'files.html') {
         window.location.href = 'dashboard.html';
         return;
       }

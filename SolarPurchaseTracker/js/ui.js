@@ -10,6 +10,7 @@ const UI = (() => {
     { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipment' },
+    { href: 'files.html',           icon: 'file',       label: 'Files' },
     { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
     { href: 'document.html',        icon: 'agreement',  label: 'Document' },
     { href: 'sizing-calc.html',     icon: 'calculator', label: 'Calculator' },
@@ -85,7 +86,7 @@ const UI = (() => {
     const visibleNavItems = user 
       ? NAV_ITEMS.filter(item => {
           if (isPowerUser) return true;
-          if (item.href === 'manage-work.html') return false;
+          if (item.href === 'manage-work.html' || item.href === 'files.html') return false;
           if (user.role === 'partner' || user.role === 'associates') {
             return ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }

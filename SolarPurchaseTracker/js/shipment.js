@@ -45,6 +45,7 @@ window.onDbReady = function () {
     const tabPriceHistory = document.getElementById('tabPriceHistory');
     const mainShipmentView = document.getElementById('mainShipmentView');
     const mainPriceHistoryView = document.getElementById('mainPriceHistoryView');
+    const shipmentSearchFilterCard = document.getElementById('shipmentSearchFilterCard');
 
     window.switchMainTab = function (type) {
         activeTab = type;
@@ -57,10 +58,12 @@ window.onDbReady = function () {
         if (type === 'PriceHistory') {
             if (mainShipmentView) mainShipmentView.style.display = 'none';
             if (mainPriceHistoryView) mainPriceHistoryView.style.display = 'flex';
+            if (shipmentSearchFilterCard) shipmentSearchFilterCard.style.display = 'none';
             renderPriceHistoryList();
         } else {
             if (mainPriceHistoryView) mainPriceHistoryView.style.display = 'none';
             if (mainShipmentView) mainShipmentView.style.display = 'flex';
+            if (shipmentSearchFilterCard) shipmentSearchFilterCard.style.display = 'block';
             renderList();
         }
     };
@@ -129,6 +132,7 @@ window.onDbReady = function () {
             document.getElementById('searchCollapseIndicator').textContent = '▼ Show';
         });
     }
+
 
     populateDatalists();
     populateColorCheckboxes();
@@ -3037,3 +3041,5 @@ window.deletePriceRecord = async function (recordId) {
         UI.showLoading(false);
     }
 };
+
+
