@@ -158,13 +158,14 @@
       const res = await fetch('/api/roles');
       if (res.ok) {
         const data = await res.json();
-        const roles = data.roles || ['user', 'partner'];
+        const roles = data.roles || ['user', 'partner', 'Employee'];
+        if (!roles.some(r => r && r.toLowerCase() === 'employee')) roles.push('Employee');
         select.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
       } else {
-        select.innerHTML = '<option value="user">user</option><option value="partner">partner</option>';
+        select.innerHTML = '<option value="user">user</option><option value="partner">partner</option><option value="Employee">Employee</option>';
       }
     } catch (err) {
-      document.getElementById('selectRegRole').innerHTML = '<option value="user">user</option><option value="partner">partner</option>';
+      document.getElementById('selectRegRole').innerHTML = '<option value="user">user</option><option value="partner">partner</option><option value="Employee">Employee</option>';
     }
   }
 
@@ -193,7 +194,8 @@
     const res = await Auth.login(userid, password);
 
     if (res.success) {
-      window.location.href = 'dashboard.html';
+      const roleLower = (res.user && res.user.role ? res.user.role : '').toLowerCase().trim();
+      window.location.href = (roleLower === 'employee') ? 'quotation.html' : 'dashboard.html';
     } else {
       alertEl.textContent = res.error || 'Invalid User ID or Password';
       alertEl.style.display = 'block';

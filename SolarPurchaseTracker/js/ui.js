@@ -9,6 +9,7 @@ const UI = (() => {
     { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
+    { href: 'inventory.html',       icon: 'boxes',      label: 'Inventory' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipment' },
     { href: 'files.html',           icon: 'file',       label: 'Files' },
     { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
@@ -19,6 +20,8 @@ const UI = (() => {
   ];
 
   const ICONS = {
+    boxes: `<path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l6 3.43a2 2 0 0 0 2.06 0l6-3.43a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L11 9.49a2 2 0 0 0-2.06 0l-5.97 3.43z" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="m12 22v-9.5" stroke="currentColor" stroke-width="1.75"/><path d="M7 17.5v-3.5L12 11l5 3v3.5" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M12 2.5 4.5 6.8v4.4l7.5 4.3 7.5-4.3V6.8L12 2.5z" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
+    package: `<path d="M16.5 9.4 7.55 4.24" stroke="currentColor" stroke-width="1.75"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.75" fill="none"/><polyline points="3.29 7 12 12 20.71 7" stroke="currentColor" stroke-width="1.75" fill="none"/><line x1="12" y1="22" x2="12" y2="12" stroke="currentColor" stroke-width="1.75"/>`,
     briefcase: `<rect x="2" y="7" width="20" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
     calculator: `<rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor" stroke-width="1.75" fill="none"/><line x1="8" y1="6" x2="16" y2="6" stroke="currentColor" stroke-width="1.75"/><line x1="16" y1="14" x2="16" y2="18" stroke="currentColor" stroke-width="1.75"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
     grid: `<rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
@@ -82,22 +85,27 @@ const UI = (() => {
     if (!el) return;
 
     const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
-    const isPowerUser = user && (user.role === 'admin' || user.role === 'superadmin');
+    const roleLower = (user && user.role ? user.role : '').toLowerCase().trim();
+    const isPowerUser = roleLower === 'admin' || roleLower === 'superadmin';
+    const isEmployee = roleLower === 'employee';
     const visibleNavItems = user 
       ? NAV_ITEMS.filter(item => {
           if (isPowerUser) return true;
-          if (item.href === 'manage-work.html' || item.href === 'files.html') return false;
-          if (user.role === 'partner' || user.role === 'associates') {
-            return ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+          if (isEmployee) {
+            return ['quotation.html', 'document.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['dashboard.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          if (item.href === 'manage-work.html' || item.href === 'files.html') return false;
+          if (roleLower === 'partner' || roleLower === 'associates') {
+            return ['dashboard.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+          }
+          return ['dashboard.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
-      : [];
+      : NAV_ITEMS;
 
     const userControlsMobile = user ? `
       <div class="sidebar-user-controls d-md-none pt-3 mt-3 border-top px-1 d-flex flex-column gap-2">
         <div class="user-badge-mobile">
-          <span class="badge ${user.role === 'admin' ? 'bg-primary' : 'bg-success'} fs-7 py-2 px-3 w-100 d-flex align-items-center justify-content-center gap-2 text-truncate">
+          <span class="badge ${user.role === 'admin' ? 'bg-primary' : (isEmployee ? 'bg-info text-dark' : 'bg-success')} fs-7 py-2 px-3 w-100 d-flex align-items-center justify-content-center gap-2 text-truncate">
             👤 ${user.username || user.userid} (${user.role.charAt(0).toUpperCase() + user.role.slice(1)})
           </span>
         </div>

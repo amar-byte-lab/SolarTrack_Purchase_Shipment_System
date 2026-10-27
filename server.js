@@ -471,7 +471,7 @@ const server = http.createServer(async (req, res) => {
               }
             }
             for (const r of currentRoles) {
-              if (!payload.roles.includes(r) && r !== 'admin' && r !== 'user') {
+              if (!payload.roles.includes(r) && r !== 'admin' && r !== 'user' && r !== 'Employee' && r !== 'employee') {
                 await db.deleteRow('roles', 'role', r);
               }
             }
@@ -724,6 +724,9 @@ const server = http.createServer(async (req, res) => {
         try {
           const rolesList = await db.getTable('roles');
           const roles = rolesList.map(r => r.role);
+          if (!roles.some(r => r && r.toLowerCase() === 'employee')) {
+            roles.push('Employee');
+          }
           sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, roles })), 'no-cache, no-store');
         } catch (e) {
           res.statusCode = 500;
@@ -973,6 +976,20 @@ server.listen(PORT, () => {
   console.log(`Active Database Driver: ${db.driverName} (DB_TYPE: ${db.dbType})`);
   console.log(`Serving Static Files From: ${PUBLIC_DIR}`);
   console.log("======================================================");
+
+  // Ensure default roles exist in database
+  (async () => {
+    try {
+      const rolesList = await db.getTable('roles');
+      const existing = (rolesList || []).map(r => (r.role || '').toLowerCase());
+      if (!existing.includes('employee')) {
+        await db.insertRow('roles', { role: 'Employee' });
+        console.log('✅ Ensured "Employee" role exists in database.');
+      }
+    } catch (err) {
+      console.warn('[Startup] ensureDefaultRoles warning:', err.message);
+    }
+  })();
 
   // Open browser only on local Windows machine
   if (process.env.RENDER !== "true") {

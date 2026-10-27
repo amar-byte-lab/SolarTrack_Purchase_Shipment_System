@@ -109,11 +109,13 @@ const Auth = (() => {
     if (page === '' || page === '/') page = 'index.html';
 
     const currentUser = getUser();
+    const roleLower = (currentUser && currentUser.role ? currentUser.role : '').toLowerCase().trim();
+    const isEmployee = roleLower === 'employee';
 
     // 1. If on login page
     if (page === 'login.html') {
       if (currentUser) {
-        window.location.href = 'dashboard.html';
+        window.location.href = isEmployee ? 'quotation.html' : 'dashboard.html';
       }
       return;
     }
@@ -131,26 +133,36 @@ const Auth = (() => {
 
     // 4. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
-      window.location.href = 'dashboard.html';
+      window.location.href = isEmployee ? 'quotation.html' : 'dashboard.html';
       return;
     }
 
     // 5. Access restrictions
-    const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+    const isPowerUser = roleLower === 'admin' || roleLower === 'superadmin';
     
+    if (isEmployee) {
+      // Employee role has exclusive access only to Quotation, Document, and Calculator pages
+      const allowed = ['quotation.html', 'document.html', 'sizing-calc.html', 'agreement.html'];
+      if (!allowed.includes(page)) {
+        window.location.href = 'quotation.html';
+        return;
+      }
+      return;
+    }
+
     if (!isPowerUser) {
       if (page === 'manage-work.html' || page === 'files.html') {
         window.location.href = 'dashboard.html';
         return;
       }
-      if (currentUser.role === 'partner' || currentUser.role === 'associates') {
-        const allowed = ['dashboard.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+      if (roleLower === 'partner' || roleLower === 'associates') {
+        const allowed = ['dashboard.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'dashboard.html';
           return;
         }
       } else {
-        const allowed = ['dashboard.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
+        const allowed = ['dashboard.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'dashboard.html';
           return;

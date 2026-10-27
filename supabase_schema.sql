@@ -76,6 +76,8 @@ ALTER TABLE installments ADD COLUMN IF NOT EXISTS "CircleName" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ApplicationNumber" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ProposedCapacity" TEXT;
 ALTER TABLE installments ADD COLUMN IF NOT EXISTS "ProductSpecs" JSONB;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "SpecsUpdatedBy" TEXT;
+ALTER TABLE installments ADD COLUMN IF NOT EXISTS "SpecsUpdatedAt" TEXT;
 
 CREATE TABLE IF NOT EXISTS installment_txns (
   "TxnID" TEXT PRIMARY KEY,
@@ -225,6 +227,8 @@ INSERT INTO roles ("role") VALUES
   ('admin'), 
   ('superadmin'), 
   ('partner'), 
+  ('associates'),
+  ('Employee'),
   ('user')
 ON CONFLICT DO NOTHING;
 
@@ -264,6 +268,107 @@ CREATE TABLE IF NOT EXISTS price_history (
 -- Alter table queries for existing PostgreSQL / Supabase deployments
 ALTER TABLE price_history ADD COLUMN IF NOT EXISTS "BatchID" TEXT;
 ALTER TABLE price_history ADD COLUMN IF NOT EXISTS "NoteName" TEXT;
+
+-- =========================================================================
+-- Solar Inventory & Site Logistics Schema (PostgreSQL / Supabase)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS inventory_items (
+  "ItemCode" TEXT PRIMARY KEY,
+  "ItemName" TEXT NOT NULL,
+  "Brand" TEXT NOT NULL,
+  "Specification" TEXT,
+  "Category" TEXT NOT NULL,
+  "Unit" TEXT DEFAULT 'Nos',
+  "BuyingPrice" NUMERIC NOT NULL DEFAULT 0,
+  "MinThreshold" NUMERIC DEFAULT 5,
+  "HSNCode" TEXT,
+  "GSTPercent" NUMERIC DEFAULT 12,
+  "Status" TEXT DEFAULT 'Active',
+  "CreatedAt" TEXT,
+  "UpdatedAt" TEXT
+);
+
+CREATE TABLE IF NOT EXISTS inventory_inwards (
+  "InwardID" TEXT PRIMARY KEY,
+  "Date" TEXT NOT NULL,
+  "InvoiceNo" TEXT,
+  "Supplier" TEXT,
+  "ItemCode" TEXT REFERENCES inventory_items("ItemCode") ON DELETE CASCADE,
+  "Quantity" NUMERIC NOT NULL DEFAULT 0,
+  "UnitPrice" NUMERIC NOT NULL DEFAULT 0,
+  "TotalCost" NUMERIC NOT NULL DEFAULT 0,
+  "Location" TEXT,
+  "Remarks" TEXT,
+  "DocumentName" TEXT,
+  "DocumentData" TEXT,
+  "CreatedAt" TEXT
+);
+
+CREATE TABLE IF NOT EXISTS inventory_dispatches (
+  "DispatchID" TEXT PRIMARY KEY,
+  "Date" TEXT NOT NULL,
+  "ChallanNo" TEXT,
+  "SiteName" TEXT NOT NULL,
+  "ItemCode" TEXT REFERENCES inventory_items("ItemCode") ON DELETE CASCADE,
+  "Quantity" NUMERIC NOT NULL DEFAULT 0,
+  "UnitBuyingPrice" NUMERIC NOT NULL DEFAULT 0,
+  "DispatchedCost" NUMERIC NOT NULL DEFAULT 0,
+  "TransportCost" NUMERIC NOT NULL DEFAULT 0,
+  "Vehicle" TEXT,
+  "Remarks" TEXT,
+  "DocumentName" TEXT,
+  "DocumentData" TEXT,
+  "CreatedAt" TEXT
+);
+
+-- Indexes for Supabase Performance
+CREATE INDEX IF NOT EXISTS idx_inventory_items_category ON inventory_items("Category");
+CREATE INDEX IF NOT EXISTS idx_inventory_items_brand ON inventory_items("Brand");
+CREATE INDEX IF NOT EXISTS idx_inventory_inwards_itemcode ON inventory_inwards("ItemCode");
+CREATE INDEX IF NOT EXISTS idx_inventory_inwards_date ON inventory_inwards("Date");
+CREATE INDEX IF NOT EXISTS idx_inventory_dispatches_itemcode ON inventory_dispatches("ItemCode");
+CREATE INDEX IF NOT EXISTS idx_inventory_dispatches_date ON inventory_dispatches("Date");
+CREATE INDEX IF NOT EXISTS idx_inventory_dispatches_sitename ON inventory_dispatches("SiteName");
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_inwards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_dispatches ENABLE ROW LEVEL SECURITY;
+
+-- Allow anonymous and authenticated access matching project's Supabase policies
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all operations on inventory_items') THEN
+    CREATE POLICY "Allow all operations on inventory_items" ON inventory_items FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all operations on inventory_inwards') THEN
+    CREATE POLICY "Allow all operations on inventory_inwards" ON inventory_inwards FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all operations on inventory_dispatches') THEN
+    CREATE POLICY "Allow all operations on inventory_dispatches" ON inventory_dispatches FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Pre-populate default solar equipment SKUs
+INSERT INTO inventory_items ("ItemCode", "ItemName", "Brand", "Specification", "Category", "Unit", "BuyingPrice", "MinThreshold", "HSNCode", "GSTPercent", "Status", "CreatedAt") VALUES
+  ('MOD-WAR-545B', 'Solar PV Module', 'Waaree', '545W Bifacial Mono PERC (Silver Frame)', 'Panels', 'Nos', 9800, 15, '85414011', 12, 'Active', '2026-10-10T10:00:00Z'),
+  ('MOD-EXI-580T', 'Solar PV Module', 'Exide', '580W TopCon Glass-to-Glass Bifacial', 'Panels', 'Nos', 11400, 10, '85414011', 12, 'Active', '2026-10-12T10:00:00Z'),
+  ('MOD-ADA-540M', 'Solar PV Module', 'Adani', '540W Mono PERC Half-Cut Cell', 'Panels', 'Nos', 9200, 12, '85414011', 12, 'Active', '2026-10-14T10:00:00Z'),
+  ('INV-GRO-10KW', 'Solar Inverter', 'Growatt', '10kW 3-Phase Dual MPPT On-Grid', 'Inverters', 'Nos', 54000, 3, '85044090', 12, 'Active', '2026-10-15T10:00:00Z'),
+  ('INV-DEY-05KW', 'Hybrid Inverter', 'Deye', '5kW Low Voltage Hybrid (48V Battery)', 'Inverters', 'Nos', 68500, 3, '85044090', 12, 'Active', '2026-10-16T10:00:00Z'),
+  ('INV-SOL-3.3K', 'Solar Inverter', 'Solis', '3.3kW Single Phase Dual MPPT On-Grid', 'Inverters', 'Nos', 28200, 4, '85044090', 12, 'Active', '2026-10-17T10:00:00Z'),
+  ('CBL-POL-4R', 'Solar DC Cable', 'Polycab', '4 sq.mm Tinned Copper UV Protected (Red)', 'Cables', 'Meters', 46, 200, '85444990', 18, 'Active', '2026-10-18T10:00:00Z'),
+  ('CBL-POL-4B', 'Solar DC Cable', 'Polycab', '4 sq.mm Tinned Copper UV Protected (Black)', 'Cables', 'Meters', 46, 200, '85444990', 18, 'Active', '2026-10-18T10:00:00Z'),
+  ('CBL-HAV-6DC', 'Solar DC Cable', 'Havells', '6 sq.mm XLPO Solar Cable (Flame Retardant)', 'Cables', 'Meters', 74, 150, '85444990', 18, 'Active', '2026-10-19T10:00:00Z'),
+  ('CBL-FIN-10AC', 'AC Armoured Cable', 'Finolex', '10 sq.mm 4-Core Aluminium Armoured AC Cable', 'Cables', 'Meters', 125, 100, '85444990', 18, 'Active', '2026-10-19T10:00:00Z'),
+  ('HDW-MID-35', 'Module Mid Clamp', 'SolarMount Pro', '35mm Anodized AL-6063 with SS304 Allen Bolt', 'Hardware', 'Nos', 24, 400, '76109010', 18, 'Active', '2026-10-20T10:00:00Z'),
+  ('HDW-END-35', 'Module End Clamp', 'SolarMount Pro', '35mm Anodized AL-6063 with SS304 Allen Bolt', 'Hardware', 'Nos', 26, 300, '76109010', 18, 'Active', '2026-10-20T10:00:00Z'),
+  ('ELC-EARTH-GI', 'Chemical Earthing Rod', 'TruePower', '17.2mm dia × 2m GI Hot-Dip with 25kg Compound', 'Electrical', 'Sets', 1450, 10, '85389000', 18, 'Active', '2026-10-21T10:00:00Z'),
+  ('ELC-ACDB-10K', 'AC Distribution Box (ACDB)', 'Schneider / L&T', '10kW 3-Phase ACDB with Type-II SPD & 4P MCB', 'Electrical', 'Nos', 4200, 5, '85371000', 18, 'Active', '2026-10-21T10:00:00Z'),
+  ('ELC-DCDB-2IN', 'DC Distribution Box (DCDB)', 'Schneider / L&T', '1000V DC 2-In 2-Out with 1000V SPD & 32A Fuses', 'Electrical', 'Nos', 3800, 5, '85371000', 18, 'Active', '2026-10-21T10:00:00Z'),
+  ('CND-PVC-25M', 'Rigid PVC Conduit Pipe', 'Supreme', '25mm Heavy Duty UV Stabilized (3m Length)', 'Conduit', 'Pcs', 95, 80, '39172300', 18, 'Active', '2026-10-22T10:00:00Z')
+ON CONFLICT ("ItemCode") DO NOTHING;
 
 
 

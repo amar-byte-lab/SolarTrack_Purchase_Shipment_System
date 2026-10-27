@@ -50,6 +50,9 @@ const PRIMARY_KEYS = {
   roles:               'role',
   notifications:       'id',
   work_notes:          'NoteID',
+  inventory_items:     'ItemCode',
+  inventory_inwards:   'InwardID',
+  inventory_dispatches:'DispatchID',
 };
 
 async function getStatus() {
@@ -116,6 +119,8 @@ async function safeUpsert(tableName, row) {
     if (row.CircleName !== undefined) customFields.CircleName = row.CircleName;
     if (row.ApplicationNumber !== undefined) customFields.ApplicationNumber = row.ApplicationNumber;
     if (row.ProposedCapacity !== undefined) customFields.ProposedCapacity = row.ProposedCapacity;
+    if (row.SpecsUpdatedBy !== undefined) customFields.SpecsUpdatedBy = row.SpecsUpdatedBy;
+    if (row.SpecsUpdatedAt !== undefined) customFields.SpecsUpdatedAt = row.SpecsUpdatedAt;
 
     if (Object.keys(customFields).length > 0) {
       let baseBroker = item.BrokerNumber || '';
@@ -187,6 +192,8 @@ async function safeUpdate(tableName, matchField, val, newData) {
     if (newData.CircleName !== undefined) customFields.CircleName = newData.CircleName;
     if (newData.ApplicationNumber !== undefined) customFields.ApplicationNumber = newData.ApplicationNumber;
     if (newData.ProposedCapacity !== undefined) customFields.ProposedCapacity = newData.ProposedCapacity;
+    if (newData.SpecsUpdatedBy !== undefined) customFields.SpecsUpdatedBy = newData.SpecsUpdatedBy;
+    if (newData.SpecsUpdatedAt !== undefined) customFields.SpecsUpdatedAt = newData.SpecsUpdatedAt;
 
     if (Object.keys(customFields).length > 0) {
       let baseBroker = item.BrokerNumber || '';

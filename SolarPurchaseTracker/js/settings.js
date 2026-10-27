@@ -528,7 +528,8 @@ async function loadAuthSettings() {
     if (!res.ok) throw new Error('Failed to load user and role configurations.');
     const data = await res.json();
     _usersList = data.users || [];
-    _rolesList = data.roles || ['admin', 'user'];
+    _rolesList = data.roles || ['admin', 'superadmin', 'partner', 'Employee', 'user'];
+    if (!_rolesList.some(r => r && r.toLowerCase() === 'employee')) _rolesList.push('Employee');
     
     renderUsersList();
     populateRoleSelect();
@@ -550,6 +551,7 @@ function renderUsersList() {
     const isCurrentAdmin = (u.userid === 'admin');
     const emailStr = u.email || '';
     const statusVal = u.status || 'Approved';
+    const roleBadgeClass = (u.role === 'admin' || u.role === 'superadmin') ? 'bg-primary' : (String(u.role).toLowerCase() === 'employee' ? 'bg-info text-dark' : 'bg-success');
     
     let statusBadge = '';
     if (statusVal === 'Approved') {
@@ -572,7 +574,7 @@ function renderUsersList() {
         <td>${emailStr}</td>
         <td>${u.mobile || ''}</td>
         <td class="font-monospace">${u.password}</td>
-        <td><span class="badge ${u.role === 'admin' ? 'bg-primary' : 'bg-success'}">${u.role}</span></td>
+        <td><span class="badge ${roleBadgeClass}">${u.role}</span></td>
         <td>${statusBadge}</td>
         <td class="text-center">
           ${quickActions}
@@ -776,7 +778,7 @@ async function addNewRole() {
 }
 
 window.deleteRole = async function(roleName) {
-  if (roleName === 'admin' || roleName === 'user') {
+  if (roleName === 'admin' || roleName === 'user' || (roleName && roleName.toLowerCase() === 'employee')) {
     UI.toast('Cannot delete default system roles.', 'warning');
     return;
   }

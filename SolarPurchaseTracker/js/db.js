@@ -21,6 +21,9 @@ const DB = (() => {
         product_items: { file: null, sheet: null },
         work_notes: { file: null, sheet: null },
         price_history: { file: null, sheet: null },
+        inventory_items: { file: null, sheet: null },
+        inventory_inwards: { file: null, sheet: null },
+        inventory_dispatches: { file: null, sheet: null },
     };
 
     const HEADERS = {
@@ -29,7 +32,7 @@ const DB = (() => {
         vendors: ['VendorName', 'Address', 'Phone', 'GSTIN', 'Email', 'Remarks'],
         items: ['ItemName', 'Category', 'Unit', 'HSNCode', 'GSTPercent', 'Status'],
         settings: ['Key', 'Value'],
-        installments: ['SlNo', 'Name', 'ConsumerNo', 'Status', 'District', 'Address', 'MobileNumber', 'CommittedBrand', 'FirstInstallment', 'SecondInstallment', 'ThirdInstallment', 'Total', 'CommittedPrice', 'VendorPrice', 'VendorPaid', 'LoginDate', 'InstallationDate', 'Commission', 'CommissionPaid', 'BrokerName', 'BrokerNumber', 'CommissioningDate', 'PinCode', 'State', 'NetMeterPayment', 'NetMeterPaid', 'SubDivision', 'DivisionName', 'CircleName', 'ApplicationNumber', 'ProposedCapacity', 'ProductSpecs'],
+        installments: ['SlNo', 'Name', 'ConsumerNo', 'Status', 'District', 'Address', 'MobileNumber', 'CommittedBrand', 'FirstInstallment', 'SecondInstallment', 'ThirdInstallment', 'Total', 'CommittedPrice', 'VendorPrice', 'VendorPaid', 'LoginDate', 'InstallationDate', 'Commission', 'CommissionPaid', 'BrokerName', 'BrokerNumber', 'CommissioningDate', 'PinCode', 'State', 'NetMeterPayment', 'NetMeterPaid', 'SubDivision', 'DivisionName', 'CircleName', 'ApplicationNumber', 'ProposedCapacity', 'ProductSpecs', 'SpecsUpdatedBy', 'SpecsUpdatedAt'],
         borrowers: ['BorrowerID', 'Name', 'Mobile', 'Address', 'Status', 'CreatedAt'],
         borrower_txns: ['TxnID', 'BorrowerID', 'TxnDate', 'Amount', 'Type', 'Remarks', 'CreatedAt'],
         installment_txns: ['TxnID', 'SlNo', 'TxnDate', 'Amount', 'Remark', 'TxnType'],
@@ -40,6 +43,9 @@ const DB = (() => {
         product_items: ['RowID', 'ProductName', 'ItemName', 'Price'],
         work_notes: ['NoteID', 'NoteTitle', 'CommonNote', 'SelectedBadges', 'CustomerData', 'CreatedAt', 'UpdatedAt'],
         price_history: ['RecordID', 'BatchID', 'Date', 'NoteName', 'ItemName', 'Quantity', 'Unit', 'TotalWithoutGst', 'TotalWithGst', 'RateWithoutGst', 'RateWithGst', 'Remarks', 'CreatedAt'],
+        inventory_items: ['ItemCode', 'ItemName', 'Brand', 'Specification', 'Category', 'Unit', 'BuyingPrice', 'MinThreshold', 'HSNCode', 'GSTPercent', 'Status', 'CreatedAt', 'UpdatedAt'],
+        inventory_inwards: ['InwardID', 'Date', 'InvoiceNo', 'Supplier', 'ItemCode', 'Quantity', 'UnitPrice', 'TotalCost', 'Location', 'Remarks', 'DocumentName', 'DocumentData', 'CreatedAt'],
+        inventory_dispatches: ['DispatchID', 'Date', 'ChallanNo', 'SiteName', 'ItemCode', 'Quantity', 'UnitBuyingPrice', 'DispatchedCost', 'TransportCost', 'Vehicle', 'Remarks', 'DocumentName', 'DocumentData', 'CreatedAt'],
     };
 
     let mode = 'postgres';
@@ -81,6 +87,9 @@ const DB = (() => {
         if (key === 'product_items') return 'RowID';
         if (key === 'work_notes') return 'NoteID';
         if (key === 'price_history') return 'RecordID';
+        if (key === 'inventory_items') return 'ItemCode';
+        if (key === 'inventory_inwards') return 'InwardID';
+        if (key === 'inventory_dispatches') return 'DispatchID';
         return null;
     }
 
@@ -184,7 +193,7 @@ const DB = (() => {
                 const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
                 const workData = JSON.parse(workPart);
                 Object.keys(workData).forEach(k => {
-                    if (r[k] === undefined || r[k] === null || r[k] === '' || k === 'ProductSpecs') {
+                    if (r[k] === undefined || r[k] === null || r[k] === '' || k === 'ProductSpecs' || k === 'SpecsUpdatedBy' || k === 'SpecsUpdatedAt') {
                         r[k] = workData[k];
                     }
                 });
@@ -201,7 +210,9 @@ const DB = (() => {
         if (typeof Auth !== 'undefined') {
             const currentUser = Auth.getUser();
             const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
-            if (currentUser && !isPowerUser) {
+            const roleLower = currentUser && currentUser.role ? currentUser.role.toLowerCase().trim() : '';
+            const isPartner = roleLower === 'partner' || roleLower === 'associates';
+            if (currentUser && isPartner) {
                 const partnerNames = [
                     (currentUser.username || '').toLowerCase().trim(),
                     (currentUser.userid || '').toLowerCase().trim()

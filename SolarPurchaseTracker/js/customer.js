@@ -2840,9 +2840,6 @@ window.openProductModal = function(slNo) {
 
   document.getElementById('prodSlNo').value = slNo;
   const subTitle = document.getElementById('productModalSubTitle');
-  if (subTitle) {
-    subTitle.textContent = r.Name ? `Consumer Name: ${r.Name.toUpperCase()}` : 'Consumer Name: —';
-  }
 
   // Parse existing specs if any (checking both direct property and |work: metadata)
   let specs = {};
@@ -2861,6 +2858,25 @@ window.openProductModal = function(slNo) {
         specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
       }
     } catch (e) {}
+  }
+
+  const lastUser = specs.LastModifiedBy || specs.UpdatedBy || specs.ModifiedBy || specs.SavedBy || r.SpecsUpdatedBy || '';
+  const lastTime = specs.UpdatedAt || r.SpecsUpdatedAt || '';
+  let auditHtml = '';
+  if (lastUser) {
+    let dateStr = '';
+    if (lastTime) {
+      try {
+        const dt = new Date(lastTime);
+        if (!isNaN(dt)) {
+          dateStr = ' on ' + dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        }
+      } catch (_) {}
+    }
+    auditHtml = ` <span class="badge bg-light text-secondary border font-monospace ms-2" style="font-weight: 500;">Saved by: <strong>${escapeHtml(lastUser)}</strong>${dateStr}</span>`;
+  }
+  if (subTitle) {
+    subTitle.innerHTML = (r.Name ? `Consumer Name: <strong>${escapeHtml(r.Name.toUpperCase())}</strong>` : 'Consumer Name: —') + auditHtml;
   }
 
   const brandInfo = parseCustomerBrandForSpecs(r.CommittedBrand);
@@ -3102,6 +3118,26 @@ window.saveProductPopupSpecs = async function() {
     }
   };
 
+  // Get current user and audit details
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  const username = currentUser ? (currentUser.username || currentUser.userid || 'Unknown') : 'Unknown';
+  const nowIso = new Date().toISOString();
+
+  let existingSpecs = {};
+  if (r.ProductSpecs) {
+    try {
+      existingSpecs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+    } catch (_) {}
+  }
+
+  specs.CreatedBy = existingSpecs.CreatedBy || username;
+  specs.CreatedAt = existingSpecs.CreatedAt || nowIso;
+  specs.UpdatedBy = username;
+  specs.ModifiedBy = username;
+  specs.LastModifiedBy = username;
+  specs.SavedBy = username;
+  specs.UpdatedAt = nowIso;
+
   // Serialize ProductSpecs and work metadata into BrokerNumber
   const workUpdates = {
     ProductSpecs: specs,
@@ -3109,7 +3145,9 @@ window.saveProductPopupSpecs = async function() {
     DivisionName: r.DivisionName || '',
     CircleName: r.CircleName || '',
     ApplicationNumber: r.ApplicationNumber || '',
-    ProposedCapacity: r.ProposedCapacity || ''
+    ProposedCapacity: r.ProposedCapacity || '',
+    SpecsUpdatedBy: username,
+    SpecsUpdatedAt: nowIso
   };
   const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(r.BrokerNumber || '', workUpdates);
 
@@ -3123,7 +3161,9 @@ window.saveProductPopupSpecs = async function() {
       Address: siteAddress,
       District: districtVal,
       PinCode: pinCode,
-      State: stateVal
+      State: stateVal,
+      SpecsUpdatedBy: username,
+      SpecsUpdatedAt: nowIso
     };
     if (dateOfInstallation) {
       updatePayload.InstallationDate = dateOfInstallation;
@@ -3143,6 +3183,7 @@ window.saveProductPopupSpecs = async function() {
     UI.showLoading(false);
   }
 };
+window.saveProductSpecs = window.saveProductPopupSpecs;
 
 window.savePartnerInline = async function(slNo, partnerName) {
   const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
