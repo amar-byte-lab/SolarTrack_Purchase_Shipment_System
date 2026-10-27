@@ -2971,7 +2971,7 @@ window.openProductModal = function(slNo) {
   // Details of Earthing
   document.getElementById('prodEarthResistance').value = extractNumFromSpec(earth.EarthResistance, '3');
   document.getElementById('prodEarthWireSize').value = extractNumFromSpec(earth.EarthWireSize, '16');
-  document.getElementById('prodLaSizeType').value = toUpperSpec(earth.LaSizeType || 'COPPER BONDED');
+  document.getElementById('prodLaSizeType').value = toUpperSpec(earth.LaSizeType || 'COPPER BOUNDED');
 
   const firstTabBtn = document.getElementById('tabSpecGeneral-btn') || modalEl.querySelector('#productSpecsNavTabs .nav-link');
   if (firstTabBtn) {
@@ -3096,7 +3096,7 @@ window.saveProductPopupSpecs = async function() {
     DetailsOfEarthing: {
       EarthResistance: formatUnitVal(document.getElementById('prodEarthResistance')?.value, 'OHM', '3'),
       EarthWireSize: formatUnitVal(document.getElementById('prodEarthWireSize')?.value, 'SQ MM ALUMINUM', '16'),
-      LaSizeType: toUpperSpec(document.getElementById('prodLaSizeType')?.value) || 'COPPER BONDED',
+      LaSizeType: toUpperSpec(document.getElementById('prodLaSizeType')?.value) || 'COPPER BOUNDED',
       DcEarthing: dcEarthingVal,
       AcEarthing: acEarthingVal
     }

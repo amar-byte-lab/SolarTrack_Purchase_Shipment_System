@@ -1485,6 +1485,25 @@ body.installments-page .page-body {
   outline: none;
 }
 
+/* Highlighted / Key RTS Record Inputs in Specs Popup */
+.specs-highlight-label {
+  color: #b45309 !important; /* Rich amber-700 for prominent emphasis */
+  font-weight: 600 !important;
+}
+
+.specs-highlight-input {
+  background-color: #fffbeb !important; /* Soft warm amber-50 pastel highlight */
+  border: 1.5px solid #f59e0b !important; /* Distinct amber-500 border */
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.15) !important;
+}
+
+.specs-highlight-input:focus {
+  background-color: #ffffff !important;
+  border-color: #d97706 !important;     /* Deeper amber on focus */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.28) !important;
+  outline: none;
+}
+
 .specs-card-subgroup {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -1689,6 +1708,16 @@ body.installments-page .page-body {
     padding: 4px 6px !important;
     height: 29px !important;
     border-radius: 4px !important;
+  }
+
+  .specs-highlight-label {
+    color: #b45309 !important;
+    font-weight: 700 !important;
+  }
+
+  .specs-highlight-input {
+    background-color: #fffbeb !important;
+    border: 1.5px solid #f59e0b !important;
   }
 
   #prodDcEarthing,

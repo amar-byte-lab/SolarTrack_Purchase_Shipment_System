@@ -681,7 +681,7 @@ function populateForm4Fields(r) {
   const earth = specs.DetailsOfEarthing || {};
   setInputVal('f4EarthResistance', formatWithUnit(earth.EarthResistance, '3 OHM', 'earthRes'));
   setInputVal('f4EarthWireSize', formatWithUnit(earth.EarthWireSize, '16 SQ MM Aluminum', 'earthWire'));
-  setInputVal('f4LaSizeType', earth.LaSizeType || 'Copper Bonded');
+  setInputVal('f4LaSizeType', earth.LaSizeType || 'Copper Bounded');
 
   // Applicant Details
   setInputVal('f4ApplicantName', customerName);
@@ -794,7 +794,7 @@ function getForm4CurrentData() {
 
     earthResistance: formatWithUnit(getInputVal('f4EarthResistance', '3 OHM'), '3 OHM', 'earthRes'),
     earthWireSize: formatWithUnit(getInputVal('f4EarthWireSize', '16 SQ MM Aluminum'), '16 SQ MM Aluminum', 'earthWire'),
-    laSizeType: getInputVal('f4LaSizeType', 'Copper Bonded'),
+    laSizeType: getInputVal('f4LaSizeType', 'Copper Bounded'),
 
     applicantName: custName,
     applicantAddress: getInputVal('f4ApplicantAddress', custAddr),
