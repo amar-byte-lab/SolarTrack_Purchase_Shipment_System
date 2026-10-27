@@ -865,22 +865,26 @@
                 DC Distribution Box (DCDB)
               </div>
               <div class="row g-2">
+                <!-- Row 1: Make & MCB / Isolator Quantity & Capacity (in AMP) -->
                 <div class="col-md-6 col-6">
                   <label class="specs-input-label" for="prodDcdbMake" title="Make">Make</label>
                   <input type="text" class="form-control specs-input-control" id="prodDcdbMake" placeholder="e.g. HAVELLS">
                 </div>
                 <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodDcdbSerialNo" title="Sl. No.">Sl. No.</label>
-                  <input type="text" class="form-control specs-input-control font-monospace" id="prodDcdbSerialNo" placeholder="e.g. DCDB Sl. No.">
-                </div>
-                <!-- Hidden input to preserve DC Surge Protection Device Rating for sync -->
-                <input type="hidden" id="prodDcdbSpdRating">
-                <div class="col-12">
                   <label class="specs-input-label" for="prodDcdbMcbDetails" title="MCB / Isolator Quantity &amp; Capacity (in AMP)">MCB / Isolator Quantity &amp; Capacity (in AMP)</label>
                   <div class="input-group">
                     <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodDcdbMcbDetails" placeholder="32" value="32">
                     <span class="input-group-text bg-light text-muted fs-8 font-monospace">AMP (1 NO)</span>
                   </div>
+                </div>
+
+                <!-- Hidden input to preserve DC Surge Protection Device Rating for sync -->
+                <input type="hidden" id="prodDcdbSpdRating">
+
+                <!-- Row 2: Sl. No. -->
+                <div class="col-12">
+                  <label class="specs-input-label" for="prodDcdbSerialNo" title="Sl. No.">Sl. No.</label>
+                  <input type="text" class="form-control specs-input-control font-monospace" id="prodDcdbSerialNo" placeholder="e.g. DCDB Sl. No.">
                 </div>
               </div>
             </div>
@@ -892,22 +896,26 @@
                 AC Distribution Box (ACDB)
               </div>
               <div class="row g-2">
+                <!-- Row 1: Make & MCB / MCCB Quantity & Capacity (in AMP) -->
                 <div class="col-md-6 col-6">
                   <label class="specs-input-label" for="prodAcdbMake" title="Make">Make</label>
                   <input type="text" class="form-control specs-input-control" id="prodAcdbMake" placeholder="e.g. HAVELLS">
                 </div>
                 <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodAcdbSerialNo" title="Sl. No.">Sl. No.</label>
-                  <input type="text" class="form-control specs-input-control font-monospace" id="prodAcdbSerialNo" placeholder="e.g. ACDB Sl. No.">
-                </div>
-                <!-- Hidden input to preserve AC Surge Protection Device Rating for sync -->
-                <input type="hidden" id="prodAcdbSpdRating">
-                <div class="col-12">
                   <label class="specs-input-label" for="prodAcdbMcbDetails" title="MCB / MCCB Quantity &amp; Capacity (in AMP)">MCB / MCCB Quantity &amp; Capacity (in AMP)</label>
                   <div class="input-group">
                     <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodAcdbMcbDetails" placeholder="32" value="32">
                     <span class="input-group-text bg-light text-muted fs-8 font-monospace">AMP (1 NO)</span>
                   </div>
+                </div>
+
+                <!-- Hidden input to preserve AC Surge Protection Device Rating for sync -->
+                <input type="hidden" id="prodAcdbSpdRating">
+
+                <!-- Row 2: Sl. No. -->
+                <div class="col-12">
+                  <label class="specs-input-label" for="prodAcdbSerialNo" title="Sl. No.">Sl. No.</label>
+                  <input type="text" class="form-control specs-input-control font-monospace" id="prodAcdbSerialNo" placeholder="e.g. ACDB Sl. No.">
                 </div>
               </div>
             </div>
@@ -923,16 +931,9 @@
                 Details of Cables: DC
               </div>
               <div class="row g-2">
-                <div class="col-md-6 col-6">
+                <div class="col-12">
                   <label class="specs-input-label" for="prodDcCableMake" title="Make">Make</label>
                   <input type="text" class="form-control specs-input-control" id="prodDcCableMake" placeholder="e.g. KEI">
-                </div>
-                <div class="col-md-6 col-6">
-                  <label class="specs-input-label" for="prodDcCableSizeType" title="Size &amp; Type (in SQ MM)">Size &amp; Type (in SQ MM)</label>
-                  <div class="input-group">
-                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodDcCableSizeType" placeholder="4" value="4">
-                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">SQ MM</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -967,17 +968,24 @@
                   </div>
                 </div>
 
-                <!-- Row 2: Earth Wire / Flat Size | LA Size & Type -->
-                <div class="col-md-6 col-12">
+                <!-- Row 2: Earth Wire / Flat Size | LA Size & Type | Size & Type (in SQ MM) -->
+                <div class="col-md-4 col-12">
                   <label class="specs-input-label" for="prodEarthWireSize" title="Earth Wire / Flat Size (in SQ MM - Copper/Al)">Earth Wire / Flat Size (in SQ MM)</label>
                   <div class="input-group">
                     <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodEarthWireSize" placeholder="16" value="16">
                     <span class="input-group-text bg-light text-muted fs-8 font-monospace">SQ MM ALUMINUM</span>
                   </div>
                 </div>
-                <div class="col-md-6 col-12">
+                <div class="col-md-4 col-6">
                   <label class="specs-input-label" for="prodLaSizeType" title="LA Size &amp; Type">LA Size &amp; Type</label>
                   <input type="text" class="form-control specs-input-control" id="prodLaSizeType" placeholder="e.g. COPPER BONDED" value="COPPER BONDED">
+                </div>
+                <div class="col-md-4 col-6">
+                  <label class="specs-input-label" for="prodDcCableSizeType" title="Size &amp; Type (in SQ MM)">Size &amp; Type (in SQ MM)</label>
+                  <div class="input-group">
+                    <input type="number" min="0" step="any" class="form-control specs-input-control text-end fw-semibold" id="prodDcCableSizeType" placeholder="4" value="4">
+                    <span class="input-group-text bg-light text-muted fs-8 font-monospace">SQ MM</span>
+                  </div>
                 </div>
               </div>
             </div>
