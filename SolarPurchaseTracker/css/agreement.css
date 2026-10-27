@@ -199,6 +199,28 @@
   text-overflow: ellipsis;
   display: block;
 }
+.doc-edit-specs-btn {
+  height: 24px !important;
+  font-size: 0.70rem !important;
+  font-weight: 600 !important;
+  padding: 1px 7px !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  border-color: #c7d2fe !important;
+  color: #4338ca !important;
+  background-color: #ffffff !important;
+  transition: all 0.15s ease-in-out;
+}
+.doc-edit-specs-btn:hover {
+  background-color: #4338ca !important;
+  border-color: #4338ca !important;
+  color: #ffffff !important;
+}
 .doc-actions-group {
   display: flex;
   align-items: center;

@@ -4595,3 +4595,617 @@ window.downloadForm3Docx = async function() {
     UI.showLoading(false);
   }
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TECHNICAL SPECIFICATIONS & RTS RECORD MODAL INTEGRATION FOR DOCUMENTS
+═══════════════════════════════════════════════════════════════════════════════ */
+
+function toUpperSpec(val) {
+  if (val === undefined || val === null) return '';
+  return String(val).trim().toUpperCase();
+}
+
+function extractNumFromSpec(val, fallback = '') {
+  if (val === undefined || val === null) return fallback;
+  const str = String(val).trim();
+  if (!str) return fallback;
+  const m = str.match(/([0-9]+(\.[0-9]+)?)/);
+  return m ? m[1] : fallback;
+}
+
+function extractVoltAcFromSpec(val, fallback = '220 - 240') {
+  if (val === undefined || val === null) return fallback;
+  let str = String(val).trim();
+  if (!str) return fallback;
+  str = str.replace(/V\s*AC/gi, '').replace(/V/gi, '').trim();
+  return str || fallback;
+}
+
+function parseCustomerBrandForSpecs(committedBrand) {
+  if (!committedBrand) return { moduleMake: '', inverterMake: '' };
+  const str = String(committedBrand).trim();
+  let moduleMake = '';
+  let inverterMake = '';
+  if (str.includes('M:') || str.includes('Inv:')) {
+    const mMatch = str.match(/M:\s*([^|]+)/i);
+    const invMatch = str.match(/Inv:\s*([^|]+)/i);
+    if (mMatch) moduleMake = mMatch[1].trim();
+    if (invMatch) inverterMake = invMatch[1].trim();
+  } else {
+    moduleMake = str;
+    inverterMake = str;
+  }
+  return {
+    moduleMake: moduleMake || '',
+    inverterMake: inverterMake || ''
+  };
+}
+
+function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
+  let basePhone = '';
+  let expensesJson = '';
+  let creatorId = '';
+  let workObj = {};
+
+  if (currentBrokerNumber) {
+    const parts = currentBrokerNumber.split('|');
+    basePhone = parts[0] || '';
+    parts.slice(1).forEach(p => {
+      if (p.startsWith('expenses:')) {
+        expensesJson = p.slice('expenses:'.length);
+      } else if (p.startsWith('creator:')) {
+        creatorId = p.slice('creator:'.length);
+      } else if (p.startsWith('work:')) {
+        try {
+          workObj = JSON.parse(p.slice('work:'.length));
+        } catch (e) {}
+      }
+    });
+  }
+
+  Object.assign(workObj, updates);
+
+  let result = basePhone;
+  if (expensesJson) result += '|expenses:' + expensesJson;
+  if (creatorId) result += '|creator:' + creatorId;
+  if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
+  return result;
+}
+
+window.renderModuleSerialInputs = function(initialSerials = null, initialCapacities = null) {
+  const countInput = document.getElementById('prodModuleCount');
+  const container = document.getElementById('prodModuleSerialInputsContainer');
+  const badge = document.getElementById('lblModuleSerialCount');
+  if (!countInput || !container) return;
+
+  const count = Math.max(0, parseInt(countInput.value, 10) || 0);
+  if (badge) badge.textContent = `${count} Serial${count === 1 ? '' : 's'}`;
+
+  if (count === 0) {
+    container.innerHTML = '<div class="col-12 text-muted fs-8 fst-italic py-2">Enter "No. of Module" above to generate serial number and capacity textboxes.</div>';
+    window.calcModuleTotalCapacity();
+    return;
+  }
+
+  // Preserve existing entered values if initial arrays are not provided
+  let existingSerials = [];
+  let existingCaps = [];
+  if (initialSerials && Array.isArray(initialSerials)) {
+    existingSerials = initialSerials;
+  } else {
+    container.querySelectorAll('.prod-module-serial-box').forEach((box, i) => {
+      existingSerials[i] = box.value;
+    });
+  }
+
+  if (initialCapacities && Array.isArray(initialCapacities)) {
+    existingCaps = initialCapacities;
+  } else {
+    container.querySelectorAll('.prod-module-cap-box').forEach((box, i) => {
+      existingCaps[i] = box.value;
+    });
+  }
+
+  // Fallback: If no capacities yet, check hidden prodModuleCapacityEach (from DB)
+  const defaultCap = (document.getElementById('prodModuleCapacityEach')?.value || '').trim();
+
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    const sVal = existingSerials[i - 1] || '';
+    let cVal = existingCaps[i - 1] || '';
+    if (!cVal && defaultCap) {
+      const m = defaultCap.match(/([0-9.]+)/);
+      if (m) {
+        cVal = m[1];
+      }
+    }
+    html += `
+      <div class="col-md-6 col-12">
+        <div class="input-group input-group-sm specs-module-row-group">
+          <span class="input-group-text bg-light text-muted fs-8 font-monospace px-2" style="min-width: 34px; justify-content: center;">#${i}</span>
+          <input type="text" class="form-control form-control-sm fs-8 font-monospace prod-module-serial-box" id="prodModuleSerial_${i}" data-index="${i}" value="${escapeHtml(sVal)}" placeholder="Serial No. ${i}" title="Module ${i} Serial Number">
+          <input type="number" min="0" step="any" class="form-control form-control-sm fs-8 prod-module-cap-box text-end fw-semibold" id="prodModuleCap_${i}" data-index="${i}" value="${escapeHtml(cVal)}" placeholder="555" style="max-width: 82px;" oninput="window.handleModuleCapChange(${i})" title="Module ${i} Capacity in Wp">
+          <span class="input-group-text bg-light text-muted fs-8 px-1.5 border-start-0" style="font-size: 0.70rem; min-width: 32px; justify-content: center;">Wp</span>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+  window.calcModuleTotalCapacity();
+};
+
+window.handleModuleCapChange = function(index) {
+  if (index === 1) {
+    const firstBox = document.getElementById('prodModuleCap_1');
+    const val = firstBox ? firstBox.value.trim() : '';
+    // If other boxes are currently empty, auto-propagate Module 1's capacity
+    const allBoxes = document.querySelectorAll('.prod-module-cap-box');
+    let allOthersEmpty = true;
+    for (let i = 1; i < allBoxes.length; i++) {
+      if (allBoxes[i].value && allBoxes[i].value.trim() !== '') {
+        allOthersEmpty = false;
+        break;
+      }
+    }
+    if (allOthersEmpty && val !== '') {
+      for (let i = 1; i < allBoxes.length; i++) {
+        allBoxes[i].value = val;
+      }
+    }
+  }
+  window.calcModuleTotalCapacity();
+};
+
+window.applyModuleCapToAll = function() {
+  const firstBox = document.getElementById('prodModuleCap_1');
+  if (!firstBox) return;
+  const val = firstBox.value.trim();
+  if (!val) {
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Please enter a capacity in Module #1 first.', 'info');
+    }
+    return;
+  }
+  document.querySelectorAll('.prod-module-cap-box').forEach(box => {
+    box.value = val;
+  });
+  window.calcModuleTotalCapacity();
+};
+
+window.calcModuleTotalCapacity = function() {
+  const capBoxes = document.querySelectorAll('.prod-module-cap-box');
+  const totalCapInput = document.getElementById('prodModuleTotalCapacity');
+  const countBadge = document.getElementById('lblModuleTotalCountBadge');
+  const summaryText = document.getElementById('lblModuleCapSummaryText');
+  const hiddenCapEach = document.getElementById('prodModuleCapacityEach');
+  const countInput = document.getElementById('prodModuleCount');
+
+  const count = capBoxes.length > 0 ? capBoxes.length : (parseInt(countInput?.value, 10) || 0);
+
+  if (countBadge) {
+    countBadge.textContent = `${count}`;
+  }
+
+  if (capBoxes.length === 0) {
+    if (totalCapInput) totalCapInput.value = '';
+    if (summaryText) summaryText.textContent = '';
+    if (hiddenCapEach) hiddenCapEach.value = '';
+    return;
+  }
+
+  let totalWatts = 0;
+  let filledCount = 0;
+  const capCounts = {};
+
+  capBoxes.forEach(box => {
+    const raw = (box.value || '').trim();
+    if (!raw) return;
+
+    const match = raw.match(/([0-9.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      if (!isNaN(num) && num > 0) {
+        filledCount++;
+        // Module capacity input is strictly in Wp
+        const watts = num;
+        totalWatts += watts;
+
+        const displayLabel = `${num} Wp`;
+        capCounts[displayLabel] = (capCounts[displayLabel] || 0) + 1;
+      }
+    }
+  });
+
+  if (filledCount > 0 && totalWatts > 0) {
+    const totalKW = (totalWatts / 1000).toFixed(2);
+    const formattedTotal = `${totalKW} kWp (${Math.round(totalWatts)} Wp)`;
+    if (totalCapInput) totalCapInput.value = formattedTotal;
+
+    const summaryParts = Object.entries(capCounts).map(([label, cnt]) => {
+      return cnt === 1 && filledCount === 1 ? label : `${label} (${cnt} Nos)`;
+    });
+    const summaryStr = summaryParts.join(', ');
+    if (summaryText) {
+      summaryText.textContent = summaryStr ? `• ${summaryStr}` : '';
+    }
+
+    if (hiddenCapEach) {
+      if (Object.keys(capCounts).length === 1) {
+        hiddenCapEach.value = Object.keys(capCounts)[0];
+      } else {
+        hiddenCapEach.value = Object.entries(capCounts).map(([lbl, c]) => `${lbl} - ${c} Nos`).join(', ');
+      }
+    }
+  } else {
+    if (totalCapInput) totalCapInput.value = '';
+    if (summaryText) summaryText.textContent = '';
+    if (hiddenCapEach) hiddenCapEach.value = '';
+  }
+};
+
+window.openProductModalFromDocument = function() {
+  if (!selectedCustomerSlNo) {
+    const rows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
+    if (rows.length > 0) {
+      window.selectCustomerForAgreement(rows[0].SlNo);
+    } else {
+      if (typeof UI !== 'undefined' && UI.toast) {
+        UI.toast('Please select a customer first.', 'warning');
+      }
+      return;
+    }
+  }
+  window.openProductModal(selectedCustomerSlNo);
+};
+
+window.openProductModal = function(slNo) {
+  const r = (typeof getInstallmentRows === 'function' ? getInstallmentRows() : DB.getAll('installments')).find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) {
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast('Customer record not found.', 'danger');
+    return;
+  }
+
+  const modalEl = document.getElementById('productModal');
+  if (!modalEl) return;
+
+  // Real-time automatic uppercase listener on modal inputs
+  if (!modalEl.dataset.upperBound) {
+    modalEl.dataset.upperBound = 'true';
+    modalEl.addEventListener('input', function(e) {
+      const target = e.target;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        if (target.type !== 'date' && target.type !== 'number' && target.type !== 'file') {
+          const start = target.selectionStart;
+          const end = target.selectionEnd;
+          target.value = target.value.toUpperCase();
+          if (start !== null && end !== null) {
+            try { target.setSelectionRange(start, end); } catch (err) {}
+          }
+        }
+      }
+    });
+  }
+
+  const prodSlNoInput = document.getElementById('prodSlNo');
+  if (prodSlNoInput) prodSlNoInput.value = slNo;
+
+  const subTitle = document.getElementById('productModalSubTitle');
+  if (subTitle) {
+    subTitle.textContent = r.Name ? `Consumer Name: ${r.Name.toUpperCase()}` : 'Consumer Name: —';
+  }
+
+  // Parse existing specs if any (checking both direct property and |work: metadata)
+  let specs = {};
+  if (r.ProductSpecs) {
+    try {
+      specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+    } catch (e) {
+      specs = {};
+    }
+  } else if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
+    try {
+      const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
+      const workData = JSON.parse(workPart);
+      if (workData.ProductSpecs) {
+        r.ProductSpecs = workData.ProductSpecs;
+        specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+      }
+    } catch (e) {}
+  }
+
+  const brandInfo = parseCustomerBrandForSpecs(r.CommittedBrand);
+  const capNum = parseFloat(String(r.ProposedCapacity || r.Capacity || '3').replace(/[^0-9.]/g, '')) || 3;
+
+  // General Dates & Site Info: Fallback to existing customer data if not set in specs
+  const dateOfInstallation = specs.DateOfInstallation || (r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '');
+  const dateOfCommission = specs.DateOfCommission || (r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '');
+  const siteAddress = toUpperSpec(specs.SiteAddress || r.Address || '');
+  const pinCodeVal = toUpperSpec(specs.PinCode || r.PinCode || '');
+  const stateVal = toUpperSpec(specs.State || r.State || 'ODISHA');
+  const districtVal = toUpperSpec(specs.District || r.District || '');
+  const connectionTypeVal = toUpperSpec(specs.ConnectionType || (capNum > 5 ? '3PH LT' : '1PH LT'));
+
+  if (document.getElementById('prodDateOfInstallation')) document.getElementById('prodDateOfInstallation').value = dateOfInstallation;
+  if (document.getElementById('prodDateOfCommission')) document.getElementById('prodDateOfCommission').value = dateOfCommission;
+  if (document.getElementById('prodConnectionType')) {
+    const connEl = document.getElementById('prodConnectionType');
+    let matched = false;
+    for (const opt of connEl.options) {
+      if (opt.value.toUpperCase() === connectionTypeVal.toUpperCase()) {
+        opt.selected = true;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && connectionTypeVal) {
+      const opt = document.createElement('option');
+      opt.value = connectionTypeVal;
+      opt.textContent = connectionTypeVal;
+      opt.selected = true;
+      connEl.appendChild(opt);
+    }
+  }
+  if (document.getElementById('prodState')) document.getElementById('prodState').value = stateVal;
+  if (document.getElementById('prodDistrict')) document.getElementById('prodDistrict').value = districtVal;
+  if (document.getElementById('prodPinCode')) document.getElementById('prodPinCode').value = pinCodeVal;
+  if (document.getElementById('prodAddress')) document.getElementById('prodAddress').value = siteAddress;
+
+  // Grid Tied Inverter
+  const inv = specs.GridTiedInverter || {};
+  const invNameEl = document.getElementById('prodInverterName');
+  if (invNameEl) {
+    const desiredInvName = toUpperSpec(inv.Name || 'GRID-TIED');
+    let matched = false;
+    for (const opt of invNameEl.options) {
+      if (opt.value.toUpperCase() === desiredInvName) {
+        opt.selected = true;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      invNameEl.value = 'GRID-TIED';
+    }
+  }
+  if (document.getElementById('prodInverterCount')) document.getElementById('prodInverterCount').value = '1';
+  if (document.getElementById('prodInverterMake')) document.getElementById('prodInverterMake').value = toUpperSpec(inv.Make || brandInfo.inverterMake || '');
+  if (document.getElementById('prodInverterSerialNo')) document.getElementById('prodInverterSerialNo').value = toUpperSpec(inv.SerialNo || '');
+  if (document.getElementById('prodInverterCapacity')) document.getElementById('prodInverterCapacity').value = extractNumFromSpec(inv.Capacity, '3');
+  if (document.getElementById('prodInverterInputVoltage')) document.getElementById('prodInverterInputVoltage').value = extractNumFromSpec(inv.InputVoltage, '300');
+  if (document.getElementById('prodInverterOutputVoltage')) document.getElementById('prodInverterOutputVoltage').value = extractVoltAcFromSpec(inv.OutputVoltage, '220 - 240');
+
+  // P.V Module
+  const pv = specs.PvModule || {};
+  if (document.getElementById('prodModuleMake')) document.getElementById('prodModuleMake').value = toUpperSpec(pv.Make || brandInfo.moduleMake || '');
+  if (document.getElementById('prodModuleCount')) document.getElementById('prodModuleCount').value = pv.NoOfModule || '';
+  if (document.getElementById('prodModuleTypeModel')) document.getElementById('prodModuleTypeModel').value = toUpperSpec(pv.TypeAndModel || '');
+  if (document.getElementById('prodModuleCapacityEach')) {
+    document.getElementById('prodModuleCapacityEach').value = toUpperSpec(pv.CapacityEach || '');
+  }
+
+  // Render serial boxes & capacities for modules
+  const serials = (Array.isArray(pv.SerialNumbers) ? pv.SerialNumbers : []).map(s => toUpperSpec(s));
+  const capacities = Array.isArray(pv.ModuleCapacities) ? pv.ModuleCapacities : [];
+  window.renderModuleSerialInputs(serials, capacities);
+
+  // If saved TotalCapacity exists and auto-calc didn't fill it (e.g. no capacities were stored), fallback
+  if (pv.TotalCapacity && document.getElementById('prodModuleTotalCapacity') && !document.getElementById('prodModuleTotalCapacity').value) {
+    document.getElementById('prodModuleTotalCapacity').value = toUpperSpec(pv.TotalCapacity);
+  }
+
+  // Earthing Verification & System Grounding
+  const ev = specs.EarthingVerification || {};
+  const earth = specs.DetailsOfEarthing || {};
+  if (document.getElementById('prodDcEarthing')) document.getElementById('prodDcEarthing').value = extractNumFromSpec(ev.DcEarthing || earth.DcEarthing, '1.7');
+  if (document.getElementById('prodAcEarthing')) document.getElementById('prodAcEarthing').value = extractNumFromSpec(ev.AcEarthing || earth.AcEarthing, '2.3');
+
+  // Details of Cables: DC
+  const dcCables = specs.DetailsOfCablesDc || {};
+  if (document.getElementById('prodDcCableMake')) document.getElementById('prodDcCableMake').value = toUpperSpec(dcCables.Make || '');
+  if (document.getElementById('prodDcCableSizeType')) document.getElementById('prodDcCableSizeType').value = extractNumFromSpec(dcCables.SizeType, '4');
+
+  // Details of the DC distribution box
+  const dcdb = specs.DetailsOfDcdb || {};
+  if (document.getElementById('prodDcdbMake')) document.getElementById('prodDcdbMake').value = toUpperSpec(dcdb.Make || '');
+  if (document.getElementById('prodDcdbSerialNo')) document.getElementById('prodDcdbSerialNo').value = toUpperSpec(dcdb.SerialNo || '');
+  if (document.getElementById('prodDcdbSpdRating')) document.getElementById('prodDcdbSpdRating').value = toUpperSpec(dcdb.SpdRating || '');
+  if (document.getElementById('prodDcdbMcbDetails')) document.getElementById('prodDcdbMcbDetails').value = extractNumFromSpec(dcdb.McbDetails, '32');
+
+  // Details of AC distribution box
+  const acdb = specs.DetailsOfAcdb || {};
+  if (document.getElementById('prodAcdbMake')) document.getElementById('prodAcdbMake').value = toUpperSpec(acdb.Make || '');
+  if (document.getElementById('prodAcdbSerialNo')) document.getElementById('prodAcdbSerialNo').value = toUpperSpec(acdb.SerialNo || '');
+  if (document.getElementById('prodAcdbSpdRating')) document.getElementById('prodAcdbSpdRating').value = toUpperSpec(acdb.SpdRating || '');
+  if (document.getElementById('prodAcdbMcbDetails')) document.getElementById('prodAcdbMcbDetails').value = extractNumFromSpec(acdb.McbDetails, '32');
+
+  // Details of Earthing
+  if (document.getElementById('prodEarthResistance')) document.getElementById('prodEarthResistance').value = extractNumFromSpec(earth.EarthResistance, '3');
+  if (document.getElementById('prodEarthWireSize')) document.getElementById('prodEarthWireSize').value = extractNumFromSpec(earth.EarthWireSize, '16');
+  if (document.getElementById('prodLaSizeType')) document.getElementById('prodLaSizeType').value = toUpperSpec(earth.LaSizeType || 'COPPER BOUNDED');
+
+  const firstTabBtn = document.getElementById('tabSpecGeneral-btn') || modalEl.querySelector('#productSpecsNavTabs .nav-link');
+  if (firstTabBtn) {
+    firstTabBtn.click();
+  }
+
+  const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  bsModal.show();
+};
+
+window.saveProductPopupSpecs = async function() {
+  const slNo = Number(document.getElementById('prodSlNo').value);
+  if (!slNo) return;
+
+  const r = (typeof getInstallmentRows === 'function' ? getInstallmentRows() : DB.getAll('installments')).find(x => Number(x.SlNo) === slNo);
+  if (!r) {
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast('Customer not found.', 'danger');
+    return;
+  }
+
+  function formatUnitVal(rawVal, unit, fallback = '') {
+    const num = extractNumFromSpec(rawVal, fallback);
+    return num ? `${num} ${unit}`.trim().toUpperCase() : '';
+  }
+
+  // Extract module serials & individual capacities
+  const moduleSerials = [];
+  document.querySelectorAll('.prod-module-serial-box').forEach(box => {
+    moduleSerials.push(toUpperSpec(box.value));
+  });
+  const moduleCapacities = [];
+  document.querySelectorAll('.prod-module-cap-box').forEach(box => {
+    moduleCapacities.push(box.value.trim());
+  });
+
+  // Ensure calculations are up to date
+  window.calcModuleTotalCapacity();
+
+  const capNum = parseFloat(String(r.ProposedCapacity || r.Capacity || '3').replace(/[^0-9.]/g, '')) || 3;
+  const moduleMake = toUpperSpec(document.getElementById('prodModuleMake')?.value || '');
+  const inverterMake = toUpperSpec(document.getElementById('prodInverterMake')?.value || '');
+  const dateOfInstallation = document.getElementById('prodDateOfInstallation')?.value || null;
+  const dateOfCommission = document.getElementById('prodDateOfCommission')?.value || null;
+  const connectionType = toUpperSpec(document.getElementById('prodConnectionType') ? document.getElementById('prodConnectionType').value : (capNum > 5 ? '3PH LT' : '1PH LT'));
+  const siteAddress = toUpperSpec(document.getElementById('prodAddress') ? document.getElementById('prodAddress').value : (r.Address || ''));
+  const districtVal = toUpperSpec(document.getElementById('prodDistrict') ? document.getElementById('prodDistrict').value : (r.District || ''));
+  const pinCode = toUpperSpec(document.getElementById('prodPinCode') ? document.getElementById('prodPinCode').value : (r.PinCode || ''));
+  const stateVal = toUpperSpec(document.getElementById('prodState') ? document.getElementById('prodState').value : (r.State || 'ODISHA')) || 'ODISHA';
+
+  // Construct summarized CommittedBrand text
+  let displayBrand = '';
+  if (moduleMake && inverterMake) {
+    displayBrand = `M: ${moduleMake} | Inv: ${inverterMake}`;
+  } else if (moduleMake) {
+    displayBrand = `M: ${moduleMake}`;
+  } else if (inverterMake) {
+    displayBrand = `Inv: ${inverterMake}`;
+  } else {
+    displayBrand = r.CommittedBrand || '';
+  }
+  displayBrand = toUpperSpec(displayBrand);
+
+  function formatVoltAcVal(rawVal, fallback = '220 - 240') {
+    const str = extractVoltAcFromSpec(rawVal, fallback);
+    return str ? `${str} V AC`.toUpperCase() : '';
+  }
+
+  const invName = toUpperSpec(document.getElementById('prodInverterName')?.value) || 'GRID-TIED';
+  const invCapacity = formatUnitVal(document.getElementById('prodInverterCapacity')?.value, 'KW', '3');
+  const invInputVoltage = formatUnitVal(document.getElementById('prodInverterInputVoltage')?.value, 'V DC', '300');
+  const invOutputVoltage = formatVoltAcVal(document.getElementById('prodInverterOutputVoltage')?.value, '220 - 240');
+
+  const dcEarthingVal = formatUnitVal(document.getElementById('prodDcEarthing')?.value, 'OHM', '1.7');
+  const acEarthingVal = formatUnitVal(document.getElementById('prodAcEarthing')?.value, 'OHM', '2.3');
+
+  const specs = {
+    DateOfInstallation: dateOfInstallation,
+    DateOfCommission: dateOfCommission,
+    ConnectionType: connectionType,
+    SiteAddress: siteAddress,
+    District: districtVal,
+    PinCode: pinCode,
+    State: stateVal,
+    GridTiedInverter: {
+      Name: invName,
+      TotalNo: '1',
+      Make: inverterMake,
+      SerialNo: toUpperSpec(document.getElementById('prodInverterSerialNo')?.value),
+      Capacity: invCapacity,
+      InputVoltage: invInputVoltage,
+      OutputVoltage: invOutputVoltage
+    },
+    PvModule: {
+      Make: moduleMake,
+      NoOfModule: toUpperSpec(document.getElementById('prodModuleCount')?.value),
+      TypeAndModel: toUpperSpec(document.getElementById('prodModuleTypeModel')?.value),
+      CapacityEach: toUpperSpec(document.getElementById('prodModuleCapacityEach')?.value),
+      TotalCapacity: toUpperSpec(document.getElementById('prodModuleTotalCapacity')?.value),
+      SerialNumbers: moduleSerials,
+      ModuleCapacities: moduleCapacities
+    },
+    EarthingVerification: {
+      DcEarthing: dcEarthingVal,
+      AcEarthing: acEarthingVal
+    },
+    DetailsOfCablesDc: {
+      Make: toUpperSpec(document.getElementById('prodDcCableMake')?.value),
+      SizeType: formatUnitVal(document.getElementById('prodDcCableSizeType')?.value, 'SQ MM', '4')
+    },
+    DetailsOfDcdb: {
+      Make: toUpperSpec(document.getElementById('prodDcdbMake')?.value),
+      SerialNo: toUpperSpec(document.getElementById('prodDcdbSerialNo')?.value),
+      SpdRating: toUpperSpec(document.getElementById('prodDcdbSpdRating')?.value),
+      McbDetails: formatUnitVal(document.getElementById('prodDcdbMcbDetails')?.value, 'AMP (1 NO)', '32')
+    },
+    DetailsOfAcdb: {
+      Make: toUpperSpec(document.getElementById('prodAcdbMake')?.value),
+      SerialNo: toUpperSpec(document.getElementById('prodAcdbSerialNo')?.value),
+      SpdRating: toUpperSpec(document.getElementById('prodAcdbSpdRating')?.value),
+      McbDetails: formatUnitVal(document.getElementById('prodAcdbMcbDetails')?.value, 'AMP (1 NO)', '32')
+    },
+    DetailsOfEarthing: {
+      EarthResistance: formatUnitVal(document.getElementById('prodEarthResistance')?.value, 'OHM', '3'),
+      EarthWireSize: formatUnitVal(document.getElementById('prodEarthWireSize')?.value, 'SQ MM ALUMINUM', '16'),
+      LaSizeType: toUpperSpec(document.getElementById('prodLaSizeType')?.value) || 'COPPER BOUNDED',
+      DcEarthing: dcEarthingVal,
+      AcEarthing: acEarthingVal
+    }
+  };
+
+  // Serialize ProductSpecs and work metadata into BrokerNumber
+  const workUpdates = {
+    ProductSpecs: specs,
+    SubDivision: r.SubDivision || '',
+    DivisionName: r.DivisionName || '',
+    CircleName: r.CircleName || '',
+    ApplicationNumber: r.ApplicationNumber || '',
+    ProposedCapacity: r.ProposedCapacity || ''
+  };
+  const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(r.BrokerNumber || '', workUpdates);
+
+  if (typeof UI !== 'undefined' && UI.showLoading) UI.showLoading(true);
+  try {
+    const updatePayload = {
+      ...(r || {}),
+      CommittedBrand: displayBrand,
+      ProductSpecs: specs,
+      BrokerNumber: formattedBrokerNumber,
+      Address: siteAddress,
+      District: districtVal,
+      PinCode: pinCode,
+      State: stateVal
+    };
+    if (dateOfInstallation) {
+      updatePayload.InstallationDate = dateOfInstallation;
+    }
+    if (dateOfCommission) {
+      updatePayload.CommissioningDate = dateOfCommission;
+    }
+
+    await DB.update('installments', x => Number(x.SlNo) === slNo, updatePayload);
+
+    // Hide modal
+    const modalEl = document.getElementById('productModal');
+    if (modalEl) {
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+    }
+
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Specifications saved successfully! Document forms updated.', 'success');
+    }
+
+    // Refresh active customer data in all document forms
+    if (typeof window.selectCustomerForAgreement === 'function') {
+      window.selectCustomerForAgreement(slNo);
+    }
+  } catch (err) {
+    console.error('Error saving product specifications:', err);
+    if (typeof UI !== 'undefined' && UI.toast) {
+      UI.toast('Error saving Product specifications: ' + err.message, 'danger');
+    }
+  } finally {
+    if (typeof UI !== 'undefined' && UI.showLoading) UI.showLoading(false);
+  }
+};
+
