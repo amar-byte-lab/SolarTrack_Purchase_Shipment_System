@@ -291,6 +291,7 @@ const InventoryApp = (() => {
       'Panels',
       'Inverters',
       'Cables',
+      'Structure',
       'Hardware',
       'Electricals',
       'Conduit',
@@ -992,7 +993,7 @@ const InventoryApp = (() => {
   // --- Dynamic Grouped Dropdown Generators ---
   function buildGroupedItemOptions(selectedCode, mode = 'stockin') {
     const ledger = getCalculatedStockLedger();
-    const categoryOrder = ['Panels', 'Inverters', 'Cables', 'Hardware', 'Electricals', 'Conduit', 'Earthing', 'Others'];
+    const categoryOrder = ['Panels', 'Inverters', 'Cables', 'Structure', 'Hardware', 'Electricals', 'Conduit', 'Earthing', 'Others'];
 
     const sortedLedger = [...ledger].sort((a, b) => {
       const catA = categoryOrder.indexOf(a.category);
