@@ -245,7 +245,25 @@ const InventoryApp = (() => {
     const totalDispatchedMaterialCost = dispatches.reduce((sum, dsp) => sum + (Number(dsp.dispatchedCost) || 0), 0);
     const totalTransportationCost = dispatches.reduce((sum, dsp) => sum + (Number(dsp.transportCost) || 0), 0);
 
+    // Calculate Turnover from Customer Solar Installations/Orders in DB
+    let totalTurnover = 0;
+    let customerCount = 0;
+    try {
+      if (typeof DB !== 'undefined') {
+        const installments = DB.getAll('installments') || [];
+        const activeInstallments = installments.filter(r => r && r.Status !== 'Deactive');
+        if (activeInstallments.length > 0) {
+          totalTurnover = activeInstallments.reduce((sum, r) => sum + (Number(r.CommittedPrice) || Number(r.Price) || 0), 0);
+          customerCount = activeInstallments.length;
+        }
+      }
+    } catch (e) {
+      console.warn('Error computing turnover from installments:', e);
+    }
+
     return {
+      totalTurnover,
+      customerCount,
       totalWarehouseValuation,
       totalInHandStock,
       totalDispatchedMaterialCost,
@@ -258,28 +276,34 @@ const InventoryApp = (() => {
   function renderKpiCards() {
     const metrics = getKpiMetrics();
 
+    const turnoverEl = document.getElementById('kpiTotalTurnover');
     const valEl = document.getElementById('kpiTotalValuation');
-    const transEl = document.getElementById('kpiTotalTransportationCost');
-    const inHandEl = document.getElementById('kpiTotalInHand');
     const dispEl = document.getElementById('kpiTotalDispatchedCost');
+    const transEl = document.getElementById('kpiTotalTransportationCost');
 
+    if (turnoverEl) turnoverEl.textContent = fmtRupees(metrics.totalTurnover);
     if (valEl) valEl.textContent = fmtRupees(metrics.totalWarehouseValuation);
-    if (transEl) transEl.textContent = fmtRupees(metrics.totalTransportationCost);
-    if (inHandEl) inHandEl.textContent = `${fmtQty(metrics.totalInHandStock)} Units`;
     if (dispEl) dispEl.textContent = fmtRupees(metrics.totalDispatchedMaterialCost);
+    if (transEl) transEl.textContent = fmtRupees(metrics.totalTransportationCost);
 
+    const subTurnoverEl = document.getElementById('kpiSubTurnover');
     const subValEl = document.getElementById('kpiSubValuation');
-    const subTransEl = document.getElementById('kpiSubTransportation');
-    const subInHandEl = document.getElementById('kpiSubInHand');
     const subDispEl = document.getElementById('kpiSubDispatched');
+    const subTransEl = document.getElementById('kpiSubTransportation');
 
+    if (subTurnoverEl) {
+      if (metrics.customerCount > 0) {
+        subTurnoverEl.textContent = `${metrics.customerCount} Active ${metrics.customerCount === 1 ? 'Project' : 'Projects'}`;
+      } else {
+        subTurnoverEl.textContent = 'Total Project Orders';
+      }
+    }
     if (subValEl) subValEl.textContent = `${metrics.totalSKUs} catalog items`;
+    if (subDispEl) subDispEl.textContent = `${dispatches.length} site consignments`;
     if (subTransEl) {
       const freightTrips = dispatches.filter(d => (Number(d.transportCost) || 0) > 0).length;
       subTransEl.textContent = freightTrips > 0 ? `${freightTrips} freight ${freightTrips === 1 ? 'trip' : 'trips'}` : 'Site Logistics & Freight';
     }
-    if (subInHandEl) subInHandEl.textContent = 'Available Godown Inventory';
-    if (subDispEl) subDispEl.textContent = `${dispatches.length} site consignments`;
   }
 
   function renderCategoryChips() {
@@ -393,7 +417,10 @@ const InventoryApp = (() => {
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No equipment items found</div>
               <div class="small text-muted mb-3">Add equipment SKUs to start tracking warehouse stock.</div>
-              <button type="button" class="inv-btn inv-btn-export" onclick="InventoryApp.openNewItemModal()">+ Add SKU</button>
+              <button type="button" class="inv-btn inv-btn-primary" onclick="InventoryApp.openNewItemModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add SKU</span>
+              </button>
             </div>
           </td>
         </tr>
@@ -433,19 +460,22 @@ const InventoryApp = (() => {
             ${fmtRupees(item.totalStockValuation)}
           </td>
           <td>${statusBadge}</td>
-          <td class="text-center text-nowrap no-print" style="width: 140px;">
-            <button class="inv-row-btn btn-row-dispatch" onclick="InventoryApp.openDispatchModalFor('${item.code}')" title="Dispatch to Project Site">
-              🚚
-            </button>
-            <button class="inv-row-btn btn-row-stockin" onclick="InventoryApp.openStockInModalFor('${item.code}')" title="Inward Stock In">
-              + In
-            </button>
-            <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit SKU">
-              ✏️
-            </button>
-            <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete SKU">
-              🗑️
-            </button>
+          <td class="text-center text-nowrap no-print" style="width: 130px;">
+            <div class="d-inline-flex align-items-center gap-1">
+              <button class="inv-row-btn btn-row-dispatch" onclick="InventoryApp.openDispatchModalFor('${item.code}')" title="Dispatch to Project Site">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+              </button>
+              <button class="inv-row-btn btn-row-stockin" onclick="InventoryApp.openStockInModalFor('${item.code}')" title="Inward Stock In">
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="ms-0.5">In</span>
+              </button>
+              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit SKU">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete SKU">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -512,7 +542,10 @@ const InventoryApp = (() => {
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No site dispatches recorded</div>
               <div class="small text-muted mb-3">Record equipment dispatches to track site material consumption.</div>
-              <button type="button" class="inv-btn inv-btn-dispatch" onclick="InventoryApp.openDispatchModal()">🚚 Dispatch Material</button>
+              <button type="button" class="inv-btn inv-btn-dispatch" onclick="InventoryApp.openDispatchModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+                <span>Dispatch Material</span>
+              </button>
             </div>
           </td>
         </tr>
@@ -532,8 +565,9 @@ const InventoryApp = (() => {
       let docBadge = `<span class="text-muted small" style="font-size:0.75rem;">—</span>`;
       if (disp.docName) {
         docBadge = `
-          <button type="button" class="inv-row-btn" onclick="InventoryApp.viewDoc('${disp.id}', 'dispatch')" title="Download / View ${escapeHtml(disp.docName)}">
-            📄 <span style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(disp.docName)}</span>
+          <button type="button" class="inv-row-btn inv-doc-btn" onclick="InventoryApp.viewDoc('${disp.id}', 'dispatch')" title="Download / View ${escapeHtml(disp.docName)}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(disp.docName)}</span>
           </button>
         `;
       }
@@ -569,9 +603,15 @@ const InventoryApp = (() => {
           </td>
           <td>${docBadge}</td>
           <td class="text-secondary small text-nowrap">${escapeHtml(disp.vehicle || 'Direct Delivery')}</td>
-          <td class="text-center text-nowrap no-print" style="width: 95px;">
-            <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditDispatchModal('${disp.id}')" title="Edit Dispatch">✏️</button>
-            <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteDispatch('${disp.id}')" title="Delete Dispatch">🗑️</button>
+          <td class="text-center text-nowrap no-print" style="width: 85px;">
+            <div class="d-inline-flex align-items-center gap-1">
+              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditDispatchModal('${disp.id}')" title="Edit Dispatch">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteDispatch('${disp.id}')" title="Delete Dispatch">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -640,7 +680,10 @@ const InventoryApp = (() => {
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No inward purchases recorded</div>
               <div class="small text-muted mb-3">Record inward deliveries from suppliers to increase godown stock.</div>
-              <button type="button" class="inv-btn inv-btn-stockin" onclick="InventoryApp.openStockInModal()">+ Stock In</button>
+              <button type="button" class="inv-btn inv-btn-stockin" onclick="InventoryApp.openStockInModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Stock In</span>
+              </button>
             </div>
           </td>
         </tr>
@@ -659,8 +702,9 @@ const InventoryApp = (() => {
       let docBadge = `<span class="text-muted small" style="font-size:0.75rem;">—</span>`;
       if (inw.docName) {
         docBadge = `
-          <button type="button" class="inv-row-btn" onclick="InventoryApp.viewDoc('${inw.id}', 'inward')" title="Download / View ${escapeHtml(inw.docName)}">
-            📄 <span style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(inw.docName)}</span>
+          <button type="button" class="inv-row-btn inv-doc-btn" onclick="InventoryApp.viewDoc('${inw.id}', 'inward')" title="Download / View ${escapeHtml(inw.docName)}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(inw.docName)}</span>
           </button>
         `;
       }
@@ -693,9 +737,15 @@ const InventoryApp = (() => {
           </td>
           <td>${docBadge}</td>
           <td class="text-secondary small text-nowrap">${escapeHtml(inw.location || 'Main Godown')}</td>
-          <td class="text-center text-nowrap no-print" style="width: 95px;">
-            <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditInwardModal('${inw.id}')" title="Edit Inward">✏️</button>
-            <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteInward('${inw.id}')" title="Delete Inward">🗑️</button>
+          <td class="text-center text-nowrap no-print" style="width: 85px;">
+            <div class="d-inline-flex align-items-center gap-1">
+              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditInwardModal('${inw.id}')" title="Edit Inward">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteInward('${inw.id}')" title="Delete Inward">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -791,10 +841,11 @@ const InventoryApp = (() => {
       if (bar) bar.style.display = 'flex';
       if (badge) badge.textContent = count;
       if (text) text.textContent = `${count} ${count === 1 ? label : labelPlural} selected for deletion`;
-      if (btnDelete) btnDelete.innerHTML = `🗑️ Delete Selected (${count})`;
+      const trashSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+      if (btnDelete) btnDelete.innerHTML = `${trashSvg} <span>Delete Selected (${count})</span>`;
       if (headerBtn) {
         headerBtn.style.display = 'inline-flex';
-        if (headerCount) headerCount.textContent = count;
+        headerBtn.innerHTML = `${trashSvg} <span>Delete (<span id="headerSelectedCount">${count}</span>)</span>`;
       }
     } else {
       if (bar) bar.style.display = 'none';
