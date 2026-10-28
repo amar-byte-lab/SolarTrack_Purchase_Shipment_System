@@ -1420,8 +1420,38 @@
 }
 
 .inv-row-picker-list {
-  max-height: 240px;
+  max-height: 180px;
   overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Price History Trigger Button */
+.inv-ph-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  margin-left: 4px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: #475569;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.12s ease;
+  vertical-align: middle;
+}
+
+.inv-ph-btn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  color: #4338ca;
+}
+
+.inv-ph-btn svg {
+  width: 11px;
+  height: 11px;
 }
 
 .inv-picker-group-title {

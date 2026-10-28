@@ -473,7 +473,7 @@ const InventoryApp = (() => {
           <td><div class="fw-semibold text-dark">${escapeHtml(item.name)}</div></td>
           <td><span class="inv-brand-badge">${escapeHtml(item.brand)}</span></td>
           <td style="max-width: 220px;" class="text-secondary small">${escapeHtml(item.spec)}</td>
-          <td class="text-end font-monospace">${fmtRupees(item.buyingPrice)}</td>
+          <td class="text-end font-monospace text-nowrap">${fmtRupees(item.buyingPrice)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${item.code}')">📈</button></td>
           <td class="text-center font-monospace fw-bold ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}" style="font-size:0.88rem;">
             ${fmtQty(item.inHandQty)} <span class="text-muted small fw-normal">${escapeHtml(item.unit || 'Nos')}</span>
           </td>
@@ -697,14 +697,14 @@ const InventoryApp = (() => {
           </td>
           <td>
             <div class="fw-medium text-dark">${escapeHtml(itm.name || disp.itemCode)}</div>
-            <div class="inv-sku-code mt-0.5">${disp.itemCode}</div>
+            <div class="inv-sku-code mt-0.5">${disp.itemCode} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${disp.itemCode}')">📈</button></div>
           </td>
           <td>
             <div class="inv-brand-badge mb-0.5">${escapeHtml(itm.brand || '—')}</div>
             <div class="text-muted small" style="max-width:180px;">${escapeHtml(itm.spec || '')}</div>
           </td>
           <td class="text-center font-monospace fw-bold text-dark">${fmtQty(disp.qty)} <span class="text-muted small fw-normal">${itm.unit || 'Nos'}</span></td>
-          <td class="text-end font-monospace text-secondary">${fmtRupees(unitBuyingCost)}</td>
+          <td class="text-end font-monospace text-secondary text-nowrap">${fmtRupees(unitBuyingCost)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${disp.itemCode}')">📈</button></td>
           <td class="text-end font-monospace fw-bold text-amber-700" style="font-size:0.86rem;">
             ${fmtRupees(totalCost)}
           </td>
@@ -926,14 +926,14 @@ const InventoryApp = (() => {
           </td>
           <td>
             <div class="fw-medium text-dark">${escapeHtml(itm.name || inw.itemCode)}</div>
-            <div class="inv-sku-code mt-0.5">${inw.itemCode}</div>
+            <div class="inv-sku-code mt-0.5">${inw.itemCode} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${inw.itemCode}')">📈</button></div>
           </td>
           <td>
             <div class="inv-brand-badge mb-0.5">${escapeHtml(itm.brand || '—')}</div>
             <div class="text-muted small" style="max-width:180px;">${escapeHtml(itm.spec || '')}</div>
           </td>
           <td class="text-center font-monospace fw-bold text-dark">${fmtQty(inw.qty)} <span class="text-muted small fw-normal">${itm.unit || 'Nos'}</span></td>
-          <td class="text-end font-monospace text-secondary">${fmtRupees(unitPrice)}</td>
+          <td class="text-end font-monospace text-secondary text-nowrap">${fmtRupees(unitPrice)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${inw.itemCode}')">📈</button></td>
           <td class="text-end font-monospace fw-bold text-emerald-700" style="font-size:0.86rem;">
             ${fmtRupees(totalCost)}
           </td>
@@ -1352,14 +1352,146 @@ const InventoryApp = (() => {
         const brandSpec = `${escapeHtml(v.brand || '')}${v.spec ? ' — ' + escapeHtml(v.spec) : ''}`;
         if (mode === 'dispatch') {
           const stockLabel = v.inHandQty > 0 ? `Stock: ${v.inHandQty} ${v.unit || 'Nos'}` : `Stock: 0 ${v.unit || 'Nos'}`;
-          html += `<option value="${v.code}" ${isSelected}>${brandSpec} [${stockLabel}] — ${fmtRupees(v.buyingPrice)}</option>`;
+          html += `<option value="${v.code}" ${isSelected}>${brandSpec} [${stockLabel}]</option>`;
         } else {
-          html += `<option value="${v.code}" ${isSelected}>${brandSpec} — ${fmtRupees(v.buyingPrice)}</option>`;
+          html += `<option value="${v.code}" ${isSelected}>${brandSpec}</option>`;
         }
       });
       html += `</optgroup>`;
     }
     return html;
+  }
+
+  // --- Modern Searchable Equipment Picker Generator ---
+  function renderPickerListHtml(rowId, mode, selectedCode, query = '') {
+    const ledger = getCalculatedStockLedger();
+    const categoryOrder = ['Panels', 'Inverters', 'Cables', 'Structure', 'Hardware', 'Electricals', 'Conduit', 'Earthing', 'Others'];
+    const q = (query || '').toLowerCase().trim();
+
+    let filtered = ledger;
+    if (q) {
+      filtered = ledger.filter(it => 
+        (it.name && it.name.toLowerCase().includes(q)) ||
+        (it.brand && it.brand.toLowerCase().includes(q)) ||
+        (it.spec && it.spec.toLowerCase().includes(q)) ||
+        (it.code && it.code.toLowerCase().includes(q)) ||
+        (it.category && it.category.toLowerCase().includes(q))
+      );
+    }
+
+    if (filtered.length === 0) {
+      return `<div class="p-3 text-center text-muted small">No equipment matching "${escapeHtml(query)}"</div>`;
+    }
+
+    const groups = {};
+    filtered.forEach(item => {
+      const cat = item.category || 'Others';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+
+    let html = '';
+    const renderGroup = (cat, itemsList) => {
+      if (!itemsList || itemsList.length === 0) return '';
+      let gHtml = `<div class="inv-picker-group-title">${escapeHtml(cat)} <span class="badge bg-white text-secondary border font-monospace ms-auto" style="font-size:0.65rem;">${itemsList.length}</span></div>`;
+      itemsList.forEach(v => {
+        const isSelected = v.code === selectedCode;
+        gHtml += `
+          <div class="inv-picker-item ${isSelected ? 'selected' : ''}" onclick="InventoryApp.selectPickerItem('${rowId}', '${mode}', '${v.code}')">
+            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+              <div class="d-flex align-items-center gap-1.5">
+                <span class="fw-semibold text-dark text-truncate">${escapeHtml(v.name)}</span>
+                <span class="inv-brand-badge py-0 px-1" style="font-size:0.68rem;">${escapeHtml(v.brand || 'Standard')}</span>
+              </div>
+              <div class="text-secondary small text-truncate" style="font-size:0.71rem;">
+                <span class="font-monospace text-muted me-1">${escapeHtml(v.code)}</span>
+                ${v.spec ? `• ${escapeHtml(v.spec)}` : ''}
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+              ${mode === 'dispatch' ? `
+                <span class="badge ${v.inHandQty > 0 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}" style="font-size:0.68rem;">
+                  Stock: ${v.inHandQty} ${v.unit || 'Nos'}
+                </span>
+              ` : ''}
+              <button type="button" class="inv-ph-btn" title="View Price History" onclick="event.stopPropagation(); InventoryApp.openPriceHistory('${v.code}')">📈</button>
+            </div>
+          </div>
+        `;
+      });
+      return gHtml;
+    };
+
+    categoryOrder.forEach(cat => {
+      if (groups[cat]) html += renderGroup(cat, groups[cat]);
+    });
+
+    Object.keys(groups).forEach(cat => {
+      if (!categoryOrder.includes(cat)) html += renderGroup(cat, groups[cat]);
+    });
+
+    return html;
+  }
+
+  function toggleItemPicker(rowId) {
+    const menu = document.getElementById(`pickerMenu_${rowId}`);
+    const btn = document.getElementById(`pickerBtn_${rowId}`);
+    if (!menu) return;
+    const isShown = menu.classList.contains('show');
+    document.querySelectorAll('.inv-row-picker-menu.show').forEach(m => {
+      if (m !== menu) m.classList.remove('show');
+    });
+    document.querySelectorAll('.inv-row-picker-btn.active').forEach(b => {
+      if (b !== btn) b.classList.remove('active');
+    });
+
+    if (!isShown) {
+      menu.classList.add('show');
+      if (btn) btn.classList.add('active');
+      const input = menu.querySelector('.inv-row-picker-search-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    } else {
+      menu.classList.remove('show');
+      if (btn) btn.classList.remove('active');
+    }
+  }
+
+  function filterPickerItems(rowId, mode, query) {
+    const listEl = document.getElementById(`pickerList_${rowId}`);
+    if (!listEl) return;
+    const row = (mode === 'stockin' ? inwardRows : dispatchRows).find(r => r.id === rowId);
+    const selectedCode = row ? row.itemCode : '';
+    listEl.innerHTML = renderPickerListHtml(rowId, mode, selectedCode, query);
+  }
+
+  function selectPickerItem(rowId, mode, code) {
+    const ledger = getCalculatedStockLedger();
+    if (mode === 'stockin') {
+      const row = inwardRows.find(r => r.id === rowId);
+      if (row && code) {
+        row.itemCode = code;
+        const selectedMaster = ledger.find(it => it.code === code);
+        if (selectedMaster) {
+          row.unitPrice = selectedMaster.buyingPrice;
+        }
+        renderInwRows();
+        recalcInwardTotals();
+      }
+    } else if (mode === 'dispatch') {
+      const row = dispatchRows.find(r => r.id === rowId);
+      if (row && code) {
+        row.itemCode = code;
+        const targetItem = ledger.find(i => i.code === code);
+        if (targetItem && targetItem.inHandQty > 0 && (!row.qty || Number(row.qty) === 0)) {
+          row.qty = 1;
+        }
+        renderDspRows();
+        recalcDispatchTotals();
+      }
+    }
   }
 
   // --- Modal 1: Stock In Consignment ---
@@ -1407,17 +1539,37 @@ const InventoryApp = (() => {
 
       return `
         <tr data-row-id="${row.id}">
-          <td style="min-width: 280px;">
-            <select class="form-select form-select-sm inw-row-item-select" data-row-id="${row.id}">
-              ${buildGroupedItemOptions(row.itemCode, 'stockin')}
-            </select>
+          <td style="min-width: 280px; position: relative;">
+            <div class="inv-row-item-picker" id="pickerWrap_${row.id}">
+              <button type="button" class="inv-row-picker-btn" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')">
+                <span class="text-truncate flex-grow-1" id="pickerLabel_${row.id}">
+                  <span class="fw-semibold text-dark">${escapeHtml(item.name || 'Select Equipment')}</span>
+                  <span class="text-secondary small ms-1">(${escapeHtml(item.brand || 'Standard')})</span>
+                </span>
+                <span class="d-inline-flex align-items-center flex-shrink-0 ms-1">
+                  <button type="button" class="inv-ph-btn" title="View Price History" onclick="event.stopPropagation(); InventoryApp.openPriceHistory('${item.code || row.itemCode}')">📈</button>
+                  <svg class="ms-1 text-muted" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+              </button>
+              <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
+                <div class="inv-row-picker-search-wrap">
+                  <input type="text" class="inv-row-picker-search-input" placeholder="Search equipment by name, brand, spec..." oninput="InventoryApp.filterPickerItems('${row.id}', 'stockin', this.value)" autocomplete="off">
+                </div>
+                <div class="inv-row-picker-list" id="pickerList_${row.id}">
+                  ${renderPickerListHtml(row.id, 'stockin', row.itemCode, '')}
+                </div>
+              </div>
+            </div>
           </td>
           <td class="text-center font-monospace text-secondary">${item.unit || 'Nos'}</td>
           <td>
             <input type="number" min="1" step="any" class="form-control form-control-sm text-center font-monospace inw-row-qty" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="Qty">
           </td>
           <td>
-            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace inw-row-price" data-row-id="${row.id}" value="${row.unitPrice !== undefined ? row.unitPrice : (item.buyingPrice || 0)}">
+            <div class="d-flex align-items-center gap-1">
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace inw-row-price" data-row-id="${row.id}" value="${row.unitPrice !== undefined ? row.unitPrice : (item.buyingPrice || 0)}">
+              <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${item.code || row.itemCode}')">📈</button>
+            </div>
           </td>
           <td class="text-end font-monospace fw-bold text-success inw-row-total" data-row-id="${row.id}">
             ${fmtRupees(lineTotal)}
@@ -1705,10 +1857,27 @@ const InventoryApp = (() => {
 
       return `
         <tr data-row-id="${row.id}" class="${isOverStock ? 'table-danger' : ''}">
-          <td style="min-width: 280px;">
-            <select class="form-select form-select-sm dsp-row-item-select ${isOverStock ? 'is-invalid border-danger' : ''}" data-row-id="${row.id}">
-              ${buildGroupedItemOptions(row.itemCode, 'dispatch')}
-            </select>
+          <td style="min-width: 280px; position: relative;">
+            <div class="inv-row-item-picker" id="pickerWrap_${row.id}">
+              <button type="button" class="inv-row-picker-btn ${isOverStock ? 'border-danger' : ''}" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')">
+                <span class="text-truncate flex-grow-1" id="pickerLabel_${row.id}">
+                  <span class="fw-semibold text-dark">${escapeHtml(item.name || 'Select Equipment')}</span>
+                  <span class="text-secondary small ms-1">(${escapeHtml(item.brand || 'Standard')})</span>
+                </span>
+                <span class="d-inline-flex align-items-center flex-shrink-0 ms-1">
+                  <button type="button" class="inv-ph-btn" title="View Price History" onclick="event.stopPropagation(); InventoryApp.openPriceHistory('${item.code || row.itemCode}')">📈</button>
+                  <svg class="ms-1 text-muted" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+              </button>
+              <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
+                <div class="inv-row-picker-search-wrap">
+                  <input type="text" class="inv-row-picker-search-input" placeholder="Search equipment by name, brand, spec..." oninput="InventoryApp.filterPickerItems('${row.id}', 'dispatch', this.value)" autocomplete="off">
+                </div>
+                <div class="inv-row-picker-list" id="pickerList_${row.id}">
+                  ${renderPickerListHtml(row.id, 'dispatch', row.itemCode, '')}
+                </div>
+              </div>
+            </div>
           </td>
           <td class="text-center font-monospace">
             <span class="badge ${inHand > 0 ? 'bg-light text-success border' : 'bg-light text-danger border'}">
@@ -1718,8 +1887,8 @@ const InventoryApp = (() => {
           <td>
             <input type="number" min="1" max="${inHand}" step="any" class="form-control form-control-sm text-center font-monospace dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="Qty">
           </td>
-          <td class="text-end font-monospace text-secondary">
-            ${fmtRupees(unitPrice)}
+          <td class="text-end font-monospace text-secondary text-nowrap">
+            ${fmtRupees(unitPrice)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${item.code || row.itemCode}')">📈</button>
           </td>
           <td class="text-end font-monospace fw-bold text-dark dsp-row-total" data-row-id="${row.id}">
             ${fmtRupees(lineTotal)}
@@ -1983,6 +2152,54 @@ const InventoryApp = (() => {
     }
   }
 
+  // --- Upload helper to project's uploads/bills folder via /api/bills/upload ---
+  async function uploadFileToBillsFolder(file, prefix = '') {
+    const originalName = file.name;
+    const cleanPrefix = prefix ? prefix.replace(/[^a-zA-Z0-9_-]/g, '_') : '';
+    const fileName = cleanPrefix ? `${cleanPrefix}_${originalName}` : originalName;
+    const today = new Date().toISOString().slice(0, 10);
+    const uploadUrl = `/api/bills/upload?fileName=${encodeURIComponent(fileName)}&originalName=${encodeURIComponent(originalName)}&fileDate=${encodeURIComponent(today)}`;
+
+    try {
+      const resp = await fetch(uploadUrl, {
+        method: 'POST',
+        body: file
+      });
+      if (resp.ok) {
+        const resData = await resp.json();
+        const f = resData.file || resData.bill;
+        if (f) {
+          const fileUrl = f.url || `/files/${f.storedFileName}` || `/bills/${f.storedFileName}`;
+          return {
+            name: f.fileName || originalName,
+            size: f.fileSize || fmtFileSize(file.size),
+            type: file.type,
+            url: fileUrl,
+            data: fileUrl,
+            storedFileName: f.storedFileName
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Upload to /api/bills/upload failed, falling back to local data URL:', err);
+    }
+
+    // Fallback: Read as base64 data URL
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        resolve({
+          name: file.name,
+          size: fmtFileSize(file.size),
+          type: file.type,
+          url: loadEvt.target.result,
+          data: loadEvt.target.result
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   // --- Document File Uploads Setup ---
   function setupFileUploads() {
     // Inward Upload
@@ -1995,24 +2212,20 @@ const InventoryApp = (() => {
 
     if (btnInwUpload && inwFileInput) {
       btnInwUpload.addEventListener('click', () => inwFileInput.click());
-      inwFileInput.addEventListener('change', (e) => {
+      inwFileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-          inwardDocFile = {
-            name: file.name,
-            size: fmtFileSize(file.size),
-            type: file.type,
-            data: loadEvent.target.result
-          };
-          if (inwFileName) inwFileName.textContent = file.name;
-          if (inwFileSize) inwFileSize.textContent = `(${inwardDocFile.size})`;
-          if (inwBadge) inwBadge.style.display = 'inline-flex';
-          btnInwUpload.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
+        if (inwFileName) inwFileName.textContent = 'Saving to bills folder...';
+        if (inwBadge) inwBadge.style.display = 'inline-flex';
+        btnInwUpload.style.display = 'none';
+
+        const uploaded = await uploadFileToBillsFolder(file, 'INW');
+        inwardDocFile = uploaded;
+
+        if (inwFileName) inwFileName.textContent = uploaded.name;
+        if (inwFileSize) inwFileSize.textContent = `(${uploaded.size})`;
+        if (typeof UI !== 'undefined') UI.toast(`File "${uploaded.name}" saved to bills folder`, 'success');
       });
     }
 
@@ -2035,24 +2248,20 @@ const InventoryApp = (() => {
 
     if (btnDspUpload && dspFileInput) {
       btnDspUpload.addEventListener('click', () => dspFileInput.click());
-      dspFileInput.addEventListener('change', (e) => {
+      dspFileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-          dispatchDocFile = {
-            name: file.name,
-            size: fmtFileSize(file.size),
-            type: file.type,
-            data: loadEvent.target.result
-          };
-          if (dspFileName) dspFileName.textContent = file.name;
-          if (dspFileSize) dspFileSize.textContent = `(${dispatchDocFile.size})`;
-          if (dspBadge) dspBadge.style.display = 'inline-flex';
-          btnDspUpload.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
+        if (dspFileName) dspFileName.textContent = 'Saving to bills folder...';
+        if (dspBadge) dspBadge.style.display = 'inline-flex';
+        btnDspUpload.style.display = 'none';
+
+        const uploaded = await uploadFileToBillsFolder(file, 'DSP');
+        dispatchDocFile = uploaded;
+
+        if (dspFileName) dspFileName.textContent = uploaded.name;
+        if (dspFileSize) dspFileSize.textContent = `(${uploaded.size})`;
+        if (typeof UI !== 'undefined') UI.toast(`File "${uploaded.name}" saved to bills folder`, 'success');
       });
     }
 
@@ -2074,14 +2283,19 @@ const InventoryApp = (() => {
       return;
     }
 
-    if (record.docData) {
-      const link = document.createElement('a');
-      link.href = record.docData;
-      link.download = record.docName;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    const docTarget = record.docData || record.docUrl;
+    if (docTarget) {
+      if (docTarget.startsWith('/bills/') || docTarget.startsWith('/files/') || docTarget.startsWith('http://') || docTarget.startsWith('https://')) {
+        window.open(docTarget, '_blank');
+      } else {
+        const link = document.createElement('a');
+        link.href = docTarget;
+        link.download = record.docName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
       if (typeof UI !== 'undefined') UI.toast(`Opened document: ${record.docName}`, 'success');
     } else {
       if (typeof UI !== 'undefined') UI.toast(`Document file: ${record.docName}`, 'info');
@@ -2099,21 +2313,17 @@ const InventoryApp = (() => {
 
     if (btnEditInwUpload && editInwDocInput) {
       btnEditInwUpload.addEventListener('click', () => editInwDocInput.click());
-      editInwDocInput.addEventListener('change', (e) => {
+      editInwDocInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-          editInwardDocFile = {
-            name: file.name,
-            size: fmtFileSize(file.size),
-            type: file.type,
-            data: loadEvent.target.result
-          };
-          if (editInwFileName) editInwFileName.textContent = file.name;
-          if (editInwBadge) editInwBadge.style.display = 'inline-flex';
-        };
-        reader.readAsDataURL(file);
+        if (editInwFileName) editInwFileName.textContent = 'Saving to bills folder...';
+        if (editInwBadge) editInwBadge.style.display = 'inline-flex';
+
+        const uploaded = await uploadFileToBillsFolder(file, 'INW_EDIT');
+        editInwardDocFile = uploaded;
+
+        if (editInwFileName) editInwFileName.textContent = uploaded.name;
+        if (typeof UI !== 'undefined') UI.toast(`File "${uploaded.name}" saved to bills folder`, 'success');
       });
     }
 
@@ -2134,21 +2344,17 @@ const InventoryApp = (() => {
 
     if (btnEditDspUpload && editDspDocInput) {
       btnEditDspUpload.addEventListener('click', () => editDspDocInput.click());
-      editDspDocInput.addEventListener('change', (e) => {
+      editDspDocInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-          editDispatchDocFile = {
-            name: file.name,
-            size: fmtFileSize(file.size),
-            type: file.type,
-            data: loadEvent.target.result
-          };
-          if (editDspFileName) editDspFileName.textContent = file.name;
-          if (editDspBadge) editDspBadge.style.display = 'inline-flex';
-        };
-        reader.readAsDataURL(file);
+        if (editDspFileName) editDspFileName.textContent = 'Saving to bills folder...';
+        if (editDspBadge) editDspBadge.style.display = 'inline-flex';
+
+        const uploaded = await uploadFileToBillsFolder(file, 'DSP_EDIT');
+        editDispatchDocFile = uploaded;
+
+        if (editDspFileName) editDspFileName.textContent = uploaded.name;
+        if (typeof UI !== 'undefined') UI.toast(`File "${uploaded.name}" saved to bills folder`, 'success');
       });
     }
 
@@ -2226,17 +2432,12 @@ const InventoryApp = (() => {
       document.getElementById('newSkuBrand')?.focus();
       return;
     }
-    if (!spec) {
-      if (typeof UI !== 'undefined') UI.toast('Please enter Specification / Model details', 'warning');
-      document.getElementById('newSkuSpec')?.focus();
-      return;
-    }
 
     const newItem = {
       code,
       name,
       brand,
-      spec,
+      spec: spec || '',
       category,
       unit,
       buyingPrice,
@@ -2294,7 +2495,7 @@ const InventoryApp = (() => {
   }
 
   function openEditItemModal(code) {
-    const item = items.find(i => i.code === code);
+    const item = items.find(i => (i.code || '').toLowerCase() === (code || '').toLowerCase());
     if (!item) {
       if (typeof UI !== 'undefined') UI.toast('SKU item not found', 'danger');
       return;
@@ -2313,9 +2514,9 @@ const InventoryApp = (() => {
     const thresholdInput = document.getElementById('editSkuMinThreshold');
 
     if (codeInput) codeInput.value = item.code;
-    if (nameInput) nameInput.value = item.name;
-    if (brandInput) brandInput.value = item.brand;
-    if (specInput) specInput.value = item.spec || '';
+    if (nameInput) nameInput.value = item.name || '';
+    if (brandInput) brandInput.value = item.brand || item.Brand || item.make || '';
+    if (specInput) specInput.value = item.spec || item.Specification || '';
     if (catInput) catInput.value = item.category || 'Panels';
     if (unitInput) unitInput.value = item.unit || 'Nos';
     if (priceInput) priceInput.value = item.buyingPrice;
@@ -2336,18 +2537,20 @@ const InventoryApp = (() => {
     const minThreshold = Number(document.getElementById('editSkuMinThreshold')?.value) || 5;
 
     if (!code) return;
-    if (!name || !brand || !spec) {
-      if (typeof UI !== 'undefined') UI.toast('Please fill all required SKU attributes', 'warning');
+    if (!name || !brand) {
+      if (typeof UI !== 'undefined') UI.toast('Please fill all required SKU attributes (Name & Brand)', 'warning');
       return;
     }
 
-    const item = items.find(i => i.code === code);
+    const item = items.find(i => (i.code || '').toLowerCase() === code.toLowerCase());
     if (!item) return;
 
     const oldName = item.name;
     item.name = name;
     item.brand = brand;
-    item.spec = spec;
+    item.Brand = brand;
+    item.spec = spec || '';
+    item.Specification = spec || '';
     item.category = category;
     item.unit = unit;
     item.buyingPrice = buyingPrice;
@@ -2356,10 +2559,13 @@ const InventoryApp = (() => {
     saveData();
 
     if (typeof DB !== 'undefined') {
-      DB.update('inventory_items', r => (r.ItemCode || r.code) === code, {
+      DB.update('inventory_items', r => ((r.ItemCode || r.itemcode || r.code || '').toLowerCase() === code.toLowerCase()), {
         ItemName: name,
+        itemname: name,
         Brand: brand,
-        Specification: spec,
+        brand: brand,
+        Specification: spec || '',
+        specification: spec || '',
         Category: category,
         Unit: unit,
         BuyingPrice: buyingPrice,
@@ -2367,8 +2573,10 @@ const InventoryApp = (() => {
         UpdatedAt: new Date().toISOString()
       }).catch(err => console.warn('[Supabase] inventory_items update error:', err));
 
-      DB.update('items', r => (r.ItemName || r.name) === oldName, {
+      DB.update('items', r => ((r.ItemName || r.itemname || r.name || '').toLowerCase() === (oldName || '').toLowerCase() || (r.ItemCode || r.itemcode || r.code || '').toLowerCase() === code.toLowerCase()), {
         ItemName: name,
+        Brand: brand,
+        brand: brand,
         Category: category,
         Unit: unit
       }).catch(err => console.warn('[Supabase] items update error:', err));
@@ -2381,6 +2589,8 @@ const InventoryApp = (() => {
     renderKpiCards();
     renderCategoryChips();
     if (activeTab === 'ledger') renderLedgerTable();
+    else if (activeTab === 'dispatches') renderDispatchesTable();
+    else if (activeTab === 'inwards') renderInwardsTable();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Updated SKU "${code}" successfully!`, 'success');
@@ -3126,6 +3336,239 @@ const InventoryApp = (() => {
     });
   }
 
+  // --- Price History & Trend Graph Renderer ---
+  function formatShortDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${d.getDate()} ${months[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  function openPriceHistory(itemCode) {
+    if (!itemCode) return;
+    const ledger = getCalculatedStockLedger();
+    const item = ledger.find(it => (it.code || '').toLowerCase() === itemCode.toLowerCase()) || 
+                 items.find(it => (it.code || '').toLowerCase() === itemCode.toLowerCase()) || 
+                 { code: itemCode, name: itemCode, brand: '', spec: '', buyingPrice: 0 };
+
+    const modalEl = document.getElementById('modalPriceHistory');
+    if (!modalEl) return;
+
+    // Title and Subtitle
+    const titleEl = document.getElementById('modalPriceHistoryTitle');
+    const subtitleEl = document.getElementById('modalPriceHistorySubtitle');
+    if (titleEl) {
+      titleEl.innerHTML = `Equipment Rate History: <span class="text-primary">${escapeHtml(item.name || itemCode)}</span> <span class="badge bg-secondary-subtle text-secondary border font-monospace ms-1">${escapeHtml(item.brand || 'Standard')}</span>`;
+    }
+    if (subtitleEl) {
+      subtitleEl.textContent = `SKU: ${item.code || itemCode} ${item.spec ? ' • ' + item.spec : ''} • Unit: ${item.unit || 'Nos'}`;
+    }
+
+    // Find all inward records for this itemCode
+    const itemInwards = inwards
+      .filter(inw => (inw.itemCode || '').toLowerCase() === itemCode.toLowerCase())
+      .sort((a, b) => new Date(a.date) - new Date(b.date)); // chronological (oldest to newest)
+
+    // Build price points list
+    let pricePoints = [];
+    if (itemInwards.length > 0) {
+      pricePoints = itemInwards.map((inw) => {
+        const rate = Number(inw.unitPrice) || Number(item.buyingPrice) || 0;
+        const qty = Number(inw.qty) || 0;
+        const total = Number(inw.totalCost) || (rate * qty);
+        return {
+          id: inw.id,
+          date: inw.date,
+          supplier: inw.supplier || inw.remarks || 'Consignment Inward',
+          rate: rate,
+          qty: qty,
+          totalCost: total,
+          invoiceNo: inw.invoiceNo || inw.id
+        };
+      });
+    } else {
+      // If no inwards recorded yet, display current catalog baseline price
+      pricePoints = [{
+        id: 'BASE',
+        date: new Date().toISOString().slice(0, 10),
+        supplier: 'Catalog Base Rate (Initial)',
+        rate: Number(item.buyingPrice) || 0,
+        qty: 0,
+        totalCost: 0,
+        invoiceNo: 'CATALOG-INIT'
+      }];
+    }
+
+    // Rates calculation
+    const rates = pricePoints.map(p => p.rate);
+    const minRate = Math.min(...rates);
+    const maxRate = Math.max(...rates);
+    const latestRate = pricePoints[pricePoints.length - 1].rate;
+
+    const statCurrent = document.getElementById('phStatCurrent');
+    const statLowest = document.getElementById('phStatLowest');
+    const statHighest = document.getElementById('phStatHighest');
+    const statEntries = document.getElementById('phStatEntries');
+
+    if (statCurrent) statCurrent.textContent = fmtRupees(latestRate);
+    if (statLowest) statLowest.textContent = fmtRupees(minRate);
+    if (statHighest) statHighest.textContent = fmtRupees(maxRate);
+    if (statEntries) statEntries.textContent = itemInwards.length;
+
+    // Render SVG Trend Graph
+    renderPriceTrendGraph(pricePoints, item);
+
+    // Render History Table
+    renderPriceHistoryTable(pricePoints);
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+  }
+
+  function renderPriceTrendGraph(pricePoints, item) {
+    const wrap = document.getElementById('phGraphCanvasWrap');
+    if (!wrap) return;
+
+    if (!pricePoints || pricePoints.length === 0) {
+      wrap.innerHTML = `<div class="p-4 text-center text-muted small">No price data available</div>`;
+      return;
+    }
+
+    const rates = pricePoints.map(p => p.rate);
+    const minRate = Math.min(...rates);
+    const maxRate = Math.max(...rates);
+
+    const width = 680;
+    const height = 180;
+    const paddingLeft = 65;
+    const paddingRight = 35;
+    const paddingTop = 25;
+    const paddingBottom = 35;
+
+    const plotW = width - paddingLeft - paddingRight;
+    const plotH = height - paddingTop - paddingBottom;
+
+    // Calculate Y range
+    let yMin = minRate;
+    let yMax = maxRate;
+    if (yMin === yMax) {
+      yMin = Math.max(0, Math.floor(yMin * 0.85));
+      yMax = Math.ceil((yMax * 1.15) || 100);
+    } else {
+      const diff = yMax - yMin;
+      yMin = Math.max(0, Math.floor(yMin - diff * 0.15));
+      yMax = Math.ceil(yMax + diff * 0.15);
+    }
+
+    const getY = (val) => {
+      const pct = (val - yMin) / (yMax - yMin || 1);
+      return paddingTop + plotH - (pct * plotH);
+    };
+
+    const getX = (idx) => {
+      if (pricePoints.length === 1) return paddingLeft + plotW / 2;
+      return paddingLeft + (idx / (pricePoints.length - 1)) * plotW;
+    };
+
+    // Build SVG coordinate points
+    const coords = pricePoints.map((p, idx) => ({
+      x: getX(idx),
+      y: getY(p.rate),
+      p
+    }));
+
+    // Grid lines (3 horizontal lines)
+    const gridLevels = [yMin, yMin + (yMax - yMin) * 0.5, yMax];
+    let gridSvg = '';
+    gridLevels.forEach(val => {
+      const gy = getY(val);
+      gridSvg += `
+        <line x1="${paddingLeft}" y1="${gy}" x2="${width - paddingRight}" y2="${gy}" stroke="#e2e8f0" stroke-dasharray="3,3" stroke-width="1"/>
+        <text x="${paddingLeft - 8}" y="${gy + 3}" text-anchor="end" font-size="9" fill="#94a3b8" font-family="monospace">₹${Math.round(val).toLocaleString('en-IN')}</text>
+      `;
+    });
+
+    // Path points
+    const pointsStr = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+    const areaStr = `${coords[0].x.toFixed(1)},${(paddingTop + plotH).toFixed(1)} ` + pointsStr + ` ${coords[coords.length - 1].x.toFixed(1)},${(paddingTop + plotH).toFixed(1)}`;
+
+    // Dots and text labels
+    let dotsSvg = '';
+    coords.forEach((c) => {
+      dotsSvg += `
+        <g class="ph-graph-dot" style="cursor: pointer;">
+          <title>${c.p.supplier}: ₹${c.p.rate.toLocaleString('en-IN')} on ${c.p.date}</title>
+          <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="#059669" stroke="#ffffff" stroke-width="2"/>
+          <text x="${c.x.toFixed(1)}" y="${(c.y - 8).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f172a" font-family="monospace">₹${Math.round(c.p.rate).toLocaleString('en-IN')}</text>
+          <text x="${c.x.toFixed(1)}" y="${(height - 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="sans-serif">${formatShortDate(c.p.date)}</text>
+        </g>
+      `;
+    });
+
+    wrap.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto; max-height: 200px; display: block; overflow: visible;">
+        <defs>
+          <linearGradient id="phAreaGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#10b981" stop-opacity="0.32"/>
+            <stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        ${gridSvg}
+        <polygon points="${areaStr}" fill="url(#phAreaGradient)"/>
+        <polyline points="${pointsStr}" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${dotsSvg}
+      </svg>
+    `;
+  }
+
+  function renderPriceHistoryTable(pricePoints) {
+    const tbody = document.getElementById('phTableBody');
+    if (!tbody) return;
+
+    if (!pricePoints || pricePoints.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">No inward purchase records recorded.</td></tr>`;
+      return;
+    }
+
+    // Display rows in reverse chronological order (newest on top)
+    const displayList = [...pricePoints].reverse();
+
+    tbody.innerHTML = displayList.map((p) => {
+      const chronoIdx = pricePoints.findIndex(pt => pt.id === p.id);
+      let trendBadge = `<span class="badge bg-light text-secondary border font-monospace" style="font-size:0.70rem;">— Baseline</span>`;
+      if (chronoIdx > 0) {
+        const prevRate = pricePoints[chronoIdx - 1].rate;
+        const diff = p.rate - prevRate;
+        if (diff > 0) {
+          trendBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace" style="font-size:0.70rem;" title="+${fmtRupees(diff)} vs previous">▲ +₹${diff.toFixed(2)}</span>`;
+        } else if (diff < 0) {
+          trendBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle font-monospace" style="font-size:0.70rem;" title="${fmtRupees(diff)} vs previous">▼ -₹${Math.abs(diff).toFixed(2)}</span>`;
+        } else {
+          trendBadge = `<span class="badge bg-light text-muted border font-monospace" style="font-size:0.70rem;">= Same Rate</span>`;
+        }
+      }
+
+      return `
+        <tr>
+          <td class="font-monospace text-secondary">${escapeHtml(p.date)}</td>
+          <td>
+            <div class="fw-semibold text-dark text-truncate" style="max-width:240px;">${escapeHtml(p.supplier)}</div>
+            ${p.invoiceNo ? `<div class="text-muted small font-monospace" style="font-size:0.70rem;">${escapeHtml(p.invoiceNo)}</div>` : ''}
+          </td>
+          <td class="text-end font-monospace fw-bold text-dark">${fmtRupees(p.rate)}</td>
+          <td class="text-center font-monospace">${p.qty > 0 ? fmtQty(p.qty) : '—'}</td>
+          <td class="text-end font-monospace fw-semibold ${p.totalCost > 0 ? 'text-emerald-700' : 'text-muted'}">${p.totalCost > 0 ? fmtRupees(p.totalCost) : '—'}</td>
+          <td class="text-center">${trendBadge}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
   // --- Initializer ---
   let isInitialized = false;
 
@@ -3204,6 +3647,10 @@ const InventoryApp = (() => {
     viewDoc,
     exportCsv,
     resetFilters,
+    openPriceHistory,
+    toggleItemPicker,
+    filterPickerItems,
+    selectPickerItem,
     getItems: () => items,
     getDispatches: () => dispatches,
     getInwards: () => inwards
