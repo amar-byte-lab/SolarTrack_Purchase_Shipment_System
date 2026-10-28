@@ -155,6 +155,30 @@
   border-color: var(--inv-slate-400);
 }
 
+/* Danger Button (Delete Selected) */
+.inv-btn-danger {
+  background-color: var(--inv-rose-600);
+  color: #ffffff;
+  border-color: var(--inv-rose-600);
+}
+.inv-btn-danger:hover {
+  background-color: #be123c;
+  color: #ffffff;
+  border-color: #be123c;
+}
+
+/* Secondary Button (Cancel / Clear) */
+.inv-btn-secondary {
+  background-color: #ffffff;
+  color: var(--inv-slate-700);
+  border-color: var(--inv-slate-300);
+}
+.inv-btn-secondary:hover {
+  background-color: var(--inv-slate-100);
+  color: var(--inv-slate-900);
+  border-color: var(--inv-slate-400);
+}
+
 /* ---------------- 3-Card KPI Summary Grid ---------------- */
 .inv-kpi-grid {
   display: grid;
@@ -467,6 +491,90 @@
   outline: none;
 }
 
+/* ---------------- Bulk Actions Bar ---------------- */
+.inv-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  background: var(--inv-rose-50);
+  border-bottom: 1px solid var(--inv-rose-100);
+  margin: 0;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(225, 29, 72, 0.06);
+  animation: invFadeIn 0.15s ease-out;
+}
+
+@keyframes invFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.inv-bulk-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inv-bulk-badge {
+  background: var(--inv-rose-600);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  min-width: 22px;
+  text-align: center;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.inv-bulk-text {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #9f1239;
+}
+
+.inv-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Row Selection Highlights & Checkboxes */
+.inv-table tr.inv-row-selected td {
+  background-color: #fff1f2 !important;
+}
+
+.inv-table tr.inv-row-selected:hover td {
+  background-color: #ffe4e6 !important;
+}
+
+.inv-row-chk,
+.inv-select-chk-all {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--inv-slate-400);
+  accent-color: var(--inv-rose-600);
+  transition: all 0.12s ease;
+  vertical-align: middle;
+  margin: 0 auto;
+  display: block;
+}
+
+.inv-row-chk:checked,
+.inv-select-chk-all:checked {
+  background-color: var(--inv-rose-600);
+  border-color: var(--inv-rose-600);
+}
+
+.inv-chk-cell {
+  cursor: pointer;
+  user-select: none;
+}
+
 /* ---------------- Data Tables ---------------- */
 .inv-table-wrap {
   overflow-x: auto;
@@ -622,6 +730,53 @@
   background: var(--inv-rose-50);
   border-color: var(--inv-rose-300);
   color: var(--inv-rose-600);
+}
+
+/* Modal Table Responsive & Clean Equipment Select */
+#modalStockIn .table-responsive,
+#modalSiteDispatch .table-responsive {
+  overflow: visible !important;
+}
+
+.inw-row-item-select,
+.dsp-row-item-select {
+  font-size: 0.8rem !important;
+  font-weight: 500;
+  padding: 5px 28px 5px 8px;
+  border-radius: 6px;
+  border-color: var(--inv-slate-300);
+  background-color: #ffffff;
+  color: var(--inv-slate-800);
+  cursor: pointer;
+  line-height: 1.35;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inw-row-item-select:focus,
+.dsp-row-item-select:focus {
+  border-color: var(--inv-emerald-600);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+  outline: none;
+}
+
+.dsp-row-item-select.is-invalid {
+  border-color: var(--inv-rose-600);
+}
+
+.inw-row-item-select optgroup,
+.dsp-row-item-select optgroup {
+  font-weight: 700;
+  color: var(--inv-slate-700);
+  background-color: var(--inv-slate-100);
+  padding: 4px 6px;
+}
+
+.inw-row-item-select option,
+.dsp-row-item-select option {
+  font-weight: 400;
+  color: var(--inv-slate-900);
+  background-color: #ffffff;
+  padding: 4px 8px;
 }
 
 /* Modern Inline Grouped Searchable Equipment Picker */

@@ -21,6 +21,11 @@ const InventoryApp = (() => {
   let inwards = [];
   let dispatches = [];
 
+  // Multi-selection state for deletion
+  const selectedLedger = new Set();
+  const selectedDispatches = new Set();
+  const selectedInwards = new Set();
+
   let activeTab = 'ledger';
   let activeCategory = 'All';
   let searchTerm = '';
@@ -105,14 +110,15 @@ const InventoryApp = (() => {
       }
 
       // 1. Fetch items
+      let loadedItems = [];
       const dbItems = DB.getAll('inventory_items');
-      if (Array.isArray(dbItems)) {
-        items = dbItems.map(row => ({
+      if (Array.isArray(dbItems) && dbItems.length > 0) {
+        loadedItems = dbItems.map(row => ({
           code: row.ItemCode || row.itemcode || row.code,
           name: row.ItemName || row.itemname || row.name,
           brand: row.Brand || row.brand || '',
           spec: row.Specification || row.specification || row.spec || '',
-          category: row.Category || row.category || 'General',
+          category: row.Category || row.category || 'Others',
           unit: row.Unit || row.unit || 'Nos',
           buyingPrice: Number(row.BuyingPrice !== undefined ? row.BuyingPrice : row.buyingprice) || 0,
           minThreshold: Number(row.MinThreshold !== undefined ? row.MinThreshold : row.minthreshold) || 5,
@@ -120,6 +126,26 @@ const InventoryApp = (() => {
           gst: Number(row.GSTPercent !== undefined ? row.GSTPercent : row.gstpercent) || 12,
           status: row.Status || row.status || 'Active'
         }));
+      } else {
+        const masterItems = DB.getAll('items');
+        if (Array.isArray(masterItems) && masterItems.length > 0) {
+          loadedItems = masterItems.map((row, idx) => ({
+            code: row.ItemCode || row.code || `SKU-${String(idx + 1).padStart(3, '0')}`,
+            name: row.ItemName || row.itemname || row.name,
+            brand: row.Brand || row.brand || 'Standard',
+            spec: row.Specification || row.specification || row.spec || (row.ItemName || ''),
+            category: row.Category || row.category || 'Others',
+            unit: row.Unit || row.unit || 'Nos',
+            buyingPrice: Number(row.BuyingPrice || row.Price || 0),
+            minThreshold: Number(row.MinThreshold || 5),
+            hsn: row.HSNCode || row.hsncode || '',
+            gst: Number(row.GSTPercent || 18),
+            status: row.Status || 'Active'
+          }));
+        }
+      }
+      if (loadedItems.length > 0) {
+        items = loadedItems;
       }
 
       // 2. Fetch inwards
@@ -251,8 +277,32 @@ const InventoryApp = (() => {
     const chipsContainer = document.getElementById('invCategoryChips');
     if (!chipsContainer) return;
 
-    const dynamicCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean))).sort();
-    const categories = ['All', ...dynamicCategories];
+    const PREFERRED_CATEGORIES = [
+      'All',
+      'Panels',
+      'Inverters',
+      'Cables',
+      'Hardware',
+      'Electricals',
+      'Conduit',
+      'Earthing',
+      'Others'
+    ];
+
+    const itemCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
+    const categories = ['All'];
+
+    PREFERRED_CATEGORIES.slice(1).forEach(cat => {
+      if (!categories.map(c => c.toLowerCase()).includes(cat.toLowerCase())) {
+        categories.push(cat);
+      }
+    });
+
+    itemCategories.forEach(cat => {
+      if (!categories.map(c => c.toLowerCase()).includes(cat.toLowerCase())) {
+        categories.push(cat);
+      }
+    });
 
     if (!categories.map(c => c.toLowerCase()).includes(activeCategory.toLowerCase())) {
       activeCategory = 'All';
@@ -283,16 +333,12 @@ const InventoryApp = (() => {
     });
   }
 
-  // --- Render Tables ---
-  function renderLedgerTable() {
-    const tbody = document.getElementById('invLedgerTbody');
-    const tfoot = document.getElementById('invLedgerTfoot');
-    if (!tbody) return;
-
+  // --- Render Tables & Filter Helpers ---
+  function getFilteredLedgerItems() {
     let rows = getCalculatedStockLedger();
 
     if (activeCategory !== 'All') {
-      rows = rows.filter(r => r.category.toLowerCase() === activeCategory.toLowerCase());
+      rows = rows.filter(r => (r.category || '').toLowerCase() === activeCategory.toLowerCase());
     }
 
     if (statusFilter !== 'All') {
@@ -311,6 +357,21 @@ const InventoryApp = (() => {
         (r.category && r.category.toLowerCase().includes(q))
       );
     }
+    return rows;
+  }
+
+  function renderLedgerTable() {
+    const tbody = document.getElementById('invLedgerTbody');
+    const tfoot = document.getElementById('invLedgerTfoot');
+    if (!tbody) return;
+
+    // Prune stale selection
+    const currentCodes = new Set(items.map(i => i.code));
+    for (const c of selectedLedger) {
+      if (!currentCodes.has(c)) selectedLedger.delete(c);
+    }
+
+    const rows = getFilteredLedgerItems();
 
     const tabCount = document.getElementById('tabCountLedger');
     if (tabCount) tabCount.textContent = rows.length;
@@ -318,7 +379,7 @@ const InventoryApp = (() => {
     if (rows.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="13" class="text-center py-5 text-muted">
+          <td colspan="10" class="text-center py-5 text-muted">
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No equipment items found</div>
               <div class="small text-muted mb-3">Add equipment SKUs to start tracking warehouse stock.</div>
@@ -328,6 +389,8 @@ const InventoryApp = (() => {
         </tr>
       `;
       if (tfoot) tfoot.innerHTML = '';
+      updateHeaderCheckboxState('ledger');
+      updateBulkActionBar();
       return;
     }
 
@@ -341,19 +404,20 @@ const InventoryApp = (() => {
         statusBadge = `<span class="inv-stock-badge out-of-stock"><span class="inv-badge-dot"></span> Out of Stock</span>`;
       }
 
+      const isSelected = selectedLedger.has(item.code);
+
       return `
-        <tr>
+        <tr class="${isSelected ? 'inv-row-selected' : ''}">
+          <td class="text-center no-print inv-chk-cell" style="width: 38px;">
+            <input type="checkbox" class="form-check-input inv-row-chk" data-type="ledger" data-id="${item.code}" ${isSelected ? 'checked' : ''} title="Select SKU ${item.code}">
+          </td>
           <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
-          <td><span class="inv-sku-code">${item.code}</span></td>
           <td><div class="fw-semibold text-dark">${escapeHtml(item.name)}</div></td>
           <td><span class="inv-brand-badge">${escapeHtml(item.brand)}</span></td>
           <td style="max-width: 220px;" class="text-secondary small">${escapeHtml(item.spec)}</td>
-          <td><span class="badge bg-light text-secondary border">${item.unit}</span></td>
           <td class="text-end font-monospace">${fmtRupees(item.buyingPrice)}</td>
-          <td class="text-center font-monospace text-secondary">${fmtQty(item.inwardQty)}</td>
-          <td class="text-center font-monospace text-secondary">${fmtQty(item.dispatchedQty)}</td>
           <td class="text-center font-monospace fw-bold ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}" style="font-size:0.88rem;">
-            ${fmtQty(item.inHandQty)}
+            ${fmtQty(item.inHandQty)} <span class="text-muted small fw-normal">${escapeHtml(item.unit || 'Nos')}</span>
           </td>
           <td class="text-end font-monospace fw-bold text-dark" style="font-size:0.85rem;">
             ${fmtRupees(item.totalStockValuation)}
@@ -383,23 +447,20 @@ const InventoryApp = (() => {
     if (tfoot) {
       tfoot.innerHTML = `
         <tr>
-          <td colspan="6" class="text-uppercase text-secondary fs-8">Total (${rows.length} Catalog SKUs)</td>
+          <td colspan="5" class="text-uppercase text-secondary fs-8">Total (${rows.length} Catalog SKUs)</td>
           <td class="text-end font-monospace text-muted">—</td>
-          <td class="text-center font-monospace">${fmtQty(rows.reduce((s, r) => s + r.inwardQty, 0))}</td>
-          <td class="text-center font-monospace">${fmtQty(rows.reduce((s, r) => s + r.dispatchedQty, 0))}</td>
           <td class="text-center font-monospace text-primary fs-7">${fmtQty(totalInHand)}</td>
           <td class="text-end font-monospace text-emerald-700 fs-7">${fmtRupees(totalValuation)}</td>
           <td colspan="2"></td>
         </tr>
       `;
     }
+
+    updateHeaderCheckboxState('ledger');
+    updateBulkActionBar();
   }
 
-  function renderDispatchesTable() {
-    const tbody = document.getElementById('invDispatchesTbody');
-    const tfoot = document.getElementById('invDispatchesTfoot');
-    if (!tbody) return;
-
+  function getFilteredDispatches() {
     let rows = [...dispatches];
 
     if (searchTerm.trim()) {
@@ -415,6 +476,21 @@ const InventoryApp = (() => {
     }
 
     rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return rows;
+  }
+
+  function renderDispatchesTable() {
+    const tbody = document.getElementById('invDispatchesTbody');
+    const tfoot = document.getElementById('invDispatchesTfoot');
+    if (!tbody) return;
+
+    // Prune stale selection
+    const currentIds = new Set(dispatches.map(d => d.id));
+    for (const id of selectedDispatches) {
+      if (!currentIds.has(id)) selectedDispatches.delete(id);
+    }
+
+    const rows = getFilteredDispatches();
 
     const tabCount = document.getElementById('tabCountDispatches');
     if (tabCount) tabCount.textContent = rows.length;
@@ -422,7 +498,7 @@ const InventoryApp = (() => {
     if (rows.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="12" class="text-center py-5 text-muted">
+          <td colspan="13" class="text-center py-5 text-muted">
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No site dispatches recorded</div>
               <div class="small text-muted mb-3">Record equipment dispatches to track site material consumption.</div>
@@ -432,6 +508,8 @@ const InventoryApp = (() => {
         </tr>
       `;
       if (tfoot) tfoot.innerHTML = '';
+      updateHeaderCheckboxState('dispatches');
+      updateBulkActionBar();
       return;
     }
 
@@ -450,8 +528,13 @@ const InventoryApp = (() => {
         `;
       }
 
+      const isSelected = selectedDispatches.has(disp.id);
+
       return `
-        <tr>
+        <tr class="${isSelected ? 'inv-row-selected' : ''}">
+          <td class="text-center no-print inv-chk-cell" style="width: 38px;">
+            <input type="checkbox" class="form-check-input inv-row-chk" data-type="dispatches" data-id="${disp.id}" ${isSelected ? 'checked' : ''} title="Select Dispatch ${disp.id}">
+          </td>
           <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
           <td class="font-monospace text-secondary text-nowrap">${disp.date}</td>
           <td>
@@ -491,7 +574,7 @@ const InventoryApp = (() => {
     if (tfoot) {
       tfoot.innerHTML = `
         <tr>
-          <td colspan="5" class="text-uppercase text-secondary fs-8">Total Dispatched Site Material Cost (${rows.length} Dispatches)</td>
+          <td colspan="6" class="text-uppercase text-secondary fs-8">Total Dispatched Site Material Cost (${rows.length} Dispatches)</td>
           <td class="text-center font-monospace fw-bold">${fmtQty(totalQtyDisp)}</td>
           <td class="text-end font-monospace text-muted">—</td>
           <td class="text-end font-monospace text-amber-700 fs-7 fw-bold">${fmtRupees(grandMaterialCost)}</td>
@@ -500,13 +583,12 @@ const InventoryApp = (() => {
         </tr>
       `;
     }
+
+    updateHeaderCheckboxState('dispatches');
+    updateBulkActionBar();
   }
 
-  function renderInwardsTable() {
-    const tbody = document.getElementById('invInwardsTbody');
-    const tfoot = document.getElementById('invInwardsTfoot');
-    if (!tbody) return;
-
+  function getFilteredInwards() {
     let rows = [...inwards];
 
     if (searchTerm.trim()) {
@@ -522,6 +604,21 @@ const InventoryApp = (() => {
     }
 
     rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return rows;
+  }
+
+  function renderInwardsTable() {
+    const tbody = document.getElementById('invInwardsTbody');
+    const tfoot = document.getElementById('invInwardsTfoot');
+    if (!tbody) return;
+
+    // Prune stale selection
+    const currentIds = new Set(inwards.map(i => i.id));
+    for (const id of selectedInwards) {
+      if (!currentIds.has(id)) selectedInwards.delete(id);
+    }
+
+    const rows = getFilteredInwards();
 
     const tabCount = document.getElementById('tabCountInwards');
     if (tabCount) tabCount.textContent = rows.length;
@@ -529,7 +626,7 @@ const InventoryApp = (() => {
     if (rows.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="11" class="text-center py-5 text-muted">
+          <td colspan="12" class="text-center py-5 text-muted">
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No inward purchases recorded</div>
               <div class="small text-muted mb-3">Record inward deliveries from suppliers to increase godown stock.</div>
@@ -539,6 +636,8 @@ const InventoryApp = (() => {
         </tr>
       `;
       if (tfoot) tfoot.innerHTML = '';
+      updateHeaderCheckboxState('inwards');
+      updateBulkActionBar();
       return;
     }
 
@@ -556,8 +655,13 @@ const InventoryApp = (() => {
         `;
       }
 
+      const isSelected = selectedInwards.has(inw.id);
+
       return `
-        <tr>
+        <tr class="${isSelected ? 'inv-row-selected' : ''}">
+          <td class="text-center no-print inv-chk-cell" style="width: 38px;">
+            <input type="checkbox" class="form-check-input inv-row-chk" data-type="inwards" data-id="${inw.id}" ${isSelected ? 'checked' : ''} title="Select Inward ${inw.id}">
+          </td>
           <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
           <td class="font-monospace text-secondary text-nowrap">${inw.date}</td>
           <td>
@@ -593,7 +697,7 @@ const InventoryApp = (() => {
     if (tfoot) {
       tfoot.innerHTML = `
         <tr>
-          <td colspan="5" class="text-uppercase text-secondary fs-8">Total Inward Purchase Cost (${rows.length} Consignments)</td>
+          <td colspan="6" class="text-uppercase text-secondary fs-8">Total Inward Purchase Cost (${rows.length} Consignments)</td>
           <td class="text-center font-monospace fw-bold">${fmtQty(totalQtyInw)}</td>
           <td class="text-end font-monospace text-muted">—</td>
           <td class="text-end font-monospace text-emerald-700 fs-7 fw-bold">${fmtRupees(grandInwCost)}</td>
@@ -601,16 +705,301 @@ const InventoryApp = (() => {
         </tr>
       `;
     }
+
+    updateHeaderCheckboxState('inwards');
+    updateBulkActionBar();
+  }
+
+  // --- Multi-Selection & Bulk Deletion Helpers ---
+  function updateHeaderCheckboxState(type) {
+    let chkAll = null;
+    let visibleRows = [];
+    let targetSet = null;
+
+    if (type === 'ledger') {
+      chkAll = document.getElementById('chkSelectAllLedger');
+      visibleRows = getFilteredLedgerItems();
+      targetSet = selectedLedger;
+    } else if (type === 'dispatches') {
+      chkAll = document.getElementById('chkSelectAllDispatches');
+      visibleRows = getFilteredDispatches();
+      targetSet = selectedDispatches;
+    } else if (type === 'inwards') {
+      chkAll = document.getElementById('chkSelectAllInwards');
+      visibleRows = getFilteredInwards();
+      targetSet = selectedInwards;
+    }
+
+    if (!chkAll) return;
+
+    if (visibleRows.length === 0) {
+      chkAll.checked = false;
+      chkAll.indeterminate = false;
+      return;
+    }
+
+    const selectedCount = visibleRows.filter(r => targetSet.has(type === 'ledger' ? r.code : r.id)).length;
+    if (selectedCount === visibleRows.length) {
+      chkAll.checked = true;
+      chkAll.indeterminate = false;
+    } else if (selectedCount > 0) {
+      chkAll.checked = false;
+      chkAll.indeterminate = true;
+    } else {
+      chkAll.checked = false;
+      chkAll.indeterminate = false;
+    }
+  }
+
+  function updateBulkActionBar() {
+    const bar = document.getElementById('invBulkActionBar');
+    const badge = document.getElementById('invBulkBadge');
+    const text = document.getElementById('invBulkText');
+    const btnDelete = document.getElementById('btnDeleteSelected');
+    const headerBtn = document.getElementById('btnHeaderDeleteSelected');
+    const headerCount = document.getElementById('headerSelectedCount');
+
+    let count = 0;
+    let label = 'item';
+    let labelPlural = 'items';
+
+    if (activeTab === 'ledger') {
+      count = selectedLedger.size;
+      label = 'equipment SKU';
+      labelPlural = 'equipment SKUs';
+    } else if (activeTab === 'dispatches') {
+      count = selectedDispatches.size;
+      label = 'site dispatch';
+      labelPlural = 'site dispatches';
+    } else if (activeTab === 'inwards') {
+      count = selectedInwards.size;
+      label = 'inward purchase';
+      labelPlural = 'inward purchases';
+    }
+
+    if (count > 0) {
+      if (bar) bar.style.display = 'flex';
+      if (badge) badge.textContent = count;
+      if (text) text.textContent = `${count} ${count === 1 ? label : labelPlural} selected for deletion`;
+      if (btnDelete) btnDelete.innerHTML = `🗑️ Delete Selected (${count})`;
+      if (headerBtn) {
+        headerBtn.style.display = 'inline-flex';
+        if (headerCount) headerCount.textContent = count;
+      }
+    } else {
+      if (bar) bar.style.display = 'none';
+      if (headerBtn) headerBtn.style.display = 'none';
+    }
+  }
+
+  function toggleSelectRow(type, id, isChecked) {
+    const targetSet = type === 'ledger' ? selectedLedger 
+                    : type === 'dispatches' ? selectedDispatches 
+                    : selectedInwards;
+
+    if (isChecked) {
+      targetSet.add(id);
+    } else {
+      targetSet.delete(id);
+    }
+
+    const chk = document.querySelector(`.inv-row-chk[data-type="${type}"][data-id="${id}"]`);
+    if (chk) {
+      chk.checked = isChecked;
+      const tr = chk.closest('tr');
+      if (tr) tr.classList.toggle('inv-row-selected', isChecked);
+    }
+
+    updateHeaderCheckboxState(type);
+    updateBulkActionBar();
+  }
+
+  function handleSelectAll(type, checked) {
+    if (type === 'ledger') {
+      const visible = getFilteredLedgerItems();
+      visible.forEach(r => {
+        if (checked) selectedLedger.add(r.code);
+        else selectedLedger.delete(r.code);
+      });
+      renderLedgerTable();
+    } else if (type === 'dispatches') {
+      const visible = getFilteredDispatches();
+      visible.forEach(r => {
+        if (checked) selectedDispatches.add(r.id);
+        else selectedDispatches.delete(r.id);
+      });
+      renderDispatchesTable();
+    } else if (type === 'inwards') {
+      const visible = getFilteredInwards();
+      visible.forEach(r => {
+        if (checked) selectedInwards.add(r.id);
+        else selectedInwards.delete(r.id);
+      });
+      renderInwardsTable();
+    }
+    updateBulkActionBar();
+  }
+
+  function clearSelection(tab = activeTab) {
+    if (tab === 'ledger') {
+      selectedLedger.clear();
+      renderLedgerTable();
+    } else if (tab === 'dispatches') {
+      selectedDispatches.clear();
+      renderDispatchesTable();
+    } else if (tab === 'inwards') {
+      selectedInwards.clear();
+      renderInwardsTable();
+    }
+    updateBulkActionBar();
+  }
+
+  async function deleteDbBatch(table, pkField, ids) {
+    if (typeof DB === 'undefined' || !ids || ids.length === 0) return;
+    try {
+      if (typeof DB.deleteBatch === 'function') {
+        await DB.deleteBatch(table, r => {
+          const val = String(r[pkField] || r[pkField.toLowerCase()] || r.id || r.code || '');
+          return ids.includes(val);
+        }).catch(err => console.warn(`[DB] ${table} deleteBatch error:`, err));
+      }
+      if (DB.getMode && DB.getMode() === 'postgres') {
+        await fetch(`/api/delete-batch?table=${table}&matchField=${pkField}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matchValues: ids })
+        }).catch(async () => {
+          await Promise.all(ids.map(id =>
+            fetch(`/api/delete?table=${table}&matchField=${pkField}&matchValue=${encodeURIComponent(id)}`, { method: 'POST' }).catch(() => {})
+          ));
+        });
+      }
+    } catch (e) {
+      console.warn(`[DB] Error during deleteDbBatch for ${table}:`, e);
+    }
+  }
+
+  async function deleteSelectedLedger() {
+    const selectedCodes = Array.from(selectedLedger);
+    if (selectedCodes.length === 0) return;
+
+    const targetItems = items.filter(i => selectedCodes.includes(i.code));
+    const refInwards = inwards.filter(i => selectedCodes.includes(i.itemCode));
+    const refDispatches = dispatches.filter(d => selectedCodes.includes(d.itemCode));
+
+    let warning = `Are you sure you want to delete ${selectedCodes.length} selected equipment SKU(s) from the catalog?`;
+    if (refInwards.length > 0 || refDispatches.length > 0) {
+      warning += `\n\n⚠️ Warning: The selected items are referenced in ${refInwards.length} inward purchases and ${refDispatches.length} site dispatches. Deleting them will remove these SKUs from the live stock catalog.`;
+    }
+    warning += `\n\nThis action cannot be undone.`;
+
+    if (!confirm(warning)) return;
+
+    items = items.filter(i => !selectedCodes.includes(i.code));
+    selectedLedger.clear();
+    saveData();
+
+    await deleteDbBatch('inventory_items', 'ItemCode', selectedCodes);
+
+    const itemNames = targetItems.map(i => i.name).filter(Boolean);
+    if (itemNames.length > 0) {
+      await deleteDbBatch('items', 'ItemName', itemNames);
+    }
+
+    renderKpiCards();
+    renderCategoryChips();
+    renderLedgerTable();
+    updateBulkActionBar();
+
+    if (typeof UI !== 'undefined') {
+      UI.toast(`Successfully deleted ${selectedCodes.length} equipment SKU(s).`, 'info');
+    }
+  }
+
+  async function deleteSelectedDispatches() {
+    const selectedIds = Array.from(selectedDispatches);
+    if (selectedIds.length === 0) return;
+
+    const targetDispatches = dispatches.filter(d => selectedIds.includes(d.id));
+    const totalQty = targetDispatches.reduce((s, d) => s + (Number(d.qty) || 0), 0);
+
+    const warning = `Are you sure you want to delete ${selectedIds.length} selected site dispatch record(s)?\n\nThis will restore ${fmtQty(totalQty)} units back to physical warehouse stock.\n\nThis action cannot be undone.`;
+    if (!confirm(warning)) return;
+
+    dispatches = dispatches.filter(d => !selectedIds.includes(d.id));
+    selectedDispatches.clear();
+    saveData();
+
+    await deleteDbBatch('inventory_dispatches', 'DispatchID', selectedIds);
+
+    renderKpiCards();
+    renderCategoryChips();
+    if (activeTab === 'ledger') renderLedgerTable();
+    else if (activeTab === 'dispatches') renderDispatchesTable();
+    updateBulkActionBar();
+
+    if (typeof UI !== 'undefined') {
+      UI.toast(`Successfully deleted ${selectedIds.length} site dispatch record(s). Stock restored to warehouse inventory.`, 'info');
+    }
+  }
+
+  async function deleteSelectedInwards() {
+    const selectedIds = Array.from(selectedInwards);
+    if (selectedIds.length === 0) return;
+
+    const targetInwards = inwards.filter(i => selectedIds.includes(i.id));
+    const totalQty = targetInwards.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+
+    const warning = `Are you sure you want to delete ${selectedIds.length} selected inward consignment record(s)?\n\nThis will deduct ${fmtQty(totalQty)} units from warehouse stock calculation.\n\nThis action cannot be undone.`;
+    if (!confirm(warning)) return;
+
+    inwards = inwards.filter(i => !selectedIds.includes(i.id));
+    selectedInwards.clear();
+    saveData();
+
+    await deleteDbBatch('inventory_inwards', 'InwardID', selectedIds);
+
+    renderKpiCards();
+    renderCategoryChips();
+    if (activeTab === 'ledger') renderLedgerTable();
+    else if (activeTab === 'inwards') renderInwardsTable();
+    updateBulkActionBar();
+
+    if (typeof UI !== 'undefined') {
+      UI.toast(`Successfully deleted ${selectedIds.length} inward record(s). Warehouse stock updated.`, 'info');
+    }
+  }
+
+  async function deleteSelected() {
+    if (activeTab === 'ledger') {
+      await deleteSelectedLedger();
+    } else if (activeTab === 'dispatches') {
+      await deleteSelectedDispatches();
+    } else if (activeTab === 'inwards') {
+      await deleteSelectedInwards();
+    }
   }
 
   // --- Dynamic Grouped Dropdown Generators ---
-  // Standard select for edit modals
   function buildGroupedItemOptions(selectedCode, mode = 'stockin') {
     const ledger = getCalculatedStockLedger();
+    const categoryOrder = ['Panels', 'Inverters', 'Cables', 'Hardware', 'Electricals', 'Conduit', 'Earthing', 'Others'];
+
+    const sortedLedger = [...ledger].sort((a, b) => {
+      const catA = categoryOrder.indexOf(a.category);
+      const catB = categoryOrder.indexOf(b.category);
+      const orderA = catA !== -1 ? catA : 999;
+      const orderB = catB !== -1 ? catB : 999;
+      if (orderA !== orderB) return orderA - orderB;
+      const nameCompare = (a.name || '').localeCompare(b.name || '');
+      if (nameCompare !== 0) return nameCompare;
+      return (a.brand || '').localeCompare(b.brand || '');
+    });
+
     const groupsMap = new Map();
 
-    ledger.forEach(item => {
-      const groupKey = (item.name || 'Other Solar Equipment').trim();
+    sortedLedger.forEach(item => {
+      const groupKey = `${item.name || 'Equipment'} (${item.category || 'General'})`;
       if (!groupsMap.has(groupKey)) {
         groupsMap.set(groupKey, []);
       }
@@ -622,60 +1011,15 @@ const InventoryApp = (() => {
       html += `<optgroup label="${escapeHtml(groupName)}">`;
       variants.forEach(v => {
         const isSelected = v.code === selectedCode ? 'selected' : '';
+        const brandSpec = `${escapeHtml(v.brand || '')}${v.spec ? ' — ' + escapeHtml(v.spec) : ''}`;
         if (mode === 'dispatch') {
-          html += `<option value="${v.code}" ${isSelected}>${escapeHtml(v.brand)} — ${escapeHtml(v.spec)} (Stock: ${v.inHandQty} ${v.unit}) — ${fmtRupees(v.buyingPrice)}</option>`;
+          const stockLabel = v.inHandQty > 0 ? `Stock: ${v.inHandQty} ${v.unit || 'Nos'}` : `Stock: 0 ${v.unit || 'Nos'}`;
+          html += `<option value="${v.code}" ${isSelected}>${brandSpec} [${stockLabel}] — ${fmtRupees(v.buyingPrice)}</option>`;
         } else {
-          html += `<option value="${v.code}" ${isSelected}>${escapeHtml(v.brand)} — ${escapeHtml(v.spec)} — ${fmtRupees(v.buyingPrice)}</option>`;
+          html += `<option value="${v.code}" ${isSelected}>${brandSpec} — ${fmtRupees(v.buyingPrice)}</option>`;
         }
       });
       html += `</optgroup>`;
-    }
-    return html;
-  }
-
-  // Modern Searchable Non-Duplicate Item Picker for Multi-Item Dynamic Rows
-  function buildPickerGroupedItemsHtml(selectedCode, mode = 'stockin') {
-    const ledger = getCalculatedStockLedger();
-    const groupsMap = new Map();
-
-    ledger.forEach(item => {
-      const groupKey = (item.name || 'Other Solar Equipment').trim();
-      if (!groupsMap.has(groupKey)) {
-        groupsMap.set(groupKey, []);
-      }
-      groupsMap.get(groupKey).push(item);
-    });
-
-    let html = '';
-    for (const [groupName, variants] of groupsMap.entries()) {
-      html += `
-        <div class="inv-picker-group" data-group="${escapeHtml(groupName.toLowerCase())}">
-          <div class="inv-picker-group-title">
-            <span>${escapeHtml(groupName)}</span>
-            <span class="badge bg-white text-secondary border font-monospace" style="font-size:0.65rem;">${variants.length}</span>
-          </div>
-          <div class="inv-picker-group-items">
-      `;
-      variants.forEach(v => {
-        const isSelected = v.code === selectedCode;
-        const searchKeywords = `${groupName} ${v.brand} ${v.spec} ${v.code}`.toLowerCase();
-        html += `
-          <div class="inv-picker-item ${isSelected ? 'selected' : ''}" data-code="${v.code}" data-search="${escapeHtml(searchKeywords)}">
-            <div class="d-flex flex-column text-truncate" style="line-height:1.25;">
-              <span class="fw-semibold text-dark text-truncate">${escapeHtml(v.brand)} <span class="text-secondary fw-normal">— ${escapeHtml(v.spec)}</span></span>
-              <span class="text-muted small font-monospace" style="font-size:0.67rem;">SKU: ${v.code}</span>
-            </div>
-            <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-2">
-              ${mode === 'dispatch' ? `<span class="badge ${v.inHandQty > 0 ? 'bg-light text-success border' : 'bg-light text-danger border'} font-monospace" style="font-size:0.66rem;">Stock: ${v.inHandQty}</span>` : ''}
-              <span class="font-monospace fw-bold text-slate-800" style="font-size:0.75rem;">${fmtRupees(v.buyingPrice)}</span>
-            </div>
-          </div>
-        `;
-      });
-      html += `
-          </div>
-        </div>
-      `;
     }
     return html;
   }
@@ -726,29 +1070,9 @@ const InventoryApp = (() => {
       return `
         <tr data-row-id="${row.id}">
           <td style="min-width: 280px;">
-            <div class="inv-row-item-picker" data-row-id="${row.id}">
-              <button type="button" class="inv-row-picker-btn inw-picker-trigger" data-row-id="${row.id}">
-                <div class="d-flex flex-column text-truncate" style="line-height:1.2;">
-                  <span class="fw-bold text-dark text-truncate" style="font-size:0.8rem;">${escapeHtml(item.name || 'Select Equipment')}</span>
-                  <span class="text-secondary small text-truncate" style="font-size:0.71rem;">${escapeHtml(item.brand || '')} ${item.spec ? '— ' + escapeHtml(item.spec) : ''}</span>
-                </div>
-                <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-1">
-                  <span class="font-monospace fw-bold text-slate-800" style="font-size:0.75rem;">${fmtRupees(item.buyingPrice)}</span>
-                  <svg style="color:#64748b;" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
-                </div>
-              </button>
-              <div class="inv-row-picker-menu" data-row-id="${row.id}">
-                <div class="inv-row-picker-search-wrap">
-                  <div class="position-relative">
-                    <input type="text" class="inv-row-picker-search-input inw-picker-search" placeholder="Type to filter equipment, brand, spec..." autocomplete="off">
-                    <svg style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none;" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  </div>
-                </div>
-                <div class="inv-row-picker-list">
-                  ${buildPickerGroupedItemsHtml(row.itemCode, 'stockin')}
-                </div>
-              </div>
-            </div>
+            <select class="form-select form-select-sm inw-row-item-select" data-row-id="${row.id}">
+              ${buildGroupedItemOptions(row.itemCode, 'stockin')}
+            </select>
           </td>
           <td class="text-center font-monospace text-secondary">${item.unit || 'Nos'}</td>
           <td>
@@ -767,66 +1091,16 @@ const InventoryApp = (() => {
       `;
     }).join('');
 
-    attachInwPickerHandlers(tbody, ledger);
+    attachInwRowHandlers(tbody, ledger);
   }
 
-  function attachInwPickerHandlers(tbody, ledger) {
-    // 1. Toggle picker menu
-    tbody.querySelectorAll('.inw-picker-trigger').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const rowId = btn.getAttribute('data-row-id');
-        const menu = tbody.querySelector(`.inv-row-picker-menu[data-row-id="${rowId}"]`);
-        const isOpen = menu && menu.classList.contains('show');
-
-        // Close all other menus
-        document.querySelectorAll('.inv-row-picker-menu.show').forEach(m => m.classList.remove('show'));
-        document.querySelectorAll('.inv-row-picker-btn.active').forEach(b => b.classList.remove('active'));
-
-        if (!isOpen && menu) {
-          menu.classList.add('show');
-          btn.classList.add('active');
-          const searchInput = menu.querySelector('.inw-picker-search');
-          if (searchInput) {
-            searchInput.value = '';
-            menu.querySelectorAll('.inv-picker-group').forEach(g => g.style.display = 'block');
-            menu.querySelectorAll('.inv-picker-item').forEach(i => i.style.display = 'flex');
-            setTimeout(() => searchInput.focus(), 50);
-          }
-        }
-      });
-    });
-
-    // 2. Search inside picker
-    tbody.querySelectorAll('.inw-picker-search').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const query = (e.target.value || '').trim().toLowerCase();
-        const menu = input.closest('.inv-row-picker-menu');
-        if (!menu) return;
-
-        menu.querySelectorAll('.inv-picker-group').forEach(group => {
-          let hasVisibleVariant = false;
-          group.querySelectorAll('.inv-picker-item').forEach(item => {
-            const searchData = item.getAttribute('data-search') || '';
-            const matches = !query || searchData.includes(query);
-            item.style.display = matches ? 'flex' : 'none';
-            if (matches) hasVisibleVariant = true;
-          });
-          group.style.display = hasVisibleVariant ? 'block' : 'none';
-        });
-      });
-      input.addEventListener('click', e => e.stopPropagation());
-    });
-
-    // 3. Variant item click
-    tbody.querySelectorAll('.inv-picker-item').forEach(itemEl => {
-      itemEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const code = itemEl.getAttribute('data-code');
-        const menu = itemEl.closest('.inv-row-picker-menu');
-        const rowId = menu.getAttribute('data-row-id');
+  function attachInwRowHandlers(tbody, ledger) {
+    // 1. Equipment select change
+    tbody.querySelectorAll('.inw-row-item-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const rowId = sel.getAttribute('data-row-id');
+        const code = sel.value;
         const row = inwardRows.find(r => r.id === rowId);
-
         if (row && code) {
           row.itemCode = code;
           const selectedMaster = ledger.find(it => it.code === code);
@@ -839,7 +1113,7 @@ const InventoryApp = (() => {
       });
     });
 
-    // 4. Quantity & price inputs
+    // 2. Quantity & price inputs
     tbody.querySelectorAll('.inw-row-qty').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-row-id');
@@ -868,7 +1142,7 @@ const InventoryApp = (() => {
       });
     });
 
-    // 5. Remove row button
+    // 3. Remove row button
     tbody.querySelectorAll('.btn-remove-inw-row').forEach(btn => {
       btn.addEventListener('click', () => {
         const rowId = btn.getAttribute('data-row-id');
@@ -1094,30 +1368,9 @@ const InventoryApp = (() => {
       return `
         <tr data-row-id="${row.id}" class="${isOverStock ? 'table-danger' : ''}">
           <td style="min-width: 280px;">
-            <div class="inv-row-item-picker" data-row-id="${row.id}">
-              <button type="button" class="inv-row-picker-btn dsp-picker-trigger ${isOverStock ? 'border-danger' : ''}" data-row-id="${row.id}">
-                <div class="d-flex flex-column text-truncate" style="line-height:1.2;">
-                  <span class="fw-bold text-dark text-truncate" style="font-size:0.8rem;">${escapeHtml(item.name || 'Select Equipment')}</span>
-                  <span class="text-secondary small text-truncate" style="font-size:0.71rem;">${escapeHtml(item.brand || '')} ${item.spec ? '— ' + escapeHtml(item.spec) : ''}</span>
-                </div>
-                <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-1">
-                  <span class="badge ${inHand > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} border font-monospace" style="font-size:0.67rem;">Stock: ${inHand}</span>
-                  <span class="font-monospace fw-bold text-slate-800" style="font-size:0.75rem;">${fmtRupees(unitPrice)}</span>
-                  <svg style="color:#64748b;" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
-                </div>
-              </button>
-              <div class="inv-row-picker-menu" data-row-id="${row.id}">
-                <div class="inv-row-picker-search-wrap">
-                  <div class="position-relative">
-                    <input type="text" class="inv-row-picker-search-input dsp-picker-search" placeholder="Type to filter equipment, brand, spec..." autocomplete="off">
-                    <svg style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none;" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  </div>
-                </div>
-                <div class="inv-row-picker-list">
-                  ${buildPickerGroupedItemsHtml(row.itemCode, 'dispatch')}
-                </div>
-              </div>
-            </div>
+            <select class="form-select form-select-sm dsp-row-item-select ${isOverStock ? 'is-invalid border-danger' : ''}" data-row-id="${row.id}">
+              ${buildGroupedItemOptions(row.itemCode, 'dispatch')}
+            </select>
           </td>
           <td class="text-center font-monospace">
             <span class="badge ${inHand > 0 ? 'bg-light text-success border' : 'bg-light text-danger border'}">
@@ -1140,75 +1393,29 @@ const InventoryApp = (() => {
       `;
     }).join('');
 
-    attachDspPickerHandlers(tbody, ledger);
+    attachDspRowHandlers(tbody, ledger);
   }
 
-  function attachDspPickerHandlers(tbody, ledger) {
-    // 1. Toggle picker menu
-    tbody.querySelectorAll('.dsp-picker-trigger').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const rowId = btn.getAttribute('data-row-id');
-        const menu = tbody.querySelector(`.inv-row-picker-menu[data-row-id="${rowId}"]`);
-        const isOpen = menu && menu.classList.contains('show');
-
-        // Close all other menus
-        document.querySelectorAll('.inv-row-picker-menu.show').forEach(m => m.classList.remove('show'));
-        document.querySelectorAll('.inv-row-picker-btn.active').forEach(b => b.classList.remove('active'));
-
-        if (!isOpen && menu) {
-          menu.classList.add('show');
-          btn.classList.add('active');
-          const searchInput = menu.querySelector('.dsp-picker-search');
-          if (searchInput) {
-            searchInput.value = '';
-            menu.querySelectorAll('.inv-picker-group').forEach(g => g.style.display = 'block');
-            menu.querySelectorAll('.inv-picker-item').forEach(i => i.style.display = 'flex');
-            setTimeout(() => searchInput.focus(), 50);
-          }
-        }
-      });
-    });
-
-    // 2. Search inside picker
-    tbody.querySelectorAll('.dsp-picker-search').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const query = (e.target.value || '').trim().toLowerCase();
-        const menu = input.closest('.inv-row-picker-menu');
-        if (!menu) return;
-
-        menu.querySelectorAll('.inv-picker-group').forEach(group => {
-          let hasVisibleVariant = false;
-          group.querySelectorAll('.inv-picker-item').forEach(item => {
-            const searchData = item.getAttribute('data-search') || '';
-            const matches = !query || searchData.includes(query);
-            item.style.display = matches ? 'flex' : 'none';
-            if (matches) hasVisibleVariant = true;
-          });
-          group.style.display = hasVisibleVariant ? 'block' : 'none';
-        });
-      });
-      input.addEventListener('click', e => e.stopPropagation());
-    });
-
-    // 3. Variant item click
-    tbody.querySelectorAll('.inv-picker-item').forEach(itemEl => {
-      itemEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const code = itemEl.getAttribute('data-code');
-        const menu = itemEl.closest('.inv-row-picker-menu');
-        const rowId = menu.getAttribute('data-row-id');
+  function attachDspRowHandlers(tbody, ledger) {
+    // 1. Equipment select change
+    tbody.querySelectorAll('.dsp-row-item-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const rowId = sel.getAttribute('data-row-id');
+        const code = sel.value;
         const row = dispatchRows.find(r => r.id === rowId);
-
         if (row && code) {
           row.itemCode = code;
+          const targetItem = ledger.find(i => i.code === code);
+          if (targetItem && targetItem.inHandQty > 0 && (!row.qty || Number(row.qty) === 0)) {
+            row.qty = 1;
+          }
           renderDspRows();
           recalcDispatchTotals();
         }
       });
     });
 
-    // 4. Quantity inputs
+    // 2. Quantity inputs
     tbody.querySelectorAll('.dsp-row-qty').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-row-id');
@@ -1231,7 +1438,7 @@ const InventoryApp = (() => {
       });
     });
 
-    // 5. Remove row button
+    // 3. Remove row button
     tbody.querySelectorAll('.btn-remove-dsp-row').forEach(btn => {
       btn.addEventListener('click', () => {
         const rowId = btn.getAttribute('data-row-id');
@@ -1719,6 +1926,15 @@ const InventoryApp = (() => {
         Status: 'Active',
         CreatedAt: new Date().toISOString()
       }).catch(err => console.warn('[Supabase] inventory_items insert error:', err));
+
+      DB.insert('items', {
+        ItemName: newItem.name,
+        Category: newItem.category,
+        Unit: newItem.unit,
+        HSNCode: newItem.hsn || '',
+        GSTPercent: newItem.gst || 18,
+        Status: 'Active'
+      }).catch(err => console.warn('[Supabase] items insert error:', err));
     }
 
     const modalEl = document.getElementById('modalNewItem');
@@ -1790,6 +2006,7 @@ const InventoryApp = (() => {
     const item = items.find(i => i.code === code);
     if (!item) return;
 
+    const oldName = item.name;
     item.name = name;
     item.brand = brand;
     item.spec = spec;
@@ -1811,6 +2028,12 @@ const InventoryApp = (() => {
         MinThreshold: minThreshold,
         UpdatedAt: new Date().toISOString()
       }).catch(err => console.warn('[Supabase] inventory_items update error:', err));
+
+      DB.update('items', r => (r.ItemName || r.name) === oldName, {
+        ItemName: name,
+        Category: category,
+        Unit: unit
+      }).catch(err => console.warn('[Supabase] items update error:', err));
     }
 
     const modalEl = document.getElementById('modalEditItem');
@@ -1841,15 +2064,18 @@ const InventoryApp = (() => {
     if (!confirm(warningText)) return;
 
     items = items.filter(i => i.code !== code);
+    selectedLedger.delete(code);
     saveData();
 
     if (typeof DB !== 'undefined') {
       await DB.remove('inventory_items', r => (r.ItemCode || r.code) === code).catch(err => console.warn('[Supabase] inventory_items delete error:', err));
+      await DB.remove('items', r => (r.ItemName || r.name) === item.name).catch(() => {});
     }
 
     renderKpiCards();
     renderCategoryChips();
     renderLedgerTable();
+    updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`SKU "${code}" deleted from catalog.`, 'info');
@@ -2024,6 +2250,7 @@ const InventoryApp = (() => {
     }
 
     inwards = inwards.filter(i => i.id !== id);
+    selectedInwards.delete(id);
     saveData();
 
     if (typeof DB !== 'undefined') {
@@ -2034,6 +2261,7 @@ const InventoryApp = (() => {
     renderCategoryChips();
     if (activeTab === 'ledger') renderLedgerTable();
     else if (activeTab === 'inwards') renderInwardsTable();
+    updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Deleted inward record "${id}". Warehouse stock updated.`, 'info');
@@ -2229,6 +2457,7 @@ const InventoryApp = (() => {
     }
 
     dispatches = dispatches.filter(d => d.id !== id);
+    selectedDispatches.delete(id);
     saveData();
 
     if (typeof DB !== 'undefined') {
@@ -2239,6 +2468,7 @@ const InventoryApp = (() => {
     renderCategoryChips();
     if (activeTab === 'ledger') renderLedgerTable();
     else if (activeTab === 'dispatches') renderDispatchesTable();
+    updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Deleted site dispatch "${id}". Stock restored to warehouse physical inventory.`, 'info');
@@ -2376,12 +2606,18 @@ const InventoryApp = (() => {
         if (tabKey === 'ledger') renderLedgerTable();
         else if (tabKey === 'dispatches') renderDispatchesTable();
         else if (tabKey === 'inwards') renderInwardsTable();
+
+        updateBulkActionBar();
       });
     });
   }
 
   // --- Global Event Bindings ---
+  let eventsBound = false;
   function bindEvents() {
+    if (eventsBound) return;
+    eventsBound = true;
+
     const btnStockIn = document.getElementById('btnQuickStockIn');
     if (btnStockIn) btnStockIn.addEventListener('click', () => openStockInModal());
 
@@ -2408,6 +2644,61 @@ const InventoryApp = (() => {
         renderLedgerTable();
       });
     }
+
+    // Bulk action buttons
+    const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+    if (btnDeleteSelected) {
+      btnDeleteSelected.addEventListener('click', () => deleteSelected());
+    }
+
+    const btnHeaderDeleteSelected = document.getElementById('btnHeaderDeleteSelected');
+    if (btnHeaderDeleteSelected) {
+      btnHeaderDeleteSelected.addEventListener('click', () => deleteSelected());
+    }
+
+    const btnClearSelection = document.getElementById('btnClearSelection');
+    if (btnClearSelection) {
+      btnClearSelection.addEventListener('click', () => clearSelection());
+    }
+
+    // Header "Select All" checkboxes
+    const chkAllLedger = document.getElementById('chkSelectAllLedger');
+    if (chkAllLedger) {
+      chkAllLedger.addEventListener('change', (e) => handleSelectAll('ledger', e.target.checked));
+    }
+
+    const chkAllDispatches = document.getElementById('chkSelectAllDispatches');
+    if (chkAllDispatches) {
+      chkAllDispatches.addEventListener('change', (e) => handleSelectAll('dispatches', e.target.checked));
+    }
+
+    const chkAllInwards = document.getElementById('chkSelectAllInwards');
+    if (chkAllInwards) {
+      chkAllInwards.addEventListener('change', (e) => handleSelectAll('inwards', e.target.checked));
+    }
+
+    // Delegated event for row checkboxes
+    document.addEventListener('change', (e) => {
+      if (e.target && e.target.classList.contains('inv-row-chk')) {
+        const type = e.target.getAttribute('data-type');
+        const id = e.target.getAttribute('data-id');
+        toggleSelectRow(type, id, e.target.checked);
+      }
+    });
+
+    // Delegated click for checkbox cell (clicking near checkbox toggles it)
+    document.addEventListener('click', (e) => {
+      const chkCell = e.target.closest('.inv-chk-cell');
+      if (chkCell && e.target.tagName !== 'INPUT') {
+        const chk = chkCell.querySelector('.inv-row-chk');
+        if (chk) {
+          chk.checked = !chk.checked;
+          const type = chk.getAttribute('data-type');
+          const id = chk.getAttribute('data-id');
+          toggleSelectRow(type, id, chk.checked);
+        }
+      }
+    });
   }
 
   // --- Initializer ---
@@ -2468,6 +2759,13 @@ const InventoryApp = (() => {
     deleteInward,
     openEditDispatchModal,
     deleteDispatch,
+    deleteSelected,
+    clearSelection,
+    handleSelectAll,
+    toggleSelectRow,
+    deleteSelectedLedger,
+    deleteSelectedDispatches,
+    deleteSelectedInwards,
     viewDoc,
     exportCsv,
     resetFilters,

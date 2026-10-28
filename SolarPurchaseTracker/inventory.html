@@ -48,6 +48,7 @@
         </div>
 
         <div class="inv-actions-group">
+          <button type="button" class="inv-btn inv-btn-danger" id="btnHeaderDeleteSelected" style="display: none;" title="Delete selected items">🗑️ Delete Selected (<span id="headerSelectedCount">0</span>)</button>
           <button type="button" class="inv-btn inv-btn-export" id="btnAddNewSku" title="Register New Equipment SKU">+ Add SKU</button>
           <button type="button" class="inv-btn inv-btn-stockin" id="btnQuickStockIn" title="Record New Inward Delivery">+ Stock In</button>
           <button type="button" class="inv-btn inv-btn-dispatch" id="btnQuickDispatch" title="Dispatch Equipment to Site">🚚 Dispatch</button>
@@ -144,21 +145,36 @@
           </div>
         </div>
 
+        <!-- Bulk Action Bar (Appears when items are selected) -->
+        <div class="inv-bulk-bar no-print" id="invBulkActionBar" style="display: none;">
+          <div class="inv-bulk-left">
+            <span class="inv-bulk-badge" id="invBulkBadge">0</span>
+            <span class="inv-bulk-text" id="invBulkText">items selected for deletion</span>
+          </div>
+          <div class="inv-bulk-actions">
+            <button type="button" class="inv-btn inv-btn-danger" id="btnDeleteSelected" title="Delete selected items">
+              🗑️ Delete Selected
+            </button>
+            <button type="button" class="inv-btn inv-btn-secondary" id="btnClearSelection" title="Clear selection">
+              ✕ Clear Selection
+            </button>
+          </div>
+        </div>
+
         <!-- ══ TAB 1: Live Stock Ledger ══ -->
         <div class="inv-tab-pane" id="pane-ledger">
           <div class="inv-table-wrap">
             <table class="inv-table" id="invLedgerTable">
               <thead>
                 <tr>
+                  <th class="text-center no-print" style="width: 38px;">
+                    <input type="checkbox" class="form-check-input inv-select-chk-all" id="chkSelectAllLedger" title="Select All Items">
+                  </th>
                   <th class="text-center" style="width: 40px;">#</th>
-                  <th>Item Code</th>
                   <th>Item Name</th>
                   <th>Brand / Make</th>
                   <th>Specification</th>
-                  <th>Unit</th>
                   <th class="text-end">Buying Price (₹)</th>
-                  <th class="text-center">Inward Qty</th>
-                  <th class="text-center">Dispatched Qty</th>
                   <th class="text-center">In-Hand Stock</th>
                   <th class="text-end">Total Stock Value (₹)</th>
                   <th>Status</th>
@@ -181,6 +197,9 @@
             <table class="inv-table" id="invDispatchesTable">
               <thead>
                 <tr>
+                  <th class="text-center no-print" style="width: 38px;">
+                    <input type="checkbox" class="form-check-input inv-select-chk-all" id="chkSelectAllDispatches" title="Select All Dispatches">
+                  </th>
                   <th class="text-center" style="width: 40px;">#</th>
                   <th>Dispatch Date</th>
                   <th>Project / Customer Site Name</th>
@@ -211,6 +230,9 @@
             <table class="inv-table" id="invInwardsTable">
               <thead>
                 <tr>
+                  <th class="text-center no-print" style="width: 38px;">
+                    <input type="checkbox" class="form-check-input inv-select-chk-all" id="chkSelectAllInwards" title="Select All Inwards">
+                  </th>
                   <th class="text-center" style="width: 40px;">#</th>
                   <th>Inward Date</th>
                   <th>Supplier / Vendor</th>
@@ -297,11 +319,11 @@
         </div>
 
         <!-- Dynamic Items Table -->
-        <div class="table-responsive border rounded mb-2">
+        <div class="table-responsive border rounded mb-2" style="overflow: visible;">
           <table class="table table-sm table-bordered align-middle mb-0" style="font-size:0.8rem;">
             <thead class="table-light">
               <tr>
-                <th style="min-width: 260px;">Equipment Item</th>
+                <th style="min-width: 280px;">Equipment Item</th>
                 <th style="width: 70px;" class="text-center">Unit</th>
                 <th style="width: 90px;" class="text-center">Qty</th>
                 <th style="width: 120px;" class="text-end">Buying Price (₹)</th>
@@ -391,11 +413,11 @@
         </div>
 
         <!-- Dynamic Items Table -->
-        <div class="table-responsive border rounded mb-2">
+        <div class="table-responsive border rounded mb-2" style="overflow: visible;">
           <table class="table table-sm table-bordered align-middle mb-0" style="font-size:0.8rem;">
             <thead class="table-light">
               <tr>
-                <th style="min-width: 260px;">Equipment Item</th>
+                <th style="min-width: 280px;">Equipment Item</th>
                 <th style="width: 85px;" class="text-center">Stock</th>
                 <th style="width: 90px;" class="text-center">Qty</th>
                 <th style="width: 110px;" class="text-end">Unit Cost (₹)</th>
@@ -457,9 +479,10 @@
               <option value="Inverters">Inverters</option>
               <option value="Cables">Cables</option>
               <option value="Hardware">Hardware</option>
-              <option value="Electrical">Electrical</option>
+              <option value="Electricals">Electricals</option>
               <option value="Conduit">Conduit</option>
-              <option value="Other">Other</option>
+              <option value="Earthing">Earthing</option>
+              <option value="Others">Others</option>
             </select>
           </div>
           <div class="col-12">
@@ -477,6 +500,7 @@
               <option value="Meters">Meters</option>
               <option value="Sets">Sets</option>
               <option value="Pcs">Pcs</option>
+              <option value="Bag">Bag</option>
               <option value="Kgs">Kgs</option>
             </select>
           </div>
@@ -525,9 +549,10 @@
               <option value="Inverters">Inverters</option>
               <option value="Cables">Cables</option>
               <option value="Hardware">Hardware</option>
-              <option value="Electrical">Electrical</option>
+              <option value="Electricals">Electricals</option>
               <option value="Conduit">Conduit</option>
-              <option value="Other">Other</option>
+              <option value="Earthing">Earthing</option>
+              <option value="Others">Others</option>
             </select>
           </div>
           <div class="col-12">
@@ -545,6 +570,7 @@
               <option value="Meters">Meters</option>
               <option value="Sets">Sets</option>
               <option value="Pcs">Pcs</option>
+              <option value="Bag">Bag</option>
               <option value="Kgs">Kgs</option>
             </select>
           </div>
@@ -722,6 +748,6 @@
 <script src="js/ui.js?v=1.0.4" defer></script>
 <script src="js/connect.js" defer></script>
 <!-- Inventory Controller Script -->
-<script src="js/inventory.js?v=1.0.1" defer></script>
+<script src="js/inventory.js?v=1.0.3" defer></script>
 </body>
 </html>

@@ -350,25 +350,94 @@ BEGIN
   END IF;
 END $$;
 
--- Pre-populate default solar equipment SKUs
+-- Pre-populate segregated solar equipment catalog into inventory_items
 INSERT INTO inventory_items ("ItemCode", "ItemName", "Brand", "Specification", "Category", "Unit", "BuyingPrice", "MinThreshold", "HSNCode", "GSTPercent", "Status", "CreatedAt") VALUES
-  ('MOD-WAR-545B', 'Solar PV Module', 'Waaree', '545W Bifacial Mono PERC (Silver Frame)', 'Panels', 'Nos', 9800, 15, '85414011', 12, 'Active', '2026-10-10T10:00:00Z'),
-  ('MOD-EXI-580T', 'Solar PV Module', 'Exide', '580W TopCon Glass-to-Glass Bifacial', 'Panels', 'Nos', 11400, 10, '85414011', 12, 'Active', '2026-10-12T10:00:00Z'),
-  ('MOD-ADA-540M', 'Solar PV Module', 'Adani', '540W Mono PERC Half-Cut Cell', 'Panels', 'Nos', 9200, 12, '85414011', 12, 'Active', '2026-10-14T10:00:00Z'),
-  ('INV-GRO-10KW', 'Solar Inverter', 'Growatt', '10kW 3-Phase Dual MPPT On-Grid', 'Inverters', 'Nos', 54000, 3, '85044090', 12, 'Active', '2026-10-15T10:00:00Z'),
-  ('INV-DEY-05KW', 'Hybrid Inverter', 'Deye', '5kW Low Voltage Hybrid (48V Battery)', 'Inverters', 'Nos', 68500, 3, '85044090', 12, 'Active', '2026-10-16T10:00:00Z'),
-  ('INV-SOL-3.3K', 'Solar Inverter', 'Solis', '3.3kW Single Phase Dual MPPT On-Grid', 'Inverters', 'Nos', 28200, 4, '85044090', 12, 'Active', '2026-10-17T10:00:00Z'),
-  ('CBL-POL-4R', 'Solar DC Cable', 'Polycab', '4 sq.mm Tinned Copper UV Protected (Red)', 'Cables', 'Meters', 46, 200, '85444990', 18, 'Active', '2026-10-18T10:00:00Z'),
-  ('CBL-POL-4B', 'Solar DC Cable', 'Polycab', '4 sq.mm Tinned Copper UV Protected (Black)', 'Cables', 'Meters', 46, 200, '85444990', 18, 'Active', '2026-10-18T10:00:00Z'),
-  ('CBL-HAV-6DC', 'Solar DC Cable', 'Havells', '6 sq.mm XLPO Solar Cable (Flame Retardant)', 'Cables', 'Meters', 74, 150, '85444990', 18, 'Active', '2026-10-19T10:00:00Z'),
-  ('CBL-FIN-10AC', 'AC Armoured Cable', 'Finolex', '10 sq.mm 4-Core Aluminium Armoured AC Cable', 'Cables', 'Meters', 125, 100, '85444990', 18, 'Active', '2026-10-19T10:00:00Z'),
-  ('HDW-MID-35', 'Module Mid Clamp', 'SolarMount Pro', '35mm Anodized AL-6063 with SS304 Allen Bolt', 'Hardware', 'Nos', 24, 400, '76109010', 18, 'Active', '2026-10-20T10:00:00Z'),
-  ('HDW-END-35', 'Module End Clamp', 'SolarMount Pro', '35mm Anodized AL-6063 with SS304 Allen Bolt', 'Hardware', 'Nos', 26, 300, '76109010', 18, 'Active', '2026-10-20T10:00:00Z'),
-  ('ELC-EARTH-GI', 'Chemical Earthing Rod', 'TruePower', '17.2mm dia × 2m GI Hot-Dip with 25kg Compound', 'Electrical', 'Sets', 1450, 10, '85389000', 18, 'Active', '2026-10-21T10:00:00Z'),
-  ('ELC-ACDB-10K', 'AC Distribution Box (ACDB)', 'Schneider / L&T', '10kW 3-Phase ACDB with Type-II SPD & 4P MCB', 'Electrical', 'Nos', 4200, 5, '85371000', 18, 'Active', '2026-10-21T10:00:00Z'),
-  ('ELC-DCDB-2IN', 'DC Distribution Box (DCDB)', 'Schneider / L&T', '1000V DC 2-In 2-Out with 1000V SPD & 32A Fuses', 'Electrical', 'Nos', 3800, 5, '85371000', 18, 'Active', '2026-10-21T10:00:00Z'),
-  ('CND-PVC-25M', 'Rigid PVC Conduit Pipe', 'Supreme', '25mm Heavy Duty UV Stabilized (3m Length)', 'Conduit', 'Pcs', 95, 80, '39172300', 18, 'Active', '2026-10-22T10:00:00Z')
-ON CONFLICT ("ItemCode") DO NOTHING;
+  -- 1. Panels
+  ('PNL-001', 'Panel', 'Standard Solar', 'Solar PV Module', 'Panels', 'Nos', 0, 10, '85414011', 12, 'Active', '2026-10-27T10:00:00Z'),
+
+  -- 2. Inverters
+  ('INV-001', 'Inverter', 'Standard Solar', 'Solar On-Grid / Hybrid Inverter', 'Inverters', 'Nos', 0, 3, '85044090', 12, 'Active', '2026-10-27T10:00:00Z'),
+
+  -- 3. Cables
+  ('CBL-DC-01', 'DC Wire', 'Polycab / Standard', 'Solar DC Cable UV Protected', 'Cables', 'Meters', 0, 100, '85444990', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('CBL-AC-01', 'AC Wire', 'Polycab / Standard', 'AC Copper / Armoured Cable', 'Cables', 'Meters', 0, 100, '85444990', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('CBL-EARTH-01', 'Earthing Wire', 'Standard', 'Green Copper / GI Earthing Wire', 'Cables', 'Meters', 0, 50, '85444990', 18, 'Active', '2026-10-27T10:00:00Z'),
+
+  -- 4. Hardware
+  ('HDW-MID-01', 'Mid clamp', 'SolarMount', 'Aluminium Module Mid Clamp with SS Bolt', 'Hardware', 'Nos', 0, 100, '76109010', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('HDW-END-01', 'End clamp', 'SolarMount', 'Aluminium Module End Clamp with SS Bolt', 'Hardware', 'Nos', 0, 80, '76109010', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('HDW-UBOLT-01', 'U Bolt', 'Standard', 'SS / GI Structure U-Bolt with Nuts', 'Hardware', 'Nos', 0, 50, '73181500', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('HDW-CCLAMP-01', 'C clamp', 'Standard', 'Structure Mounting C-Clamp', 'Hardware', 'Nos', 0, 50, '73181500', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('HDW-ANCHOR-01', 'Anchor Bolt', 'Standard', 'M10 / M12 Fastener Anchor Bolt', 'Hardware', 'Nos', 0, 50, '73181500', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('HDW-BOLT-46', 'Bolt 4/6', 'Standard', 'SS304 / GI Bolt Size 4/6 with Nut & Washer', 'Hardware', 'Nos', 0, 100, '73181500', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('HDW-SCREW-01', 'Screw', 'Standard', 'Self-Drilling SS Screws', 'Hardware', 'Nos', 0, 200, '73181500', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('HDW-GRIP-38', '38mm grip', 'Standard', '38mm Gripping Clamps / Grips', 'Hardware', 'Nos', 0, 50, '73181500', 18, 'Active', '2026-10-27T10:00:00Z'),
+
+  -- 5. Electricals
+  ('ELC-ACDB-01', 'ACDB', 'Standard / L&T', 'AC Distribution Box with SPD & MCB', 'Electricals', 'Nos', 0, 5, '85371000', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('ELC-DCDB-01', 'DCDB', 'Standard / L&T', 'DC Distribution Box with 1000V SPD & Fuse', 'Electricals', 'Nos', 0, 5, '85371000', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('ELC-MC4-01', 'MC4 connector', 'Standard', 'Male & Female 1000V/1500V MC4 Pair', 'Electricals', 'Sets', 0, 50, '85366990', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('ELC-LUG-01', 'Cable Lux (Cable Lugs)', 'Standard', 'Tinned Copper Cable Lugs', 'Electricals', 'Nos', 0, 100, '85369090', 18, 'Active', '2026-10-27T10:00:00Z'),
+
+  -- 6. Conduit
+  ('CND-PIPE-01', 'PVC pipe', 'Supreme / Standard', '20mm / 25mm Rigid PVC Conduit Pipe', 'Conduit', 'Pcs', 0, 30, '39172300', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('CND-FLEX-01', 'Flexible Pipe', 'Standard', 'Heavy Duty Flexible PVC Conduit', 'Conduit', 'Meters', 0, 50, '39173200', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('CND-TRAY-01', 'Cable Tray', 'Standard', 'Perforated GI Cable Tray with Cover', 'Conduit', 'Meters', 0, 20, '73269099', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('CND-ELBOW-01', 'L bow (Elbow)', 'Supreme / Standard', 'PVC Conduit Elbow Bend 90 Deg', 'Conduit', 'Pcs', 0, 40, '39174000', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('CND-BEND-01', 'Bend', 'Supreme / Standard', 'PVC Long Bend for Wiring Conduit', 'Conduit', 'Pcs', 0, 40, '39174000', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('CND-TPVC-01', 'T PVC', 'Supreme / Standard', 'T-Junction PVC Conduit Box', 'Conduit', 'Pcs', 0, 30, '39174000', 18, 'Active', '2026-10-27T10:00:00Z'),
+
+  -- 7. Earthing
+  ('EAR-LA-01', 'Lightning Arrester', 'Standard', 'Copper / GI Lightning Arrester Rod with Base', 'Earthing', 'Sets', 0, 5, '85354030', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('EAR-ROD-01', 'Earthing rod', 'Standard', '14.2mm / 17.2mm Pure Copper Bonded / GI Rod', 'Earthing', 'Nos', 0, 10, '85389000', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('EAR-POW-01', 'Earthing Powder', 'Standard', 'Backfill Chemical Compound Bag (25kg)', 'Earthing', 'Bag', 0, 10, '38249900', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('EAR-NUTBOLT-01', 'Earthing nut bolt', 'Standard', 'Brass / SS Earthing Nut, Bolt & Washers', 'Earthing', 'Sets', 0, 50, '73181500', 18, 'Active', '2026-10-27T10:00:00Z'),
+
+  -- 8. Others
+  ('OTH-TAPE-01', 'PVC Tape', 'Steelgrip / Standard', 'High Insulation Electrical PVC Tape Roll', 'Others', 'Nos', 0, 30, '39191000', 18, 'Active', '2026-10-27T10:00:00Z'),
+  ('OTH-TIE-01', 'Tie (Cable Tie)', 'Standard', 'Nylon UV Resistant Cable Ties (Pack/Nos)', 'Others', 'Pcs', 0, 200, '39269099', 18, 'Active', '2026-10-27T10:00:00Z')
+ON CONFLICT ("ItemCode") DO UPDATE SET
+  "ItemName" = EXCLUDED."ItemName",
+  "Category" = EXCLUDED."Category",
+  "Unit" = EXCLUDED."Unit",
+  "Specification" = EXCLUDED."Specification";
+
+-- Pre-populate items master table
+INSERT INTO items ("ItemName", "Category", "Unit", "HSNCode", "GSTPercent", "Status") VALUES
+  ('Panel', 'Panels', 'Nos', '85414011', 12, 'Active'),
+  ('Inverter', 'Inverters', 'Nos', '85044090', 12, 'Active'),
+  ('DC Wire', 'Cables', 'Meters', '85444990', 18, 'Active'),
+  ('AC Wire', 'Cables', 'Meters', '85444990', 18, 'Active'),
+  ('Earthing Wire', 'Cables', 'Meters', '85444990', 18, 'Active'),
+  ('Mid clamp', 'Hardware', 'Nos', '76109010', 18, 'Active'),
+  ('End clamp', 'Hardware', 'Nos', '76109010', 18, 'Active'),
+  ('U Bolt', 'Hardware', 'Nos', '73181500', 18, 'Active'),
+  ('C clamp', 'Hardware', 'Nos', '73181500', 18, 'Active'),
+  ('Anchor Bolt', 'Hardware', 'Nos', '73181500', 18, 'Active'),
+  ('Bolt 4/6', 'Hardware', 'Nos', '73181500', 18, 'Active'),
+  ('Screw', 'Hardware', 'Nos', '73181500', 18, 'Active'),
+  ('38mm grip', 'Hardware', 'Nos', '73181500', 18, 'Active'),
+  ('ACDB', 'Electricals', 'Nos', '85371000', 18, 'Active'),
+  ('DCDB', 'Electricals', 'Nos', '85371000', 18, 'Active'),
+  ('MC4 connector', 'Electricals', 'Sets', '85366990', 18, 'Active'),
+  ('Cable Lux (Cable Lugs)', 'Electricals', 'Nos', '85369090', 18, 'Active'),
+  ('PVC pipe', 'Conduit', 'Pcs', '39172300', 18, 'Active'),
+  ('Flexible Pipe', 'Conduit', 'Meters', '39173200', 18, 'Active'),
+  ('Cable Tray', 'Conduit', 'Meters', '73269099', 18, 'Active'),
+  ('L bow (Elbow)', 'Conduit', 'Pcs', '39174000', 18, 'Active'),
+  ('Bend', 'Conduit', 'Pcs', '39174000', 18, 'Active'),
+  ('T PVC', 'Conduit', 'Pcs', '39174000', 18, 'Active'),
+  ('Lightning Arrester', 'Earthing', 'Sets', '85354030', 18, 'Active'),
+  ('Earthing rod', 'Earthing', 'Nos', '85389000', 18, 'Active'),
+  ('Earthing Powder', 'Earthing', 'Bag', '38249900', 18, 'Active'),
+  ('Earthing nut bolt', 'Earthing', 'Sets', '73181500', 18, 'Active'),
+  ('PVC Tape', 'Others', 'Nos', '39191000', 18, 'Active'),
+  ('Tie (Cable Tie)', 'Others', 'Pcs', '39269099', 18, 'Active')
+ON CONFLICT ("ItemName") DO UPDATE SET
+  "Category" = EXCLUDED."Category",
+  "Unit" = EXCLUDED."Unit",
+  "HSNCode" = EXCLUDED."HSNCode",
+  "GSTPercent" = EXCLUDED."GSTPercent";
 
 
 
