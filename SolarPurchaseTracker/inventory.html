@@ -52,58 +52,78 @@
         </div>
       </header>
 
-      <!-- ══ Top Metric KPI Summary Cards (4-Card Enterprise Grid) ════════ -->
-      <section class="inv-kpi-grid" aria-label="Inventory KPI Summary">
-        
-        <!-- KPI 1: Turnover -->
-        <article class="inv-kpi-card kpi-sky">
-          <div class="inv-kpi-head">
-            <span class="inv-kpi-label" title="Turnover">Turnover</span>
-            <div class="inv-kpi-icon-wrap" aria-hidden="true">
-              <!-- Indian Rupee Icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>
+      <!-- ══ Top Metric KPI Summary Cards (Collapsible 4-Card Enterprise Grid) ══ -->
+      <section class="inv-kpi-section" id="invKpiSection" aria-label="Inventory KPI Summary">
+        <div class="inv-kpi-toggle-bar" id="btnToggleKpi" role="button" tabindex="0" aria-expanded="true" aria-controls="invKpiCollapseBody" title="Click to collapse / expand summary metrics">
+          <div class="inv-kpi-toggle-left">
+            <svg class="inv-kpi-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            <span class="inv-kpi-toggle-title">Summary Metrics</span>
+            <div class="inv-kpi-mini-strip" id="invKpiMiniStrip" style="display: none;">
+              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-sky"></span> Turnover: <strong id="miniKpiTurnover">₹0.00</strong></span>
+              <span class="mini-kpi-sep">•</span>
+              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-emerald"></span> Valuation: <strong id="miniKpiValuation">₹0.00</strong></span>
+              <span class="mini-kpi-sep">•</span>
+              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-amber"></span> Dispatched: <strong id="miniKpiDispatched">₹0.00</strong></span>
             </div>
           </div>
-          <div class="inv-kpi-value text-sky-700" id="kpiTotalTurnover">₹0.00</div>
-          <div class="inv-kpi-subtext" id="kpiSubTurnover">Total Project Orders</div>
-        </article>
-
-        <!-- KPI 2: Stock Valuation -->
-        <article class="inv-kpi-card kpi-emerald">
-          <div class="inv-kpi-head">
-            <span class="inv-kpi-label" title="Stock Valuation">Stock Valuation</span>
-            <div class="inv-kpi-icon-wrap" aria-hidden="true">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l6 3.43a2 2 0 0 0 2.06 0l6-3.43a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L11 9.49a2 2 0 0 0-2.06 0l-5.97 3.43z"/><path d="m12 22v-9.5"/><path d="M7 17.5v-3.5L12 11l5 3v3.5"/><path d="M12 2.5 4.5 6.8v4.4l7.5 4.3 7.5-4.3V6.8L12 2.5z"/></svg>
-            </div>
+          <div class="inv-kpi-toggle-right">
+            <span class="inv-kpi-toggle-label" id="invKpiToggleLabel">Collapse</span>
+            <svg class="inv-kpi-toggle-chevron" id="invKpiToggleChevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
           </div>
-          <div class="inv-kpi-value text-emerald-700" id="kpiTotalValuation">₹0.00</div>
-          <div class="inv-kpi-subtext" id="kpiSubValuation">Unsold Physical Stock Value</div>
-        </article>
+        </div>
 
-        <!-- KPI 3: Dispatched Material Cost -->
-        <article class="inv-kpi-card kpi-amber">
-          <div class="inv-kpi-head">
-            <span class="inv-kpi-label" title="Dispatched Material Cost">Dispatched Cost</span>
-            <div class="inv-kpi-icon-wrap" aria-hidden="true">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/></svg>
-            </div>
+        <div class="inv-kpi-collapse-body" id="invKpiCollapseBody">
+          <div class="inv-kpi-grid">
+            <!-- KPI 1: Turnover -->
+            <article class="inv-kpi-card kpi-sky">
+              <div class="inv-kpi-head">
+                <span class="inv-kpi-label" title="Turnover">Turnover</span>
+                <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                  <!-- Indian Rupee Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>
+                </div>
+              </div>
+              <div class="inv-kpi-value text-sky-700" id="kpiTotalTurnover">₹0.00</div>
+              <div class="inv-kpi-subtext" id="kpiSubTurnover">Total Project Orders</div>
+            </article>
+
+            <!-- KPI 2: Stock Valuation -->
+            <article class="inv-kpi-card kpi-emerald">
+              <div class="inv-kpi-head">
+                <span class="inv-kpi-label" title="Stock Valuation">Stock Valuation</span>
+                <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l6 3.43a2 2 0 0 0 2.06 0l6-3.43a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L11 9.49a2 2 0 0 0-2.06 0l-5.97 3.43z"/><path d="m12 22v-9.5"/><path d="M7 17.5v-3.5L12 11l5 3v3.5"/><path d="M12 2.5 4.5 6.8v4.4l7.5 4.3 7.5-4.3V6.8L12 2.5z"/></svg>
+                </div>
+              </div>
+              <div class="inv-kpi-value text-emerald-700" id="kpiTotalValuation">₹0.00</div>
+              <div class="inv-kpi-subtext" id="kpiSubValuation">Unsold Physical Stock Value</div>
+            </article>
+
+            <!-- KPI 3: Dispatched Material Cost -->
+            <article class="inv-kpi-card kpi-amber">
+              <div class="inv-kpi-head">
+                <span class="inv-kpi-label" title="Dispatched Material Cost">Dispatched Cost</span>
+                <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/></svg>
+                </div>
+              </div>
+              <div class="inv-kpi-value text-amber-700" id="kpiTotalDispatchedCost">₹0.00</div>
+              <div class="inv-kpi-subtext" id="kpiSubDispatched">Site Consumption</div>
+            </article>
+
+            <!-- KPI 4: Transportation Cost -->
+            <article class="inv-kpi-card kpi-indigo">
+              <div class="inv-kpi-head">
+                <span class="inv-kpi-label" title="Transportation Cost">Transport Cost</span>
+                <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+                </div>
+              </div>
+              <div class="inv-kpi-value text-indigo-700" id="kpiTotalTransportationCost">₹0.00</div>
+              <div class="inv-kpi-subtext" id="kpiSubTransportation">Site Logistics &amp; Freight</div>
+            </article>
           </div>
-          <div class="inv-kpi-value text-amber-700" id="kpiTotalDispatchedCost">₹0.00</div>
-          <div class="inv-kpi-subtext" id="kpiSubDispatched">Site Consumption</div>
-        </article>
-
-        <!-- KPI 4: Transportation Cost -->
-        <article class="inv-kpi-card kpi-indigo">
-          <div class="inv-kpi-head">
-            <span class="inv-kpi-label" title="Transportation Cost">Transport Cost</span>
-            <div class="inv-kpi-icon-wrap" aria-hidden="true">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
-            </div>
-          </div>
-          <div class="inv-kpi-value text-indigo-700" id="kpiTotalTransportationCost">₹0.00</div>
-          <div class="inv-kpi-subtext" id="kpiSubTransportation">Site Logistics &amp; Freight</div>
-        </article>
-
+        </div>
       </section>
 
       <!-- ══ Data Section (Tabbed View) ═══════════════════════════════════ -->
@@ -131,18 +151,6 @@
               </button>
             </li>
           </ul>
-
-          <!-- View Switcher (Cards vs Table) -->
-          <div class="inv-view-toggle no-print" id="invViewToggle" aria-label="View toggle">
-            <button type="button" class="inv-view-btn" id="btnViewCards" data-view="cards" title="Mobile Card View">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              <span>Cards</span>
-            </button>
-            <button type="button" class="inv-view-btn" id="btnViewTable" data-view="table" title="Data Table View">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-              <span>Table</span>
-            </button>
-          </div>
         </div>
 
         <!-- Toolbar & Filter Controls -->
@@ -232,11 +240,6 @@
               </tfoot>
             </table>
           </div>
-
-          <!-- Mobile Touch-Optimized Cards (Stock Ledger) -->
-          <div class="inv-mobile-cards-wrap" id="invLedgerCards">
-            <!-- Injected dynamically by JS -->
-          </div>
         </div>
 
         <!-- ══ TAB 2: Site Dispatch History (Strictly Consumption Cost) ══ -->
@@ -270,11 +273,6 @@
               </tfoot>
             </table>
           </div>
-
-          <!-- Mobile Touch-Optimized Cards (Site Dispatches) -->
-          <div class="inv-mobile-cards-wrap" id="invDispatchesCards">
-            <!-- Injected dynamically by JS -->
-          </div>
         </div>
 
         <!-- ══ TAB 3: Inward Purchase History ══ -->
@@ -306,11 +304,6 @@
                 <!-- Injected dynamically by JS -->
               </tfoot>
             </table>
-          </div>
-
-          <!-- Mobile Touch-Optimized Cards (Inward Purchases) -->
-          <div class="inv-mobile-cards-wrap" id="invInwardsCards">
-            <!-- Injected dynamically by JS -->
           </div>
         </div>
 

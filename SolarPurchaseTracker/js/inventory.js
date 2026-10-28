@@ -286,6 +286,14 @@ const InventoryApp = (() => {
     if (dispEl) dispEl.textContent = fmtRupees(metrics.totalDispatchedMaterialCost);
     if (transEl) transEl.textContent = fmtRupees(metrics.totalTransportationCost);
 
+    // Collapsed Mini Strip Sync
+    const miniTurnover = document.getElementById('miniKpiTurnover');
+    const miniVal = document.getElementById('miniKpiValuation');
+    const miniDisp = document.getElementById('miniKpiDispatched');
+    if (miniTurnover) miniTurnover.textContent = fmtRupees(metrics.totalTurnover);
+    if (miniVal) miniVal.textContent = fmtRupees(metrics.totalWarehouseValuation);
+    if (miniDisp) miniDisp.textContent = fmtRupees(metrics.totalDispatchedMaterialCost);
+
     const subTurnoverEl = document.getElementById('kpiSubTurnover');
     const subValEl = document.getElementById('kpiSubValuation');
     const subDispEl = document.getElementById('kpiSubDispatched');
@@ -2942,27 +2950,47 @@ const InventoryApp = (() => {
     });
   }
 
-  // --- View Mode State (Cards vs Table) ---
-  let currentViewMode = (() => {
+  // --- Sticky Offsets & Layout Helpers ---
+  function updateStickyOffsets() {
+    const topbar = document.getElementById('topbar');
+    if (topbar) {
+      const height = topbar.offsetHeight || 46;
+      document.documentElement.style.setProperty('--topbar-height', `${height}px`);
+    }
+  }
+
+  // --- Collapsible KPI Metrics Section ---
+  function toggleKpiCollapse(forceState) {
+    const section = document.getElementById('invKpiSection');
+    const label = document.getElementById('invKpiToggleLabel');
+    const miniStrip = document.getElementById('invKpiMiniStrip');
+    const toggleBar = document.getElementById('btnToggleKpi');
+    if (!section) return;
+
+    const isCollapsed = forceState !== undefined ? forceState : !section.classList.contains('is-collapsed');
+    section.classList.toggle('is-collapsed', isCollapsed);
+    if (label) label.textContent = isCollapsed ? 'Expand' : 'Collapse';
+    if (miniStrip) miniStrip.style.display = isCollapsed ? 'inline-flex' : 'none';
+    if (toggleBar) toggleBar.setAttribute('aria-expanded', !isCollapsed);
+
     try {
-      const saved = localStorage.getItem('inv_view_mode');
-      if (saved) return saved;
+      localStorage.setItem('inv_kpi_collapsed', isCollapsed ? 'true' : 'false');
     } catch (e) { }
-    return (window.innerWidth <= 768) ? 'cards' : 'table';
-  })();
+
+    updateStickyOffsets();
+  }
+
+  // --- View Mode State (Always Table Format) ---
+  let currentViewMode = 'table';
 
   function setViewMode(mode) {
-    currentViewMode = mode;
-    try { localStorage.setItem('inv_view_mode', mode); } catch (e) { }
+    currentViewMode = 'table';
+    try { localStorage.removeItem('inv_view_mode'); } catch (e) { }
     const mainCard = document.querySelector('.inv-main-card');
     if (mainCard) {
-      mainCard.classList.remove('inv-pane-view-cards', 'inv-pane-view-table');
-      mainCard.classList.add(mode === 'cards' ? 'inv-pane-view-cards' : 'inv-pane-view-table');
+      mainCard.classList.remove('inv-pane-view-cards');
+      mainCard.classList.add('inv-pane-view-table');
     }
-    const btnCards = document.getElementById('btnViewCards');
-    const btnTable = document.getElementById('btnViewTable');
-    if (btnCards) btnCards.classList.toggle('active', mode === 'cards');
-    if (btnTable) btnTable.classList.toggle('active', mode === 'table');
   }
 
   // --- Global Event Bindings ---
@@ -3027,15 +3055,20 @@ const InventoryApp = (() => {
       });
     }
 
-    // View mode switcher buttons
-    const btnCards = document.getElementById('btnViewCards');
-    const btnTable = document.getElementById('btnViewTable');
-    if (btnCards) {
-      btnCards.addEventListener('click', () => setViewMode('cards'));
+    // KPI Summary Collapsible Toggle
+    const btnToggleKpi = document.getElementById('btnToggleKpi');
+    if (btnToggleKpi) {
+      btnToggleKpi.addEventListener('click', () => toggleKpiCollapse());
+      btnToggleKpi.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleKpiCollapse();
+        }
+      });
     }
-    if (btnTable) {
-      btnTable.addEventListener('click', () => setViewMode('table'));
-    }
+
+    // Keep sticky header offsets aligned on viewport resize
+    window.addEventListener('resize', updateStickyOffsets);
 
     // Bulk action buttons
     const btnDeleteSelected = document.getElementById('btnDeleteSelected');
@@ -3111,7 +3144,14 @@ const InventoryApp = (() => {
     }
 
     renderKpiCards();
-    setViewMode(currentViewMode);
+    setViewMode('table');
+    updateStickyOffsets();
+    try {
+      const savedCollapsed = localStorage.getItem('inv_kpi_collapsed');
+      if (savedCollapsed === 'true') {
+        toggleKpiCollapse(true);
+      }
+    } catch (e) { }
     renderCategoryChips();
     setupTabs();
     bindEvents();
@@ -3142,6 +3182,7 @@ const InventoryApp = (() => {
     init,
     syncWithDatabase,
     setViewMode,
+    toggleKpiCollapse,
     openStockInModal,
     openDispatchModal,
     openStockInModalFor: openStockInModal,

@@ -65,14 +65,20 @@
   min-height: calc(100vh - 60px);
 }
 
-/* ---------------- Header & Action Bar ---------------- */
+/* ---------------- Header & Action Bar (Fixed / Sticky Position) ---------------- */
 .inv-header-bar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  position: sticky;
+  top: var(--topbar-height, 46px);
+  z-index: 85;
+  background: var(--st-bg, #f8fafc);
+  padding: 6px 0;
+  transition: box-shadow 0.15s ease;
 }
 
 .inv-actions-group {
@@ -185,6 +191,115 @@
   background-color: var(--st-surface-hover, #f1f5f9);
   color: var(--st-text-main, #0f172a);
   border-color: #cbd5e1;
+}
+
+/* ---------------- Collapsible Summary KPI Section ---------------- */
+.inv-kpi-section {
+  margin-bottom: 12px;
+}
+
+.inv-kpi-toggle-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid var(--st-border, #e2e8f0);
+  border-radius: var(--st-card-radius, 4px);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.inv-kpi-toggle-bar:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.inv-kpi-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.inv-kpi-toggle-icon {
+  color: var(--st-primary, #4338ca);
+  flex-shrink: 0;
+}
+
+.inv-kpi-toggle-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--st-text-secondary, #475569);
+  white-space: nowrap;
+}
+
+.inv-kpi-mini-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
+.mini-kpi-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.mini-kpi-item strong {
+  font-family: var(--st-font-mono, monospace);
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mini-kpi-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot-sky { background-color: #0284c7; }
+.dot-emerald { background-color: #166534; }
+.dot-amber { background-color: #d97706; }
+.mini-kpi-sep { color: #cbd5e1; }
+
+.inv-kpi-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 0.73rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.inv-kpi-toggle-chevron {
+  transition: transform 0.2s ease;
+}
+
+.inv-kpi-section.is-collapsed .inv-kpi-collapse-body {
+  display: none !important;
+}
+
+.inv-kpi-section.is-collapsed .inv-kpi-toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.inv-kpi-section.is-collapsed .inv-kpi-toggle-bar {
+  margin-bottom: 0;
 }
 
 /* ---------------- 4-Card KPI Summary Grid ---------------- */
@@ -744,10 +859,21 @@
   user-select: none;
 }
 
-/* ---------------- Data Tables ---------------- */
+/* ---------------- Data Tables (Scrollable with Fixed Header) ---------------- */
 .inv-table-wrap {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: calc(100vh - 310px);
+  max-height: calc(100dvh - 310px);
+  min-height: 280px;
   background: #ffffff;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--st-border, #e2e8f0);
+}
+
+.inv-kpi-section.is-collapsed ~ .inv-main-card .inv-table-wrap {
+  max-height: calc(100vh - 240px);
+  max-height: calc(100dvh - 240px);
 }
 
 .inv-table {
@@ -759,18 +885,19 @@
 }
 
 .inv-table th {
-  background: var(--inv-slate-100);
-  color: var(--inv-slate-600);
+  background: var(--inv-slate-100, #f1f5f9);
+  color: var(--inv-slate-600, #475569);
   font-weight: 600;
   font-size: 0.73rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--inv-slate-200);
+  border-bottom: 2px solid var(--inv-slate-300, #cbd5e1);
   white-space: nowrap;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .inv-table td {
@@ -784,12 +911,16 @@
 }
 
 .inv-table tfoot td {
-  background-color: var(--inv-slate-100);
+  background-color: var(--inv-slate-100, #f8fafc);
   font-weight: 700;
   font-family: var(--st-font-mono, monospace);
-  border-top: 2px solid var(--inv-slate-300);
+  border-top: 2px solid var(--inv-slate-300, #cbd5e1);
   padding: 10px 12px;
   font-size: 0.8rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 9;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* Badges */
@@ -1149,18 +1280,11 @@
   margin: 6px 0;
 }
 
-/* ---------------- View Mode Switcher Rules ---------------- */
-.inv-main-card.inv-pane-view-cards .inv-table-wrap {
-  display: none !important;
-}
-.inv-main-card.inv-pane-view-cards .inv-mobile-cards-wrap {
-  display: flex !important;
-}
-
-.inv-main-card.inv-pane-view-table .inv-table-wrap {
+/* ---------------- View Mode Switcher Rules (Always Table Format) ---------------- */
+.inv-table-wrap {
   display: block !important;
 }
-.inv-main-card.inv-pane-view-table .inv-mobile-cards-wrap {
+.inv-mobile-cards-wrap {
   display: none !important;
 }
 
@@ -1958,7 +2082,13 @@
   }
 
   .inv-header-bar {
-    margin-bottom: 10px;
+    position: sticky;
+    top: var(--topbar-height, 42px);
+    z-index: 85;
+    background: var(--st-bg, #f8fafc);
+    padding: 6px 10px 8px;
+    margin: -4px -10px 10px;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
     gap: 6px;
   }
 
@@ -2117,22 +2247,29 @@
     padding: 0 5px;
   }
 
-  /* Mobile Default View: Cards unless Table explicitly toggled */
-  .inv-main-card:not(.inv-pane-view-table) .inv-table-wrap {
-    display: none !important;
-  }
-  .inv-main-card:not(.inv-pane-view-table) .inv-mobile-cards-wrap {
-    display: flex !important;
+  /* Table View Always Enforced on Mobile */
+  .inv-table-wrap {
+    display: block !important;
+    border-radius: 0;
+    max-height: calc(100dvh - 310px);
+    min-height: 260px;
   }
 
-  /* Data Tables Mobile Fit */
-  .inv-table-wrap {
-    border-radius: 0;
+  .inv-kpi-section.is-collapsed ~ .inv-main-card .inv-table-wrap {
+    max-height: calc(100dvh - 230px);
+  }
+
+  .inv-mobile-cards-wrap {
+    display: none !important;
   }
 
   .inv-table th {
     padding: 7px 8px;
     font-size: 0.7rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f1f5f9;
   }
 
   .inv-table td {
