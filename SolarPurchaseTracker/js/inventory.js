@@ -397,6 +397,7 @@ const InventoryApp = (() => {
   function renderLedgerTable() {
     const tbody = document.getElementById('invLedgerTbody');
     const tfoot = document.getElementById('invLedgerTfoot');
+    const cardsContainer = document.getElementById('invLedgerCards');
     if (!tbody) return;
 
     // Prune stale selection
@@ -425,6 +426,18 @@ const InventoryApp = (() => {
           </td>
         </tr>
       `;
+      if (cardsContainer) {
+        cardsContainer.innerHTML = `
+          <div class="inv-cards-empty text-center py-4">
+            <div class="fs-6 fw-semibold text-secondary mb-1">No equipment items found</div>
+            <div class="small text-muted mb-3">Add equipment SKUs to start tracking warehouse stock.</div>
+            <button type="button" class="inv-btn inv-btn-primary" onclick="InventoryApp.openNewItemModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add SKU</span>
+            </button>
+          </div>
+        `;
+      }
       if (tfoot) tfoot.innerHTML = '';
       updateHeaderCheckboxState('ledger');
       updateBulkActionBar();
@@ -481,6 +494,82 @@ const InventoryApp = (() => {
       `;
     }).join('');
 
+    // Render Mobile Cards
+    if (cardsContainer) {
+      cardsContainer.innerHTML = rows.map((item) => {
+        let statusBadge = '';
+        if (item.status === 'in-stock') {
+          statusBadge = `<span class="inv-stock-badge in-stock"><span class="inv-badge-dot"></span> In Stock</span>`;
+        } else if (item.status === 'low-stock') {
+          statusBadge = `<span class="inv-stock-badge low-stock" title="Below threshold of ${item.minThreshold || 5}"><span class="inv-badge-dot"></span> Low Stock</span>`;
+        } else {
+          statusBadge = `<span class="inv-stock-badge out-of-stock"><span class="inv-badge-dot"></span> Out of Stock</span>`;
+        }
+
+        const isSelected = selectedLedger.has(item.code);
+
+        return `
+          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${item.code}">
+            <div class="inv-card-head">
+              <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
+                <div class="inv-chk-cell pt-0.5">
+                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="ledger" data-id="${item.code}" ${isSelected ? 'checked' : ''} title="Select SKU ${item.code}">
+                </div>
+                <div class="min-w-0 flex-grow-1">
+                  <div class="inv-card-title">${escapeHtml(item.name)}</div>
+                  <div class="inv-card-meta">
+                    <span class="inv-brand-badge">${escapeHtml(item.brand || 'Standard')}</span>
+                    <span class="inv-sku-code">${escapeHtml(item.code)}</span>
+                    <span class="inv-cat-pill">${escapeHtml(item.category || 'General')}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="inv-card-status-wrap ms-1 flex-shrink-0">
+                ${statusBadge}
+              </div>
+            </div>
+
+            ${item.spec ? `<div class="inv-card-spec">${escapeHtml(item.spec)}</div>` : ''}
+
+            <div class="inv-card-kpi-grid">
+              <div class="inv-card-kpi stock-cell">
+                <span class="lbl">In-Hand Stock</span>
+                <span class="val ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}">
+                  ${fmtQty(item.inHandQty)} <small class="text-muted fw-normal">${escapeHtml(item.unit || 'Nos')}</small>
+                </span>
+              </div>
+              <div class="inv-card-kpi">
+                <span class="lbl">Buying Rate</span>
+                <span class="val font-monospace">${fmtRupees(item.buyingPrice)}</span>
+              </div>
+              <div class="inv-card-kpi">
+                <span class="lbl">Stock Valuation</span>
+                <span class="val font-monospace fw-bold text-dark">${fmtRupees(item.totalStockValuation)}</span>
+              </div>
+            </div>
+
+            <div class="inv-card-actions">
+              <button type="button" class="inv-qa-btn qa-stockin" onclick="InventoryApp.openStockInModalFor('${item.code}')" title="Record Delivery Inward">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Stock In</span>
+              </button>
+              <button type="button" class="inv-qa-btn qa-dispatch" onclick="InventoryApp.openDispatchModalFor('${item.code}')" title="Dispatch to Site">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+                <span>Dispatch</span>
+              </button>
+              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit SKU">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Edit</span>
+              </button>
+              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete SKU">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
     const totalInHand = rows.reduce((s, r) => s + r.inHandQty, 0);
     const totalValuation = rows.reduce((s, r) => s + r.totalStockValuation, 0);
 
@@ -522,6 +611,7 @@ const InventoryApp = (() => {
   function renderDispatchesTable() {
     const tbody = document.getElementById('invDispatchesTbody');
     const tfoot = document.getElementById('invDispatchesTfoot');
+    const cardsContainer = document.getElementById('invDispatchesCards');
     if (!tbody) return;
 
     // Prune stale selection
@@ -550,6 +640,18 @@ const InventoryApp = (() => {
           </td>
         </tr>
       `;
+      if (cardsContainer) {
+        cardsContainer.innerHTML = `
+          <div class="inv-cards-empty text-center py-4">
+            <div class="fs-6 fw-semibold text-secondary mb-1">No site dispatches recorded</div>
+            <div class="small text-muted mb-3">Record equipment dispatches to track site material consumption.</div>
+            <button type="button" class="inv-btn inv-btn-dispatch" onclick="InventoryApp.openDispatchModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+              <span>Dispatch Material</span>
+            </button>
+          </div>
+        `;
+      }
       if (tfoot) tfoot.innerHTML = '';
       updateHeaderCheckboxState('dispatches');
       updateBulkActionBar();
@@ -617,6 +719,85 @@ const InventoryApp = (() => {
       `;
     }).join('');
 
+    // Render Mobile Cards (Site Dispatches)
+    if (cardsContainer) {
+      cardsContainer.innerHTML = rows.map((disp) => {
+        const itm = items.find(i => i.code === disp.itemCode) || {};
+        const unitBuyingCost = Number(disp.unitBuyingPrice) || itm.buyingPrice || 0;
+        const totalCost = Number(disp.dispatchedCost) || (Number(disp.qty) * unitBuyingCost);
+        const transportCost = Number(disp.transportCost) || 0;
+        const isSelected = selectedDispatches.has(disp.id);
+
+        return `
+          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${disp.id}">
+            <div class="inv-card-head">
+              <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
+                <div class="inv-chk-cell pt-0.5">
+                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="dispatches" data-id="${disp.id}" ${isSelected ? 'checked' : ''} title="Select Dispatch ${disp.id}">
+                </div>
+                <div class="min-w-0 flex-grow-1">
+                  <div class="inv-card-title text-primary">${escapeHtml(disp.siteName)}</div>
+                  <div class="inv-card-meta">
+                    <span class="font-monospace text-secondary small">${disp.date}</span>
+                    ${disp.challanNo ? `<span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5">${escapeHtml(disp.challanNo)}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              ${disp.docName ? `
+                <button type="button" class="inv-doc-pill-btn flex-shrink-0" onclick="InventoryApp.viewDoc('${disp.id}', 'dispatch')" title="Challan">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Challan</span>
+                </button>
+              ` : ''}
+            </div>
+
+            <div class="inv-card-body-row">
+              <div class="min-w-0 flex-grow-1">
+                <div class="fw-semibold text-dark small">${escapeHtml(itm.name || disp.itemCode)}</div>
+                <div class="small text-muted">${escapeHtml(itm.brand || '')} ${itm.spec ? `• ${escapeHtml(itm.spec)}` : ''}</div>
+              </div>
+              <div class="inv-qty-pill text-amber-700 bg-amber-subtle flex-shrink-0">
+                ${fmtQty(disp.qty)} <small class="fw-normal text-muted">${escapeHtml(itm.unit || 'Nos')}</small>
+              </div>
+            </div>
+
+            <div class="inv-card-kpi-grid">
+              <div class="inv-card-kpi">
+                <span class="lbl">Unit Cost</span>
+                <span class="val font-monospace">${fmtRupees(unitBuyingCost)}</span>
+              </div>
+              <div class="inv-card-kpi">
+                <span class="lbl">Dispatched Cost</span>
+                <span class="val font-monospace fw-bold text-amber-700">${fmtRupees(totalCost)}</span>
+              </div>
+              <div class="inv-card-kpi">
+                <span class="lbl">Freight / Transport</span>
+                <span class="val font-monospace fw-semibold ${transportCost > 0 ? 'text-indigo-700' : 'text-muted'}">${transportCost > 0 ? fmtRupees(transportCost) : '—'}</span>
+              </div>
+            </div>
+
+            ${disp.vehicle || disp.remarks ? `
+              <div class="small text-secondary d-flex align-items-center gap-2 flex-wrap">
+                ${disp.vehicle ? `<span>🚗 ${escapeHtml(disp.vehicle)}</span>` : ''}
+                ${disp.remarks ? `<span class="text-muted">💬 ${escapeHtml(disp.remarks)}</span>` : ''}
+              </div>
+            ` : ''}
+
+            <div class="inv-card-actions justify-content-end">
+              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditDispatchModal('${disp.id}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Edit</span>
+              </button>
+              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteDispatch('${disp.id}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <span>Delete</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
     const grandMaterialCost = rows.reduce((s, r) => s + (Number(r.dispatchedCost) || (Number(r.qty) * (Number(r.unitBuyingPrice) || 0))), 0);
     const grandTransportCost = rows.reduce((s, r) => s + (Number(r.transportCost) || 0), 0);
     const totalQtyDisp = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
@@ -660,6 +841,7 @@ const InventoryApp = (() => {
   function renderInwardsTable() {
     const tbody = document.getElementById('invInwardsTbody');
     const tfoot = document.getElementById('invInwardsTfoot');
+    const cardsContainer = document.getElementById('invInwardsCards');
     if (!tbody) return;
 
     // Prune stale selection
@@ -688,6 +870,18 @@ const InventoryApp = (() => {
           </td>
         </tr>
       `;
+      if (cardsContainer) {
+        cardsContainer.innerHTML = `
+          <div class="inv-cards-empty text-center py-4">
+            <div class="fs-6 fw-semibold text-secondary mb-1">No inward consignments recorded</div>
+            <div class="small text-muted mb-3">Record equipment purchases from suppliers to increase godown stock.</div>
+            <button type="button" class="inv-btn inv-btn-stockin" onclick="InventoryApp.openStockInModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Stock In Delivery</span>
+            </button>
+          </div>
+        `;
+      }
       if (tfoot) tfoot.innerHTML = '';
       updateHeaderCheckboxState('inwards');
       updateBulkActionBar();
@@ -750,6 +944,79 @@ const InventoryApp = (() => {
         </tr>
       `;
     }).join('');
+
+    // Render Mobile Cards (Inward Purchases)
+    if (cardsContainer) {
+      cardsContainer.innerHTML = rows.map((inw) => {
+        const itm = items.find(i => i.code === inw.itemCode) || {};
+        const unitPrice = Number(inw.unitPrice) || itm.buyingPrice || 0;
+        const totalCost = Number(inw.totalCost) || (Number(inw.qty) * unitPrice);
+        const isSelected = selectedInwards.has(inw.id);
+
+        return `
+          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${inw.id}">
+            <div class="inv-card-head">
+              <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
+                <div class="inv-chk-cell pt-0.5">
+                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="inwards" data-id="${inw.id}" ${isSelected ? 'checked' : ''} title="Select Inward ${inw.id}">
+                </div>
+                <div class="min-w-0 flex-grow-1">
+                  <div class="inv-card-title text-dark">${escapeHtml(inw.supplier || 'Inward Purchase')}</div>
+                  <div class="inv-card-meta">
+                    <span class="font-monospace text-secondary small">${inw.date}</span>
+                    ${inw.invoiceNo ? `<span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5">Inv: ${escapeHtml(inw.invoiceNo)}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              ${inw.docName ? `
+                <button type="button" class="inv-doc-pill-btn flex-shrink-0" onclick="InventoryApp.viewDoc('${inw.id}', 'inward')" title="Invoice">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Invoice</span>
+                </button>
+              ` : ''}
+            </div>
+
+            <div class="inv-card-body-row">
+              <div class="min-w-0 flex-grow-1">
+                <div class="fw-semibold text-dark small">${escapeHtml(itm.name || inw.itemCode)}</div>
+                <div class="small text-muted">${escapeHtml(itm.brand || '')} ${itm.spec ? `• ${escapeHtml(itm.spec)}` : ''}</div>
+              </div>
+              <div class="inv-qty-pill text-emerald-700 bg-emerald-subtle flex-shrink-0">
+                +${fmtQty(inw.qty)} <small class="fw-normal text-muted">${escapeHtml(itm.unit || 'Nos')}</small>
+              </div>
+            </div>
+
+            <div class="inv-card-kpi-grid">
+              <div class="inv-card-kpi">
+                <span class="lbl">Unit Price</span>
+                <span class="val font-monospace">${fmtRupees(unitPrice)}</span>
+              </div>
+              <div class="inv-card-kpi">
+                <span class="lbl">Total Cost</span>
+                <span class="val font-monospace fw-bold text-emerald-700">${fmtRupees(totalCost)}</span>
+              </div>
+              <div class="inv-card-kpi">
+                <span class="lbl">Storage Bay</span>
+                <span class="val text-truncate">${escapeHtml(inw.location || 'Main Godown')}</span>
+              </div>
+            </div>
+
+            ${inw.remarks ? `<div class="small text-muted">💬 ${escapeHtml(inw.remarks)}</div>` : ''}
+
+            <div class="inv-card-actions justify-content-end">
+              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditInwardModal('${inw.id}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Edit</span>
+              </button>
+              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteInward('${inw.id}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <span>Delete</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
 
     const grandInwCost = rows.reduce((s, r) => s + (Number(r.totalCost) || (Number(r.qty) * (Number(r.unitPrice) || 0))), 0);
     const totalQtyInw = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
@@ -864,12 +1131,14 @@ const InventoryApp = (() => {
       targetSet.delete(id);
     }
 
-    const chk = document.querySelector(`.inv-row-chk[data-type="${type}"][data-id="${id}"]`);
-    if (chk) {
+    const allChks = document.querySelectorAll(`.inv-row-chk[data-type="${type}"][data-id="${id}"]`);
+    allChks.forEach(chk => {
       chk.checked = isChecked;
       const tr = chk.closest('tr');
       if (tr) tr.classList.toggle('inv-row-selected', isChecked);
-    }
+      const card = chk.closest('.inv-mobile-card');
+      if (card) card.classList.toggle('inv-card-selected', isChecked);
+    });
 
     updateHeaderCheckboxState(type);
     updateBulkActionBar();
@@ -2660,9 +2929,9 @@ const InventoryApp = (() => {
         if (activePane) activePane.style.display = 'block';
 
         const chipsWrap = document.getElementById('invCategoryChipsRow');
-        const statusWrap = document.getElementById('invStatusFilterWrap');
+        const statusWrap = document.getElementById('invStatusPills') || document.getElementById('invStatusFilterWrap');
         if (chipsWrap) chipsWrap.style.display = (tabKey === 'ledger') ? 'flex' : 'none';
-        if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? 'block' : 'none';
+        if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
 
         if (tabKey === 'ledger') renderLedgerTable();
         else if (tabKey === 'dispatches') renderDispatchesTable();
@@ -2671,6 +2940,29 @@ const InventoryApp = (() => {
         updateBulkActionBar();
       });
     });
+  }
+
+  // --- View Mode State (Cards vs Table) ---
+  let currentViewMode = (() => {
+    try {
+      const saved = localStorage.getItem('inv_view_mode');
+      if (saved) return saved;
+    } catch (e) { }
+    return (window.innerWidth <= 768) ? 'cards' : 'table';
+  })();
+
+  function setViewMode(mode) {
+    currentViewMode = mode;
+    try { localStorage.setItem('inv_view_mode', mode); } catch (e) { }
+    const mainCard = document.querySelector('.inv-main-card');
+    if (mainCard) {
+      mainCard.classList.remove('inv-pane-view-cards', 'inv-pane-view-table');
+      mainCard.classList.add(mode === 'cards' ? 'inv-pane-view-cards' : 'inv-pane-view-table');
+    }
+    const btnCards = document.getElementById('btnViewCards');
+    const btnTable = document.getElementById('btnViewTable');
+    if (btnCards) btnCards.classList.toggle('active', mode === 'cards');
+    if (btnTable) btnTable.classList.toggle('active', mode === 'table');
   }
 
   // --- Global Event Bindings ---
@@ -2689,9 +2981,22 @@ const InventoryApp = (() => {
     if (btnExport) btnExport.addEventListener('click', () => exportCsv());
 
     const searchInput = document.getElementById('invTableSearch');
+    const btnClear = document.getElementById('btnSearchClear');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         searchTerm = e.target.value;
+        if (btnClear) btnClear.style.display = searchTerm.length > 0 ? 'flex' : 'none';
+        if (activeTab === 'ledger') renderLedgerTable();
+        else if (activeTab === 'dispatches') renderDispatchesTable();
+        else if (activeTab === 'inwards') renderInwardsTable();
+      });
+    }
+    if (btnClear && searchInput) {
+      btnClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchTerm = '';
+        btnClear.style.display = 'none';
+        searchInput.focus();
         if (activeTab === 'ledger') renderLedgerTable();
         else if (activeTab === 'dispatches') renderDispatchesTable();
         else if (activeTab === 'inwards') renderInwardsTable();
@@ -2699,11 +3004,37 @@ const InventoryApp = (() => {
     }
 
     const statusSelect = document.getElementById('invStatusSelect');
+    const statusPillsWrap = document.getElementById('invStatusPills');
+    if (statusPillsWrap) {
+      statusPillsWrap.querySelectorAll('.inv-status-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          const st = pill.getAttribute('data-status');
+          statusFilter = st;
+          statusPillsWrap.querySelectorAll('.inv-status-pill').forEach(p => p.classList.toggle('active', p === pill));
+          if (statusSelect) statusSelect.value = st;
+          renderLedgerTable();
+        });
+      });
+    }
+
     if (statusSelect) {
       statusSelect.addEventListener('change', (e) => {
         statusFilter = e.target.value;
+        if (statusPillsWrap) {
+          statusPillsWrap.querySelectorAll('.inv-status-pill').forEach(p => p.classList.toggle('active', p.getAttribute('data-status') === statusFilter));
+        }
         renderLedgerTable();
       });
+    }
+
+    // View mode switcher buttons
+    const btnCards = document.getElementById('btnViewCards');
+    const btnTable = document.getElementById('btnViewTable');
+    if (btnCards) {
+      btnCards.addEventListener('click', () => setViewMode('cards'));
+    }
+    if (btnTable) {
+      btnTable.addEventListener('click', () => setViewMode('table'));
     }
 
     // Bulk action buttons
@@ -2780,6 +3111,7 @@ const InventoryApp = (() => {
     }
 
     renderKpiCards();
+    setViewMode(currentViewMode);
     renderCategoryChips();
     setupTabs();
     bindEvents();
@@ -2809,6 +3141,7 @@ const InventoryApp = (() => {
   return {
     init,
     syncWithDatabase,
+    setViewMode,
     openStockInModal,
     openDispatchModal,
     openStockInModalFor: openStockInModal,
