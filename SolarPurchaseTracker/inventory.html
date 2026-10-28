@@ -41,12 +41,8 @@
     <!-- Modular Inventory Main View -->
     <main class="page-body inventory-body" id="inventoryAppRoot">
 
-      <!-- ══ Header & Quick Action Buttons ════════════════════════════════ -->
+      <!-- ══ Quick Action Buttons ═════════════════════════════════════════ -->
       <header class="inv-header-bar">
-        <div class="inv-title-group">
-          <h1>Solar Inventory &amp; Logistics</h1>
-        </div>
-
         <div class="inv-actions-group">
           <button type="button" class="inv-btn inv-btn-danger" id="btnHeaderDeleteSelected" style="display: none;" title="Delete selected items">🗑️ Delete Selected (<span id="headerSelectedCount">0</span>)</button>
           <button type="button" class="inv-btn inv-btn-export" id="btnAddNewSku" title="Register New Equipment SKU">+ Add SKU</button>
@@ -68,12 +64,12 @@
           </div>
         </article>
 
-        <!-- KPI 2: Total In-Hand Stock -->
+        <!-- KPI 2: Transportation Cost -->
         <article class="inv-kpi-card kpi-indigo">
           <div class="inv-kpi-content">
-            <div class="inv-kpi-label">Total In-Hand Stock</div>
-            <div class="inv-kpi-value text-indigo-700" id="kpiTotalInHand">0 Units</div>
-            <div class="inv-kpi-subtext" id="kpiSubInHand">Available Godown Inventory</div>
+            <div class="inv-kpi-label">Transportation Cost</div>
+            <div class="inv-kpi-value text-indigo-700" id="kpiTotalTransportationCost">₹0.00</div>
+            <div class="inv-kpi-subtext" id="kpiSubTransportation">Site Logistics &amp; Freight</div>
           </div>
         </article>
 

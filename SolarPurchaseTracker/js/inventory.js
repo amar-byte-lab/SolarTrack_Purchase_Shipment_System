@@ -243,11 +243,13 @@ const InventoryApp = (() => {
     const totalWarehouseValuation = ledger.reduce((sum, itm) => sum + itm.totalStockValuation, 0);
     const totalInHandStock = ledger.reduce((sum, itm) => sum + itm.inHandQty, 0);
     const totalDispatchedMaterialCost = dispatches.reduce((sum, dsp) => sum + (Number(dsp.dispatchedCost) || 0), 0);
+    const totalTransportationCost = dispatches.reduce((sum, dsp) => sum + (Number(dsp.transportCost) || 0), 0);
 
     return {
       totalWarehouseValuation,
       totalInHandStock,
       totalDispatchedMaterialCost,
+      totalTransportationCost,
       totalSKUs: ledger.length
     };
   }
@@ -257,18 +259,25 @@ const InventoryApp = (() => {
     const metrics = getKpiMetrics();
 
     const valEl = document.getElementById('kpiTotalValuation');
+    const transEl = document.getElementById('kpiTotalTransportationCost');
     const inHandEl = document.getElementById('kpiTotalInHand');
     const dispEl = document.getElementById('kpiTotalDispatchedCost');
 
     if (valEl) valEl.textContent = fmtRupees(metrics.totalWarehouseValuation);
+    if (transEl) transEl.textContent = fmtRupees(metrics.totalTransportationCost);
     if (inHandEl) inHandEl.textContent = `${fmtQty(metrics.totalInHandStock)} Units`;
     if (dispEl) dispEl.textContent = fmtRupees(metrics.totalDispatchedMaterialCost);
 
     const subValEl = document.getElementById('kpiSubValuation');
+    const subTransEl = document.getElementById('kpiSubTransportation');
     const subInHandEl = document.getElementById('kpiSubInHand');
     const subDispEl = document.getElementById('kpiSubDispatched');
 
     if (subValEl) subValEl.textContent = `${metrics.totalSKUs} catalog items`;
+    if (subTransEl) {
+      const freightTrips = dispatches.filter(d => (Number(d.transportCost) || 0) > 0).length;
+      subTransEl.textContent = freightTrips > 0 ? `${freightTrips} freight ${freightTrips === 1 ? 'trip' : 'trips'}` : 'Site Logistics & Freight';
+    }
     if (subInHandEl) subInHandEl.textContent = 'Available Godown Inventory';
     if (subDispEl) subDispEl.textContent = `${dispatches.length} site consignments`;
   }
