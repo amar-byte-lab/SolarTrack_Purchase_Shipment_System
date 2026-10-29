@@ -302,6 +302,9 @@
   gap: 4px;
   white-space: nowrap;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Ultra-Compact Toggle Switch (26px x 15px) */
@@ -437,9 +440,12 @@
   border-color: #cbd5e1 !important;
   border-radius: 0 !important;
   text-align: right;
-  width: 80px !important;
-  min-width: 78px !important;
+  width: 75px;
+  min-width: 45px;
+  max-width: 80px;
+  flex: 1 1 auto;
   -moz-appearance: textfield;
+  box-sizing: border-box;
 }
 
 .mw-netmeter-pay-group input::-webkit-outer-spin-button,
@@ -450,8 +456,10 @@
 
 .mw-netmeter-pay-group input:not(:disabled),
 .mw-netmeter-pay-group.is-editing input {
-  width: 88px !important;
-  min-width: 85px !important;
+  width: 82px;
+  min-width: 50px;
+  max-width: 88px;
+  flex: 1 1 auto;
   background-color: #ffffff !important;
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.25) !important;
@@ -1180,260 +1188,701 @@
 
 /* ══ Premium Mobile & Responsive Design (< 768px) ═════════════════════ */
 @media (max-width: 768px) {
-  /* Mobile Toolbar Ultra-Compact Redesign */
-  .manage-work-page .page-body {
-    padding: 6px 8px !important;
+  /* Mobile Page Layout & Shell */
+  html.manage-work-page,
+  body.manage-work-page,
+  body.manage-work-page .app-shell {
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0;
+    overflow: hidden !important;
   }
 
+  body.manage-work-page .main-content {
+    height: 100vh !important;
+    height: 100dvh !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+
+  body.manage-work-page .page-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden !important;
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+
+  /* ── Mobile Toolbar Modernization ── */
   .manage-work-page .erp-toolbar {
-    padding: 5px 8px !important;
+    padding: 8px 10px !important;
     margin-bottom: 6px !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    border: 1px solid #e2e8f0 !important;
+    flex-shrink: 0 !important;
   }
 
   .mw-toolbar-top-row {
-    gap: 4px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    margin-bottom: 4px !important;
   }
 
   .mw-search-box {
     max-width: 100% !important;
     width: 100% !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 0 !important;
   }
 
   .mw-search-box .input-group-sm {
-    height: 26px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .mw-search-box .input-group-text {
+    padding: 0 10px !important;
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
   }
 
   .mw-search-box .form-control {
-    font-size: 0.74rem !important;
-    height: 26px !important;
-    padding-top: 1px !important;
-    padding-bottom: 1px !important;
+    font-size: 0.82rem !important;
+    height: 36px !important;
+    border-color: #cbd5e1 !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
   }
 
   .mw-toolbar-actions {
     width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
     justify-content: space-between !important;
-    gap: 4px !important;
+    gap: 6px !important;
     margin-left: 0 !important;
-    margin-top: 1px !important;
+    margin-top: 2px !important;
+    flex-wrap: nowrap !important;
   }
 
-  .mw-toolbar-actions .btn-sm,
-  .mw-toolbar-actions .dropdown button {
-    font-size: 0.67rem !important;
-    height: 23px !important;
-    padding: 1px 5px !important;
+  .mw-toolbar-actions #btnOpenSummaryModal {
+    font-size: 0.74rem !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    flex-shrink: 0 !important;
   }
 
   .mw-toolbar-actions .dropdown {
-    flex: 1 1 auto;
-    min-width: 90px !important;
-    max-width: 130px !important;
+    flex: 1 1 auto !important;
+    min-width: 100px !important;
+    max-width: 140px !important;
+  }
+
+  .mw-toolbar-actions .dropdown button {
+    font-size: 0.74rem !important;
+    height: 32px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .mw-toolbar-actions > .form-check {
-    font-size: 0.66rem !important;
+    font-size: 0.72rem !important;
     margin-bottom: 0 !important;
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
-    gap: 2px !important;
+    gap: 4px !important;
+    background: #f1f5f9 !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    height: 32px !important;
     flex-shrink: 0 !important;
   }
 
   .mw-toolbar-actions > .form-check .form-check-label {
-    font-size: 0.66rem !important;
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
     cursor: pointer !important;
     white-space: nowrap !important;
+    color: #334155 !important;
   }
 
   .mw-toolbar-actions > .form-check .form-check-input {
-    width: 12px !important;
-    height: 12px !important;
+    width: 14px !important;
+    height: 14px !important;
     margin-top: 0 !important;
     flex-shrink: 0 !important;
   }
 
+  .mw-toolbar-actions #btnClearFilters {
+    height: 32px !important;
+    font-size: 0.72rem !important;
+    padding: 0 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Filter Chips Scroll Strips */
   .mw-chips-scroll-strip {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
-    padding-top: 3px !important;
-    margin-top: 3px !important;
-    gap: 3px !important;
+    padding: 3px 1px 4px 1px !important;
+    margin-top: 2px !important;
+    gap: 5px !important;
     -webkit-overflow-scrolling: touch !important;
   }
 
-  .manage-work-page .stage-filter-tag {
-    font-size: 0.61rem !important;
-    padding: 1px 5px !important;
-    height: 20px !important;
-    line-height: 16px !important;
-    border-radius: 3px !important;
-    flex-shrink: 0 !important;
-  }
-
+  .manage-work-page .stage-filter-tag,
   .manage-work-page .erp-tag {
-    font-size: 0.61rem !important;
-    padding: 1px 5px !important;
-    height: 19px !important;
-    line-height: 15px !important;
-    border-radius: 3px !important;
+    font-size: 0.72rem !important;
+    padding: 0 9px !important;
+    height: 28px !important;
+    line-height: 26px !important;
+    border-radius: 6px !important;
     flex-shrink: 0 !important;
+    font-weight: 500 !important;
   }
 
-  .table-responsive-main {
+  /* ── Main Data View Container: Mobile Cards Transformation ── */
+  .manage-work-page .st-card-table-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .manage-work-page .table-responsive-main {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
-    max-height: calc(100vh - 130px) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    max-height: 100% !important;
+    padding: 2px 2px 20px 2px !important;
   }
 
+  .table-manage-work {
+    display: block !important;
+    border: none !important;
+    background: transparent !important;
+    width: 100% !important;
+  }
+
+  .table-manage-work thead {
+    display: none !important; /* Hide wide desktop headers */
+  }
+
+  .table-manage-work tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* ── Mobile Customer Workflow Card / Section ── */
+  .table-manage-work tbody tr {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05) !important;
+    padding: 8px 10px !important;
+    margin-bottom: 8px !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    content-visibility: auto !important;
+    contain-intrinsic-size: 0 280px !important;
+  }
+
+  .table-manage-work tbody tr:hover,
+  .table-manage-work tbody tr:active {
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .table-manage-work tbody tr.selected-row {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25), 0 3px 10px rgba(59, 130, 246, 0.10) !important;
+    background: #f8faff !important;
+  }
+
+  .table-manage-work tbody tr.stage-complete-all {
+    background: #f0fdf4 !important;
+    border-color: #86efac !important;
+  }
+
+  .table-manage-work tbody tr.deactive-row {
+    background: #fef2f2 !important;
+    border-color: #fca5a5 !important;
+    opacity: 0.82 !important;
+  }
+
+  /* No records empty state */
+  .table-manage-work tbody tr td[colspan] {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    padding: 24px 10px !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    color: #64748b !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* ── Section Header (Customer Cell - Line 1) ── */
+  .table-manage-work td:nth-child(1) {
+    display: block !important;
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    padding: 0 0 6px 0 !important;
+    margin-bottom: 6px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-right: none !important;
+    border-left: none !important;
+    background: transparent !important;
+    height: auto !important;
+    white-space: normal !important;
+  }
+
+  .table-manage-work td:nth-child(1) .mw-customer-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+
+  .table-manage-work .mw-sl-badge {
+    font-size: 0.70rem !important;
+    font-weight: 700 !important;
+    padding: 2px 7px !important;
+    border-radius: 5px !important;
+    background: #e2e8f0 !important;
+    color: #1e293b !important;
+    flex-shrink: 0 !important;
+  }
+
+  .table-manage-work .mw-customer-name {
+    font-size: 0.90rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    line-height: 1.3 !important;
+    flex: 1 1 auto !important;
+    white-space: normal !important;
+  }
+
+  .table-manage-work .erp-delay-badge {
+    font-size: 0.70rem !important;
+    font-weight: 600 !important;
+    padding: 2px 6px !important;
+    border-radius: 5px !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+  }
+
+  /* ── Stages (2 through 9): Single-Row Layout (Toggle & Datepicker on Same Line of Row) ── */
+  .table-manage-work td:nth-child(n+2) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    padding: 3px 6px !important;
+    margin-bottom: 3px !important;
+    background: #f8fafc !important;
+    border: 1px solid #edf2f7 !important;
+    border-radius: 6px !important;
+    height: auto !important;
+    min-height: 30px !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Stage Name Labels (Left Column) */
+  .table-manage-work td:nth-child(n+2)::before {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    text-transform: uppercase !important;
+    width: 82px !important;
+    min-width: 76px !important;
+    max-width: 86px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 6px 0 0 !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+  }
+
+  .table-manage-work td:nth-child(2)::before { content: "1. Login"; color: #0284c7 !important; }
+  .table-manage-work td:nth-child(3)::before { content: "2. Agreement"; color: #7c3aed !important; }
+  .table-manage-work td:nth-child(4)::before { content: "3. Dispatched"; color: #0891b2 !important; }
+  .table-manage-work td:nth-child(5)::before { content: "4. Installation"; color: #d97706 !important; }
+  .table-manage-work td:nth-child(6)::before { content: "5. NetMeter"; color: #9333ea !important; }
+  .table-manage-work td:nth-child(7)::before { content: "6. Inspection"; color: #475569 !important; }
+  .table-manage-work td:nth-child(8)::before { content: "7. Connection"; color: #4338ca !important; }
+  .table-manage-work td:nth-child(9)::before { content: "8. Subsidy"; color: #16a34a !important; }
+
+  /* Stage Controls Container: Toggle + Datepicker on SAME LINE OF ROW */
+  .table-manage-work .mw-stage-cell {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+    width: auto !important;
+    flex: 1 1 auto !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+  }
+
+  /* Compact Toggle Switch */
+  .table-manage-work .mw-switch {
+    width: 30px !important;
+    height: 17px !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    align-self: center !important;
+  }
+
+  .table-manage-work .mw-slider {
+    border-radius: 17px !important;
+  }
+
+  .table-manage-work .mw-slider:before {
+    height: 13px !important;
+    width: 13px !important;
+    left: 2px !important;
+    bottom: 2px !important;
+  }
+
+  .table-manage-work .mw-switch input:checked + .mw-slider:before {
+    transform: translateX(13px) !important;
+  }
+
+  /* Stage Input Wrapper: inline side-by-side with toggle */
+  .table-manage-work .mw-stage-input-wrap {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: auto !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .table-manage-work .mw-stage-input-wrap.d-none {
+    display: none !important;
+  }
+
+  /* Compact Datepicker on Same Line */
+  .table-manage-work .mw-date-input {
+    width: 110px !important;
+    min-width: 105px !important;
+    height: 25px !important;
+    font-size: 0.72rem !important;
+    padding: 1px 4px !important;
+    border-radius: 4px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    text-align: center !important;
+    color: #0f172a !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+
+  /* ── Stage 5 (NetMeter): Auto-adjust controls without horizontal overflow ── */
+  .table-manage-work td:nth-child(6) {
+    background: #faf5ff !important;
+    border: 1px solid #f3e8ff !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-netmeter-cell {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-stage-input-wrap {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: auto !important;
+    margin: 0 !important;
+    flex-shrink: 1 !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-stage-input-wrap.d-none {
+    display: none !important;
+  }
+
+  /* Date picker: exact same width and alignment as stages above */
+  .table-manage-work td:nth-child(6) .mw-date-input {
+    width: 110px !important;
+    min-width: 105px !important;
+    max-width: 110px !important;
+    flex: 0 0 110px !important;
+    height: 25px !important;
+    font-size: 0.72rem !important;
+    padding: 1px 4px !important;
+    border-radius: 4px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    text-align: center !important;
+    color: #0f172a !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Amount group: auto-adjusting in edit and non-edit mode */
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 25px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group .input-group-text {
+    padding: 0 4px !important;
+    font-size: 0.68rem !important;
+    height: 25px !important;
+    line-height: 23px !important;
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #475569 !important;
+    border-radius: 4px 0 0 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group input {
+    height: 25px !important;
+    font-size: 0.68rem !important;
+    padding: 1px 3px !important;
+    width: 100% !important;
+    min-width: 20px !important;
+    flex: 1 1 auto !important;
+    text-align: right !important;
+    border-color: #cbd5e1 !important;
+    border-radius: 0 !important;
+    background: #f8fafc !important;
+    box-sizing: border-box !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group input:not(:disabled),
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group.is-editing input {
+    width: 100% !important;
+    min-width: 20px !important;
+    flex: 1 1 auto !important;
+    background-color: #ffffff !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.25) !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group button,
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group .btn {
+    width: 20px !important;
+    height: 25px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0 !important;
+    border-color: #cbd5e1 !important;
+    flex: 0 0 20px !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group button:last-child,
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group .btn:last-child {
+    border-radius: 0 4px 4px 0 !important;
+  }
+
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group button.d-none,
+  .table-manage-work td:nth-child(6) .mw-netmeter-pay-group .btn.d-none {
+    display: none !important;
+  }
+
+  @media (max-width: 360px) {
+    .table-manage-work td:nth-child(n+2)::before {
+      width: 74px !important;
+      min-width: 70px !important;
+      max-width: 76px !important;
+      font-size: 0.67rem !important;
+    }
+    .table-manage-work .mw-date-input,
+    .table-manage-work td:nth-child(6) .mw-date-input {
+      width: 100px !important;
+      min-width: 95px !important;
+      max-width: 100px !important;
+      flex: 0 0 100px !important;
+      font-size: 0.66rem !important;
+      padding: 1px 2px !important;
+    }
+    .table-manage-work td:nth-child(6) .mw-netmeter-pay-group input {
+      min-width: 16px !important;
+      font-size: 0.64rem !important;
+    }
+  }
+
+  /* ── Modals Mobile UX ── */
   .modal-dialog {
-    margin: 0.35rem;
-    max-width: calc(100% - 0.7rem);
+    margin: 0.4rem !important;
+    max-width: calc(100% - 0.8rem) !important;
   }
 
   .modal-content {
-    border-radius: 10px !important;
+    border-radius: 12px !important;
   }
 
   .modal-header {
-    padding: 0.55rem 0.75rem !important;
+    padding: 0.65rem 0.85rem !important;
   }
 
   .modal-body {
-    padding: 0.6rem !important;
-    gap: 0.5rem !important;
+    padding: 0.75rem !important;
+    gap: 0.6rem !important;
   }
 
   .mw-summary-modal-dialog {
-    max-width: calc(100% - 0.7rem) !important;
+    max-width: calc(100% - 0.8rem) !important;
     width: auto !important;
-    margin: 0.35rem !important;
+    margin: 0.4rem !important;
   }
 
   .mw-kpi-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 4px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
   }
 
   .mw-kpi-card {
-    padding: 3px 4px !important;
+    padding: 6px 8px !important;
+    border-radius: 8px !important;
   }
 
   .mw-kpi-title {
-    font-size: 0.52rem !important;
+    font-size: 0.65rem !important;
   }
 
   .mw-kpi-pct {
-    font-size: 0.52rem !important;
+    font-size: 0.65rem !important;
   }
 
   .mw-kpi-value {
-    font-size: 0.85rem !important;
+    font-size: 1.05rem !important;
   }
 
   .mw-kpi-subtext {
-    font-size: 0.50rem !important;
+    font-size: 0.60rem !important;
   }
 
-  .mw-date-input {
-    width: 82px !important;
-    font-size: 0.64rem !important;
-  }
-
-  .table-manage-work th.th-netmeter {
-    min-width: 275px !important;
-    width: 275px !important;
-  }
-
-  .mw-netmeter-pay-group {
-    width: auto !important;
-    min-width: 112px !important;
-  }
-
-  .mw-netmeter-pay-group.is-editing {
-    min-width: 144px !important;
-  }
-
-  .mw-netmeter-pay-group input {
-    width: 80px !important;
-    min-width: 78px !important;
-    font-size: 0.70rem !important;
-    padding: 1px 3px !important;
-  }
-
-  .mw-netmeter-pay-group input:not(:disabled),
-  .mw-netmeter-pay-group.is-editing input {
-    width: 88px !important;
-    min-width: 85px !important;
+  /* Summary Table inside Modal */
+  .mw-summary-table-wrap {
+    max-height: calc(100vh - 280px) !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .table-manage-work-summary thead th.th-col-sl,
   .table-manage-work-summary td.td-col-sl {
-    width: 22px !important;
-    max-width: 24px !important;
-    min-width: 20px !important;
-    padding: 3px 1px !important;
-    font-size: 0.62rem !important;
+    position: sticky !important;
+    left: 0 !important;
+    background: #ffffff !important;
+    z-index: 3 !important;
+    width: 24px !important;
+    min-width: 24px !important;
+    font-size: 0.68rem !important;
   }
 
   .table-manage-work-summary thead th.th-col-cust,
   .table-manage-work-summary td.td-col-cust {
-    width: 85px !important;
-    min-width: 75px !important;
-    max-width: 95px !important;
-    padding: 3px 2px !important;
-  }
-
-  .table-manage-work-summary .mw-sum-cust-name {
-    font-size: 0.65rem !important;
-    max-width: 85px !important;
+    position: sticky !important;
+    left: 24px !important;
+    background: #ffffff !important;
+    z-index: 3 !important;
+    width: 95px !important;
+    min-width: 90px !important;
+    font-size: 0.72rem !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04) !important;
   }
 
   .table-manage-work-summary thead th.th-col-partner,
   .table-manage-work-summary td.td-col-partner {
-    width: 55px !important;
-    min-width: 48px !important;
-    max-width: 60px !important;
-    padding: 3px 1px !important;
-  }
-
-  .table-manage-work-summary .mw-sum-partner-badge {
-    font-size: 0.56rem !important;
-    max-width: 55px !important;
+    font-size: 0.66rem !important;
   }
 
   .table-manage-work-summary thead th.th-stage-col {
-    min-width: 46px !important;
-    width: 46px !important;
-    max-width: 50px !important;
-    font-size: 0.55rem !important;
-    padding: 4px 1px !important;
+    min-width: 52px !important;
+    width: 52px !important;
+    font-size: 0.62rem !important;
+    padding: 4px 2px !important;
   }
 
   .mw-stepper-td {
-    width: 46px !important;
-    min-width: 46px !important;
-    max-width: 50px !important;
-    padding: 3px 0 !important;
+    width: 52px !important;
+    min-width: 52px !important;
   }
 
   .mw-row-node {
-    width: 16px !important;
-    height: 16px !important;
-    font-size: 0.55rem !important;
-    margin-bottom: 1px !important;
-  }
-
-  .mw-row-line-left,
-  .mw-row-line-right {
-    top: 8px !important;
-    height: 1.5px !important;
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 0.62rem !important;
   }
 
   .mw-row-node-date {
-    font-size: 0.54rem !important;
+    font-size: 0.60rem !important;
   }
 }
 

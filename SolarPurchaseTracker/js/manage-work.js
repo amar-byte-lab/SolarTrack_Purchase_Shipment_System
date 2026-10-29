@@ -670,28 +670,28 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 6. NetMeterApplied (Toggle: NetMeterPaid, Date: NetMeterDate, Amount: NetMeterPayment) -->
+        <!-- 6. NetMeterApplied (Toggle: NetMeterPaid, Amount: NetMeterPayment, Date: NetMeterDate) -->
         <td>
-          <div class="mw-netmeter-cell">
+          <div class="mw-stage-cell mw-netmeter-cell">
             <label class="mw-switch" title="Toggle NetMeter">
               <input type="checkbox" class="mw-stage-toggle" data-stage="NetMeter" ${isNetMeterPaid ? 'checked' : ''} onchange="handleNetMeterToggle(this, ${slNo})">
               <span class="mw-slider"></span>
             </label>
             <div class="mw-stage-input-wrap d-inline-flex align-items-center gap-1 ${isNetMeterPaid ? '' : 'd-none'}" id="wrap_NetMeter_${slNo}">
-              <input type="date" class="form-control form-control-sm mw-date-input" value="${netMeterDate}" onchange="handleNetMeterDateChange(${slNo}, this.value)" title="NetMeter Application Date">
               <div class="input-group input-group-sm mw-netmeter-pay-group" title="NetMeter Payment">
                 <span class="input-group-text">₹</span>
                 <input type="number" step="any" class="form-control form-control-sm font-monospace" id="nmPayInput_${slNo}" placeholder="Amount" value="${netMeterPayment}" disabled onkeydown="if(event.key==='Enter') window.saveNetMeterPayment(${slNo}); else if(event.key==='Escape') window.cancelNetMeterEdit(${slNo});">
-                <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" id="btnNmEdit_${slNo}" onclick="window.toggleNetMeterEdit(${slNo})" title="Edit Payment" style="width: 22px; height: 23px; flex-shrink: 0;">
+                <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" id="btnNmEdit_${slNo}" onclick="window.toggleNetMeterEdit(${slNo})" title="Edit Payment">
                   <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-success p-0 d-none align-items-center justify-content-center" id="btnNmSave_${slNo}" onclick="window.saveNetMeterPayment(${slNo})" title="Save Payment" style="width: 22px; height: 23px; flex-shrink: 0;">
+                <button type="button" class="btn btn-sm btn-outline-success p-0 d-none align-items-center justify-content-center" id="btnNmSave_${slNo}" onclick="window.saveNetMeterPayment(${slNo})" title="Save Payment">
                   <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary p-0 d-none align-items-center justify-content-center" id="btnNmCancel_${slNo}" onclick="window.cancelNetMeterEdit(${slNo})" title="Cancel Edit" style="width: 22px; height: 23px; flex-shrink: 0;">
+                <button type="button" class="btn btn-sm btn-outline-secondary p-0 d-none align-items-center justify-content-center" id="btnNmCancel_${slNo}" onclick="window.cancelNetMeterEdit(${slNo})" title="Cancel Edit">
                   <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
+              <input type="date" class="form-control form-control-sm mw-date-input" value="${netMeterDate}" onchange="handleNetMeterDateChange(${slNo}, this.value)" title="NetMeter Application Date">
             </div>
           </div>
         </td>
