@@ -12,6 +12,7 @@ let selectedDistricts = []; // Array of currently selected districts for filteri
 let selectedBrands = [];    // Array of currently selected brands for filtering
 let selectedPartners = [];  // Array of currently selected partners for filtering
 let selectedStage = 'ALL';  // Selected workflow stage for filtering
+let selectedPaymentFilters = []; // Array of active payment filters: 'FullyPaid', 'PartiallyPaid', 'Unpaid', 'NetMeterPaid'
 let selectedColorCols = []; // Array of column keys currently checked in custom coloring menu
 
 const WORKFLOW_STAGES = [
@@ -56,6 +57,170 @@ window.toggleStageBadgeFilter = function(stageKey, event) {
   }
   renderList();
 };
+
+function getCustomerPaymentsMap() {
+  const txns = DB.getAll('installment_txns') || [];
+  const map = {};
+  for (let i = 0; i < txns.length; i++) {
+    const t = txns[i];
+    if (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '') {
+      const sl = Number(t.SlNo);
+      map[sl] = (map[sl] || 0) + (Number(t.Amount) || 0);
+    }
+  }
+  return map;
+}
+
+function getRowPaymentCategory(r, payMap) {
+  const total = payMap ? (payMap[Number(r.SlNo)] || 0) : 0;
+  const price = Number(r.CommittedPrice) || 0;
+  const isFullyPaid = (price > 0 && total >= price);
+  const isPartiallyPaid = (total > 0 && !isFullyPaid);
+  const isUnpaid = (total <= 0);
+
+  let isNetMeterPaid = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  if (!isNetMeterPaid && r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+    try {
+      const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+      const expenses = JSON.parse(jsonStr);
+      if (expenses && expenses.net_meter_paid) isNetMeterPaid = true;
+    } catch (e) {}
+  }
+
+  return { total, price, isFullyPaid, isPartiallyPaid, isUnpaid, isNetMeterPaid };
+}
+
+function matchesPaymentFilter(r, payMap, filters) {
+  if (!filters || filters.length === 0) return true;
+
+  const cat = getRowPaymentCategory(r, payMap);
+  const hasMainFilters = filters.some(f => f === 'FullyPaid' || f === 'PartiallyPaid' || f === 'Unpaid');
+  const hasNetMeterFilter = filters.includes('NetMeterPaid');
+
+  let mainMatch = true;
+  if (hasMainFilters) {
+    mainMatch = (
+      (filters.includes('FullyPaid') && cat.isFullyPaid) ||
+      (filters.includes('PartiallyPaid') && cat.isPartiallyPaid) ||
+      (filters.includes('Unpaid') && cat.isUnpaid)
+    );
+  }
+
+  let nmMatch = true;
+  if (hasNetMeterFilter) {
+    nmMatch = cat.isNetMeterPaid;
+  }
+
+  return mainMatch && nmMatch;
+}
+
+window.togglePaymentBadgeFilter = function(filterKey, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  if (filterKey === 'ALL') {
+    selectedPaymentFilters = [];
+  } else {
+    const idx = selectedPaymentFilters.indexOf(filterKey);
+    if (idx >= 0) {
+      selectedPaymentFilters.splice(idx, 1);
+    } else {
+      selectedPaymentFilters.push(filterKey);
+    }
+  }
+  renderList();
+};
+
+function updatePaymentStats() {
+  const container = document.getElementById('paymentStatsContainer');
+  const modalContainer = document.getElementById('modalPaymentStatsContainer');
+  if (!container && !modalContainer) return;
+
+  const allRows = getInstallmentRows();
+  const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
+  let activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  // Filter by search text
+  const search = (document.getElementById('fSearch') ? document.getElementById('fSearch').value : '').toLowerCase().trim();
+  if (search) {
+    activeRows = activeRows.filter(r =>
+      String(r.Name || '').toLowerCase().includes(search) ||
+      String(r.ConsumerNo || '').toLowerCase().includes(search) ||
+      String(r.District || '').toLowerCase().includes(search) ||
+      String(r.PinCode || '').toLowerCase().includes(search) ||
+      String(r.State || '').toLowerCase().includes(search) ||
+      String(r.Address || '').toLowerCase().includes(search) ||
+      String(r.MobileNumber || '').toLowerCase().includes(search) ||
+      String(r.CommittedBrand || '').toLowerCase().includes(search) ||
+      String(r.LoginDate || '').toLowerCase().includes(search) ||
+      String(r.BrokerName || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Filter by selected districts
+  if (selectedDistricts.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const dist = r.District ? r.District.trim() : '(No District)';
+      const distName = dist === '' ? '(No District)' : dist;
+      return selectedDistricts.includes(distName);
+    });
+  }
+
+  // Filter by selected partners
+  if (selectedPartners.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const partnerVal = r.BrokerName ? r.BrokerName.trim() : '(No Partner)';
+      const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
+      return selectedPartners.includes(partnerName);
+    });
+  }
+
+  // Filter by selected brands
+  if (selectedBrands && selectedBrands.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const brandVal = r.CommittedBrand ? r.CommittedBrand.trim() : '(No Brand)';
+      const brandName = brandVal === '' ? '(No Brand)' : brandVal;
+      return selectedBrands.includes(brandName);
+    });
+  }
+
+  // Filter by workflow stage
+  if (selectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(st => st.key === selectedStage);
+    if (targetIdx >= 0) {
+      activeRows = activeRows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+    }
+  }
+
+  const payMap = getCustomerPaymentsMap();
+  let fullyPaidCount = 0;
+  let partiallyPaidCount = 0;
+  let unpaidCount = 0;
+  let netMeterPaidCount = 0;
+
+  activeRows.forEach(r => {
+    const cat = getRowPaymentCategory(r, payMap);
+    if (cat.isFullyPaid) fullyPaidCount++;
+    else if (cat.isPartiallyPaid) partiallyPaidCount++;
+    else if (cat.isUnpaid) unpaidCount++;
+
+    if (cat.isNetMeterPaid) netMeterPaidCount++;
+  });
+
+  const totalCount = activeRows.length;
+  const isTotalActive = (selectedPaymentFilters.length === 0);
+
+  const totalBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('ALL', event)" class="pay-filter-tag pay-tag-all ${isTotalActive ? 'active' : ''}" title="Show all payment statuses">Total (${totalCount})</button>`;
+  const fullyPaidBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('FullyPaid', event)" class="pay-filter-tag pay-tag-full ${selectedPaymentFilters.includes('FullyPaid') ? 'active' : ''}" title="Filter by Fully Paid">Fully Paid (${fullyPaidCount})</button>`;
+  const partialBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('PartiallyPaid', event)" class="pay-filter-tag pay-tag-partial ${selectedPaymentFilters.includes('PartiallyPaid') ? 'active' : ''}" title="Filter by Partially Paid">Partially Paid (${partiallyPaidCount})</button>`;
+  const unpaidBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('Unpaid', event)" class="pay-filter-tag pay-tag-unpaid ${selectedPaymentFilters.includes('Unpaid') ? 'active' : ''}" title="Filter by Unpaid">Unpaid (${unpaidCount})</button>`;
+  const netMeterBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('NetMeterPaid', event)" class="pay-filter-tag pay-tag-netmeter ${selectedPaymentFilters.includes('NetMeterPaid') ? 'active' : ''}" title="Filter by Net Meter Paid">NetMeter Paid (${netMeterPaidCount})</button>`;
+
+  const html = `${totalBadge} ${fullyPaidBadge} ${partialBadge} ${unpaidBadge} ${netMeterBadge}`;
+  if (container) container.innerHTML = html;
+  if (modalContainer) modalContainer.innerHTML = html;
+}
 
 function updateStageStats() {
   const container = document.getElementById('stageStatsContainer');
@@ -108,6 +273,12 @@ function updateStageStats() {
       const brandName = brandVal === '' ? '(No Brand)' : brandVal;
       return selectedBrands.includes(brandName);
     });
+  }
+
+  // Filter by payment status
+  if (selectedPaymentFilters.length > 0) {
+    const payMap = getCustomerPaymentsMap();
+    activeRows = activeRows.filter(r => matchesPaymentFilter(r, payMap, selectedPaymentFilters));
   }
 
   const stageCounts = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -329,6 +500,7 @@ window.onDbReady = function () {
     selectedBrands = [];
     selectedPartners = [];
     selectedStage = 'ALL';
+    selectedPaymentFilters = [];
     document.querySelectorAll('.district-chk').forEach(c => c.checked = false);
     document.querySelectorAll('.brand-chk').forEach(c => c.checked = false);
     document.querySelectorAll('.main-partner-chk, .modal-partner-chk').forEach(c => c.checked = false);
@@ -911,6 +1083,20 @@ function updateDistrictStats() {
   }
 
   const totalCount = activeRows.length;
+  // Filter by workflow stage
+  if (selectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(st => st.key === selectedStage);
+    if (targetIdx >= 0) {
+      activeRows = activeRows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+    }
+  }
+
+  // Filter by payment status
+  if (selectedPaymentFilters.length > 0) {
+    const payMap = getCustomerPaymentsMap();
+    activeRows = activeRows.filter(r => matchesPaymentFilter(r, payMap, selectedPaymentFilters));
+  }
+
   const counts = {};
 
   activeRows.forEach(r => {
@@ -1216,6 +1402,7 @@ function getAllPartnerNames() {
 function renderList() {
   updateDistrictStats();
   updateStageStats();
+  updatePaymentStats();
   const search = (document.getElementById('fSearch') ? document.getElementById('fSearch').value : '').toLowerCase();
   const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
 
@@ -1276,6 +1463,12 @@ function renderList() {
     if (targetIdx >= 0) {
       rows = rows.filter(r => getRowHighestStageIdx(r) === targetIdx);
     }
+  }
+
+  // Apply Payment Filter
+  if (selectedPaymentFilters.length > 0) {
+    const payMap = getCustomerPaymentsMap();
+    rows = rows.filter(r => matchesPaymentFilter(r, payMap, selectedPaymentFilters));
   }
 
   // Apply sort
@@ -1350,6 +1543,16 @@ function renderList() {
   if (selectedDistricts.length > 0) filterParts.push(selectedDistricts.length === 1 ? selectedDistricts[0] : `${selectedDistricts.length} Districts`);
   if (selectedPartners.length > 0) filterParts.push(selectedPartners.length === 1 ? selectedPartners[0] : `${selectedPartners.length} Partners`);
   if (selectedBrands.length > 0) filterParts.push(selectedBrands.length === 1 ? selectedBrands[0] : `${selectedBrands.length} Brands`);
+  if (selectedPaymentFilters.length > 0) {
+    const payLabels = {
+      FullyPaid: 'Fully Paid',
+      PartiallyPaid: 'Partially Paid',
+      Unpaid: 'Unpaid',
+      NetMeterPaid: 'NetMeter Paid'
+    };
+    const labels = selectedPaymentFilters.map(f => payLabels[f] || f).join(', ');
+    filterParts.push(`Payment: ${labels}`);
+  }
   if (search) filterParts.push(`"${search}"`);
   const filterLabel = filterParts.length > 0 ? filterParts.join(', ') : 'All';
 
@@ -1469,7 +1672,7 @@ function renderList() {
               <input type="text" class="form-control form-control-sm erp-partner-input" id="editBrokerName" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off">
             </div>
           </td>
-          <td class="no-print text-center align-middle">
+          <td class="no-print text-center align-middle erp-actions-cell">
             <div class="d-flex gap-1 justify-content-center">
               <button class="btn btn-sm btn-success py-0.5 px-2 d-inline-flex align-items-center" onclick="saveInline(${r.SlNo})" title="Save">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -1525,6 +1728,7 @@ function renderList() {
       const defaultPayAmt = pendingAmt > 0 ? pendingAmt : '';
       const brandVal = (r.CommittedBrand || '').trim();
       const hasBrand = brandVal.length > 0;
+      const priceBracket = (price > 0 && !isFullyPaid) ? ` <span class="erp-price-bracket">(₹${Math.round(price).toLocaleString('en-IN')})</span>` : '';
 
       return `
         <tr class="${rowClass}">
@@ -1553,7 +1757,7 @@ function renderList() {
                       <span class="mw-slider"></span>
                     </label>
                     <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace text-nowrap" style="font-size: 0.74rem;">
-                      ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
+                      ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}${priceBracket}` : `Unpaid${priceBracket}`}
                     </span>
                   </div>
                   ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
@@ -1580,7 +1784,7 @@ function renderList() {
                 <div class="d-flex align-items-center justify-content-between gap-1">
                   <div class="d-flex align-items-center gap-1.5 flex-nowrap">
                     <span class="erp-pay-status-label ${hasPayment ? 'text-success fw-bold' : 'text-muted'} font-monospace text-nowrap" style="font-size: 0.75rem;">
-                      ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}` : 'Unpaid'}
+                      ${hasPayment ? `Paid: ₹${Math.round(total).toLocaleString('en-IN')}${isFullyPaid ? ' (Full)' : ''}${priceBracket}` : `Unpaid${priceBracket}`}
                     </span>
                   </div>
                   ${!isFullyPaid ? getDispatchOrHigherDelayBadgeHtml(r) : ''}
@@ -1605,17 +1809,17 @@ function renderList() {
               <input type="text" class="form-control form-control-sm erp-partner-input" id="partnerInput_${r.SlNo}" value="${escapeHtml(r.BrokerName || '')}" placeholder="Select Partner..." autocomplete="off" ${!isAdmin ? 'disabled' : ''}>
             </div>
           </td>
-          <td class="no-print text-center align-middle">
+          <td class="no-print text-center align-middle erp-actions-cell">
               ${isDeactive ? `
-                <button class="btn erp-btn-action text-success" onclick="restoreRow(${r.SlNo})" title="Restore Row">
+                <button type="button" class="btn btn-sm erp-btn-action erp-btn-restore text-success" onclick="restoreRow(${r.SlNo})" title="Restore Customer">
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 </button>
-                <button class="btn erp-btn-action text-danger ms-1" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">
+                <button type="button" class="btn btn-sm erp-btn-action erp-btn-hard-delete text-danger ms-1" onclick="hardDeleteRow(${r.SlNo})" title="Delete Permanently">
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               ` : `
-                <button class="btn erp-btn-action text-primary" onclick="editRow(${r.SlNo})" title="Edit Row">${UI.icon('pencil', 14)}</button>
-                <button class="btn erp-btn-action text-danger ms-1" onclick="deleteRow(${r.SlNo})" title="Deactivate Row">${UI.icon('trash', 14)}</button>
+                <button type="button" class="btn btn-sm erp-btn-action erp-btn-edit text-primary" onclick="editRow(${r.SlNo})" title="Edit Customer"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+                <button type="button" class="btn btn-sm erp-btn-action erp-btn-deact text-danger ms-1" onclick="deleteRow(${r.SlNo})" title="Deactivate Customer"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
               `}
           </td>
         </tr>
@@ -2146,6 +2350,7 @@ window.openCustomerSummaryModal = function() {
 
   updateDistrictStats();
   updateStageStats();
+  updatePaymentStats();
   populateDatalists();
   
   const currentRows = (window._lastRenderedRows || getInstallmentRows());
@@ -2247,7 +2452,7 @@ window.saveInline = async function (slNo) {
     SecondInstallment: sInst,
     ThirdInstallment: tInst,
     Total: total,
-    CommittedPrice: custPriceVal,
+    CommittedPrice: Math.max(custPriceVal, total),
     VendorPrice: calculatedVendorPrice,
     VendorPaid: existing ? (Number(existing.VendorPaid) || 0) : 0,
     LoginDate: document.getElementById('editLoginDate') ? document.getElementById('editLoginDate').value : (existing ? (existing.LoginDate || '') : ''),
@@ -2377,6 +2582,10 @@ async function syncInstallmentTotal(slNo, txnType = 'Customer') {
     const updateData = {};
     if (txnType === 'Customer') {
       updateData.Total = sum;
+      const currentPrice = Number(existing.CommittedPrice) || 0;
+      if (sum > currentPrice) {
+        updateData.CommittedPrice = sum;
+      }
     } else {
       updateData.VendorPaid = sum;
     }
@@ -2556,7 +2765,17 @@ window.saveCustomerQuickPayment = async function(slNo) {
     });
 
     await syncInstallmentTotal(slNo, 'Customer');
-    UI.toast(`Payment of ${formattedAmt} added. Pending balance updated.`, 'success');
+    const updatedRec = DB.getAll('installments').find(x => Number(x.SlNo) === Number(slNo));
+    const finalPrice = updatedRec ? (Number(updatedRec.CommittedPrice) || 0) : 0;
+    const finalTotal = updatedRec ? (Number(updatedRec.Total) || 0) : 0;
+    const prevPrice = Number(r.CommittedPrice) || 0;
+    if (finalPrice > prevPrice) {
+      UI.toast(`Payment of ${formattedAmt} added. Customer price updated to ₹${Math.round(finalPrice).toLocaleString('en-IN')}.`, 'success');
+    } else if (finalTotal >= finalPrice && finalPrice > 0) {
+      UI.toast(`Payment of ${formattedAmt} added. Customer is fully paid.`, 'success');
+    } else {
+      UI.toast(`Payment of ${formattedAmt} added. Pending balance updated.`, 'success');
+    }
     renderList();
   } catch (err) {
     UI.toast('Error saving payment: ' + err.message, 'danger');
