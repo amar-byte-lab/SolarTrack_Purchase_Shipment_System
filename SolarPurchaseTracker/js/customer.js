@@ -2110,16 +2110,28 @@ function getSummaryRowValues(r) {
   }
 
   const price = Number(r.CommittedPrice) || 0;
-  const total = Number(r.Total) || 0;
-  const custPending = price - total;
+
+  // Accurately sum customer payment transactions from local DB
+  const txns = (DB.getAll('installment_txns') || []).filter(t => 
+    Number(t.SlNo) === Number(r.SlNo) && 
+    (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+  );
+  const total = txns.length > 0 ? txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0) : (Number(r.Total) || 0);
+  const custPending = Math.max(0, price - total);
 
   const partnerPrice = (expenses && expenses.partner) ? Number(expenses.partner) : (Number(r.BrokerShare) || price);
-  const vPaid = Number(r.VendorPaid) || 0;
-  const partnerPending = (price - partnerPrice) - vPaid;
+  const vTxns = (DB.getAll('installment_txns') || []).filter(t => Number(t.SlNo) === Number(r.SlNo) && t.TxnType === 'Vendor');
+  const vPaid = vTxns.length > 0 ? vTxns.reduce((s, t) => s + (Number(t.Amount) || 0), 0) : (Number(r.VendorPaid) || 0);
+  const partnerPending = Math.max(0, (price - partnerPrice) - vPaid);
 
-  const netMeterAmt = (r.NetMeterPayment != null && r.NetMeterPayment !== '') 
+  let isNetMeterPaid = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  if (!isNetMeterPaid && expenses && expenses.net_meter_paid) {
+    isNetMeterPaid = true;
+  }
+  const rawMeterAmt = (r.NetMeterPayment != null && r.NetMeterPayment !== '') 
     ? Number(r.NetMeterPayment) 
     : (expenses && expenses.net_meter_payment ? Number(expenses.net_meter_payment) : 0);
+  const netMeterAmt = isNetMeterPaid ? rawMeterAmt : 0;
 
   let vPrice = 0;
   if (r.VendorPrice !== undefined && r.VendorPrice !== null && r.VendorPrice !== '') {
@@ -2144,6 +2156,8 @@ function getSummaryRowValues(r) {
     partnerPrice,
     partnerPending,
     netMeterAmt,
+    vPrice,
+    vPaid,
     profit
   };
 }
@@ -2356,6 +2370,38 @@ window.openCustomerSummaryModal = function() {
   const currentRows = (window._lastRenderedRows || getInstallmentRows());
   const currentUser = Auth.getUser();
   const isAdm = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  // Recalculate and render Top Executive KPIs for exact matching numbers
+  const activeRows = currentRows.filter(r => Number(r.SlNo) !== Number(editingSlNo));
+  let sumPrice = 0, sumTotal = 0, sumPartnerPrice = 0, sumVendorPrice = 0, sumVendorPaid = 0, sumComm = 0;
+  activeRows.forEach(r => {
+    const c = getSummaryRowValues(r);
+    sumPrice += c.price;
+    sumTotal += c.total;
+    sumPartnerPrice += c.partnerPrice;
+    sumVendorPrice += c.vPrice;
+    sumVendorPaid += c.vPaid;
+    sumComm += (Number(r.Commission) || 0);
+  });
+  const totalProfit = sumPartnerPrice - sumComm - sumVendorPrice;
+  const pendingCust = Math.max(0, sumPrice - sumTotal);
+  const partnerPending = (sumPrice - sumPartnerPrice) - sumVendorPaid;
+  const allDbRows = getInstallmentRows().filter(r => r.Status !== 'Deactive');
+
+  renderTopKpis({
+    activeCount: activeRows.length,
+    totalInDb: allDbRows.length,
+    filterLabel: 'Summary',
+    showDeactive: chkModalShowDeactive ? chkModalShowDeactive.checked : false,
+    sumPrice,
+    sumTotal,
+    pendingCust,
+    sumPartnerPrice,
+    partnerPending,
+    sumVendorPrice,
+    totalProfit,
+    isAdmin: isAdm
+  });
+
   renderSummaryModalBreakdown(currentRows, isAdm);
 
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);

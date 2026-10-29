@@ -44,6 +44,10 @@
               </div>
             </div>
             <div class="form-check mb-0 d-flex align-items-center gap-1">
+              <input class="form-check-input mt-0" type="checkbox" id="chkCollapseAll" checked>
+              <label class="form-check-label fs-8 text-secondary fw-semibold" for="chkCollapseAll" style="cursor: pointer; white-space: nowrap;">Collapse</label>
+            </div>
+            <div class="form-check mb-0 d-flex align-items-center gap-1">
               <input class="form-check-input mt-0" type="checkbox" id="chkShowDeactive">
               <label class="form-check-label fs-8 text-secondary" for="chkShowDeactive" style="cursor: pointer; white-space: nowrap;">Show Deactive</label>
             </div>
@@ -55,7 +59,10 @@
         <div class="mw-chips-scroll-strip mw-district-strip mb-1.5" id="districtStatsContainer"></div>
 
         <!-- Row 3: Workflow Stage Filters (Horizontal Scrollable Strip on Mobile) -->
-        <div class="mw-chips-scroll-strip mw-stage-strip" id="stageStatsContainer"></div>
+        <div class="mw-chips-scroll-strip mw-stage-strip mb-1.5" id="stageStatsContainer"></div>
+
+        <!-- Row 4: Customer Payment Filters (Horizontal Scrollable Strip on Mobile) -->
+        <div class="mw-chips-scroll-strip mw-payment-strip" id="paymentStatsContainer"></div>
       </div>
 
       <!-- Main Progress & Workflow Table -->

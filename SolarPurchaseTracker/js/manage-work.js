@@ -8,6 +8,9 @@ let sortDir = 'asc';
 let selectedDistricts = [];
 let selectedPartners = [];
 let selectedStage = 'ALL';
+let selectedPaymentFilters = [];
+let isCollapseAll = true;
+let expandedSlNo = null;
 
 const WORKFLOW_STAGES = [
   { key: 'LoginDate', name: 'Login', num: 1 },
@@ -60,6 +63,17 @@ window.onDbReady = function () {
     }
   });
 
+  // Collapse Cards toggle listener
+  const chkCollapse = document.getElementById('chkCollapseAll');
+  if (chkCollapse) {
+    chkCollapse.checked = isCollapseAll;
+    chkCollapse.addEventListener('change', () => {
+      isCollapseAll = chkCollapse.checked;
+      expandedSlNo = null;
+      renderList();
+    });
+  }
+
   // Clear filters
   const btnClear = document.getElementById('btnClearFilters');
   if (btnClear) {
@@ -69,9 +83,14 @@ window.onDbReady = function () {
       const chkDeactive = document.getElementById('chkShowDeactive');
       if (chkDeactive) chkDeactive.checked = false;
 
+      isCollapseAll = true;
+      expandedSlNo = null;
+      if (chkCollapse) chkCollapse.checked = true;
+
       selectedDistricts = [];
       selectedPartners = [];
       selectedStage = 'ALL';
+      selectedPaymentFilters = [];
       document.querySelectorAll('.district-chk').forEach(c => c.checked = false);
       document.querySelectorAll('.partner-chk').forEach(c => c.checked = false);
       updatePartnerDropdownButton();
@@ -102,17 +121,16 @@ window.onDbReady = function () {
   if (tableTbody) {
     tableTbody.addEventListener('click', (e) => {
       const tr = e.target.closest('tr');
-      if (!tr || tr.classList.contains('no-print') || tr.querySelector('td[colspan]')) return;
+      if (!tr || tr.classList.contains('no-print') || tr.classList.contains('mw-empty-state-row')) return;
 
-      // If clicked inside input, select, datepicker, or toggle switch
-      if (e.target.closest('input') || e.target.closest('select') || e.target.closest('.mw-switch')) {
+      // If clicked inside input, select, datepicker, toggle switch, or expand/collapse buttons
+      if (e.target.closest('input') || e.target.closest('select') || e.target.closest('.mw-switch') || e.target.closest('.mw-card-toggle-btn') || e.target.closest('.mw-bottom-collapse-td')) {
         document.querySelectorAll('#manageWorkTable tbody tr').forEach(r => {
           if (r !== tr) r.classList.remove('selected-row');
         });
         tr.classList.add('selected-row');
         return;
       }
-
 
       const isAlreadySelected = tr.classList.contains('selected-row');
 
@@ -126,6 +144,20 @@ window.onDbReady = function () {
       }
     });
   }
+};
+
+window.toggleCardExpansion = function (slNo, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const sl = Number(slNo);
+  if (expandedSlNo === sl) {
+    expandedSlNo = null; // collapse
+  } else {
+    expandedSlNo = sl; // expand this one, collapse others
+  }
+  renderList();
 };
 
 function updateSortHeadersUI() {
@@ -230,6 +262,163 @@ window.toggleDistrictBadgeFilter = function(dist, event) {
   renderList();
 };
 
+function getCustomerPaymentsMap() {
+  const txns = DB.getAll('installment_txns') || [];
+  const map = {};
+  for (let i = 0; i < txns.length; i++) {
+    const t = txns[i];
+    if (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '') {
+      const sl = Number(t.SlNo);
+      map[sl] = (map[sl] || 0) + (Number(t.Amount) || 0);
+    }
+  }
+  return map;
+}
+
+function getRowPaymentCategory(r, payMap) {
+  const total = payMap ? (payMap[Number(r.SlNo)] || 0) : 0;
+  const price = Number(r.CommittedPrice) || 0;
+  const isFullyPaid = (price > 0 && total >= price);
+  const isPartiallyPaid = (total > 0 && !isFullyPaid);
+  const isUnpaid = (total <= 0);
+
+  let isNetMeterPaid = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  if (!isNetMeterPaid && r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+    try {
+      const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+      const expenses = JSON.parse(jsonStr);
+      if (expenses && expenses.net_meter_paid) isNetMeterPaid = true;
+    } catch (e) {}
+  }
+
+  return { total, price, isFullyPaid, isPartiallyPaid, isUnpaid, isNetMeterPaid };
+}
+
+function matchesPaymentFilter(r, payMap, filters) {
+  if (!filters || filters.length === 0) return true;
+
+  const cat = getRowPaymentCategory(r, payMap);
+  const hasMainFilters = filters.some(f => f === 'FullyPaid' || f === 'PartiallyPaid' || f === 'Unpaid');
+  const hasNetMeterFilter = filters.includes('NetMeterPaid');
+
+  let mainMatch = true;
+  if (hasMainFilters) {
+    mainMatch = (
+      (filters.includes('FullyPaid') && cat.isFullyPaid) ||
+      (filters.includes('PartiallyPaid') && cat.isPartiallyPaid) ||
+      (filters.includes('Unpaid') && cat.isUnpaid)
+    );
+  }
+
+  let nmMatch = true;
+  if (hasNetMeterFilter) {
+    nmMatch = cat.isNetMeterPaid;
+  }
+
+  return mainMatch && nmMatch;
+}
+
+window.togglePaymentBadgeFilter = function(filterKey, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  if (filterKey === 'ALL') {
+    selectedPaymentFilters = [];
+  } else {
+    const idx = selectedPaymentFilters.indexOf(filterKey);
+    if (idx >= 0) {
+      selectedPaymentFilters.splice(idx, 1);
+    } else {
+      selectedPaymentFilters.push(filterKey);
+    }
+  }
+  renderList();
+};
+
+function updatePaymentStats() {
+  const container = document.getElementById('paymentStatsContainer');
+  if (!container) return;
+
+  const allRows = getWorkRows();
+  const showDeactive = document.getElementById('chkShowDeactive') ? document.getElementById('chkShowDeactive').checked : false;
+  let activeRows = allRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  // Filter by search text
+  const search = (document.getElementById('fSearch') ? document.getElementById('fSearch').value : '').toLowerCase().trim();
+  if (search) {
+    activeRows = activeRows.filter(r =>
+      String(r.Name || '').toLowerCase().includes(search) ||
+      String(r.ConsumerNo || '').toLowerCase().includes(search) ||
+      String(r.District || '').toLowerCase().includes(search) ||
+      String(r.Address || '').toLowerCase().includes(search) ||
+      String(r.MobileNumber || '').toLowerCase().includes(search) ||
+      String(r.CommittedBrand || '').toLowerCase().includes(search) ||
+      String(r.BrokerName || '').toLowerCase().includes(search) ||
+      String(r.LoginDate || '').toLowerCase().includes(search) ||
+      String(r.AgreementDate || '').toLowerCase().includes(search) ||
+      String(r.MaterialDispatchedDate || '').toLowerCase().includes(search) ||
+      String(r.InstallationDate || '').toLowerCase().includes(search) ||
+      String(r.NetMeterDate || '').toLowerCase().includes(search) ||
+      String(r.InspectionDate || '').toLowerCase().includes(search) ||
+      String(r.MeterConnectedDate || '').toLowerCase().includes(search) ||
+      String(r.CommissioningDate || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Filter by selected districts
+  if (selectedDistricts.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const dist = r.District ? r.District.trim() : '(No District)';
+      const distName = dist === '' ? '(No District)' : dist;
+      return selectedDistricts.includes(distName);
+    });
+  }
+
+  // Filter by selected partners
+  if (selectedPartners.length > 0) {
+    activeRows = activeRows.filter(r => {
+      const partnerVal = r.BrokerName ? r.BrokerName.trim() : '(No Partner)';
+      const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
+      return selectedPartners.includes(partnerName);
+    });
+  }
+
+  // Filter by workflow stage
+  if (selectedStage && selectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(st => st.key === selectedStage);
+    if (targetIdx >= 0) {
+      activeRows = activeRows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+    }
+  }
+
+  const payMap = getCustomerPaymentsMap();
+  let fullyPaidCount = 0;
+  let partiallyPaidCount = 0;
+  let unpaidCount = 0;
+  let netMeterPaidCount = 0;
+
+  activeRows.forEach(r => {
+    const cat = getRowPaymentCategory(r, payMap);
+    if (cat.isFullyPaid) fullyPaidCount++;
+    else if (cat.isPartiallyPaid) partiallyPaidCount++;
+    else if (cat.isUnpaid) unpaidCount++;
+
+    if (cat.isNetMeterPaid) netMeterPaidCount++;
+  });
+
+  const totalCount = activeRows.length;
+  const isTotalActive = (selectedPaymentFilters.length === 0);
+
+  const totalBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('ALL', event)" class="pay-filter-tag pay-tag-all ${isTotalActive ? 'active' : ''}" title="Show all payment statuses">Total (${totalCount})</button>`;
+  const fullyPaidBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('FullyPaid', event)" class="pay-filter-tag pay-tag-full ${selectedPaymentFilters.includes('FullyPaid') ? 'active' : ''}" title="Filter by Fully Paid">Fully Paid (${fullyPaidCount})</button>`;
+  const partialBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('PartiallyPaid', event)" class="pay-filter-tag pay-tag-partial ${selectedPaymentFilters.includes('PartiallyPaid') ? 'active' : ''}" title="Filter by Partially Paid">Partially Paid (${partiallyPaidCount})</button>`;
+  const unpaidBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('Unpaid', event)" class="pay-filter-tag pay-tag-unpaid ${selectedPaymentFilters.includes('Unpaid') ? 'active' : ''}" title="Filter by Unpaid">Unpaid (${unpaidCount})</button>`;
+  const netMeterBadge = `<button type="button" onclick="window.togglePaymentBadgeFilter('NetMeterPaid', event)" class="pay-filter-tag pay-tag-netmeter ${selectedPaymentFilters.includes('NetMeterPaid') ? 'active' : ''}" title="Filter by Net Meter Paid">NetMeter Paid (${netMeterPaidCount})</button>`;
+
+  container.innerHTML = `${totalBadge} ${fullyPaidBadge} ${partialBadge} ${unpaidBadge} ${netMeterBadge}`;
+}
+
 function updateDistrictStats() {
   const container = document.getElementById('districtStatsContainer');
   if (!container) return;
@@ -259,6 +448,12 @@ function updateDistrictStats() {
       const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
       return selectedPartners.includes(partnerName);
     });
+  }
+
+  // Filter by payment status
+  if (selectedPaymentFilters.length > 0) {
+    const payMap = getCustomerPaymentsMap();
+    activeRows = activeRows.filter(r => matchesPaymentFilter(r, payMap, selectedPaymentFilters));
   }
 
   const totalCount = activeRows.length;
@@ -346,6 +541,12 @@ function updateStageStats() {
     });
   }
 
+  // Filter by payment status
+  if (selectedPaymentFilters.length > 0) {
+    const payMap = getCustomerPaymentsMap();
+    activeRows = activeRows.filter(r => matchesPaymentFilter(r, payMap, selectedPaymentFilters));
+  }
+
   const stageCounts = [0, 0, 0, 0, 0, 0, 0, 0];
   activeRows.forEach(r => {
     const idx = getRowHighestStageIdx(r);
@@ -415,6 +616,7 @@ function getDelayInfo(dateStr) {
 function renderList() {
   updateDistrictStats();
   updateStageStats();
+  updatePaymentStats();
 
   const search = (document.getElementById('fSearch')?.value || '').toLowerCase().trim();
   const showDeactive = document.getElementById('chkShowDeactive')?.checked || false;
@@ -475,6 +677,12 @@ function renderList() {
     }
   }
 
+  // Payment filter
+  const payMap = getCustomerPaymentsMap();
+  if (selectedPaymentFilters.length > 0) {
+    rows = rows.filter(r => matchesPaymentFilter(r, payMap, selectedPaymentFilters));
+  }
+
   // Sort rows: Customers with Subsidy ON (CommissioningDate) are always placed at the bottom
   rows.sort((a, b) => {
     const aSubsidy = Boolean(a.CommissioningDate);
@@ -507,7 +715,7 @@ function renderList() {
 
   const tbody = document.querySelector('#manageWorkTable tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted fs-7">No customer workflow records found.</td></tr>`;
+    tbody.innerHTML = `<tr class="mw-empty-state-row"><td colspan="9" class="text-center py-5 text-muted fs-7">No customer workflow records found.</td></tr>`;
     window._lastFilteredWorkRows = [];
     return;
   }
@@ -599,22 +807,136 @@ function renderList() {
       }
     }
 
-    // Delay Badge for customer (hidden if Subsidy is ON)
-    const delayInfo = !hasSubsidy ? getDelayInfo(r.LoginDate) : null;
-    const delayBadgeHtml = delayInfo
-      ? `<span class="badge erp-delay-badge delay-${delayInfo.colorType} fs-8" title="Login: ${r.LoginDate || ''} (${delayInfo.totalDays} days)">(${delayInfo.text})</span>`
-      : '';
+    const isCardCollapsed = isCollapseAll && (Number(expandedSlNo) !== Number(slNo));
+
+    // Payment info for Customer Cell (Row 1 of Card)
+    const payCategory = getRowPaymentCategory(r, payMap);
+    const total = payCategory.total;
+    const price = payCategory.price;
+    const pending = Math.max(0, price - total);
+    const isFullyPaid = payCategory.isFullyPaid || (price > 0 && pending <= 0);
+
+    // User requirement: "Instead of paid only write pending value. No need to write customer price."
+    let paymentHtml = '';
+    if (isFullyPaid) {
+      paymentHtml = `
+        <span class="mw-pay-status-label badge bg-success-subtle text-success border border-success-subtle font-monospace text-nowrap ms-auto" style="font-size: 0.72rem; padding: 2px 6px;">
+          Fully Paid
+        </span>
+      `;
+    } else if (pending > 0) {
+      paymentHtml = `
+        <span class="mw-pay-status-label text-danger fw-bold font-monospace text-nowrap ms-auto" style="font-size: 0.74rem;">
+          Pending: ₹${Math.round(pending).toLocaleString('en-IN')}
+        </span>
+      `;
+    } else {
+      paymentHtml = `
+        <span class="mw-pay-status-label text-muted font-monospace text-nowrap ms-auto" style="font-size: 0.74rem;">
+          Pending: ₹0
+        </span>
+      `;
+    }
+
+    // User requirement: "Customer side re jahara net meter payment heichi tara gote meter icon deiki tara netmeter payment ta show karao only collapse time re re."
+    let netMeterHtml = '';
+    const isNetMeterActuallyPaid = Boolean(payCategory.isNetMeterPaid || isNetMeterPaid || netMeterPayment);
+    if (isCardCollapsed && isNetMeterActuallyPaid) {
+      const nmAmt = Number(netMeterPayment) || 0;
+      netMeterHtml = `
+        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle d-inline-flex align-items-center gap-1 font-monospace text-nowrap" style="font-size: 0.70rem; padding: 2px 6px;" title="NetMeter Paid${nmAmt > 0 ? `: ₹${Math.round(nmAmt).toLocaleString('en-IN')}` : ''}">
+          <i class="bi bi-speedometer2 text-primary"></i> ${nmAmt > 0 ? `₹${Math.round(nmAmt).toLocaleString('en-IN')}` : 'Paid'}
+        </span>
+      `;
+    }
+
+    // Progress bar calculations for collapsed state
+    const stagesInfo = [
+      { num: 1, name: 'Login', isDone: hasLogin, date: loginDate },
+      { num: 2, name: 'Agreement', isDone: hasAgreement, date: agreementDate },
+      { num: 3, name: 'Dispatched', isDone: hasDispatched, date: dispatchedDate },
+      { num: 4, name: 'Installation', isDone: hasInstallation, date: installationDate },
+      { num: 5, name: 'NetMeter', isDone: isNm, date: netMeterDate },
+      { num: 6, name: 'Inspection', isDone: hasInspection, date: inspectionDate },
+      { num: 7, name: 'Connection', isDone: hasMeterConnected, date: meterConnectedDate },
+      { num: 8, name: 'Subsidy', isDone: hasSubsidy, date: subsidyDate }
+    ];
+
+    const completedCount = stagesInfo.filter(s => s.isDone).length;
+
+    const segmentsHtml = stagesInfo.map((s, sIdx) => {
+      let segColor = s.isDone ? '#10b981' : '#e2e8f0';
+      let segTextColor = s.isDone ? '#ffffff' : '#64748b';
+      let statusText = s.isDone ? `Completed ${s.date ? `(${s.date})` : ''}` : 'Pending';
+
+      if (s.isDone && sIdx === 0 && highestMarkedIdx === 0 && loginDelay) {
+        if (loginDelay.totalDays >= 90) { segColor = '#ef4444'; segTextColor = '#ffffff'; }
+        else if (loginDelay.totalDays >= 60) { segColor = '#f59e0b'; segTextColor = '#ffffff'; }
+      } else if (s.isDone && sIdx === 1 && isEligibleForAgrmtAlert && agrmtDelay) {
+        if (agrmtDelay.totalDays >= 90) { segColor = '#ef4444'; segTextColor = '#ffffff'; }
+        else if (agrmtDelay.totalDays >= 60) { segColor = '#f59e0b'; segTextColor = '#ffffff'; }
+      }
+
+      return `
+        <div class="mw-progress-segment" style="flex: 1; height: 18px; background-color: ${segColor}; color: ${segTextColor}; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; transition: all 0.2s ease;" title="Stage ${s.num} (${s.name}): ${statusText}">
+          ${s.num}${s.isDone ? '✓' : ''}
+        </div>
+      `;
+    }).join('');
+
+    const progressBarHtml = `
+      <div class="mw-card-progress-wrap d-flex align-items-center gap-2 w-100" style="cursor: pointer;" title="Click to expand 1 to 8 stages">
+        <div class="d-flex gap-1 flex-grow-1" style="min-width: 0;">
+          ${segmentsHtml}
+        </div>
+        <span class="mw-progress-count-badge badge ${completedCount === 8 ? 'bg-success text-white' : 'bg-light text-secondary border'} font-monospace text-nowrap" style="font-size: 0.70rem; padding: 3px 6px;">
+          ${completedCount}/8 ${completedCount === 8 ? 'Complete' : 'Done'}
+        </span>
+      </div>
+    `;
+
+    const toggleBtnIcon = isCardCollapsed ? 'bi-chevron-down' : 'bi-chevron-up';
+    const toggleBtnTitle = isCardCollapsed ? 'Click to expand 1 to 8 stages' : 'Click to collapse card';
+
+    if (isCardCollapsed) {
+      return `
+        <tr data-slno="${slNo}" class="mw-card-row mw-card-collapsed ${isDeactive ? 'deactive-row' : ''} ${isAllComplete ? 'stage-complete-all' : ''}">
+          <!-- 1. Customer Cell -->
+          <td class="td-customer-col" onclick="window.toggleCardExpansion(${slNo}, event)" style="cursor: pointer;">
+            <div class="mw-customer-cell">
+              <span class="mw-sl-badge">${idx + 1}</span>
+              <span class="mw-customer-name" title="${r.Name || ''}" onclick="window.openCustomerDetailsModal(${slNo}); event.stopPropagation();" style="cursor: pointer;">
+                ${r.Name || 'Unnamed Customer'}
+              </span>
+              ${netMeterHtml}
+              ${paymentHtml}
+              <button type="button" class="btn btn-sm btn-link p-0 mw-card-toggle-btn text-muted ms-1" onclick="window.toggleCardExpansion(${slNo}, event)" title="${toggleBtnTitle}">
+                <i class="bi ${toggleBtnIcon} fs-7"></i>
+              </button>
+            </div>
+          </td>
+
+          <!-- 2. Progress Bar Cell -->
+          <td colspan="8" class="td-progress-col" onclick="window.toggleCardExpansion(${slNo}, event)" title="Click to expand 1 to 8 stages">
+            ${progressBarHtml}
+          </td>
+        </tr>
+      `;
+    }
 
     return `
-      <tr data-slno="${slNo}" class="${isDeactive ? 'deactive-row' : ''} ${isAllComplete ? 'stage-complete-all' : ''}">
+      <tr data-slno="${slNo}" class="mw-card-row mw-card-expanded ${isDeactive ? 'deactive-row' : ''} ${isAllComplete ? 'stage-complete-all' : ''}">
         <!-- 1. Customer Cell -->
-        <td>
+        <td class="td-customer-col">
           <div class="mw-customer-cell">
             <span class="mw-sl-badge">${idx + 1}</span>
-            <span class="mw-customer-name" title="${r.Name || ''}">
+            <span class="mw-customer-name" title="${r.Name || ''}" onclick="window.openCustomerDetailsModal(${slNo}); event.stopPropagation();" style="cursor: pointer;">
               ${r.Name || 'Unnamed Customer'}
             </span>
-            ${delayBadgeHtml}
+            ${paymentHtml}
+            <button type="button" class="btn btn-sm btn-link p-0 mw-card-toggle-btn text-primary ms-1" onclick="window.toggleCardExpansion(${slNo}, event)" title="${toggleBtnTitle}">
+              <i class="bi ${toggleBtnIcon} fs-7"></i>
+            </button>
           </div>
         </td>
 
@@ -631,7 +953,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 3. Aggreement -->
+        <!-- 3. Agreement -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch ${agrmtSwitchClass}" title="${agrmtTitle}">
@@ -644,7 +966,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 4. MaterialDispatched -->
+        <!-- 4. Dispatched -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Dispatched">
@@ -657,7 +979,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 5. InstallationDone (Mapped to InstallationDate) -->
+        <!-- 5. Installation -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Installation">
@@ -670,33 +992,27 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 6. NetMeterApplied (Toggle: NetMeterPaid, Amount: NetMeterPayment, Date: NetMeterDate) -->
+        <!-- 6. NetMeter -->
         <td>
-          <div class="mw-stage-cell mw-netmeter-cell">
+          <div class="mw-stage-cell mw-netmeter-stage-cell">
             <label class="mw-switch" title="Toggle NetMeter">
               <input type="checkbox" class="mw-stage-toggle" data-stage="NetMeter" ${isNetMeterPaid ? 'checked' : ''} onchange="handleNetMeterToggle(this, ${slNo})">
               <span class="mw-slider"></span>
             </label>
-            <div class="mw-stage-input-wrap d-inline-flex align-items-center gap-1 ${isNetMeterPaid ? '' : 'd-none'}" id="wrap_NetMeter_${slNo}">
-              <div class="input-group input-group-sm mw-netmeter-pay-group" title="NetMeter Payment">
-                <span class="input-group-text">₹</span>
-                <input type="number" step="any" class="form-control form-control-sm font-monospace" id="nmPayInput_${slNo}" placeholder="Amount" value="${netMeterPayment}" disabled onkeydown="if(event.key==='Enter') window.saveNetMeterPayment(${slNo}); else if(event.key==='Escape') window.cancelNetMeterEdit(${slNo});">
+            <div class="mw-stage-input-wrap ${isNetMeterPaid ? '' : 'd-none'}" id="wrap_NetMeter_${slNo}">
+              <div class="input-group input-group-sm mw-netmeter-input-group">
+                <span class="input-group-text p-1 text-muted" style="font-size: 0.70rem;">₹</span>
+                <input type="number" class="form-control mw-netmeter-amount" id="nmAmount_${slNo}" value="${netMeterPayment}" placeholder="Amount" readonly style="background-color: #f8fafc;" onchange="window.saveNetMeterInline(${slNo})">
                 <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" id="btnNmEdit_${slNo}" onclick="window.toggleNetMeterEdit(${slNo})" title="Edit Payment">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-success p-0 d-none align-items-center justify-content-center" id="btnNmSave_${slNo}" onclick="window.saveNetMeterPayment(${slNo})" title="Save Payment">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary p-0 d-none align-items-center justify-content-center" id="btnNmCancel_${slNo}" onclick="window.cancelNetMeterEdit(${slNo})" title="Cancel Edit">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <i class="bi bi-pencil" style="font-size: 0.70rem;"></i>
                 </button>
               </div>
-              <input type="date" class="form-control form-control-sm mw-date-input" value="${netMeterDate}" onchange="handleNetMeterDateChange(${slNo}, this.value)" title="NetMeter Application Date">
+              <input type="date" class="form-control form-control-sm mw-date-input" id="nmDate_${slNo}" value="${netMeterDate}" onchange="window.saveNetMeterInline(${slNo})">
             </div>
           </div>
         </td>
 
-        <!-- 7. InspectionDone -->
+        <!-- 7. Inspection -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Inspection">
@@ -709,7 +1025,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 8. MeterConnected -->
+        <!-- 8. Connection -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Connection">
@@ -722,7 +1038,7 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 9. SubsidyApplied (Mapped to CommissioningDate) -->
+        <!-- 9. Subsidy -->
         <td>
           <div class="mw-stage-cell">
             <label class="mw-switch" title="Toggle Subsidy">
@@ -732,6 +1048,15 @@ function renderList() {
             <div class="mw-stage-input-wrap ${hasSubsidy ? '' : 'd-none'}" id="wrap_CommissioningDate_${slNo}">
               <input type="date" class="form-control form-control-sm mw-date-input" value="${subsidyDate}" onchange="handleStageDateChange(${slNo}, 'CommissioningDate', this.value)">
             </div>
+          </div>
+        </td>
+
+        <!-- 10. Bottom Collapse Row/Bar for Mobile Card -->
+        <td class="mw-bottom-collapse-td" onclick="window.toggleCardExpansion(${slNo}, event)" title="Collapse Card">
+          <div class="mw-bottom-collapse-inner text-center w-100">
+            <button type="button" class="btn btn-xs btn-light border text-secondary rounded-pill px-3 py-0.5 d-inline-flex align-items-center gap-1 shadow-none" style="font-size: 0.70rem;">
+              <i class="bi bi-chevron-up"></i> <span>Collapse</span>
+            </button>
           </div>
         </td>
       </tr>
@@ -1166,67 +1491,64 @@ window.saveNetMeterPayment = async function (slNo) {
 
 // ══ Summary Modal ═══════════════════════════════════════════════════════════
 window.openWorkSummaryModal = function () {
-  const rows = window._lastFilteredWorkRows || getWorkRows().filter(r => r.Status !== 'Deactive');
+  const allWorkRows = getWorkRows();
+  const showDeactive = document.getElementById('chkShowDeactive')?.checked || false;
+  let baseRows = allWorkRows.filter(r => showDeactive ? r.Status === 'Deactive' : r.Status !== 'Deactive');
+
+  // Apply Partner filter if active on main page
+  if (selectedPartners.length > 0) {
+    baseRows = baseRows.filter(r => {
+      const partnerVal = r.BrokerName ? r.BrokerName.trim() : '(No Partner)';
+      const partnerName = partnerVal === '' ? '(No Partner)' : partnerVal;
+      return selectedPartners.includes(partnerName);
+    });
+  }
+
+  // Apply District filter if active on main page
+  if (selectedDistricts.length > 0) {
+    baseRows = baseRows.filter(r => {
+      const distVal = r.District ? r.District.trim() : '(No District)';
+      const distName = distVal === '' ? '(No District)' : distVal;
+      return selectedDistricts.includes(distName);
+    });
+  }
+
+  // Apply Payment filter if active on main page
+  if (selectedPaymentFilters.length > 0) {
+    const payMap = getCustomerPaymentsMap();
+    baseRows = baseRows.filter(r => matchesPaymentFilter(r, payMap, selectedPaymentFilters));
+  }
+
+  const rows = baseRows;
   const total = rows.length;
 
-  let latestDates = {
-    AgreementDate: '',
-    MaterialDispatchedDate: '',
-    InstallationDate: '',
-    NetMeterDate: '',
-    InspectionDate: '',
-    MeterConnectedDate: '',
-    CommissioningDate: ''
+  const stageHelpers = {
+    'LoginDate': (r) => Boolean(r.LoginDate),
+    'AgreementDate': (r) => Boolean(r.AgreementDate),
+    'MaterialDispatchedDate': (r) => Boolean(r.MaterialDispatchedDate),
+    'InstallationDate': (r) => Boolean(r.InstallationDate),
+    'NetMeter': (r) => Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate),
+    'InspectionDate': (r) => Boolean(r.InspectionDate),
+    'MeterConnectedDate': (r) => Boolean(r.MeterConnectedDate),
+    'CommissioningDate': (r) => Boolean(r.CommissioningDate)
   };
 
-  let stageCurrentCounts = {
-    'LoginDate': 0,
-    'AgreementDate': 0,
-    'MaterialDispatchedDate': 0,
-    'InstallationDate': 0,
-    'NetMeter': 0,
-    'InspectionDate': 0,
-    'MeterConnectedDate': 0,
-    'CommissioningDate': 0
-  };
-
-  rows.forEach(r => {
-    const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
-    const stages = [
-      Boolean(r.LoginDate),
-      Boolean(r.AgreementDate),
-      Boolean(r.MaterialDispatchedDate),
-      Boolean(r.InstallationDate),
-      isNm,
-      Boolean(r.InspectionDate),
-      Boolean(r.MeterConnectedDate),
-      Boolean(r.CommissioningDate)
-    ];
-    let highestIdx = -1;
-    stages.forEach((d, idx) => {
-      if (d) highestIdx = Math.max(highestIdx, idx);
-    });
-
-    if (highestIdx === 0) stageCurrentCounts.LoginDate++;
-    else if (highestIdx === 1) stageCurrentCounts.AgreementDate++;
-    else if (highestIdx === 2) stageCurrentCounts.MaterialDispatchedDate++;
-    else if (highestIdx === 3) stageCurrentCounts.InstallationDate++;
-    else if (highestIdx === 4) stageCurrentCounts.NetMeter++;
-    else if (highestIdx === 5) stageCurrentCounts.InspectionDate++;
-    else if (highestIdx === 6) stageCurrentCounts.MeterConnectedDate++;
-    else if (highestIdx === 7) stageCurrentCounts.CommissioningDate++;
+  // Accurate Stage Completion counts across the solar workflow pipeline
+  const stageCompletedCounts = {};
+  WORKFLOW_STAGES.forEach(st => {
+    stageCompletedCounts[st.key] = rows.filter(r => stageHelpers[st.key](r)).length;
   });
 
   const getPct = (cnt) => (total > 0 ? Math.round((cnt / total) * 100) : 0);
 
-  const loginCount = stageCurrentCounts.LoginDate;
-  const agreementCount = stageCurrentCounts.AgreementDate;
-  const dispatchedCount = stageCurrentCounts.MaterialDispatchedDate;
-  const installedCount = stageCurrentCounts.InstallationDate;
-  const netMeterCount = stageCurrentCounts.NetMeter;
-  const inspectionCount = stageCurrentCounts.InspectionDate;
-  const connectedCount = stageCurrentCounts.MeterConnectedDate;
-  const subsidyCount = stageCurrentCounts.CommissioningDate;
+  const loginCount = stageCompletedCounts['LoginDate'];
+  const agreementCount = stageCompletedCounts['AgreementDate'];
+  const dispatchedCount = stageCompletedCounts['MaterialDispatchedDate'];
+  const installedCount = stageCompletedCounts['InstallationDate'];
+  const netMeterCount = stageCompletedCounts['NetMeter'];
+  const inspectionCount = stageCompletedCounts['InspectionDate'];
+  const connectedCount = stageCompletedCounts['MeterConnectedDate'];
+  const subsidyCount = stageCompletedCounts['CommissioningDate'];
 
   let selectedSummaryStage = 'ALL';
 
@@ -1234,14 +1556,14 @@ window.openWorkSummaryModal = function () {
   if (kpiGrid) {
     kpiGrid.innerHTML = `
       <!-- Total -->
-      <div class="mw-kpi-card border-start border-3 border-dark kpi-card-selected" data-stage="ALL" title="Click to show all customers">
+      <div class="mw-kpi-card border-start border-3 border-dark kpi-card-selected" data-stage="ALL" title="Click to show all active customers">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">TOTAL</span>
           <span class="badge bg-light text-dark border" style="font-size: 0.50rem; padding: 1px 3px;">All</span>
         </div>
         <div class="mw-kpi-value-row">
           <span class="mw-kpi-value text-dark">${total}</span>
-          <span class="mw-kpi-subtext">all</span>
+          <span class="mw-kpi-subtext">customers</span>
         </div>
         <div class="mw-kpi-progress">
           <div class="progress-bar bg-dark" role="progressbar" style="width: 100%;"></div>
@@ -1249,7 +1571,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Login -->
-      <div class="mw-kpi-card border-start border-3" style="border-color: #0284c7 !important;" data-stage="LoginDate" title="Click to filter by Login stage">
+      <div class="mw-kpi-card border-start border-3" style="border-color: #0284c7 !important;" data-stage="LoginDate" title="Click to filter customers with Login completed">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Login</span>
           <span class="mw-kpi-pct" style="color: #0284c7;">${getPct(loginCount)}%</span>
@@ -1264,7 +1586,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Agreement -->
-      <div class="mw-kpi-card border-start border-3 border-primary" data-stage="AgreementDate" title="Click to filter by Agreement stage">
+      <div class="mw-kpi-card border-start border-3 border-primary" data-stage="AgreementDate" title="Click to filter customers with Agreement completed">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Agreement</span>
           <span class="mw-kpi-pct text-primary">${getPct(agreementCount)}%</span>
@@ -1279,7 +1601,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Dispatched -->
-      <div class="mw-kpi-card border-start border-3 border-info" data-stage="MaterialDispatchedDate" title="Click to filter by Dispatched stage">
+      <div class="mw-kpi-card border-start border-3 border-info" data-stage="MaterialDispatchedDate" title="Click to filter customers with Material Dispatched">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Dispatched</span>
           <span class="mw-kpi-pct text-info">${getPct(dispatchedCount)}%</span>
@@ -1294,7 +1616,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Installation -->
-      <div class="mw-kpi-card border-start border-3 border-warning" data-stage="InstallationDate" title="Click to filter by Installation stage">
+      <div class="mw-kpi-card border-start border-3 border-warning" data-stage="InstallationDate" title="Click to filter customers with Installation completed">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Installation</span>
           <span class="mw-kpi-pct text-warning">${getPct(installedCount)}%</span>
@@ -1309,7 +1631,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- NetMeter -->
-      <div class="mw-kpi-card border-start border-3" style="border-color: #8b5cf6 !important;" data-stage="NetMeter" title="Click to filter by NetMeter stage">
+      <div class="mw-kpi-card border-start border-3" style="border-color: #8b5cf6 !important;" data-stage="NetMeter" title="Click to filter customers with NetMeter applied/paid">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">NetMeter</span>
           <span class="mw-kpi-pct" style="color: #8b5cf6;">${getPct(netMeterCount)}%</span>
@@ -1324,7 +1646,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Inspection -->
-      <div class="mw-kpi-card border-start border-3 border-secondary" data-stage="InspectionDate" title="Click to filter by Inspection stage">
+      <div class="mw-kpi-card border-start border-3 border-secondary" data-stage="InspectionDate" title="Click to filter customers with Inspection completed">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Inspection</span>
           <span class="mw-kpi-pct text-secondary">${getPct(inspectionCount)}%</span>
@@ -1339,7 +1661,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Connection -->
-      <div class="mw-kpi-card border-start border-3 border-primary" data-stage="MeterConnectedDate" title="Click to filter by Connection stage">
+      <div class="mw-kpi-card border-start border-3 border-primary" data-stage="MeterConnectedDate" title="Click to filter customers with Connection completed">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Connection</span>
           <span class="mw-kpi-pct text-primary">${getPct(connectedCount)}%</span>
@@ -1354,7 +1676,7 @@ window.openWorkSummaryModal = function () {
       </div>
 
       <!-- Subsidy (Final Milestone) -->
-      <div class="mw-kpi-card border-start border-3 border-success" data-stage="CommissioningDate" title="Click to filter by Subsidy stage">
+      <div class="mw-kpi-card border-start border-3 border-success" data-stage="CommissioningDate" title="Click to filter customers with Subsidy applied">
         <div class="mw-kpi-header">
           <span class="mw-kpi-title">Subsidy</span>
           <span class="mw-kpi-pct text-success">${getPct(subsidyCount)}%</span>
@@ -1369,7 +1691,7 @@ window.openWorkSummaryModal = function () {
       </div>
     `;
 
-    // Click event on KPI cards to filter customer list
+    // Click event on KPI cards to filter customer list by stage
     kpiGrid.querySelectorAll('.mw-kpi-card').forEach(card => {
       card.addEventListener('click', () => {
         const stage = card.getAttribute('data-stage') || 'ALL';
@@ -1392,117 +1714,44 @@ window.openWorkSummaryModal = function () {
     });
   }
 
-  const stageKeys = [
-    'LoginDate',
-    'AgreementDate',
-    'MaterialDispatchedDate',
-    'InstallationDate',
-    'NetMeter',
-    'InspectionDate',
-    'MeterConnectedDate',
-    'CommissioningDate'
-  ];
-
   let sumModalSortCol = null;
   let sumModalSortDir = 'desc';
 
   function getLoginSortScore(r) {
-    const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
-    const stages = [
-      Boolean(r.LoginDate),
-      Boolean(r.AgreementDate),
-      Boolean(r.MaterialDispatchedDate),
-      Boolean(r.InstallationDate),
-      isNm,
-      Boolean(r.InspectionDate),
-      Boolean(r.MeterConnectedDate),
-      Boolean(r.CommissioningDate)
-    ];
-    let highestIdx = -1;
-    stages.forEach((d, idx) => {
-      if (d) highestIdx = Math.max(highestIdx, idx);
-    });
-
     const loginDate = r.LoginDate || '';
     const loginDelay = getDelayInfo(loginDate);
-    let alertScore = 0; // 0 = inactive
+    let alertScore = 0;
     let delayDays = loginDelay ? loginDelay.totalDays : -999;
-
-    if (highestIdx === 0 && loginDelay) {
-      if (loginDelay.totalDays >= 90) {
-        alertScore = 3; // RED (>= 3 months delay)
-      } else if (loginDelay.totalDays >= 60) {
-        alertScore = 2; // YELLOW (>= 2 months delay)
-      } else {
-        alertScore = 1; // BLUE (normal)
-      }
-    } else if (highestIdx > 0) {
-      alertScore = 0.5; // Progressed past Login
+    if (loginDelay) {
+      if (loginDelay.totalDays >= 90) alertScore = 3;
+      else if (loginDelay.totalDays >= 60) alertScore = 2;
+      else alertScore = 1;
     }
-
     return { alertScore, delayDays };
   }
 
   function getAgreementSortScore(r) {
-    const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
-    const stages = [
-      Boolean(r.LoginDate),
-      Boolean(r.AgreementDate),
-      Boolean(r.MaterialDispatchedDate),
-      Boolean(r.InstallationDate),
-      isNm,
-      Boolean(r.InspectionDate),
-      Boolean(r.MeterConnectedDate),
-      Boolean(r.CommissioningDate)
-    ];
-    let highestIdx = -1;
-    stages.forEach((d, idx) => {
-      if (d) highestIdx = Math.max(highestIdx, idx);
-    });
-
     const agrmtDate = r.AgreementDate || '';
     const agrmtDelay = getDelayInfo(agrmtDate);
-    const isEligibleForAlert = (highestIdx >= 1 && highestIdx <= 4);
-
-    let alertScore = 0; // 0 = inactive
+    let alertScore = 0;
     let delayDays = agrmtDelay ? agrmtDelay.totalDays : -999;
-
-    if (highestIdx >= 1) {
-      if (isEligibleForAlert && agrmtDelay && agrmtDelay.totalDays >= 90) {
-        alertScore = 3; // RED (>= 3 months delay)
-      } else if (isEligibleForAlert && agrmtDelay && agrmtDelay.totalDays >= 60) {
-        alertScore = 2; // YELLOW (>= 2 months delay)
-      } else {
-        alertScore = 1; // BLUE (normal / no delay)
-      }
+    if (agrmtDelay) {
+      if (agrmtDelay.totalDays >= 90) alertScore = 3;
+      else if (agrmtDelay.totalDays >= 60) alertScore = 2;
+      else alertScore = 1;
     }
-
     return { alertScore, delayDays };
   }
 
   const renderPopupTable = (filterTxt = '') => {
     let filtered = [...rows];
 
-    // Filter by selected summary stage (strictly customers whose maximum reached level is this stage)
+    // Filter by selected summary stage (customers who have completed this stage)
     if (selectedSummaryStage && selectedSummaryStage !== 'ALL') {
-      const targetStageIdx = stageKeys.indexOf(selectedSummaryStage);
-      filtered = filtered.filter(r => {
-        const stages = [
-          Boolean(r.LoginDate),
-          Boolean(r.AgreementDate),
-          Boolean(r.MaterialDispatchedDate),
-          Boolean(r.InstallationDate),
-          Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate),
-          Boolean(r.InspectionDate),
-          Boolean(r.MeterConnectedDate),
-          Boolean(r.CommissioningDate)
-        ];
-        let highestIdx = -1;
-        stages.forEach((d, idx) => {
-          if (d) highestIdx = Math.max(highestIdx, idx);
-        });
-        return highestIdx === targetStageIdx;
-      });
+      const helper = stageHelpers[selectedSummaryStage];
+      if (helper) {
+        filtered = filtered.filter(r => helper(r));
+      }
     }
 
     // Filter by search text
@@ -1520,7 +1769,6 @@ window.openWorkSummaryModal = function () {
       filtered.sort((a, b) => {
         const scoreA = getLoginSortScore(a);
         const scoreB = getLoginSortScore(b);
-
         if (scoreA.alertScore !== scoreB.alertScore) {
           return sumModalSortDir === 'desc'
             ? scoreB.alertScore - scoreA.alertScore
@@ -1534,23 +1782,20 @@ window.openWorkSummaryModal = function () {
       filtered.sort((a, b) => {
         const scoreA = getAgreementSortScore(a);
         const scoreB = getAgreementSortScore(b);
-
         if (scoreA.alertScore !== scoreB.alertScore) {
           return sumModalSortDir === 'desc'
             ? scoreB.alertScore - scoreA.alertScore
             : scoreA.alertScore - scoreB.alertScore;
         }
-        // Sub-sort by total delay days within the same color group
         return sumModalSortDir === 'desc'
           ? scoreB.delayDays - scoreA.delayDays
           : scoreA.delayDays - scoreB.delayDays;
       });
     } else if (sumModalSortCol === 'Partner') {
-      // Sort by Partner Name (A-Z / Z-A)
       filtered.sort((a, b) => {
         const pA = String(a.BrokerName || 'Direct').toLowerCase().trim();
         const pB = String(b.BrokerName || 'Direct').toLowerCase().trim();
-        return sumModalSortDir === 'asc' ? pA.localeCompare(pB) : pB.localeCompare(a.BrokerName || 'Direct');
+        return sumModalSortDir === 'asc' ? pA.localeCompare(pB) : pB.localeCompare(pA);
       });
     }
 
@@ -1562,7 +1807,7 @@ window.openWorkSummaryModal = function () {
     const tbody = document.querySelector('#workSummaryTable tbody');
     if (tbody) {
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-muted fs-8">No records matching search.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-muted fs-8">No records matching criteria.</td></tr>`;
         return;
       }
       tbody.innerHTML = filtered.map((r, i) => {
@@ -1573,38 +1818,30 @@ window.openWorkSummaryModal = function () {
         const agrmtDelay = getDelayInfo(agrmtDate);
 
         const stages = [
-          { num: 1, date: r.LoginDate || '', isMarked: Boolean(r.LoginDate) },
-          { num: 2, date: r.AgreementDate || '', isMarked: Boolean(r.AgreementDate) },
-          { num: 3, date: r.MaterialDispatchedDate || '', isMarked: Boolean(r.MaterialDispatchedDate) },
-          { num: 4, date: r.InstallationDate || '', isMarked: Boolean(r.InstallationDate) },
-          { num: 5, date: r.NetMeterDate || '', isMarked: isNetMeterMarked },
-          { num: 6, date: r.InspectionDate || '', isMarked: Boolean(r.InspectionDate) },
-          { num: 7, date: r.MeterConnectedDate || '', isMarked: Boolean(r.MeterConnectedDate) },
-          { num: 8, date: r.CommissioningDate || '', isMarked: Boolean(r.CommissioningDate) }
+          { num: 1, key: 'LoginDate', date: r.LoginDate || '', isMarked: Boolean(r.LoginDate) },
+          { num: 2, key: 'AgreementDate', date: r.AgreementDate || '', isMarked: Boolean(r.AgreementDate) },
+          { num: 3, key: 'MaterialDispatchedDate', date: r.MaterialDispatchedDate || '', isMarked: Boolean(r.MaterialDispatchedDate) },
+          { num: 4, key: 'InstallationDate', date: r.InstallationDate || '', isMarked: Boolean(r.InstallationDate) },
+          { num: 5, key: 'NetMeter', date: r.NetMeterDate || '', isMarked: isNetMeterMarked },
+          { num: 6, key: 'InspectionDate', date: r.InspectionDate || '', isMarked: Boolean(r.InspectionDate) },
+          { num: 7, key: 'MeterConnectedDate', date: r.MeterConnectedDate || '', isMarked: Boolean(r.MeterConnectedDate) },
+          { num: 8, key: 'CommissioningDate', date: r.CommissioningDate || '', isMarked: Boolean(r.CommissioningDate) }
         ];
 
-        let highestMarkedIdx = -1;
-        stages.forEach((st, idx) => {
-          if (st.isMarked || st.date) {
-            highestMarkedIdx = Math.max(highestMarkedIdx, idx);
-          }
-        });
-
         const stageCellsHtml = stages.map((st, idx) => {
-          const isDone = (idx <= highestMarkedIdx) || st.isMarked || Boolean(st.date);
+          const isDone = st.isMarked || Boolean(st.date);
           const hasLeftLine = idx > 0;
           const hasRightLine = idx < stages.length - 1;
-          const leftFilled = hasLeftLine && (idx <= highestMarkedIdx);
-          const rightFilled = hasRightLine && (idx < highestMarkedIdx);
+          const leftFilled = hasLeftLine && isDone;
+          const rightFilled = hasRightLine && (idx < stages.length - 1 && stages[idx + 1].isMarked);
 
-          let nodeClass = 'node-inactive';
-          let nodeTitle = `Stage ${st.num}`;
+          let nodeClass = isDone ? 'node-active' : 'node-inactive';
+          let nodeTitle = `Stage ${st.num}: ${isDone ? 'Completed' : 'Pending'}`;
           let dateClass = '';
 
           if (isDone) {
-            nodeClass = 'node-active';
-            // Stage 1 (Login) delay alert: only for customers whose highest stage is strictly Login (idx === 0)
-            if (idx === 0 && highestMarkedIdx === 0 && loginDelay) {
+            // Stage 1 (Login) delay alert
+            if (idx === 0 && loginDelay) {
               if (loginDelay.totalDays >= 90) {
                 nodeClass += ' node-delay-red';
                 nodeTitle = `Login: ${loginDelay.text} (${loginDelay.totalDays} days ago - Delayed >= 3 Months)`;
@@ -1616,9 +1853,8 @@ window.openWorkSummaryModal = function () {
               }
             }
 
-            // Stage 2 (Agreement) delay alert: for customers whose maximum reached stage is Agreement, Dispatch, Installation, or NetMeter (Stages 2-5, idx 1-4)
-            const isEligibleForAlert = (highestMarkedIdx >= 1 && highestMarkedIdx <= 4);
-            if (idx === 1 && isEligibleForAlert && agrmtDelay) {
+            // Stage 2 (Agreement) delay alert
+            if (idx === 1 && agrmtDelay) {
               if (agrmtDelay.totalDays >= 90) {
                 nodeClass += ' node-delay-red';
                 nodeTitle = `Agreement: ${agrmtDelay.text} (${agrmtDelay.totalDays} days ago - Delayed >= 3 Months)`;
@@ -1708,7 +1944,14 @@ window.openWorkSummaryModal = function () {
     }
   };
 
-  renderPopupTable();
+  const searchInput = document.getElementById('fSumModalSearch');
+  const mainSearchVal = (document.getElementById('fSearch')?.value || '').toLowerCase().trim();
+  if (searchInput) {
+    searchInput.value = mainSearchVal;
+    searchInput.oninput = (e) => renderPopupTable(e.target.value.toLowerCase().trim());
+  }
+
+  renderPopupTable(mainSearchVal);
 
   // Attach sort listener to Login column header
   const thLogin = document.getElementById('thSumLogin');
@@ -1721,7 +1964,6 @@ window.openWorkSummaryModal = function () {
         sumModalSortDir = 'desc';
       }
       updateSortIcons();
-      const searchInput = document.getElementById('fSumModalSearch');
       renderPopupTable(searchInput ? searchInput.value.toLowerCase().trim() : '');
     };
   }
@@ -1737,7 +1979,6 @@ window.openWorkSummaryModal = function () {
         sumModalSortDir = 'desc';
       }
       updateSortIcons();
-      const searchInput = document.getElementById('fSumModalSearch');
       renderPopupTable(searchInput ? searchInput.value.toLowerCase().trim() : '');
     };
   }
@@ -1753,7 +1994,6 @@ window.openWorkSummaryModal = function () {
         sumModalSortDir = 'asc';
       }
       updateSortIcons();
-      const searchInput = document.getElementById('fSumModalSearch');
       renderPopupTable(searchInput ? searchInput.value.toLowerCase().trim() : '');
     };
   }
@@ -1783,7 +2023,6 @@ window.openWorkSummaryModal = function () {
     btnExpand.onclick = () => {
       const dialog = document.querySelector('#workSummaryModal .modal-dialog');
       if (dialog) {
-        // Reset manual drag inline styles so CSS classes take effect
         dialog.style.width = '';
         dialog.style.maxWidth = '';
         dialog.style.height = '';
@@ -1848,12 +2087,6 @@ window.openWorkSummaryModal = function () {
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
     };
-  }
-
-  const searchInput = document.getElementById('fSumModalSearch');
-  if (searchInput) {
-    searchInput.value = '';
-    searchInput.oninput = (e) => renderPopupTable(e.target.value.toLowerCase().trim());
   }
 
   const modalEl = document.getElementById('workSummaryModal');

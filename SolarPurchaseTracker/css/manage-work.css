@@ -180,7 +180,8 @@
 
 .table-manage-work th.th-customer {
   text-align: left;
-  min-width: 140px;
+  min-width: 215px;
+  width: 230px;
 }
 
 .table-manage-work th.th-stage {
@@ -235,12 +236,68 @@
   color: #ffffff !important;
 }
 
-/* ══ Customer Cell (Single Compact Line) ══════════════════════════════ */
-.mw-customer-cell {
+/* ══ Progress Bar & Collapsed Card Styles ══════════════════════════════ */
+.mw-card-progress-wrap {
+  user-select: none;
+}
+
+.mw-progress-segment {
+  user-select: none;
+}
+
+.mw-progress-segment:hover {
+  filter: brightness(0.92);
+}
+
+.mw-card-toggle-btn {
+  text-decoration: none !important;
+  color: #64748b;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.mw-card-toggle-btn:hover {
+  color: #2563eb !important;
+  background-color: #f1f5f9;
+}
+
+@media (min-width: 769px) {
+  .table-manage-work .mw-bottom-collapse-td {
+    display: none !important;
+  }
+
+  .table-manage-work tr.mw-card-collapsed td.td-progress-col {
+    padding: 3px 10px !important;
+    vertical-align: middle;
+  }
+}
+
+/* ══ Customer Cell (Single Compact Line) ══════════════════════════════ */
+.mw-customer-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   white-space: nowrap;
+  width: 100%;
+}
+
+.table-manage-work .mw-pay-status-label {
+  font-size: 0.74rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.table-manage-work .erp-price-bracket {
+  color: #64748b;
+  font-weight: 500;
+  margin-left: 2px;
 }
 
 .mw-sl-badge {
@@ -1436,7 +1493,8 @@
   }
 
   /* No records empty state */
-  .table-manage-work tbody tr td[colspan] {
+  .table-manage-work tbody tr.mw-empty-state-row td,
+  .table-manage-work tbody tr:not(.mw-card-row) td[colspan] {
     display: block !important;
     width: 100% !important;
     text-align: center !important;
@@ -1445,6 +1503,59 @@
     border-radius: 8px !important;
     color: #64748b !important;
     font-size: 0.82rem !important;
+  }
+
+  /* Collapsed Card on Mobile */
+  .table-manage-work tr.mw-card-collapsed {
+    padding: 7px 10px 8px 10px !important;
+    gap: 5px !important;
+    contain-intrinsic-size: 0 68px !important;
+  }
+
+  .table-manage-work tr.mw-card-collapsed td:nth-child(1) {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .table-manage-work tr.mw-card-collapsed td.td-progress-col {
+    display: block !important;
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 2px 0 0 0 !important;
+    margin: 0 !important;
+    min-height: unset !important;
+    height: auto !important;
+    white-space: normal !important;
+  }
+
+  .table-manage-work tr.mw-card-collapsed td.td-progress-col::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Bottom Collapse Button on Expanded Mobile Card */
+  .table-manage-work .mw-bottom-collapse-td {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    background: transparent !important;
+    border: none !important;
+    border-top: 1px dashed #e2e8f0 !important;
+    padding: 6px 0 2px 0 !important;
+    margin-top: 5px !important;
+    cursor: pointer !important;
+    height: auto !important;
+    min-height: unset !important;
+  }
+
+  .table-manage-work .mw-bottom-collapse-td::before {
+    display: none !important;
+    content: none !important;
   }
 
   /* ── Section Header (Customer Cell - Line 1) ── */
@@ -1467,7 +1578,7 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 6px !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     width: 100% !important;
   }
 
@@ -1482,21 +1593,28 @@
   }
 
   .table-manage-work .mw-customer-name {
-    font-size: 0.90rem !important;
+    font-size: 0.88rem !important;
     font-weight: 700 !important;
     color: #0f172a !important;
     line-height: 1.3 !important;
     flex: 1 1 auto !important;
-    white-space: normal !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 
-  .table-manage-work .erp-delay-badge {
-    font-size: 0.70rem !important;
-    font-weight: 600 !important;
-    padding: 2px 6px !important;
-    border-radius: 5px !important;
+  .table-manage-work .mw-pay-status-label {
+    font-size: 0.73rem !important;
     flex-shrink: 0 !important;
     margin-left: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .table-manage-work .erp-price-bracket {
+    color: #475569 !important;
+    font-weight: 600 !important;
   }
 
   /* ── Stages (2 through 9): Single-Row Layout (Toggle & Datepicker on Same Line of Row) ── */
