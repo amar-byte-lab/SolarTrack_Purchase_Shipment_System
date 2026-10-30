@@ -3001,34 +3001,47 @@ window.calcModuleTotalCapacity = function() {
   }
 };
 
-function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
-  let basePhone = '';
-  let expensesJson = '';
-  let creatorId = '';
-  let workObj = {};
-
-  if (currentBrokerNumber) {
-    const parts = currentBrokerNumber.split('|');
-    basePhone = parts[0] || '';
-    parts.slice(1).forEach(p => {
-      if (p.startsWith('expenses:')) {
-        expensesJson = p.slice('expenses:'.length);
-      } else if (p.startsWith('creator:')) {
-        creatorId = p.slice('creator:'.length);
-      } else if (p.startsWith('work:')) {
-        try {
-          workObj = JSON.parse(p.slice('work:'.length));
-        } catch (e) {}
-      }
-    });
+function parseBrokerNumberForWork(brokerStr) {
+  if (!brokerStr || typeof brokerStr !== 'string') {
+    return { basePhone: '', expensesJson: '', creatorId: '', workObj: {} };
   }
+  let workObj = {};
+  let rest = brokerStr;
+  const workIdx = brokerStr.indexOf('|work:');
+  if (workIdx !== -1) {
+    const workStr = brokerStr.slice(workIdx + 6);
+    rest = brokerStr.slice(0, workIdx);
+    try {
+      workObj = JSON.parse(workStr) || {};
+    } catch (e) {
+      console.warn('Error parsing |work: JSON in customer.js:', e);
+    }
+  }
+  let creatorId = '';
+  const creatorIdx = rest.indexOf('|creator:');
+  if (creatorIdx !== -1) {
+    creatorId = rest.slice(creatorIdx + 9).split('|')[0];
+    rest = rest.slice(0, creatorIdx);
+  }
+  let expensesJson = '';
+  const expensesIdx = rest.indexOf('|expenses:');
+  if (expensesIdx !== -1) {
+    expensesJson = rest.slice(expensesIdx + 10).split('|')[0];
+    rest = rest.slice(0, expensesIdx);
+  }
+  const basePhone = rest.split('|')[0] || '';
+  return { basePhone, expensesJson, creatorId, workObj };
+}
+window.parseBrokerNumberForWork = parseBrokerNumberForWork;
 
-  Object.assign(workObj, updates);
+function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
+  const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumberForWork(currentBrokerNumber);
+  Object.assign(workObj, updates || {});
 
-  let result = basePhone;
+  let result = basePhone || '';
   if (expensesJson) result += '|expenses:' + expensesJson;
   if (creatorId) result += '|creator:' + creatorId;
-  if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
+  if (workObj && Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
   return result;
 }
 window.formatBrokerNumberWithWorkMeta = formatBrokerNumberWithWorkMeta;
@@ -3114,15 +3127,18 @@ window.openProductModal = function(slNo) {
     } catch (e) {
       specs = {};
     }
-  } else if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
-    try {
-      const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
-      const workData = JSON.parse(workPart);
-      if (workData.ProductSpecs) {
-        r.ProductSpecs = workData.ProductSpecs;
-        specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
-      }
-    } catch (e) {}
+  }
+  if (!specs || Object.keys(specs).length === 0) {
+    if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
+      try {
+        const workIdx = r.BrokerNumber.indexOf('|work:');
+        const workData = JSON.parse(r.BrokerNumber.slice(workIdx + 6));
+        if (workData.ProductSpecs) {
+          r.ProductSpecs = workData.ProductSpecs;
+          specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+        }
+      } catch (e) {}
+    }
   }
 
   const lastUser = specs.LastModifiedBy || specs.UpdatedBy || specs.ModifiedBy || specs.SavedBy || r.SpecsUpdatedBy || '';
@@ -3148,8 +3164,18 @@ window.openProductModal = function(slNo) {
   const capNum = parseFloat(String(r.ProposedCapacity || r.Capacity || '3').replace(/[^0-9.]/g, '')) || 3;
 
   // General Dates & Site Info: Fallback to existing customer data if not set in specs
-  const dateOfInstallation = specs.DateOfInstallation || (r.InstallationDate ? new Date(r.InstallationDate).toISOString().slice(0, 10) : '');
-  const dateOfCommission = specs.DateOfCommission || (r.CommissioningDate ? new Date(r.CommissioningDate).toISOString().slice(0, 10) : '');
+  const parseSafeDate = (dVal) => {
+    if (!dVal) return '';
+    const s = String(dVal).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    try {
+      const dt = new Date(s);
+      if (!isNaN(dt.getTime())) return dt.toISOString().slice(0, 10);
+    } catch (_) {}
+    return '';
+  };
+  const dateOfInstallation = parseSafeDate(specs.DateOfInstallation || r.InstallationDate);
+  const dateOfCommission = parseSafeDate(specs.DateOfCommission || r.CommissioningDate);
   const siteAddress = toUpperSpec(specs.SiteAddress || r.Address || '');
   const pinCodeVal = toUpperSpec(specs.PinCode || r.PinCode || '');
   const stateVal = toUpperSpec(specs.State || r.State || 'ODISHA');
@@ -3201,7 +3227,7 @@ window.openProductModal = function(slNo) {
   document.getElementById('prodInverterCount').value = '1';
   document.getElementById('prodInverterMake').value = toUpperSpec(inv.Make || brandInfo.inverterMake || '');
   document.getElementById('prodInverterSerialNo').value = toUpperSpec(inv.SerialNo || '');
-  document.getElementById('prodInverterCapacity').value = extractNumFromSpec(inv.Capacity, '3');
+  document.getElementById('prodInverterCapacity').value = extractNumFromSpec(inv.Capacity, String(Math.round(capNum) || '3'));
   document.getElementById('prodInverterInputVoltage').value = extractNumFromSpec(inv.InputVoltage, '300');
   document.getElementById('prodInverterOutputVoltage').value = extractVoltAcFromSpec(inv.OutputVoltage, '220 - 240');
 
@@ -3430,14 +3456,17 @@ window.saveProductPopupSpecs = async function() {
       SpecsUpdatedBy: username,
       SpecsUpdatedAt: nowIso
     };
-    if (dateOfInstallation) {
-      updatePayload.InstallationDate = dateOfInstallation;
-    }
-    if (dateOfCommission) {
-      updatePayload.CommissioningDate = dateOfCommission;
-    }
+    updatePayload.InstallationDate = dateOfInstallation || null;
+    updatePayload.CommissioningDate = dateOfCommission || null;
 
     await DB.update('installments', x => Number(x.SlNo) === slNo, updatePayload);
+
+    // Hide modal on successful save
+    const modalEl = document.getElementById('productModal');
+    if (modalEl) {
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+    }
 
     UI.toast('Specifications saved successfully to database.', 'success');
     renderList();
@@ -4428,36 +4457,8 @@ async function saveCustomerModal() {
     }
   }
 
-  function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
-    let basePhone = '';
-    let expensesJson = '';
-    let creatorId = '';
-    let workObj = {};
-
-    if (currentBrokerNumber) {
-      const parts = currentBrokerNumber.split('|');
-      basePhone = parts[0] || '';
-      parts.slice(1).forEach(p => {
-        if (p.startsWith('expenses:')) {
-          expensesJson = p.slice('expenses:'.length);
-        } else if (p.startsWith('creator:')) {
-          creatorId = p.slice('creator:'.length);
-        } else if (p.startsWith('work:')) {
-          try {
-            workObj = JSON.parse(p.slice('work:'.length));
-          } catch (e) {}
-        }
-      });
-    }
-
-    Object.assign(workObj, updates);
-
-    let result = basePhone;
-    if (expensesJson) result += '|expenses:' + expensesJson;
-    if (creatorId) result += '|creator:' + creatorId;
-    if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
-    return result;
-  }
+  // Using top-level formatBrokerNumberWithWorkMeta
+  /* inner duplicate removed */
 
   const workMeta = {
     SubDivision: document.getElementById('cSubDivision') ? document.getElementById('cSubDivision').value.trim() : (existingRow ? (existingRow.SubDivision || '') : ''),
@@ -4467,7 +4468,17 @@ async function saveCustomerModal() {
     ProposedCapacity: document.getElementById('cProposedCapacity') ? document.getElementById('cProposedCapacity').value.trim() : (existingRow ? (existingRow.ProposedCapacity || '') : '')
   };
 
-  const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses), workMeta);
+  if (existingRow) {
+    if (existingRow.ProductSpecs) workMeta.ProductSpecs = existingRow.ProductSpecs;
+    if (existingRow.SpecsUpdatedBy) workMeta.SpecsUpdatedBy = existingRow.SpecsUpdatedBy;
+    if (existingRow.SpecsUpdatedAt) workMeta.SpecsUpdatedAt = existingRow.SpecsUpdatedAt;
+    ['AgreementDate', 'MaterialDispatchedDate', 'NetMeterDate', 'InspectionDate', 'MeterConnectedDate', 'SubsidyDate'].forEach(k => {
+      if (existingRow[k]) workMeta[k] = existingRow[k];
+    });
+  }
+
+  const baseForMeta = existingRow && existingRow.BrokerNumber ? existingRow.BrokerNumber : (phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses));
+  const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(baseForMeta, workMeta);
 
   const rowData = {
     Name: name,
@@ -4493,7 +4504,9 @@ async function saveCustomerModal() {
     Commission: Number(document.getElementById('cCommission').value) || 0,
     NetMeterPayment: expenses.net_meter_payment,
     NetMeterPaid: expenses.net_meter_paid,
-    ProductSpecs: existingRow ? (existingRow.ProductSpecs || null) : null
+    ProductSpecs: existingRow ? (existingRow.ProductSpecs || null) : null,
+    SpecsUpdatedBy: existingRow ? (existingRow.SpecsUpdatedBy || null) : null,
+    SpecsUpdatedAt: existingRow ? (existingRow.SpecsUpdatedAt || null) : null
   };
 
   UI.showLoading(true);
@@ -5129,36 +5142,8 @@ async function saveImportedCustomers() {
     return;
   }
 
-  function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
-    let basePhone = '';
-    let expensesJson = '';
-    let creatorId = '';
-    let workObj = {};
-
-    if (currentBrokerNumber) {
-      const parts = currentBrokerNumber.split('|');
-      basePhone = parts[0] || '';
-      parts.slice(1).forEach(p => {
-        if (p.startsWith('expenses:')) {
-          expensesJson = p.slice('expenses:'.length);
-        } else if (p.startsWith('creator:')) {
-          creatorId = p.slice('creator:'.length);
-        } else if (p.startsWith('work:')) {
-          try {
-            workObj = JSON.parse(p.slice('work:'.length));
-          } catch (e) {}
-        }
-      });
-    }
-
-    Object.assign(workObj, updates);
-
-    let result = basePhone;
-    if (expensesJson) result += '|expenses:' + expensesJson;
-    if (creatorId) result += '|creator:' + creatorId;
-    if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
-    return result;
-  }
+  // Using top-level formatBrokerNumberWithWorkMeta
+  /* inner duplicate removed */
 
   UI.showLoading(true);
   try {

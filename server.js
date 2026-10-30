@@ -954,8 +954,8 @@ const server = http.createServer(async (req, res) => {
 
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-  const cacheControl = ext === '.html'
-    ? 'no-cache'
+  const cacheControl = (ext === '.html' || ext === '.js' || ext === '.css')
+    ? 'no-cache, no-store, must-revalidate'
     : 'public, max-age=86400, stale-while-revalidate=3600';
 
   try {

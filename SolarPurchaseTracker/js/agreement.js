@@ -4641,36 +4641,50 @@ function parseCustomerBrandForSpecs(committedBrand) {
   };
 }
 
-function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
-  let basePhone = '';
-  let expensesJson = '';
-  let creatorId = '';
-  let workObj = {};
-
-  if (currentBrokerNumber) {
-    const parts = currentBrokerNumber.split('|');
-    basePhone = parts[0] || '';
-    parts.slice(1).forEach(p => {
-      if (p.startsWith('expenses:')) {
-        expensesJson = p.slice('expenses:'.length);
-      } else if (p.startsWith('creator:')) {
-        creatorId = p.slice('creator:'.length);
-      } else if (p.startsWith('work:')) {
-        try {
-          workObj = JSON.parse(p.slice('work:'.length));
-        } catch (e) {}
-      }
-    });
+function parseBrokerNumberForWork(brokerStr) {
+  if (!brokerStr || typeof brokerStr !== 'string') {
+    return { basePhone: '', expensesJson: '', creatorId: '', workObj: {} };
   }
+  let workObj = {};
+  let rest = brokerStr;
+  const workIdx = brokerStr.indexOf('|work:');
+  if (workIdx !== -1) {
+    const workStr = brokerStr.slice(workIdx + 6);
+    rest = brokerStr.slice(0, workIdx);
+    try {
+      workObj = JSON.parse(workStr) || {};
+    } catch (e) {
+      console.warn('Error parsing |work: JSON in agreement.js:', e);
+    }
+  }
+  let creatorId = '';
+  const creatorIdx = rest.indexOf('|creator:');
+  if (creatorIdx !== -1) {
+    creatorId = rest.slice(creatorIdx + 9).split('|')[0];
+    rest = rest.slice(0, creatorIdx);
+  }
+  let expensesJson = '';
+  const expensesIdx = rest.indexOf('|expenses:');
+  if (expensesIdx !== -1) {
+    expensesJson = rest.slice(expensesIdx + 10).split('|')[0];
+    rest = rest.slice(0, expensesIdx);
+  }
+  const basePhone = rest.split('|')[0] || '';
+  return { basePhone, expensesJson, creatorId, workObj };
+}
+window.parseBrokerNumberForWork = parseBrokerNumberForWork;
 
-  Object.assign(workObj, updates);
+function formatBrokerNumberWithWorkMeta(currentBrokerNumber, updates) {
+  const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumberForWork(currentBrokerNumber);
+  Object.assign(workObj, updates || {});
 
-  let result = basePhone;
+  let result = basePhone || '';
   if (expensesJson) result += '|expenses:' + expensesJson;
   if (creatorId) result += '|creator:' + creatorId;
-  if (Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
+  if (workObj && Object.keys(workObj).length > 0) result += '|work:' + JSON.stringify(workObj);
   return result;
 }
+window.formatBrokerNumberWithWorkMeta = formatBrokerNumberWithWorkMeta;
 
 window.renderModuleSerialInputs = function(initialSerials = null, initialCapacities = null) {
   const countInput = document.getElementById('prodModuleCount');
@@ -4898,15 +4912,20 @@ window.openProductModal = function(slNo) {
     } catch (e) {
       specs = {};
     }
-  } else if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
-    try {
-      const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
-      const workData = JSON.parse(workPart);
-      if (workData.ProductSpecs) {
-        r.ProductSpecs = workData.ProductSpecs;
-        specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+  }
+  if (!specs || Object.keys(specs).length === 0) {
+    if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
+      try {
+        const workIdx = r.BrokerNumber.indexOf('|work:');
+        const workData = JSON.parse(r.BrokerNumber.slice(workIdx + 6));
+        if (workData && workData.ProductSpecs) {
+          r.ProductSpecs = workData.ProductSpecs;
+          specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
+        }
+      } catch (e) {
+        console.warn('Error parsing |work: in agreement.js:', e);
       }
-    } catch (e) {}
+    }
   }
 
   const lastUser = specs.LastModifiedBy || specs.UpdatedBy || specs.ModifiedBy || specs.SavedBy || r.SpecsUpdatedBy || '';

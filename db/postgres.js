@@ -31,6 +31,55 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
 });
 
+const VALID_INSTALLMENT_COLS = new Set([
+  'SlNo', 'Name', 'Status', 'District', 'Address', 'MobileNumber',
+  'CommittedBrand', 'FirstInstallment', 'SecondInstallment', 'ThirdInstallment',
+  'Total', 'CommittedPrice', 'LoginDate', 'InstallationDate', 'Commission',
+  'CommissionPaid', 'BrokerName', 'BrokerNumber', 'CommissioningDate',
+  'VendorPrice', 'VendorPaid', 'ConsumerNo', 'PinCode', 'State',
+  'NetMeterPayment', 'NetMeterPaid'
+]);
+
+function parseBrokerNumber(brokerStr) {
+  if (!brokerStr || typeof brokerStr !== 'string') {
+    return { basePhone: '', expensesJson: '', creatorId: '', workObj: {} };
+  }
+  let workObj = {};
+  let rest = brokerStr;
+  const workIdx = brokerStr.indexOf('|work:');
+  if (workIdx !== -1) {
+    const workStr = brokerStr.slice(workIdx + 6);
+    rest = brokerStr.slice(0, workIdx);
+    try {
+      workObj = JSON.parse(workStr) || {};
+    } catch (e) {
+      console.warn('[Postgres] Error parsing |work: JSON:', e.message);
+    }
+  }
+  let creatorId = '';
+  const creatorIdx = rest.indexOf('|creator:');
+  if (creatorIdx !== -1) {
+    creatorId = rest.slice(creatorIdx + 9).split('|')[0];
+    rest = rest.slice(0, creatorIdx);
+  }
+  let expensesJson = '';
+  const expensesIdx = rest.indexOf('|expenses:');
+  if (expensesIdx !== -1) {
+    expensesJson = rest.slice(expensesIdx + 10).split('|')[0];
+    rest = rest.slice(0, expensesIdx);
+  }
+  const basePhone = rest.split('|')[0] || '';
+  return { basePhone, expensesJson, creatorId, workObj };
+}
+
+function formatBrokerNumber(basePhone, expensesJson, creatorId, workObj) {
+  let res = basePhone || '';
+  if (expensesJson) res += '|expenses:' + expensesJson;
+  if (creatorId) res += '|creator:' + creatorId;
+  if (workObj && Object.keys(workObj).length > 0) res += '|work:' + JSON.stringify(workObj);
+  return res;
+}
+
 const PRIMARY_KEYS = {
   shipments:           'ShipmentNo',
   materials:           'RowID',
@@ -81,9 +130,8 @@ async function getTable(tableName) {
         });
         if (tableName === 'installments' && normalized.BrokerNumber && normalized.BrokerNumber.includes('|work:')) {
           try {
-            const workPart = normalized.BrokerNumber.split('|work:')[1].split('|')[0];
-            const workData = JSON.parse(workPart);
-            Object.assign(normalized, workData);
+            const { workObj } = parseBrokerNumber(normalized.BrokerNumber);
+            Object.assign(normalized, workObj);
           } catch (e) {
             console.error('[Postgres] Error parsing work metadata:', e);
           }
@@ -112,45 +160,19 @@ async function safeUpsert(tableName, row) {
     };
   }
   if (tableName === 'installments') {
-    const customFields = {};
-    if (row.ProductSpecs !== undefined) customFields.ProductSpecs = row.ProductSpecs;
-    if (row.SubDivision !== undefined) customFields.SubDivision = row.SubDivision;
-    if (row.DivisionName !== undefined) customFields.DivisionName = row.DivisionName;
-    if (row.CircleName !== undefined) customFields.CircleName = row.CircleName;
-    if (row.ApplicationNumber !== undefined) customFields.ApplicationNumber = row.ApplicationNumber;
-    if (row.ProposedCapacity !== undefined) customFields.ProposedCapacity = row.ProposedCapacity;
-    if (row.SpecsUpdatedBy !== undefined) customFields.SpecsUpdatedBy = row.SpecsUpdatedBy;
-    if (row.SpecsUpdatedAt !== undefined) customFields.SpecsUpdatedAt = row.SpecsUpdatedAt;
-
-    if (Object.keys(customFields).length > 0) {
-      let baseBroker = item.BrokerNumber || '';
-      let expensesJson = null;
-      let creatorId = null;
-      let workObj = {};
-
-      if (baseBroker.includes('|')) {
-        const parts = baseBroker.split('|');
-        baseBroker = parts[0];
-        parts.slice(1).forEach(p => {
-          if (p.startsWith('expenses:')) expensesJson = p.slice('expenses:'.length);
-          else if (p.startsWith('creator:')) creatorId = p.slice('creator:'.length);
-          else if (p.startsWith('work:')) {
-            try { workObj = JSON.parse(p.slice('work:'.length)); } catch (_) {}
-          }
-        });
+    const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(item.BrokerNumber);
+    for (const k of Object.keys(item)) {
+      if (!VALID_INSTALLMENT_COLS.has(k)) {
+        if (item[k] !== undefined) {
+          workObj[k] = item[k];
+        }
+        delete item[k];
       }
-
-      Object.assign(workObj, customFields);
-
-      let newBroker = baseBroker;
-      if (expensesJson) newBroker += '|expenses:' + expensesJson;
-      if (creatorId) newBroker += '|creator:' + creatorId;
-      if (Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
-
-      item.BrokerNumber = newBroker;
     }
+    item.BrokerNumber = formatBrokerNumber(basePhone, expensesJson, creatorId, workObj);
   }
-  for (let attempt = 0; attempt < 10; attempt++) {
+  const maxAttempts = Object.keys(item).length + 3;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const { error } = await supabase.from(tableName).upsert([item]);
       if (!error) return;
@@ -161,10 +183,12 @@ async function safeUpsert(tableName, row) {
         continue;
       }
       console.error(`[Postgres] safeUpsert('${tableName}') error:`, error.message);
-      return;
+      throw new Error(`[Postgres] safeUpsert('${tableName}') failed: ${error.message}`);
     } catch (err) {
-      console.error(`[Postgres] safeUpsert('${tableName}') exception:`, err.message);
-      return;
+      if (attempt >= maxAttempts - 1) {
+        console.error(`[Postgres] safeUpsert('${tableName}') exception:`, err.message);
+        throw err;
+      }
     }
   }
 }
@@ -185,47 +209,22 @@ async function safeUpdate(tableName, matchField, val, newData) {
     };
   }
   if (tableName === 'installments') {
-    const customFields = {};
-    if (newData.ProductSpecs !== undefined) customFields.ProductSpecs = newData.ProductSpecs;
-    if (newData.SubDivision !== undefined) customFields.SubDivision = newData.SubDivision;
-    if (newData.DivisionName !== undefined) customFields.DivisionName = newData.DivisionName;
-    if (newData.CircleName !== undefined) customFields.CircleName = newData.CircleName;
-    if (newData.ApplicationNumber !== undefined) customFields.ApplicationNumber = newData.ApplicationNumber;
-    if (newData.ProposedCapacity !== undefined) customFields.ProposedCapacity = newData.ProposedCapacity;
-    if (newData.SpecsUpdatedBy !== undefined) customFields.SpecsUpdatedBy = newData.SpecsUpdatedBy;
-    if (newData.SpecsUpdatedAt !== undefined) customFields.SpecsUpdatedAt = newData.SpecsUpdatedAt;
-
-    if (Object.keys(customFields).length > 0) {
-      let baseBroker = item.BrokerNumber || '';
-      let expensesJson = null;
-      let creatorId = null;
-      let workObj = {};
-
-      if (baseBroker.includes('|')) {
-        const parts = baseBroker.split('|');
-        baseBroker = parts[0];
-        parts.slice(1).forEach(p => {
-          if (p.startsWith('expenses:')) expensesJson = p.slice('expenses:'.length);
-          else if (p.startsWith('creator:')) creatorId = p.slice('creator:'.length);
-          else if (p.startsWith('work:')) {
-            try { workObj = JSON.parse(p.slice('work:'.length)); } catch (_) {}
-          }
-        });
+    const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(item.BrokerNumber);
+    for (const k of Object.keys(item)) {
+      if (!VALID_INSTALLMENT_COLS.has(k)) {
+        if (item[k] !== undefined) {
+          workObj[k] = item[k];
+        }
+        delete item[k];
       }
-
-      Object.assign(workObj, customFields);
-
-      let newBroker = baseBroker;
-      if (expensesJson) newBroker += '|expenses:' + expensesJson;
-      if (creatorId) newBroker += '|creator:' + creatorId;
-      if (Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
-
-      item.BrokerNumber = newBroker;
     }
+    item.BrokerNumber = formatBrokerNumber(basePhone, expensesJson, creatorId, workObj);
   }
-  for (let attempt = 0; attempt < 10; attempt++) {
+  const maxAttempts = Object.keys(item).length + 3;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const { error } = await supabase.from(tableName).update(item).eq(field, val);
+      const matchVal = (field === 'SlNo' || field === 'id' || field === 'BorrowerID') && !isNaN(val) ? Number(val) : val;
+      const { error } = await supabase.from(tableName).update(item).eq(field, matchVal);
       if (!error) return;
 
       const match = error.message && error.message.match(/Could not find the '([^']+)' column/i);
@@ -234,10 +233,12 @@ async function safeUpdate(tableName, matchField, val, newData) {
         continue;
       }
       console.error(`[Postgres] safeUpdate('${tableName}') error:`, error.message);
-      return;
+      throw new Error(`[Postgres] safeUpdate('${tableName}') failed: ${error.message}`);
     } catch (err) {
-      console.error(`[Postgres] safeUpdate('${tableName}') exception:`, err.message);
-      return;
+      if (attempt >= maxAttempts - 1) {
+        console.error(`[Postgres] safeUpdate('${tableName}') exception:`, err.message);
+        throw err;
+      }
     }
   }
 }

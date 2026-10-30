@@ -101,22 +101,7 @@ const DB = (() => {
 
     async function tryRestoreFolder() {
         mode = 'postgres';
-
-        // 1. Instant restore from sessionStorage if available (0ms delay for sub-page navigation)
-        try {
-            const stored = sessionStorage.getItem('st_db_cache');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (parsed && typeof parsed === 'object' && parsed.shipments) {
-                    cache = parsed;
-                    // Silent non-blocking background refresh
-                    refreshCacheInBackground();
-                    return true;
-                }
-            }
-        } catch (e) { }
-
-        // 2. Initial fresh fetch if no session cache exists
+        // Always fetch fresh data from server so newly added and updated data is immediately visible
         return await fetchFreshDatabase();
     }
 
@@ -133,18 +118,7 @@ const DB = (() => {
                 try {
                     const r = await fetch(`/api/get?table=${key}`);
                     const fetchedRows = r.ok ? await r.json() : [];
-                    if (Array.isArray(fetchedRows) && cache[key] && Array.isArray(cache[key]) && cache[key].length > 0) {
-                        const pkName = getPrimaryKey(key);
-                        if (pkName) {
-                            const fetchedKeys = new Set(fetchedRows.map(d => String(d[pkName])));
-                            const localOnly = cache[key].filter(r => !fetchedKeys.has(String(r[pkName])));
-                            cache[key] = [...fetchedRows, ...localOnly];
-                        } else {
-                            cache[key] = fetchedRows;
-                        }
-                    } else {
-                        cache[key] = Array.isArray(fetchedRows) ? fetchedRows : [];
-                    }
+                    cache[key] = Array.isArray(fetchedRows) ? fetchedRows : [];
                 } catch {
                     cache[key] = cache[key] || [];
                 }
@@ -188,16 +162,22 @@ const DB = (() => {
 
     function normalizeInstallmentRow(r) {
         if (!r) return r;
-        if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
-            try {
-                const workPart = r.BrokerNumber.split('|work:')[1].split('|')[0];
-                const workData = JSON.parse(workPart);
-                Object.keys(workData).forEach(k => {
-                    if (r[k] === undefined || r[k] === null || r[k] === '' || k === 'ProductSpecs' || k === 'SpecsUpdatedBy' || k === 'SpecsUpdatedAt') {
-                        r[k] = workData[k];
+        if (r.BrokerNumber && typeof r.BrokerNumber === 'string') {
+            const workIdx = r.BrokerNumber.indexOf('|work:');
+            if (workIdx !== -1) {
+                try {
+                    const workData = JSON.parse(r.BrokerNumber.slice(workIdx + 6));
+                    if (workData && typeof workData === 'object') {
+                        Object.keys(workData).forEach(k => {
+                            if (r[k] === undefined || r[k] === null || r[k] === '' || k === 'ProductSpecs' || k === 'SpecsUpdatedBy' || k === 'SpecsUpdatedAt') {
+                                r[k] = workData[k];
+                            }
+                        });
                     }
-                });
-            } catch (e) { }
+                } catch (e) {
+                    console.warn('[DB] Error parsing |work: JSON:', e);
+                }
+            }
         }
         return r;
     }
@@ -271,7 +251,7 @@ const DB = (() => {
         const pkValue = originalRow ? (originalRow[pkName] !== undefined && originalRow[pkName] !== null ? originalRow[pkName] : originalRow[pkName ? pkName.toLowerCase() : '']) : null;
 
         // Update local cache
-        cache[key] = cache[key].map(r => matchFn(r) ? { ...r, ...newData } : r);
+        cache[key] = cache[key].map(r => matchFn(r) ? (key === 'installments' ? normalizeInstallmentRow({ ...r, ...newData }) : { ...r, ...newData }) : r);
         syncSessionCache();
 
         if (mode === 'postgres' && pkValue !== null) {
