@@ -918,9 +918,14 @@ function renderList() {
           <td class="td-customer-col" onclick="window.toggleCardExpansion(${slNo}, event)" style="cursor: pointer;">
             <div class="mw-customer-cell">
               <span class="mw-sl-badge">${idx + 1}</span>
-              <span class="mw-customer-name" title="${r.Name || ''}" onclick="window.openCustomerDetailsModal(${slNo}); event.stopPropagation();" style="cursor: pointer;">
-                ${r.Name || 'Unnamed Customer'}
-              </span>
+              <div class="mw-cust-name-wrap d-inline-flex align-items-center" style="min-width: 0;">
+                <span class="mw-customer-name" title="${r.Name || ''}" onclick="window.toggleCardExpansion(${slNo}, event)" style="cursor: pointer;">
+                  ${r.Name || 'Unnamed Customer'}
+                </span>
+                <button type="button" class="btn btn-xs mw-btn-edit-cust p-0 d-inline-flex align-items-center justify-content-center ms-1" onclick="window.openCustomerModal(${slNo}); event.stopPropagation();" title="Edit Customer Record">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+              </div>
               ${netMeterHtml}
               ${paymentHtml}
               <button type="button" class="btn btn-sm btn-link p-0 mw-card-toggle-btn text-muted ms-1" onclick="window.toggleCardExpansion(${slNo}, event)" title="${toggleBtnTitle}">
@@ -940,12 +945,17 @@ function renderList() {
     return `
       <tr data-slno="${slNo}" class="mw-card-row mw-card-expanded ${isDeactive ? 'deactive-row' : ''} ${isAllComplete ? 'stage-complete-all' : ''}">
         <!-- 1. Customer Cell -->
-        <td class="td-customer-col">
+        <td class="td-customer-col" onclick="window.toggleCardExpansion(${slNo}, event)" style="cursor: pointer;">
           <div class="mw-customer-cell">
             <span class="mw-sl-badge">${idx + 1}</span>
-            <span class="mw-customer-name" title="${r.Name || ''}" onclick="window.openCustomerDetailsModal(${slNo}); event.stopPropagation();" style="cursor: pointer;">
-              ${r.Name || 'Unnamed Customer'}
-            </span>
+            <div class="mw-cust-name-wrap d-inline-flex align-items-center" style="min-width: 0;">
+              <span class="mw-customer-name" title="${r.Name || ''}" onclick="window.toggleCardExpansion(${slNo}, event)" style="cursor: pointer;">
+                ${r.Name || 'Unnamed Customer'}
+              </span>
+              <button type="button" class="btn btn-xs mw-btn-edit-cust p-0 d-inline-flex align-items-center justify-content-center ms-1" onclick="window.openCustomerModal(${slNo}); event.stopPropagation();" title="Edit Customer Record">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+            </div>
             ${paymentHtml}
             <button type="button" class="btn btn-sm btn-link p-0 mw-card-toggle-btn text-primary ms-1" onclick="window.toggleCardExpansion(${slNo}, event)" title="${toggleBtnTitle}">
               <i class="bi ${toggleBtnIcon} fs-7"></i>
@@ -1196,6 +1206,246 @@ window.openCustomerDetailsModal = function (slNo) {
     modal.show();
   }
 };
+
+// ══ Edit Customer Modal Integration ═════════════════════════════════════════
+function updateModalLoginDelayBadge() {
+  const badge = document.getElementById('cLoginDelayBadge');
+  const input = document.getElementById('cLoginDate');
+  if (!badge || !input) return;
+  const val = input.value;
+  if (!val) {
+    badge.style.display = 'none';
+    badge.textContent = '';
+    return;
+  }
+  const info = getDelayInfo(val);
+  if (!info) {
+    badge.style.display = 'none';
+    return;
+  }
+  badge.style.display = 'inline-flex';
+  badge.textContent = info.text;
+  badge.className = 'badge erp-delay-badge font-monospace fs-8 ' + (info.totalDays >= 90 ? 'bg-danger text-white' : (info.totalDays >= 60 ? 'bg-warning text-dark' : 'bg-secondary text-white'));
+}
+
+window.openCustomerModal = function(slNo) {
+  const modalEl = document.getElementById('customerModal');
+  if (!modalEl) return;
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  const titleEl = document.getElementById('customerModalTitle');
+  if (titleEl) titleEl.textContent = slNo ? 'Edit Customer Record' : 'Add New Customer Record';
+  const slNoInput = document.getElementById('cSlNo');
+  if (slNoInput) slNoInput.value = slNo || '';
+
+  const distSelect = document.getElementById('cDistrict');
+  if (distSelect) {
+    distSelect.innerHTML = '<option value="">-- Select District --</option>' + DISTRICTS.map(d => `<option value="${d}">${d}</option>`).join('');
+  }
+
+  if (slNo) {
+    const allRows = DB.getAll('installments') || [];
+    const r = allRows.find(x => Number(x.SlNo) === Number(slNo));
+    if (r) {
+      if (document.getElementById('cName')) document.getElementById('cName').value = r.Name || '';
+      if (document.getElementById('cConsumerNo')) document.getElementById('cConsumerNo').value = r.ConsumerNo || '';
+      if (document.getElementById('cApplicationNo')) document.getElementById('cApplicationNo').value = r.ApplicationNumber || r.ApplicationNo || '';
+      if (document.getElementById('cProposedCapacity')) document.getElementById('cProposedCapacity').value = r.ProposedCapacity || r.Capacity || '';
+      if (document.getElementById('cCircle')) document.getElementById('cCircle').value = r.CircleName || r.Circle || '';
+      if (document.getElementById('cDivision')) document.getElementById('cDivision').value = r.DivisionName || r.Division || '';
+      if (document.getElementById('cSubDivision')) document.getElementById('cSubDivision').value = r.SubDivision || r.Subdivision || '';
+      if (document.getElementById('cMobile')) document.getElementById('cMobile').value = r.MobileNumber || '';
+      if (document.getElementById('cDistrict')) document.getElementById('cDistrict').value = r.District || '';
+      if (document.getElementById('cAddress')) document.getElementById('cAddress').value = r.Address || '';
+      if (document.getElementById('cBrand')) document.getElementById('cBrand').value = r.CommittedBrand || '';
+      if (document.getElementById('cPrice')) document.getElementById('cPrice').value = r.CommittedPrice || '';
+      if (document.getElementById('cVendorPrice')) document.getElementById('cVendorPrice').value = r.VendorPrice || '';
+      if (document.getElementById('cLoginDate')) {
+        document.getElementById('cLoginDate').value = r.LoginDate ? new Date(r.LoginDate).toISOString().slice(0, 10) : '';
+      }
+      if (document.getElementById('cBrokerName')) document.getElementById('cBrokerName').value = r.BrokerName || '';
+      if (document.getElementById('cCommission')) document.getElementById('cCommission').value = r.Commission || '';
+
+      let expenses = null;
+      if (r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+        try {
+          expenses = JSON.parse(r.BrokerNumber.split('|expenses:')[1].split('|')[0]);
+        } catch(e) { console.error(e); }
+      }
+      if (document.getElementById('cMaterialCost')) document.getElementById('cMaterialCost').value = (expenses && expenses.material) || 0;
+      if (document.getElementById('cPartnerPrice')) document.getElementById('cPartnerPrice').value = (expenses && expenses.partner) || 0;
+      if (document.getElementById('cInstallationCost')) document.getElementById('cInstallationCost').value = (expenses && expenses.install) || 0;
+      if (document.getElementById('cTransportCost')) document.getElementById('cTransportCost').value = (expenses && expenses.transport) || 0;
+      const defaultGstVal = (expenses && expenses.gst_pct !== undefined && expenses.gst_pct !== null && expenses.gst_pct !== '') ? expenses.gst_pct : ((typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18);
+      if (document.getElementById('cGSTPercentage')) document.getElementById('cGSTPercentage').value = defaultGstVal;
+      if (document.getElementById('cOtherCost')) document.getElementById('cOtherCost').value = (expenses && expenses.other) || 0;
+      if (document.getElementById('cNetMeterPayment')) {
+        const netMeterVal = (r.NetMeterPayment != null && r.NetMeterPayment !== '') ? r.NetMeterPayment : ((expenses && expenses.net_meter_payment != null && expenses.net_meter_payment !== '') ? expenses.net_meter_payment : '');
+        document.getElementById('cNetMeterPayment').value = netMeterVal;
+      }
+      if (document.getElementById('cNetMeterPaid')) {
+        const isPaid = (r.NetMeterPaid != null) ? !!r.NetMeterPaid : !!(expenses && expenses.net_meter_paid);
+        document.getElementById('cNetMeterPaid').checked = isPaid;
+      }
+    }
+  }
+
+  updateModalLoginDelayBadge();
+
+  const updateModalCalculations = () => {
+    const custPriceVal = Number(document.getElementById('cPrice')?.value) || 0;
+    const gstPct = Number(document.getElementById('cGSTPercentage')?.value) || 0;
+    const gstVal = custPriceVal * (gstPct / 100);
+
+    const gstLabel = document.getElementById('lblGSTAmount');
+    if (gstLabel) gstLabel.textContent = '₹' + gstVal.toFixed(2);
+
+    const mat = Number(document.getElementById('cMaterialCost')?.value) || 0;
+    const inst = Number(document.getElementById('cInstallationCost')?.value) || 0;
+    const trans = Number(document.getElementById('cTransportCost')?.value) || 0;
+    const oth = Number(document.getElementById('cOtherCost')?.value) || 0;
+    const totalExpense = mat + inst + trans + gstVal + oth;
+
+    const totalField = document.getElementById('cVendorPrice');
+    if (totalField) totalField.value = totalExpense.toFixed(2);
+
+    const partnerPrice = Number(document.getElementById('cPartnerPrice')?.value) || 0;
+    const comm = Number(document.getElementById('cCommission')?.value) || 0;
+    const profitVal = partnerPrice - comm - totalExpense;
+
+    const profitField = document.getElementById('cProfit');
+    if (profitField) {
+      profitField.value = profitVal.toFixed(2);
+      profitField.style.color = (profitVal >= 0) ? '#198754' : '#dc3545';
+    }
+  };
+
+  ['cPrice', 'cCommission', 'cPartnerPrice', 'cMaterialCost', 'cTransportCost', 'cOtherCost', 'cInstallationCost', 'cGSTPercentage'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.oninput = updateModalCalculations;
+    }
+  });
+
+  const loginDateInput = document.getElementById('cLoginDate');
+  if (loginDateInput) {
+    loginDateInput.oninput = updateModalLoginDelayBadge;
+    loginDateInput.onchange = updateModalLoginDelayBadge;
+  }
+
+  updateModalCalculations();
+  modal.show();
+};
+
+async function saveCustomerModalRecord() {
+  const slNoVal = document.getElementById('cSlNo')?.value;
+  const name = document.getElementById('cName')?.value.trim();
+  if (!name) {
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast('Customer Name is required.', 'danger');
+    document.getElementById('cName')?.focus();
+    return;
+  }
+
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  let creatorSuffix = '';
+  if (slNoVal) {
+    const slNo = Number(slNoVal);
+    const existing = (DB.getAll('installments') || []).find(x => Number(x.SlNo) === slNo);
+    if (existing && (existing.BrokerNumber || '').includes('|creator:')) {
+      creatorSuffix = '|creator:' + existing.BrokerNumber.split('|creator:')[1].split('|')[0];
+    }
+  }
+  if (!creatorSuffix && currentUser) {
+    creatorSuffix = '|creator:' + currentUser.userid;
+  }
+
+  const custPriceVal = Number(document.getElementById('cPrice')?.value) || 0;
+  const gstPctVal = Number(document.getElementById('cGSTPercentage')?.value) || 0;
+  const calculatedGSTAmount = custPriceVal * (gstPctVal / 100);
+
+  const existingRow = slNoVal ? (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNoVal)) : null;
+
+  const expenses = {
+    material: Number(document.getElementById('cMaterialCost')?.value) || 0,
+    partner: Number(document.getElementById('cPartnerPrice')?.value) || 0,
+    install: Number(document.getElementById('cInstallationCost')?.value) || 0,
+    transport: Number(document.getElementById('cTransportCost')?.value) || 0,
+    gst_pct: gstPctVal,
+    gst: calculatedGSTAmount,
+    other: Number(document.getElementById('cOtherCost')?.value) || 0,
+    net_meter_payment: document.getElementById('cNetMeterPayment') ? (Number(document.getElementById('cNetMeterPayment').value) || 0) : (existingRow ? (existingRow.NetMeterPayment || 0) : 0),
+    net_meter_paid: document.getElementById('cNetMeterPaid') ? document.getElementById('cNetMeterPaid').checked : (existingRow ? !!existingRow.NetMeterPaid : false)
+  };
+
+  const calculatedVendorPrice = expenses.material + expenses.install + expenses.transport + expenses.gst + expenses.other;
+  let phoneClean = existingRow && existingRow.BrokerNumber ? existingRow.BrokerNumber.split('|')[0] : '';
+
+  const workMeta = {
+    SubDivision: document.getElementById('cSubDivision') ? document.getElementById('cSubDivision').value.trim() : (existingRow ? (existingRow.SubDivision || '') : ''),
+    DivisionName: document.getElementById('cDivision') ? document.getElementById('cDivision').value.trim() : (existingRow ? (existingRow.DivisionName || '') : ''),
+    CircleName: document.getElementById('cCircle') ? document.getElementById('cCircle').value.trim() : (existingRow ? (existingRow.CircleName || '') : ''),
+    ApplicationNumber: document.getElementById('cApplicationNo') ? document.getElementById('cApplicationNo').value.trim() : (existingRow ? (existingRow.ApplicationNumber || '') : ''),
+    ProposedCapacity: document.getElementById('cProposedCapacity') ? document.getElementById('cProposedCapacity').value.trim() : (existingRow ? (existingRow.ProposedCapacity || '') : '')
+  };
+
+  if (existingRow) {
+    if (existingRow.ProductSpecs) workMeta.ProductSpecs = existingRow.ProductSpecs;
+    if (existingRow.SpecsUpdatedBy) workMeta.SpecsUpdatedBy = existingRow.SpecsUpdatedBy;
+    if (existingRow.SpecsUpdatedAt) workMeta.SpecsUpdatedAt = existingRow.SpecsUpdatedAt;
+    ['AgreementDate', 'MaterialDispatchedDate', 'NetMeterDate', 'InspectionDate', 'MeterConnectedDate', 'SubsidyDate'].forEach(k => {
+      if (existingRow[k]) workMeta[k] = existingRow[k];
+    });
+  }
+
+  const baseForMeta = existingRow && existingRow.BrokerNumber ? existingRow.BrokerNumber : (phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses));
+  const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(baseForMeta, workMeta);
+
+  const rowData = {
+    Name: name,
+    ConsumerNo: document.getElementById('cConsumerNo') ? document.getElementById('cConsumerNo').value.trim() : '',
+    ApplicationNumber: workMeta.ApplicationNumber,
+    ProposedCapacity: workMeta.ProposedCapacity,
+    CircleName: workMeta.CircleName,
+    DivisionName: workMeta.DivisionName,
+    SubDivision: workMeta.SubDivision,
+    MobileNumber: document.getElementById('cMobile') ? document.getElementById('cMobile').value.trim() : '',
+    District: document.getElementById('cDistrict') ? document.getElementById('cDistrict').value : '',
+    Address: document.getElementById('cAddress') ? document.getElementById('cAddress').value.trim() : (existingRow ? (existingRow.Address || '') : ''),
+    CommittedBrand: document.getElementById('cBrand') ? document.getElementById('cBrand').value.trim() : (existingRow ? (existingRow.CommittedBrand || '') : ''),
+    CommittedPrice: Number(document.getElementById('cPrice')?.value) || 0,
+    VendorPrice: calculatedVendorPrice,
+    LoginDate: document.getElementById('cLoginDate')?.value || null,
+    BrokerName: document.getElementById('cBrokerName') ? document.getElementById('cBrokerName').value.trim() : (existingRow ? (existingRow.BrokerName || '') : ''),
+    BrokerNumber: formattedBrokerNumber,
+    Commission: Number(document.getElementById('cCommission')?.value) || 0,
+    NetMeterPayment: expenses.net_meter_payment,
+    NetMeterPaid: expenses.net_meter_paid
+  };
+
+  if (typeof UI !== 'undefined' && UI.showLoading) UI.showLoading(true);
+  try {
+    if (slNoVal) {
+      const slNo = Number(slNoVal);
+      await DB.update('installments', r => Number(r.SlNo) === slNo, rowData);
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast('Customer record updated.', 'success');
+    }
+    const modalEl = document.getElementById('customerModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+    renderList();
+  } catch (err) {
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast('Error saving customer: ' + err.message, 'danger');
+  } finally {
+    if (typeof UI !== 'undefined' && UI.showLoading) UI.showLoading(false);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnSave = document.getElementById('btnSaveCustomer');
+  if (btnSave) {
+    btnSave.onclick = saveCustomerModalRecord;
+  }
+});
 
 // ══ Helper for BrokerNumber metadata synchronization ════════════════════════
 function formatBrokerNumberWithWorkMeta(existingBrokerNumber, workUpdates) {
