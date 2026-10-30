@@ -30,6 +30,7 @@ const InventoryApp = (() => {
   let activeCategory = 'All';
   let searchTerm = '';
   let statusFilter = 'All';
+  let activeInlineCategory = null;
 
   // Multi-item dynamic rows state
   let inwardRows = [];
@@ -268,30 +269,210 @@ const InventoryApp = (() => {
     };
   }
 
+  // --- Category Management ---
+  const DEFAULT_CATEGORIES = ['Panels', 'Inverters', 'Cables', 'Structure', 'Hardware', 'Electricals', 'Conduit', 'Earthing', 'Others'];
+
+  function getCategoryList() {
+    let saved = null;
+    try {
+      saved = JSON.parse(localStorage.getItem('inv_custom_categories') || 'null');
+    } catch (e) { }
+    let list = Array.isArray(saved) && saved.length > 0 ? [...saved] : [...DEFAULT_CATEGORIES];
+    // Include any categories already on items
+    items.forEach(item => {
+      const c = (item.category || '').trim();
+      if (c && !list.includes(c)) list.push(c);
+    });
+    return list;
+  }
+
+  function saveCategoryList(list) {
+    try {
+      localStorage.setItem('inv_custom_categories', JSON.stringify(list));
+    } catch (e) { }
+    populateCategorySelects();
+    renderCategoryChips();
+    renderLedgerTable();
+  }
+
+  function populateCategorySelects() {
+    const cats = getCategoryList();
+    ['newSkuCategory', 'editSkuCategory'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const cur = el.value;
+      el.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      if (cur && cats.includes(cur)) el.value = cur;
+    });
+  }
+
+  function openEditCategoryModal(cat) {
+    const modalEl = document.getElementById('modalEditCategory');
+    if (!modalEl) return;
+    const oldInput = document.getElementById('editCatOldName');
+    const nameInput = document.getElementById('txtEditCategoryName');
+    const subEl = document.getElementById('editCatModalSubtitle');
+    if (oldInput) oldInput.value = cat;
+    if (nameInput) nameInput.value = cat;
+    if (subEl) subEl.textContent = `Update category name for "${cat}"`;
+    const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+    m.show();
+    setTimeout(() => {
+      nameInput?.focus();
+      nameInput?.select();
+    }, 200);
+  }
+
+  async function saveEditCategoryModal() {
+    const oldCat = document.getElementById('editCatOldName')?.value.trim();
+    const newName = document.getElementById('txtEditCategoryName')?.value.trim();
+    if (!newName || !oldCat) return;
+    if (newName === oldCat) {
+      bootstrap.Modal.getInstance(document.getElementById('modalEditCategory'))?.hide();
+      return;
+    }
+    const cats = getCategoryList();
+    if (cats.some(c => c.toLowerCase() === newName.toLowerCase() && c.toLowerCase() !== oldCat.toLowerCase())) {
+      if (typeof UI !== 'undefined') UI.toast(`Category "${newName}" already exists!`, 'warning');
+      return;
+    }
+    const updated = cats.map(c => c === oldCat ? newName : c);
+    items.forEach(i => {
+      if (i.category === oldCat) i.category = newName;
+    });
+    saveData();
+    if (typeof DB !== 'undefined') {
+      DB.update('inventory_items', r => r.Category === oldCat, { Category: newName }).catch(() => {});
+      DB.update('items', r => r.Category === oldCat, { Category: newName }).catch(() => {});
+    }
+    saveCategoryList(updated);
+    bootstrap.Modal.getInstance(document.getElementById('modalEditCategory'))?.hide();
+    renderCategoryManagerList();
+    if (typeof UI !== 'undefined') UI.toast(`Category renamed to "${newName}"!`, 'success');
+  }
+
+  function promptEditCategory(oldCat) {
+    openEditCategoryModal(oldCat);
+  }
+
+  async function promptDeleteCategory(cat) {
+    if (cat === 'Others') {
+      if (typeof UI !== 'undefined') UI.toast(`Default category "Others" cannot be deleted.`, 'warning');
+      return;
+    }
+    const matchingItems = items.filter(i => i.category === cat);
+    let msg = `Are you sure you want to delete category "${cat}"?`;
+    if (matchingItems.length > 0) {
+      msg = `Category "${cat}" has ${matchingItems.length} item(s).\n\nDeleting this category will move all its items to "Others". Proceed?`;
+    }
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(msg, 'Delete Category', 'Delete', 'btn-danger');
+    } else {
+      ok = confirm(msg);
+    }
+    if (!ok) return;
+
+    if (matchingItems.length > 0) {
+      items.forEach(i => {
+        if (i.category === cat) i.category = 'Others';
+      });
+      saveData();
+      if (typeof DB !== 'undefined') {
+        DB.update('inventory_items', r => r.Category === cat, { Category: 'Others' }).catch(() => {});
+        DB.update('items', r => r.Category === cat, { Category: 'Others' }).catch(() => {});
+      }
+    }
+
+    const cats = getCategoryList().filter(c => c !== cat);
+    if (!cats.includes('Others')) cats.push('Others');
+    saveCategoryList(cats);
+    renderCategoryManagerList();
+    if (typeof UI !== 'undefined') UI.toast(`Category "${cat}" deleted successfully!`, 'success');
+  }
+
+  function openCategoryModal() {
+    renderCategoryManagerList();
+    const modalEl = document.getElementById('modalCategoryManager');
+    if (modalEl) {
+      const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+      m.show();
+      setTimeout(() => document.getElementById('txtNewCategoryName')?.focus(), 200);
+    }
+  }
+
+  function renderCategoryManagerList() {
+    const listEl = document.getElementById('catManagerList');
+    if (!listEl) return;
+    const cats = getCategoryList();
+    const badgeEl = document.getElementById('catManagerTotalBadge');
+    if (badgeEl) badgeEl.textContent = `${cats.length} Categories`;
+
+    listEl.innerHTML = cats.map(cat => {
+      const count = items.filter(i => (i.category || '').toLowerCase() === cat.toLowerCase()).length;
+      return `
+        <div class="cat-manager-card">
+          <div class="cat-manager-card-left">
+            <div class="cat-manager-dot"></div>
+            <span class="cat-manager-name">${escapeHtml(cat)}</span>
+            <span class="cat-manager-count">${count} items</span>
+          </div>
+          <div class="cat-manager-card-actions">
+            <button type="button" class="cat-btn-action" onclick="InventoryApp.openEditCategoryModal('${escapeHtml(cat)}')" title="Rename Category">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+            ${cat !== 'Others' ? `
+            <button type="button" class="cat-btn-action btn-del" onclick="InventoryApp.promptDeleteCategory('${escapeHtml(cat)}')" title="Delete Category">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function addCategoryFromManager() {
+    const input = document.getElementById('txtNewCategoryName');
+    const name = input ? input.value.trim() : '';
+    if (!name) {
+      if (typeof UI !== 'undefined') UI.toast('Please enter a category name', 'warning');
+      input?.focus();
+      return;
+    }
+    const cats = getCategoryList();
+    if (cats.some(c => c.toLowerCase() === name.toLowerCase())) {
+      if (typeof UI !== 'undefined') UI.toast(`Category "${name}" already exists!`, 'warning');
+      input?.focus();
+      return;
+    }
+    cats.push(name);
+    saveCategoryList(cats);
+    if (input) input.value = '';
+    renderCategoryManagerList();
+    if (typeof UI !== 'undefined') UI.toast(`Category "${name}" created successfully!`, 'success');
+  }
+
   // --- Render KPI & Chips ---
   function renderKpiCards() {
     const metrics = getKpiMetrics();
 
     const turnoverEl = document.getElementById('kpiTotalTurnover');
-    const valEl = document.getElementById('kpiTotalValuation');
     const dispEl = document.getElementById('kpiTotalDispatchedCost');
     const transEl = document.getElementById('kpiTotalTransportationCost');
 
     if (turnoverEl) turnoverEl.textContent = fmtRupees(metrics.totalTurnover);
-    if (valEl) valEl.textContent = fmtRupees(metrics.totalWarehouseValuation);
     if (dispEl) dispEl.textContent = fmtRupees(metrics.totalDispatchedMaterialCost);
     if (transEl) transEl.textContent = fmtRupees(metrics.totalTransportationCost);
 
-    // Collapsed Mini Strip Sync
+    // Collapsed Mini Strip Sync (Turnover, Dispatched, Transport)
     const miniTurnover = document.getElementById('miniKpiTurnover');
-    const miniVal = document.getElementById('miniKpiValuation');
     const miniDisp = document.getElementById('miniKpiDispatched');
+    const miniTrans = document.getElementById('miniKpiTransport');
     if (miniTurnover) miniTurnover.textContent = fmtRupees(metrics.totalTurnover);
-    if (miniVal) miniVal.textContent = fmtRupees(metrics.totalWarehouseValuation);
     if (miniDisp) miniDisp.textContent = fmtRupees(metrics.totalDispatchedMaterialCost);
+    if (miniTrans) miniTrans.textContent = fmtRupees(metrics.totalTransportationCost);
 
     const subTurnoverEl = document.getElementById('kpiSubTurnover');
-    const subValEl = document.getElementById('kpiSubValuation');
     const subDispEl = document.getElementById('kpiSubDispatched');
     const subTransEl = document.getElementById('kpiSubTransportation');
 
@@ -302,7 +483,6 @@ const InventoryApp = (() => {
         subTurnoverEl.textContent = 'Total Project Orders';
       }
     }
-    if (subValEl) subValEl.textContent = `${metrics.totalSKUs} catalog items`;
     if (subDispEl) subDispEl.textContent = `${dispatches.length} site consignments`;
     if (subTransEl) {
       const freightTrips = dispatches.filter(d => (Number(d.transportCost) || 0) > 0).length;
@@ -314,33 +494,8 @@ const InventoryApp = (() => {
     const chipsContainer = document.getElementById('invCategoryChips');
     if (!chipsContainer) return;
 
-    const PREFERRED_CATEGORIES = [
-      'All',
-      'Panels',
-      'Inverters',
-      'Cables',
-      'Structure',
-      'Hardware',
-      'Electricals',
-      'Conduit',
-      'Earthing',
-      'Others'
-    ];
-
-    const itemCategories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
-    const categories = ['All'];
-
-    PREFERRED_CATEGORIES.slice(1).forEach(cat => {
-      if (!categories.map(c => c.toLowerCase()).includes(cat.toLowerCase())) {
-        categories.push(cat);
-      }
-    });
-
-    itemCategories.forEach(cat => {
-      if (!categories.map(c => c.toLowerCase()).includes(cat.toLowerCase())) {
-        categories.push(cat);
-      }
-    });
+    const customCats = getCategoryList();
+    const categories = ['All', ...customCats];
 
     if (!categories.map(c => c.toLowerCase()).includes(activeCategory.toLowerCase())) {
       activeCategory = 'All';
@@ -418,14 +573,14 @@ const InventoryApp = (() => {
       return;
     }
 
-    if (rows.length === 0) {
+    if (rows.length === 0 && !activeInlineCategory) {
       treeContainer.innerHTML = `
         <div class="inv-tree-empty text-center py-5">
           <div class="fs-6 fw-semibold text-secondary mb-1">No equipment items found</div>
-          <div class="small text-muted mb-3">Add equipment SKUs to start tracking warehouse stock.</div>
+          <div class="small text-muted mb-3">Add equipment items to start tracking warehouse stock.</div>
           <button type="button" class="inv-btn inv-btn-primary" onclick="InventoryApp.openNewItemModal()">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>Add SKU</span>
+            <span>Add Item</span>
           </button>
         </div>
       `;
@@ -437,8 +592,9 @@ const InventoryApp = (() => {
     }
 
     // Group items by category for tree view
-    const categoryOrder = ['Panels', 'Inverters', 'Cables', 'Structure', 'Hardware', 'Electricals', 'Conduit', 'Earthing', 'Others'];
+    const categoryOrder = getCategoryList();
     const groups = {};
+    categoryOrder.forEach(cat => { groups[cat] = []; });
     rows.forEach(item => {
       const cat = item.category || 'Others';
       if (!groups[cat]) groups[cat] = [];
@@ -449,22 +605,40 @@ const InventoryApp = (() => {
     const totalInHand = rows.reduce((s, r) => s + r.inHandQty, 0);
 
     let html = `
-      <div class="inv-tree-summary">
-        <span class="inv-tree-summary-label">${rows.length} Equipment SKUs</span>
-        <span class="inv-tree-summary-sep">•</span>
-        <span class="inv-tree-summary-stock">Total In-Hand: <strong>${fmtQty(totalInHand)}</strong> units</span>
-        <span class="inv-tree-summary-sep">•</span>
-        <span class="inv-tree-summary-val">Stock Value: <strong class="text-emerald-700 font-monospace">${fmtRupees(totalValuation)}</strong></span>
-      </div>
+      <div class="inv-tree-container">
+        <div class="inv-tree-summary">
+          <div class="inv-tree-summary-top">
+            <span class="inv-tree-summary-label">${rows.length} Equipment Items</span>
+            <span class="inv-tree-summary-sep">•</span>
+            <span class="inv-tree-summary-stock">Total In-Hand: <strong>${fmtQty(totalInHand)}</strong> units</span>
+            <span class="inv-tree-summary-sep">•</span>
+            <span class="inv-tree-summary-val">Stock Value: <strong class="text-emerald-700 font-monospace">${fmtRupees(totalValuation)}</strong></span>
+          </div>
+          <div class="inv-tree-header-row">
+            <div class="inv-tree-header-left col-item">
+              <span class="inv-tree-header-col">Equipment Item</span>
+            </div>
+            <div class="inv-tree-header-right">
+              <span class="inv-tree-header-col col-stock">Item Stock</span>
+              <span class="inv-tree-header-col col-status">Status</span>
+              <span class="inv-tree-header-col col-price">Cost / Unit (₹)</span>
+              <span class="inv-tree-header-col col-val">Total Value (₹)</span>
+              <span class="inv-tree-header-col col-actions">Actions</span>
+            </div>
+          </div>
+        </div>
     `;
 
     // Render each category group
     const renderCategoryGroup = (cat, itemsList) => {
-      if (!itemsList || itemsList.length === 0) return '';
-      const catInHand = itemsList.reduce((s, r) => s + r.inHandQty, 0);
-      const catVal = itemsList.reduce((s, r) => s + r.totalStockValuation, 0);
-      const catOutCount = itemsList.filter(r => r.status === 'out-of-stock').length;
-      const catLowCount = itemsList.filter(r => r.status === 'low-stock').length;
+      const isInlineOpen = activeInlineCategory === cat;
+      if ((!itemsList || itemsList.length === 0) && !isInlineOpen && activeCategory !== 'All') return '';
+      
+      const itemsCount = itemsList ? itemsList.length : 0;
+      const catInHand = (itemsList || []).reduce((s, r) => s + r.inHandQty, 0);
+      const catVal = (itemsList || []).reduce((s, r) => s + r.totalStockValuation, 0);
+      const catOutCount = (itemsList || []).filter(r => r.status === 'out-of-stock').length;
+      const catLowCount = (itemsList || []).filter(r => r.status === 'low-stock').length;
 
       const alertDot = catOutCount > 0
         ? `<span class="inv-tree-cat-dot dot-danger" title="${catOutCount} out of stock"></span>`
@@ -473,23 +647,77 @@ const InventoryApp = (() => {
         : '';
 
       let gHtml = `
-        <div class="inv-tree-group">
-          <div class="inv-tree-group-header" onclick="this.parentElement.classList.toggle('collapsed')" role="button">
+        <div class="inv-tree-group" id="catGroup_${cat}">
+          <div class="inv-tree-group-header" 
+               onclick="this.parentElement.classList.toggle('collapsed')" 
+               oncontextmenu="event.preventDefault(); InventoryApp.startInlineAddItem('${cat}');"
+               title="Click to collapse / expand. Right-click to Add Item"
+               role="button">
             <div class="inv-tree-group-left">
               <svg class="inv-tree-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
               <span class="inv-tree-cat-name">${escapeHtml(cat)}</span>
+              <span class="inv-tree-cat-count" title="${itemsCount} items">${itemsCount}</span>
               ${alertDot}
-              <span class="inv-tree-cat-count">${itemsList.length}</span>
+              <span class="inv-tree-cat-stock">${fmtQty(catInHand)} units</span>
+              <span class="inv-tree-cat-sep">•</span>
+              <span class="inv-tree-cat-val font-monospace">${fmtRupees(catVal)}</span>
             </div>
             <div class="inv-tree-group-right">
-              <span class="inv-tree-cat-stock">${fmtQty(catInHand)} units</span>
-              <span class="inv-tree-cat-val font-monospace">${fmtRupees(catVal)}</span>
+              <button type="button" class="inv-cat-add-btn" onclick="event.stopPropagation(); InventoryApp.startInlineAddItem('${cat}');" title="Add item to ${escapeHtml(cat)}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Item</span>
+              </button>
+              <button type="button" class="inv-cat-action-btn" onclick="event.stopPropagation(); InventoryApp.openEditCategoryModal('${cat}');" title="Rename Category '${escapeHtml(cat)}'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+              ${cat !== 'Others' ? `
+              <button type="button" class="inv-cat-action-btn text-danger" onclick="event.stopPropagation(); InventoryApp.promptDeleteCategory('${cat}');" title="Delete Category '${escapeHtml(cat)}'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>` : ''}
             </div>
           </div>
           <div class="inv-tree-group-body">
       `;
 
-      itemsList.forEach(item => {
+      // If inline addition is open for this category, display input row at top of list
+      if (isInlineOpen) {
+        gHtml += `
+          <div class="inv-tree-item inv-tree-item-inline-add">
+            <div class="inv-tree-item-left col-item">
+              <div class="inv-tree-item-connector"></div>
+              <input type="text" class="form-control form-control-sm fw-semibold" id="inlineNewName_${cat}" placeholder="Item Name *" style="max-width: 250px; flex: 1 1 auto;" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}'); if(event.key==='Escape') InventoryApp.cancelInlineAddItem();" autocomplete="off">
+              <select class="form-select form-select-sm" id="inlineNewUnit_${cat}" style="width: 82px; flex: 0 0 82px;" title="Unit">
+                <option value="Nos">Nos</option>
+                <option value="Pcs">Pcs</option>
+                <option value="Meters">Meters</option>
+                <option value="Sets">Sets</option>
+                <option value="Bag">Bag</option>
+                <option value="Kgs">Kgs</option>
+              </select>
+            </div>
+            <div class="inv-tree-item-right">
+              <div class="inv-tree-col col-stock">
+                <input type="number" min="0" step="any" class="form-control form-control-sm text-center font-monospace w-100" id="inlineNewQty_${cat}" value="0" title="Initial Qty" oninput="InventoryApp.updateInlineTotalVal('${cat}')" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}');">
+              </div>
+              <div class="inv-tree-col col-status">
+                <span class="inv-stock-badge in-stock m-0"><span class="inv-badge-dot"></span> New</span>
+              </div>
+              <div class="inv-tree-col col-price">
+                <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace w-100" id="inlineNewPrice_${cat}" placeholder="0.00" title="Cost / Unit (₹)" oninput="InventoryApp.updateInlineTotalVal('${cat}')" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}');">
+              </div>
+              <div class="inv-tree-col col-val font-monospace fw-bold text-dark small" id="inlineNewTotalVal_${cat}">
+                ₹0.00
+              </div>
+              <div class="inv-tree-col col-actions no-print d-flex align-items-center justify-content-center gap-1">
+                <button type="button" class="btn btn-sm btn-success py-0.5 px-2 fs-8 fw-semibold" onclick="InventoryApp.saveInlineAddItem('${cat}')" title="Save Item">✓ Save</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0.5 px-1.5 fs-8" onclick="InventoryApp.cancelInlineAddItem()" title="Cancel">✕</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      (itemsList || []).forEach(item => {
         let statusBadge = '';
         if (item.status === 'in-stock') {
           statusBadge = `<span class="inv-stock-badge in-stock"><span class="inv-badge-dot"></span> In Stock</span>`;
@@ -503,42 +731,36 @@ const InventoryApp = (() => {
 
         gHtml += `
           <div class="inv-tree-item ${isSelected ? 'inv-tree-item-selected' : ''}" data-code="${item.code}">
-            <div class="inv-tree-item-left">
+            <div class="inv-tree-item-left col-item">
               <div class="inv-tree-item-connector"></div>
-              <input type="checkbox" class="form-check-input inv-row-chk inv-tree-chk no-print" data-type="ledger" data-id="${item.code}" ${isSelected ? 'checked' : ''} title="Select ${item.code}">
-              <div class="inv-tree-item-info">
-                <div class="inv-tree-item-name">
-                  <span class="fw-semibold text-dark">${escapeHtml(item.name)}</span>
-                  <span class="inv-sku-code ms-1">${escapeHtml(item.code)}</span>
-                </div>
-                <div class="inv-tree-item-meta">
-                  <span class="text-muted small">${escapeHtml(item.unit || 'Nos')}</span>
-                  ${statusBadge}
-                </div>
-              </div>
+              <input type="checkbox" class="form-check-input inv-row-chk inv-tree-chk no-print" data-type="ledger" data-id="${item.code}" ${isSelected ? 'checked' : ''} title="Select ${escapeHtml(item.name)}">
+              <span class="fw-semibold text-dark inv-tree-item-name-text">${escapeHtml(item.name)}</span>
             </div>
             <div class="inv-tree-item-right">
-              <div class="inv-tree-item-stock ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}">
-                ${fmtQty(item.inHandQty)} <span class="text-muted small fw-normal">${escapeHtml(item.unit || 'Nos')}</span>
+              <div class="inv-tree-col col-stock ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}">
+                ${fmtQty(item.inHandQty)} <small class="text-muted fw-normal">${escapeHtml(item.unit || 'Nos')}</small>
               </div>
-              <div class="inv-tree-item-price font-monospace text-secondary small">
+              <div class="inv-tree-col col-status">
+                ${statusBadge}
+              </div>
+              <div class="inv-tree-col col-price font-monospace text-secondary small">
                 ${fmtRupees(item.buyingPrice)}
                 <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${item.code}')">📈</button>
               </div>
-              <div class="inv-tree-item-val font-monospace fw-bold text-dark small">
+              <div class="inv-tree-col col-val font-monospace fw-bold text-dark small">
                 ${fmtRupees(item.totalStockValuation)}
               </div>
-              <div class="inv-tree-item-actions no-print">
+              <div class="inv-tree-col col-actions no-print">
                 <button class="inv-row-btn btn-row-dispatch" onclick="InventoryApp.openDispatchModalFor('${item.code}')" title="Dispatch to Project Site">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
                 <button class="inv-row-btn btn-row-stockin" onclick="InventoryApp.openStockInModalFor('${item.code}')" title="Inward Stock In">
                   <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
-                <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit SKU">
+                <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit Item">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 </button>
-                <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete SKU">
+                <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete Item">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
@@ -552,11 +774,13 @@ const InventoryApp = (() => {
     };
 
     categoryOrder.forEach(cat => {
-      if (groups[cat]) html += renderCategoryGroup(cat, groups[cat]);
+      if (groups[cat] !== undefined) html += renderCategoryGroup(cat, groups[cat]);
     });
     Object.keys(groups).forEach(cat => {
       if (!categoryOrder.includes(cat)) html += renderCategoryGroup(cat, groups[cat]);
     });
+
+    html += `</div>`; // Close .inv-tree-container
 
     treeContainer.innerHTML = html;
 
@@ -565,6 +789,145 @@ const InventoryApp = (() => {
 
     updateHeaderCheckboxState('ledger');
     updateBulkActionBar();
+
+    // Auto focus inline input if open
+    if (activeInlineCategory) {
+      setTimeout(() => {
+        document.getElementById(`inlineNewName_${activeInlineCategory}`)?.focus();
+      }, 50);
+    }
+  }
+
+  function startInlineAddItem(cat) {
+    activeInlineCategory = cat;
+    renderLedgerTable();
+    const groupEl = document.getElementById(`catGroup_${cat}`);
+    if (groupEl && groupEl.classList.contains('collapsed')) {
+      groupEl.classList.remove('collapsed');
+    }
+    setTimeout(() => {
+      document.getElementById(`inlineNewName_${cat}`)?.focus();
+    }, 50);
+  }
+
+  function cancelInlineAddItem() {
+    activeInlineCategory = null;
+    renderLedgerTable();
+  }
+
+  function updateInlineTotalVal(cat) {
+    const qEl = document.getElementById(`inlineNewQty_${cat}`);
+    const pEl = document.getElementById(`inlineNewPrice_${cat}`);
+    const vEl = document.getElementById(`inlineNewTotalVal_${cat}`);
+    if (!vEl) return;
+    const q = parseFloat(qEl ? qEl.value : 0) || 0;
+    const p = parseFloat(pEl ? pEl.value : 0) || 0;
+    vEl.textContent = fmtRupees(q * p);
+  }
+
+  function saveInlineAddItem(cat) {
+    const nameInput = document.getElementById(`inlineNewName_${cat}`);
+    const unitInput = document.getElementById(`inlineNewUnit_${cat}`);
+    const qtyInput = document.getElementById(`inlineNewQty_${cat}`);
+    const priceInput = document.getElementById(`inlineNewPrice_${cat}`);
+
+    const name = nameInput?.value.trim();
+    if (!name) {
+      if (typeof UI !== 'undefined') UI.toast('Please enter the Item Name', 'warning');
+      nameInput?.focus();
+      return;
+    }
+
+    const unit = unitInput?.value || 'Nos';
+    const qty = Number(qtyInput?.value) || 0;
+    const buyingPrice = Number(priceInput?.value) || 0;
+    const code = generateNextSkuCode();
+
+    const newItem = {
+      code,
+      name,
+      brand: '',
+      spec: '',
+      category: cat,
+      unit,
+      buyingPrice,
+      minThreshold: 5,
+      hsn: '',
+      gst: 12,
+      status: 'Active'
+    };
+
+    items.push(newItem);
+
+    // If initial stock quantity was entered, record an opening consignment inward
+    if (qty > 0) {
+      const newInward = {
+        id: 'INW_' + Date.now(),
+        date: new Date().toISOString().slice(0, 10),
+        invoiceNo: 'OPENING-STOCK',
+        supplier: 'Opening Stock',
+        itemCode: code,
+        qty: qty,
+        unitPrice: buyingPrice,
+        totalCost: qty * buyingPrice,
+        location: 'Main Godown',
+        remarks: 'Initial stock on item registration',
+        docName: null,
+        docData: null
+      };
+      inwards.push(newInward);
+
+      if (typeof DB !== 'undefined') {
+        DB.insert('inventory_inwards', {
+          InwardID: newInward.id,
+          Date: newInward.date,
+          InvoiceNo: newInward.invoiceNo,
+          Supplier: newInward.supplier,
+          ItemCode: newInward.itemCode,
+          Quantity: newInward.qty,
+          UnitPrice: newInward.unitPrice,
+          TotalCost: newInward.totalCost,
+          Location: newInward.location,
+          Remarks: newInward.remarks,
+          CreatedAt: new Date().toISOString()
+        }).catch(() => {});
+      }
+    }
+
+    saveData();
+
+    if (typeof DB !== 'undefined') {
+      DB.insert('inventory_items', {
+        ItemCode: newItem.code,
+        ItemName: newItem.name,
+        Category: newItem.category,
+        Unit: newItem.unit,
+        BuyingPrice: newItem.buyingPrice,
+        MinThreshold: newItem.minThreshold,
+        HSNCode: '',
+        GSTPercent: 12,
+        Status: 'Active',
+        CreatedAt: new Date().toISOString()
+      }).catch(err => console.warn('[Supabase] inventory_items insert error:', err));
+
+      DB.insert('items', {
+        ItemName: newItem.name,
+        Category: newItem.category,
+        Unit: newItem.unit,
+        HSNCode: '',
+        GSTPercent: 18,
+        Status: 'Active'
+      }).catch(err => console.warn('[Supabase] items insert error:', err));
+    }
+
+    activeInlineCategory = null;
+    renderKpiCards();
+    renderCategoryChips();
+    renderLedgerTable();
+
+    if (typeof UI !== 'undefined') {
+      UI.toast(`Added "${name}" to ${cat} successfully!`, 'success');
+    }
   }
 
   function getFilteredDispatches() {
@@ -1187,13 +1550,19 @@ const InventoryApp = (() => {
     const refInwards = inwards.filter(i => selectedCodes.includes(i.itemCode));
     const refDispatches = dispatches.filter(d => selectedCodes.includes(d.itemCode));
 
-    let warning = `Are you sure you want to delete ${selectedCodes.length} selected equipment SKU(s) from the catalog?`;
+    let warning = `Are you sure you want to delete ${selectedCodes.length} selected equipment item(s) from the catalog?`;
     if (refInwards.length > 0 || refDispatches.length > 0) {
-      warning += `\n\n⚠️ Warning: The selected items are referenced in ${refInwards.length} inward purchases and ${refDispatches.length} site dispatches. Deleting them will remove these SKUs from the live stock catalog.`;
+      warning += `\n\n⚠️ Warning: The selected items are referenced in ${refInwards.length} inward purchases and ${refDispatches.length} site dispatches. Deleting them will remove these items from the live stock catalog.`;
     }
     warning += `\n\nThis action cannot be undone.`;
 
-    if (!confirm(warning)) return;
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(warning, 'Delete Selected Items', 'Delete All', 'btn-danger');
+    } else {
+      ok = confirm(warning);
+    }
+    if (!ok) return;
 
     items = items.filter(i => !selectedCodes.includes(i.code));
     selectedLedger.clear();
@@ -2346,6 +2715,7 @@ const InventoryApp = (() => {
   }
 
   function openNewItemModal() {
+    populateCategorySelects();
     const modalEl = document.getElementById('modalNewItem');
     if (!modalEl) return;
 
@@ -2353,26 +2723,26 @@ const InventoryApp = (() => {
     const nameInput = document.getElementById('newSkuName');
     const catInput = document.getElementById('newSkuCategory');
     const unitInput = document.getElementById('newSkuUnit');
-    const priceInput = document.getElementById('newSkuPrice');
     const thresholdInput = document.getElementById('newSkuMinThreshold');
 
     if (codeInput) codeInput.value = generateNextSkuCode();
     if (nameInput) nameInput.value = '';
-    if (catInput) catInput.value = 'Panels';
+    const cats = getCategoryList();
+    if (catInput) catInput.value = cats[0] || 'Panels';
     if (unitInput) unitInput.value = 'Nos';
-    if (priceInput) priceInput.value = '';
     if (thresholdInput) thresholdInput.value = '5';
 
     const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
     bsModal.show();
+    setTimeout(() => nameInput?.focus(), 200);
   }
 
   function handleSaveNewItem() {
-    const code = document.getElementById('newSkuCode')?.value.trim().toUpperCase();
+    const code = document.getElementById('newSkuCode')?.value.trim().toUpperCase() || generateNextSkuCode();
     const name = document.getElementById('newSkuName')?.value.trim();
     const category = document.getElementById('newSkuCategory')?.value || 'Panels';
     const unit = document.getElementById('newSkuUnit')?.value || 'Nos';
-    const buyingPrice = Number(document.getElementById('newSkuPrice')?.value) || 0;
+    const buyingPrice = 0;
     const minThreshold = Number(document.getElementById('newSkuMinThreshold')?.value) || 5;
 
     if (!code) {
@@ -2380,7 +2750,6 @@ const InventoryApp = (() => {
       return;
     }
     if (items.some(i => (i.code || '').toLowerCase() === code.toLowerCase())) {
-      // regenerate and update display
       const newCode = generateNextSkuCode();
       const codeInput = document.getElementById('newSkuCode');
       if (codeInput) codeInput.value = newCode;
@@ -2453,9 +2822,10 @@ const InventoryApp = (() => {
   }
 
   function openEditItemModal(code) {
+    populateCategorySelects();
     const item = items.find(i => (i.code || '').toLowerCase() === (code || '').toLowerCase());
     if (!item) {
-      if (typeof UI !== 'undefined') UI.toast('SKU item not found', 'danger');
+      if (typeof UI !== 'undefined') UI.toast('Equipment item not found', 'danger');
       return;
     }
 
@@ -2466,18 +2836,17 @@ const InventoryApp = (() => {
     const nameInput = document.getElementById('editSkuName');
     const catInput = document.getElementById('editSkuCategory');
     const unitInput = document.getElementById('editSkuUnit');
-    const priceInput = document.getElementById('editSkuPrice');
     const thresholdInput = document.getElementById('editSkuMinThreshold');
 
     if (codeInput) codeInput.value = item.code;
     if (nameInput) nameInput.value = item.name || '';
     if (catInput) catInput.value = item.category || 'Panels';
     if (unitInput) unitInput.value = item.unit || 'Nos';
-    if (priceInput) priceInput.value = item.buyingPrice;
     if (thresholdInput) thresholdInput.value = item.minThreshold || 5;
 
     const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
     bsModal.show();
+    setTimeout(() => nameInput?.focus(), 200);
   }
 
   function handleSaveEditItem() {
@@ -2485,7 +2854,6 @@ const InventoryApp = (() => {
     const name = document.getElementById('editSkuName')?.value.trim();
     const category = document.getElementById('editSkuCategory')?.value || 'Panels';
     const unit = document.getElementById('editSkuUnit')?.value || 'Nos';
-    const buyingPrice = Number(document.getElementById('editSkuPrice')?.value) || 0;
     const minThreshold = Number(document.getElementById('editSkuMinThreshold')?.value) || 5;
 
     if (!code) return;
@@ -2499,6 +2867,7 @@ const InventoryApp = (() => {
     if (!item) return;
 
     const oldName = item.name;
+    const buyingPrice = item.buyingPrice || 0;
     item.name = name;
     item.brand = '';
     item.Brand = '';
@@ -2517,7 +2886,6 @@ const InventoryApp = (() => {
         itemname: name,
         Category: category,
         Unit: unit,
-        BuyingPrice: buyingPrice,
         MinThreshold: minThreshold,
         UpdatedAt: new Date().toISOString()
       }).catch(err => console.warn('[Supabase] inventory_items update error:', err));
@@ -2540,7 +2908,7 @@ const InventoryApp = (() => {
     else if (activeTab === 'inwards') renderInwardsTable();
 
     if (typeof UI !== 'undefined') {
-      UI.toast(`Updated SKU "${code}" successfully!`, 'success');
+      UI.toast(`Updated item "${name}" successfully!`, 'success');
     }
   }
 
@@ -2551,12 +2919,18 @@ const InventoryApp = (() => {
     const inwCount = inwards.filter(i => i.itemCode === code).length;
     const dspCount = dispatches.filter(d => d.itemCode === code).length;
 
-    let warningText = `Are you sure you want to delete equipment SKU "${code}" (${item.name})?`;
+    let warningText = `Are you sure you want to delete equipment item "${item.name}"?`;
     if (inwCount > 0 || dspCount > 0) {
-      warningText += `\n\n⚠️ Note: This item is referenced in ${inwCount} inward purchases and ${dspCount} site dispatches. Deleting it will remove the SKU from the live stock catalog.`;
+      warningText += `\n\n⚠️ Note: This item is referenced in ${inwCount} inward purchases and ${dspCount} site dispatches. Deleting it will remove the item from the live stock catalog.`;
     }
 
-    if (!confirm(warningText)) return;
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(warningText, 'Delete Equipment Item', 'Delete', 'btn-danger');
+    } else {
+      ok = confirm(warningText);
+    }
+    if (!ok) return;
 
     items = items.filter(i => i.code !== code);
     selectedLedger.delete(code);
@@ -2573,7 +2947,7 @@ const InventoryApp = (() => {
     updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
-      UI.toast(`SKU "${code}" deleted from catalog.`, 'info');
+      UI.toast(`Item "${item.name}" deleted from catalog.`, 'info');
     }
   }
 
@@ -3532,10 +3906,15 @@ const InventoryApp = (() => {
     updateStickyOffsets();
     try {
       const savedCollapsed = localStorage.getItem('inv_kpi_collapsed');
-      if (savedCollapsed === 'true') {
+      if (savedCollapsed !== 'false') {
         toggleKpiCollapse(true);
+      } else {
+        toggleKpiCollapse(false);
       }
-    } catch (e) { }
+    } catch (e) {
+      toggleKpiCollapse(true);
+    }
+    populateCategorySelects();
     renderCategoryChips();
     setupTabs();
     bindEvents();
@@ -3592,6 +3971,16 @@ const InventoryApp = (() => {
     toggleItemPicker,
     filterPickerItems,
     selectPickerItem,
+    startInlineAddItem,
+    saveInlineAddItem,
+    cancelInlineAddItem,
+    updateInlineTotalVal,
+    openCategoryModal,
+    addCategoryFromManager,
+    openEditCategoryModal,
+    saveEditCategoryModal,
+    promptEditCategory,
+    promptDeleteCategory,
     getItems: () => items,
     getDispatches: () => dispatches,
     getInwards: () => inwards

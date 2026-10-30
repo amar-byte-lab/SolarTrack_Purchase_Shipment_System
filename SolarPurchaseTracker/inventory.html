@@ -33,9 +33,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             <span>Delete (<span id="headerSelectedCount">0</span>)</span>
           </button>
-          <button type="button" class="inv-btn inv-btn-primary" id="btnAddNewSku" title="Register New Equipment SKU">
+          <button type="button" class="inv-btn inv-btn-primary" id="btnAddNewSku" title="Register New Equipment Item">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>Add SKU</span>
+            <span>Add Item</span>
           </button>
           <button type="button" class="inv-btn inv-btn-stockin" id="btnQuickStockIn" title="Record New Inward Delivery">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -52,22 +52,22 @@
         </div>
       </header>
 
-      <!-- ══ Top Metric KPI Summary Cards (Collapsible 4-Card Enterprise Grid) ══ -->
-      <section class="inv-kpi-section" id="invKpiSection" aria-label="Inventory KPI Summary">
-        <div class="inv-kpi-toggle-bar" id="btnToggleKpi" role="button" tabindex="0" aria-expanded="true" aria-controls="invKpiCollapseBody" title="Click to collapse / expand summary metrics">
+      <!-- ══ Top Metric KPI Summary Cards (Collapsible 3-Card Enterprise Grid) ══ -->
+      <section class="inv-kpi-section is-collapsed" id="invKpiSection" aria-label="Inventory Summary">
+        <div class="inv-kpi-toggle-bar" id="btnToggleKpi" role="button" tabindex="0" aria-expanded="false" aria-controls="invKpiCollapseBody" title="Click to collapse / expand summary metrics">
           <div class="inv-kpi-toggle-left">
             <svg class="inv-kpi-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            <span class="inv-kpi-toggle-title">Summary Metrics</span>
-            <div class="inv-kpi-mini-strip" id="invKpiMiniStrip" style="display: none;">
+            <span class="inv-kpi-toggle-title">Summary</span>
+            <div class="inv-kpi-mini-strip" id="invKpiMiniStrip" style="display: inline-flex;">
               <span class="mini-kpi-item"><span class="mini-kpi-dot dot-sky"></span> Turnover: <strong id="miniKpiTurnover">₹0.00</strong></span>
               <span class="mini-kpi-sep">•</span>
-              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-emerald"></span> Valuation: <strong id="miniKpiValuation">₹0.00</strong></span>
-              <span class="mini-kpi-sep">•</span>
               <span class="mini-kpi-item"><span class="mini-kpi-dot dot-amber"></span> Dispatched: <strong id="miniKpiDispatched">₹0.00</strong></span>
+              <span class="mini-kpi-sep">•</span>
+              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-indigo"></span> Transport Cost: <strong id="miniKpiTransport">₹0.00</strong></span>
             </div>
           </div>
           <div class="inv-kpi-toggle-right">
-            <span class="inv-kpi-toggle-label" id="invKpiToggleLabel">Collapse</span>
+            <span class="inv-kpi-toggle-label" id="invKpiToggleLabel">Expand</span>
             <svg class="inv-kpi-toggle-chevron" id="invKpiToggleChevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
           </div>
         </div>
@@ -87,19 +87,7 @@
               <div class="inv-kpi-subtext" id="kpiSubTurnover">Total Project Orders</div>
             </article>
 
-            <!-- KPI 2: Stock Valuation -->
-            <article class="inv-kpi-card kpi-emerald">
-              <div class="inv-kpi-head">
-                <span class="inv-kpi-label" title="Stock Valuation">Stock Valuation</span>
-                <div class="inv-kpi-icon-wrap" aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l6 3.43a2 2 0 0 0 2.06 0l6-3.43a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L11 9.49a2 2 0 0 0-2.06 0l-5.97 3.43z"/><path d="m12 22v-9.5"/><path d="M7 17.5v-3.5L12 11l5 3v3.5"/><path d="M12 2.5 4.5 6.8v4.4l7.5 4.3 7.5-4.3V6.8L12 2.5z"/></svg>
-                </div>
-              </div>
-              <div class="inv-kpi-value text-emerald-700" id="kpiTotalValuation">₹0.00</div>
-              <div class="inv-kpi-subtext" id="kpiSubValuation">Unsold Physical Stock Value</div>
-            </article>
-
-            <!-- KPI 3: Dispatched Material Cost -->
+            <!-- KPI 2: Dispatched Material Cost -->
             <article class="inv-kpi-card kpi-amber">
               <div class="inv-kpi-head">
                 <span class="inv-kpi-label" title="Dispatched Material Cost">Dispatched Cost</span>
@@ -111,7 +99,7 @@
               <div class="inv-kpi-subtext" id="kpiSubDispatched">Site Consumption</div>
             </article>
 
-            <!-- KPI 4: Transportation Cost -->
+            <!-- KPI 3: Transportation Cost -->
             <article class="inv-kpi-card kpi-indigo">
               <div class="inv-kpi-head">
                 <span class="inv-kpi-label" title="Transportation Cost">Transport Cost</span>
@@ -174,6 +162,12 @@
                 <button type="button" class="inv-status-pill pill-alert" data-status="low-stock"><span class="inv-badge-dot"></span> Low Stock</button>
                 <button type="button" class="inv-status-pill pill-danger" data-status="out-of-stock"><span class="inv-badge-dot"></span> Out</button>
               </div>
+
+              <!-- Manage Category Button in Top Corner above Category Chips Row -->
+              <button type="button" class="inv-btn-manage-cat" id="btnManageCategories" onclick="InventoryApp.openCategoryModal()" title="Manage Equipment Categories (Create, Rename, Delete)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+                <span>Manage Category</span>
+              </button>
 
               <!-- Hidden Fallback Select for backwards compatibility -->
               <select class="d-none" id="invStatusSelect">
@@ -489,22 +483,20 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════
-     MODAL 3: ADD NEW EQUIPMENT SKU (CATALOG REGISTRATION)
+     MODAL 3: ADD NEW EQUIPMENT ITEM
      ══════════════════════════════════════════════════════════════════════ -->
 <div class="modal fade" id="modalNewItem" tabindex="-1" aria-labelledby="modalNewItemTitle" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header py-2.5 px-3 border-bottom bg-light">
-        <h6 class="modal-title fw-bold text-dark m-0" id="modalNewItemTitle">Add New Equipment SKU</h6>
+        <h6 class="modal-title fw-bold text-dark m-0" id="modalNewItemTitle">Add New Equipment Item</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3">
+        <input type="hidden" id="newSkuCode">
         <div class="row g-2">
-          <div class="col-sm-6 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Item Code (SKU)</label>
-            <input type="text" class="form-control form-control-sm font-monospace bg-light text-muted" id="newSkuCode" readonly title="Auto-generated SKU code" placeholder="Auto-generated...">
-          </div>
-          <div class="col-sm-6 col-12">
+          <!-- Row 1: Category & Item Name -->
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Category *</label>
             <select class="form-select form-select-sm" id="newSkuCategory">
               <option value="Panels">Panels</option>
@@ -518,11 +510,12 @@
               <option value="Others">Others</option>
             </select>
           </div>
-          <div class="col-12">
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Equipment Item Name *</label>
             <input type="text" class="form-control form-control-sm" id="newSkuName" placeholder="e.g. Solar PV Module, Solar Inverter">
           </div>
-          <div class="col-sm-6 col-12">
+          <!-- Row 2: Unit & Min Threshold Alert -->
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Unit of Measurement</label>
             <select class="form-select form-select-sm" id="newSkuUnit">
               <option value="Nos">Nos</option>
@@ -533,11 +526,7 @@
               <option value="Kgs">Kgs</option>
             </select>
           </div>
-          <div class="col-sm-6 col-6">
-            <label class="form-label small fw-semibold text-secondary mb-1">Buying Price (₹) *</label>
-            <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace" id="newSkuPrice" placeholder="0.00">
-          </div>
-          <div class="col-sm-6 col-6">
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Min Threshold Alert</label>
             <input type="number" min="1" step="1" class="form-control form-control-sm font-monospace" id="newSkuMinThreshold" value="5">
           </div>
@@ -545,26 +534,27 @@
       </div>
       <div class="modal-footer py-2 px-3 border-top bg-light">
         <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-sm btn-primary px-4 fw-semibold" id="btnSubmitNewSku">Save SKU</button>
+        <button type="button" class="btn btn-sm btn-primary px-4 fw-semibold" id="btnSubmitNewSku">Save Item</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════
-     MODAL 4: EDIT EQUIPMENT SKU DETAILS
+     MODAL 4: EDIT EQUIPMENT ITEM DETAILS
      ══════════════════════════════════════════════════════════════════════ -->
 <div class="modal fade" id="modalEditItem" tabindex="-1" aria-labelledby="modalEditItemTitle" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
       <div class="modal-header py-2.5 px-3 border-bottom bg-light">
-        <h6 class="modal-title fw-bold text-dark m-0" id="modalEditItemTitle">Edit Equipment SKU</h6>
+        <h6 class="modal-title fw-bold text-dark m-0" id="modalEditItemTitle">Edit Equipment Item</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3">
+        <input type="hidden" id="editSkuCode">
         <div class="row g-2">
-          <input type="hidden" id="editSkuCode">
-          <div class="col-sm-6 col-12">
+          <!-- Row 1: Category & Item Name -->
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Category *</label>
             <select class="form-select form-select-sm" id="editSkuCategory">
               <option value="Panels">Panels</option>
@@ -578,11 +568,12 @@
               <option value="Others">Others</option>
             </select>
           </div>
-          <div class="col-12">
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Equipment Item Name *</label>
             <input type="text" class="form-control form-control-sm" id="editSkuName">
           </div>
-          <div class="col-sm-6 col-12">
+          <!-- Row 2: Unit & Min Threshold Alert -->
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Unit of Measurement</label>
             <select class="form-select form-select-sm" id="editSkuUnit">
               <option value="Nos">Nos</option>
@@ -593,11 +584,7 @@
               <option value="Kgs">Kgs</option>
             </select>
           </div>
-          <div class="col-sm-6 col-6">
-            <label class="form-label small fw-semibold text-secondary mb-1">Buying Price (₹) *</label>
-            <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace" id="editSkuPrice">
-          </div>
-          <div class="col-sm-6 col-6">
+          <div class="col-md-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Min Threshold Alert</label>
             <input type="number" min="1" step="1" class="form-control form-control-sm font-monospace" id="editSkuMinThreshold">
           </div>
@@ -605,7 +592,84 @@
       </div>
       <div class="modal-footer py-2 px-3 border-top bg-light">
         <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-sm btn-primary px-4 fw-semibold" id="btnSubmitEditSku">Update SKU</button>
+        <button type="button" class="btn btn-sm btn-primary px-4 fw-semibold" id="btnSubmitEditSku">Update Item</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODAL: MANAGE CATEGORIES (APPLICATION ERP THEMED)
+     ══════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalCategoryManager" tabindex="-1" aria-labelledby="modalCategoryManagerTitle" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <div class="inv-modal-icon-badge bg-indigo-subtle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+          </div>
+          <div>
+            <h6 class="modal-title fw-bold text-dark m-0 fs-7" id="modalCategoryManagerTitle">Equipment Categories</h6>
+            <div class="text-secondary small" style="font-size:0.73rem;">Add, rename, or delete catalog groups</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3">
+        <!-- Add Category Form -->
+        <div class="p-2.5 rounded border bg-light mb-3">
+          <label class="form-label small fw-semibold text-dark mb-1.5 d-flex align-items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Add New Category</span>
+          </label>
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control" id="txtNewCategoryName" placeholder="Enter category name..." autocomplete="off" onkeydown="if(event.key==='Enter') InventoryApp.addCategoryFromManager()">
+            <button class="btn btn-primary fw-semibold px-3" type="button" id="btnAddCategorySubmit" onclick="InventoryApp.addCategoryFromManager()">+ Add</button>
+          </div>
+        </div>
+        <!-- Existing Categories List -->
+        <div class="d-flex align-items-center justify-content-between mb-1.5 px-0.5">
+          <span class="small fw-semibold text-secondary text-uppercase" style="font-size:0.70rem; letter-spacing:0.04em;">Active Categories</span>
+          <span class="badge bg-light text-secondary border font-monospace" id="catManagerTotalBadge">0 Categories</span>
+        </div>
+        <div id="catManagerList" class="cat-manager-list-wrap">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3 border-top bg-light">
+        <button type="button" class="btn btn-sm btn-secondary w-100 fw-semibold" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODAL: EDIT CATEGORY NAME (THEMED MODAL INSTEAD OF BROWSER PROMPT)
+     ══════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalEditCategory" tabindex="-1" aria-labelledby="modalEditCategoryTitle" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <div class="inv-modal-icon-badge bg-primary-subtle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <div>
+            <h6 class="modal-title fw-bold text-dark m-0 fs-7" id="modalEditCategoryTitle">Edit Category</h6>
+            <div class="text-secondary small" style="font-size:0.73rem;" id="editCatModalSubtitle">Update category name</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3">
+        <input type="hidden" id="editCatOldName">
+        <label class="form-label small fw-semibold text-secondary mb-1">Category Name *</label>
+        <input type="text" class="form-control form-control-sm fw-semibold text-dark" id="txtEditCategoryName" placeholder="Category name..." autocomplete="off" onkeydown="if(event.key==='Enter') InventoryApp.saveEditCategoryModal()">
+      </div>
+      <div class="modal-footer py-2 px-3 border-top bg-light">
+        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" id="btnSubmitEditCategory" onclick="InventoryApp.saveEditCategoryModal()">Update Category</button>
       </div>
     </div>
   </div>
