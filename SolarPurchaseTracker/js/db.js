@@ -43,7 +43,7 @@ const DB = (() => {
         product_items: ['RowID', 'ProductName', 'ItemName', 'Price'],
         work_notes: ['NoteID', 'NoteTitle', 'CommonNote', 'SelectedBadges', 'CustomerData', 'CreatedAt', 'UpdatedAt'],
         price_history: ['RecordID', 'BatchID', 'Date', 'NoteName', 'ItemName', 'Quantity', 'Unit', 'TotalWithoutGst', 'TotalWithGst', 'RateWithoutGst', 'RateWithGst', 'Remarks', 'CreatedAt'],
-        inventory_items: ['ItemCode', 'ItemName', 'Brand', 'Specification', 'Category', 'Unit', 'BuyingPrice', 'MinThreshold', 'HSNCode', 'GSTPercent', 'Status', 'CreatedAt', 'UpdatedAt'],
+        inventory_items: ['ItemCode', 'ItemName', 'Category', 'Unit', 'BuyingPrice', 'MinThreshold', 'HSNCode', 'GSTPercent', 'Status', 'CreatedAt', 'UpdatedAt'],
         inventory_inwards: ['InwardID', 'Date', 'InvoiceNo', 'Supplier', 'ItemCode', 'Quantity', 'UnitPrice', 'TotalCost', 'Location', 'Remarks', 'DocumentName', 'DocumentData', 'CreatedAt'],
         inventory_dispatches: ['DispatchID', 'Date', 'ChallanNo', 'SiteName', 'ItemCode', 'Quantity', 'UnitBuyingPrice', 'DispatchedCost', 'TransportCost', 'Vehicle', 'Remarks', 'DocumentName', 'DocumentData', 'CreatedAt'],
     };

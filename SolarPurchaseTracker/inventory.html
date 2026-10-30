@@ -159,7 +159,7 @@
             <!-- Search input with instant clear button -->
             <div class="inv-search-wrap">
               <svg class="inv-search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" class="inv-search-input" id="invTableSearch" placeholder="Search item, SKU, brand, site, challan...">
+              <input type="text" class="inv-search-input" id="invTableSearch" placeholder="Search item, SKU, category, site, challan...">
               <button type="button" class="inv-search-clear-btn" id="btnSearchClear" style="display:none;" title="Clear Search">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -212,34 +212,17 @@
           </div>
         </div>
 
-        <!-- ══ TAB 1: Live Stock Ledger ══ -->
+        <!-- ══ TAB 1: Live Stock Ledger (Tree View) ══ -->
         <div class="inv-tab-pane" id="pane-ledger">
-          <div class="inv-table-wrap">
-            <table class="inv-table" id="invLedgerTable">
-              <thead>
-                <tr>
-                  <th class="text-center no-print" style="width: 38px;">
-                    <input type="checkbox" class="form-check-input inv-select-chk-all" id="chkSelectAllLedger" title="Select All Items">
-                  </th>
-                  <th class="text-center" style="width: 40px;">#</th>
-                  <th>Item Name</th>
-                  <th>Brand / Make</th>
-                  <th>Specification</th>
-                  <th class="text-end">Buying Price (₹)</th>
-                  <th class="text-center">In-Hand Stock</th>
-                  <th class="text-end">Total Stock Value (₹)</th>
-                  <th>Status</th>
-                  <th class="text-center no-print" style="width: 140px;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="invLedgerTbody">
-                <!-- Injected dynamically by JS -->
-              </tbody>
-              <tfoot id="invLedgerTfoot">
-                <!-- Injected dynamically by JS -->
-              </tfoot>
-            </table>
+          <div class="inv-tree-wrap" id="invLedgerTree">
+            <!-- Injected dynamically by JS -->
           </div>
+          <!-- Hidden elements to maintain JS compatibility -->
+          <table style="display:none;" id="invLedgerTable">
+            <tbody id="invLedgerTbody"></tbody>
+            <tfoot id="invLedgerTfoot"></tfoot>
+          </table>
+          <input type="checkbox" style="display:none;" id="chkSelectAllLedger">
         </div>
 
         <!-- ══ TAB 2: Site Dispatch History (Strictly Consumption Cost) ══ -->
@@ -255,7 +238,6 @@
                   <th>Dispatch Date</th>
                   <th>Project / Customer Site Name</th>
                   <th>Equipment Item</th>
-                  <th>Brand &amp; Spec</th>
                   <th class="text-center">Qty Dispatched</th>
                   <th class="text-end">Unit Cost (₹)</th>
                   <th class="text-end">Total Material Cost (₹)</th>
@@ -288,7 +270,6 @@
                   <th>Inward Date</th>
                   <th>Supplier / Vendor</th>
                   <th>Equipment Item</th>
-                  <th>Brand &amp; Spec</th>
                   <th class="text-center">Qty Received</th>
                   <th class="text-end">Unit Price (₹)</th>
                   <th class="text-end">Total Inward Cost (₹)</th>
@@ -520,8 +501,8 @@
       <div class="modal-body p-3">
         <div class="row g-2">
           <div class="col-sm-6 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Item Code (SKU) *</label>
-            <input type="text" class="form-control form-control-sm font-monospace text-uppercase" id="newSkuCode" placeholder="e.g. MOD-WAR-545B">
+            <label class="form-label small fw-semibold text-secondary mb-1">Item Code (SKU)</label>
+            <input type="text" class="form-control form-control-sm font-monospace bg-light text-muted" id="newSkuCode" readonly title="Auto-generated SKU code" placeholder="Auto-generated...">
           </div>
           <div class="col-sm-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Category *</label>
@@ -542,10 +523,6 @@
             <input type="text" class="form-control form-control-sm" id="newSkuName" placeholder="e.g. Solar PV Module, Solar Inverter">
           </div>
           <div class="col-sm-6 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Brand / Make *</label>
-            <input type="text" class="form-control form-control-sm" id="newSkuBrand" placeholder="e.g. Waaree, Growatt, Polycab">
-          </div>
-          <div class="col-sm-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Unit of Measurement</label>
             <select class="form-select form-select-sm" id="newSkuUnit">
               <option value="Nos">Nos</option>
@@ -555,10 +532,6 @@
               <option value="Bag">Bag</option>
               <option value="Kgs">Kgs</option>
             </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Specification / Model Details <span class="text-muted fw-normal">(Optional)</span></label>
-            <input type="text" class="form-control form-control-sm" id="newSkuSpec" placeholder="e.g. 545W Bifacial Mono PERC (Silver Frame) (Optional)">
           </div>
           <div class="col-sm-6 col-6">
             <label class="form-label small fw-semibold text-secondary mb-1">Buying Price (₹) *</label>
@@ -590,10 +563,7 @@
       </div>
       <div class="modal-body p-3">
         <div class="row g-2">
-          <div class="col-sm-6 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Item Code (SKU)</label>
-            <input type="text" class="form-control form-control-sm font-monospace bg-light" id="editSkuCode" readonly disabled>
-          </div>
+          <input type="hidden" id="editSkuCode">
           <div class="col-sm-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Category *</label>
             <select class="form-select form-select-sm" id="editSkuCategory">
@@ -613,10 +583,6 @@
             <input type="text" class="form-control form-control-sm" id="editSkuName">
           </div>
           <div class="col-sm-6 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Brand / Make *</label>
-            <input type="text" class="form-control form-control-sm" id="editSkuBrand">
-          </div>
-          <div class="col-sm-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Unit of Measurement</label>
             <select class="form-select form-select-sm" id="editSkuUnit">
               <option value="Nos">Nos</option>
@@ -626,10 +592,6 @@
               <option value="Bag">Bag</option>
               <option value="Kgs">Kgs</option>
             </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Specification / Model Details <span class="text-muted fw-normal">(Optional)</span></label>
-            <input type="text" class="form-control form-control-sm" id="editSkuSpec" placeholder="Specification details (Optional)">
           </div>
           <div class="col-sm-6 col-6">
             <label class="form-label small fw-semibold text-secondary mb-1">Buying Price (₹) *</label>

@@ -116,8 +116,6 @@ const InventoryApp = (() => {
         loadedItems = dbItems.map(row => ({
           code: row.ItemCode || row.itemcode || row.code,
           name: row.ItemName || row.itemname || row.name,
-          brand: row.Brand || row.brand || '',
-          spec: row.Specification || row.specification || row.spec || '',
           category: row.Category || row.category || 'Others',
           unit: row.Unit || row.unit || 'Nos',
           buyingPrice: Number(row.BuyingPrice !== undefined ? row.BuyingPrice : row.buyingprice) || 0,
@@ -132,8 +130,6 @@ const InventoryApp = (() => {
           loadedItems = masterItems.map((row, idx) => ({
             code: row.ItemCode || row.code || `SKU-${String(idx + 1).padStart(3, '0')}`,
             name: row.ItemName || row.itemname || row.name,
-            brand: row.Brand || row.brand || 'Standard',
-            spec: row.Specification || row.specification || row.spec || (row.ItemName || ''),
             category: row.Category || row.category || 'Others',
             unit: row.Unit || row.unit || 'Nos',
             buyingPrice: Number(row.BuyingPrice || row.Price || 0),
@@ -394,8 +390,6 @@ const InventoryApp = (() => {
       rows = rows.filter(r => 
         (r.code && r.code.toLowerCase().includes(q)) ||
         (r.name && r.name.toLowerCase().includes(q)) ||
-        (r.brand && r.brand.toLowerCase().includes(q)) ||
-        (r.spec && r.spec.toLowerCase().includes(q)) ||
         (r.category && r.category.toLowerCase().includes(q))
       );
     }
@@ -403,10 +397,9 @@ const InventoryApp = (() => {
   }
 
   function renderLedgerTable() {
+    const treeContainer = document.getElementById('invLedgerTree');
     const tbody = document.getElementById('invLedgerTbody');
     const tfoot = document.getElementById('invLedgerTfoot');
-    const cardsContainer = document.getElementById('invLedgerCards');
-    if (!tbody) return;
 
     // Prune stale selection
     const currentCodes = new Set(items.map(i => i.code));
@@ -419,91 +412,84 @@ const InventoryApp = (() => {
     const tabCount = document.getElementById('tabCountLedger');
     if (tabCount) tabCount.textContent = rows.length;
 
+    if (!treeContainer) {
+      updateHeaderCheckboxState('ledger');
+      updateBulkActionBar();
+      return;
+    }
+
     if (rows.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="10" class="text-center py-5 text-muted">
-            <div class="py-4">
-              <div class="fs-6 fw-semibold text-secondary mb-1">No equipment items found</div>
-              <div class="small text-muted mb-3">Add equipment SKUs to start tracking warehouse stock.</div>
-              <button type="button" class="inv-btn inv-btn-primary" onclick="InventoryApp.openNewItemModal()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>Add SKU</span>
-              </button>
-            </div>
-          </td>
-        </tr>
+      treeContainer.innerHTML = `
+        <div class="inv-tree-empty text-center py-5">
+          <div class="fs-6 fw-semibold text-secondary mb-1">No equipment items found</div>
+          <div class="small text-muted mb-3">Add equipment SKUs to start tracking warehouse stock.</div>
+          <button type="button" class="inv-btn inv-btn-primary" onclick="InventoryApp.openNewItemModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Add SKU</span>
+          </button>
+        </div>
       `;
-      if (cardsContainer) {
-        cardsContainer.innerHTML = `
-          <div class="inv-cards-empty text-center py-4">
-            <div class="fs-6 fw-semibold text-secondary mb-1">No equipment items found</div>
-            <div class="small text-muted mb-3">Add equipment SKUs to start tracking warehouse stock.</div>
-            <button type="button" class="inv-btn inv-btn-primary" onclick="InventoryApp.openNewItemModal()">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              <span>Add SKU</span>
-            </button>
-          </div>
-        `;
-      }
+      if (tbody) tbody.innerHTML = '';
       if (tfoot) tfoot.innerHTML = '';
       updateHeaderCheckboxState('ledger');
       updateBulkActionBar();
       return;
     }
 
-    tbody.innerHTML = rows.map((item, idx) => {
-      let statusBadge = '';
-      if (item.status === 'in-stock') {
-        statusBadge = `<span class="inv-stock-badge in-stock"><span class="inv-badge-dot"></span> In Stock</span>`;
-      } else if (item.status === 'low-stock') {
-        statusBadge = `<span class="inv-stock-badge low-stock" title="Below threshold of ${item.minThreshold || 5}"><span class="inv-badge-dot"></span> Low Stock</span>`;
-      } else {
-        statusBadge = `<span class="inv-stock-badge out-of-stock"><span class="inv-badge-dot"></span> Out of Stock</span>`;
-      }
+    // Group items by category for tree view
+    const categoryOrder = ['Panels', 'Inverters', 'Cables', 'Structure', 'Hardware', 'Electricals', 'Conduit', 'Earthing', 'Others'];
+    const groups = {};
+    rows.forEach(item => {
+      const cat = item.category || 'Others';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
 
-      const isSelected = selectedLedger.has(item.code);
+    const totalValuation = rows.reduce((s, r) => s + r.totalStockValuation, 0);
+    const totalInHand = rows.reduce((s, r) => s + r.inHandQty, 0);
 
-      return `
-        <tr class="${isSelected ? 'inv-row-selected' : ''}">
-          <td class="text-center no-print inv-chk-cell" style="width: 38px;">
-            <input type="checkbox" class="form-check-input inv-row-chk" data-type="ledger" data-id="${item.code}" ${isSelected ? 'checked' : ''} title="Select SKU ${item.code}">
-          </td>
-          <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
-          <td><div class="fw-semibold text-dark">${escapeHtml(item.name)}</div></td>
-          <td><span class="inv-brand-badge">${escapeHtml(item.brand)}</span></td>
-          <td style="max-width: 220px;" class="text-secondary small">${escapeHtml(item.spec)}</td>
-          <td class="text-end font-monospace text-nowrap">${fmtRupees(item.buyingPrice)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${item.code}')">📈</button></td>
-          <td class="text-center font-monospace fw-bold ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}" style="font-size:0.88rem;">
-            ${fmtQty(item.inHandQty)} <span class="text-muted small fw-normal">${escapeHtml(item.unit || 'Nos')}</span>
-          </td>
-          <td class="text-end font-monospace fw-bold text-dark" style="font-size:0.85rem;">
-            ${fmtRupees(item.totalStockValuation)}
-          </td>
-          <td>${statusBadge}</td>
-          <td class="text-center text-nowrap no-print" style="width: 130px;">
-            <div class="d-inline-flex align-items-center gap-1">
-              <button class="inv-row-btn btn-row-dispatch" onclick="InventoryApp.openDispatchModalFor('${item.code}')" title="Dispatch to Project Site">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
-              <button class="inv-row-btn btn-row-stockin" onclick="InventoryApp.openStockInModalFor('${item.code}')" title="Inward Stock In">
-                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
-              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit SKU">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              </button>
-              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete SKU">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
+    let html = `
+      <div class="inv-tree-summary">
+        <span class="inv-tree-summary-label">${rows.length} Equipment SKUs</span>
+        <span class="inv-tree-summary-sep">•</span>
+        <span class="inv-tree-summary-stock">Total In-Hand: <strong>${fmtQty(totalInHand)}</strong> units</span>
+        <span class="inv-tree-summary-sep">•</span>
+        <span class="inv-tree-summary-val">Stock Value: <strong class="text-emerald-700 font-monospace">${fmtRupees(totalValuation)}</strong></span>
+      </div>
+    `;
+
+    // Render each category group
+    const renderCategoryGroup = (cat, itemsList) => {
+      if (!itemsList || itemsList.length === 0) return '';
+      const catInHand = itemsList.reduce((s, r) => s + r.inHandQty, 0);
+      const catVal = itemsList.reduce((s, r) => s + r.totalStockValuation, 0);
+      const catOutCount = itemsList.filter(r => r.status === 'out-of-stock').length;
+      const catLowCount = itemsList.filter(r => r.status === 'low-stock').length;
+
+      const alertDot = catOutCount > 0
+        ? `<span class="inv-tree-cat-dot dot-danger" title="${catOutCount} out of stock"></span>`
+        : catLowCount > 0
+        ? `<span class="inv-tree-cat-dot dot-warning" title="${catLowCount} low stock"></span>`
+        : '';
+
+      let gHtml = `
+        <div class="inv-tree-group">
+          <div class="inv-tree-group-header" onclick="this.parentElement.classList.toggle('collapsed')" role="button">
+            <div class="inv-tree-group-left">
+              <svg class="inv-tree-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              <span class="inv-tree-cat-name">${escapeHtml(cat)}</span>
+              ${alertDot}
+              <span class="inv-tree-cat-count">${itemsList.length}</span>
             </div>
-          </td>
-        </tr>
+            <div class="inv-tree-group-right">
+              <span class="inv-tree-cat-stock">${fmtQty(catInHand)} units</span>
+              <span class="inv-tree-cat-val font-monospace">${fmtRupees(catVal)}</span>
+            </div>
+          </div>
+          <div class="inv-tree-group-body">
       `;
-    }).join('');
 
-    // Render Mobile Cards
-    if (cardsContainer) {
-      cardsContainer.innerHTML = rows.map((item) => {
+      itemsList.forEach(item => {
         let statusBadge = '';
         if (item.status === 'in-stock') {
           statusBadge = `<span class="inv-stock-badge in-stock"><span class="inv-badge-dot"></span> In Stock</span>`;
@@ -515,82 +501,67 @@ const InventoryApp = (() => {
 
         const isSelected = selectedLedger.has(item.code);
 
-        return `
-          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${item.code}">
-            <div class="inv-card-head">
-              <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
-                <div class="inv-chk-cell pt-0.5">
-                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="ledger" data-id="${item.code}" ${isSelected ? 'checked' : ''} title="Select SKU ${item.code}">
+        gHtml += `
+          <div class="inv-tree-item ${isSelected ? 'inv-tree-item-selected' : ''}" data-code="${item.code}">
+            <div class="inv-tree-item-left">
+              <div class="inv-tree-item-connector"></div>
+              <input type="checkbox" class="form-check-input inv-row-chk inv-tree-chk no-print" data-type="ledger" data-id="${item.code}" ${isSelected ? 'checked' : ''} title="Select ${item.code}">
+              <div class="inv-tree-item-info">
+                <div class="inv-tree-item-name">
+                  <span class="fw-semibold text-dark">${escapeHtml(item.name)}</span>
+                  <span class="inv-sku-code ms-1">${escapeHtml(item.code)}</span>
                 </div>
-                <div class="min-w-0 flex-grow-1">
-                  <div class="inv-card-title">${escapeHtml(item.name)}</div>
-                  <div class="inv-card-meta">
-                    <span class="inv-brand-badge">${escapeHtml(item.brand || 'Standard')}</span>
-                    <span class="inv-sku-code">${escapeHtml(item.code)}</span>
-                    <span class="inv-cat-pill">${escapeHtml(item.category || 'General')}</span>
-                  </div>
+                <div class="inv-tree-item-meta">
+                  <span class="text-muted small">${escapeHtml(item.unit || 'Nos')}</span>
+                  ${statusBadge}
                 </div>
               </div>
-              <div class="inv-card-status-wrap ms-1 flex-shrink-0">
-                ${statusBadge}
+            </div>
+            <div class="inv-tree-item-right">
+              <div class="inv-tree-item-stock ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}">
+                ${fmtQty(item.inHandQty)} <span class="text-muted small fw-normal">${escapeHtml(item.unit || 'Nos')}</span>
+              </div>
+              <div class="inv-tree-item-price font-monospace text-secondary small">
+                ${fmtRupees(item.buyingPrice)}
+                <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${item.code}')">📈</button>
+              </div>
+              <div class="inv-tree-item-val font-monospace fw-bold text-dark small">
+                ${fmtRupees(item.totalStockValuation)}
+              </div>
+              <div class="inv-tree-item-actions no-print">
+                <button class="inv-row-btn btn-row-dispatch" onclick="InventoryApp.openDispatchModalFor('${item.code}')" title="Dispatch to Project Site">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+                <button class="inv-row-btn btn-row-stockin" onclick="InventoryApp.openStockInModalFor('${item.code}')" title="Inward Stock In">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+                <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit SKU">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete SKU">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
               </div>
             </div>
-
-            ${item.spec ? `<div class="inv-card-spec">${escapeHtml(item.spec)}</div>` : ''}
-
-            <div class="inv-card-kpi-grid">
-              <div class="inv-card-kpi stock-cell">
-                <span class="lbl">In-Hand Stock</span>
-                <span class="val ${item.inHandQty === 0 ? 'text-danger' : 'text-emerald-700'}">
-                  ${fmtQty(item.inHandQty)} <small class="text-muted fw-normal">${escapeHtml(item.unit || 'Nos')}</small>
-                </span>
-              </div>
-              <div class="inv-card-kpi">
-                <span class="lbl">Buying Rate</span>
-                <span class="val font-monospace">${fmtRupees(item.buyingPrice)}</span>
-              </div>
-              <div class="inv-card-kpi">
-                <span class="lbl">Stock Valuation</span>
-                <span class="val font-monospace fw-bold text-dark">${fmtRupees(item.totalStockValuation)}</span>
-              </div>
-            </div>
-
-            <div class="inv-card-actions">
-              <button type="button" class="inv-qa-btn qa-stockin" onclick="InventoryApp.openStockInModalFor('${item.code}')" title="Record Delivery Inward">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>Stock In</span>
-              </button>
-              <button type="button" class="inv-qa-btn qa-dispatch" onclick="InventoryApp.openDispatchModalFor('${item.code}')" title="Dispatch to Site">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
-                <span>Dispatch</span>
-              </button>
-              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditItemModal('${item.code}')" title="Edit SKU">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                <span>Edit</span>
-              </button>
-              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteItem('${item.code}')" title="Delete SKU">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
-            </div>
-          </article>
+          </div>
         `;
-      }).join('');
-    }
+      });
 
-    const totalInHand = rows.reduce((s, r) => s + r.inHandQty, 0);
-    const totalValuation = rows.reduce((s, r) => s + r.totalStockValuation, 0);
+      gHtml += `</div></div>`;
+      return gHtml;
+    };
 
-    if (tfoot) {
-      tfoot.innerHTML = `
-        <tr>
-          <td colspan="5" class="text-uppercase text-secondary fs-8">Total (${rows.length} Catalog SKUs)</td>
-          <td class="text-end font-monospace text-muted">—</td>
-          <td class="text-center font-monospace text-primary fs-7">${fmtQty(totalInHand)}</td>
-          <td class="text-end font-monospace text-emerald-700 fs-7">${fmtRupees(totalValuation)}</td>
-          <td colspan="2"></td>
-        </tr>
-      `;
-    }
+    categoryOrder.forEach(cat => {
+      if (groups[cat]) html += renderCategoryGroup(cat, groups[cat]);
+    });
+    Object.keys(groups).forEach(cat => {
+      if (!categoryOrder.includes(cat)) html += renderCategoryGroup(cat, groups[cat]);
+    });
+
+    treeContainer.innerHTML = html;
+
+    if (tbody) tbody.innerHTML = '';
+    if (tfoot) tfoot.innerHTML = '';
 
     updateHeaderCheckboxState('ledger');
     updateBulkActionBar();
@@ -698,10 +669,6 @@ const InventoryApp = (() => {
             <div class="fw-medium text-dark">${escapeHtml(itm.name || disp.itemCode)}</div>
             <div class="inv-sku-code mt-0.5">${disp.itemCode} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${disp.itemCode}')">📈</button></div>
           </td>
-          <td>
-            <div class="inv-brand-badge mb-0.5">${escapeHtml(itm.brand || '—')}</div>
-            <div class="text-muted small" style="max-width:180px;">${escapeHtml(itm.spec || '')}</div>
-          </td>
           <td class="text-center font-monospace fw-bold text-dark">${fmtQty(disp.qty)} <span class="text-muted small fw-normal">${itm.unit || 'Nos'}</span></td>
           <td class="text-end font-monospace text-secondary text-nowrap">${fmtRupees(unitBuyingCost)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${disp.itemCode}')">📈</button></td>
           <td class="text-end font-monospace fw-bold text-amber-700" style="font-size:0.86rem;">
@@ -761,7 +728,7 @@ const InventoryApp = (() => {
             <div class="inv-card-body-row">
               <div class="min-w-0 flex-grow-1">
                 <div class="fw-semibold text-dark small">${escapeHtml(itm.name || disp.itemCode)}</div>
-                <div class="small text-muted">${escapeHtml(itm.brand || '')} ${itm.spec ? `• ${escapeHtml(itm.spec)}` : ''}</div>
+                <div class="small text-muted">${escapeHtml(itm.unit || 'Nos')}</div>
               </div>
               <div class="inv-qty-pill text-amber-700 bg-amber-subtle flex-shrink-0">
                 ${fmtQty(disp.qty)} <small class="fw-normal text-muted">${escapeHtml(itm.unit || 'Nos')}</small>
@@ -812,7 +779,7 @@ const InventoryApp = (() => {
     if (tfoot) {
       tfoot.innerHTML = `
         <tr>
-          <td colspan="6" class="text-uppercase text-secondary fs-8">Total Dispatched Site Material Cost (${rows.length} Dispatches)</td>
+          <td colspan="5" class="text-uppercase text-secondary fs-8">Total Dispatched Site Material Cost (${rows.length} Dispatches)</td>
           <td class="text-center font-monospace fw-bold">${fmtQty(totalQtyDisp)}</td>
           <td class="text-end font-monospace text-muted">—</td>
           <td class="text-end font-monospace text-amber-700 fs-7 fw-bold">${fmtRupees(grandMaterialCost)}</td>
@@ -927,10 +894,6 @@ const InventoryApp = (() => {
             <div class="fw-medium text-dark">${escapeHtml(itm.name || inw.itemCode)}</div>
             <div class="inv-sku-code mt-0.5">${inw.itemCode} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${inw.itemCode}')">📈</button></div>
           </td>
-          <td>
-            <div class="inv-brand-badge mb-0.5">${escapeHtml(itm.brand || '—')}</div>
-            <div class="text-muted small" style="max-width:180px;">${escapeHtml(itm.spec || '')}</div>
-          </td>
           <td class="text-center font-monospace fw-bold text-dark">${fmtQty(inw.qty)} <span class="text-muted small fw-normal">${itm.unit || 'Nos'}</span></td>
           <td class="text-end font-monospace text-secondary text-nowrap">${fmtRupees(unitPrice)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${inw.itemCode}')">📈</button></td>
           <td class="text-end font-monospace fw-bold text-emerald-700" style="font-size:0.86rem;">
@@ -986,7 +949,7 @@ const InventoryApp = (() => {
             <div class="inv-card-body-row">
               <div class="min-w-0 flex-grow-1">
                 <div class="fw-semibold text-dark small">${escapeHtml(itm.name || inw.itemCode)}</div>
-                <div class="small text-muted">${escapeHtml(itm.brand || '')} ${itm.spec ? `• ${escapeHtml(itm.spec)}` : ''}</div>
+                <div class="small text-muted">${escapeHtml(itm.unit || 'Nos')}</div>
               </div>
               <div class="inv-qty-pill text-emerald-700 bg-emerald-subtle flex-shrink-0">
                 +${fmtQty(inw.qty)} <small class="fw-normal text-muted">${escapeHtml(itm.unit || 'Nos')}</small>
@@ -1031,7 +994,7 @@ const InventoryApp = (() => {
     if (tfoot) {
       tfoot.innerHTML = `
         <tr>
-          <td colspan="6" class="text-uppercase text-secondary fs-8">Total Inward Purchase Cost (${rows.length} Consignments)</td>
+          <td colspan="5" class="text-uppercase text-secondary fs-8">Total Inward Purchase Cost (${rows.length} Consignments)</td>
           <td class="text-center font-monospace fw-bold">${fmtQty(totalQtyInw)}</td>
           <td class="text-end font-monospace text-muted">—</td>
           <td class="text-end font-monospace text-emerald-700 fs-7 fw-bold">${fmtRupees(grandInwCost)}</td>
@@ -1348,12 +1311,11 @@ const InventoryApp = (() => {
       html += `<optgroup label="${escapeHtml(groupName)}">`;
       variants.forEach(v => {
         const isSelected = v.code === selectedCode ? 'selected' : '';
-        const brandSpec = `${escapeHtml(v.brand || '')}${v.spec ? ' — ' + escapeHtml(v.spec) : ''}`;
         if (mode === 'dispatch') {
           const stockLabel = v.inHandQty > 0 ? `Stock: ${v.inHandQty} ${v.unit || 'Nos'}` : `Stock: 0 ${v.unit || 'Nos'}`;
-          html += `<option value="${v.code}" ${isSelected}>${brandSpec} [${stockLabel}]</option>`;
+          html += `<option value="${v.code}" ${isSelected}>${escapeHtml(v.name || v.code)} [${stockLabel}]</option>`;
         } else {
-          html += `<option value="${v.code}" ${isSelected}>${brandSpec}</option>`;
+          html += `<option value="${v.code}" ${isSelected}>${escapeHtml(v.name || v.code)}</option>`;
         }
       });
       html += `</optgroup>`;
@@ -1371,8 +1333,6 @@ const InventoryApp = (() => {
     if (q) {
       filtered = ledger.filter(it => 
         (it.name && it.name.toLowerCase().includes(q)) ||
-        (it.brand && it.brand.toLowerCase().includes(q)) ||
-        (it.spec && it.spec.toLowerCase().includes(q)) ||
         (it.code && it.code.toLowerCase().includes(q)) ||
         (it.category && it.category.toLowerCase().includes(q))
       );
@@ -1400,11 +1360,9 @@ const InventoryApp = (() => {
             <div class="d-flex flex-column flex-grow-1 overflow-hidden">
               <div class="d-flex align-items-center gap-1.5">
                 <span class="fw-semibold text-dark text-truncate">${escapeHtml(v.name)}</span>
-                <span class="inv-brand-badge py-0 px-1" style="font-size:0.68rem;">${escapeHtml(v.brand || 'Standard')}</span>
               </div>
               <div class="text-secondary small text-truncate" style="font-size:0.71rem;">
                 <span class="font-monospace text-muted me-1">${escapeHtml(v.code)}</span>
-                ${v.spec ? `• ${escapeHtml(v.spec)}` : ''}
               </div>
             </div>
             <div class="d-flex align-items-center gap-1 flex-shrink-0">
@@ -1543,7 +1501,6 @@ const InventoryApp = (() => {
               <button type="button" class="inv-row-picker-btn" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')">
                 <span class="text-truncate flex-grow-1" id="pickerLabel_${row.id}">
                   <span class="fw-semibold text-dark">${escapeHtml(item.name || 'Select Equipment')}</span>
-                  <span class="text-secondary small ms-1">(${escapeHtml(item.brand || 'Standard')})</span>
                 </span>
                 <span class="d-inline-flex align-items-center flex-shrink-0 ms-1">
                   <button type="button" class="inv-ph-btn" title="View Price History" onclick="event.stopPropagation(); InventoryApp.openPriceHistory('${item.code || row.itemCode}')">📈</button>
@@ -1552,7 +1509,7 @@ const InventoryApp = (() => {
               </button>
               <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
                 <div class="inv-row-picker-search-wrap">
-                  <input type="text" class="inv-row-picker-search-input" placeholder="Search equipment by name, brand, spec..." oninput="InventoryApp.filterPickerItems('${row.id}', 'stockin', this.value)" autocomplete="off">
+                  <input type="text" class="inv-row-picker-search-input" placeholder="Search equipment by name, code..." oninput="InventoryApp.filterPickerItems('${row.id}', 'stockin', this.value)" autocomplete="off">
                 </div>
                 <div class="inv-row-picker-list" id="pickerList_${row.id}">
                   ${renderPickerListHtml(row.id, 'stockin', row.itemCode, '')}
@@ -1861,7 +1818,6 @@ const InventoryApp = (() => {
               <button type="button" class="inv-row-picker-btn ${isOverStock ? 'border-danger' : ''}" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')">
                 <span class="text-truncate flex-grow-1" id="pickerLabel_${row.id}">
                   <span class="fw-semibold text-dark">${escapeHtml(item.name || 'Select Equipment')}</span>
-                  <span class="text-secondary small ms-1">(${escapeHtml(item.brand || 'Standard')})</span>
                 </span>
                 <span class="d-inline-flex align-items-center flex-shrink-0 ms-1">
                   <button type="button" class="inv-ph-btn" title="View Price History" onclick="event.stopPropagation(); InventoryApp.openPriceHistory('${item.code || row.itemCode}')">📈</button>
@@ -1870,7 +1826,7 @@ const InventoryApp = (() => {
               </button>
               <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
                 <div class="inv-row-picker-search-wrap">
-                  <input type="text" class="inv-row-picker-search-input" placeholder="Search equipment by name, brand, spec..." oninput="InventoryApp.filterPickerItems('${row.id}', 'dispatch', this.value)" autocomplete="off">
+                  <input type="text" class="inv-row-picker-search-input" placeholder="Search equipment by name, code..." oninput="InventoryApp.filterPickerItems('${row.id}', 'dispatch', this.value)" autocomplete="off">
                 </div>
                 <div class="inv-row-picker-list" id="pickerList_${row.id}">
                   ${renderPickerListHtml(row.id, 'dispatch', row.itemCode, '')}
@@ -2375,23 +2331,33 @@ const InventoryApp = (() => {
     if (btnSubmit) btnSubmit.addEventListener('click', handleSaveNewItem);
   }
 
+  function generateNextSkuCode() {
+    const prefix = 'SKU';
+    let maxNum = 0;
+    items.forEach(item => {
+      const code = (item.code || '');
+      const match = code.match(/^SKU-?(\d+)$/i);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+  }
+
   function openNewItemModal() {
     const modalEl = document.getElementById('modalNewItem');
     if (!modalEl) return;
 
     const codeInput = document.getElementById('newSkuCode');
     const nameInput = document.getElementById('newSkuName');
-    const brandInput = document.getElementById('newSkuBrand');
-    const specInput = document.getElementById('newSkuSpec');
     const catInput = document.getElementById('newSkuCategory');
     const unitInput = document.getElementById('newSkuUnit');
     const priceInput = document.getElementById('newSkuPrice');
     const thresholdInput = document.getElementById('newSkuMinThreshold');
 
-    if (codeInput) codeInput.value = '';
+    if (codeInput) codeInput.value = generateNextSkuCode();
     if (nameInput) nameInput.value = '';
-    if (brandInput) brandInput.value = '';
-    if (specInput) specInput.value = '';
     if (catInput) catInput.value = 'Panels';
     if (unitInput) unitInput.value = 'Nos';
     if (priceInput) priceInput.value = '';
@@ -2404,21 +2370,21 @@ const InventoryApp = (() => {
   function handleSaveNewItem() {
     const code = document.getElementById('newSkuCode')?.value.trim().toUpperCase();
     const name = document.getElementById('newSkuName')?.value.trim();
-    const brand = document.getElementById('newSkuBrand')?.value.trim();
-    const spec = document.getElementById('newSkuSpec')?.value.trim();
     const category = document.getElementById('newSkuCategory')?.value || 'Panels';
     const unit = document.getElementById('newSkuUnit')?.value || 'Nos';
     const buyingPrice = Number(document.getElementById('newSkuPrice')?.value) || 0;
     const minThreshold = Number(document.getElementById('newSkuMinThreshold')?.value) || 5;
 
     if (!code) {
-      if (typeof UI !== 'undefined') UI.toast('Please enter a unique Item Code (SKU)', 'warning');
-      document.getElementById('newSkuCode')?.focus();
+      if (typeof UI !== 'undefined') UI.toast('Unable to generate SKU code. Please refresh and try again.', 'warning');
       return;
     }
     if (items.some(i => (i.code || '').toLowerCase() === code.toLowerCase())) {
-      if (typeof UI !== 'undefined') UI.toast(`Item Code "${code}" already exists in catalog`, 'danger');
-      document.getElementById('newSkuCode')?.focus();
+      // regenerate and update display
+      const newCode = generateNextSkuCode();
+      const codeInput = document.getElementById('newSkuCode');
+      if (codeInput) codeInput.value = newCode;
+      if (typeof UI !== 'undefined') UI.toast(`SKU code updated to ${newCode}. Please try saving again.`, 'info');
       return;
     }
     if (!name) {
@@ -2426,17 +2392,12 @@ const InventoryApp = (() => {
       document.getElementById('newSkuName')?.focus();
       return;
     }
-    if (!brand) {
-      if (typeof UI !== 'undefined') UI.toast('Please enter Brand / Make', 'warning');
-      document.getElementById('newSkuBrand')?.focus();
-      return;
-    }
 
     const newItem = {
       code,
       name,
-      brand,
-      spec: spec || '',
+      brand: '',
+      spec: '',
       category,
       unit,
       buyingPrice,
@@ -2453,8 +2414,6 @@ const InventoryApp = (() => {
       DB.insert('inventory_items', {
         ItemCode: newItem.code,
         ItemName: newItem.name,
-        Brand: newItem.brand,
-        Specification: newItem.spec,
         Category: newItem.category,
         Unit: newItem.unit,
         BuyingPrice: newItem.buyingPrice,
@@ -2484,7 +2443,7 @@ const InventoryApp = (() => {
     if (activeTab === 'ledger') renderLedgerTable();
 
     if (typeof UI !== 'undefined') {
-      UI.toast(`Registered new SKU "${code}" (${name} - ${brand}) successfully!`, 'success');
+      UI.toast(`Registered new SKU "${code}" — ${name} successfully!`, 'success');
     }
   }
 
@@ -2505,8 +2464,6 @@ const InventoryApp = (() => {
 
     const codeInput = document.getElementById('editSkuCode');
     const nameInput = document.getElementById('editSkuName');
-    const brandInput = document.getElementById('editSkuBrand');
-    const specInput = document.getElementById('editSkuSpec');
     const catInput = document.getElementById('editSkuCategory');
     const unitInput = document.getElementById('editSkuUnit');
     const priceInput = document.getElementById('editSkuPrice');
@@ -2514,8 +2471,6 @@ const InventoryApp = (() => {
 
     if (codeInput) codeInput.value = item.code;
     if (nameInput) nameInput.value = item.name || '';
-    if (brandInput) brandInput.value = item.brand || item.Brand || item.make || '';
-    if (specInput) specInput.value = item.spec || item.Specification || '';
     if (catInput) catInput.value = item.category || 'Panels';
     if (unitInput) unitInput.value = item.unit || 'Nos';
     if (priceInput) priceInput.value = item.buyingPrice;
@@ -2528,16 +2483,15 @@ const InventoryApp = (() => {
   function handleSaveEditItem() {
     const code = document.getElementById('editSkuCode')?.value.trim();
     const name = document.getElementById('editSkuName')?.value.trim();
-    const brand = document.getElementById('editSkuBrand')?.value.trim();
-    const spec = document.getElementById('editSkuSpec')?.value.trim();
     const category = document.getElementById('editSkuCategory')?.value || 'Panels';
     const unit = document.getElementById('editSkuUnit')?.value || 'Nos';
     const buyingPrice = Number(document.getElementById('editSkuPrice')?.value) || 0;
     const minThreshold = Number(document.getElementById('editSkuMinThreshold')?.value) || 5;
 
     if (!code) return;
-    if (!name || !brand) {
-      if (typeof UI !== 'undefined') UI.toast('Please fill all required SKU attributes (Name & Brand)', 'warning');
+    if (!name) {
+      if (typeof UI !== 'undefined') UI.toast('Please fill the Equipment Name', 'warning');
+      document.getElementById('editSkuName')?.focus();
       return;
     }
 
@@ -2546,10 +2500,10 @@ const InventoryApp = (() => {
 
     const oldName = item.name;
     item.name = name;
-    item.brand = brand;
-    item.Brand = brand;
-    item.spec = spec || '';
-    item.Specification = spec || '';
+    item.brand = '';
+    item.Brand = '';
+    item.spec = '';
+    item.Specification = '';
     item.category = category;
     item.unit = unit;
     item.buyingPrice = buyingPrice;
@@ -2561,10 +2515,6 @@ const InventoryApp = (() => {
       DB.update('inventory_items', r => ((r.ItemCode || r.itemcode || r.code || '').toLowerCase() === code.toLowerCase()), {
         ItemName: name,
         itemname: name,
-        Brand: brand,
-        brand: brand,
-        Specification: spec || '',
-        specification: spec || '',
         Category: category,
         Unit: unit,
         BuyingPrice: buyingPrice,
@@ -2574,8 +2524,6 @@ const InventoryApp = (() => {
 
       DB.update('items', r => ((r.ItemName || r.itemname || r.name || '').toLowerCase() === (oldName || '').toLowerCase() || (r.ItemCode || r.itemcode || r.code || '').toLowerCase() === code.toLowerCase()), {
         ItemName: name,
-        Brand: brand,
-        brand: brand,
         Category: category,
         Unit: unit
       }).catch(err => console.warn('[Supabase] items update error:', err));
@@ -2603,7 +2551,7 @@ const InventoryApp = (() => {
     const inwCount = inwards.filter(i => i.itemCode === code).length;
     const dspCount = dispatches.filter(d => d.itemCode === code).length;
 
-    let warningText = `Are you sure you want to delete equipment SKU "${code}" (${item.name} - ${item.brand})?`;
+    let warningText = `Are you sure you want to delete equipment SKU "${code}" (${item.name})?`;
     if (inwCount > 0 || dspCount > 0) {
       warningText += `\n\n⚠️ Note: This item is referenced in ${inwCount} inward purchases and ${dspCount} site dispatches. Deleting it will remove the SKU from the live stock catalog.`;
     }
@@ -3031,13 +2979,11 @@ const InventoryApp = (() => {
     if (activeTab === 'ledger') {
       filename = `Solar_Stock_Ledger_${today}.csv`;
       const ledger = getCalculatedStockLedger();
-      const headers = ['Item Code', 'Item Name', 'Brand', 'Specification', 'Category', 'Unit', 'Buying Price (INR)', 'Inward Qty', 'Dispatched Qty', 'In-Hand Stock', 'Total Stock Valuation (INR)', 'Status'];
+      const headers = ['Item Code', 'Item Name', 'Category', 'Unit', 'Buying Price (INR)', 'Inward Qty', 'Dispatched Qty', 'In-Hand Stock', 'Total Stock Valuation (INR)', 'Status'];
       
       const rows = ledger.map(item => [
         `"${item.code}"`,
         `"${(item.name || '').replace(/"/g, '""')}"`,
-        `"${(item.brand || '').replace(/"/g, '""')}"`,
-        `"${(item.spec || '').replace(/"/g, '""')}"`,
         `"${item.category}"`,
         `"${item.unit}"`,
         item.buyingPrice,
@@ -3051,7 +2997,7 @@ const InventoryApp = (() => {
       csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
     } else if (activeTab === 'dispatches') {
       filename = `Solar_Site_Dispatches_${today}.csv`;
-      const headers = ['Date', 'Challan No', 'Project / Site Name', 'Item Code', 'Item Name', 'Brand', 'Specification', 'Quantity Dispatched', 'Unit Buying Price (INR)', 'Total Material Cost (INR)', 'Transport Cost (INR)', 'Document', 'Vehicle / Transporter'];
+      const headers = ['Date', 'Challan No', 'Project / Site Name', 'Item Code', 'Item Name', 'Quantity Dispatched', 'Unit Buying Price (INR)', 'Total Material Cost (INR)', 'Transport Cost (INR)', 'Document', 'Vehicle / Transporter'];
       
       const rows = dispatches.map(dsp => {
         const itm = items.find(i => i.code === dsp.itemCode) || {};
@@ -3061,8 +3007,6 @@ const InventoryApp = (() => {
           `"${(dsp.siteName || '').replace(/"/g, '""')}"`,
           `"${dsp.itemCode}"`,
           `"${(itm.name || '').replace(/"/g, '""')}"`,
-          `"${(itm.brand || '').replace(/"/g, '""')}"`,
-          `"${(itm.spec || '').replace(/"/g, '""')}"`,
           dsp.qty,
           dsp.unitBuyingPrice,
           dsp.dispatchedCost,
@@ -3075,7 +3019,7 @@ const InventoryApp = (() => {
       csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
     } else if (activeTab === 'inwards') {
       filename = `Solar_Inward_Procurement_${today}.csv`;
-      const headers = ['Date', 'Invoice No', 'Supplier / Vendor', 'Item Code', 'Item Name', 'Brand', 'Specification', 'Quantity Received', 'Unit Price (INR)', 'Total Inward Cost (INR)', 'Document', 'Storage Location'];
+      const headers = ['Date', 'Invoice No', 'Supplier / Vendor', 'Item Code', 'Item Name', 'Quantity Received', 'Unit Price (INR)', 'Total Inward Cost (INR)', 'Document', 'Storage Location'];
       
       const rows = inwards.map(inw => {
         const itm = items.find(i => i.code === inw.itemCode) || {};
@@ -3085,8 +3029,6 @@ const InventoryApp = (() => {
           `"${(inw.supplier || '').replace(/"/g, '""')}"`,
           `"${inw.itemCode}"`,
           `"${(itm.name || '').replace(/"/g, '""')}"`,
-          `"${(itm.brand || '').replace(/"/g, '""')}"`,
-          `"${(itm.spec || '').replace(/"/g, '""')}"`,
           inw.qty,
           inw.unitPrice,
           inw.totalCost,
@@ -3362,10 +3304,10 @@ const InventoryApp = (() => {
     const titleEl = document.getElementById('modalPriceHistoryTitle');
     const subtitleEl = document.getElementById('modalPriceHistorySubtitle');
     if (titleEl) {
-      titleEl.innerHTML = `Equipment Rate History: <span class="text-primary">${escapeHtml(item.name || itemCode)}</span> <span class="badge bg-secondary-subtle text-secondary border font-monospace ms-1">${escapeHtml(item.brand || 'Standard')}</span>`;
+      titleEl.innerHTML = `Equipment Rate History: <span class="text-primary">${escapeHtml(item.name || itemCode)}</span>`;
     }
     if (subtitleEl) {
-      subtitleEl.textContent = `SKU: ${item.code || itemCode} ${item.spec ? ' • ' + item.spec : ''} • Unit: ${item.unit || 'Nos'}`;
+      subtitleEl.textContent = `SKU: ${item.code || itemCode} • Unit: ${item.unit || 'Nos'}`;
     }
 
     // Find all inward records for this itemCode
