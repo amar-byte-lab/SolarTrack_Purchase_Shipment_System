@@ -152,10 +152,14 @@
 .table-manage-work {
   display: block !important;
   font-size: 0.74rem;
-  width: 100%;
+  /* CRITICAL: prevent table from sizing beyond its container */
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
   border: none !important;
   border-radius: 0;
   background: transparent;
+  table-layout: fixed !important;
 }
 
 .table-manage-work th {
@@ -169,15 +173,19 @@
   background: transparent;
   white-space: nowrap;
   height: auto;
+  box-sizing: border-box !important;
   transition: background-color 0.15s ease;
 }
 
-/* ══ Card Grid: tbody becomes a responsive grid ════════════════════════ */
+/* ══ Card Grid: tbody — auto-fit columns based on available width ══════ */
 .table-manage-work tbody {
   display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
+  /* auto-fit: browser calculates how many columns fit — min 260px each */
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
   gap: 10px !important;
   width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
   align-items: start !important;
 }
 
@@ -186,7 +194,11 @@
   display: flex !important;
   flex-direction: column !important;
   grid-column: span 1 !important;
+  /* CRITICAL: never exceed the grid cell width */
   width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 10px !important;
@@ -196,8 +208,6 @@
   transition: box-shadow 0.15s ease, border-color 0.15s ease !important;
   position: relative !important;
   cursor: pointer !important;
-  contain-intrinsic-size: 0 80px !important;
-  content-visibility: auto !important;
 }
 
 .table-manage-work tbody tr.mw-card-row.mw-card-collapsed:hover {
@@ -209,8 +219,13 @@
 .table-manage-work tbody tr.mw-card-row.mw-card-expanded {
   display: flex !important;
   flex-wrap: wrap !important;
+  align-content: flex-start !important;
   grid-column: 1 / -1 !important;
+  /* CRITICAL: never exceed container */
   width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
   background: #ffffff !important;
   border: 1px solid #3b82f6 !important;
   border-radius: 10px !important;
@@ -228,6 +243,8 @@
   grid-column: 1 / -1 !important;
   display: flex !important;
   width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 10px !important;
@@ -300,7 +317,19 @@
 }
 
 @media (min-width: 769px) {
-  /* ── Desktop: hide bottom collapse button (use header chevron instead) ── */
+  /* ── Desktop: container must not overflow ── */
+  .manage-work-page .st-card-table-container {
+    overflow: hidden !important;
+  }
+
+  .manage-work-page .table-responsive-main {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Desktop: hide bottom collapse button ── */
   .table-manage-work .mw-bottom-collapse-td {
     display: none !important;
   }
@@ -309,21 +338,28 @@
   .table-manage-work tr.mw-card-collapsed td:nth-child(1) {
     display: block !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
     padding: 0 0 5px 0 !important;
     border-bottom: 1px solid #f1f5f9 !important;
     margin-bottom: 5px !important;
+    box-sizing: border-box !important;
   }
 
   .table-manage-work tr.mw-card-collapsed td.td-progress-col {
     display: block !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
     padding: 2px 0 0 0 !important;
     border: none !important;
     background: transparent !important;
-    vertical-align: middle;
+    box-sizing: border-box !important;
   }
 
-  /* ── Collapsed: hide all stage cells (only show customer + progress) ── */
+  /* ── Collapsed: hide all stage cells ── */
   .table-manage-work tr.mw-card-collapsed td:not(:nth-child(1)):not(.td-progress-col):not(.mw-bottom-collapse-td) {
     display: none !important;
   }
@@ -333,19 +369,25 @@
     display: block !important;
     width: 100% !important;
     flex: 0 0 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
     padding: 0 0 8px 0 !important;
     margin-bottom: 6px !important;
     border-bottom: 2px solid #dbeafe !important;
+    box-sizing: border-box !important;
   }
 
-  /* ── Expanded card: stage cells in 2-column grid layout ── */
+  /* ── Expanded card: stage cells — 2 per row, auto-shrink controls ── */
   .table-manage-work tr.mw-card-expanded td:nth-child(n+2):not(.mw-bottom-collapse-td):not(.td-progress-col) {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
+    /* exactly half minus gap — fits 2 per row */
     width: calc(50% - 6px) !important;
     flex: 0 0 calc(50% - 6px) !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
     padding: 4px 8px !important;
     margin-bottom: 4px !important;
     background: #f8fafc !important;
@@ -353,53 +395,55 @@
     border-radius: 6px !important;
     height: auto !important;
     min-height: 32px !important;
-    white-space: nowrap !important;
+    /* allow content to shrink instead of overflow */
+    white-space: normal !important;
     box-sizing: border-box !important;
     flex-wrap: nowrap !important;
+    gap: 6px !important;
   }
 
-  /* Stage label prefix for expanded desktop cards */
+  /* Stage label prefix */
   .table-manage-work tr.mw-card-expanded td:nth-child(n+2):not(.mw-bottom-collapse-td):not(.td-progress-col)::before {
     font-size: 0.72rem !important;
     font-weight: 700 !important;
     letter-spacing: 0.01em !important;
     text-transform: uppercase !important;
-    width: 100px !important;
-    min-width: 90px !important;
+    width: 95px !important;
+    min-width: 80px !important;
     flex-shrink: 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    margin: 0 8px 0 0 !important;
+    margin: 0 !important;
     line-height: 1 !important;
     display: inline-block !important;
   }
 
-  .table-manage-work tr.mw-card-expanded td:nth-child(2)::before  { content: "1. Login";       color: #0284c7 !important; }
-  .table-manage-work tr.mw-card-expanded td:nth-child(3)::before  { content: "2. Agreement";   color: #7c3aed !important; }
-  .table-manage-work tr.mw-card-expanded td:nth-child(4)::before  { content: "3. Dispatched";  color: #0891b2 !important; }
-  .table-manage-work tr.mw-card-expanded td:nth-child(5)::before  { content: "4. Installation";color: #d97706 !important; }
-  .table-manage-work tr.mw-card-expanded td:nth-child(6)::before  { content: "5. NetMeter";    color: #9333ea !important; }
-  .table-manage-work tr.mw-card-expanded td:nth-child(7)::before  { content: "6. Inspection";  color: #475569 !important; }
-  .table-manage-work tr.mw-card-expanded td:nth-child(8)::before  { content: "7. Connection";  color: #4338ca !important; }
-  .table-manage-work tr.mw-card-expanded td:nth-child(9)::before  { content: "8. Subsidy";     color: #16a34a !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(2)::before  { content: "1. Login";        color: #0284c7 !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(3)::before  { content: "2. Agreement";    color: #7c3aed !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(4)::before  { content: "3. Dispatched";   color: #0891b2 !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(5)::before  { content: "4. Installation"; color: #d97706 !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(6)::before  { content: "5. NetMeter";     color: #9333ea !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(7)::before  { content: "6. Inspection";   color: #475569 !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(8)::before  { content: "7. Connection";   color: #4338ca !important; }
+  .table-manage-work tr.mw-card-expanded td:nth-child(9)::before  { content: "8. Subsidy";      color: #16a34a !important; }
 
-  /* Stage controls (toggle + datepicker) in expanded desktop card */
+  /* Stage controls: toggle + datepicker — shrink to fit */
   .table-manage-work tr.mw-card-expanded .mw-stage-cell {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    gap: 6px !important;
-    width: auto !important;
+    gap: 5px !important;
     flex: 1 1 auto !important;
+    min-width: 0 !important;
     flex-wrap: nowrap !important;
-    white-space: nowrap !important;
+    overflow: hidden !important;
   }
 
   .table-manage-work tr.mw-card-expanded .mw-switch {
-    width: 30px !important;
-    height: 17px !important;
+    width: 28px !important;
+    height: 16px !important;
     flex-shrink: 0 !important;
     margin: 0 !important;
     display: inline-block !important;
@@ -407,27 +451,26 @@
   }
 
   .table-manage-work tr.mw-card-expanded .mw-slider {
-    border-radius: 17px !important;
+    border-radius: 16px !important;
   }
 
   .table-manage-work tr.mw-card-expanded .mw-slider:before {
-    height: 13px !important;
-    width: 13px !important;
+    height: 12px !important;
+    width: 12px !important;
     left: 2px !important;
     bottom: 2px !important;
   }
 
   .table-manage-work tr.mw-card-expanded .mw-switch input:checked + .mw-slider:before {
-    transform: translateX(13px) !important;
+    transform: translateX(12px) !important;
   }
 
   .table-manage-work tr.mw-card-expanded .mw-stage-input-wrap {
     display: inline-flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    width: auto !important;
-    margin: 0 !important;
-    flex-shrink: 0 !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
     flex-wrap: nowrap !important;
   }
 
@@ -435,12 +478,14 @@
     display: none !important;
   }
 
+  /* Date input — shrinks on smaller screens */
   .table-manage-work tr.mw-card-expanded .mw-date-input {
-    width: 110px !important;
-    min-width: 105px !important;
-    height: 25px !important;
-    font-size: 0.72rem !important;
-    padding: 1px 4px !important;
+    width: 100px !important;
+    min-width: 90px !important;
+    max-width: 110px !important;
+    height: 24px !important;
+    font-size: 0.70rem !important;
+    padding: 1px 3px !important;
     border-radius: 4px !important;
     border: 1px solid #cbd5e1 !important;
     background: #ffffff !important;
@@ -448,13 +493,14 @@
     color: #0f172a !important;
     box-sizing: border-box !important;
     margin: 0 !important;
+    flex-shrink: 1 !important;
   }
 
   /* NetMeter cell in expanded desktop card */
   .table-manage-work tr.mw-card-expanded td:nth-child(6) {
     background: #faf5ff !important;
-    border: 1px solid #f3e8ff !important;
-    overflow-x: hidden !important;
+    border-color: #f3e8ff !important;
+    overflow: hidden !important;
   }
 
   .table-manage-work tr.mw-card-expanded td:nth-child(6) .mw-netmeter-cell {
@@ -465,10 +511,17 @@
     gap: 4px !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
-    width: auto !important;
     max-width: 100% !important;
     flex-wrap: nowrap !important;
-    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  .table-manage-work tr.mw-card-expanded td:nth-child(6) .mw-stage-input-wrap {
+    display: inline-flex !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+    gap: 3px !important;
   }
 
   .table-manage-work tr.mw-card-expanded td:nth-child(6) .mw-netmeter-pay-group {
@@ -478,51 +531,53 @@
     flex-wrap: nowrap !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
-    height: 25px !important;
+    height: 24px !important;
     box-sizing: border-box !important;
   }
 
   .table-manage-work tr.mw-card-expanded td:nth-child(6) .mw-netmeter-pay-group .input-group-text {
     padding: 0 4px !important;
-    font-size: 0.68rem !important;
-    height: 25px !important;
+    font-size: 0.66rem !important;
+    height: 24px !important;
     border-radius: 4px 0 0 4px !important;
     flex-shrink: 0 !important;
   }
 
   .table-manage-work tr.mw-card-expanded td:nth-child(6) .mw-netmeter-pay-group input {
-    height: 25px !important;
+    height: 24px !important;
     font-size: 0.68rem !important;
     flex: 1 1 auto !important;
-    min-width: 40px !important;
+    min-width: 30px !important;
+    max-width: 80px !important;
     text-align: right !important;
     border-radius: 0 !important;
     box-sizing: border-box !important;
   }
 
   .table-manage-work tr.mw-card-expanded td:nth-child(6) .mw-netmeter-pay-group button {
-    width: 22px !important;
-    height: 25px !important;
+    width: 20px !important;
+    height: 24px !important;
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    flex: 0 0 22px !important;
+    flex: 0 0 20px !important;
   }
 
   .table-manage-work tr.mw-card-expanded td:nth-child(6) .mw-netmeter-pay-group button:last-child {
     border-radius: 0 4px 4px 0 !important;
   }
 
-  /* td-progress-col hidden in expanded card (progress bar only shown in collapsed) */
+  /* Progress bar hidden in expanded card (only in collapsed) */
   .table-manage-work tr.mw-card-expanded td.td-progress-col {
     display: none !important;
   }
 
-  /* Customer cell on collapsed desktop card: compact name + progress bar */
+  /* Collapsed card customer cell — truncate long names */
   .table-manage-work tr.mw-card-collapsed .mw-customer-cell {
     flex-wrap: nowrap !important;
     gap: 4px !important;
+    overflow: hidden !important;
   }
 
   .table-manage-work tr.mw-card-collapsed .mw-customer-name {
@@ -531,20 +586,26 @@
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    min-width: 0 !important;
   }
 
-  /* Expanded card: customer cell layout */
+  /* Expanded card customer cell */
   .table-manage-work tr.mw-card-expanded .mw-customer-cell {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     gap: 6px !important;
     width: 100% !important;
+    overflow: hidden !important;
   }
 
   .table-manage-work tr.mw-card-expanded .mw-customer-name {
     font-size: 0.88rem !important;
     font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
   }
 }
 
@@ -1732,6 +1793,8 @@
     overflow-x: hidden !important;
     overflow-y: auto !important;
     width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     max-height: 100% !important;
     padding: 2px 2px 20px 2px !important;
   }
@@ -1741,24 +1804,28 @@
     border: none !important;
     background: transparent !important;
     width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .table-manage-work thead {
-    display: none !important; /* Hide wide desktop headers */
+    display: none !important;
   }
 
+  /* Mobile: single column grid */
   .table-manage-work tbody {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
     gap: 8px !important;
+    max-width: 100% !important;
   }
 
-  /* ── Mobile Customer Workflow Card / Section ── */
+  /* ── Mobile Collapsed Card ── */
   .table-manage-work tbody tr.mw-card-row.mw-card-collapsed {
-    padding: 7px 8px 8px 8px !important;
+    padding: 7px 10px 8px 10px !important;
     gap: 4px !important;
-    contain-intrinsic-size: 0 72px !important;
   }
 
+  /* ── Mobile Expanded Card ── */
   .table-manage-work tbody tr.mw-card-row.mw-card-expanded {
     padding: 8px 10px !important;
   }
@@ -1790,6 +1857,9 @@
   .table-manage-work tr.mw-card-collapsed td.td-progress-col {
     display: block !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
     flex: 0 0 100% !important;
     background: transparent !important;
     border: none !important;
@@ -1798,6 +1868,7 @@
     min-height: unset !important;
     height: auto !important;
     white-space: normal !important;
+    box-sizing: border-box !important;
   }
 
   .table-manage-work tr.mw-card-collapsed td.td-progress-col::before {
@@ -1831,6 +1902,9 @@
   .table-manage-work td:nth-child(1) {
     display: block !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
     flex: 0 0 100% !important;
     padding: 0 0 6px 0 !important;
     margin-bottom: 6px !important;
@@ -1840,6 +1914,7 @@
     background: transparent !important;
     height: auto !important;
     white-space: normal !important;
+    box-sizing: border-box !important;
   }
 
   .table-manage-work td:nth-child(1) .mw-customer-cell {
@@ -1911,13 +1986,15 @@
     font-weight: 600 !important;
   }
 
-  /* ── Stages (2 through 9): Single-Row Layout (Toggle & Datepicker on Same Line of Row) ── */
+  /* ── Stages (2 through 9): Single-Row Layout — label left, controls right ── */
   .table-manage-work td:nth-child(n+2) {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     flex: 0 0 100% !important;
     padding: 3px 6px !important;
     margin-bottom: 3px !important;
@@ -1927,54 +2004,56 @@
     height: auto !important;
     min-height: 30px !important;
     white-space: nowrap !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
     flex-wrap: nowrap !important;
+    gap: 4px !important;
   }
 
-  /* Stage Name Labels (Left Column) */
+  /* Stage Name Labels */
   .table-manage-work td:nth-child(n+2)::before {
-    font-size: 0.72rem !important;
+    font-size: 0.70rem !important;
     font-weight: 700 !important;
     letter-spacing: 0.01em !important;
     text-transform: uppercase !important;
-    width: 82px !important;
-    min-width: 76px !important;
-    max-width: 86px !important;
+    width: 78px !important;
+    min-width: 72px !important;
+    max-width: 82px !important;
     flex-shrink: 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    margin: 0 6px 0 0 !important;
+    margin: 0 !important;
     line-height: 1 !important;
     display: inline-block !important;
   }
 
-  .table-manage-work td:nth-child(2)::before { content: "1. Login"; color: #0284c7 !important; }
-  .table-manage-work td:nth-child(3)::before { content: "2. Agreement"; color: #7c3aed !important; }
-  .table-manage-work td:nth-child(4)::before { content: "3. Dispatched"; color: #0891b2 !important; }
-  .table-manage-work td:nth-child(5)::before { content: "4. Installation"; color: #d97706 !important; }
-  .table-manage-work td:nth-child(6)::before { content: "5. NetMeter"; color: #9333ea !important; }
-  .table-manage-work td:nth-child(7)::before { content: "6. Inspection"; color: #475569 !important; }
-  .table-manage-work td:nth-child(8)::before { content: "7. Connection"; color: #4338ca !important; }
-  .table-manage-work td:nth-child(9)::before { content: "8. Subsidy"; color: #16a34a !important; }
+  .table-manage-work td:nth-child(2)::before { content: "1. Login";        color: #0284c7 !important; }
+  .table-manage-work td:nth-child(3)::before { content: "2. Agreement";    color: #7c3aed !important; }
+  .table-manage-work td:nth-child(4)::before { content: "3. Dispatched";   color: #0891b2 !important; }
+  .table-manage-work td:nth-child(5)::before { content: "4. Install";      color: #d97706 !important; }
+  .table-manage-work td:nth-child(6)::before { content: "5. NetMeter";     color: #9333ea !important; }
+  .table-manage-work td:nth-child(7)::before { content: "6. Inspection";   color: #475569 !important; }
+  .table-manage-work td:nth-child(8)::before { content: "7. Connection";   color: #4338ca !important; }
+  .table-manage-work td:nth-child(9)::before { content: "8. Subsidy";      color: #16a34a !important; }
 
-  /* Stage Controls Container: Toggle + Datepicker on SAME LINE OF ROW */
+  /* Stage Controls: toggle + datepicker — must shrink, not overflow */
   .table-manage-work .mw-stage-cell {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    gap: 6px !important;
-    width: auto !important;
+    gap: 5px !important;
     flex: 1 1 auto !important;
+    min-width: 0 !important;
     flex-wrap: nowrap !important;
-    white-space: nowrap !important;
+    overflow: hidden !important;
   }
 
   /* Compact Toggle Switch */
   .table-manage-work .mw-switch {
-    width: 30px !important;
-    height: 17px !important;
+    width: 28px !important;
+    height: 16px !important;
     flex-shrink: 0 !important;
     margin: 0 !important;
     display: inline-block !important;
@@ -1983,28 +2062,28 @@
   }
 
   .table-manage-work .mw-slider {
-    border-radius: 17px !important;
+    border-radius: 16px !important;
   }
 
   .table-manage-work .mw-slider:before {
-    height: 13px !important;
-    width: 13px !important;
+    height: 12px !important;
+    width: 12px !important;
     left: 2px !important;
     bottom: 2px !important;
   }
 
   .table-manage-work .mw-switch input:checked + .mw-slider:before {
-    transform: translateX(13px) !important;
+    transform: translateX(12px) !important;
   }
 
-  /* Stage Input Wrapper: inline side-by-side with toggle */
+  /* Stage Input Wrapper */
   .table-manage-work .mw-stage-input-wrap {
     display: inline-flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    width: auto !important;
+    min-width: 0 !important;
     margin: 0 !important;
-    flex-shrink: 0 !important;
+    flex-shrink: 1 !important;
     flex-wrap: nowrap !important;
   }
 
@@ -2012,13 +2091,14 @@
     display: none !important;
   }
 
-  /* Compact Datepicker on Same Line */
+  /* Date input — responsive, shrinks on narrow screens */
   .table-manage-work .mw-date-input {
-    width: 110px !important;
-    min-width: 105px !important;
-    height: 25px !important;
-    font-size: 0.72rem !important;
-    padding: 1px 4px !important;
+    width: 100px !important;
+    min-width: 88px !important;
+    max-width: 105px !important;
+    height: 24px !important;
+    font-size: 0.70rem !important;
+    padding: 1px 3px !important;
     border-radius: 4px !important;
     border: 1px solid #cbd5e1 !important;
     background: #ffffff !important;
@@ -2026,14 +2106,14 @@
     color: #0f172a !important;
     box-sizing: border-box !important;
     margin: 0 !important;
+    flex-shrink: 1 !important;
   }
 
-  /* ── Stage 5 (NetMeter): Auto-adjust controls without horizontal overflow ── */
+  /* ── Stage 5 (NetMeter): Auto-adjust, no overflow ── */
   .table-manage-work td:nth-child(6) {
     background: #faf5ff !important;
     border: 1px solid #f3e8ff !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
+    overflow: hidden !important;
     max-width: 100% !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -2047,10 +2127,9 @@
     gap: 4px !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
-    width: auto !important;
     max-width: 100% !important;
     flex-wrap: nowrap !important;
-    white-space: nowrap !important;
+    overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
@@ -2061,12 +2140,11 @@
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-end !important;
-    gap: 4px !important;
+    gap: 3px !important;
     flex-wrap: nowrap !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    width: auto !important;
     margin: 0 !important;
     flex-shrink: 1 !important;
   }
@@ -2075,15 +2153,15 @@
     display: none !important;
   }
 
-  /* Date picker: exact same width and alignment as stages above */
+  /* NetMeter date picker — shrinks with available space */
   .table-manage-work td:nth-child(6) .mw-date-input {
-    width: 110px !important;
-    min-width: 105px !important;
-    max-width: 110px !important;
-    flex: 0 0 110px !important;
-    height: 25px !important;
-    font-size: 0.72rem !important;
-    padding: 1px 4px !important;
+    width: 98px !important;
+    min-width: 80px !important;
+    max-width: 105px !important;
+    flex: 0 1 98px !important;
+    height: 24px !important;
+    font-size: 0.70rem !important;
+    padding: 1px 3px !important;
     border-radius: 4px !important;
     border: 1px solid #cbd5e1 !important;
     background: #ffffff !important;
@@ -2091,10 +2169,10 @@
     color: #0f172a !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    flex-shrink: 0 !important;
+    flex-shrink: 1 !important;
   }
 
-  /* Amount group: auto-adjusting in edit and non-edit mode */
+  /* Amount group: auto-adjusting */
   .table-manage-work td:nth-child(6) .mw-netmeter-pay-group {
     display: inline-flex !important;
     flex-direction: row !important;
@@ -2102,18 +2180,18 @@
     flex-wrap: nowrap !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
-    width: 100% !important;
     max-width: 100% !important;
-    height: 25px !important;
+    height: 24px !important;
     margin: 0 !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .table-manage-work td:nth-child(6) .mw-netmeter-pay-group .input-group-text {
-    padding: 0 4px !important;
-    font-size: 0.68rem !important;
-    height: 25px !important;
-    line-height: 23px !important;
+    padding: 0 3px !important;
+    font-size: 0.66rem !important;
+    height: 24px !important;
+    line-height: 22px !important;
     background-color: #f1f5f9 !important;
     border-color: #cbd5e1 !important;
     color: #475569 !important;
@@ -2122,10 +2200,9 @@
   }
 
   .table-manage-work td:nth-child(6) .mw-netmeter-pay-group input {
-    height: 25px !important;
+    height: 24px !important;
     font-size: 0.68rem !important;
     padding: 1px 3px !important;
-    width: 100% !important;
     min-width: 20px !important;
     flex: 1 1 auto !important;
     text-align: right !important;
@@ -2137,7 +2214,6 @@
 
   .table-manage-work td:nth-child(6) .mw-netmeter-pay-group input:not(:disabled),
   .table-manage-work td:nth-child(6) .mw-netmeter-pay-group.is-editing input {
-    width: 100% !important;
     min-width: 20px !important;
     flex: 1 1 auto !important;
     background-color: #ffffff !important;
