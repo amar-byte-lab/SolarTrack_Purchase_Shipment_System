@@ -850,6 +850,18 @@ function renderList() {
       `;
     }
 
+    // Stage icons mapping: (1: Login, 2: Agreement, 3: Dispatched [truck facing left-to-right], 4: Installation, 5: NetMeter [currency], 6: Inspection, 7: Connection [meter], 8: Subsidy [trophy/cup])
+    const STAGE_ICONS = {
+      1: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`,
+      2: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+      3: `<svg width="11" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>`,
+      4: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
+      5: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="18" y2="3"/><line x1="6" y1="8" x2="18" y2="8"/><path d="M6 3h7a4.5 4.5 0 0 1 0 9H6"/><path d="M10 12l6 9"/></svg>`,
+      6: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="m9 11 1.5 1.5 3-3"/></svg>`,
+      7: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12A10 10 0 0 0 2 12"/><path d="M6 12a6 6 0 0 1 12 0"/><line x1="12" y1="12" x2="15.5" y2="8.5"/><circle cx="12" cy="12" r="1.5"/></svg>`,
+      8: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>`
+    };
+
     // Progress bar calculations for collapsed state
     const stagesInfo = [
       { num: 1, name: 'Login', isDone: hasLogin, date: loginDate },
@@ -877,21 +889,22 @@ function renderList() {
         else if (agrmtDelay.totalDays >= 60) { segColor = '#f59e0b'; segTextColor = '#ffffff'; }
       }
 
+      const iconSvg = STAGE_ICONS[s.num] || '';
+
       return `
-        <div class="mw-progress-segment" style="flex: 1; height: 18px; background-color: ${segColor}; color: ${segTextColor}; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; transition: all 0.2s ease;" title="Stage ${s.num} (${s.name}): ${statusText}">
-          ${s.num}${s.isDone ? '✓' : ''}
+        <div class="mw-progress-segment" style="flex: 1; height: 20px; background-color: ${segColor}; color: ${segTextColor}; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.65rem; font-weight: 700; transition: all 0.2s ease; padding: 0 2px;" title="Stage ${s.num} (${s.name}): ${statusText}">
+          <span>${s.num}</span>
+          <span class="mw-seg-icon d-inline-flex align-items-center opacity-85" style="line-height: 1;">${iconSvg}</span>
+          ${s.isDone ? '<span class="mw-seg-check" style="font-size: 0.70rem; line-height: 1; margin-left: 1px;">✓</span>' : ''}
         </div>
       `;
     }).join('');
 
     const progressBarHtml = `
-      <div class="mw-card-progress-wrap d-flex align-items-center gap-2 w-100" style="cursor: pointer;" title="Click to expand 1 to 8 stages">
+      <div class="mw-card-progress-wrap d-flex align-items-center w-100" style="cursor: pointer;" title="Click to expand 1 to 8 stages">
         <div class="d-flex gap-1 flex-grow-1" style="min-width: 0;">
           ${segmentsHtml}
         </div>
-        <span class="mw-progress-count-badge badge ${completedCount === 8 ? 'bg-success text-white' : 'bg-light text-secondary border'} font-monospace text-nowrap" style="font-size: 0.70rem; padding: 3px 6px;">
-          ${completedCount}/8 ${completedCount === 8 ? 'Complete' : 'Done'}
-        </span>
       </div>
     `;
 

@@ -967,7 +967,9 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+function startServer(port = PORT) {
+  return new Promise((resolve) => {
+    server.listen(port, () => {
   const startupDuration = (performance.now() - SERVER_START_TIME).toFixed(2);
   console.log("======================================================");
   console.log("SolarTrack Server Started");
@@ -1003,4 +1005,13 @@ server.listen(PORT, () => {
 
     exec(startCmd, () => {});
   }
-});
+      resolve(server);
+    });
+  });
+}
+
+if (require.main === module) {
+  startServer(PORT);
+}
+
+module.exports = { server, startServer };

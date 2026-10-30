@@ -56,18 +56,25 @@ function parseBrokerNumber(brokerStr) {
       console.warn('[Postgres] Error parsing |work: JSON:', e.message);
     }
   }
+
   let creatorId = '';
   const creatorIdx = rest.indexOf('|creator:');
   if (creatorIdx !== -1) {
-    creatorId = rest.slice(creatorIdx + 9).split('|')[0];
-    rest = rest.slice(0, creatorIdx);
+    const afterCreator = rest.slice(creatorIdx + 9);
+    const nextPipe = afterCreator.indexOf('|');
+    creatorId = nextPipe !== -1 ? afterCreator.slice(0, nextPipe) : afterCreator;
+    rest = rest.slice(0, creatorIdx) + (nextPipe !== -1 ? afterCreator.slice(nextPipe) : '');
   }
+
   let expensesJson = '';
   const expensesIdx = rest.indexOf('|expenses:');
   if (expensesIdx !== -1) {
-    expensesJson = rest.slice(expensesIdx + 10).split('|')[0];
-    rest = rest.slice(0, expensesIdx);
+    const afterExpenses = rest.slice(expensesIdx + 10);
+    const nextPipe = afterExpenses.indexOf('|');
+    expensesJson = nextPipe !== -1 ? afterExpenses.slice(0, nextPipe) : afterExpenses;
+    rest = rest.slice(0, expensesIdx) + (nextPipe !== -1 ? afterExpenses.slice(nextPipe) : '');
   }
+
   const basePhone = rest.split('|')[0] || '';
   return { basePhone, expensesJson, creatorId, workObj };
 }
@@ -160,16 +167,38 @@ async function safeUpsert(tableName, row) {
     };
   }
   if (tableName === 'installments') {
-    const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(item.BrokerNumber);
-    for (const k of Object.keys(item)) {
-      if (!VALID_INSTALLMENT_COLS.has(k)) {
-        if (item[k] !== undefined) {
-          workObj[k] = item[k];
+    const hasNonValidCols = Object.keys(item).some(k => !VALID_INSTALLMENT_COLS.has(k));
+    const hasBrokerNumber = Object.prototype.hasOwnProperty.call(item, 'BrokerNumber');
+
+    if (hasBrokerNumber || hasNonValidCols) {
+      let currentBrokerNumber = item.BrokerNumber;
+      if (!hasBrokerNumber) {
+        try {
+          const matchVal = (field === 'SlNo' || field === 'id' || field === 'BorrowerID') && !isNaN(val) ? Number(val) : val;
+          const { data: existingRows } = await supabase.from('installments').select('BrokerNumber').eq(field, matchVal).limit(1);
+          if (existingRows && existingRows[0]) {
+            currentBrokerNumber = existingRows[0].BrokerNumber || '';
+          }
+        } catch (e) {
+          console.warn('[Postgres] Error fetching current BrokerNumber for merge:', e.message);
         }
-        delete item[k];
       }
+
+      const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(currentBrokerNumber || '');
+      for (const k of Object.keys(item)) {
+        if (!VALID_INSTALLMENT_COLS.has(k)) {
+          if (item[k] !== undefined) {
+            if (item[k] === '' || item[k] === null) {
+              delete workObj[k];
+            } else {
+              workObj[k] = item[k];
+            }
+          }
+          delete item[k];
+        }
+      }
+      item.BrokerNumber = formatBrokerNumber(basePhone, expensesJson, creatorId, workObj);
     }
-    item.BrokerNumber = formatBrokerNumber(basePhone, expensesJson, creatorId, workObj);
   }
   const maxAttempts = Object.keys(item).length + 3;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
