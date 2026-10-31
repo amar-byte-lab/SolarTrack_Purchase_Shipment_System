@@ -1467,6 +1467,81 @@
   height: 11px;
 }
 
+/* Desktop App-style ERP Table in Modal */
+.inv-desktop-table-wrap {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.inv-desktop-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.inv-desktop-table thead th {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 6px 8px !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+.inv-desktop-table tbody td {
+  padding: 4px 6px !important;
+  vertical-align: middle;
+}
+.inv-desktop-table .form-control-sm,
+.inv-desktop-table .input-group-text {
+  font-size: 0.78rem;
+  border-radius: 4px;
+}
+.inv-desktop-table .form-control-sm:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 1.5px rgba(16, 185, 129, 0.25);
+}
+
+/* Note UI above buttons */
+.inv-note-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-top: 6px;
+  transition: all 0.15s ease;
+}
+.inv-note-box:focus-within {
+  border-color: #10b981;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+}
+.inv-note-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  margin: 0;
+}
+.inv-note-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.78rem;
+  color: #0f172a;
+  outline: none;
+  padding: 2px 0;
+}
+.inv-note-input::placeholder {
+  color: #94a3b8;
+  font-style: italic;
+}
+
 .inv-picker-group-title {
   padding: 6px 10px;
   font-size: 0.72rem;
@@ -3054,3 +3129,163 @@
   }
 }
 
+
+
+/* Google Keep-style Note Card */
+.inv-keep-note {
+  background-color: #fffdf5;
+  border: 1px solid #e2d9b6;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.inv-keep-note:focus-within {
+  border-color: #d97706;
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.18);
+  background-color: #ffffff;
+}
+.inv-keep-note-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #92400e;
+  margin-bottom: 3px;
+}
+.inv-keep-note-body {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: vertical;
+  max-height: 80px;
+  min-height: 38px;
+  overflow-y: auto;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #1e293b;
+  padding: 0;
+}
+.inv-keep-note-body::placeholder {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Upload file action icon buttons */
+.inv-file-btn {
+  background: none;
+  border: none;
+  padding: 0 3px;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+}
+.inv-file-btn:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+
+/* Multiple File Upload Badges & Inline Rename */
+.inv-files-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 28px;
+}
+.inv-file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  transition: all 0.15s ease;
+}
+.inv-file-pill:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+.inv-file-pill.editing {
+  background: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+  padding: 2px 6px;
+}
+.inv-file-rename-input {
+  font-size: 0.75rem;
+  height: 22px;
+  padding: 1px 5px;
+  border: 1px solid #93c5fd;
+  border-radius: 3px;
+  outline: none;
+}
+.inv-file-rename-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+
+/* Wide Modal for ERP View */
+.modal-wide-inv {
+  max-width: 1320px !important;
+  width: 95vw !important;
+}
+@media (max-width: 991px) {
+  .modal-wide-inv {
+    max-width: 98vw !important;
+    width: 98vw !important;
+    margin: 0.5rem auto !important;
+  }
+}
+
+.inv-materials-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  min-height: 140px;
+}
+@media (min-width: 1200px) {
+  .inv-materials-wrap {
+    overflow: visible;
+  }
+}
+
+/* Edit Shipment style Materials List table in Inventory */
+.inv-materials-table th {
+  background-color: #f8fafc;
+  color: #1e3a8a;
+  font-weight: 700;
+  font-size: 0.74rem;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  padding: 6px 4px;
+  border-color: #e2e8f0;
+  font-family: inherit;
+}
+.inv-materials-table td {
+  padding: 3px 4px;
+  border-color: #e2e8f0;
+  vertical-align: middle;
+  font-family: inherit;
+}
+.inv-materials-table input {
+  font-size: 0.8rem;
+  background: transparent;
+  font-family: inherit;
+  color: #0f172a;
+}
+.inv-materials-table input:focus {
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #3b82f6;
+  border-radius: 2px;
+}
