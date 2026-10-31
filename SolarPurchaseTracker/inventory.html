@@ -154,7 +154,7 @@
             </div>
 
             <!-- Mobile & Desktop View / Filter Controls -->
-            <div class="d-flex align-items-center gap-2 flex-wrap" id="invToolbarRightControls">
+            <div class="inv-toolbar-right-controls" id="invToolbarRightControls">
               <!-- Stock Status Touch Pills (Ledger Only) -->
               <div class="inv-status-pills" id="invStatusPills">
                 <button type="button" class="inv-status-pill active" data-status="All">All</button>
@@ -192,9 +192,17 @@
         <div class="inv-bulk-bar no-print" id="invBulkActionBar" style="display: none;">
           <div class="inv-bulk-left">
             <span class="inv-bulk-badge" id="invBulkBadge">0</span>
-            <span class="inv-bulk-text" id="invBulkText">items selected for deletion</span>
+            <span class="inv-bulk-text" id="invBulkText">items selected</span>
           </div>
           <div class="inv-bulk-actions">
+            <button type="button" class="inv-btn inv-btn-stockin" id="btnBulkStockIn" title="Stock In selected items">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Stock In Bucket</span>
+            </button>
+            <button type="button" class="inv-btn inv-btn-dispatch" id="btnBulkDispatch" title="Dispatch selected items">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+              <span>Dispatch Bucket</span>
+            </button>
             <button type="button" class="inv-btn inv-btn-danger" id="btnDeleteSelected" title="Delete selected items">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               <span>Delete Selected</span>

@@ -1416,6 +1416,8 @@ const InventoryApp = (() => {
     const badge = document.getElementById('invBulkBadge');
     const text = document.getElementById('invBulkText');
     const btnDelete = document.getElementById('btnDeleteSelected');
+    const btnBulkStockIn = document.getElementById('btnBulkStockIn');
+    const btnBulkDispatch = document.getElementById('btnBulkDispatch');
     const headerBtn = document.getElementById('btnHeaderDeleteSelected');
     const headerCount = document.getElementById('headerSelectedCount');
 
@@ -1440,7 +1442,15 @@ const InventoryApp = (() => {
     if (count > 0) {
       if (bar) bar.style.display = 'flex';
       if (badge) badge.textContent = count;
-      if (text) text.textContent = `${count} ${count === 1 ? label : labelPlural} selected for deletion`;
+      if (text) text.textContent = `${count} ${count === 1 ? label : labelPlural} selected`;
+
+      if (btnBulkStockIn) {
+        btnBulkStockIn.style.display = (activeTab === 'ledger') ? 'inline-flex' : 'none';
+      }
+      if (btnBulkDispatch) {
+        btnBulkDispatch.style.display = (activeTab === 'ledger') ? 'inline-flex' : 'none';
+      }
+
       const trashSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
       if (btnDelete) btnDelete.innerHTML = `${trashSvg} <span>Delete Selected (${count})</span>`;
       if (headerBtn) {
@@ -2008,16 +2018,37 @@ const InventoryApp = (() => {
     if (btnInwUpload) btnInwUpload.style.display = 'inline-flex';
 
     const ledger = getCalculatedStockLedger();
-    const initialItem = preselectedCode ? (ledger.find(i => i.code === preselectedCode) || ledger[0]) : ledger[0];
 
-    inwardRows = [
-      {
-        id: 'inw_' + Date.now(),
-        itemCode: initialItem ? initialItem.code : '',
-        qty: 1,
-        unitPrice: initialItem ? initialItem.buyingPrice : 0
-      }
-    ];
+    let codes = [];
+    if (preselectedCode instanceof Set) {
+      codes = Array.from(preselectedCode);
+    } else if (Array.isArray(preselectedCode)) {
+      codes = preselectedCode;
+    } else if (preselectedCode) {
+      codes = [preselectedCode];
+    }
+
+    if (codes.length > 0) {
+      inwardRows = codes.map((c, idx) => {
+        const item = ledger.find(i => i.code === c);
+        return {
+          id: 'inw_' + Date.now() + '_' + idx,
+          itemCode: c,
+          qty: 1,
+          unitPrice: item ? (Number(item.buyingPrice) || 0) : 0
+        };
+      });
+    } else {
+      const initialItem = ledger[0];
+      inwardRows = [
+        {
+          id: 'inw_' + Date.now(),
+          itemCode: initialItem ? initialItem.code : '',
+          qty: 1,
+          unitPrice: initialItem ? (Number(initialItem.buyingPrice) || 0) : 0
+        }
+      ];
+    }
 
     renderInwRows();
     recalcInwardTotals();
@@ -2115,6 +2146,7 @@ const InventoryApp = (() => {
     });
 
     saveData();
+    clearSelection('ledger');
 
     const modalEl = document.getElementById('modalStockIn');
     const bsModal = bootstrap.Modal.getInstance(modalEl);
@@ -2347,24 +2379,36 @@ const InventoryApp = (() => {
     if (btnDspUpload) btnDspUpload.style.display = 'inline-flex';
 
     const ledger = getCalculatedStockLedger();
-    const availableLedger = ledger.filter(i => i.inHandQty > 0);
-    let targetItem = null;
 
-    if (preselectedCode) {
-      targetItem = ledger.find(i => i.code === preselectedCode);
-    } else if (availableLedger.length > 0) {
-      targetItem = availableLedger[0];
-    } else {
-      targetItem = ledger[0];
+    let codes = [];
+    if (preselectedCode instanceof Set) {
+      codes = Array.from(preselectedCode);
+    } else if (Array.isArray(preselectedCode)) {
+      codes = preselectedCode;
+    } else if (preselectedCode) {
+      codes = [preselectedCode];
     }
 
-    dispatchRows = [
-      {
-        id: 'dsp_' + Date.now(),
-        itemCode: targetItem ? targetItem.code : '',
-        qty: targetItem && targetItem.inHandQty > 0 ? 1 : ''
-      }
-    ];
+    if (codes.length > 0) {
+      dispatchRows = codes.map((c, idx) => {
+        const targetItem = ledger.find(i => i.code === c);
+        return {
+          id: 'dsp_' + Date.now() + '_' + idx,
+          itemCode: c,
+          qty: targetItem && targetItem.inHandQty > 0 ? 1 : ''
+        };
+      });
+    } else {
+      const availableLedger = ledger.filter(i => i.inHandQty > 0);
+      let targetItem = availableLedger.length > 0 ? availableLedger[0] : ledger[0];
+      dispatchRows = [
+        {
+          id: 'dsp_' + Date.now(),
+          itemCode: targetItem ? targetItem.code : '',
+          qty: targetItem && targetItem.inHandQty > 0 ? 1 : ''
+        }
+      ];
+    }
 
     renderDspRows();
     recalcDispatchTotals();
@@ -2461,6 +2505,7 @@ const InventoryApp = (() => {
     });
 
     saveData();
+    clearSelection('ledger');
 
     const modalEl = document.getElementById('modalSiteDispatch');
     const bsModal = bootstrap.Modal.getInstance(modalEl);
@@ -3462,9 +3507,11 @@ const InventoryApp = (() => {
         if (activePane) activePane.style.display = 'block';
 
         const chipsWrap = document.getElementById('invCategoryChipsRow');
+        const rightControls = document.getElementById('invToolbarRightControls');
         const statusWrap = document.getElementById('invStatusPills') || document.getElementById('invStatusFilterWrap');
         if (chipsWrap) chipsWrap.style.display = (tabKey === 'ledger') ? 'flex' : 'none';
-        if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
+        if (rightControls) rightControls.style.display = (tabKey === 'ledger') ? '' : 'none';
+        else if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
 
         if (tabKey === 'ledger') renderLedgerTable();
         else if (tabKey === 'dispatches') renderDispatchesTable();
@@ -3596,6 +3643,28 @@ const InventoryApp = (() => {
     window.addEventListener('resize', updateStickyOffsets);
 
     // Bulk action buttons
+    const btnBulkStockIn = document.getElementById('btnBulkStockIn');
+    if (btnBulkStockIn) {
+      btnBulkStockIn.addEventListener('click', () => {
+        if (selectedLedger.size === 0) {
+          if (typeof UI !== 'undefined') UI.toast('Please select at least one item first', 'warning');
+          return;
+        }
+        openStockInModal(selectedLedger);
+      });
+    }
+
+    const btnBulkDispatch = document.getElementById('btnBulkDispatch');
+    if (btnBulkDispatch) {
+      btnBulkDispatch.addEventListener('click', () => {
+        if (selectedLedger.size === 0) {
+          if (typeof UI !== 'undefined') UI.toast('Please select at least one item first', 'warning');
+          return;
+        }
+        openDispatchModal(selectedLedger);
+      });
+    }
+
     const btnDeleteSelected = document.getElementById('btnDeleteSelected');
     if (btnDeleteSelected) {
       btnDeleteSelected.addEventListener('click', () => deleteSelected());

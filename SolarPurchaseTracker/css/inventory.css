@@ -519,6 +519,13 @@
   flex-wrap: wrap;
 }
 
+.inv-toolbar-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
 .inv-search-wrap {
   position: relative;
   flex: 1;
@@ -780,12 +787,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 9px 16px;
-  background: var(--inv-rose-50);
-  border-bottom: 1px solid var(--inv-rose-100);
+  padding: 8px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #cbd5e1;
   margin: 0;
   gap: 12px;
-  box-shadow: 0 1px 3px rgba(225, 29, 72, 0.06);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   animation: invFadeIn 0.15s ease-out;
 }
 
@@ -801,7 +808,7 @@
 }
 
 .inv-bulk-badge {
-  background: var(--inv-rose-600);
+  background: #1e293b;
   color: #ffffff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -816,7 +823,7 @@
 .inv-bulk-text {
   font-size: 0.84rem;
   font-weight: 600;
-  color: #9f1239;
+  color: #334155;
 }
 
 .inv-bulk-actions {
@@ -2250,13 +2257,57 @@
 
   #invToolbarRightControls {
     width: 100%;
-    justify-content: flex-start;
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #invToolbarRightControls::-webkit-scrollbar {
+    display: none;
   }
 
   .inv-status-pills {
-    width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 3px !important;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .inv-status-pill {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 5px !important;
+    font-size: 0.69rem !important;
+    gap: 3px !important;
+    min-width: 0;
+    white-space: nowrap !important;
+    text-align: center;
+  }
+
+  .inv-status-pill .inv-badge-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .inv-btn-manage-cat {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 7px !important;
+    font-size: 0.69rem !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
   }
 
   .inv-chips-wrap {
@@ -2321,7 +2372,19 @@
 
   .inv-bulk-actions {
     width: 100%;
-    justify-content: flex-end;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    justify-content: stretch;
+  }
+
+  .inv-bulk-actions .inv-btn {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    white-space: nowrap;
   }
 
   /* Modal Mobile Responsiveness */
