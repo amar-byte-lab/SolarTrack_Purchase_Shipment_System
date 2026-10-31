@@ -297,13 +297,24 @@ CREATE TABLE IF NOT EXISTS inventory_inwards (
   "ItemCode" TEXT REFERENCES inventory_items("ItemCode") ON DELETE CASCADE,
   "Quantity" NUMERIC NOT NULL DEFAULT 0,
   "UnitPrice" NUMERIC NOT NULL DEFAULT 0,
+  "GstRate" NUMERIC DEFAULT 18,
+  "CostPerUnit" NUMERIC DEFAULT 0,
+  "TransportCost" NUMERIC DEFAULT 0,
+  "ConsignmentTransportCost" NUMERIC DEFAULT 0,
   "TotalCost" NUMERIC NOT NULL DEFAULT 0,
   "Location" TEXT,
   "Remarks" TEXT,
   "DocumentName" TEXT,
   "DocumentData" TEXT,
+  "Documents" TEXT,
   "CreatedAt" TEXT
 );
+
+ALTER TABLE inventory_inwards ADD COLUMN IF NOT EXISTS "GstRate" NUMERIC DEFAULT 18;
+ALTER TABLE inventory_inwards ADD COLUMN IF NOT EXISTS "CostPerUnit" NUMERIC DEFAULT 0;
+ALTER TABLE inventory_inwards ADD COLUMN IF NOT EXISTS "TransportCost" NUMERIC DEFAULT 0;
+ALTER TABLE inventory_inwards ADD COLUMN IF NOT EXISTS "ConsignmentTransportCost" NUMERIC DEFAULT 0;
+ALTER TABLE inventory_inwards ADD COLUMN IF NOT EXISTS "Documents" TEXT;
 
 CREATE TABLE IF NOT EXISTS inventory_dispatches (
   "DispatchID" TEXT PRIMARY KEY,

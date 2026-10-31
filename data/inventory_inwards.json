@@ -1,0 +1,22 @@
+[
+  {
+    "InwardID": "INW-1793458924809-1",
+    "Date": "2026-10-31",
+    "InvoiceNo": "INV-924808",
+    "Supplier": "sfdfsfds",
+    "ItemCode": "PNL-001",
+    "Quantity": 1,
+    "UnitPrice": 456,
+    "GstRate": 5,
+    "CostPerUnit": 944.22,
+    "TransportCost": 488.22,
+    "ConsignmentTransportCost": 1000,
+    "TotalCost": 967.02,
+    "Location": "Main Godown — Bay A",
+    "Remarks": "cbvcbvcb",
+    "DocumentName": null,
+    "DocumentData": null,
+    "Documents": "[]",
+    "CreatedAt": "2026-10-31T15:02:04.809Z"
+  }
+]

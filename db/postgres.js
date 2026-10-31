@@ -1,5 +1,35 @@
 require('dotenv').config();
 const dns = require('dns');
+const fs = require('fs');
+const path = require('path');
+
+const DATA_DIR = path.join(__dirname, '..', 'data');
+if (!fs.existsSync(DATA_DIR)) {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
+}
+
+function readLocalTable(tableName) {
+  const filePath = path.join(DATA_DIR, `${tableName}.json`);
+  if (fs.existsSync(filePath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+}
+
+function writeLocalTable(tableName, rows) {
+  const filePath = path.join(DATA_DIR, `${tableName}.json`);
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(rows, null, 2), 'utf8');
+  } catch (e) {
+    console.error(`[FileDB] Failed to save ${tableName}.json:`, e.message);
+  }
+}
+
 
 // Patch DNS lookup for Cloudflare / Supabase to bypass unreachable IP 104.18.38.10 on certain Indian ISPs
 const origLookup = dns.lookup;
@@ -119,10 +149,18 @@ async function getTable(tableName) {
   try {
     const { data, error } = await supabase.from(tableName).select('*');
     if (error) {
+      if (error.message && error.message.includes('Could not find the table')) {
+        return readLocalTable(tableName);
+      }
       console.error(`[Postgres] getTable('${tableName}') error:`, error.message);
+      const local = readLocalTable(tableName);
+      if (local && local.length > 0) return local;
       return [];
     }
     if (data && Array.isArray(data)) {
+      if (['inventory_items', 'inventory_inwards', 'inventory_dispatches'].includes(tableName)) {
+        writeLocalTable(tableName, data);
+      }
       return data.map(row => {
         const normalized = { ...row };
         Object.keys(row).forEach(k => {
@@ -149,12 +187,29 @@ async function getTable(tableName) {
     return data || [];
   } catch (err) {
     console.error(`[Postgres] getTable('${tableName}') exception:`, err.message);
-    return [];
+    return readLocalTable(tableName);
   }
 }
 
 async function safeUpsert(tableName, row) {
   let item = { ...row };
+  if (tableName === 'inventory_items') {
+    item.Brand = item.Brand || 'Standard Solar';
+    item.Specification = item.Specification || item.ItemName || 'Standard Solar Equipment';
+    item.Category = item.Category || 'Others';
+    item.Unit = item.Unit || 'Nos';
+    item.Status = item.Status || 'Active';
+    item.BuyingPrice = Number(item.BuyingPrice) || 0;
+    item.MinThreshold = Number(item.MinThreshold) || 5;
+    item.GSTPercent = Number(item.GSTPercent) || 12;
+    item.HSNCode = item.HSNCode || '';
+  }
+  if (tableName === 'inventory_inwards') {
+    item.GstRate = Number(item.GstRate !== undefined ? item.GstRate : 18);
+    item.CostPerUnit = Number(item.CostPerUnit !== undefined ? item.CostPerUnit : 0);
+    item.TransportCost = Number(item.TransportCost !== undefined ? item.TransportCost : 0);
+    item.ConsignmentTransportCost = Number(item.ConsignmentTransportCost !== undefined ? item.ConsignmentTransportCost : 0);
+  }
   if (tableName === 'work_notes') {
     item = {
       NoteID: row.NoteID || row.noteid,
@@ -165,6 +220,10 @@ async function safeUpsert(tableName, row) {
       CreatedAt: row.CreatedAt || row.createdat,
       UpdatedAt: row.UpdatedAt || row.updatedat,
     };
+  }
+  if (tableName === 'inventory_items') {
+    item.Brand = item.Brand || 'Standard Solar';
+    item.Specification = item.Specification || item.ItemName || 'Standard Solar Equipment';
   }
   if (tableName === 'installments') {
     const hasNonValidCols = Object.keys(item).some(k => !VALID_INSTALLMENT_COLS.has(k));
@@ -211,6 +270,16 @@ async function safeUpsert(tableName, row) {
         delete item[match[1]];
         continue;
       }
+      if (error && error.message && error.message.includes('Could not find the table')) {
+        const pk = PRIMARY_KEYS[tableName] || 'id';
+        const rows = readLocalTable(tableName);
+        const pkVal = item[pk] !== undefined ? item[pk] : item[pk.toLowerCase()];
+        const idx = rows.findIndex(r => String(r[pk] !== undefined ? r[pk] : r[pk.toLowerCase()]) === String(pkVal));
+        if (idx >= 0) rows[idx] = { ...rows[idx], ...item };
+        else rows.push(item);
+        writeLocalTable(tableName, rows);
+        return;
+      }
       console.error(`[Postgres] safeUpsert('${tableName}') error:`, error.message);
       throw new Error(`[Postgres] safeUpsert('${tableName}') failed: ${error.message}`);
     } catch (err) {
@@ -236,6 +305,10 @@ async function safeUpdate(tableName, matchField, val, newData) {
       CreatedAt: newData.CreatedAt || newData.createdat,
       UpdatedAt: newData.UpdatedAt || newData.updatedat,
     };
+  }
+  if (tableName === 'inventory_items') {
+    item.Brand = item.Brand || 'Standard Solar';
+    item.Specification = item.Specification || item.ItemName || 'Standard Solar Equipment';
   }
   if (tableName === 'installments') {
     const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(item.BrokerNumber);
@@ -317,6 +390,13 @@ async function deleteRow(tableName, matchField, matchValue) {
   } catch (err) {
     console.warn(`[Postgres] deleteRow('${tableName}') exception:`, err.message);
   }
+  try {
+    const localRows = readLocalTable(tableName);
+    const filtered = localRows.filter(r => String(r[matchField] !== undefined ? r[matchField] : r[matchField.toLowerCase()]) !== String(matchValue));
+    if (filtered.length !== localRows.length) {
+      writeLocalTable(tableName, filtered);
+    }
+  } catch (e) {}
 }
 
 async function replaceTable(tableName, rows) {
@@ -498,12 +578,33 @@ async function insertRows(tableName, rows) {
   try {
     const { error } = await supabase.from(tableName).upsert(rows);
     if (error) {
+      if (error.message && error.message.includes('Could not find the table')) {
+        const pk = PRIMARY_KEYS[tableName] || 'id';
+        const localRows = readLocalTable(tableName);
+        rows.forEach(item => {
+          const pkVal = item[pk] !== undefined ? item[pk] : item[pk.toLowerCase()];
+          const idx = localRows.findIndex(r => String(r[pk] !== undefined ? r[pk] : r[pk.toLowerCase()]) === String(pkVal));
+          if (idx >= 0) localRows[idx] = { ...localRows[idx], ...item };
+          else localRows.push(item);
+        });
+        writeLocalTable(tableName, localRows);
+        return;
+      }
       for (const r of rows) {
         await safeUpsert(tableName, r);
       }
     }
   } catch (err) {
     console.warn(`[Postgres] insertRows('${tableName}') exception:`, err.message);
+    const pk = PRIMARY_KEYS[tableName] || 'id';
+    const localRows = readLocalTable(tableName);
+    rows.forEach(item => {
+      const pkVal = item[pk] !== undefined ? item[pk] : item[pk.toLowerCase()];
+      const idx = localRows.findIndex(r => String(r[pk] !== undefined ? r[pk] : r[pk.toLowerCase()]) === String(pkVal));
+      if (idx >= 0) localRows[idx] = { ...localRows[idx], ...item };
+      else localRows.push(item);
+    });
+    writeLocalTable(tableName, localRows);
   }
 }
 

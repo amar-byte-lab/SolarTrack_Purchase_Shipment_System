@@ -11,10 +11,7 @@ const InventoryApp = (() => {
 
 
 
-  // Storage Keys
-  const STORAGE_KEY_ITEMS = 'solartrack_inventory_items_v2';
-  const STORAGE_KEY_INWARDS = 'solartrack_inventory_inwards_v2';
-  const STORAGE_KEY_DISPATCHES = 'solartrack_inventory_dispatches_v2';
+  // Pure Database-driven Architecture (Zero localStorage for inventory data)
 
   // State
   let items = [];
@@ -73,35 +70,13 @@ const InventoryApp = (() => {
       .replace(/'/g, '&#39;');
   }
 
-  // --- Storage & Supabase Sync ---
+  // --- Pure Database Sync (No localStorage) ---
   function loadData() {
-    try {
-      const storedItems = localStorage.getItem(STORAGE_KEY_ITEMS);
-      items = storedItems ? JSON.parse(storedItems) : [];
-
-      const storedInwards = localStorage.getItem(STORAGE_KEY_INWARDS);
-      inwards = storedInwards ? JSON.parse(storedInwards) : [];
-
-      const storedDispatches = localStorage.getItem(STORAGE_KEY_DISPATCHES);
-      dispatches = storedDispatches ? JSON.parse(storedDispatches) : [];
-    } catch (e) {
-      console.warn('Error reading from localStorage:', e);
-      items = [];
-      inwards = [];
-      dispatches = [];
-    }
-
     syncWithDatabase();
   }
 
   function saveData() {
-    try {
-      localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
-      localStorage.setItem(STORAGE_KEY_INWARDS, JSON.stringify(inwards));
-      localStorage.setItem(STORAGE_KEY_DISPATCHES, JSON.stringify(dispatches));
-    } catch (e) {
-      console.warn('Error saving to localStorage:', e);
-    }
+    // Pure Database-driven: all state is managed directly in database
   }
 
   async function syncWithDatabase() {
@@ -149,7 +124,7 @@ const InventoryApp = (() => {
 
       // 2. Fetch inwards
       const dbInwards = DB.getAll('inventory_inwards');
-      if (Array.isArray(dbInwards)) {
+      if (Array.isArray(dbInwards) && dbInwards.length > 0) {
         inwards = dbInwards.map(row => {
           let docs = [];
           if (row.Documents) {
@@ -178,6 +153,30 @@ const InventoryApp = (() => {
             docData: row.DocumentData || row.documentdata || null,
             documents: docs
           };
+        });
+      } else if (inwards.length > 0) {
+        // Local storage has inwards, upload to server DB so persistence is guaranteed
+        inwards.forEach(newInward => {
+          DB.insert('inventory_inwards', {
+            InwardID: newInward.id,
+            Date: newInward.date,
+            InvoiceNo: newInward.invoiceNo,
+            Supplier: newInward.supplier,
+            ItemCode: newInward.itemCode,
+            Quantity: newInward.qty,
+            UnitPrice: newInward.unitPrice,
+            GstRate: newInward.gstRate,
+            CostPerUnit: newInward.costPerUnit,
+            TransportCost: newInward.transportCost,
+            ConsignmentTransportCost: newInward.consignmentTransportCost,
+            TotalCost: newInward.totalCost,
+            Location: newInward.location,
+            Remarks: newInward.remarks,
+            DocumentName: newInward.docName,
+            DocumentData: newInward.docData,
+            Documents: JSON.stringify(newInward.documents || []),
+            CreatedAt: newInward.createdAt || new Date().toISOString()
+          }).catch(() => {});
         });
       }
 
@@ -469,8 +468,26 @@ const InventoryApp = (() => {
     if (typeof UI !== 'undefined') UI.toast(`Category "${name}" created successfully!`, 'success');
   }
 
+  function updateAllTabCounters() {
+    const tabCountLedger = document.getElementById('tabCountLedger');
+    if (tabCountLedger) {
+      const ledger = getCalculatedStockLedger();
+      tabCountLedger.textContent = ledger.length;
+    }
+    const tabCountInwards = document.getElementById('tabCountInwards');
+    if (tabCountInwards) {
+      const consignments = getGroupedInwardConsignments();
+      tabCountInwards.textContent = consignments.length;
+    }
+    const tabCountDispatches = document.getElementById('tabCountDispatches');
+    if (tabCountDispatches) {
+      tabCountDispatches.textContent = dispatches.length;
+    }
+  }
+
   // --- Render KPI & Chips ---
   function renderKpiCards() {
+    updateAllTabCounters();
     const metrics = getKpiMetrics();
 
     const turnoverEl = document.getElementById('kpiTotalTurnover');
@@ -863,8 +880,8 @@ const InventoryApp = (() => {
     const newItem = {
       code,
       name,
-      brand: '',
-      spec: '',
+      brand: 'Standard Solar',
+      spec: name,
       category: cat,
       unit,
       buyingPrice,
@@ -886,11 +903,16 @@ const InventoryApp = (() => {
         itemCode: code,
         qty: qty,
         unitPrice: buyingPrice,
+        costPerUnit: buyingPrice,
+        transportCost: 0,
+        consignmentTransportCost: 0,
+        gstRate: 0,
         totalCost: qty * buyingPrice,
         location: 'Main Godown',
         remarks: 'Initial stock on item registration',
         docName: null,
-        docData: null
+        docData: null,
+        documents: []
       };
       inwards.push(newInward);
 
@@ -903,6 +925,10 @@ const InventoryApp = (() => {
           ItemCode: newInward.itemCode,
           Quantity: newInward.qty,
           UnitPrice: newInward.unitPrice,
+          GstRate: 0,
+          CostPerUnit: newInward.costPerUnit,
+          TransportCost: 0,
+          ConsignmentTransportCost: 0,
           TotalCost: newInward.totalCost,
           Location: newInward.location,
           Remarks: newInward.remarks,
@@ -917,6 +943,8 @@ const InventoryApp = (() => {
       DB.insert('inventory_items', {
         ItemCode: newItem.code,
         ItemName: newItem.name,
+        Brand: 'Standard Solar',
+        Specification: newItem.name,
         Category: newItem.category,
         Unit: newItem.unit,
         BuyingPrice: newItem.buyingPrice,
@@ -938,9 +966,11 @@ const InventoryApp = (() => {
     }
 
     activeInlineCategory = null;
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
     renderLedgerTable();
+    if (qty > 0) renderInwardsTable();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Added "${name}" to ${cat} successfully!`, 'success');
@@ -1192,33 +1222,104 @@ const InventoryApp = (() => {
     return rows;
   }
 
+  function getGroupedInwardConsignments() {
+    const rawInwards = getFilteredInwards();
+    const map = new Map();
+
+    rawInwards.forEach(inw => {
+      const key = inw.invoiceNo || inw.id;
+      if (!map.has(key)) {
+        map.set(key, {
+          key: key,
+          invoiceNo: inw.invoiceNo || key,
+          date: inw.date || '',
+          supplier: inw.supplier || '',
+          location: inw.location || 'Main Godown',
+          remarks: inw.remarks || '',
+          docName: inw.docName || null,
+          docData: inw.docData || null,
+          documents: inw.documents || [],
+          transportCost: Number(inw.consignmentTransportCost || 0),
+          items: [],
+          totalCost: 0,
+          totalQty: 0,
+          inwardIds: []
+        });
+      }
+
+      const grp = map.get(key);
+      grp.inwardIds.push(inw.id);
+
+      const itm = items.find(i => i.code === inw.itemCode) || {};
+      const unitPrice = Number(inw.unitPrice !== undefined ? inw.unitPrice : inw.UnitPrice) || itm.buyingPrice || 0;
+      const qty = Number(inw.qty !== undefined ? inw.qty : inw.Quantity) || 0;
+      const gstRate = Number(inw.gstRate !== undefined ? inw.gstRate : 18);
+      const rowTransport = Number(inw.transportCost !== undefined ? inw.transportCost : 0);
+      const rowTotal = Number(inw.totalCost) || round2((qty * unitPrice * (1 + gstRate / 100)) + rowTransport);
+      const costPerUnit = Number(inw.costPerUnit !== undefined ? inw.costPerUnit : inw.CostPerUnit) || round2(unitPrice + (qty > 0 ? (rowTransport / qty) : 0));
+
+      grp.items.push({
+        inwardId: inw.id,
+        itemCode: inw.itemCode,
+        itemName: itm.name || inw.itemCode,
+        category: itm.category || 'Others',
+        qty: qty,
+        unit: inw.unit || itm.unit || 'Nos',
+        unitPrice: unitPrice,
+        gstRate: gstRate,
+        transportCost: rowTransport,
+        costPerUnit: costPerUnit,
+        totalCost: rowTotal
+      });
+
+      grp.totalCost += rowTotal;
+      grp.totalQty += qty;
+
+      const ctc = Number(inw.consignmentTransportCost || 0);
+      if (ctc > grp.transportCost) {
+        grp.transportCost = ctc;
+      }
+      if (!grp.docName && inw.docName) {
+        grp.docName = inw.docName;
+        grp.docData = inw.docData;
+      }
+      if ((!grp.documents || grp.documents.length === 0) && inw.documents && inw.documents.length > 0) {
+        grp.documents = inw.documents;
+      }
+    });
+
+    const consignments = Array.from(map.values());
+    consignments.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return consignments;
+  }
+
   function renderInwardsTable() {
     const tbody = document.getElementById('invInwardsTbody');
     const tfoot = document.getElementById('invInwardsTfoot');
     const cardsContainer = document.getElementById('invInwardsCards');
     if (!tbody) return;
 
-    // Prune stale selection
-    const currentIds = new Set(inwards.map(i => i.id));
+    const consignments = getGroupedInwardConsignments();
+
+    // Prune stale selection based on consignment keys
+    const currentKeys = new Set(consignments.map(c => c.key));
     for (const id of selectedInwards) {
-      if (!currentIds.has(id)) selectedInwards.delete(id);
+      if (!currentKeys.has(id)) selectedInwards.delete(id);
     }
 
-    const rows = getFilteredInwards();
-
     const tabCount = document.getElementById('tabCountInwards');
-    if (tabCount) tabCount.textContent = rows.length;
+    if (tabCount) tabCount.textContent = consignments.length;
 
-    if (rows.length === 0) {
+    if (consignments.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="12" class="text-center py-5 text-muted">
+          <td colspan="8" class="text-center py-5 text-muted">
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No inward purchases recorded</div>
               <div class="small text-muted mb-3">Record inward deliveries from suppliers to increase godown stock.</div>
               <button type="button" class="inv-btn inv-btn-stockin" onclick="InventoryApp.openStockInModal()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                <span>Stock In</span>
+                <span>Stock In Delivery</span>
               </button>
             </div>
           </td>
@@ -1242,52 +1343,47 @@ const InventoryApp = (() => {
       return;
     }
 
-    tbody.innerHTML = rows.map((inw, idx) => {
-      const itm = items.find(i => i.code === inw.itemCode) || {};
-      const unitPrice = Number(inw.unitPrice) || itm.buyingPrice || 0;
-      const totalCost = Number(inw.totalCost) || (Number(inw.qty) * unitPrice);
-
-      let docBadge = `<span class="text-muted small" style="font-size:0.75rem;">—</span>`;
-      if (inw.docName) {
-        docBadge = `
-          <button type="button" class="inv-row-btn inv-doc-btn" onclick="InventoryApp.viewDoc('${inw.id}', 'inward')" title="Download / View ${escapeHtml(inw.docName)}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(inw.docName)}</span>
-          </button>
-        `;
-      }
-
-      const isSelected = selectedInwards.has(inw.id);
+    // Render Consignment-wise Desktop Table Rows (1 row per bucket confirmation)
+    tbody.innerHTML = consignments.map((grp, idx) => {
+      const isSelected = selectedInwards.has(grp.key);
 
       return `
         <tr class="${isSelected ? 'inv-row-selected' : ''}">
           <td class="text-center no-print inv-chk-cell" style="width: 38px;">
-            <input type="checkbox" class="form-check-input inv-row-chk" data-type="inwards" data-id="${inw.id}" ${isSelected ? 'checked' : ''} title="Select Inward ${inw.id}">
+            <input type="checkbox" class="form-check-input inv-row-chk" data-type="inwards" data-id="${grp.key}" ${isSelected ? 'checked' : ''} title="Select Consignment ${grp.key}">
           </td>
           <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
-          <td class="font-monospace text-secondary text-nowrap">${inw.date}</td>
+          <td class="font-monospace text-secondary text-nowrap">${grp.date}</td>
           <td>
-            <div class="fw-semibold text-dark">${escapeHtml(inw.supplier)}</div>
-            ${inw.invoiceNo ? `<div class="font-monospace text-muted small mt-0.5"><span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5 cursor-pointer" onclick="InventoryApp.openStockInConsignment('${escapeHtml(inw.invoiceNo)}')" title="Open Consignment ${escapeHtml(inw.invoiceNo)}">Inv: ${escapeHtml(inw.invoiceNo)}</span></div>` : ''}
-            <div class="text-muted small">${escapeHtml(inw.remarks || '')}</div>
+            <div class="fw-semibold text-dark">${escapeHtml(grp.supplier)}</div>
+            ${grp.remarks ? `<div class="text-muted small mt-0.5">${escapeHtml(grp.remarks)}</div>` : ''}
           </td>
           <td>
-            <div class="fw-medium text-dark">${escapeHtml(itm.name || inw.itemCode)}</div>
-            <div class="inv-sku-code mt-0.5">${inw.itemCode} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${inw.itemCode}')">📈</button></div>
+            <div class="d-flex flex-column gap-1">
+              ${grp.items.map((it, itIdx) => `
+                <div class="d-flex align-items-center justify-content-between gap-2 py-0.5 ${itIdx > 0 ? 'border-top border-light-subtle' : ''}">
+                  <div class="min-w-0 flex-grow-1">
+                    <span class="fw-medium text-dark">${escapeHtml(it.itemName)}</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 flex-shrink-0 text-nowrap">
+                    <span class="badge bg-slate-100 text-slate-800 border font-monospace px-1.5 py-0.5">${fmtQty(it.qty)} <span class="fw-normal text-muted">${escapeHtml(it.unit)}</span></span>
+                    <span class="font-monospace text-secondary small">× ${fmtRupees(it.costPerUnit)}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
           </td>
-          <td class="text-center font-monospace fw-bold text-dark">${fmtQty(inw.qty)} <span class="text-muted small fw-normal">${itm.unit || 'Nos'}</span></td>
-          <td class="text-end font-monospace text-secondary text-nowrap">${fmtRupees(unitPrice)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${inw.itemCode}')">📈</button></td>
-          <td class="text-end font-monospace fw-bold text-emerald-700" style="font-size:0.86rem;">
-            ${fmtRupees(totalCost)}
+          <td class="text-end font-monospace fw-bold text-emerald-700" style="font-size:0.88rem;">
+            ${fmtRupees(grp.totalCost)}
+            ${grp.transportCost > 0 ? `<div class="text-muted small fw-normal" style="font-size:0.72rem;">Incl. Trans: ${fmtRupees(grp.transportCost)}</div>` : ''}
           </td>
-          <td>${docBadge}</td>
-          <td class="text-secondary small text-nowrap">${escapeHtml(inw.location || 'Main Godown')}</td>
+          <td class="text-secondary small text-nowrap">${escapeHtml(grp.location || 'Main Godown')}</td>
           <td class="text-center text-nowrap no-print" style="width: 85px;">
             <div class="d-inline-flex align-items-center gap-1">
-              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditInwardModal('${inw.id}')" title="Edit Inward">
+              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openStockInConsignment('${escapeHtml(grp.key)}')" title="Edit Consignment">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </button>
-              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteInward('${inw.id}')" title="Delete Inward">
+              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteInward('${escapeHtml(grp.key)}')" title="Delete Consignment">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             </div>
@@ -1296,70 +1392,62 @@ const InventoryApp = (() => {
       `;
     }).join('');
 
-    // Render Mobile Cards (Inward Purchases)
+    // Render Consignment-wise Mobile Cards
     if (cardsContainer) {
-      cardsContainer.innerHTML = rows.map((inw) => {
-        const itm = items.find(i => i.code === inw.itemCode) || {};
-        const unitPrice = Number(inw.unitPrice) || itm.buyingPrice || 0;
-        const totalCost = Number(inw.totalCost) || (Number(inw.qty) * unitPrice);
-        const isSelected = selectedInwards.has(inw.id);
+      cardsContainer.innerHTML = consignments.map((grp) => {
+        const isSelected = selectedInwards.has(grp.key);
 
         return `
-          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${inw.id}">
+          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${grp.key}">
             <div class="inv-card-head">
               <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
                 <div class="inv-chk-cell pt-0.5">
-                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="inwards" data-id="${inw.id}" ${isSelected ? 'checked' : ''} title="Select Inward ${inw.id}">
+                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="inwards" data-id="${grp.key}" ${isSelected ? 'checked' : ''} title="Select Consignment ${grp.key}">
                 </div>
                 <div class="min-w-0 flex-grow-1">
-                  <div class="inv-card-title text-dark">${escapeHtml(inw.supplier || 'Inward Purchase')}</div>
+                  <div class="inv-card-title text-dark">${escapeHtml(grp.supplier || 'Inward Consignment')}</div>
                   <div class="inv-card-meta">
-                    <span class="font-monospace text-secondary small">${inw.date}</span>
-                    ${inw.invoiceNo ? `<span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5 cursor-pointer" onclick="InventoryApp.openStockInConsignment('${escapeHtml(inw.invoiceNo)}')" title="Open Consignment">Inv: ${escapeHtml(inw.invoiceNo)}</span>` : ''}
+                    <span class="font-monospace text-secondary small">${grp.date}</span>
                   </div>
                 </div>
               </div>
-              ${inw.docName ? `
-                <button type="button" class="inv-doc-pill-btn flex-shrink-0" onclick="InventoryApp.viewDoc('${inw.id}', 'inward')" title="Invoice">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <span>Invoice</span>
-                </button>
-              ` : ''}
             </div>
 
-            <div class="inv-card-body-row">
-              <div class="min-w-0 flex-grow-1">
-                <div class="fw-semibold text-dark small">${escapeHtml(itm.name || inw.itemCode)}</div>
-                <div class="small text-muted">${escapeHtml(itm.unit || 'Nos')}</div>
-              </div>
-              <div class="inv-qty-pill text-emerald-700 bg-emerald-subtle flex-shrink-0">
-                +${fmtQty(inw.qty)} <small class="fw-normal text-muted">${escapeHtml(itm.unit || 'Nos')}</small>
+            <div class="p-2 border-top border-bottom bg-light-subtle">
+              <div class="small fw-semibold text-secondary mb-1">Items Received (${grp.items.length})</div>
+              <div class="d-flex flex-column gap-1">
+                ${grp.items.map(it => `
+                  <div class="d-flex align-items-center justify-content-between small">
+                    <span class="text-dark fw-medium text-truncate me-2">${escapeHtml(it.itemName)}</span>
+                    <span class="font-monospace text-secondary flex-shrink-0">${fmtQty(it.qty)} ${escapeHtml(it.unit)} × ${fmtRupees(it.costPerUnit)}</span>
+                  </div>
+                `).join('')}
               </div>
             </div>
 
             <div class="inv-card-kpi-grid">
               <div class="inv-card-kpi">
-                <span class="lbl">Unit Price</span>
-                <span class="val font-monospace">${fmtRupees(unitPrice)}</span>
+                <span class="lbl">Total Units</span>
+                <span class="val font-monospace">${fmtQty(grp.totalQty)}</span>
               </div>
               <div class="inv-card-kpi">
-                <span class="lbl">Total Cost</span>
-                <span class="val font-monospace fw-bold text-emerald-700">${fmtRupees(totalCost)}</span>
+                <span class="lbl">Total Inward Cost</span>
+                <span class="val font-monospace fw-bold text-emerald-700">${fmtRupees(grp.totalCost)}</span>
               </div>
               <div class="inv-card-kpi">
                 <span class="lbl">Storage Bay</span>
-                <span class="val text-truncate">${escapeHtml(inw.location || 'Main Godown')}</span>
+                <span class="val text-truncate">${escapeHtml(grp.location || 'Main Godown')}</span>
               </div>
             </div>
 
-            ${inw.remarks ? `<div class="small text-muted">💬 ${escapeHtml(inw.remarks)}</div>` : ''}
+            ${grp.remarks ? `<div class="small text-muted px-2 py-1">💬 ${escapeHtml(grp.remarks)}</div>` : ''}
 
             <div class="inv-card-actions justify-content-end">
-              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditInwardModal('${inw.id}')">
+              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openStockInConsignment('${escapeHtml(grp.key)}')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 <span>Edit</span>
               </button>
-              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteInward('${inw.id}')">
+              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteInward('${escapeHtml(grp.key)}')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 <span>Delete</span>
               </button>
@@ -1369,23 +1457,55 @@ const InventoryApp = (() => {
       }).join('');
     }
 
-    const grandInwCost = rows.reduce((s, r) => s + (Number(r.totalCost) || (Number(r.qty) * (Number(r.unitPrice) || 0))), 0);
-    const totalQtyInw = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    const grandInwCost = consignments.reduce((s, c) => s + c.totalCost, 0);
+    const totalQtyInw = consignments.reduce((s, c) => s + c.totalQty, 0);
+    const totalDistinctItems = consignments.reduce((s, c) => s + c.items.length, 0);
 
     if (tfoot) {
       tfoot.innerHTML = `
         <tr>
-          <td colspan="5" class="text-uppercase text-secondary fs-8">Total Inward Purchase Cost (${rows.length} Consignments)</td>
-          <td class="text-center font-monospace fw-bold">${fmtQty(totalQtyInw)}</td>
-          <td class="text-end font-monospace text-muted">—</td>
-          <td class="text-end font-monospace text-emerald-700 fs-7 fw-bold">${fmtRupees(grandInwCost)}</td>
-          <td colspan="3"></td>
+          <td colspan="4" class="text-uppercase text-secondary fs-8">Total Inward Procurement (${consignments.length} Consignments, ${totalDistinctItems} Items)</td>
+          <td class="font-monospace fw-bold text-dark">${fmtQty(totalQtyInw)} total units</td>
+          <td class="text-end font-monospace fw-bold text-emerald-700">${fmtRupees(grandInwCost)}</td>
+          <td colspan="2"></td>
         </tr>
       `;
     }
 
     updateHeaderCheckboxState('inwards');
     updateBulkActionBar();
+  }
+
+  async function deleteInward(key) {
+    const matching = inwards.filter(i => (i.invoiceNo && i.invoiceNo === key) || i.id === key);
+    if (matching.length === 0) {
+      if (typeof UI !== 'undefined') UI.toast('Consignment record not found', 'warning');
+      return;
+    }
+
+    const consignmentName = matching[0].invoiceNo || matching[0].id;
+    const totalQty = matching.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+    const countItems = matching.length;
+
+    const warning = `Are you sure you want to delete consignment "${consignmentName}" (${countItems} item(s), ${fmtQty(totalQty)} units)?\n\nThis will adjust in-hand stock calculation accordingly.\n\nThis action cannot be undone.`;
+    if (!confirm(warning)) return;
+
+    const idsToDelete = matching.map(i => i.id);
+    inwards = inwards.filter(i => !idsToDelete.includes(i.id));
+    selectedInwards.delete(key);
+    saveData();
+
+    await deleteDbBatch('inventory_inwards', 'InwardID', idsToDelete);
+
+    renderKpiCards();
+    renderCategoryChips();
+    if (activeTab === 'ledger') renderLedgerTable();
+    else if (activeTab === 'inwards') renderInwardsTable();
+    updateBulkActionBar();
+
+    if (typeof UI !== 'undefined') {
+      UI.toast(`Consignment "${consignmentName}" deleted successfully.`, 'info');
+    }
   }
 
   // --- Multi-Selection & Bulk Deletion Helpers ---
@@ -1404,7 +1524,7 @@ const InventoryApp = (() => {
       targetSet = selectedDispatches;
     } else if (type === 'inwards') {
       chkAll = document.getElementById('chkSelectAllInwards');
-      visibleRows = getFilteredInwards();
+      visibleRows = getGroupedInwardConsignments();
       targetSet = selectedInwards;
     }
 
@@ -1416,7 +1536,7 @@ const InventoryApp = (() => {
       return;
     }
 
-    const selectedCount = visibleRows.filter(r => targetSet.has(type === 'ledger' ? r.code : r.id)).length;
+    const selectedCount = visibleRows.filter(r => targetSet.has(type === 'ledger' ? r.code : (type === 'inwards' ? r.key : r.id))).length;
     if (selectedCount === visibleRows.length) {
       chkAll.checked = true;
       chkAll.indeterminate = false;
@@ -1542,10 +1662,10 @@ const InventoryApp = (() => {
       });
       renderDispatchesTable();
     } else if (type === 'inwards') {
-      const visible = getFilteredInwards();
+      const visible = getGroupedInwardConsignments();
       visible.forEach(r => {
-        if (checked) selectedInwards.add(r.id);
-        else selectedInwards.delete(r.id);
+        if (checked) selectedInwards.add(r.key);
+        else selectedInwards.delete(r.key);
       });
       renderInwardsTable();
     }
@@ -3622,8 +3742,8 @@ const InventoryApp = (() => {
     const newItem = {
       code,
       name,
-      brand: '',
-      spec: '',
+      brand: 'Standard Solar',
+      spec: name,
       category,
       unit,
       buyingPrice,
@@ -3640,6 +3760,8 @@ const InventoryApp = (() => {
       DB.insert('inventory_items', {
         ItemCode: newItem.code,
         ItemName: newItem.name,
+        Brand: 'Standard Solar',
+        Specification: newItem.name,
         Category: newItem.category,
         Unit: newItem.unit,
         BuyingPrice: newItem.buyingPrice,
@@ -3664,6 +3786,7 @@ const InventoryApp = (() => {
     const bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
     if (activeTab === 'ledger') renderLedgerTable();
@@ -4206,21 +4329,21 @@ const InventoryApp = (() => {
       csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
     } else if (activeTab === 'inwards') {
       filename = `Solar_Inward_Procurement_${today}.csv`;
-      const headers = ['Date', 'Invoice No', 'Supplier / Vendor', 'Item Code', 'Item Name', 'Quantity Received', 'Unit Price (INR)', 'Total Inward Cost (INR)', 'Document', 'Storage Location'];
-      
-      const rows = inwards.map(inw => {
-        const itm = items.find(i => i.code === inw.itemCode) || {};
+      const headers = ['Date', 'Invoice No', 'Supplier / Vendor', 'Items Received (Qty & Unit Price)', 'Total Units', 'Total Inward Cost (INR)', 'Transport Cost (INR)', 'Document', 'Storage Location', 'Remarks'];
+      const consignments = getGroupedInwardConsignments();
+      const rows = consignments.map(c => {
+        const itemsSummary = c.items.map(it => `${it.itemName} (${it.qty} ${it.unit} @ ₹${it.unitPrice})`).join('; ');
         return [
-          `"${inw.date}"`,
-          `"${inw.invoiceNo || ''}"`,
-          `"${(inw.supplier || '').replace(/"/g, '""')}"`,
-          `"${inw.itemCode}"`,
-          `"${(itm.name || '').replace(/"/g, '""')}"`,
-          inw.qty,
-          inw.unitPrice,
-          inw.totalCost,
-          `"${inw.docName || ''}"`,
-          `"${(inw.location || '').replace(/"/g, '""')}"`
+          `"${c.date}"`,
+          `"${c.invoiceNo || ''}"`,
+          `"${(c.supplier || '').replace(/"/g, '""')}"`,
+          `"${itemsSummary.replace(/"/g, '""')}"`,
+          c.totalQty,
+          c.totalCost,
+          c.transportCost || 0,
+          `"${c.docName || ''}"`,
+          `"${(c.location || '').replace(/"/g, '""')}"`,
+          `"${(c.remarks || '').replace(/"/g, '""')}"`
         ];
       });
 
@@ -4731,12 +4854,23 @@ const InventoryApp = (() => {
     }
     isInitialized = true;
 
-    loadData();
+    // Completely purge any legacy inventory data from browser localStorage
+    try {
+      localStorage.removeItem('solartrack_inventory_items_v2');
+      localStorage.removeItem('solartrack_inventory_inwards_v2');
+      localStorage.removeItem('solartrack_inventory_dispatches_v2');
+      localStorage.removeItem('solartrack_inventory_items');
+      localStorage.removeItem('solartrack_inventory_inwards');
+      localStorage.removeItem('solartrack_inventory_dispatches');
+    } catch (e) {}
 
     if (typeof UI !== 'undefined') {
       UI.renderSidebar('inventory.html');
       UI.renderTopbar('Solar Inventory & Site Logistics');
     }
+
+    // Await direct load from Database
+    await syncWithDatabase();
 
     renderKpiCards();
     setViewMode('table');
@@ -4774,8 +4908,6 @@ const InventoryApp = (() => {
     renderLedgerTable();
     renderDispatchesTable();
     renderInwardsTable();
-
-    await syncWithDatabase();
   }
 
   return {
