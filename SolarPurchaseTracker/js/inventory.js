@@ -1415,7 +1415,9 @@ const InventoryApp = (() => {
     const bar = document.getElementById('invBulkActionBar');
     const badge = document.getElementById('invBulkBadge');
     const text = document.getElementById('invBulkText');
+    const leftEl = document.getElementById('invBulkLeft');
     const btnDelete = document.getElementById('btnDeleteSelected');
+    const btnClear = document.getElementById('btnClearSelection');
     const btnBulkStockIn = document.getElementById('btnBulkStockIn');
     const btnBulkDispatch = document.getElementById('btnBulkDispatch');
     const headerBtn = document.getElementById('btnHeaderDeleteSelected');
@@ -1439,26 +1441,45 @@ const InventoryApp = (() => {
       labelPlural = 'inward purchases';
     }
 
+    // Always show Action Bar
+    if (bar) bar.style.display = 'flex';
+
+    // Stock In Bucket and Dispatch Bucket are ALWAYS SHOWN
+    if (btnBulkStockIn) {
+      btnBulkStockIn.style.display = 'inline-flex';
+      const countSuffix = (count > 0 && activeTab === 'ledger') ? ` (${count})` : '';
+      btnBulkStockIn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span>Stock In Bucket${countSuffix}</span>`;
+    }
+    if (btnBulkDispatch) {
+      btnBulkDispatch.style.display = 'inline-flex';
+      const countSuffix = (count > 0 && activeTab === 'ledger') ? ` (${count})` : '';
+      btnBulkDispatch.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg> <span>Dispatch Bucket${countSuffix}</span>`;
+    }
+
+    // Delete selected and Clear buttons: ONLY SHOW if checkbox is selected!
     if (count > 0) {
-      if (bar) bar.style.display = 'flex';
+      if (bar) bar.classList.add('has-selection');
+      if (leftEl) leftEl.style.display = 'inline-flex';
       if (badge) badge.textContent = count;
       if (text) text.textContent = `${count} ${count === 1 ? label : labelPlural} selected`;
 
-      if (btnBulkStockIn) {
-        btnBulkStockIn.style.display = (activeTab === 'ledger') ? 'inline-flex' : 'none';
-      }
-      if (btnBulkDispatch) {
-        btnBulkDispatch.style.display = (activeTab === 'ledger') ? 'inline-flex' : 'none';
-      }
-
       const trashSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
-      if (btnDelete) btnDelete.innerHTML = `${trashSvg} <span>Delete Selected (${count})</span>`;
+      if (btnDelete) {
+        btnDelete.style.display = 'inline-flex';
+        btnDelete.innerHTML = `${trashSvg} <span>Delete Selected (${count})</span>`;
+      }
+      if (btnClear) {
+        btnClear.style.display = 'inline-flex';
+      }
       if (headerBtn) {
         headerBtn.style.display = 'inline-flex';
         headerBtn.innerHTML = `${trashSvg} <span>Delete (<span id="headerSelectedCount">${count}</span>)</span>`;
       }
     } else {
-      if (bar) bar.style.display = 'none';
+      if (bar) bar.classList.remove('has-selection');
+      if (leftEl) leftEl.style.display = 'none';
+      if (btnDelete) btnDelete.style.display = 'none';
+      if (btnClear) btnClear.style.display = 'none';
       if (headerBtn) headerBtn.style.display = 'none';
     }
   }
@@ -3646,22 +3667,22 @@ const InventoryApp = (() => {
     const btnBulkStockIn = document.getElementById('btnBulkStockIn');
     if (btnBulkStockIn) {
       btnBulkStockIn.addEventListener('click', () => {
-        if (selectedLedger.size === 0) {
-          if (typeof UI !== 'undefined') UI.toast('Please select at least one item first', 'warning');
-          return;
+        if (selectedLedger.size > 0) {
+          openStockInModal(selectedLedger);
+        } else {
+          openStockInModal();
         }
-        openStockInModal(selectedLedger);
       });
     }
 
     const btnBulkDispatch = document.getElementById('btnBulkDispatch');
     if (btnBulkDispatch) {
       btnBulkDispatch.addEventListener('click', () => {
-        if (selectedLedger.size === 0) {
-          if (typeof UI !== 'undefined') UI.toast('Please select at least one item first', 'warning');
-          return;
+        if (selectedLedger.size > 0) {
+          openDispatchModal(selectedLedger);
+        } else {
+          openDispatchModal();
         }
-        openDispatchModal(selectedLedger);
       });
     }
 

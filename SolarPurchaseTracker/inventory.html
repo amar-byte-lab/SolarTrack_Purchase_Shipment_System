@@ -26,32 +26,6 @@
     <!-- Modular Inventory Main View -->
     <main class="page-body inventory-body" id="inventoryAppRoot">
 
-      <!-- ══ Quick Action Buttons ═════════════════════════════════════════ -->
-      <header class="inv-header-bar">
-        <div class="inv-actions-group">
-          <button type="button" class="inv-btn inv-btn-danger" id="btnHeaderDeleteSelected" style="display: none;" title="Delete selected items">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            <span>Delete (<span id="headerSelectedCount">0</span>)</span>
-          </button>
-          <button type="button" class="inv-btn inv-btn-primary" id="btnAddNewSku" title="Register New Equipment Item">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>Add Item</span>
-          </button>
-          <button type="button" class="inv-btn inv-btn-stockin" id="btnQuickStockIn" title="Record New Inward Delivery">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Stock In</span>
-          </button>
-          <button type="button" class="inv-btn inv-btn-dispatch" id="btnQuickDispatch" title="Dispatch Equipment to Site">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
-            <span>Dispatch</span>
-          </button>
-          <button type="button" class="inv-btn inv-btn-export" id="btnExportCsv" title="Export as CSV">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Export CSV</span>
-          </button>
-        </div>
-      </header>
-
       <!-- ══ Top Metric KPI Summary Cards (Collapsible 3-Card Enterprise Grid) ══ -->
       <section class="inv-kpi-section is-collapsed" id="invKpiSection" aria-label="Inventory Summary">
         <div class="inv-kpi-toggle-bar" id="btnToggleKpi" role="button" tabindex="0" aria-expanded="false" aria-controls="invKpiCollapseBody" title="Click to collapse / expand summary metrics">
@@ -188,26 +162,34 @@
           </div>
         </div>
 
-        <!-- Bulk Action Bar (Appears when items are selected) -->
-        <div class="inv-bulk-bar no-print" id="invBulkActionBar" style="display: none;">
-          <div class="inv-bulk-left">
+        <!-- Action & Bucket Bar (Always visible: Add Item, Stock In Bucket, Dispatch Bucket, Export CSV; Delete & Clear appear on selection) -->
+        <div class="inv-bulk-bar no-print" id="invBulkActionBar">
+          <div class="inv-bulk-left" id="invBulkLeft" style="display: none;">
             <span class="inv-bulk-badge" id="invBulkBadge">0</span>
             <span class="inv-bulk-text" id="invBulkText">items selected</span>
           </div>
           <div class="inv-bulk-actions">
-            <button type="button" class="inv-btn inv-btn-stockin" id="btnBulkStockIn" title="Stock In selected items">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <button type="button" class="inv-btn inv-btn-primary" id="btnAddNewSku" title="Register New Equipment Item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add Item</span>
+            </button>
+            <button type="button" class="inv-btn inv-btn-stockin" id="btnBulkStockIn" title="Inward Stock In Delivery">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span>Stock In Bucket</span>
             </button>
-            <button type="button" class="inv-btn inv-btn-dispatch" id="btnBulkDispatch" title="Dispatch selected items">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+            <button type="button" class="inv-btn inv-btn-dispatch" id="btnBulkDispatch" title="Dispatch Equipment to Site">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
               <span>Dispatch Bucket</span>
             </button>
-            <button type="button" class="inv-btn inv-btn-danger" id="btnDeleteSelected" title="Delete selected items">
+            <button type="button" class="inv-btn inv-btn-export" id="btnExportCsv" title="Export as CSV">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Export CSV</span>
+            </button>
+            <button type="button" class="inv-btn inv-btn-danger" id="btnDeleteSelected" style="display: none;" title="Delete selected items">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               <span>Delete Selected</span>
             </button>
-            <button type="button" class="inv-btn inv-btn-secondary" id="btnClearSelection" title="Clear selection">
+            <button type="button" class="inv-btn inv-btn-secondary" id="btnClearSelection" style="display: none;" title="Clear selection">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               <span>Clear</span>
             </button>
