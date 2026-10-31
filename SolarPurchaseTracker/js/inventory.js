@@ -150,20 +150,35 @@ const InventoryApp = (() => {
       // 2. Fetch inwards
       const dbInwards = DB.getAll('inventory_inwards');
       if (Array.isArray(dbInwards)) {
-        inwards = dbInwards.map(row => ({
-          id: row.InwardID || row.inwardid || row.id,
-          date: row.Date || row.date,
-          invoiceNo: row.InvoiceNo || row.invoiceno || '',
-          supplier: row.Supplier || row.supplier || '',
-          itemCode: row.ItemCode || row.itemcode || '',
-          qty: Number(row.Quantity !== undefined ? row.Quantity : row.quantity) || 0,
-          unitPrice: Number(row.UnitPrice !== undefined ? row.UnitPrice : row.unitprice) || 0,
-          totalCost: Number(row.TotalCost !== undefined ? row.TotalCost : row.totalcost) || 0,
-          location: row.Location || row.location || 'Main Godown',
-          remarks: row.Remarks || row.remarks || '',
-          docName: row.DocumentName || row.documentname || null,
-          docData: row.DocumentData || row.documentdata || null
-        }));
+        inwards = dbInwards.map(row => {
+          let docs = [];
+          if (row.Documents) {
+            try {
+              docs = typeof row.Documents === 'string' ? JSON.parse(row.Documents) : row.Documents;
+            } catch (e) {
+              docs = [];
+            }
+          }
+          return {
+            id: row.InwardID || row.inwardid || row.id,
+            date: row.Date || row.date,
+            invoiceNo: row.InvoiceNo || row.invoiceno || '',
+            supplier: row.Supplier || row.supplier || '',
+            itemCode: row.ItemCode || row.itemcode || '',
+            qty: Number(row.Quantity !== undefined ? row.Quantity : row.quantity) || 0,
+            unitPrice: Number(row.UnitPrice !== undefined ? row.UnitPrice : row.unitprice) || 0,
+            gstRate: Number(row.GstRate !== undefined ? row.GstRate : (row.gstrate !== undefined ? row.gstrate : 18)),
+            transportCost: Number(row.TransportCost !== undefined ? row.TransportCost : (row.transportcost !== undefined ? row.transportcost : 0)),
+            consignmentTransportCost: Number(row.ConsignmentTransportCost !== undefined ? row.ConsignmentTransportCost : (row.consignmenttransportcost !== undefined ? row.consignmenttransportcost : 0)),
+            costPerUnit: Number(row.CostPerUnit !== undefined ? row.CostPerUnit : (row.costperunit !== undefined ? row.costperunit : 0)),
+            totalCost: Number(row.TotalCost !== undefined ? row.TotalCost : row.totalcost) || 0,
+            location: row.Location || row.location || 'Main Godown',
+            remarks: row.Remarks || row.remarks || '',
+            docName: row.DocumentName || row.documentname || null,
+            docData: row.DocumentData || row.documentdata || null,
+            documents: docs
+          };
+        });
       }
 
       // 3. Fetch dispatches
@@ -1253,6 +1268,7 @@ const InventoryApp = (() => {
           <td class="font-monospace text-secondary text-nowrap">${inw.date}</td>
           <td>
             <div class="fw-semibold text-dark">${escapeHtml(inw.supplier)}</div>
+            ${inw.invoiceNo ? `<div class="font-monospace text-muted small mt-0.5"><span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5 cursor-pointer" onclick="InventoryApp.openStockInConsignment('${escapeHtml(inw.invoiceNo)}')" title="Open Consignment ${escapeHtml(inw.invoiceNo)}">Inv: ${escapeHtml(inw.invoiceNo)}</span></div>` : ''}
             <div class="text-muted small">${escapeHtml(inw.remarks || '')}</div>
           </td>
           <td>
@@ -1299,7 +1315,7 @@ const InventoryApp = (() => {
                   <div class="inv-card-title text-dark">${escapeHtml(inw.supplier || 'Inward Purchase')}</div>
                   <div class="inv-card-meta">
                     <span class="font-monospace text-secondary small">${inw.date}</span>
-                    ${inw.invoiceNo ? `<span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5">Inv: ${escapeHtml(inw.invoiceNo)}</span>` : ''}
+                    ${inw.invoiceNo ? `<span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5 cursor-pointer" onclick="InventoryApp.openStockInConsignment('${escapeHtml(inw.invoiceNo)}')" title="Open Consignment">Inv: ${escapeHtml(inw.invoiceNo)}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -1780,9 +1796,11 @@ const InventoryApp = (() => {
     return html;
   }
 
-  function toggleItemPicker(rowId) {
-    const menu = document.getElementById(`pickerMenu_${rowId}`);
-    const btn = document.getElementById(`pickerBtn_${rowId}`);
+  function toggleItemPicker(rowId, prefix = '') {
+    const menuId = prefix ? `${prefix}Menu_${rowId}` : `pickerMenu_${rowId}`;
+    const btnId = prefix ? `${prefix}Btn_${rowId}` : `pickerBtn_${rowId}`;
+    const menu = document.getElementById(menuId);
+    const btn = document.getElementById(btnId);
     if (!menu) return;
     const isShown = menu.classList.contains('show');
     document.querySelectorAll('.inv-row-picker-menu.show').forEach(m => {
@@ -1806,17 +1824,19 @@ const InventoryApp = (() => {
     }
   }
 
-  function filterPickerItems(rowId, mode, query) {
-    const listEl = document.getElementById(`pickerList_${rowId}`);
+  function filterPickerItems(rowId, mode, query, prefix = '') {
+    const listId = prefix ? `${prefix}List_${rowId}` : `pickerList_${rowId}`;
+    const listEl = document.getElementById(listId);
     if (!listEl) return;
-    const row = (mode === 'stockin' ? inwardRows : dispatchRows).find(r => r.id === rowId);
+    const isStockIn = (mode === 'stockin' || mode === 'stockin_mob');
+    const row = (isStockIn ? inwardRows : dispatchRows).find(r => r.id === rowId);
     const selectedCode = row ? row.itemCode : '';
     listEl.innerHTML = renderPickerListHtml(rowId, mode, selectedCode, query);
   }
 
   function selectPickerItem(rowId, mode, code) {
     const ledger = getCalculatedStockLedger();
-    if (mode === 'stockin') {
+    if (mode === 'stockin' || mode === 'stockin_mob') {
       const row = inwardRows.find(r => r.id === rowId);
       if (row && code) {
         row.itemCode = code;
@@ -1898,66 +1918,172 @@ const InventoryApp = (() => {
 
   function renderInwRows() {
     const tbody = document.getElementById('inwItemsTableBody');
-    if (!tbody) return;
-
+    const mobContainer = document.getElementById('inwMobileCardsContainer');
     const ledger = getCalculatedStockLedger();
 
-    tbody.innerHTML = inwardRows.map((row) => {
-      const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
-      const q = Number(row.qty) || 0;
-      const r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
-      const g = (row.gstRate !== undefined && row.gstRate !== null && row.gstRate !== '') ? Number(row.gstRate) : 18;
-      const twg = (row.totalWithoutGst !== undefined && row.totalWithoutGst !== '') ? round2(row.totalWithoutGst) : ((q && r) ? round2(q * r) : '');
-      const rg = (row.rateWithGst !== undefined && row.rateWithGst !== '') ? round2(row.rateWithGst) : (r ? round2(r * (1 + g / 100)) : '');
-      const t = (row.totalWithGst !== undefined && row.totalWithGst !== '') ? round2(row.totalWithGst) : ((q && rg) ? round2(q * rg) : '');
-      const tc = (row.transportCost !== undefined && row.transportCost !== null && row.transportCost !== '') ? round2(row.transportCost) : '';
-      const transPerUnit = q > 0 ? ((Number(tc) || 0) / q) : 0;
-      const cpu = (row.costPerUnit !== undefined && row.costPerUnit !== null && row.costPerUnit !== '')
-        ? round2(row.costPerUnit)
-        : ((r > 0 || transPerUnit > 0) ? round2(r + transPerUnit) : '');
+    // 1. Render Desktop Table Rows
+    if (tbody) {
+      tbody.innerHTML = inwardRows.map((row) => {
+        const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
+        const q = Number(row.qty) || 0;
+        const r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
+        const g = (row.gstRate !== undefined && row.gstRate !== null && row.gstRate !== '') ? Number(row.gstRate) : 18;
+        const twg = (row.totalWithoutGst !== undefined && row.totalWithoutGst !== '') ? round2(row.totalWithoutGst) : ((q && r) ? round2(q * r) : '');
+        const rg = (row.rateWithGst !== undefined && row.rateWithGst !== '') ? round2(row.rateWithGst) : (r ? round2(r * (1 + g / 100)) : '');
+        const t = (row.totalWithGst !== undefined && row.totalWithGst !== '') ? round2(row.totalWithGst) : ((q && rg) ? round2(q * rg) : '');
+        const tc = (row.transportCost !== undefined && row.transportCost !== null && row.transportCost !== '') ? round2(row.transportCost) : '';
+        const transPerUnit = q > 0 ? ((Number(tc) || 0) / q) : 0;
+        const cpu = (row.costPerUnit !== undefined && row.costPerUnit !== null && row.costPerUnit !== '')
+          ? round2(row.costPerUnit)
+          : ((r > 0 || transPerUnit > 0) ? round2(r + transPerUnit) : '');
 
-      const unitName = escapeHtml(item.unit || row.unit || 'Nos');
+        const unitName = escapeHtml(item.unit || row.unit || 'Nos');
 
-      return `
-        <tr data-row-id="${row.id}">
-          <td style="min-width:180px;">
-            <div class="inv-row-item-picker" id="pickerWrap_${row.id}">
-              <button type="button" class="inv-row-picker-btn border-0 p-0 w-100 bg-transparent text-center d-flex align-items-center justify-content-between px-1" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')" style="box-shadow:none;">
-                <span class="text-truncate flex-grow-1 text-dark text-start" id="pickerLabel_${row.id}">${escapeHtml(item.name || 'Select Item')}</span>
-                <svg class="ms-1 text-muted flex-shrink-0" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
-                <div class="inv-row-picker-search-wrap">
-                  <input type="text" class="inv-row-picker-search-input" placeholder="Search item..." oninput="InventoryApp.filterPickerItems('${row.id}', 'stockin', this.value)" autocomplete="off">
+        return `
+          <tr data-row-id="${row.id}">
+            <td style="min-width:180px;">
+              <div class="inv-row-item-picker" id="pickerWrap_${row.id}">
+                <button type="button" class="inv-row-picker-btn border-0 p-0 w-100 bg-transparent text-center d-flex align-items-center justify-content-between px-1" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')" style="box-shadow:none;">
+                  <span class="text-truncate flex-grow-1 text-dark text-start" id="pickerLabel_${row.id}">${escapeHtml(item.name || 'Select Item')}</span>
+                  <svg class="ms-1 text-muted flex-shrink-0" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
+                  <div class="inv-row-picker-search-wrap">
+                    <input type="text" class="inv-row-picker-search-input" placeholder="Search item..." oninput="InventoryApp.filterPickerItems('${row.id}', 'stockin', this.value)" autocomplete="off">
+                  </div>
+                  <div class="inv-row-picker-list" id="pickerList_${row.id}">
+                    ${renderPickerListHtml(row.id, 'stockin', row.itemCode, '')}
+                  </div>
                 </div>
-                <div class="inv-row-picker-list" id="pickerList_${row.id}">
-                  ${renderPickerListHtml(row.id, 'stockin', row.itemCode, '')}
+              </div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center justify-content-end gap-1 px-1">
+                <input type="number" class="form-control form-control-sm mat-qty inw-row-qty border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0" autocomplete="off" style="width: 50px;">
+                <span class="text-secondary small fw-medium flex-shrink-0 inw-row-unit-label" style="font-size:0.75rem;">${unitName}</span>
+              </div>
+            </td>
+            <td><input type="number" class="form-control form-control-sm mat-rate inw-row-rate border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${r || ''}" placeholder="0.00" autocomplete="off"></td>
+            <td><input type="number" class="form-control form-control-sm mat-gst inw-row-gst border-0 p-0 text-end" min="0" max="100" step="any" data-row-id="${row.id}" value="${g}" placeholder="18" autocomplete="off"></td>
+            <td><input type="number" class="form-control form-control-sm mat-rate-with-gst inw-row-rate-with-gst border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${rg}" placeholder="0.00" autocomplete="off"></td>
+            <td><input type="number" class="form-control form-control-sm mat-total-without-gst inw-row-total-without-gst border-0 p-0 text-end fw-semibold text-secondary" min="0" step="any" data-row-id="${row.id}" value="${twg}" placeholder="0.00" autocomplete="off"></td>
+            <td><input type="number" class="form-control form-control-sm mat-total inw-row-total-with-gst border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${t}" placeholder="0.00" autocomplete="off"></td>
+            <td><input type="number" class="form-control form-control-sm mat-transport inw-row-transport border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${tc}" placeholder="0" autocomplete="off"></td>
+            <td>
+              <div class="d-flex align-items-center justify-content-end gap-1 px-1">
+                <input type="number" class="form-control form-control-sm mat-cost-per-unit inw-row-cost-per-unit border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${cpu}" placeholder="Auto" readonly tabindex="-1" autocomplete="off" style="width: 65px;">
+                <span class="text-muted small flex-shrink-0 inw-row-cost-unit-label" style="font-size:0.72rem;">/${unitName}</span>
+              </div>
+            </td>
+            <td class="text-center"><span class="text-danger fw-bold btn-remove-inw-row" data-row-id="${row.id}" style="cursor:pointer; font-size:0.9rem;" title="Remove">✕</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 2. Render Mobile Touch Cards
+    if (mobContainer) {
+      mobContainer.innerHTML = inwardRows.map((row) => {
+        const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
+        const q = Number(row.qty) || 0;
+        const r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
+        const g = (row.gstRate !== undefined && row.gstRate !== null && row.gstRate !== '') ? Number(row.gstRate) : 18;
+        const twg = (row.totalWithoutGst !== undefined && row.totalWithoutGst !== '') ? round2(row.totalWithoutGst) : ((q && r) ? round2(q * r) : '');
+        const rg = (row.rateWithGst !== undefined && row.rateWithGst !== '') ? round2(row.rateWithGst) : (r ? round2(r * (1 + g / 100)) : '');
+        const t = (row.totalWithGst !== undefined && row.totalWithGst !== '') ? round2(row.totalWithGst) : ((q && rg) ? round2(q * rg) : '');
+        const tc = (row.transportCost !== undefined && row.transportCost !== null && row.transportCost !== '') ? round2(row.transportCost) : '';
+        const transPerUnit = q > 0 ? ((Number(tc) || 0) / q) : 0;
+        const cpu = (row.costPerUnit !== undefined && row.costPerUnit !== null && row.costPerUnit !== '')
+          ? round2(row.costPerUnit)
+          : ((r > 0 || transPerUnit > 0) ? round2(r + transPerUnit) : '');
+
+        const unitName = escapeHtml(item.unit || row.unit || 'Nos');
+
+        return `
+          <div class="inv-inw-card" data-row-id="${row.id}">
+            <!-- Header: Item Picker + Delete -->
+            <div class="card-header d-flex align-items-center justify-content-between gap-2">
+              <div class="flex-grow-1 min-w-0">
+                <div class="inv-row-item-picker" id="pickerWrap_mob_${row.id}">
+                  <button type="button" class="btn btn-sm btn-light border w-100 text-start d-flex align-items-center justify-content-between px-2 py-1.5 shadow-none" id="picker_mob_Btn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}', 'picker_mob_')">
+                    <span class="text-truncate fw-semibold text-dark fs-7" id="pickerLabel_mob_${row.id}">${escapeHtml(item.name || 'Select Item')}</span>
+                    <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div class="inv-row-picker-menu" id="picker_mob_Menu_${row.id}">
+                    <div class="inv-row-picker-search-wrap">
+                      <input type="text" class="inv-row-picker-search-input" placeholder="Search item..." oninput="InventoryApp.filterPickerItems('${row.id}', 'stockin_mob', this.value, 'picker_mob_')" autocomplete="off">
+                    </div>
+                    <div class="inv-row-picker-list" id="picker_mob_List_${row.id}">
+                      ${renderPickerListHtml(row.id, 'stockin_mob', row.itemCode, '')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center flex-shrink-0 btn-remove-inw-row" data-row-id="${row.id}" style="width: 28px; height: 28px; border-radius: 6px;" title="Remove Item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body">
+              <!-- QTY & Base Cost -->
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Quantity</label>
+                  <div class="input-group input-group-sm">
+                    <input type="number" class="form-control text-center fw-bold inw-mob-qty" min="0" step="any" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0">
+                    <span class="input-group-text px-2 text-muted fs-8 bg-light">${unitName}</span>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Cost / Unit (₹)</label>
+                  <input type="number" class="form-control form-control-sm text-end fw-semibold inw-mob-rate" min="0" step="any" data-row-id="${row.id}" value="${r || ''}" placeholder="0.00">
+                </div>
+              </div>
+
+              <!-- GST & Cost+GST -->
+              <div class="row g-2 mb-2">
+                <div class="col-5">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">GST %</label>
+                  <div class="input-group input-group-sm">
+                    <input type="number" class="form-control text-center inw-mob-gst" min="0" max="100" step="any" data-row-id="${row.id}" value="${g}" placeholder="18">
+                    <span class="input-group-text px-1.5 text-muted fs-8 bg-light">%</span>
+                  </div>
+                </div>
+                <div class="col-7">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Cost+GST (₹)</label>
+                  <input type="number" class="form-control form-control-sm text-end inw-mob-rate-with-gst" min="0" step="any" data-row-id="${row.id}" value="${rg}" placeholder="0.00">
+                </div>
+              </div>
+
+              <!-- Total Without GST & Total With GST -->
+              <div class="row g-2 mb-2 pt-1 border-top">
+                <div class="col-6">
+                  <div class="text-muted fs-8">Total (excl. GST)</div>
+                  <div class="fw-semibold text-secondary fs-7 inw-mob-twg-display" data-row-id="${row.id}">${fmtRupees(twg || 0)}</div>
+                </div>
+                <div class="col-6 text-end">
+                  <div class="text-muted fs-8">Total (incl. GST)</div>
+                  <div class="fw-bold text-dark fs-7 inw-mob-t-display" data-row-id="${row.id}">${fmtRupees(t || 0)}</div>
+                </div>
+              </div>
+
+              <!-- Transport Cost & Landed Cost per Unit -->
+              <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle border">
+                <div>
+                  <span class="text-secondary fs-8 d-block">Transport Cost</span>
+                  <input type="number" class="form-control form-control-sm text-start fw-semibold inw-mob-transport-input mt-0.5" style="width: 90px; height: 26px; font-size: 0.78rem;" min="0" step="any" data-row-id="${row.id}" value="${tc}" placeholder="0.00">
+                </div>
+                <div class="text-end">
+                  <span class="text-primary fs-8 fw-semibold d-block">Cost per ${unitName}</span>
+                  <span class="fw-bold text-primary fs-6 inw-mob-cpu-display" data-row-id="${row.id}">${fmtRupees(cpu || 0)}</span>
                 </div>
               </div>
             </div>
-          </td>
-          <td>
-            <div class="d-flex align-items-center justify-content-end gap-1 px-1">
-              <input type="number" class="form-control form-control-sm mat-qty inw-row-qty border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0" autocomplete="off" style="width: 50px;">
-              <span class="text-secondary small fw-medium flex-shrink-0 inw-row-unit-label" style="font-size:0.75rem;">${unitName}</span>
-            </div>
-          </td>
-          <td><input type="number" class="form-control form-control-sm mat-rate inw-row-rate border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${r || ''}" placeholder="0.00" autocomplete="off"></td>
-          <td><input type="number" class="form-control form-control-sm mat-gst inw-row-gst border-0 p-0 text-end" min="0" max="100" step="any" data-row-id="${row.id}" value="${g}" placeholder="18" autocomplete="off"></td>
-          <td><input type="number" class="form-control form-control-sm mat-rate-with-gst inw-row-rate-with-gst border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${rg}" placeholder="0.00" autocomplete="off"></td>
-          <td><input type="number" class="form-control form-control-sm mat-total-without-gst inw-row-total-without-gst border-0 p-0 text-end fw-semibold text-secondary" min="0" step="any" data-row-id="${row.id}" value="${twg}" placeholder="0.00" autocomplete="off"></td>
-          <td><input type="number" class="form-control form-control-sm mat-total inw-row-total-with-gst border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${t}" placeholder="0.00" autocomplete="off"></td>
-          <td><input type="number" class="form-control form-control-sm mat-transport inw-row-transport border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${tc}" placeholder="0" autocomplete="off"></td>
-          <td>
-            <div class="d-flex align-items-center justify-content-end gap-1 px-1">
-              <input type="number" class="form-control form-control-sm mat-cost-per-unit inw-row-cost-per-unit border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${cpu}" placeholder="Auto" readonly tabindex="-1" autocomplete="off" style="width: 65px;">
-              <span class="text-muted small flex-shrink-0 inw-row-cost-unit-label" style="font-size:0.72rem;">/${unitName}</span>
-            </div>
-          </td>
-          <td class="text-center"><span class="text-danger fw-bold btn-remove-inw-row" data-row-id="${row.id}" style="cursor:pointer; font-size:0.9rem;" title="Remove">✕</span></td>
-        </tr>
-      `;
-    }).join('');
+          </div>
+        `;
+      }).join('');
+    }
 
     // Dynamic header text for COST PER UNIT if all items share the same unit
     const thCpu = document.querySelector('.inw-th-cost-per-unit');
@@ -1973,326 +2099,193 @@ const InventoryApp = (() => {
       }
     }
 
-    attachInwRowHandlers(tbody, ledger);
+    attachInwRowHandlers();
   }
 
-  function attachInwRowHandlers(tbody, ledger) {
-    // 1. Equipment select change
-    tbody.querySelectorAll('.inw-row-item-select').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const rowId = sel.getAttribute('data-row-id');
-        const code = sel.value;
-        const row = inwardRows.find(r => r.id === rowId);
-        if (row && code) {
-          row.itemCode = code;
-          const selectedMaster = ledger.find(it => it.code === code);
-          if (selectedMaster) {
-            row.rate = selectedMaster.buyingPrice || 0;
-            row.unitPrice = selectedMaster.buyingPrice || 0;
-            row.unit = selectedMaster.unit || 'Set';
-          }
-          renderInwRows();
-          recalcInwardTotals();
-        }
-      });
-    });
+  function attachInwRowHandlers() {
+    const modalStockIn = document.getElementById('modalStockIn');
+    if (!modalStockIn) return;
 
-    // 2. QTY Input
-    tbody.querySelectorAll('.inw-row-qty').forEach(qtyEl => {
-      qtyEl.addEventListener('input', () => {
-        const rowId = qtyEl.getAttribute('data-row-id');
-        const row = inwardRows.find(r => r.id === rowId);
-        const rowTr = tbody.querySelector(`tr[data-row-id="${rowId}"]`);
-        if (!row || !rowTr) return;
-
-        const rateEl = rowTr.querySelector('.inw-row-rate');
-        const gstEl = rowTr.querySelector('.inw-row-gst');
-        const rateWithGstEl = rowTr.querySelector('.inw-row-rate-with-gst');
-        const totalWithoutGstEl = rowTr.querySelector('.inw-row-total-without-gst');
-        const totalEl = rowTr.querySelector('.inw-row-total-with-gst');
-
-        const q = Number(qtyEl.value) || 0;
-        const r = Number(rateEl?.value) || 0;
-        const g = Number(gstEl?.value) || 0;
-        const rg = Number(rateWithGstEl?.value) || 0;
-        const twg = Number(totalWithoutGstEl?.value) || 0;
-        const t = Number(totalEl?.value) || 0;
-
-        row.qty = qtyEl.value === '' ? '' : q;
-
-        if (q > 0) {
-          if (r > 0) {
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(q * r);
-            const computedRg = r * (1 + g / 100);
-            if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-            if (totalEl) totalEl.value = round2(q * computedRg);
-          } else if (twg > 0) {
-            const computedR = twg / q;
-            if (rateEl) rateEl.value = round2(computedR);
-            const computedRg = computedR * (1 + g / 100);
-            if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-            if (totalEl) totalEl.value = round2(q * computedRg);
-          } else if (t > 0) {
-            const computedRg = t / q;
-            if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-            const computedR = computedRg / (1 + g / 100);
-            if (rateEl) rateEl.value = round2(computedR);
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(q * computedR);
-          } else if (rg > 0) {
-            if (totalEl) totalEl.value = round2(q * rg);
-            const computedR = rg / (1 + g / 100);
-            if (rateEl) rateEl.value = round2(computedR);
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(q * computedR);
-          }
-        }
-        recalcInwardTotals();
-      });
-    });
-
-    // 3. RATE/UNIT Input
-    tbody.querySelectorAll('.inw-row-rate').forEach(rateEl => {
-      rateEl.addEventListener('input', () => {
-        const rowId = rateEl.getAttribute('data-row-id');
-        const row = inwardRows.find(r => r.id === rowId);
-        const rowTr = tbody.querySelector(`tr[data-row-id="${rowId}"]`);
-        if (!row || !rowTr) return;
-
-        const qtyEl = rowTr.querySelector('.inw-row-qty');
-        const gstEl = rowTr.querySelector('.inw-row-gst');
-        const rateWithGstEl = rowTr.querySelector('.inw-row-rate-with-gst');
-        const totalWithoutGstEl = rowTr.querySelector('.inw-row-total-without-gst');
-        const totalEl = rowTr.querySelector('.inw-row-total-with-gst');
-
-        const q = Number(qtyEl?.value) || 0;
-        const r = Number(rateEl.value) || 0;
-        const g = Number(gstEl?.value) || 0;
-        const twg = Number(totalWithoutGstEl?.value) || 0;
-        const t = Number(totalEl?.value) || 0;
-
-        row.rate = rateEl.value === '' ? '' : r;
-
-        if (r > 0) {
-          const rg = r * (1 + g / 100);
-          if (rateWithGstEl) rateWithGstEl.value = round2(rg);
-          if (q > 0) {
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(q * r);
-            if (totalEl) totalEl.value = round2(q * rg);
-          } else if (twg > 0) {
-            const computedQ = twg / r;
-            if (qtyEl) qtyEl.value = round2(computedQ);
-            if (totalEl) totalEl.value = round2(computedQ * rg);
-          } else if (t > 0) {
-            const computedQ = t / rg;
-            if (qtyEl) qtyEl.value = round2(computedQ);
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(computedQ * r);
-          }
-        }
-        recalcInwardTotals();
-      });
-    });
-
-    // 4. TOTAL PRICE (without GST) Input
-    tbody.querySelectorAll('.inw-row-total-without-gst').forEach(twgEl => {
-      twgEl.addEventListener('input', () => {
-        const rowId = twgEl.getAttribute('data-row-id');
-        const rowTr = tbody.querySelector(`tr[data-row-id="${rowId}"]`);
-        if (!rowTr) return;
-
-        const qtyEl = rowTr.querySelector('.inw-row-qty');
-        const rateEl = rowTr.querySelector('.inw-row-rate');
-        const gstEl = rowTr.querySelector('.inw-row-gst');
-        const rateWithGstEl = rowTr.querySelector('.inw-row-rate-with-gst');
-        const totalEl = rowTr.querySelector('.inw-row-total-with-gst');
-
-        const twg = Number(twgEl.value) || 0;
-        const q = Number(qtyEl?.value) || 0;
-        const r = Number(rateEl?.value) || 0;
-        const g = Number(gstEl?.value) || 0;
-
-        if (twg > 0) {
-          if (q > 0) {
-            const computedR = twg / q;
-            if (rateEl) rateEl.value = round2(computedR);
-            const computedRg = computedR * (1 + g / 100);
-            if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-            if (totalEl) totalEl.value = round2(q * computedRg);
-          } else if (r > 0) {
-            const computedQ = twg / r;
-            if (qtyEl) qtyEl.value = round2(computedQ);
-            const computedRg = r * (1 + g / 100);
-            if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-            if (totalEl) totalEl.value = round2(computedQ * computedRg);
-          }
-        }
-        recalcInwardTotals();
-      });
-    });
-
-    // 5. GST % Input
-    tbody.querySelectorAll('.inw-row-gst').forEach(gstEl => {
-      gstEl.addEventListener('input', () => {
-        const rowId = gstEl.getAttribute('data-row-id');
-        const rowTr = tbody.querySelector(`tr[data-row-id="${rowId}"]`);
-        if (!rowTr) return;
-
-        const qtyEl = rowTr.querySelector('.inw-row-qty');
-        const rateEl = rowTr.querySelector('.inw-row-rate');
-        const rateWithGstEl = rowTr.querySelector('.inw-row-rate-with-gst');
-        const totalWithoutGstEl = rowTr.querySelector('.inw-row-total-without-gst');
-        const totalEl = rowTr.querySelector('.inw-row-total-with-gst');
-
-        const q = Number(qtyEl?.value) || 0;
-        const g = Number(gstEl.value) || 0;
-        const r = Number(rateEl?.value) || 0;
-        const rg = Number(rateWithGstEl?.value) || 0;
-        const twg = Number(totalWithoutGstEl?.value) || 0;
-
-        if (r > 0) {
-          const computedRg = r * (1 + g / 100);
-          if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-          if (q > 0 && totalEl) totalEl.value = round2(q * computedRg);
-          else if (twg > 0 && totalEl) totalEl.value = round2(twg * (1 + g / 100));
-        } else if (rg > 0) {
-          const computedR = rg / (1 + g / 100);
-          if (rateEl) rateEl.value = round2(computedR);
-          if (q > 0) {
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(q * computedR);
-            if (totalEl) totalEl.value = round2(q * rg);
-          }
-        }
-        recalcInwardTotals();
-      });
-    });
-
-    // 6. RATE/UNIT+GST Input
-    tbody.querySelectorAll('.inw-row-rate-with-gst').forEach(rgEl => {
-      rgEl.addEventListener('input', () => {
-        const rowId = rgEl.getAttribute('data-row-id');
-        const rowTr = tbody.querySelector(`tr[data-row-id="${rowId}"]`);
-        if (!rowTr) return;
-
-        const qtyEl = rowTr.querySelector('.inw-row-qty');
-        const rateEl = rowTr.querySelector('.inw-row-rate');
-        const gstEl = rowTr.querySelector('.inw-row-gst');
-        const totalWithoutGstEl = rowTr.querySelector('.inw-row-total-without-gst');
-        const totalEl = rowTr.querySelector('.inw-row-total-with-gst');
-
-        const q = Number(qtyEl?.value) || 0;
-        const rg = Number(rgEl.value) || 0;
-        const g = Number(gstEl?.value) || 0;
-        const twg = Number(totalWithoutGstEl?.value) || 0;
-        const t = Number(totalEl?.value) || 0;
-
-        if (rg > 0) {
-          const computedR = rg / (1 + g / 100);
-          if (rateEl) rateEl.value = round2(computedR);
-          if (q > 0) {
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(q * computedR);
-            if (totalEl) totalEl.value = round2(q * rg);
-          } else if (twg > 0) {
-            const computedQ = twg / computedR;
-            if (qtyEl) qtyEl.value = round2(computedQ);
-            if (totalEl) totalEl.value = round2(computedQ * rg);
-          } else if (t > 0) {
-            const computedQ = t / rg;
-            if (qtyEl) qtyEl.value = round2(computedQ);
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(computedQ * computedR);
-          }
-        }
-        recalcInwardTotals();
-      });
-    });
-
-    // 7. TOTAL PRICE+GST Input
-    tbody.querySelectorAll('.inw-row-total-with-gst').forEach(tEl => {
-      tEl.addEventListener('input', () => {
-        const rowId = tEl.getAttribute('data-row-id');
-        const rowTr = tbody.querySelector(`tr[data-row-id="${rowId}"]`);
-        if (!rowTr) return;
-
-        const qtyEl = rowTr.querySelector('.inw-row-qty');
-        const rateEl = rowTr.querySelector('.inw-row-rate');
-        const gstEl = rowTr.querySelector('.inw-row-gst');
-        const rateWithGstEl = rowTr.querySelector('.inw-row-rate-with-gst');
-        const totalWithoutGstEl = rowTr.querySelector('.inw-row-total-without-gst');
-
-        const t = Number(tEl.value) || 0;
-        const q = Number(qtyEl?.value) || 0;
-        const rate = Number(rateEl?.value) || 0;
-        const g = Number(gstEl?.value) || 0;
-
-        if (t > 0) {
-          if (q > 0) {
-            const computedRg = t / q;
-            if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-            const computedR = computedRg / (1 + g / 100);
-            if (rateEl) rateEl.value = round2(computedR);
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(q * computedR);
-          } else if (rate > 0) {
-            const computedRg = rate * (1 + g / 100);
-            if (rateWithGstEl) rateWithGstEl.value = round2(computedRg);
-            const computedQ = t / computedRg;
-            if (qtyEl) qtyEl.value = round2(computedQ);
-            if (totalWithoutGstEl) totalWithoutGstEl.value = round2(computedQ * rate);
-          }
-        }
-        recalcInwardTotals();
-      });
-    });
-
-    // 8. TRANS. COST (Row level) Input
-    tbody.querySelectorAll('.inw-row-transport').forEach(transEl => {
-      transEl.addEventListener('input', () => {
-        if (transEl.value.trim() === '') {
-          delete transEl.dataset.userEdited;
-        } else {
-          transEl.dataset.userEdited = 'true';
-        }
-        recalcInwardTotals();
-      });
-    });
-
-    // 9. Remove row button
-    tbody.querySelectorAll('.btn-remove-inw-row').forEach(btn => {
-      btn.addEventListener('click', () => {
+    modalStockIn.querySelectorAll('.btn-remove-inw-row').forEach(btn => {
+      btn.onclick = () => {
         const rowId = btn.getAttribute('data-row-id');
         removeInwRow(rowId);
-      });
+      };
     });
+
+    const bindInputs = (selector, field) => {
+      modalStockIn.querySelectorAll(selector).forEach(el => {
+        el.oninput = () => {
+          const rowId = el.getAttribute('data-row-id');
+          updateInwRowField(rowId, field, el.value);
+        };
+      });
+    };
+
+    // Desktop bindings
+    bindInputs('.inw-row-qty', 'qty');
+    bindInputs('.inw-row-rate', 'rate');
+    bindInputs('.inw-row-gst', 'gst');
+    bindInputs('.inw-row-rate-with-gst', 'rateWithGst');
+    bindInputs('.inw-row-total-without-gst', 'totalWithoutGst');
+    bindInputs('.inw-row-total-with-gst', 'totalWithGst');
+    bindInputs('.inw-row-transport', 'transport');
+
+    // Mobile bindings
+    bindInputs('.inw-mob-qty', 'qty');
+    bindInputs('.inw-mob-rate', 'rate');
+    bindInputs('.inw-mob-gst', 'gst');
+    bindInputs('.inw-mob-rate-with-gst', 'rateWithGst');
+    bindInputs('.inw-mob-transport-input', 'transport');
+  }
+
+  function updateInwRowField(rowId, field, rawVal) {
+    const row = inwardRows.find(r => r.id === rowId);
+    if (!row) return;
+
+    const val = Number(rawVal) || 0;
+    let q = Number(row.qty) || 0;
+    let r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
+    let g = (row.gstRate !== undefined && row.gstRate !== null && row.gstRate !== '') ? Number(row.gstRate) : 18;
+    let rg = Number(row.rateWithGst) || (r * (1 + g / 100));
+    let twg = Number(row.totalWithoutGst) || (q * r);
+    let t = Number(row.totalWithGst) || (q * rg);
+
+    if (field === 'qty') {
+      row.qty = rawVal === '' ? '' : val;
+      q = val;
+      if (q > 0) {
+        if (r > 0) {
+          rg = round2(r * (1 + g / 100));
+          twg = round2(q * r);
+          t = round2(q * rg);
+        } else if (rg > 0) {
+          r = round2(rg / (1 + g / 100));
+          twg = round2(q * r);
+          t = round2(q * rg);
+        }
+      }
+    } else if (field === 'rate') {
+      row.rate = rawVal === '' ? '' : val;
+      r = val;
+      rg = round2(r * (1 + g / 100));
+      if (q > 0) {
+        twg = round2(q * r);
+        t = round2(q * rg);
+      }
+    } else if (field === 'gst') {
+      row.gstRate = val;
+      g = val;
+      if (r > 0) {
+        rg = round2(r * (1 + g / 100));
+        if (q > 0) t = round2(q * rg);
+      }
+    } else if (field === 'rateWithGst') {
+      row.rateWithGst = rawVal === '' ? '' : val;
+      rg = val;
+      r = round2(rg / (1 + g / 100));
+      row.rate = r;
+      if (q > 0) {
+        twg = round2(q * r);
+        t = round2(q * rg);
+      }
+    } else if (field === 'totalWithoutGst') {
+      twg = val;
+      row.totalWithoutGst = twg;
+      if (q > 0) {
+        r = round2(twg / q);
+        row.rate = r;
+        rg = round2(r * (1 + g / 100));
+        t = round2(q * rg);
+      }
+    } else if (field === 'totalWithGst') {
+      t = val;
+      row.totalWithGst = t;
+      if (q > 0) {
+        rg = round2(t / q);
+        r = round2(rg / (1 + g / 100));
+        row.rate = r;
+        twg = round2(q * r);
+      }
+    } else if (field === 'transport') {
+      if (rawVal.trim() === '') {
+        row.userEditedTransport = false;
+        row.transportCost = '';
+      } else {
+        row.userEditedTransport = true;
+        row.transportCost = val;
+      }
+    }
+
+    row.rateWithGst = rg;
+    row.totalWithoutGst = twg;
+    row.totalWithGst = t;
+
+    syncInwRowInputs(rowId);
+    recalcInwardTotals();
+  }
+
+  function syncInwRowInputs(rowId) {
+    const row = inwardRows.find(r => r.id === rowId);
+    if (!row) return;
+
+    // Sync Desktop elements
+    const tr = document.querySelector(`#inwItemsTableBody tr[data-row-id="${rowId}"]`);
+    if (tr) {
+      const qEl = tr.querySelector('.inw-row-qty');
+      const rEl = tr.querySelector('.inw-row-rate');
+      const gEl = tr.querySelector('.inw-row-gst');
+      const rgEl = tr.querySelector('.inw-row-rate-with-gst');
+      const twgEl = tr.querySelector('.inw-row-total-without-gst');
+      const tEl = tr.querySelector('.inw-row-total-with-gst');
+
+      if (qEl && document.activeElement !== qEl) qEl.value = row.qty !== undefined && row.qty !== null ? row.qty : '';
+      if (rEl && document.activeElement !== rEl) rEl.value = row.rate || '';
+      if (gEl && document.activeElement !== gEl) gEl.value = row.gstRate !== undefined ? row.gstRate : 18;
+      if (rgEl && document.activeElement !== rgEl) rgEl.value = row.rateWithGst || '';
+      if (twgEl && document.activeElement !== twgEl) twgEl.value = row.totalWithoutGst || '';
+      if (tEl && document.activeElement !== tEl) tEl.value = row.totalWithGst || '';
+    }
+
+    // Sync Mobile elements
+    const card = document.querySelector(`#inwMobileCardsContainer .inv-inw-card[data-row-id="${rowId}"]`);
+    if (card) {
+      const qEl = card.querySelector('.inw-mob-qty');
+      const rEl = card.querySelector('.inw-mob-rate');
+      const gEl = card.querySelector('.inw-mob-gst');
+      const rgEl = card.querySelector('.inw-mob-rate-with-gst');
+      const twgDisplay = card.querySelector('.inw-mob-twg-display');
+      const tDisplay = card.querySelector('.inw-mob-t-display');
+
+      if (qEl && document.activeElement !== qEl) qEl.value = row.qty !== undefined && row.qty !== null ? row.qty : '';
+      if (rEl && document.activeElement !== rEl) rEl.value = row.rate || '';
+      if (gEl && document.activeElement !== gEl) gEl.value = row.gstRate !== undefined ? row.gstRate : 18;
+      if (rgEl && document.activeElement !== rgEl) rgEl.value = row.rateWithGst || '';
+      if (twgDisplay) twgDisplay.textContent = fmtRupees(row.totalWithoutGst || 0);
+      if (tDisplay) tDisplay.textContent = fmtRupees(row.totalWithGst || 0);
+    }
   }
 
   function recalcInwardTotals() {
-    const tbody = document.getElementById('inwItemsTableBody');
-    if (!tbody) return;
-
     const transportCostInput = document.getElementById('inwTransportCost') || document.getElementById('inwImportCost');
     const totalTransportCost = Math.max(0, Number(transportCostInput?.value) || 0);
 
-    const rows = Array.from(tbody.querySelectorAll('tr[data-row-id]'));
     let totalUnits = 0;
     let sumTotalWithoutGst = 0;
     let sumGstAmount = 0;
     let sumTotalWithGst = 0;
 
-    // 1. Synchronize row values to memory state & gather totals
-    rows.forEach(rowTr => {
-      const rowId = rowTr.getAttribute('data-row-id');
-      const row = inwardRows.find(r => r.id === rowId);
-      if (!row) return;
+    // 1. Line totals calculation
+    inwardRows.forEach(row => {
+      const q = Number(row.qty) || 0;
+      const r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
+      const g = (row.gstRate !== undefined && row.gstRate !== null && row.gstRate !== '') ? Number(row.gstRate) : 18;
+      const rg = round2(r * (1 + g / 100));
+      const twg = round2(q * r);
+      const t = round2(q * rg);
 
-      const q = Number(rowTr.querySelector('.inw-row-qty')?.value) || 0;
-      const r = Number(rowTr.querySelector('.inw-row-rate')?.value) || 0;
-      const g = Number(rowTr.querySelector('.inw-row-gst')?.value) || 0;
-      const twg = Number(rowTr.querySelector('.inw-row-total-without-gst')?.value) || round2(q * r);
-      const rg = Number(rowTr.querySelector('.inw-row-rate-with-gst')?.value) || round2(r * (1 + g / 100));
-      const t = Number(rowTr.querySelector('.inw-row-total-with-gst')?.value) || round2(q * rg);
-
-      row.qty = q;
-      row.rate = r;
-      row.unitPrice = r;
-      row.gstRate = g;
-      row.totalWithoutGst = twg;
       row.rateWithGst = rg;
+      row.totalWithoutGst = twg;
       row.totalWithGst = t;
 
       totalUnits += q;
@@ -2305,36 +2298,29 @@ const InventoryApp = (() => {
     let sumUserEditedTransport = 0;
     let userEditedCount = 0;
 
-    rows.forEach(rowTr => {
-      const tEl = rowTr.querySelector('.inw-row-transport');
-      if (tEl && tEl.dataset.userEdited === 'true' && tEl.value.trim() !== '') {
-        sumUserEditedTransport += Number(tEl.value) || 0;
+    inwardRows.forEach(row => {
+      if (row.userEditedTransport && row.transportCost !== '' && row.transportCost !== null && row.transportCost !== undefined) {
+        sumUserEditedTransport += Number(row.transportCost) || 0;
         userEditedCount++;
       }
     });
 
-    const uneditedCount = rows.length - userEditedCount;
+    const uneditedCount = inwardRows.length - userEditedCount;
     const remainingTransport = Math.max(0, totalTransportCost - sumUserEditedTransport);
     let sumUneditedTotals = 0;
 
-    rows.forEach(rowTr => {
-      const tEl = rowTr.querySelector('.inw-row-transport');
-      if (!tEl || tEl.dataset.userEdited !== 'true' || tEl.value.trim() === '') {
-        sumUneditedTotals += Number(rowTr.querySelector('.inw-row-total-with-gst')?.value) || 0;
+    inwardRows.forEach(row => {
+      if (!row.userEditedTransport || row.transportCost === '' || row.transportCost === null || row.transportCost === undefined) {
+        sumUneditedTotals += Number(row.totalWithGst) || 0;
       }
     });
 
-    rows.forEach(rowTr => {
-      const rowId = rowTr.getAttribute('data-row-id');
-      const row = inwardRows.find(r => r.id === rowId);
-      const tEl = rowTr.querySelector('.inw-row-transport');
-      const cpuEl = rowTr.querySelector('.inw-row-cost-per-unit');
-
+    inwardRows.forEach(row => {
       let share = 0;
-      if (tEl && tEl.dataset.userEdited === 'true' && tEl.value.trim() !== '') {
-        share = Number(tEl.value) || 0;
+      if (row.userEditedTransport && row.transportCost !== '' && row.transportCost !== null && row.transportCost !== undefined) {
+        share = Number(row.transportCost) || 0;
       } else {
-        const tot = Number(rowTr.querySelector('.inw-row-total-with-gst')?.value) || 0;
+        const tot = Number(row.totalWithGst) || 0;
         if (sumUneditedTotals > 0 && remainingTransport > 0) {
           share = round2((tot / sumUneditedTotals) * remainingTransport);
         } else if (remainingTransport > 0 && uneditedCount > 0) {
@@ -2342,26 +2328,48 @@ const InventoryApp = (() => {
         } else {
           share = 0;
         }
-        if (tEl) tEl.value = share > 0 ? share : 0;
-      }
-
-      const q = Number(rowTr.querySelector('.inw-row-qty')?.value) || 0;
-      const r = Number(rowTr.querySelector('.inw-row-rate')?.value) || 0;
-
-      let transPerUnit = 0;
-      if (q > 0) {
-        transPerUnit = round2(share / q);
-      }
-
-      // Cost per unit = Cost + (Transport Cost / QTY)
-      const costPerUnit = round2(r + transPerUnit);
-      if (cpuEl) cpuEl.value = costPerUnit > 0 ? costPerUnit : '';
-
-      if (row) {
         row.transportCost = share;
-        row.transportPerUnit = transPerUnit;
-        row.costPerUnit = costPerUnit;
-        row.mspPerUnit = costPerUnit;
+      }
+
+      const q = Number(row.qty) || 0;
+      const r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
+      const transPerUnit = q > 0 ? round2(share / q) : 0;
+      const costPerUnit = round2(r + transPerUnit);
+
+      row.transportPerUnit = transPerUnit;
+      row.costPerUnit = costPerUnit;
+      row.mspPerUnit = costPerUnit;
+
+      // Update Desktop row display
+      const tr = document.querySelector(`#inwItemsTableBody tr[data-row-id="${row.id}"]`);
+      if (tr) {
+        const tEl = tr.querySelector('.inw-row-transport');
+        const cpuEl = tr.querySelector('.inw-row-cost-per-unit');
+        const twgEl = tr.querySelector('.inw-row-total-without-gst');
+        const tElTot = tr.querySelector('.inw-row-total-with-gst');
+        const rgEl = tr.querySelector('.inw-row-rate-with-gst');
+
+        if (tEl && document.activeElement !== tEl) tEl.value = share > 0 ? share : '';
+        if (cpuEl) cpuEl.value = costPerUnit > 0 ? costPerUnit : '';
+        if (twgEl && document.activeElement !== twgEl) twgEl.value = row.totalWithoutGst || '';
+        if (tElTot && document.activeElement !== tElTot) tElTot.value = row.totalWithGst || '';
+        if (rgEl && document.activeElement !== rgEl) rgEl.value = row.rateWithGst || '';
+      }
+
+      // Update Mobile card display
+      const card = document.querySelector(`#inwMobileCardsContainer .inv-inw-card[data-row-id="${row.id}"]`);
+      if (card) {
+        const mobTwg = card.querySelector('.inw-mob-twg-display');
+        const mobT = card.querySelector('.inw-mob-t-display');
+        const mobTrans = card.querySelector('.inw-mob-transport-input');
+        const mobCpu = card.querySelector('.inw-mob-cpu-display');
+        const mobRg = card.querySelector('.inw-mob-rate-with-gst');
+
+        if (mobTwg) mobTwg.textContent = fmtRupees(row.totalWithoutGst || 0);
+        if (mobT) mobT.textContent = fmtRupees(row.totalWithGst || 0);
+        if (mobTrans && document.activeElement !== mobTrans) mobTrans.value = share > 0 ? share : '';
+        if (mobCpu) mobCpu.textContent = fmtRupees(costPerUnit || 0);
+        if (mobRg && document.activeElement !== mobRg) mobRg.value = row.rateWithGst || '';
       }
     });
 
@@ -2377,9 +2385,126 @@ const InventoryApp = (() => {
     if (lblGrandLegacy) lblGrandLegacy.textContent = fmtRupees(totalMaterialCost);
   }
 
-  function openStockInModal(preselectedCode = null) {
+  let editingConsignmentInvoiceNo = null;
+
+  function openStockInConsignment(invoiceNoOrId) {
     const modalEl = document.getElementById('modalStockIn');
     if (!modalEl) return;
+
+    // Find all inward records belonging to this consignment
+    let matchingInwards = inwards.filter(i => i.invoiceNo && i.invoiceNo === invoiceNoOrId);
+    if (matchingInwards.length === 0) {
+      const single = inwards.find(i => i.id === invoiceNoOrId);
+      if (single) {
+        if (single.invoiceNo) {
+          matchingInwards = inwards.filter(i => i.invoiceNo === single.invoiceNo);
+        } else {
+          matchingInwards = [single];
+        }
+      }
+    }
+
+    if (matchingInwards.length === 0) {
+      if (typeof UI !== 'undefined') UI.toast('Consignment record not found', 'warning');
+      return;
+    }
+
+    const firstInw = matchingInwards[0];
+    editingConsignmentInvoiceNo = firstInw.invoiceNo || firstInw.id;
+
+    // Set modal title & submit button text
+    const titleEl = modalEl.querySelector('.modal-title');
+    if (titleEl) {
+      titleEl.textContent = `Stock In Consignment — ${editingConsignmentInvoiceNo}`;
+    }
+    const submitBtn = document.getElementById('btnSubmitStockIn');
+    if (submitBtn) {
+      submitBtn.textContent = 'Update Consignment';
+    }
+
+    // Populate header inputs
+    const dateInput = document.getElementById('inwDate');
+    const supplierInput = document.getElementById('inwSupplier');
+    const locationInput = document.getElementById('inwLocation');
+    const transportInput = document.getElementById('inwTransportCost') || document.getElementById('inwImportCost');
+    const remarksInput = document.getElementById('inwRemarks');
+
+    if (dateInput) dateInput.value = firstInw.date || new Date().toISOString().slice(0, 10);
+    if (supplierInput) supplierInput.value = firstInw.supplier || '';
+    if (locationInput) locationInput.value = firstInw.location || 'Main Godown — Bay A';
+
+    // Consignment Transport Cost
+    const savedConsignmentTransport = Number(firstInw.consignmentTransportCost !== undefined ? firstInw.consignmentTransportCost : firstInw.ConsignmentTransportCost);
+    const sumRowTransport = matchingInwards.reduce((sum, item) => sum + (Number(item.transportCost !== undefined ? item.transportCost : item.TransportCost) || 0), 0);
+    const effectiveTransport = savedConsignmentTransport > 0 ? savedConsignmentTransport : sumRowTransport;
+    if (transportInput) transportInput.value = effectiveTransport > 0 ? effectiveTransport : '';
+
+    if (remarksInput) remarksInput.value = firstInw.remarks || '';
+
+    // Load documents
+    inwardDocFiles = [];
+    inwardDocFile = null;
+    const inwFileInput = document.getElementById('inwDocFileInput');
+    if (inwFileInput) inwFileInput.value = '';
+
+    if (Array.isArray(firstInw.documents) && firstInw.documents.length > 0) {
+      inwardDocFiles = firstInw.documents.map(d => ({ name: d.name, size: d.size, url: d.url, data: d.data }));
+    } else if (firstInw.docName) {
+      inwardDocFiles = [{ name: firstInw.docName, size: 0, url: null, data: firstInw.docData }];
+    }
+    renderInwFiles();
+
+    // Load items using strictly saved fields: ItemCode, Quantity, UnitPrice, GstRate, TransportCost, CostPerUnit
+    const ledger = getCalculatedStockLedger();
+    inwardRows = matchingInwards.map((rec, idx) => {
+      const item = ledger.find(i => i.code === rec.itemCode) || items.find(i => i.code === rec.itemCode) || {};
+      const qty = Number(rec.qty !== undefined ? rec.qty : rec.Quantity) || 1;
+      const unitPrice = Number(rec.unitPrice !== undefined ? rec.unitPrice : rec.UnitPrice) || 0;
+      const gstRate = Number(rec.gstRate !== undefined ? rec.gstRate : (rec.GstRate !== undefined ? rec.GstRate : 18));
+      const rowTransport = Number(rec.transportCost !== undefined ? rec.transportCost : (rec.TransportCost !== undefined ? rec.TransportCost : 0));
+      const costPerUnit = Number(rec.costPerUnit !== undefined ? rec.costPerUnit : (rec.CostPerUnit !== undefined ? rec.CostPerUnit : 0));
+
+      return {
+        id: 'inw_row_' + Date.now() + '_' + idx,
+        inwardId: rec.id,
+        itemCode: rec.itemCode,
+        qty: qty,
+        unit: item.unit || rec.unit || 'Set',
+        rate: unitPrice,
+        unitPrice: unitPrice,
+        gstRate: gstRate,
+        transportCost: rowTransport,
+        costPerUnit: costPerUnit,
+        userEditedTransport: rowTransport > 0
+      };
+    });
+
+    renderInwRows();
+    // Autocalculate all derived fields on opening: Cost+GST, Total Cost, Total Cost+GST, Cost per unit, Total GST, Total Material Cost
+    recalcInwardTotals();
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+  }
+
+  function openStockInModal(preselectedCode = null, consignmentRef = null) {
+    if (consignmentRef) {
+      return openStockInConsignment(consignmentRef);
+    }
+
+    editingConsignmentInvoiceNo = null;
+
+    const modalEl = document.getElementById('modalStockIn');
+    if (!modalEl) return;
+
+    const titleEl = modalEl.querySelector('.modal-title');
+    if (titleEl) {
+      titleEl.textContent = 'Stock In Consignment';
+    }
+    const submitBtn = document.getElementById('btnSubmitStockIn');
+    if (submitBtn) {
+      submitBtn.textContent = 'Confirm Stock In';
+    }
 
     const dateInput = document.getElementById('inwDate');
     const supplierInput = document.getElementById('inwSupplier');
@@ -2416,7 +2541,6 @@ const InventoryApp = (() => {
         const item = ledger.find(i => i.code === c);
         const p = item ? (Number(item.buyingPrice) || 0) : 0;
         const g = 18;
-        const rg = p * (1 + g / 100);
         return {
           id: 'inw_' + Date.now() + '_' + idx,
           itemCode: c,
@@ -2424,20 +2548,13 @@ const InventoryApp = (() => {
           unit: item ? (item.unit || 'Set') : 'Set',
           rate: p,
           unitPrice: p,
-          totalWithoutGst: p,
           gstRate: g,
-          rateWithGst: round2(rg),
-          totalWithGst: round2(rg),
-          transportCost: 0,
-          transportPerUnit: 0,
-          mspPerUnit: p
+          transportCost: 0
         };
       });
     } else {
       const initialItem = ledger[0];
       const p = initialItem ? (Number(initialItem.buyingPrice) || 0) : 0;
-      const g = 18;
-      const rg = p * (1 + g / 100);
       inwardRows = [
         {
           id: 'inw_' + Date.now(),
@@ -2446,13 +2563,8 @@ const InventoryApp = (() => {
           unit: initialItem ? (initialItem.unit || 'Set') : 'Set',
           rate: p,
           unitPrice: p,
-          totalWithoutGst: p,
-          gstRate: g,
-          rateWithGst: round2(rg),
-          totalWithGst: round2(rg),
-          transportCost: 0,
-          transportPerUnit: 0,
-          mspPerUnit: p
+          gstRate: 18,
+          transportCost: 0
         }
       ];
     }
@@ -2495,7 +2607,23 @@ const InventoryApp = (() => {
       }
     }
 
-    const batchInvoiceNo = `INV-${Date.now().toString().slice(-6)}`;
+    // Refresh totals calculation
+    recalcInwardTotals();
+
+    const invoiceNoToUse = editingConsignmentInvoiceNo || `INV-${Date.now().toString().slice(-6)}`;
+    const isEditing = Boolean(editingConsignmentInvoiceNo);
+
+    // If editing existing consignment, remove previous entries from memory and DB
+    if (isEditing) {
+      const oldRecords = inwards.filter(i => (i.invoiceNo || i.id) === editingConsignmentInvoiceNo);
+      inwards = inwards.filter(i => (i.invoiceNo || i.id) !== editingConsignmentInvoiceNo);
+      if (typeof DB !== 'undefined') {
+        oldRecords.forEach(old => {
+          DB.remove('inventory_inwards', row => (row.InwardID || row.id) === old.id).catch(() => {});
+        });
+      }
+    }
+
     let totalConsignmentCost = 0;
     let totalConsignmentUnits = 0;
 
@@ -2506,35 +2634,28 @@ const InventoryApp = (() => {
     inwardRows.forEach((r, idx) => {
       const qty = Number(r.qty);
       const unitPrice = Number(r.rate !== undefined ? r.rate : r.unitPrice) || 0;
-      const rowTransport = Number(r.transportCost) || 0;
-      const transPerUnit = Number(r.transportPerUnit) || 0;
-      const mspPerUnit = Number(r.mspPerUnit) || (unitPrice + transPerUnit);
-      const totalWithoutGst = Number(r.totalWithoutGst) || (qty * unitPrice);
       const gstRate = Number(r.gstRate) || 0;
-      const totalWithGst = Number(r.totalWithGst) || (totalWithoutGst * (1 + gstRate / 100));
+      const rowTransport = Number(r.transportCost) || 0;
+      const costPerUnit = Number(r.costPerUnit) || round2(unitPrice + (qty > 0 ? (rowTransport / qty) : 0));
+      const totalCost = Number(r.totalWithGst) ? round2(Number(r.totalWithGst) + rowTransport) : round2((qty * unitPrice * (1 + gstRate / 100)) + rowTransport);
 
-      const lineTotal = totalWithGst + rowTransport;
-      totalConsignmentCost += lineTotal;
+      totalConsignmentCost += totalCost;
       totalConsignmentUnits += qty;
 
       const newInward = {
-        id: `INW-${Date.now()}-${idx + 1}`,
+        id: isEditing && r.inwardId ? r.inwardId : `INW-${Date.now()}-${idx + 1}`,
         date,
-        invoiceNo: batchInvoiceNo,
+        invoiceNo: invoiceNoToUse,
         supplier,
         itemCode: r.itemCode,
         qty,
         unit: r.unit || 'Set',
         unitPrice,
-        purchaseRate: unitPrice,
-        transportCost: rowTransport,
-        transportPerUnit: transPerUnit,
-        mspPerUnit,
-        totalWithoutGst,
         gstRate,
-        totalWithGst,
-        totalCost: lineTotal,
-        effectiveUnitPrice: mspPerUnit,
+        costPerUnit,
+        transportCost: rowTransport,
+        consignmentTransportCost: transportCost,
+        totalCost,
         location,
         remarks,
         docName,
@@ -2544,11 +2665,13 @@ const InventoryApp = (() => {
 
       inwards.unshift(newInward);
 
+      // Update BuyingPrice in master inventory item
       const masterItem = items.find(it => it.code === r.itemCode);
       if (masterItem && unitPrice > 0) {
         masterItem.buyingPrice = unitPrice;
       }
 
+      // Save strictly required fields to DB: QTY, Cost (UnitPrice), GST (GstRate), Cost per unit, Transport Cost, Consignment Transport Cost
       if (typeof DB !== 'undefined') {
         DB.insert('inventory_inwards', {
           InwardID: newInward.id,
@@ -2558,7 +2681,10 @@ const InventoryApp = (() => {
           ItemCode: newInward.itemCode,
           Quantity: newInward.qty,
           UnitPrice: newInward.unitPrice,
+          GstRate: newInward.gstRate,
+          CostPerUnit: newInward.costPerUnit,
           TransportCost: newInward.transportCost,
+          ConsignmentTransportCost: newInward.consignmentTransportCost,
           TotalCost: newInward.totalCost,
           Location: newInward.location,
           Remarks: newInward.remarks,
@@ -2566,7 +2692,7 @@ const InventoryApp = (() => {
           DocumentData: newInward.docData,
           Documents: JSON.stringify(newInward.documents),
           CreatedAt: new Date().toISOString()
-        }).catch(() => {});
+        }).catch(err => console.warn('[DB] inventory_inwards insert error:', err));
 
         if (masterItem && unitPrice > 0) {
           DB.update('inventory_items', row => (row.ItemCode || row.code) === r.itemCode, {
@@ -2579,6 +2705,8 @@ const InventoryApp = (() => {
     saveData();
     clearSelection('ledger');
 
+    editingConsignmentInvoiceNo = null;
+
     const modalEl = document.getElementById('modalStockIn');
     const bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
@@ -2589,7 +2717,10 @@ const InventoryApp = (() => {
     else if (activeTab === 'inwards') renderInwardsTable();
 
     if (typeof UI !== 'undefined') {
-      UI.toast(`Successfully stocked in ${inwardRows.length} items (${fmtQty(totalConsignmentUnits)} units). Grand Total: ${fmtRupees(totalConsignmentCost)}.`, 'success');
+      const msg = isEditing
+        ? `Consignment ${invoiceNoToUse} updated successfully (${inwardRows.length} items). Total: ${fmtRupees(totalConsignmentCost)}.`
+        : `Successfully stocked in ${inwardRows.length} items (${fmtQty(totalConsignmentUnits)} units). Total: ${fmtRupees(totalConsignmentCost)}.`;
+      UI.toast(msg, 'success');
     }
   }
 
@@ -3713,51 +3844,7 @@ const InventoryApp = (() => {
       if (typeof UI !== 'undefined') UI.toast('Inward record not found', 'danger');
       return;
     }
-
-    const modalEl = document.getElementById('modalEditInward');
-    if (!modalEl) return;
-
-    const idInput = document.getElementById('editInwId');
-    const dateInput = document.getElementById('editInwDate');
-    const supplierInput = document.getElementById('editInwSupplier');
-    const itemSelect = document.getElementById('editInwItemSelect');
-    const qtyInput = document.getElementById('editInwQty');
-    const priceInput = document.getElementById('editInwUnitPrice');
-    const totalEl = document.getElementById('editInwDisplayTotal');
-    const locationInput = document.getElementById('editInwLocation');
-    const remarksInput = document.getElementById('editInwRemarks');
-
-    if (idInput) idInput.value = inw.id;
-    if (dateInput) dateInput.value = inw.date || new Date().toISOString().slice(0, 10);
-    if (supplierInput) supplierInput.value = inw.supplier || '';
-
-    if (itemSelect) {
-      itemSelect.innerHTML = buildGroupedItemOptions(inw.itemCode, 'stockin');
-      itemSelect.value = inw.itemCode;
-    }
-
-    if (qtyInput) qtyInput.value = inw.qty;
-    if (priceInput) priceInput.value = inw.unitPrice;
-    if (totalEl) totalEl.textContent = fmtRupees(inw.totalCost || (inw.qty * inw.unitPrice));
-    if (locationInput) locationInput.value = inw.location || '';
-    if (remarksInput) remarksInput.value = inw.remarks || '';
-
-    // Document state
-    editInwardDocFile = inw.docName ? { name: inw.docName, data: inw.docData } : null;
-    const badge = document.getElementById('editInwFileBadge');
-    const fileNameEl = document.getElementById('editInwFileName');
-    const fileInput = document.getElementById('editInwDocInput');
-    if (fileInput) fileInput.value = '';
-
-    if (inw.docName && badge && fileNameEl) {
-      fileNameEl.textContent = inw.docName;
-      badge.style.display = 'inline-flex';
-    } else if (badge) {
-      badge.style.display = 'none';
-    }
-
-    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    bsModal.show();
+    openStockInConsignment(inw.invoiceNo || inw.id);
   }
 
   function handleSaveEditInward() {
@@ -4697,6 +4784,7 @@ const InventoryApp = (() => {
     setViewMode,
     toggleKpiCollapse,
     openStockInModal,
+    openStockInConsignment,
     openDispatchModal,
     openStockInModalFor: openStockInModal,
     openDispatchModalFor: openDispatchModal,
