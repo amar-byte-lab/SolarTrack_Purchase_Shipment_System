@@ -182,29 +182,47 @@ const InventoryApp = (() => {
       // 3. Fetch dispatches
       const dbDispatches = DB.getAll('inventory_dispatches');
       if (Array.isArray(dbDispatches)) {
-        dispatches = dbDispatches.map(row => ({
-          id: row.DispatchID || row.dispatchid || row.id,
-          date: row.Date || row.date,
-          challanNo: row.ChallanNo || row.challanno || '',
-          siteName: row.SiteName || row.sitename || '',
-          itemCode: row.ItemCode || row.itemcode || '',
-          qty: Number(row.Quantity !== undefined ? row.Quantity : row.quantity) || 0,
-          unitBuyingPrice: Number(row.UnitBuyingPrice !== undefined ? row.UnitBuyingPrice : row.unitbuyingprice) || 0,
-          dispatchedCost: Number(row.DispatchedCost !== undefined ? row.DispatchedCost : row.dispatchedcost) || 0,
-          transportCost: Number(row.TransportCost !== undefined ? row.TransportCost : row.transportcost) || 0,
-          vehicle: row.Vehicle || row.vehicle || '',
-          remarks: row.Remarks || row.remarks || '',
-          docName: row.DocumentName || row.documentname || null,
-          docData: row.DocumentData || row.documentdata || null
-        }));
+        dispatches = dbDispatches.map(row => {
+          let customerAllocations = [];
+          if (Array.isArray(row.customerAllocations) && row.customerAllocations.length > 0) {
+            customerAllocations = row.customerAllocations;
+          } else {
+            const rem = row.Remarks || row.remarks || '';
+            if (rem.includes('|logistics:')) {
+              try {
+                const meta = JSON.parse(rem.split('|logistics:')[1]);
+                if (Array.isArray(meta.customerAllocations)) {
+                  customerAllocations = meta.customerAllocations;
+                }
+              } catch (e) {}
+            }
+          }
+          return {
+            id: row.DispatchID || row.dispatchid || row.id,
+            date: row.Date || row.date,
+            challanNo: row.ChallanNo || row.challanno || '',
+            siteName: row.SiteName || row.sitename || '',
+            itemCode: row.ItemCode || row.itemcode || '',
+            qty: Number(row.Quantity !== undefined ? row.Quantity : row.quantity) || 0,
+            unitBuyingPrice: Number(row.UnitBuyingPrice !== undefined ? row.UnitBuyingPrice : row.unitbuyingprice) || 0,
+            dispatchedCost: Number(row.DispatchedCost !== undefined ? row.DispatchedCost : row.dispatchedcost) || 0,
+            transportCost: Number(row.TransportCost !== undefined ? row.TransportCost : row.transportcost) || 0,
+            vehicle: row.Vehicle || row.vehicle || '',
+            remarks: row.Remarks || row.remarks || '',
+            customerAllocations,
+            docName: row.DocumentName || row.documentname || null,
+            docData: row.DocumentData || row.documentdata || null
+          };
+        });
       }
 
       saveData();
+      updateAllTabCounters();
       renderKpiCards();
       renderCategoryChips();
-      if (activeTab === 'ledger') renderLedgerTable();
-      else if (activeTab === 'dispatches') renderDispatchesTable();
-      else if (activeTab === 'inwards') renderInwardsTable();
+      renderLedgerTable();
+      renderDispatchesTable();
+      renderInwardsTable();
 
     } catch (err) {
       console.warn('[Postgres Supabase] Sync note:', err.message);
@@ -983,19 +1001,60 @@ const InventoryApp = (() => {
     }
   }
 
+  function getDispatchCustomers(disp) {
+    let list = [];
+    if (Array.isArray(disp.customerAllocations) && disp.customerAllocations.length > 0) {
+      list = disp.customerAllocations;
+    } else if (disp.remarks && disp.remarks.includes('|logistics:')) {
+      try {
+        const meta = JSON.parse(disp.remarks.split('|logistics:')[1]);
+        if (Array.isArray(meta.customerAllocations)) {
+          list = meta.customerAllocations;
+        }
+      } catch (e) {}
+    }
+
+    const names = list
+      .map(c => {
+        if (!c) return '';
+        if (typeof c === 'string') return c.trim();
+        return (c.name || c.CustomerName || '').trim();
+      })
+      .filter(Boolean);
+
+    // If customer record only had slNo, lookup in DB installments
+    if (names.length === 0 && list.length > 0) {
+      try {
+        if (typeof DB !== 'undefined') {
+          const allInst = DB.getAll('installments') || [];
+          list.forEach(c => {
+            if (c.slNo) {
+              const matched = allInst.find(i => String(i.SlNo) === String(c.slNo));
+              if (matched && matched.Name) names.push(matched.Name.trim());
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    return [...new Set(names)];
+  }
+
   function getFilteredDispatches() {
     let rows = [...dispatches];
 
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
-      rows = rows.filter(r => 
-        (r.challanNo && r.challanNo.toLowerCase().includes(q)) ||
-        (r.siteName && r.siteName.toLowerCase().includes(q)) ||
-        (r.itemCode && r.itemCode.toLowerCase().includes(q)) ||
-        (r.vehicle && r.vehicle.toLowerCase().includes(q)) ||
-        (r.remarks && r.remarks.toLowerCase().includes(q)) ||
-        (r.docName && r.docName.toLowerCase().includes(q))
-      );
+      rows = rows.filter(r => {
+        const custNames = getDispatchCustomers(r);
+        return (r.challanNo && r.challanNo.toLowerCase().includes(q)) ||
+          (r.siteName && r.siteName.toLowerCase().includes(q)) ||
+          custNames.some(c => c.toLowerCase().includes(q)) ||
+          (r.itemCode && r.itemCode.toLowerCase().includes(q)) ||
+          (r.vehicle && r.vehicle.toLowerCase().includes(q)) ||
+          (r.remarks && r.remarks.toLowerCase().includes(q)) ||
+          (r.docName && r.docName.toLowerCase().includes(q));
+      });
     }
 
     rows.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1022,7 +1081,7 @@ const InventoryApp = (() => {
     if (rows.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="13" class="text-center py-5 text-muted">
+          <td colspan="5" class="text-center py-5 text-muted">
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No site dispatches recorded</div>
               <div class="small text-muted mb-3">Record equipment dispatches to track site material consumption.</div>
@@ -1053,48 +1112,31 @@ const InventoryApp = (() => {
     }
 
     tbody.innerHTML = rows.map((disp, idx) => {
-      const itm = items.find(i => i.code === disp.itemCode) || {};
-      const unitBuyingCost = Number(disp.unitBuyingPrice) || itm.buyingPrice || 0;
-      const totalCost = Number(disp.dispatchedCost) || (Number(disp.qty) * unitBuyingCost);
-      const transportCost = Number(disp.transportCost) || 0;
+      const custNames = getDispatchCustomers(disp);
+      const cleanRemarks = disp.remarks ? disp.remarks.split('|logistics:')[0].trim() : '';
 
-      let docBadge = `<span class="text-muted small" style="font-size:0.75rem;">—</span>`;
-      if (disp.docName) {
-        docBadge = `
-          <button type="button" class="inv-row-btn inv-doc-btn" onclick="InventoryApp.viewDoc('${disp.id}', 'dispatch')" title="Download / View ${escapeHtml(disp.docName)}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(disp.docName)}</span>
-          </button>
+      let custHtml = `<span class="text-muted small">—</span>`;
+      if (custNames.length === 1) {
+        custHtml = `<div class="fw-semibold text-dark">${escapeHtml(custNames[0])}</div>`;
+      } else if (custNames.length > 1) {
+        custHtml = `
+          <div class="d-flex flex-column gap-0.5">
+            ${custNames.map(n => `<div class="fw-semibold text-dark small" style="line-height:1.25;"><span class="text-primary me-1">•</span>${escapeHtml(n)}</div>`).join('')}
+          </div>
         `;
       }
 
-      const isSelected = selectedDispatches.has(disp.id);
-
       return `
-        <tr class="${isSelected ? 'inv-row-selected' : ''}">
-          <td class="text-center no-print inv-chk-cell" style="width: 38px;">
-            <input type="checkbox" class="form-check-input inv-row-chk" data-type="dispatches" data-id="${disp.id}" ${isSelected ? 'checked' : ''} title="Select Dispatch ${disp.id}">
-          </td>
+        <tr>
           <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
-          <td class="font-monospace text-secondary text-nowrap">${disp.date}</td>
+          <td class="font-monospace text-secondary text-nowrap" style="width: 130px;">${disp.date}</td>
           <td>
             <div class="fw-semibold text-dark">${escapeHtml(disp.siteName)}</div>
-            <div class="text-muted small">${escapeHtml(disp.remarks || '')}</div>
+            ${cleanRemarks ? `<div class="text-muted small">${escapeHtml(cleanRemarks)}</div>` : ''}
           </td>
           <td>
-            <div class="fw-medium text-dark">${escapeHtml(itm.name || disp.itemCode)}</div>
-            <div class="inv-sku-code mt-0.5">${disp.itemCode} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${disp.itemCode}')">📈</button></div>
+            ${custHtml}
           </td>
-          <td class="text-center font-monospace fw-bold text-dark">${fmtQty(disp.qty)} <span class="text-muted small fw-normal">${itm.unit || 'Nos'}</span></td>
-          <td class="text-end font-monospace text-secondary text-nowrap">${fmtRupees(unitBuyingCost)} <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${disp.itemCode}')">📈</button></td>
-          <td class="text-end font-monospace fw-bold text-amber-700" style="font-size:0.86rem;">
-            ${fmtRupees(totalCost)}
-          </td>
-          <td class="text-end font-monospace text-slate-700">
-            ${transportCost > 0 ? fmtRupees(transportCost) : '—'}
-          </td>
-          <td>${docBadge}</td>
-          <td class="text-secondary small text-nowrap">${escapeHtml(disp.vehicle || 'Direct Delivery')}</td>
           <td class="text-center text-nowrap no-print" style="width: 85px;">
             <div class="d-inline-flex align-items-center gap-1">
               <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditDispatchModal('${disp.id}')" title="Edit Dispatch">
@@ -1112,66 +1154,28 @@ const InventoryApp = (() => {
     // Render Mobile Cards (Site Dispatches)
     if (cardsContainer) {
       cardsContainer.innerHTML = rows.map((disp) => {
-        const itm = items.find(i => i.code === disp.itemCode) || {};
-        const unitBuyingCost = Number(disp.unitBuyingPrice) || itm.buyingPrice || 0;
-        const totalCost = Number(disp.dispatchedCost) || (Number(disp.qty) * unitBuyingCost);
-        const transportCost = Number(disp.transportCost) || 0;
-        const isSelected = selectedDispatches.has(disp.id);
+        const custNames = getDispatchCustomers(disp);
+        const cleanRemarks = disp.remarks ? disp.remarks.split('|logistics:')[0].trim() : '';
 
         return `
-          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${disp.id}">
+          <article class="inv-mobile-card" data-id="${disp.id}">
             <div class="inv-card-head">
               <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
-                <div class="inv-chk-cell pt-0.5">
-                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="dispatches" data-id="${disp.id}" ${isSelected ? 'checked' : ''} title="Select Dispatch ${disp.id}">
-                </div>
                 <div class="min-w-0 flex-grow-1">
                   <div class="inv-card-title text-primary">${escapeHtml(disp.siteName)}</div>
                   <div class="inv-card-meta">
                     <span class="font-monospace text-secondary small">${disp.date}</span>
-                    ${disp.challanNo ? `<span class="badge bg-secondary-subtle text-secondary border font-monospace py-0.5">${escapeHtml(disp.challanNo)}</span>` : ''}
+                    ${cleanRemarks ? `<span class="text-muted small ms-1">• ${escapeHtml(cleanRemarks)}</span>` : ''}
                   </div>
+                  ${custNames.length > 0 ? `
+                    <div class="mt-1 small">
+                      <span class="text-secondary fw-semibold">Customer:</span>
+                      <span class="text-dark fw-medium">${escapeHtml(custNames.join(', '))}</span>
+                    </div>
+                  ` : ''}
                 </div>
               </div>
-              ${disp.docName ? `
-                <button type="button" class="inv-doc-pill-btn flex-shrink-0" onclick="InventoryApp.viewDoc('${disp.id}', 'dispatch')" title="Challan">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <span>Challan</span>
-                </button>
-              ` : ''}
             </div>
-
-            <div class="inv-card-body-row">
-              <div class="min-w-0 flex-grow-1">
-                <div class="fw-semibold text-dark small">${escapeHtml(itm.name || disp.itemCode)}</div>
-                <div class="small text-muted">${escapeHtml(itm.unit || 'Nos')}</div>
-              </div>
-              <div class="inv-qty-pill text-amber-700 bg-amber-subtle flex-shrink-0">
-                ${fmtQty(disp.qty)} <small class="fw-normal text-muted">${escapeHtml(itm.unit || 'Nos')}</small>
-              </div>
-            </div>
-
-            <div class="inv-card-kpi-grid">
-              <div class="inv-card-kpi">
-                <span class="lbl">Unit Cost</span>
-                <span class="val font-monospace">${fmtRupees(unitBuyingCost)}</span>
-              </div>
-              <div class="inv-card-kpi">
-                <span class="lbl">Dispatched Cost</span>
-                <span class="val font-monospace fw-bold text-amber-700">${fmtRupees(totalCost)}</span>
-              </div>
-              <div class="inv-card-kpi">
-                <span class="lbl">Freight / Transport</span>
-                <span class="val font-monospace fw-semibold ${transportCost > 0 ? 'text-indigo-700' : 'text-muted'}">${transportCost > 0 ? fmtRupees(transportCost) : '—'}</span>
-              </div>
-            </div>
-
-            ${disp.vehicle || disp.remarks ? `
-              <div class="small text-secondary d-flex align-items-center gap-2 flex-wrap">
-                ${disp.vehicle ? `<span>🚗 ${escapeHtml(disp.vehicle)}</span>` : ''}
-                ${disp.remarks ? `<span class="text-muted">💬 ${escapeHtml(disp.remarks)}</span>` : ''}
-              </div>
-            ` : ''}
 
             <div class="inv-card-actions justify-content-end">
               <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditDispatchModal('${disp.id}')">
@@ -1188,21 +1192,8 @@ const InventoryApp = (() => {
       }).join('');
     }
 
-    const grandMaterialCost = rows.reduce((s, r) => s + (Number(r.dispatchedCost) || (Number(r.qty) * (Number(r.unitBuyingPrice) || 0))), 0);
-    const grandTransportCost = rows.reduce((s, r) => s + (Number(r.transportCost) || 0), 0);
-    const totalQtyDisp = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
-
     if (tfoot) {
-      tfoot.innerHTML = `
-        <tr>
-          <td colspan="5" class="text-uppercase text-secondary fs-8">Total Dispatched Site Material Cost (${rows.length} Dispatches)</td>
-          <td class="text-center font-monospace fw-bold">${fmtQty(totalQtyDisp)}</td>
-          <td class="text-end font-monospace text-muted">—</td>
-          <td class="text-end font-monospace text-amber-700 fs-7 fw-bold">${fmtRupees(grandMaterialCost)}</td>
-          <td class="text-end font-monospace text-slate-800 fs-8 fw-bold">${fmtRupees(grandTransportCost)}</td>
-          <td colspan="3"></td>
-        </tr>
-      `;
+      tfoot.innerHTML = '';
     }
 
     updateHeaderCheckboxState('dispatches');
@@ -1320,7 +1311,7 @@ const InventoryApp = (() => {
     if (consignments.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" class="text-center py-5 text-muted">
+          <td colspan="5" class="text-center py-5 text-muted">
             <div class="py-4">
               <div class="fs-6 fw-semibold text-secondary mb-1">No inward purchases recorded</div>
               <div class="small text-muted mb-3">Record inward deliveries from suppliers to increase godown stock.</div>
@@ -1352,39 +1343,15 @@ const InventoryApp = (() => {
 
     // Render Consignment-wise Desktop Table Rows (1 row per bucket confirmation)
     tbody.innerHTML = consignments.map((grp, idx) => {
-      const isSelected = selectedInwards.has(grp.key);
-
       return `
-        <tr class="${isSelected ? 'inv-row-selected' : ''}">
-          <td class="text-center no-print inv-chk-cell" style="width: 38px;">
-            <input type="checkbox" class="form-check-input inv-row-chk" data-type="inwards" data-id="${grp.key}" ${isSelected ? 'checked' : ''} title="Select Consignment ${grp.key}">
-          </td>
+        <tr>
           <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
-          <td class="font-monospace text-secondary text-nowrap">${grp.date}</td>
+          <td class="font-monospace text-secondary text-nowrap" style="width: 140px;">${grp.date}</td>
           <td>
             <div class="fw-semibold text-dark">${escapeHtml(grp.supplier)}</div>
             ${grp.remarks ? `<div class="text-muted small mt-0.5">${escapeHtml(grp.remarks)}</div>` : ''}
           </td>
-          <td>
-            <div class="d-flex flex-column gap-1">
-              ${grp.items.map((it, itIdx) => `
-                <div class="d-flex align-items-center justify-content-between gap-2 py-0.5 ${itIdx > 0 ? 'border-top border-light-subtle' : ''}">
-                  <div class="min-w-0 flex-grow-1">
-                    <span class="fw-medium text-dark">${escapeHtml(it.itemName)}</span>
-                  </div>
-                  <div class="d-flex align-items-center gap-2 flex-shrink-0 text-nowrap">
-                    <span class="badge bg-slate-100 text-slate-800 border font-monospace px-1.5 py-0.5">${fmtQty(it.qty)} <span class="fw-normal text-muted">${escapeHtml(it.unit)}</span></span>
-                    <span class="font-monospace text-secondary small">× ${fmtRupees(it.costPerUnit)}</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </td>
-          <td class="text-end font-monospace fw-bold text-emerald-700" style="font-size:0.88rem;">
-            ${fmtRupees(grp.totalCost)}
-            ${grp.transportCost > 0 ? `<div class="text-muted small fw-normal" style="font-size:0.72rem;">Incl. Trans: ${fmtRupees(grp.transportCost)}</div>` : ''}
-          </td>
-          <td class="text-secondary small text-nowrap">${escapeHtml(grp.location || 'Main Godown')}</td>
+          <td class="text-secondary small text-nowrap" style="width: 180px;">${escapeHtml(grp.location || 'Main Godown')}</td>
           <td class="text-center text-nowrap no-print" style="width: 85px;">
             <div class="d-inline-flex align-items-center gap-1">
               <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openStockInConsignment('${escapeHtml(grp.key)}')" title="Edit Consignment">
@@ -1402,48 +1369,17 @@ const InventoryApp = (() => {
     // Render Consignment-wise Mobile Cards
     if (cardsContainer) {
       cardsContainer.innerHTML = consignments.map((grp) => {
-        const isSelected = selectedInwards.has(grp.key);
-
         return `
-          <article class="inv-mobile-card ${isSelected ? 'inv-card-selected' : ''}" data-id="${grp.key}">
+          <article class="inv-mobile-card" data-id="${grp.key}">
             <div class="inv-card-head">
               <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
-                <div class="inv-chk-cell pt-0.5">
-                  <input type="checkbox" class="form-check-input inv-row-chk m-0" data-type="inwards" data-id="${grp.key}" ${isSelected ? 'checked' : ''} title="Select Consignment ${grp.key}">
-                </div>
                 <div class="min-w-0 flex-grow-1">
                   <div class="inv-card-title text-dark">${escapeHtml(grp.supplier || 'Inward Consignment')}</div>
                   <div class="inv-card-meta">
                     <span class="font-monospace text-secondary small">${grp.date}</span>
+                    <span class="badge bg-slate-100 text-slate-700 border ms-1">${escapeHtml(grp.location || 'Main Godown')}</span>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div class="p-2 border-top border-bottom bg-light-subtle">
-              <div class="small fw-semibold text-secondary mb-1">Items Received (${grp.items.length})</div>
-              <div class="d-flex flex-column gap-1">
-                ${grp.items.map(it => `
-                  <div class="d-flex align-items-center justify-content-between small">
-                    <span class="text-dark fw-medium text-truncate me-2">${escapeHtml(it.itemName)}</span>
-                    <span class="font-monospace text-secondary flex-shrink-0">${fmtQty(it.qty)} ${escapeHtml(it.unit)} × ${fmtRupees(it.costPerUnit)}</span>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-
-            <div class="inv-card-kpi-grid">
-              <div class="inv-card-kpi">
-                <span class="lbl">Total Units</span>
-                <span class="val font-monospace">${fmtQty(grp.totalQty)}</span>
-              </div>
-              <div class="inv-card-kpi">
-                <span class="lbl">Total Inward Cost</span>
-                <span class="val font-monospace fw-bold text-emerald-700">${fmtRupees(grp.totalCost)}</span>
-              </div>
-              <div class="inv-card-kpi">
-                <span class="lbl">Storage Bay</span>
-                <span class="val text-truncate">${escapeHtml(grp.location || 'Main Godown')}</span>
               </div>
             </div>
 
@@ -1464,19 +1400,8 @@ const InventoryApp = (() => {
       }).join('');
     }
 
-    const grandInwCost = consignments.reduce((s, c) => s + c.totalCost, 0);
-    const totalQtyInw = consignments.reduce((s, c) => s + c.totalQty, 0);
-    const totalDistinctItems = consignments.reduce((s, c) => s + c.items.length, 0);
-
     if (tfoot) {
-      tfoot.innerHTML = `
-        <tr>
-          <td colspan="4" class="text-uppercase text-secondary fs-8">Total Inward Procurement (${consignments.length} Consignments, ${totalDistinctItems} Items)</td>
-          <td class="font-monospace fw-bold text-dark">${fmtQty(totalQtyInw)} total units</td>
-          <td class="text-end font-monospace fw-bold text-emerald-700">${fmtRupees(grandInwCost)}</td>
-          <td colspan="2"></td>
-        </tr>
-      `;
+      tfoot.innerHTML = '';
     }
 
     updateHeaderCheckboxState('inwards');
@@ -1519,6 +1444,7 @@ const InventoryApp = (() => {
 
   // --- Multi-Selection & Bulk Deletion Helpers ---
   function updateHeaderCheckboxState(type) {
+    if (type === 'dispatches' || type === 'inwards') return;
     let chkAll = null;
     let visibleRows = [];
     let targetSet = null;
@@ -1527,14 +1453,6 @@ const InventoryApp = (() => {
       chkAll = document.getElementById('chkSelectAllLedger');
       visibleRows = getFilteredLedgerItems();
       targetSet = selectedLedger;
-    } else if (type === 'dispatches') {
-      chkAll = document.getElementById('chkSelectAllDispatches');
-      visibleRows = getFilteredDispatches();
-      targetSet = selectedDispatches;
-    } else if (type === 'inwards') {
-      chkAll = document.getElementById('chkSelectAllInwards');
-      visibleRows = getGroupedInwardConsignments();
-      targetSet = selectedInwards;
     }
 
     if (!chkAll) return;
@@ -1578,14 +1496,8 @@ const InventoryApp = (() => {
       count = selectedLedger.size;
       label = 'equipment SKU';
       labelPlural = 'equipment SKUs';
-    } else if (activeTab === 'dispatches') {
-      count = selectedDispatches.size;
-      label = 'site dispatch';
-      labelPlural = 'site dispatches';
-    } else if (activeTab === 'inwards') {
-      count = selectedInwards.size;
-      label = 'inward purchase';
-      labelPlural = 'inward purchases';
+    } else {
+      count = 0;
     }
 
     // Always show Action Bar
@@ -2852,6 +2764,7 @@ const InventoryApp = (() => {
     renderLedgerTable();
     renderInwardsTable();
     renderDispatchesTable();
+    switchTab('inwards');
 
     if (typeof UI !== 'undefined') {
       const msg = isEditing
@@ -2904,11 +2817,12 @@ const InventoryApp = (() => {
     if (btnSubmit) btnSubmit.addEventListener('click', handleSaveDispatch);
   }
 
-  function addDspCustomerRow(slNo = '', name = '', installCost = '', otherCost = '', otherComment = '') {
+  function addDspCustomerRow(slNo = '', name = '', setCost = '', installCost = '', otherCost = '', otherComment = '') {
     dispatchCustomerRows.push({
       id: 'dsp_c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       slNo: slNo || '',
       name: name || '',
+      setCost: setCost !== '' ? setCost : '',
       installCost: installCost !== '' ? installCost : '',
       deliveryCost: '',
       otherCost: otherCost !== '' ? otherCost : '',
@@ -2927,6 +2841,130 @@ const InventoryApp = (() => {
       return;
     }
     dispatchCustomerRows = dispatchCustomerRows.filter(r => r.id !== rowId);
+    renderDspCustomerRows();
+    recalcDispatchTotals();
+  }
+
+  function renderCustomerPickerListHtml(rowId, selectedSlNo, query = '') {
+    let customers = [];
+    try {
+      if (typeof DB !== 'undefined') {
+        const raw = DB.getAll('installments') || [];
+        customers = raw.filter(r => r && r.Status !== 'Deactive');
+      }
+    } catch (e) {}
+
+    const q = (query || '').toLowerCase().trim();
+    let filtered = customers;
+    if (q) {
+      filtered = customers.filter(c => {
+        const name = (c.Name || '').toLowerCase();
+        const cons = String(c.ConsumerNo || '').toLowerCase();
+        const sl = String(c.SlNo || '').toLowerCase();
+        const phone = String(c.Phone || c.Mobile || '').toLowerCase();
+        const city = String(c.City || c.Address || '').toLowerCase();
+        return name.includes(q) || cons.includes(q) || sl.includes(q) || phone.includes(q) || city.includes(q);
+      });
+    }
+
+    let html = `
+      <div class="inv-picker-item ${(!selectedSlNo && !q) ? 'selected' : ''}" onclick="InventoryApp.selectDspCustomer('${rowId}', '__custom__')" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; width: 100%; border-bottom: 1px dashed #e2e8f0; background: #fafafa; cursor: pointer;">
+        <span class="text-primary fw-semibold" style="font-size:0.78rem;">✏️ Custom / Unlisted Site...</span>
+      </div>
+    `;
+
+    if (filtered.length === 0) {
+      html += `<div class="p-3 text-center text-muted small">No customers matching "${escapeHtml(query)}"</div>`;
+      return html;
+    }
+
+    filtered.forEach(c => {
+      const sl = String(c.SlNo || '');
+      const isSelected = (sl && sl === String(selectedSlNo));
+      const capStr = c.ProposedCapacity ? ` [${c.ProposedCapacity}kW]` : '';
+      const consStr = c.ConsumerNo ? `Consumer: ${c.ConsumerNo}` : (c.Mobile ? c.Mobile : `Sl: ${sl}`);
+
+      html += `
+        <div class="inv-picker-item ${isSelected ? 'selected' : ''}" onclick="InventoryApp.selectDspCustomer('${rowId}', '${sl}')" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; width: 100%; cursor: pointer;">
+          <div class="min-w-0 flex-grow-1 text-truncate me-2 text-start">
+            <span class="fw-semibold text-dark d-block text-truncate" style="font-size:0.78rem;">${escapeHtml(c.Name || 'Unknown')}</span>
+            <span class="text-muted small" style="font-size:0.70rem;">${escapeHtml(consStr)}${capStr}</span>
+          </div>
+          ${isSelected ? '<span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-1.5 flex-shrink-0" style="font-size:0.65rem;">Selected</span>' : ''}
+        </div>
+      `;
+    });
+
+    return html;
+  }
+
+  function toggleCustomerPicker(rowId) {
+    const menuId = `custPickerMenu_${rowId}`;
+    const btnId = `custPickerBtn_${rowId}`;
+    const menu = document.getElementById(menuId);
+    const btn = document.getElementById(btnId);
+    if (!menu) return;
+    const isShown = menu.classList.contains('show');
+    document.querySelectorAll('.inv-row-picker-menu.show').forEach(m => {
+      if (m !== menu) m.classList.remove('show');
+    });
+    document.querySelectorAll('.inv-row-picker-btn.active').forEach(b => {
+      if (b !== btn) b.classList.remove('active');
+    });
+
+    if (!isShown) {
+      menu.classList.add('show');
+      if (btn) btn.classList.add('active');
+      const input = menu.querySelector('.inv-row-picker-search-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    } else {
+      menu.classList.remove('show');
+      if (btn) btn.classList.remove('active');
+    }
+  }
+
+  function filterCustomerPicker(rowId, query) {
+    const listEl = document.getElementById(`custPickerList_${rowId}`);
+    if (!listEl) return;
+    const row = dispatchCustomerRows.find(r => r.id === rowId);
+    const selectedSlNo = row ? row.slNo : '';
+    listEl.innerHTML = renderCustomerPickerListHtml(rowId, selectedSlNo, query);
+  }
+
+  function selectDspCustomer(rowId, val) {
+    const row = dispatchCustomerRows.find(r => r.id === rowId);
+    if (!row) return;
+
+    if (val === '__custom__') {
+      row.slNo = '';
+      row.name = (row.name && row.name !== '-- Select Customer --') ? row.name : 'Custom Site';
+    } else {
+      row.slNo = val;
+      let matched = null;
+      try {
+        if (typeof DB !== 'undefined') {
+          const raw = DB.getAll('installments') || [];
+          matched = raw.find(c => String(c.SlNo) === String(val));
+        }
+      } catch (e) {}
+
+      row.name = matched ? (matched.Name || 'Unknown') : (row.name || 'Unknown');
+
+      // Auto-load existing expenses from customer record
+      if (matched && matched.BrokerNumber && matched.BrokerNumber.includes('|expenses:')) {
+        try {
+          const exp = JSON.parse(matched.BrokerNumber.split('|expenses:')[1].split('|')[0]) || {};
+          if (exp.setCost !== undefined || exp.material !== undefined) row.setCost = exp.setCost !== undefined ? exp.setCost : exp.material;
+          if (exp.install !== undefined) row.installCost = exp.install;
+          if (exp.other !== undefined) row.otherCost = exp.other;
+          if (exp.otherComment) row.otherComment = exp.otherComment;
+        } catch(e) {}
+      }
+    }
+
     renderDspCustomerRows();
     recalcDispatchTotals();
   }
@@ -2956,30 +2994,49 @@ const InventoryApp = (() => {
 
     tbody.innerHTML = dispatchCustomerRows.map(row => {
       const selectedSlNo = row.slNo ? String(row.slNo) : '';
+      const setCost = Number(row.setCost) || 0;
       const insCost = Number(row.installCost) || 0;
       const delCost = Number(row.deliveryCost) || 0;
       const othCost = Number(row.otherCost) || 0;
-      const totalCustCost = round2(insCost + delCost + othCost);
+      const totalCustCost = round2(setCost + insCost + delCost + othCost);
+
+      const selectedCustomer = customers.find(c => String(c.SlNo) === selectedSlNo || (row.name && c.Name && c.Name.toLowerCase() === row.name.toLowerCase()));
+      let currentDisplayName = '-- Select Customer --';
+      if (selectedCustomer) {
+        currentDisplayName = `${selectedCustomer.Name || 'Unknown'} (${selectedCustomer.ConsumerNo || selectedCustomer.SlNo})${selectedCustomer.ProposedCapacity ? ` [${selectedCustomer.ProposedCapacity}kW]` : ''}`;
+      } else if (row.name) {
+        currentDisplayName = row.name;
+      }
+      const isCustom = (!selectedSlNo && row.name && (!selectedCustomer || selectedCustomer.Name !== row.name));
 
       return `
         <tr data-cust-row-id="${row.id}">
-          <td style="min-width: 170px;">
-            <select class="form-select form-select-sm dsp-cust-select py-0.5 px-1.5" data-cust-row-id="${row.id}" style="font-size:0.76rem; height: 26px;">
-              <option value="">-- Select Customer --</option>
-              ${customers.map(c => {
-                const sl = String(c.SlNo || '');
-                const isSel = (sl === selectedSlNo || (row.name && c.Name && c.Name.toLowerCase() === row.name.toLowerCase())) ? 'selected' : '';
-                const capStr = c.ProposedCapacity ? ` [${c.ProposedCapacity}kW]` : '';
-                return `<option value="${sl}" data-name="${escapeHtml(c.Name || '')}" ${isSel}>${escapeHtml(c.Name || 'Unknown')} (${c.ConsumerNo || sl})${capStr}</option>`;
-              }).join('')}
-              <option value="__custom__" ${(!selectedSlNo && row.name && !customers.some(c => c.Name === row.name)) ? 'selected' : ''}>✏️ Custom / Unlisted Site...</option>
-            </select>
-            ${(!selectedSlNo && row.name && !customers.some(c => c.Name === row.name)) ? `
+          <td style="min-width: 170px; position: relative;">
+            <div class="inv-row-item-picker" id="custPickerWrap_${row.id}">
+              <button type="button" class="inv-row-picker-btn py-0.5 px-1.5" id="custPickerBtn_${row.id}" onclick="InventoryApp.toggleCustomerPicker('${row.id}')" style="font-size:0.76rem; height: 26px;">
+                <span class="text-truncate flex-grow-1 text-start" id="custPickerLabel_${row.id}">
+                  <span class="fw-semibold text-dark">${escapeHtml(currentDisplayName)}</span>
+                </span>
+                <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="inv-row-picker-menu" id="custPickerMenu_${row.id}" style="min-width: 280px; max-width: 380px;">
+                <div class="inv-row-picker-search-wrap">
+                  <input type="text" class="inv-row-picker-search-input" placeholder="Search customer name, consumer no..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value)" autocomplete="off">
+                </div>
+                <div class="inv-row-picker-list" id="custPickerList_${row.id}" style="max-height: 220px;">
+                  ${renderCustomerPickerListHtml(row.id, row.slNo, '')}
+                </div>
+              </div>
+            </div>
+            ${isCustom ? `
               <input type="text" class="form-control form-control-sm dsp-cust-custom-name mt-1 py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.name)}" placeholder="Enter site/customer name" style="font-size:0.74rem; height:24px;">
             ` : ''}
           </td>
-          <td style="width: 110px;">
-            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-install-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.installCost !== undefined && row.installCost !== '' ? row.installCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;">
+          <td style="width: 100px;">
+            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-set-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.setCost !== undefined && row.setCost !== '' ? row.setCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;" title="Set Cost (₹)">
+          </td>
+          <td style="width: 100px;">
+            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-install-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.installCost !== undefined && row.installCost !== '' ? row.installCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;" title="Install Cost (₹)">
           </td>
           <td style="width: 110px;">
             <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-delivery-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.deliveryCost !== undefined && row.deliveryCost !== '' ? row.deliveryCost : ''}" placeholder="Auto" style="height: 26px; font-size:0.76rem;">
@@ -3004,30 +3061,22 @@ const InventoryApp = (() => {
   }
 
   function attachDspCustomerRowHandlers(tbody) {
-    tbody.querySelectorAll('.dsp-cust-select').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const rowId = sel.getAttribute('data-cust-row-id');
-        const row = dispatchCustomerRows.find(r => r.id === rowId);
-        if (!row) return;
-        if (sel.value === '__custom__') {
-          row.slNo = '';
-          row.name = row.name || 'Custom Site';
-          renderDspCustomerRows();
-        } else {
-          row.slNo = sel.value;
-          const opt = sel.selectedOptions[0];
-          row.name = opt ? opt.getAttribute('data-name') || opt.textContent : '';
-          renderDspCustomerRows();
-        }
-        recalcDispatchTotals();
-      });
-    });
-
     tbody.querySelectorAll('.dsp-cust-custom-name').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-cust-row-id');
         const row = dispatchCustomerRows.find(r => r.id === rowId);
         if (row) row.name = input.value.trim();
+      });
+    });
+
+    tbody.querySelectorAll('.dsp-cust-set-cost').forEach(input => {
+      input.addEventListener('input', () => {
+        const rowId = input.getAttribute('data-cust-row-id');
+        const row = dispatchCustomerRows.find(r => r.id === rowId);
+        if (row) {
+          row.setCost = input.value;
+          updateDspCustRowTotal(rowId);
+        }
       });
     });
 
@@ -3084,11 +3133,12 @@ const InventoryApp = (() => {
   function updateDspCustRowTotal(rowId) {
     const row = dispatchCustomerRows.find(r => r.id === rowId);
     if (!row) return;
+    const set = Number(row.setCost) || 0;
     const ins = Number(row.installCost) || 0;
     const del = Number(row.deliveryCost) || 0;
     const oth = Number(row.otherCost) || 0;
     const totalEl = document.querySelector(`.dsp-cust-row-total[data-cust-row-id="${rowId}"]`);
-    if (totalEl) totalEl.textContent = fmtRupees(round2(ins + del + oth));
+    if (totalEl) totalEl.textContent = fmtRupees(round2(set + ins + del + oth));
   }
 
   function addDspRow(itemCode = null, qty = 1) {
@@ -3441,11 +3491,12 @@ const InventoryApp = (() => {
     const customerAllocations = isOurProject ? dispatchCustomerRows.map(crow => ({
       slNo: crow.slNo || '',
       name: crow.name || '',
+      setCost: Number(crow.setCost) || 0,
       installCost: Number(crow.installCost) || 0,
       deliveryCost: Number(crow.deliveryCost) || 0,
       otherCost: Number(crow.otherCost) || 0,
       otherComment: crow.otherComment || '',
-      totalCost: round2((Number(crow.installCost) || 0) + (Number(crow.deliveryCost) || 0) + (Number(crow.otherCost) || 0))
+      totalCost: round2((Number(crow.setCost) || 0) + (Number(crow.installCost) || 0) + (Number(crow.deliveryCost) || 0) + (Number(crow.otherCost) || 0))
     })).filter(c => c.name || c.slNo || c.totalCost > 0) : [];
 
     if (!siteName && customerAllocations.length > 0 && customerAllocations[0].name) {
@@ -3554,6 +3605,66 @@ const InventoryApp = (() => {
       }
     });
 
+    // Sync customer allocations directly to Postgres installments table
+    if (typeof DB !== 'undefined' && customerAllocations.length > 0) {
+      customerAllocations.forEach(async crow => {
+        if (!crow.slNo) return;
+        try {
+          const allInst = DB.getAll('installments') || [];
+          const cust = allInst.find(c => String(c.SlNo) === String(crow.slNo));
+          if (!cust) return;
+
+          let basePhone = '';
+          let expenses = {};
+          let creatorId = '';
+          let workObj = {};
+
+          if (cust.BrokerNumber) {
+            const parts = cust.BrokerNumber.split('|');
+            basePhone = parts[0] || '';
+            parts.slice(1).forEach(p => {
+              if (p.startsWith('expenses:')) {
+                try { expenses = JSON.parse(p.slice('expenses:'.length)) || {}; } catch (e) {}
+              } else if (p.startsWith('creator:')) {
+                creatorId = p.slice('creator:'.length);
+              } else if (p.startsWith('work:')) {
+                try { workObj = JSON.parse(p.slice('work:'.length)) || {}; } catch (e) {}
+              }
+            });
+          }
+
+          if (crow.setCost !== undefined && crow.setCost !== '') {
+            expenses.setCost = Number(crow.setCost) || 0;
+            expenses.material = Number(crow.setCost) || 0;
+          }
+          if (crow.installCost !== undefined && crow.installCost !== '') expenses.install = Number(crow.installCost) || 0;
+          if (crow.deliveryCost !== undefined && crow.deliveryCost !== '') {
+            expenses.delivery = Number(crow.deliveryCost) || 0;
+            expenses.transport = Number(crow.deliveryCost) || 0;
+          }
+          if (crow.otherCost !== undefined && crow.otherCost !== '') expenses.other = Number(crow.otherCost) || 0;
+          if (crow.otherComment) expenses.otherComment = crow.otherComment;
+
+          const calcVendor = (expenses.setCost || expenses.material || 0) + (expenses.install || 0) + (expenses.delivery || expenses.transport || 0) + (expenses.gst || 0) + (expenses.other || 0);
+
+          let newBroker = basePhone;
+          newBroker += '|expenses:' + JSON.stringify(expenses);
+          if (creatorId) newBroker += '|creator:' + creatorId;
+          if (workObj && Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
+
+          cust.BrokerNumber = newBroker;
+          cust.VendorPrice = calcVendor;
+
+          await DB.update('installments', r => Number(r.SlNo) === Number(crow.slNo), {
+            BrokerNumber: newBroker,
+            VendorPrice: calcVendor
+          });
+        } catch (e) {
+          console.warn('[Dispatch] Error syncing customer allocation to installments:', e);
+        }
+      });
+    }
+
     saveData();
     clearSelection('ledger');
 
@@ -3567,6 +3678,7 @@ const InventoryApp = (() => {
     renderLedgerTable();
     renderInwardsTable();
     renderDispatchesTable();
+    switchTab('dispatches');
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Successfully dispatched ${dispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`, 'success');
@@ -4773,34 +4885,40 @@ const InventoryApp = (() => {
   }
 
   // --- Tabs Switching ---
+  function switchTab(tabKey) {
+    activeTab = tabKey;
+    const tabBtns = document.querySelectorAll('.inv-tab-btn');
+    tabBtns.forEach(b => {
+      if (b.getAttribute('data-tab') === tabKey) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+
+    document.querySelectorAll('.inv-tab-pane').forEach(p => p.style.display = 'none');
+    const activePane = document.getElementById(`pane-${tabKey}`);
+    if (activePane) activePane.style.display = 'block';
+
+    const chipsWrap = document.getElementById('invCategoryChipsRow');
+    const rightControls = document.getElementById('invToolbarRightControls');
+    const statusWrap = document.getElementById('invStatusPills') || document.getElementById('invStatusFilterWrap');
+    if (chipsWrap) chipsWrap.style.display = (tabKey === 'ledger') ? 'flex' : 'none';
+    if (rightControls) rightControls.style.display = (tabKey === 'ledger') ? '' : 'none';
+    else if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
+
+    updateAllTabCounters();
+    if (tabKey === 'ledger') renderLedgerTable();
+    else if (tabKey === 'dispatches') renderDispatchesTable();
+    else if (tabKey === 'inwards') renderInwardsTable();
+
+    updateBulkActionBar();
+  }
+
   function setupTabs() {
     const tabBtns = document.querySelectorAll('.inv-tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         const target = e.currentTarget;
         const tabKey = target.getAttribute('data-tab');
-
-        tabBtns.forEach(b => b.classList.remove('active'));
-        target.classList.add('active');
-
-        activeTab = tabKey;
-
-        document.querySelectorAll('.inv-tab-pane').forEach(p => p.style.display = 'none');
-        const activePane = document.getElementById(`pane-${tabKey}`);
-        if (activePane) activePane.style.display = 'block';
-
-        const chipsWrap = document.getElementById('invCategoryChipsRow');
-        const rightControls = document.getElementById('invToolbarRightControls');
-        const statusWrap = document.getElementById('invStatusPills') || document.getElementById('invStatusFilterWrap');
-        if (chipsWrap) chipsWrap.style.display = (tabKey === 'ledger') ? 'flex' : 'none';
-        if (rightControls) rightControls.style.display = (tabKey === 'ledger') ? '' : 'none';
-        else if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
-
-        if (tabKey === 'ledger') renderLedgerTable();
-        else if (tabKey === 'dispatches') renderDispatchesTable();
-        else if (tabKey === 'inwards') renderInwardsTable();
-
-        updateBulkActionBar();
+        switchTab(tabKey);
       });
     });
   }
@@ -5295,6 +5413,9 @@ const InventoryApp = (() => {
     toggleItemPicker,
     filterPickerItems,
     selectPickerItem,
+    toggleCustomerPicker,
+    filterCustomerPicker,
+    selectDspCustomer,
     startInlineAddItem,
     saveInlineAddItem,
     cancelInlineAddItem,
