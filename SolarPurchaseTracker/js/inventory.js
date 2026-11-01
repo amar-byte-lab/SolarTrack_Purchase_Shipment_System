@@ -1947,7 +1947,7 @@ const InventoryApp = (() => {
         renderInwRows();
         recalcInwardTotals();
       }
-    } else if (mode === 'dispatch') {
+    } else if (mode === 'dispatch' || mode === 'dispatch_mob') {
       const row = dispatchRows.find(r => r.id === rowId);
       if (row && code) {
         row.itemCode = code;
@@ -2900,18 +2900,49 @@ const InventoryApp = (() => {
 
     const transportInput = document.getElementById('dspTransportCost');
     const distanceInput = document.getElementById('dspDistanceKm');
-    const onLogisticsChange = () => {
-      const trans = Number(transportInput?.value) || 0;
-      const dist = Number(distanceInput?.value) || 0;
-      const costPerKmEl = document.getElementById('dspCostPerKm');
-      if (costPerKmEl) {
-        costPerKmEl.value = dist > 0 ? ('₹' + (trans / dist).toFixed(2) + ' / km') : '—';
-      }
-      recalcDispatchTotals();
-    };
+    const costPerKmInput = document.getElementById('dspCostPerKm');
 
-    if (transportInput) transportInput.oninput = onLogisticsChange;
-    if (distanceInput) distanceInput.oninput = onLogisticsChange;
+    if (transportInput) {
+      transportInput.oninput = () => {
+        const trans = Number(transportInput.value) || 0;
+        const dist = Number(distanceInput?.value) || 0;
+        const cpk = Number(costPerKmInput?.value) || 0;
+        if (dist > 0 && document.activeElement === transportInput) {
+          if (costPerKmInput) costPerKmInput.value = (trans / dist).toFixed(2);
+        } else if (cpk > 0 && document.activeElement === transportInput) {
+          if (distanceInput) distanceInput.value = (trans / cpk).toFixed(1);
+        }
+        recalcDispatchTotals();
+      };
+    }
+
+    if (distanceInput) {
+      distanceInput.oninput = () => {
+        const dist = Number(distanceInput.value) || 0;
+        const trans = Number(transportInput?.value) || 0;
+        const cpk = Number(costPerKmInput?.value) || 0;
+        if (trans > 0 && document.activeElement === distanceInput) {
+          if (costPerKmInput) costPerKmInput.value = dist > 0 ? (trans / dist).toFixed(2) : '';
+        } else if (cpk > 0 && document.activeElement === distanceInput) {
+          if (transportInput) transportInput.value = (dist * cpk).toFixed(2);
+        }
+        recalcDispatchTotals();
+      };
+    }
+
+    if (costPerKmInput) {
+      costPerKmInput.oninput = () => {
+        const cpk = Number(costPerKmInput.value) || 0;
+        const dist = Number(distanceInput?.value) || 0;
+        const trans = Number(transportInput?.value) || 0;
+        if (dist > 0 && document.activeElement === costPerKmInput) {
+          if (transportInput) transportInput.value = (dist * cpk).toFixed(2);
+        } else if (trans > 0 && cpk > 0 && document.activeElement === costPerKmInput) {
+          if (distanceInput) distanceInput.value = (trans / cpk).toFixed(1);
+        }
+        recalcDispatchTotals();
+      };
+    }
 
     const extraCostInput = document.getElementById('dspExtraDeliveryCost');
     const extraCommentInput = document.getElementById('dspExtraDeliveryComment');
@@ -3084,7 +3115,8 @@ const InventoryApp = (() => {
 
   function renderDspCustomerRows() {
     const tbody = document.getElementById('dspCustomerAllocationBody');
-    if (!tbody) return;
+    const mobContainer = document.getElementById('dspCustomerAllocationMobile');
+    if (!tbody && !mobContainer) return;
 
     let customers = [];
     try {
@@ -3095,82 +3127,168 @@ const InventoryApp = (() => {
     } catch (e) {}
 
     if (dispatchCustomerRows.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="text-center py-2 text-muted" style="font-size:0.75rem;">
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-2 text-muted" style="font-size:0.75rem;">
+              No customers allocated. Click "+ Add Customer" above to allocate delivery & installation costs.
+            </td>
+          </tr>
+        `;
+      }
+      if (mobContainer) {
+        mobContainer.innerHTML = `
+          <div class="text-center py-2 text-muted border rounded p-2" style="font-size:0.75rem;">
             No customers allocated. Click "+ Add Customer" above to allocate delivery & installation costs.
-          </td>
-        </tr>
-      `;
+          </div>
+        `;
+      }
       return;
     }
 
-    tbody.innerHTML = dispatchCustomerRows.map(row => {
-      const selectedSlNo = row.slNo ? String(row.slNo) : '';
-      const setCost = Number(row.setCost) || 0;
-      const insCost = Number(row.installCost) || 0;
-      const delCost = Number(row.deliveryCost) || 0;
-      const othCost = Number(row.otherCost) || 0;
-      const totalCustCost = round2(setCost + insCost + delCost + othCost);
+    if (tbody) {
+      tbody.innerHTML = dispatchCustomerRows.map(row => {
+        const selectedSlNo = row.slNo ? String(row.slNo) : '';
+        const setCost = Number(row.setCost) || 0;
+        const insCost = Number(row.installCost) || 0;
+        const delCost = Number(row.deliveryCost) || 0;
+        const othCost = Number(row.otherCost) || 0;
+        const totalCustCost = round2(setCost + insCost + delCost + othCost);
 
-      const selectedCustomer = customers.find(c => String(c.SlNo) === selectedSlNo || (row.name && c.Name && c.Name.toLowerCase() === row.name.toLowerCase()));
-      let currentDisplayName = '-- Select Customer --';
-      if (selectedCustomer) {
-        currentDisplayName = selectedCustomer.Name || 'Unknown';
-      } else if (row.name) {
-        currentDisplayName = row.name;
-      }
+        const selectedCustomer = customers.find(c => String(c.SlNo) === selectedSlNo || (row.name && c.Name && c.Name.toLowerCase() === row.name.toLowerCase()));
+        let currentDisplayName = '-- Select Customer --';
+        if (selectedCustomer) {
+          currentDisplayName = selectedCustomer.Name || 'Unknown';
+        } else if (row.name) {
+          currentDisplayName = row.name;
+        }
 
-      return `
-        <tr data-cust-row-id="${row.id}">
-          <td style="min-width: 170px; position: relative;">
-            <div class="inv-row-item-picker" id="custPickerWrap_${row.id}">
-              <button type="button" class="inv-row-picker-btn py-0.5 px-1.5" id="custPickerBtn_${row.id}" onclick="InventoryApp.toggleCustomerPicker('${row.id}')" style="font-size:0.76rem; height: 26px;">
-                <span class="text-truncate flex-grow-1 text-start" id="custPickerLabel_${row.id}">
-                  <span class="fw-semibold text-dark">${escapeHtml(currentDisplayName)}</span>
-                </span>
-                <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="inv-row-picker-menu" id="custPickerMenu_${row.id}" style="min-width: 280px; max-width: 380px;">
-                <div class="inv-row-picker-search-wrap">
-                  <input type="text" class="inv-row-picker-search-input" placeholder="Search customer name..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value)" autocomplete="off">
+        return `
+          <tr data-cust-row-id="${row.id}">
+            <td style="min-width: 170px; position: relative;">
+              <div class="inv-row-item-picker" id="custPickerWrap_${row.id}">
+                <button type="button" class="inv-row-picker-btn py-0.5 px-1.5" id="custPickerBtn_${row.id}" onclick="InventoryApp.toggleCustomerPicker('${row.id}')" style="font-size:0.76rem; height: 26px;">
+                  <span class="text-truncate flex-grow-1 text-start" id="custPickerLabel_${row.id}">
+                    <span class="fw-semibold text-dark">${escapeHtml(currentDisplayName)}</span>
+                  </span>
+                  <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="inv-row-picker-menu" id="custPickerMenu_${row.id}" style="min-width: 280px; max-width: 380px;">
+                  <div class="inv-row-picker-search-wrap">
+                    <input type="text" class="inv-row-picker-search-input" placeholder="Search customer name..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value)" autocomplete="off">
+                  </div>
+                  <div class="inv-row-picker-list" id="custPickerList_${row.id}" style="max-height: 220px;">
+                    ${renderCustomerPickerListHtml(row.id, row.slNo, '')}
+                  </div>
                 </div>
-                <div class="inv-row-picker-list" id="custPickerList_${row.id}" style="max-height: 220px;">
-                  ${renderCustomerPickerListHtml(row.id, row.slNo, '')}
+              </div>
+            </td>
+            <td style="width: 100px;">
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-set-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.setCost !== undefined && row.setCost !== '' ? row.setCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;" title="Set Cost (₹)">
+            </td>
+            <td style="width: 100px;">
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-install-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.installCost !== undefined && row.installCost !== '' ? row.installCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;" title="Install Cost (₹)">
+            </td>
+            <td style="width: 100px;">
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-delivery-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.deliveryCost !== undefined && row.deliveryCost !== '' ? row.deliveryCost : ''}" placeholder="Auto" style="height: 26px; font-size:0.76rem;">
+            </td>
+            <td style="width: 95px;">
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-other-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.otherCost !== undefined && row.otherCost !== '' ? row.otherCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm dsp-cust-other-comment py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Other cost remark / purpose..." style="height: 26px; font-size:0.74rem;">
+            </td>
+            <td class="text-end font-monospace fw-bold text-dark dsp-cust-row-total" data-cust-row-id="${row.id}" style="width: 105px; font-size:0.78rem;">
+              ${fmtRupees(totalCustCost)}
+            </td>
+            <td class="text-center p-0" style="width: 32px;">
+              <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-dsp-cust" data-cust-row-id="${row.id}" title="Remove Customer" style="font-size:0.9rem; text-decoration:none;">✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      attachDspCustomerRowHandlers(tbody);
+    }
+
+    if (mobContainer) {
+      mobContainer.innerHTML = dispatchCustomerRows.map(row => {
+        const selectedSlNo = row.slNo ? String(row.slNo) : '';
+        const setCost = Number(row.setCost) || 0;
+        const insCost = Number(row.installCost) || 0;
+        const delCost = Number(row.deliveryCost) || 0;
+        const othCost = Number(row.otherCost) || 0;
+        const totalCustCost = round2(setCost + insCost + delCost + othCost);
+
+        const selectedCustomer = customers.find(c => String(c.SlNo) === selectedSlNo || (row.name && c.Name && c.Name.toLowerCase() === row.name.toLowerCase()));
+        let currentDisplayName = '-- Select Customer --';
+        if (selectedCustomer) {
+          currentDisplayName = selectedCustomer.Name || 'Unknown';
+        } else if (row.name) {
+          currentDisplayName = row.name;
+        }
+
+        return `
+          <div class="inv-inw-card mb-2" data-cust-row-id="${row.id}">
+            <div class="card-header d-flex align-items-center justify-content-between gap-2">
+              <div class="flex-grow-1 min-w-0">
+                <div class="inv-row-item-picker" id="custPickerWrap_mob_${row.id}">
+                  <button type="button" class="btn btn-sm btn-light border w-100 text-start d-flex align-items-center justify-content-between px-2 py-1 shadow-none" id="custPickerBtn_mob_${row.id}" onclick="InventoryApp.toggleCustomerPicker('${row.id}')" style="font-size:0.76rem; height:28px;">
+                    <span class="text-truncate fw-semibold text-dark" id="custPickerLabel_mob_${row.id}">${escapeHtml(currentDisplayName)}</span>
+                    <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div class="inv-row-picker-menu" id="custPickerMenu_mob_${row.id}" style="min-width: 260px;">
+                    <div class="inv-row-picker-search-wrap">
+                      <input type="text" class="inv-row-picker-search-input" placeholder="Search customer name..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value)" autocomplete="off">
+                    </div>
+                    <div class="inv-row-picker-list" id="custPickerList_mob_${row.id}">
+                      ${renderCustomerPickerListHtml(row.id, row.slNo, '')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center flex-shrink-0 btn-remove-dsp-cust" data-cust-row-id="${row.id}" style="width:26px; height:26px; border-radius:4px;" title="Remove Customer">✕</button>
+            </div>
+            <div class="card-body">
+              <div class="inv-inw-card-grid">
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Set Cost (₹)</label>
+                  <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-set-cost" data-cust-row-id="${row.id}" value="${row.setCost !== undefined && row.setCost !== '' ? row.setCost : ''}" placeholder="0.00">
+                </div>
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Install Cost (₹)</label>
+                  <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-install-cost" data-cust-row-id="${row.id}" value="${row.installCost !== undefined && row.installCost !== '' ? row.installCost : ''}" placeholder="0.00">
+                </div>
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Delivery Cost (₹)</label>
+                  <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-delivery-cost" data-cust-row-id="${row.id}" value="${row.deliveryCost !== undefined && row.deliveryCost !== '' ? row.deliveryCost : ''}" placeholder="Auto">
+                </div>
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Other Cost (₹)</label>
+                  <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-other-cost" data-cust-row-id="${row.id}" value="${row.otherCost !== undefined && row.otherCost !== '' ? row.otherCost : ''}" placeholder="0.00">
+                </div>
+                <div class="inv-inw-card-col" style="grid-column: span 2;">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Other Remark / Note</label>
+                  <input type="text" class="form-control form-control-sm dsp-cust-other-comment" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Other cost remark...">
+                </div>
+                <div class="inv-inw-card-col" style="grid-column: span 2;">
+                  <div class="d-flex justify-content-between align-items-center p-1.5">
+                    <span class="text-secondary small fw-medium">Customer Total:</span>
+                    <span class="fw-bold text-dark fs-7 dsp-cust-row-total" data-cust-row-id="${row.id}">${fmtRupees(totalCustCost)}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </td>
-          <td style="width: 100px;">
-            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-set-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.setCost !== undefined && row.setCost !== '' ? row.setCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;" title="Set Cost (₹)">
-          </td>
-          <td style="width: 100px;">
-            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-install-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.installCost !== undefined && row.installCost !== '' ? row.installCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;" title="Install Cost (₹)">
-          </td>
-          <td style="width: 110px;">
-            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-delivery-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.deliveryCost !== undefined && row.deliveryCost !== '' ? row.deliveryCost : ''}" placeholder="Auto" style="height: 26px; font-size:0.76rem;">
-          </td>
-          <td style="width: 100px;">
-            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-other-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.otherCost !== undefined && row.otherCost !== '' ? row.otherCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;">
-          </td>
-          <td>
-            <input type="text" class="form-control form-control-sm dsp-cust-other-comment py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Other cost remark / purpose..." style="height: 26px; font-size:0.74rem;">
-          </td>
-          <td class="text-end font-monospace fw-bold text-dark dsp-cust-row-total" data-cust-row-id="${row.id}" style="width: 110px; font-size:0.78rem;">
-            ${fmtRupees(totalCustCost)}
-          </td>
-          <td class="text-center p-0" style="width: 32px;">
-            <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-dsp-cust" data-cust-row-id="${row.id}" title="Remove Customer" style="font-size:0.9rem; text-decoration:none;">✕</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    attachDspCustomerRowHandlers(tbody);
+          </div>
+        `;
+      }).join('');
+      attachDspCustomerRowHandlers(mobContainer);
+    }
   }
 
-  function attachDspCustomerRowHandlers(tbody) {
-    tbody.querySelectorAll('.dsp-cust-custom-name').forEach(input => {
+  function attachDspCustomerRowHandlers(container) {
+    if (!container) return;
+
+    container.querySelectorAll('.dsp-cust-custom-name').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-cust-row-id');
         const row = dispatchCustomerRows.find(r => r.id === rowId);
@@ -3178,60 +3296,77 @@ const InventoryApp = (() => {
       });
     });
 
-    tbody.querySelectorAll('.dsp-cust-set-cost').forEach(input => {
+    container.querySelectorAll('.dsp-cust-set-cost').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-cust-row-id');
         const row = dispatchCustomerRows.find(r => r.id === rowId);
         if (row) {
           row.setCost = input.value;
+          document.querySelectorAll(`.dsp-cust-set-cost[data-cust-row-id="${rowId}"]`).forEach(inp => {
+            if (inp !== input) inp.value = input.value;
+          });
           updateDspCustRowTotal(rowId);
         }
       });
     });
 
-    tbody.querySelectorAll('.dsp-cust-install-cost').forEach(input => {
+    container.querySelectorAll('.dsp-cust-install-cost').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-cust-row-id');
         const row = dispatchCustomerRows.find(r => r.id === rowId);
         if (row) {
           row.installCost = input.value;
+          document.querySelectorAll(`.dsp-cust-install-cost[data-cust-row-id="${rowId}"]`).forEach(inp => {
+            if (inp !== input) inp.value = input.value;
+          });
           updateDspCustRowTotal(rowId);
         }
       });
     });
 
-    tbody.querySelectorAll('.dsp-cust-delivery-cost').forEach(input => {
+    container.querySelectorAll('.dsp-cust-delivery-cost').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-cust-row-id');
         const row = dispatchCustomerRows.find(r => r.id === rowId);
         if (row) {
           row.deliveryCost = input.value;
           row.isManualDelivery = true;
+          document.querySelectorAll(`.dsp-cust-delivery-cost[data-cust-row-id="${rowId}"]`).forEach(inp => {
+            if (inp !== input) inp.value = input.value;
+          });
           updateDspCustRowTotal(rowId);
         }
       });
     });
 
-    tbody.querySelectorAll('.dsp-cust-other-cost').forEach(input => {
+    container.querySelectorAll('.dsp-cust-other-cost').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-cust-row-id');
         const row = dispatchCustomerRows.find(r => r.id === rowId);
         if (row) {
           row.otherCost = input.value;
+          document.querySelectorAll(`.dsp-cust-other-cost[data-cust-row-id="${rowId}"]`).forEach(inp => {
+            if (inp !== input) inp.value = input.value;
+          });
           updateDspCustRowTotal(rowId);
         }
       });
     });
 
-    tbody.querySelectorAll('.dsp-cust-other-comment').forEach(input => {
+    container.querySelectorAll('.dsp-cust-other-comment').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-cust-row-id');
         const row = dispatchCustomerRows.find(r => r.id === rowId);
-        if (row) row.otherComment = input.value;
+        if (row) {
+          row.otherComment = input.value;
+          document.querySelectorAll(`.dsp-cust-other-comment[data-cust-row-id="${rowId}"]`).forEach(inp => {
+            if (inp !== input) inp.value = input.value;
+          });
+        }
       });
     });
 
-    tbody.querySelectorAll('.btn-remove-dsp-cust').forEach(btn => {
+    container.querySelectorAll('.btn-remove-dsp-cust').forEach(btn => {
       btn.addEventListener('click', () => {
         const rowId = btn.getAttribute('data-cust-row-id');
         removeDspCustomerRow(rowId);
@@ -3246,8 +3381,10 @@ const InventoryApp = (() => {
     const ins = Number(row.installCost) || 0;
     const del = Number(row.deliveryCost) || 0;
     const oth = Number(row.otherCost) || 0;
-    const totalEl = document.querySelector(`.dsp-cust-row-total[data-cust-row-id="${rowId}"]`);
-    if (totalEl) totalEl.textContent = fmtRupees(round2(set + ins + del + oth));
+    const total = fmtRupees(round2(set + ins + del + oth));
+    document.querySelectorAll(`.dsp-cust-row-total[data-cust-row-id="${rowId}"]`).forEach(el => {
+      el.textContent = total;
+    });
   }
 
   function addDspRow(itemCode = null, qty = 1) {
@@ -3274,85 +3411,177 @@ const InventoryApp = (() => {
 
   function renderDspRows() {
     const tbody = document.getElementById('dspItemsTableBody');
-    if (!tbody) return;
+    const mobContainer = document.getElementById('dspMobileCardsContainer');
+    if (!tbody && !mobContainer) return;
 
     const ledger = getCalculatedStockLedger();
 
-    tbody.innerHTML = dispatchRows.map((row) => {
-      const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
-      const inHand = Number(item.inHandQty) || 0;
-      const qty = Number(row.qty) || 0;
-      const histPrices = getItemHistoricalPrices(row.itemCode);
+    if (tbody) {
+      tbody.innerHTML = dispatchRows.map((row) => {
+        const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
+        const inHand = Number(item.inHandQty) || 0;
+        const qty = Number(row.qty) || 0;
+        const histPrices = getItemHistoricalPrices(row.itemCode);
 
-      if (row.unitPrice === undefined || row.unitPrice === null) {
-        row.unitPrice = histPrices.length > 0 ? histPrices[0].price : (Number(item.buyingPrice) || 0);
-      }
-      const unitPrice = Number(row.unitPrice) || 0;
-      const lineTotal = round2(qty * unitPrice);
-      const isOverStock = qty > inHand;
-      const isManual = Boolean(row.isManualPrice);
+        if (row.unitPrice === undefined || row.unitPrice === null) {
+          row.unitPrice = histPrices.length > 0 ? histPrices[0].price : (Number(item.buyingPrice) || 0);
+        }
+        const unitPrice = Number(row.unitPrice) || 0;
+        const lineTotal = round2(qty * unitPrice);
+        const isOverStock = qty > inHand;
+        const isManual = Boolean(row.isManualPrice);
 
-      return `
-        <tr data-row-id="${row.id}" class="${isOverStock ? 'table-danger' : ''}">
-          <td style="position: relative;">
-            <div class="inv-row-item-picker" id="pickerWrap_${row.id}">
-              <button type="button" class="inv-row-picker-btn ${isOverStock ? 'border-danger' : ''}" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')">
-                <span class="text-truncate flex-grow-1 text-start" id="pickerLabel_${row.id}">
-                  <span class="fw-semibold text-dark">${escapeHtml(item.name || 'Select Item')}</span>
-                </span>
-                <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
-                <div class="inv-row-picker-search-wrap">
-                  <input type="text" class="inv-row-picker-search-input" placeholder="Search item by name..." oninput="InventoryApp.filterPickerItems('${row.id}', 'dispatch', this.value)" autocomplete="off">
+        return `
+          <tr data-row-id="${row.id}" class="${isOverStock ? 'table-danger' : ''}">
+            <td style="position: relative;">
+              <div class="inv-row-item-picker" id="pickerWrap_${row.id}">
+                <button type="button" class="inv-row-picker-btn ${isOverStock ? 'border-danger' : ''}" id="pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}')">
+                  <span class="text-truncate flex-grow-1 text-start" id="pickerLabel_${row.id}">
+                    <span class="fw-semibold text-dark">${escapeHtml(item.name || 'Select Item')}</span>
+                  </span>
+                  <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="inv-row-picker-menu" id="pickerMenu_${row.id}">
+                  <div class="inv-row-picker-search-wrap">
+                    <input type="text" class="inv-row-picker-search-input" placeholder="Search item by name..." oninput="InventoryApp.filterPickerItems('${row.id}', 'dispatch', this.value)" autocomplete="off">
+                  </div>
+                  <div class="inv-row-picker-list" id="pickerList_${row.id}">
+                    ${renderPickerListHtml(row.id, 'dispatch', row.itemCode, '')}
+                  </div>
                 </div>
-                <div class="inv-row-picker-list" id="pickerList_${row.id}">
-                  ${renderPickerListHtml(row.id, 'dispatch', row.itemCode, '')}
+              </div>
+            </td>
+            <td class="text-center font-monospace" style="width: 80px;">
+              <span class="badge ${inHand > 0 ? 'bg-light text-success border' : 'bg-light text-danger border'}" style="font-size:0.75rem;">
+                ${inHand}
+              </span>
+            </td>
+            <td style="width: 110px;">
+              <div class="input-group input-group-sm">
+                <input type="number" min="1" max="${inHand}" step="any" class="form-control form-control-sm text-center font-monospace dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="Qty" style="height: 28px; padding: 2px 4px;">
+                <span class="input-group-text px-1.5 py-0 text-secondary font-monospace" style="font-size: 0.72rem; min-width: 32px; justify-content: center; height: 28px;">${escapeHtml(item.unit || 'Nos')}</span>
+              </div>
+            </td>
+            <td style="width: 260px;" class="text-start">
+              <div class="d-flex flex-column gap-1">
+                <select class="form-select form-select-sm dsp-row-price-select font-monospace text-start py-1 px-2" data-row-id="${row.id}" style="font-size: 0.76rem; height: 28px;">
+                  ${histPrices.map(hp => {
+                    const isSel = (!isManual && Math.abs(hp.price - unitPrice) < 0.01);
+                    const dtStr = hp.date && hp.date !== 'Catalog' ? formatShortDate(hp.date) : 'Catalog';
+                    const label = `${fmtRupees(hp.price)} (${dtStr}${hp.qty ? `, Qty:${hp.qty}` : ''})`;
+                    return `<option value="${hp.price}" ${isSel ? 'selected' : ''}>${label}</option>`;
+                  }).join('')}
+                  <option value="__manual__" ${isManual ? 'selected' : ''}>✏️ Custom / Manual Input...</option>
+                </select>
+                <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-start dsp-row-custom-price py-1 px-2 ${isManual ? '' : 'd-none'}" data-row-id="${row.id}" value="${row.unitPrice !== undefined ? row.unitPrice : ''}" placeholder="Enter Rate (₹)" style="height: 26px; font-size: 0.76rem;">
+              </div>
+            </td>
+            <td class="text-end font-monospace fw-bold text-dark dsp-row-total" data-row-id="${row.id}" style="width: 120px; font-size: 0.82rem;">
+              ${fmtRupees(lineTotal)}
+            </td>
+            <td class="text-center p-0" style="width: 36px;">
+              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center btn-remove-dsp-row" data-row-id="${row.id}" style="width:26px; height:26px; border-radius: 4px;" title="Remove" ${dispatchRows.length <= 1 ? 'disabled style="width:26px; height:26px; opacity:0.25; cursor:not-allowed;"' : ''}>✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      attachDspRowHandlers(tbody, ledger);
+    }
+
+    if (mobContainer) {
+      mobContainer.innerHTML = dispatchRows.map((row) => {
+        const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
+        const inHand = Number(item.inHandQty) || 0;
+        const qty = Number(row.qty) || 0;
+        const histPrices = getItemHistoricalPrices(row.itemCode);
+
+        if (row.unitPrice === undefined || row.unitPrice === null) {
+          row.unitPrice = histPrices.length > 0 ? histPrices[0].price : (Number(item.buyingPrice) || 0);
+        }
+        const unitPrice = Number(row.unitPrice) || 0;
+        const lineTotal = round2(qty * unitPrice);
+        const isOverStock = qty > inHand;
+        const isManual = Boolean(row.isManualPrice);
+
+        return `
+          <div class="inv-inw-card mb-2" data-row-id="${row.id}">
+            <!-- Header: Item Picker + Delete -->
+            <div class="card-header d-flex align-items-center justify-content-between gap-2">
+              <div class="flex-grow-1 min-w-0">
+                <div class="inv-row-item-picker" id="dsp_mob_pickerWrap_${row.id}">
+                  <button type="button" class="btn btn-sm btn-light border w-100 text-start d-flex align-items-center justify-content-between px-2 py-1 shadow-none ${isOverStock ? 'border-danger' : ''}" id="dsp_mob_pickerBtn_${row.id}" onclick="InventoryApp.toggleItemPicker('${row.id}', 'dsp_mob_picker')">
+                    <span class="text-truncate fw-semibold text-dark fs-7" id="dsp_mob_pickerLabel_${row.id}">${escapeHtml(item.name || 'Select Item')}</span>
+                    <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div class="inv-row-picker-menu" id="dsp_mob_pickerMenu_${row.id}">
+                    <div class="inv-row-picker-search-wrap">
+                      <input type="text" class="inv-row-picker-search-input" placeholder="Search item by name..." oninput="InventoryApp.filterPickerItems('${row.id}', 'dispatch_mob', this.value, 'dsp_mob_picker')" autocomplete="off">
+                    </div>
+                    <div class="inv-row-picker-list" id="dsp_mob_pickerList_${row.id}">
+                      ${renderPickerListHtml(row.id, 'dispatch_mob', row.itemCode, '')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center flex-shrink-0 btn-remove-dsp-row" data-row-id="${row.id}" style="width: 26px; height: 26px; border-radius: 4px;" title="Remove Item" ${dispatchRows.length <= 1 ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : ''}>✕</button>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body">
+              <div class="inv-inw-card-grid">
+                <!-- Col 1: In Stock -->
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">In Stock</label>
+                  <div class="inv-inw-card-kpi d-flex align-items-center justify-content-center border rounded" style="height:30px;">
+                    <span class="fw-bold fs-7 ${inHand > 0 ? 'text-success' : 'text-danger'}">${inHand} ${escapeHtml(item.unit || 'Nos')}</span>
+                  </div>
+                </div>
+
+                <!-- Col 2: Quantity -->
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Quantity</label>
+                  <div class="input-group input-group-sm" style="height:30px;">
+                    <input type="number" min="1" max="${inHand}" step="any" class="form-control text-end fw-bold dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0" style="height:30px;">
+                    <span class="input-group-text px-2 text-muted fs-8 bg-light flex-shrink-0" style="height:30px;">${escapeHtml(item.unit || 'Nos')}</span>
+                  </div>
+                </div>
+
+                <!-- Col 3: Cost / Unit (₹) - Left Aligned -->
+                <div class="inv-inw-card-col" style="grid-column: span 2;">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Cost / Unit (₹)</label>
+                  <select class="form-select form-select-sm dsp-row-price-select font-monospace text-start py-1 px-2" data-row-id="${row.id}" style="font-size: 0.78rem; height: 30px;">
+                    ${histPrices.map(hp => {
+                      const isSel = (!isManual && Math.abs(hp.price - unitPrice) < 0.01);
+                      const dtStr = hp.date && hp.date !== 'Catalog' ? formatShortDate(hp.date) : 'Catalog';
+                      const label = `${fmtRupees(hp.price)} (${dtStr}${hp.qty ? `, Qty:${hp.qty}` : ''})`;
+                      return `<option value="${hp.price}" ${isSel ? 'selected' : ''}>${label}</option>`;
+                    }).join('')}
+                    <option value="__manual__" ${isManual ? 'selected' : ''}>✏️ Custom / Manual Input...</option>
+                  </select>
+                  <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-start dsp-row-custom-price mt-1 py-1 px-2 ${isManual ? '' : 'd-none'}" data-row-id="${row.id}" value="${row.unitPrice !== undefined ? row.unitPrice : ''}" placeholder="Enter Rate (₹)" style="height: 28px; font-size: 0.78rem;">
+                </div>
+
+                <!-- Col 4: Total Cost -->
+                <div class="inv-inw-card-col" style="grid-column: span 2;">
+                  <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border">
+                    <span class="text-secondary small fw-medium">Line Total:</span>
+                    <span class="fw-bold text-dark fs-7 dsp-row-total" data-row-id="${row.id}">${fmtRupees(lineTotal)}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </td>
-          <td class="text-center font-monospace" style="width: 90px;">
-            <span class="badge ${inHand > 0 ? 'bg-light text-success border' : 'bg-light text-danger border'}" style="font-size:0.75rem;">
-              ${inHand}
-            </span>
-          </td>
-          <td style="width: 120px;">
-            <div class="input-group input-group-sm">
-              <input type="number" min="1" max="${inHand}" step="any" class="form-control form-control-sm text-center font-monospace dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="Qty" style="height: 28px; padding: 2px 4px;">
-              <span class="input-group-text px-1.5 py-0 text-secondary font-monospace" style="font-size: 0.72rem; min-width: 32px; justify-content: center; height: 28px;">${escapeHtml(item.unit || 'Nos')}</span>
-            </div>
-          </td>
-          <td style="width: 255px;">
-            <div class="d-flex flex-column gap-1">
-              <select class="form-select form-select-sm dsp-row-price-select font-monospace text-end py-1 px-1.5" data-row-id="${row.id}" style="font-size: 0.76rem; height: 28px;">
-                ${histPrices.map(hp => {
-                  const isSel = (!isManual && Math.abs(hp.price - unitPrice) < 0.01);
-                  const dtStr = hp.date && hp.date !== 'Catalog' ? formatShortDate(hp.date) : 'Catalog';
-                  const label = `${fmtRupees(hp.price)} (${dtStr}${hp.qty ? `, Qty:${hp.qty}` : ''})`;
-                  return `<option value="${hp.price}" ${isSel ? 'selected' : ''}>${label}</option>`;
-                }).join('')}
-                <option value="__manual__" ${isManual ? 'selected' : ''}>✏️ Custom / Manual Input...</option>
-              </select>
-              <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end dsp-row-custom-price py-1 px-2 ${isManual ? '' : 'd-none'}" data-row-id="${row.id}" value="${row.unitPrice !== undefined ? row.unitPrice : ''}" placeholder="Enter Rate (₹)" style="height: 26px; font-size: 0.76rem;">
-            </div>
-          </td>
-          <td class="text-end font-monospace fw-bold text-dark dsp-row-total" data-row-id="${row.id}" style="width: 125px; font-size: 0.82rem;">
-            ${fmtRupees(lineTotal)}
-          </td>
-          <td class="text-center p-0" style="width: 36px;">
-            <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center btn-remove-dsp-row" data-row-id="${row.id}" style="width:26px; height:26px; border-radius: 4px;" title="Remove" ${dispatchRows.length <= 1 ? 'disabled style="width:26px; height:26px; opacity:0.25; cursor:not-allowed;"' : ''}>✕</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    attachDspRowHandlers(tbody, ledger);
+          </div>
+        `;
+      }).join('');
+      attachDspRowHandlers(mobContainer, ledger);
+    }
   }
 
-  function attachDspRowHandlers(tbody, ledger) {
+  function attachDspRowHandlers(container, ledger) {
+    if (!container) return;
+
     // 1. Quantity inputs
-    tbody.querySelectorAll('.dsp-row-qty').forEach(input => {
+    container.querySelectorAll('.dsp-row-qty').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-row-id');
         const row = dispatchRows.find(r => r.id === rowId);
@@ -3360,63 +3589,78 @@ const InventoryApp = (() => {
           row.qty = input.value === '' ? '' : Number(input.value);
           const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
           const inHand = Number(item.inHandQty) || 0;
-          const tr = tbody.querySelector(`tr[data-row-id="${rowId}"]`);
-          const totalCell = tbody.querySelector(`.dsp-row-total[data-row-id="${rowId}"]`);
           const isOverStock = (Number(row.qty) || 0) > inHand;
 
-          if (tr) tr.classList.toggle('table-danger', isOverStock);
-          input.classList.toggle('is-invalid', isOverStock);
+          document.querySelectorAll(`.dsp-row-qty[data-row-id="${rowId}"]`).forEach(qInp => {
+            if (qInp !== input) qInp.value = input.value;
+            qInp.classList.toggle('is-invalid', isOverStock);
+          });
+          document.querySelectorAll(`tr[data-row-id="${rowId}"]`).forEach(tr => {
+            tr.classList.toggle('table-danger', isOverStock);
+          });
 
           const total = (Number(row.qty) || 0) * (Number(row.unitPrice) || 0);
-          if (totalCell) totalCell.textContent = fmtRupees(total);
+          document.querySelectorAll(`.dsp-row-total[data-row-id="${rowId}"]`).forEach(totEl => {
+            totEl.textContent = fmtRupees(total);
+          });
           recalcDispatchTotals();
         }
       });
     });
 
     // 2. Historical Price Dropdown
-    tbody.querySelectorAll('.dsp-row-price-select').forEach(sel => {
+    container.querySelectorAll('.dsp-row-price-select').forEach(sel => {
       sel.addEventListener('change', () => {
         const rowId = sel.getAttribute('data-row-id');
         const row = dispatchRows.find(r => r.id === rowId);
-        const customInput = tbody.querySelector(`.dsp-row-custom-price[data-row-id="${rowId}"]`);
         if (!row) return;
+
+        document.querySelectorAll(`.dsp-row-price-select[data-row-id="${rowId}"]`).forEach(s => {
+          if (s !== sel) s.value = sel.value;
+        });
 
         if (sel.value === '__manual__') {
           row.isManualPrice = true;
-          if (customInput) {
-            customInput.classList.remove('d-none');
-            customInput.focus();
-          }
+          document.querySelectorAll(`.dsp-row-custom-price[data-row-id="${rowId}"]`).forEach(inp => {
+            inp.classList.remove('d-none');
+            inp.focus();
+          });
         } else {
           row.isManualPrice = false;
           row.unitPrice = Number(sel.value);
-          if (customInput) customInput.classList.add('d-none');
-          const totalCell = tbody.querySelector(`.dsp-row-total[data-row-id="${rowId}"]`);
+          document.querySelectorAll(`.dsp-row-custom-price[data-row-id="${rowId}"]`).forEach(inp => {
+            inp.classList.add('d-none');
+          });
           const total = (Number(row.qty) || 0) * (Number(row.unitPrice) || 0);
-          if (totalCell) totalCell.textContent = fmtRupees(total);
+          document.querySelectorAll(`.dsp-row-total[data-row-id="${rowId}"]`).forEach(totEl => {
+            totEl.textContent = fmtRupees(total);
+          });
           recalcDispatchTotals();
         }
       });
     });
 
     // 3. Custom / Manual Price input
-    tbody.querySelectorAll('.dsp-row-custom-price').forEach(input => {
+    container.querySelectorAll('.dsp-row-custom-price').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-row-id');
         const row = dispatchRows.find(r => r.id === rowId);
         if (row) {
           row.unitPrice = input.value === '' ? '' : Number(input.value);
-          const totalCell = tbody.querySelector(`.dsp-row-total[data-row-id="${rowId}"]`);
+          document.querySelectorAll(`.dsp-row-custom-price[data-row-id="${rowId}"]`).forEach(inp => {
+            if (inp !== input) inp.value = input.value;
+          });
           const total = (Number(row.qty) || 0) * (Number(row.unitPrice) || 0);
-          if (totalCell) totalCell.textContent = fmtRupees(total);
+          document.querySelectorAll(`.dsp-row-total[data-row-id="${rowId}"]`).forEach(totEl => {
+            totEl.textContent = fmtRupees(total);
+          });
           recalcDispatchTotals();
         }
       });
     });
 
     // 4. Remove row button
-    tbody.querySelectorAll('.btn-remove-dsp-row').forEach(btn => {
+    container.querySelectorAll('.btn-remove-dsp-row').forEach(btn => {
       btn.addEventListener('click', () => {
         const rowId = btn.getAttribute('data-row-id');
         removeDspRow(rowId);
@@ -4929,11 +5173,14 @@ const InventoryApp = (() => {
 
     const transportCostVal = first.transportCost !== undefined && first.transportCost !== null ? first.transportCost : (logistics?.transportCost || 0);
     const distanceKmVal = first.distanceKm !== undefined && first.distanceKm !== null ? first.distanceKm : (logistics?.distanceKm || '');
+    const costPerKmVal = first.costPerKm !== undefined && first.costPerKm !== null ? first.costPerKm : (logistics?.costPerKm || (distanceKmVal > 0 && transportCostVal > 0 ? (transportCostVal / distanceKmVal).toFixed(2) : ''));
     const extraDeliveryCostVal = first.extraDeliveryCost !== undefined && first.extraDeliveryCost !== null ? first.extraDeliveryCost : (logistics?.extraDeliveryCost || '');
     const extraDeliveryCommentVal = first.extraDeliveryComment !== undefined && first.extraDeliveryComment !== null ? first.extraDeliveryComment : (logistics?.extraDeliveryComment || '');
 
+    const costPerKmEl = document.getElementById('dspCostPerKm');
     if (transInput) transInput.value = transportCostVal || '';
     if (distInput) distInput.value = distanceKmVal || '';
+    if (costPerKmEl) costPerKmEl.value = costPerKmVal || '';
     if (extraDeliveryCostInput) extraDeliveryCostInput.value = extraDeliveryCostVal || '';
     if (extraDeliveryCommentInput) extraDeliveryCommentInput.value = extraDeliveryCommentVal || '';
     recalcDspDeliveryCost();

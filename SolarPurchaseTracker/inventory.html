@@ -390,112 +390,115 @@
         
         <!-- Header Fields -->
         <div class="row g-2 mb-2">
-          <!-- Row 1: Site Name, Date, Vehicle -->
-          <div class="col-sm-4 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Site / Project Name *</label>
-            <input type="text" class="form-control form-control-sm fw-medium" id="dspSiteName" placeholder="Customer / Site Name">
+          <!-- Row 1: Site Name & Dispatch Date -->
+          <div class="col-sm-6 col-12">
+            <label class="form-label small fw-semibold text-secondary mb-1">Site Name *</label>
+            <input type="text" class="form-control form-control-sm fw-medium" id="dspSiteName" placeholder="Enter Site Name">
           </div>
-          <div class="col-sm-4 col-6">
+          <div class="col-sm-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Dispatch Date *</label>
             <input type="date" class="form-control form-control-sm" id="dspDate">
           </div>
-          <div class="col-sm-4 col-6">
-            <label class="form-label small fw-semibold text-secondary mb-1">Vehicle / Transporter</label>
-            <input type="text" class="form-control form-control-sm" id="dspVehicle" placeholder="Vehicle number / driver">
-          </div>
 
-          <!-- Row 2: Our Project Checkbox & Upload Challan -->
-          <div class="col-sm-6 col-12">
-            <div class="p-2 border rounded bg-light-subtle d-flex align-items-center justify-content-between h-100">
-              <div class="form-check m-0 d-flex align-items-center gap-2">
-                <input class="form-check-input" type="checkbox" id="dspIsOurProject" checked style="cursor: pointer; width: 18px; height: 18px;">
-                <label class="form-check-label fw-bold text-dark small" for="dspIsOurProject" style="cursor: pointer;">
-                  Our Project Dispatch
-                </label>
+          <!-- Upload Challan (Full-width clean row for both Mobile and Desktop) -->
+          <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-white" style="border-color: #e2e8f0 !important;">
+              <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">Upload Challan Document</label>
               </div>
-              <span class="text-muted small" style="font-size:0.75rem;">Logistics & Customer Cost Tracking</span>
-            </div>
-          </div>
-          <div class="col-sm-6 col-12">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-              <label class="form-label small fw-semibold text-secondary mb-0">Upload Challan</label>
-              <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2 fs-8 d-inline-flex align-items-center gap-1" id="btnDspDocUpload">
+              <button type="button" class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 d-inline-flex align-items-center gap-1.5 flex-shrink-0" id="btnDspDocUpload">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>Upload Files</span>
               </button>
             </div>
             <input type="file" id="dspDocFileInput" accept=".xlsx,.xls,.csv,.jpeg,.jpg,.png,.pdf" multiple style="display:none;">
-            <div id="dspFilesContainer" class="inv-files-list"></div>
+            <div id="dspFilesContainer" class="inv-files-list mt-1"></div>
           </div>
         </div>
 
-        <!-- Section: Delivery / Logistics Cost & Customer Allocation (Shown when Our Project is checked) -->
-        <div id="dspLogisticsSection" class="border rounded p-2.5 mb-2.5 bg-light-subtle">
+        <!-- Row 2: Is our Own Project Checkbox -->
+        <div class="p-2 border rounded bg-light-subtle d-flex align-items-center mb-2.5" style="border-color: #e2e8f0 !important;">
+          <div class="form-check m-0 d-flex align-items-center gap-2">
+            <input class="form-check-input" type="checkbox" id="dspIsOurProject" checked style="cursor: pointer; width: 17px; height: 17px;">
+            <label class="form-check-label fw-bold text-dark small" for="dspIsOurProject" style="cursor: pointer;">
+              Is our Own Project
+            </label>
+          </div>
+        </div>
+
+        <!-- Section: Delivery / Logistics Cost & Customer Allocation (Shown when Is our Own Project is checked) -->
+        <div id="dspLogisticsSection" class="border rounded p-3 mb-2.5 bg-white shadow-sm" style="border-color: #e2e8f0 !important;">
           
-          <!-- 1. Delivery Cost Section -->
-          <div class="border rounded p-2.5 bg-white mb-2.5 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom">
-              <span class="small fw-bold text-dark text-uppercase" style="font-size:0.78rem; letter-spacing:0.3px;">Delivery Cost</span>
-              <span class="badge bg-light text-primary border font-monospace fs-7 fw-bold" id="dspBadgeTotalDelivery">Total Delivery Cost: ₹0.00</span>
+          <!-- Row 1: Vehicle, Transport Cost -->
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Vehicle / Transporter</label>
+              <input type="text" class="form-control form-control-sm" id="dspVehicle" placeholder="Vehicle number / driver">
             </div>
-
-            <!-- Transport Cost, Distance & Cost per KM -->
-            <div class="row g-2 mb-2 align-items-end">
-              <div class="col-sm-4 col-6">
-                <label class="form-label small fw-semibold text-secondary mb-1">Transport Cost (₹)</label>
-                <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspTransportCost" placeholder="0.00">
-              </div>
-              <div class="col-sm-4 col-6">
-                <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
-                <input type="number" min="0" step="any" class="form-control form-control-sm text-center font-monospace" id="dspDistanceKm" placeholder="0">
-              </div>
-              <div class="col-sm-4 col-12">
-                <label class="form-label small fw-semibold text-secondary mb-1">Cost per KM (₹/km)</label>
-                <input type="text" class="form-control form-control-sm text-center font-monospace bg-light fw-bold text-dark" id="dspCostPerKm" value="—" readonly tabindex="-1">
-              </div>
-            </div>
-
-            <!-- Extra Delivery Expenses (Single Textbox & Single Comment Box) -->
-            <div class="row g-2 align-items-end">
-              <div class="col-sm-4 col-12">
-                <label class="form-label small fw-semibold text-secondary mb-1">Extra Delivery Expenses (Food, Stay, Toll, Others) (₹)</label>
-                <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspExtraDeliveryCost" placeholder="0.00">
-              </div>
-              <div class="col-sm-8 col-12">
-                <label class="form-label small fw-semibold text-secondary mb-1">Expense Comment / Breakdown</label>
-                <input type="text" class="form-control form-control-sm" id="dspExtraDeliveryComment" placeholder="e.g. Food, lodging, toll gate, loading/unloading helper...">
-              </div>
+            <div class="col-sm-6 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Transport Cost (₹)</label>
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspTransportCost" placeholder="0.00">
             </div>
           </div>
 
-          <!-- 2. Customer-wise Cost Allocation Section -->
-          <div class="border rounded p-2.5 bg-white shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom">
-              <span class="small fw-bold text-dark text-uppercase" style="font-size:0.78rem; letter-spacing:0.3px;">Customer-wise Cost Allocation</span>
-              <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-8 d-inline-flex align-items-center gap-1" id="btnAddDspCustomer">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>Add Customer</span>
-              </button>
+          <!-- Row 2: Cost/Km, Distance (km) Sabu auto calculated -->
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspDistanceKm" placeholder="0">
             </div>
-            <div class="table-responsive" style="overflow-y: visible; min-height: 120px;">
-              <table class="table table-sm table-bordered align-middle mb-0" style="font-size:0.78rem;">
-                <thead class="table-light">
-                  <tr>
-                    <th style="min-width: 160px;">Customer Name</th>
-                    <th style="width: 100px;" class="text-end">Set Cost (₹)</th>
-                    <th style="width: 100px;" class="text-end">Install Cost (₹)</th>
-                    <th style="width: 100px;" class="text-end">Delivery (₹)</th>
-                    <th style="width: 95px;" class="text-end">Other (₹)</th>
-                    <th>Other Remark / Comment</th>
-                    <th style="width: 105px;" class="text-end">Total (₹)</th>
-                    <th style="width: 32px;" class="p-0 text-center"></th>
-                  </tr>
-                </thead>
-                <tbody id="dspCustomerAllocationBody">
-                </tbody>
-              </table>
+            <div class="col-sm-6 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Cost / Km (₹/km)</label>
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspCostPerKm" placeholder="0.00">
             </div>
           </div>
+
+          <!-- Row 3: Extra Expenses and Note -->
+          <div class="row g-2 mb-3">
+            <div class="col-sm-4 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Extra Expenses (₹)</label>
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspExtraDeliveryCost" placeholder="0.00">
+            </div>
+            <div class="col-sm-8 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Expense Note / Breakdown</label>
+              <input type="text" class="form-control form-control-sm" id="dspExtraDeliveryComment" placeholder="e.g. Toll gate, loading/unloading helper...">
+            </div>
+          </div>
+
+          <!-- Customer-wise Cost Allocation Header & Add Customer Button -->
+          <div class="d-flex justify-content-between align-items-center mb-1.5 pt-2 border-top">
+            <label class="form-label fw-bold text-dark small mb-0">Customer-wise Cost Allocation</label>
+            <button type="button" class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 d-inline-flex align-items-center gap-1" id="btnAddDspCustomer">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add Customer</span>
+            </button>
+          </div>
+
+          <!-- Desktop Customer Table (Visible >= 768px) -->
+          <div class="table-responsive border rounded bg-white mb-2 d-none d-md-block" style="overflow-y: visible;">
+            <table class="table table-sm table-bordered align-middle mb-0" style="font-size:0.78rem;">
+              <thead class="table-light">
+                <tr>
+                  <th style="min-width: 170px;">Customer Name</th>
+                  <th style="width: 100px;" class="text-end">Set Cost (₹)</th>
+                  <th style="width: 100px;" class="text-end">Install Cost (₹)</th>
+                  <th style="width: 100px;" class="text-end">Delivery (₹)</th>
+                  <th style="width: 95px;" class="text-end">Other (₹)</th>
+                  <th>Other Remark / Comment</th>
+                  <th style="width: 105px;" class="text-end">Total (₹)</th>
+                  <th style="width: 32px;" class="p-0 text-center"></th>
+                </tr>
+              </thead>
+              <tbody id="dspCustomerAllocationBody">
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Customer Cards (Visible < 768px) -->
+          <div class="d-md-none mb-2" id="dspCustomerAllocationMobile">
+          </div>
+
         </div>
 
         <!-- Multi-Item Dispatch Table Header -->
@@ -506,16 +509,16 @@
           </button>
         </div>
 
-        <!-- Dynamic Items Table (Desktop App Style) -->
-        <div class="table-responsive border rounded mb-2 inv-desktop-table-wrap" style="overflow: visible;">
+        <!-- Desktop Dynamic Items Table (Visible on desktop screens >= 768px) -->
+        <div class="table-responsive border rounded mb-2 inv-desktop-table-wrap d-none d-md-block" style="overflow: visible;">
           <table class="table table-sm table-bordered align-middle mb-0 inv-desktop-table" style="font-size:0.8rem;">
             <thead class="table-light">
               <tr>
                 <th>Item</th>
-                <th style="width: 90px;" class="text-center">Stock</th>
-                <th style="width: 120px;" class="text-center">Qty</th>
-                <th style="width: 255px;" class="text-end">Cost / Unit (₹)</th>
-                <th style="width: 125px;" class="text-end">Total (₹)</th>
+                <th style="width: 80px;" class="text-center">Stock</th>
+                <th style="width: 110px;" class="text-center">Qty</th>
+                <th style="width: 260px;" class="text-start ps-2">Cost / Unit (₹)</th>
+                <th style="width: 120px;" class="text-end">Total (₹)</th>
                 <th style="width: 36px;" class="text-center p-0"></th>
               </tr>
             </thead>
@@ -524,18 +527,23 @@
           </table>
         </div>
 
+        <!-- Mobile Dynamic Dispatched Item Cards (Visible on screens < 768px) -->
+        <div class="d-md-none mb-2" id="dspMobileCardsContainer">
+        </div>
+
         <!-- Stock Alert Warning -->
         <div id="dspStockAlert" class="alert alert-danger py-1 px-2 small mb-2" style="display:none;"></div>
 
-        <!-- Summary Bar (Clean, Flat, No Badge) -->
-        <div class="d-flex justify-content-between align-items-center px-1 py-1 mb-2">
-          <div class="d-flex align-items-center gap-3">
-            <span class="small text-secondary fw-semibold" id="dspSummaryTotalUnits">Total Units: 0</span>
-            <span class="small text-secondary" id="dspDisplayTransportCost">Transport: ₹0.00</span>
+        <!-- Valuation Summary (Clean, Natural Typography like Stock In Consignment) -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light-subtle border rounded mb-2 inv-inw-summary-bar">
+          <div class="d-flex align-items-baseline gap-2">
+            <span class="text-secondary small fw-medium">Total Units:</span>
+            <span class="text-dark fw-bold fs-7" id="dspSummaryTotalUnits">0</span>
+            <span class="text-muted small ms-2" id="dspDisplayTransportCost">Delivery: ₹0.00</span>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="small fw-semibold text-secondary">Material Cost:</span>
-            <span class="fw-bold text-dark fs-6" id="dspCalculatedCost">₹0.00</span>
+          <div class="d-flex align-items-baseline gap-1.5">
+            <span class="text-secondary small fw-medium">Total Material Cost:</span>
+            <span class="text-dark fw-bold fs-6" id="dspCalculatedCost">₹0.00</span>
           </div>
         </div>
 
@@ -551,8 +559,8 @@
       </div>
 
       <div class="modal-footer py-2 px-3 border-top bg-light">
-        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-sm btn-warning px-4 fw-semibold" id="btnSubmitDispatch">Confirm Dispatch</button>
+        <button type="button" class="btn btn-sm btn-secondary px-3 flex-grow-1 flex-md-grow-0" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-warning px-4 fw-semibold flex-grow-1 flex-md-grow-0" id="btnSubmitDispatch">Confirm Dispatch</button>
       </div>
 
     </div>
@@ -942,6 +950,6 @@
 <script src="js/ui.js?v=1.0.4" defer></script>
 <script src="js/connect.js" defer></script>
 <!-- Inventory Controller Script -->
-<script src="js/inventory.js?v=1.0.8" defer></script>
+<script src="js/inventory.js?v=1.0.9" defer></script>
 </body>
 </html>
