@@ -6,7 +6,7 @@
 const UI = (() => {
 
   const NAV_ITEMS = [
-    { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
+    // { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'inventory.html',       icon: 'boxes',      label: 'Inventory' },

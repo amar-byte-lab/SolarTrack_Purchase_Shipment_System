@@ -184,18 +184,23 @@ const InventoryApp = (() => {
       if (Array.isArray(dbDispatches)) {
         dispatches = dbDispatches.map(row => {
           let customerAllocations = [];
+          let mapWithStock = true;
+          const rem = row.Remarks || row.remarks || '';
+          if (row.mapWithStock === false || rem.includes('|mapWithStock:false')) {
+            mapWithStock = false;
+          }
           if (Array.isArray(row.customerAllocations) && row.customerAllocations.length > 0) {
             customerAllocations = row.customerAllocations;
-          } else {
-            const rem = row.Remarks || row.remarks || '';
-            if (rem.includes('|logistics:')) {
-              try {
-                const meta = JSON.parse(rem.split('|logistics:')[1]);
-                if (Array.isArray(meta.customerAllocations)) {
-                  customerAllocations = meta.customerAllocations;
-                }
-              } catch (e) {}
-            }
+          } else if (rem.includes('|logistics:')) {
+            try {
+              const meta = JSON.parse(rem.split('|logistics:')[1]);
+              if (Array.isArray(meta.customerAllocations)) {
+                customerAllocations = meta.customerAllocations;
+              }
+              if (meta && meta.mapWithStock === false) {
+                mapWithStock = false;
+              }
+            } catch (e) {}
           }
           return {
             id: row.DispatchID || row.dispatchid || row.id,
@@ -209,6 +214,7 @@ const InventoryApp = (() => {
             transportCost: Number(row.TransportCost !== undefined ? row.TransportCost : row.transportcost) || 0,
             vehicle: row.Vehicle || row.vehicle || '',
             remarks: row.Remarks || row.remarks || '',
+            mapWithStock,
             customerAllocations,
             docName: row.DocumentName || row.documentname || null,
             docData: row.DocumentData || row.documentdata || null
@@ -236,7 +242,7 @@ const InventoryApp = (() => {
       .reduce((sum, inw) => sum + (Number(inw.qty) || 0), 0);
 
     const dispatchSum = dispatches
-      .filter(dsp => dsp.itemCode === itemCode)
+      .filter(dsp => dsp.itemCode === itemCode && dsp.mapWithStock !== false)
       .reduce((sum, dsp) => sum + (Number(dsp.qty) || 0), 0);
 
     const inHand = Math.max(0, inwardSum - dispatchSum);
@@ -2889,6 +2895,14 @@ const InventoryApp = (() => {
     const btnAdd = document.getElementById('btnAddDspRow');
     if (btnAdd) btnAdd.onclick = () => addDspRow();
 
+    const mapWithStockChk = document.getElementById('dspMapWithStock');
+    if (mapWithStockChk) {
+      mapWithStockChk.onchange = () => {
+        renderDspModalRows();
+        recalcDispatchTotals();
+      };
+    }
+
     const isOurProjectChk = document.getElementById('dspIsOurProject');
     const logisticsSection = document.getElementById('dspLogisticsSection');
     if (isOurProjectChk && logisticsSection) {
@@ -3042,11 +3056,26 @@ const InventoryApp = (() => {
     return html;
   }
 
-  function toggleCustomerPicker(rowId) {
-    const menuId = `custPickerMenu_${rowId}`;
-    const btnId = `custPickerBtn_${rowId}`;
-    const menu = document.getElementById(menuId);
-    const btn = document.getElementById(btnId);
+  function toggleCustomerPicker(rowId, prefix = '') {
+    let menu = null;
+    let btn = null;
+
+    if (prefix === 'mob') {
+      menu = document.getElementById(`custPickerMenu_mob_${rowId}`);
+      btn = document.getElementById(`custPickerBtn_mob_${rowId}`);
+    } else if (prefix) {
+      menu = document.getElementById(`${prefix}Menu_${rowId}`);
+      btn = document.getElementById(`${prefix}Btn_${rowId}`);
+    } else {
+      if (window.innerWidth < 768) {
+        menu = document.getElementById(`custPickerMenu_mob_${rowId}`) || document.getElementById(`custPickerMenu_${rowId}`);
+        btn = document.getElementById(`custPickerBtn_mob_${rowId}`) || document.getElementById(`custPickerBtn_${rowId}`);
+      } else {
+        menu = document.getElementById(`custPickerMenu_${rowId}`) || document.getElementById(`custPickerMenu_mob_${rowId}`);
+        btn = document.getElementById(`custPickerBtn_${rowId}`) || document.getElementById(`custPickerBtn_mob_${rowId}`);
+      }
+    }
+
     if (!menu) return;
     const isShown = menu.classList.contains('show');
     document.querySelectorAll('.inv-row-picker-menu.show').forEach(m => {
@@ -3070,8 +3099,19 @@ const InventoryApp = (() => {
     }
   }
 
-  function filterCustomerPicker(rowId, query) {
-    const listEl = document.getElementById(`custPickerList_${rowId}`);
+  function filterCustomerPicker(rowId, query, prefix = '') {
+    let listEl = null;
+    if (prefix === 'mob') {
+      listEl = document.getElementById(`custPickerList_mob_${rowId}`);
+    } else if (prefix) {
+      listEl = document.getElementById(`${prefix}List_${rowId}`);
+    } else {
+      if (window.innerWidth < 768) {
+        listEl = document.getElementById(`custPickerList_mob_${rowId}`) || document.getElementById(`custPickerList_${rowId}`);
+      } else {
+        listEl = document.getElementById(`custPickerList_${rowId}`) || document.getElementById(`custPickerList_mob_${rowId}`);
+      }
+    }
     if (!listEl) return;
     const row = dispatchCustomerRows.find(r => r.id === rowId);
     const selectedSlNo = row ? row.slNo : '';
@@ -3232,13 +3272,14 @@ const InventoryApp = (() => {
             <div class="card-header d-flex align-items-center justify-content-between gap-2">
               <div class="flex-grow-1 min-w-0">
                 <div class="inv-row-item-picker" id="custPickerWrap_mob_${row.id}">
-                  <button type="button" class="btn btn-sm btn-light border w-100 text-start d-flex align-items-center justify-content-between px-2 py-1 shadow-none" id="custPickerBtn_mob_${row.id}" onclick="InventoryApp.toggleCustomerPicker('${row.id}')" style="font-size:0.76rem; height:28px;">
+                  <button type="button" class="btn btn-sm btn-light border w-100 text-start d-flex align-items-center justify-content-between px-2 py-1 shadow-none inv-row-picker-btn" id="custPickerBtn_mob_${row.id}" onclick="InventoryApp.toggleCustomerPicker('${row.id}', 'mob')" style="font-size:0.76rem; height:28px;">
                     <span class="text-truncate fw-semibold text-dark" id="custPickerLabel_mob_${row.id}">${escapeHtml(currentDisplayName)}</span>
                     <svg class="ms-1 text-muted flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
                   <div class="inv-row-picker-menu" id="custPickerMenu_mob_${row.id}" style="min-width: 260px;">
-                    <div class="inv-row-picker-search-wrap">
-                      <input type="text" class="inv-row-picker-search-input" placeholder="Search customer name..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value)" autocomplete="off">
+                    <div class="inv-row-picker-search-wrap d-flex align-items-center gap-1.5 p-1.5">
+                      <input type="text" class="inv-row-picker-search-input flex-grow-1" placeholder="Search customer name..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value, 'mob')" autocomplete="off">
+                      <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-1" onclick="InventoryApp.toggleCustomerPicker('${row.id}', 'mob')" style="font-size:1.1rem; line-height:1; text-decoration:none;" title="Close">✕</button>
                     </div>
                     <div class="inv-row-picker-list" id="custPickerList_mob_${row.id}">
                       ${renderCustomerPickerListHtml(row.id, row.slNo, '')}
@@ -3415,6 +3456,7 @@ const InventoryApp = (() => {
     if (!tbody && !mobContainer) return;
 
     const ledger = getCalculatedStockLedger();
+    const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
 
     if (tbody) {
       tbody.innerHTML = dispatchRows.map((row) => {
@@ -3428,7 +3470,7 @@ const InventoryApp = (() => {
         }
         const unitPrice = Number(row.unitPrice) || 0;
         const lineTotal = round2(qty * unitPrice);
-        const isOverStock = qty > inHand;
+        const isOverStock = mapWithStock && (qty > inHand);
         const isManual = Boolean(row.isManualPrice);
 
         return `
@@ -3458,7 +3500,7 @@ const InventoryApp = (() => {
             </td>
             <td style="width: 110px;">
               <div class="input-group input-group-sm">
-                <input type="number" min="1" max="${inHand}" step="any" class="form-control form-control-sm text-center font-monospace dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="Qty" style="height: 28px; padding: 2px 4px;">
+                <input type="number" min="1" ${mapWithStock ? `max="${inHand}"` : ''} step="any" class="form-control form-control-sm text-center font-monospace dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="Qty" style="height: 28px; padding: 2px 4px;">
                 <span class="input-group-text px-1.5 py-0 text-secondary font-monospace" style="font-size: 0.72rem; min-width: 32px; justify-content: center; height: 28px;">${escapeHtml(item.unit || 'Nos')}</span>
               </div>
             </td>
@@ -3500,7 +3542,7 @@ const InventoryApp = (() => {
         }
         const unitPrice = Number(row.unitPrice) || 0;
         const lineTotal = round2(qty * unitPrice);
-        const isOverStock = qty > inHand;
+        const isOverStock = mapWithStock && (qty > inHand);
         const isManual = Boolean(row.isManualPrice);
 
         return `
@@ -3541,7 +3583,7 @@ const InventoryApp = (() => {
                 <div class="inv-inw-card-col">
                   <label class="form-label text-secondary fs-8 fw-semibold mb-1">Quantity</label>
                   <div class="input-group input-group-sm" style="height:30px;">
-                    <input type="number" min="1" max="${inHand}" step="any" class="form-control text-end fw-bold dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0" style="height:30px;">
+                    <input type="number" min="1" ${mapWithStock ? `max="${inHand}"` : ''} step="any" class="form-control text-end fw-bold dsp-row-qty ${isOverStock ? 'is-invalid' : ''}" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0" style="height:30px;">
                     <span class="input-group-text px-2 text-muted fs-8 bg-light flex-shrink-0" style="height:30px;">${escapeHtml(item.unit || 'Nos')}</span>
                   </div>
                 </div>
@@ -3589,7 +3631,8 @@ const InventoryApp = (() => {
           row.qty = input.value === '' ? '' : Number(input.value);
           const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
           const inHand = Number(item.inHandQty) || 0;
-          const isOverStock = (Number(row.qty) || 0) > inHand;
+          const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
+          const isOverStock = mapWithStock && ((Number(row.qty) || 0) > inHand);
 
           document.querySelectorAll(`.dsp-row-qty[data-row-id="${rowId}"]`).forEach(qInp => {
             if (qInp !== input) qInp.value = input.value;
@@ -3674,13 +3717,14 @@ const InventoryApp = (() => {
     let totalUnits = 0;
     let hasOverStock = false;
     let hasEmptyOrZeroQty = false;
+    const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
 
     dispatchRows.forEach(row => {
       const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
       const inHand = Number(item.inHandQty) || 0;
       const qty = Number(row.qty) || 0;
       if (qty <= 0) hasEmptyOrZeroQty = true;
-      if (qty > inHand) hasOverStock = true;
+      if (mapWithStock && qty > inHand) hasOverStock = true;
 
       const unitPrice = Number(row.unitPrice !== undefined ? row.unitPrice : item.buyingPrice) || 0;
       totalUnits += qty;
@@ -3776,6 +3820,9 @@ const InventoryApp = (() => {
     if (remarksInput) remarksInput.value = '';
     if (isOurProjectChk) isOurProjectChk.checked = true;
     if (logisticsSection) logisticsSection.style.display = 'block';
+
+    const mapWithStockChk = document.getElementById('dspMapWithStock');
+    if (mapWithStockChk) mapWithStockChk.checked = true;
 
     const transInput = document.getElementById('dspTransportCost');
     const distInput = document.getElementById('dspDistanceKm');
@@ -3891,6 +3938,8 @@ const InventoryApp = (() => {
       oldRecords = dispatches.filter(d => (d.challanNo && d.challanNo === editingDispatchChallanNo) || d.id === editingDispatchChallanNo);
     }
 
+    const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
+
     for (let i = 0; i < dispatchRows.length; i++) {
       const r = dispatchRows[i];
       const item = ledger.find(it => it.code === r.itemCode);
@@ -3904,14 +3953,16 @@ const InventoryApp = (() => {
         return;
       }
 
-      let maxAvailable = item.inHandQty;
-      if (isEditing && r.originalDispatchId) {
-        const oldRec = oldRecords.find(o => o.id === r.originalDispatchId);
-        if (oldRec) maxAvailable += Number(oldRec.qty) || 0;
-      }
-      if (qty > maxAvailable) {
-        if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Quantity exceeds available stock (${maxAvailable})`, 'danger');
-        return;
+      if (mapWithStock) {
+        let maxAvailable = item.inHandQty;
+        if (isEditing && r.originalDispatchId) {
+          const oldRec = oldRecords.find(o => o.id === r.originalDispatchId);
+          if (oldRec) maxAvailable += Number(oldRec.qty) || 0;
+        }
+        if (qty > maxAvailable) {
+          if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Quantity exceeds available stock (${maxAvailable})`, 'danger');
+          return;
+        }
       }
     }
 
@@ -3942,6 +3993,7 @@ const InventoryApp = (() => {
       // Structured logistics metadata
       const logisticsMeta = {
         isOurProject,
+        mapWithStock,
         distanceKm,
         costPerKm,
         transportCost,
@@ -3950,7 +4002,9 @@ const InventoryApp = (() => {
         totalDeliveryCost,
         customerAllocations
       };
-      const logisticsRemarks = remarks ? `${remarks} |logistics:${JSON.stringify(logisticsMeta)}` : `|logistics:${JSON.stringify(logisticsMeta)}`;
+      const stockTag = mapWithStock ? '' : ' |mapWithStock:false';
+      const cleanRemarks = remarks ? remarks.replace(/\s*\|mapWithStock:(true|false)/g, '').replace(/\s*\|logistics:[\s\S]*/g, '').trim() : '';
+      const logisticsRemarks = cleanRemarks ? `${cleanRemarks}${stockTag} |logistics:${JSON.stringify(logisticsMeta)}` : `${stockTag} |logistics:${JSON.stringify(logisticsMeta)}`;
 
       for (let idx = 0; idx < dispatchRows.length; idx++) {
         const r = dispatchRows[idx];
@@ -3974,6 +4028,7 @@ const InventoryApp = (() => {
           vehicle,
           remarks: logisticsRemarks,
           isOurProject,
+          mapWithStock,
           distanceKm,
           costPerKm,
           totalDeliveryCost,
@@ -5164,6 +5219,16 @@ const InventoryApp = (() => {
         logistics = JSON.parse(first.remarks.split('|logistics:')[1]);
       } catch (e) {}
     }
+
+    // Map with Stock Checkbox
+    const mapWithStockChk = document.getElementById('dspMapWithStock');
+    let mapWithStock = first.mapWithStock !== false;
+    if (first.remarks && first.remarks.includes('|mapWithStock:false')) {
+      mapWithStock = false;
+    } else if (logistics && logistics.mapWithStock === false) {
+      mapWithStock = false;
+    }
+    if (mapWithStockChk) mapWithStockChk.checked = mapWithStock;
 
     // Populate Delivery Cost
     const transInput = document.getElementById('dspTransportCost');

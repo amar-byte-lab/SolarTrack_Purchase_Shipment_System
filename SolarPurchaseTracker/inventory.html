@@ -430,31 +430,27 @@
         <!-- Section: Delivery / Logistics Cost & Customer Allocation (Shown when Is our Own Project is checked) -->
         <div id="dspLogisticsSection" class="border rounded p-3 mb-2.5 bg-white shadow-sm" style="border-color: #e2e8f0 !important;">
           
-          <!-- Row 1: Vehicle, Transport Cost -->
+          <!-- Row 1: Vehicle, Transport Cost, Distance, Cost/Km (Single Row on Desktop) -->
           <div class="row g-2 mb-2">
-            <div class="col-sm-6 col-12">
+            <div class="col-md-3 col-sm-6 col-12">
               <label class="form-label small fw-semibold text-secondary mb-1">Vehicle / Transporter</label>
               <input type="text" class="form-control form-control-sm" id="dspVehicle" placeholder="Vehicle number / driver">
             </div>
-            <div class="col-sm-6 col-12">
+            <div class="col-md-3 col-sm-6 col-12">
               <label class="form-label small fw-semibold text-secondary mb-1">Transport Cost (₹)</label>
               <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspTransportCost" placeholder="0.00">
             </div>
-          </div>
-
-          <!-- Row 2: Cost/Km, Distance (km) Sabu auto calculated -->
-          <div class="row g-2 mb-2">
-            <div class="col-sm-6 col-6">
+            <div class="col-md-3 col-sm-6 col-6">
               <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
               <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspDistanceKm" placeholder="0">
             </div>
-            <div class="col-sm-6 col-6">
+            <div class="col-md-3 col-sm-6 col-6">
               <label class="form-label small fw-semibold text-secondary mb-1">Cost / Km (₹/km)</label>
-              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspCostPerKm" placeholder="0.00">
+              <input type="text" readonly class="form-control form-control-sm text-end font-monospace bg-light" id="dspCostPerKm" placeholder="—">
             </div>
           </div>
 
-          <!-- Row 3: Extra Expenses and Note -->
+          <!-- Row 2: Extra Expenses and Note -->
           <div class="row g-2 mb-3">
             <div class="col-sm-4 col-12">
               <label class="form-label small fw-semibold text-secondary mb-1">Extra Expenses (₹)</label>
@@ -502,10 +498,17 @@
         </div>
 
         <!-- Multi-Item Dispatch Table Header -->
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <label class="form-label fw-bold text-dark small mb-0">Equipment Items to Dispatch *</label>
-          <button type="button" class="btn btn-sm btn-outline-warning text-dark p-0 d-flex align-items-center justify-content-center" id="btnAddDspRow" style="width: 36px; height: 26px; border-radius: 4px;" title="Add Item">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-3">
+            <label class="form-label fw-bold text-dark small mb-0">Equipment Items to Dispatch *</label>
+            <div class="form-check form-check-inline mb-0 d-inline-flex align-items-center gap-1.5" style="font-size:0.78rem;">
+              <input class="form-check-input mt-0" type="checkbox" id="dspMapWithStock" checked>
+              <label class="form-check-label text-secondary fw-semibold cursor-pointer user-select-none" for="dspMapWithStock">Map with Stock</label>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-warning text-dark px-2.5 py-1 d-inline-flex align-items-center gap-1 fw-semibold fs-8 shadow-none" id="btnAddDspRow" style="height: 26px; border-radius: 4px;" title="Add Item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Add Item</span>
           </button>
         </div>
 
@@ -947,9 +950,9 @@
 <script src="js/db.js" defer></script>
 <script src="js/calc.js" defer></script>
 <script src="js/utils.js" defer></script>
-<script src="js/ui.js?v=1.0.4" defer></script>
+<script src="js/ui.js?v=1.0.5" defer></script>
 <script src="js/connect.js" defer></script>
 <!-- Inventory Controller Script -->
-<script src="js/inventory.js?v=1.0.9" defer></script>
+<script src="js/inventory.js?v=1.0.11" defer></script>
 </body>
 </html>
