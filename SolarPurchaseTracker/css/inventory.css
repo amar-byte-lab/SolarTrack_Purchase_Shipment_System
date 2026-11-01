@@ -3356,6 +3356,9 @@
 }
 
 /* Edit Shipment style Materials List table in Inventory */
+.inv-materials-table {
+  min-width: 1040px;
+}
 .inv-materials-table th {
   background-color: #f8fafc;
   color: #1e3a8a;

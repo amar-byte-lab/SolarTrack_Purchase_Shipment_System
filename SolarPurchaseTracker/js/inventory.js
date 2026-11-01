@@ -83,9 +83,8 @@ const InventoryApp = (() => {
     if (typeof DB === 'undefined') return;
 
     try {
-      if (!DB.isReady()) {
-        await DB.tryRestoreFolder().catch(() => {});
-      }
+      // Always guarantee latest inventory tables are loaded from server DB
+      await DB.tryRestoreFolder().catch(() => {});
 
       // 1. Fetch items
       let loadedItems = [];
@@ -226,11 +225,75 @@ const InventoryApp = (() => {
     return { inwardSum, dispatchSum, inHand };
   }
 
+  function getItemCostPerUnit(itemCode, fallbackPrice = 0) {
+    if (!itemCode) return Number(fallbackPrice) || 0;
+    const matchingInwards = inwards
+      .filter(i => (i.itemCode || '').toLowerCase() === itemCode.toLowerCase());
+
+    if (matchingInwards.length > 0) {
+      const sorted = [...matchingInwards].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0) || (b.id > a.id ? 1 : -1));
+      for (const inw of sorted) {
+        const cpu = Number(inw.costPerUnit !== undefined ? inw.costPerUnit : inw.CostPerUnit);
+        if (cpu > 0) return cpu;
+        const up = Number(inw.unitPrice !== undefined ? inw.unitPrice : inw.UnitPrice) || 0;
+        const qty = Number(inw.qty !== undefined ? inw.qty : inw.Quantity) || 0;
+        const tc = Number(inw.transportCost !== undefined ? inw.transportCost : inw.TransportCost) || 0;
+        if (up > 0 || tc > 0) {
+          return round2(up + (qty > 0 ? (tc / qty) : 0));
+        }
+      }
+    }
+    return Number(fallbackPrice) || 0;
+  }
+
+  function getItemHistoricalPrices(itemCode) {
+    if (!itemCode) return [];
+    const matching = inwards.filter(i => (i.itemCode || '').toLowerCase() === itemCode.toLowerCase());
+    const list = [];
+
+    // Chronological newest first
+    const sorted = [...matching].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0) || (b.id > a.id ? 1 : -1));
+
+    sorted.forEach(inw => {
+      const cpu = Number(inw.costPerUnit !== undefined ? inw.costPerUnit : inw.CostPerUnit);
+      const up = Number(inw.unitPrice !== undefined ? inw.unitPrice : inw.UnitPrice) || 0;
+      const qty = Number(inw.qty !== undefined ? inw.qty : inw.Quantity) || 0;
+      const tc = Number(inw.transportCost !== undefined ? inw.transportCost : inw.TransportCost) || 0;
+      const effectiveRate = cpu > 0 ? round2(cpu) : round2(up + (qty > 0 ? (tc / qty) : 0));
+
+      if (effectiveRate > 0) {
+        list.push({
+          price: effectiveRate,
+          date: inw.date || '',
+          qty: qty,
+          supplier: inw.supplier || ''
+        });
+      }
+    });
+
+    const ledger = items.map(item => ({
+      code: item.code,
+      buyingPrice: Number(item.buyingPrice) || 0
+    }));
+    const itm = ledger.find(i => (i.code || '').toLowerCase() === itemCode.toLowerCase());
+    const basePrice = Number(itm?.buyingPrice || 0);
+    if (basePrice > 0 && !list.some(p => Math.abs(p.price - basePrice) < 0.01)) {
+      list.push({
+        price: basePrice,
+        date: 'Catalog',
+        qty: 0,
+        supplier: 'Base Price'
+      });
+    }
+
+    return list;
+  }
+
   function getCalculatedStockLedger() {
     return items.map(item => {
       const { inwardSum, dispatchSum, inHand } = getItemSummary(item.code);
-      const buyingPrice = Number(item.buyingPrice) || 0;
-      const totalStockValuation = inHand * buyingPrice;
+      const costPerUnit = getItemCostPerUnit(item.code, item.buyingPrice);
+      const totalStockValuation = round2(inHand * costPerUnit);
 
       let status = 'in-stock';
       if (inHand === 0) {
@@ -241,6 +304,8 @@ const InventoryApp = (() => {
 
       return {
         ...item,
+        costPerUnit,
+        buyingPrice: costPerUnit,
         inwardQty: inwardSum,
         dispatchedQty: dispatchSum,
         inHandQty: inHand,
@@ -476,7 +541,7 @@ const InventoryApp = (() => {
     }
     const tabCountInwards = document.getElementById('tabCountInwards');
     if (tabCountInwards) {
-      const consignments = getGroupedInwardConsignments();
+      const consignments = getGroupedInwardConsignments(false);
       tabCountInwards.textContent = consignments.length;
     }
     const tabCountDispatches = document.getElementById('tabCountDispatches');
@@ -697,7 +762,7 @@ const InventoryApp = (() => {
               <span class="inv-tree-cat-val font-monospace">${fmtRupees(catVal)}</span>
             </div>
             <div class="inv-tree-group-right">
-              <button type="button" class="inv-cat-add-btn" onclick="event.stopPropagation(); InventoryApp.startInlineAddItem('${cat}');" title="Add item to ${escapeHtml(cat)}">
+              <button type="button" class="inv-cat-add-btn" onclick="event.stopPropagation(); InventoryApp.openNewItemModal('${cat}');" title="Add item to ${escapeHtml(cat)}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>Add Item</span>
               </button>
@@ -717,10 +782,10 @@ const InventoryApp = (() => {
       if (isInlineOpen) {
         gHtml += `
           <div class="inv-tree-item inv-tree-item-inline-add">
-            <div class="inv-tree-item-left col-item">
+            <div class="inv-tree-item-left col-item" style="flex: 1 1 auto; gap: 8px;">
               <div class="inv-tree-item-connector"></div>
-              <input type="text" class="form-control form-control-sm fw-semibold" id="inlineNewName_${cat}" placeholder="Item Name *" style="max-width: 250px; flex: 1 1 auto;" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}'); if(event.key==='Escape') InventoryApp.cancelInlineAddItem();" autocomplete="off">
-              <select class="form-select form-select-sm" id="inlineNewUnit_${cat}" style="width: 82px; flex: 0 0 82px;" title="Unit">
+              <input type="text" class="form-control form-control-sm fw-semibold" id="inlineNewName_${cat}" placeholder="Equipment Item Name *" style="max-width: 280px; flex: 2 1 auto;" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}'); if(event.key==='Escape') InventoryApp.cancelInlineAddItem();" autocomplete="off">
+              <select class="form-select form-select-sm" id="inlineNewUnit_${cat}" style="width: 110px; flex: 0 0 110px;" title="Unit of Measurement">
                 <option value="Nos">Nos</option>
                 <option value="Pcs">Pcs</option>
                 <option value="Meters">Meters</option>
@@ -728,23 +793,12 @@ const InventoryApp = (() => {
                 <option value="Bag">Bag</option>
                 <option value="Kgs">Kgs</option>
               </select>
+              <input type="number" min="1" step="1" class="form-control form-control-sm font-monospace text-center" id="inlineNewThreshold_${cat}" value="5" placeholder="Min Alert" title="Min Threshold Alert" style="width: 90px; flex: 0 0 90px;" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}');">
             </div>
-            <div class="inv-tree-item-right">
-              <div class="inv-tree-col col-stock">
-                <input type="number" min="0" step="any" class="form-control form-control-sm text-center font-monospace w-100" id="inlineNewQty_${cat}" value="0" title="Initial Qty" oninput="InventoryApp.updateInlineTotalVal('${cat}')" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}');">
-              </div>
-              <div class="inv-tree-col col-status">
-                <span class="inv-stock-badge in-stock m-0"><span class="inv-badge-dot"></span> New</span>
-              </div>
-              <div class="inv-tree-col col-price">
-                <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace w-100" id="inlineNewPrice_${cat}" placeholder="0.00" title="Cost / Unit (₹)" oninput="InventoryApp.updateInlineTotalVal('${cat}')" onkeydown="if(event.key==='Enter') InventoryApp.saveInlineAddItem('${cat}');">
-              </div>
-              <div class="inv-tree-col col-val font-monospace fw-bold text-dark small" id="inlineNewTotalVal_${cat}">
-                ₹0.00
-              </div>
+            <div class="inv-tree-item-right" style="flex: 0 0 auto;">
               <div class="inv-tree-col col-actions no-print d-flex align-items-center justify-content-center gap-1">
-                <button type="button" class="btn btn-sm btn-success py-0.5 px-2 fs-8 fw-semibold" onclick="InventoryApp.saveInlineAddItem('${cat}')" title="Save Item">✓ Save</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary py-0.5 px-1.5 fs-8" onclick="InventoryApp.cancelInlineAddItem()" title="Cancel">✕</button>
+                <button type="button" class="btn btn-sm btn-success py-0.5 px-2.5 fs-8 fw-semibold" onclick="InventoryApp.saveInlineAddItem('${cat}')" title="Save Item">✓ Save</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0.5 px-2 fs-8" onclick="InventoryApp.cancelInlineAddItem()" title="Cancel">✕</button>
               </div>
             </div>
           </div>
@@ -778,7 +832,7 @@ const InventoryApp = (() => {
                 ${statusBadge}
               </div>
               <div class="inv-tree-col col-price font-monospace text-secondary small">
-                ${fmtRupees(item.buyingPrice)}
+                ${fmtRupees(item.costPerUnit !== undefined ? item.costPerUnit : item.buyingPrice)}
                 <button type="button" class="inv-ph-btn" title="View Price History" onclick="InventoryApp.openPriceHistory('${item.code}')">📈</button>
               </div>
               <div class="inv-tree-col col-val font-monospace fw-bold text-dark small">
@@ -862,19 +916,17 @@ const InventoryApp = (() => {
   function saveInlineAddItem(cat) {
     const nameInput = document.getElementById(`inlineNewName_${cat}`);
     const unitInput = document.getElementById(`inlineNewUnit_${cat}`);
-    const qtyInput = document.getElementById(`inlineNewQty_${cat}`);
-    const priceInput = document.getElementById(`inlineNewPrice_${cat}`);
+    const thresholdInput = document.getElementById(`inlineNewThreshold_${cat}`);
 
     const name = nameInput?.value.trim();
     if (!name) {
-      if (typeof UI !== 'undefined') UI.toast('Please enter the Item Name', 'warning');
+      if (typeof UI !== 'undefined') UI.toast('Please enter the Equipment Item Name', 'warning');
       nameInput?.focus();
       return;
     }
 
     const unit = unitInput?.value || 'Nos';
-    const qty = Number(qtyInput?.value) || 0;
-    const buyingPrice = Number(priceInput?.value) || 0;
+    const minThreshold = Number(thresholdInput?.value) || 5;
     const code = generateNextSkuCode();
 
     const newItem = {
@@ -884,59 +936,14 @@ const InventoryApp = (() => {
       spec: name,
       category: cat,
       unit,
-      buyingPrice,
-      minThreshold: 5,
+      buyingPrice: 0,
+      minThreshold,
       hsn: '',
       gst: 12,
       status: 'Active'
     };
 
     items.push(newItem);
-
-    // If initial stock quantity was entered, record an opening consignment inward
-    if (qty > 0) {
-      const newInward = {
-        id: 'INW_' + Date.now(),
-        date: new Date().toISOString().slice(0, 10),
-        invoiceNo: 'OPENING-STOCK',
-        supplier: 'Opening Stock',
-        itemCode: code,
-        qty: qty,
-        unitPrice: buyingPrice,
-        costPerUnit: buyingPrice,
-        transportCost: 0,
-        consignmentTransportCost: 0,
-        gstRate: 0,
-        totalCost: qty * buyingPrice,
-        location: 'Main Godown',
-        remarks: 'Initial stock on item registration',
-        docName: null,
-        docData: null,
-        documents: []
-      };
-      inwards.push(newInward);
-
-      if (typeof DB !== 'undefined') {
-        DB.insert('inventory_inwards', {
-          InwardID: newInward.id,
-          Date: newInward.date,
-          InvoiceNo: newInward.invoiceNo,
-          Supplier: newInward.supplier,
-          ItemCode: newInward.itemCode,
-          Quantity: newInward.qty,
-          UnitPrice: newInward.unitPrice,
-          GstRate: 0,
-          CostPerUnit: newInward.costPerUnit,
-          TransportCost: 0,
-          ConsignmentTransportCost: 0,
-          TotalCost: newInward.totalCost,
-          Location: newInward.location,
-          Remarks: newInward.remarks,
-          CreatedAt: new Date().toISOString()
-        }).catch(() => {});
-      }
-    }
-
     saveData();
 
     if (typeof DB !== 'undefined') {
@@ -947,7 +954,7 @@ const InventoryApp = (() => {
         Specification: newItem.name,
         Category: newItem.category,
         Unit: newItem.unit,
-        BuyingPrice: newItem.buyingPrice,
+        BuyingPrice: 0,
         MinThreshold: newItem.minThreshold,
         HSNCode: '',
         GSTPercent: 12,
@@ -970,7 +977,6 @@ const InventoryApp = (() => {
     renderKpiCards();
     renderCategoryChips();
     renderLedgerTable();
-    if (qty > 0) renderInwardsTable();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Added "${name}" to ${cat} successfully!`, 'success');
@@ -1222,8 +1228,8 @@ const InventoryApp = (() => {
     return rows;
   }
 
-  function getGroupedInwardConsignments() {
-    const rawInwards = getFilteredInwards();
+  function getGroupedInwardConsignments(applyFilter = true) {
+    const rawInwards = applyFilter ? getFilteredInwards() : [...inwards].sort((a, b) => new Date(b.date) - new Date(a.date));
     const map = new Map();
 
     rawInwards.forEach(inw => {
@@ -1255,7 +1261,8 @@ const InventoryApp = (() => {
       const qty = Number(inw.qty !== undefined ? inw.qty : inw.Quantity) || 0;
       const gstRate = Number(inw.gstRate !== undefined ? inw.gstRate : 18);
       const rowTransport = Number(inw.transportCost !== undefined ? inw.transportCost : 0);
-      const rowTotal = Number(inw.totalCost) || round2((qty * unitPrice * (1 + gstRate / 100)) + rowTransport);
+      // Total Inward Cost should strictly NOT include GST: Material Cost (Qty * Unit Price) + Transport Cost
+      const rowTotal = round2((qty * unitPrice) + rowTransport);
       const costPerUnit = Number(inw.costPerUnit !== undefined ? inw.costPerUnit : inw.CostPerUnit) || round2(unitPrice + (qty > 0 ? (rowTransport / qty) : 0));
 
       grp.items.push({
@@ -1497,10 +1504,12 @@ const InventoryApp = (() => {
 
     await deleteDbBatch('inventory_inwards', 'InwardID', idsToDelete);
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'inwards') renderInwardsTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
     updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
@@ -1770,10 +1779,12 @@ const InventoryApp = (() => {
 
     await deleteDbBatch('inventory_dispatches', 'DispatchID', selectedIds);
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'dispatches') renderDispatchesTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
     updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
@@ -1797,10 +1808,12 @@ const InventoryApp = (() => {
 
     await deleteDbBatch('inventory_inwards', 'InwardID', selectedIds);
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'inwards') renderInwardsTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
     updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
@@ -2493,8 +2506,8 @@ const InventoryApp = (() => {
       }
     });
 
-    // 3. Summary (Total Material Cost includes transport cost, and Total GST)
-    const totalMaterialCost = round2(sumTotalWithGst + totalTransportCost);
+    // 3. Summary (Total Material Cost includes transport cost without GST, and Total GST)
+    const totalMaterialCost = round2(sumTotalWithoutGst + totalTransportCost);
 
     const lblGst = document.getElementById('inwSummaryGst');
     const lblTotalMaterial = document.getElementById('inwSummaryTotalMaterialCost');
@@ -2757,7 +2770,7 @@ const InventoryApp = (() => {
       const gstRate = Number(r.gstRate) || 0;
       const rowTransport = Number(r.transportCost) || 0;
       const costPerUnit = Number(r.costPerUnit) || round2(unitPrice + (qty > 0 ? (rowTransport / qty) : 0));
-      const totalCost = Number(r.totalWithGst) ? round2(Number(r.totalWithGst) + rowTransport) : round2((qty * unitPrice * (1 + gstRate / 100)) + rowTransport);
+      const totalCost = round2((qty * unitPrice) + rowTransport);
 
       totalConsignmentCost += totalCost;
       totalConsignmentUnits += qty;
@@ -2787,8 +2800,10 @@ const InventoryApp = (() => {
 
       // Update BuyingPrice in master inventory item
       const masterItem = items.find(it => it.code === r.itemCode);
-      if (masterItem && unitPrice > 0) {
-        masterItem.buyingPrice = unitPrice;
+      const effectiveCostPerUnit = costPerUnit > 0 ? costPerUnit : unitPrice;
+      if (masterItem && effectiveCostPerUnit > 0) {
+        masterItem.buyingPrice = effectiveCostPerUnit;
+        masterItem.costPerUnit = effectiveCostPerUnit;
       }
 
       // Save strictly required fields to DB: QTY, Cost (UnitPrice), GST (GstRate), Cost per unit, Transport Cost, Consignment Transport Cost
@@ -2814,9 +2829,9 @@ const InventoryApp = (() => {
           CreatedAt: new Date().toISOString()
         }).catch(err => console.warn('[DB] inventory_inwards insert error:', err));
 
-        if (masterItem && unitPrice > 0) {
+        if (masterItem && effectiveCostPerUnit > 0) {
           DB.update('inventory_items', row => (row.ItemCode || row.code) === r.itemCode, {
-            BuyingPrice: unitPrice
+            BuyingPrice: effectiveCostPerUnit
           }).catch(() => {});
         }
       }
@@ -2831,10 +2846,12 @@ const InventoryApp = (() => {
     const bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'inwards') renderInwardsTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
 
     if (typeof UI !== 'undefined') {
       const msg = isEditing
@@ -2890,9 +2907,15 @@ const InventoryApp = (() => {
       const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
       const inHand = Number(item.inHandQty) || 0;
       const qty = Number(row.qty) || 0;
-      const unitPrice = Number(item.buyingPrice) || 0;
-      const lineTotal = qty * unitPrice;
+      const histPrices = getItemHistoricalPrices(row.itemCode);
+
+      if (row.unitPrice === undefined || row.unitPrice === null) {
+        row.unitPrice = histPrices.length > 0 ? histPrices[0].price : (Number(item.buyingPrice) || 0);
+      }
+      const unitPrice = Number(row.unitPrice) || 0;
+      const lineTotal = round2(qty * unitPrice);
       const isOverStock = qty > inHand;
+      const isManual = Boolean(row.isManualPrice);
 
       return `
         <tr data-row-id="${row.id}" class="${isOverStock ? 'table-danger' : ''}">
@@ -2925,8 +2948,19 @@ const InventoryApp = (() => {
               <span class="input-group-text px-1.5 py-0 text-secondary font-monospace" style="font-size: 0.72rem; min-width: 32px; justify-content: center; height: 28px;">${escapeHtml(item.unit || 'Nos')}</span>
             </div>
           </td>
-          <td class="text-end font-monospace text-secondary text-nowrap" style="width: 125px;">
-            ${fmtRupees(unitPrice)}
+          <td style="width: 190px;">
+            <div class="d-flex flex-column gap-1">
+              <select class="form-select form-select-sm dsp-row-price-select font-monospace text-end py-1 px-1.5" data-row-id="${row.id}" style="font-size: 0.76rem; height: 28px;">
+                ${histPrices.map(hp => {
+                  const isSel = (!isManual && Math.abs(hp.price - unitPrice) < 0.01);
+                  const dtStr = hp.date && hp.date !== 'Catalog' ? formatShortDate(hp.date) : 'Catalog';
+                  const label = `${fmtRupees(hp.price)} (${dtStr}${hp.qty ? `, Qty:${hp.qty}` : ''})`;
+                  return `<option value="${hp.price}" ${isSel ? 'selected' : ''}>${label}</option>`;
+                }).join('')}
+                <option value="__manual__" ${isManual ? 'selected' : ''}>✏️ Custom / Manual Input...</option>
+              </select>
+              <input type="number" min="0" step="any" class="form-control form-control-sm font-monospace text-end dsp-row-custom-price py-1 px-2 ${isManual ? '' : 'd-none'}" data-row-id="${row.id}" value="${row.unitPrice !== undefined ? row.unitPrice : ''}" placeholder="Enter Rate (₹)" style="height: 26px; font-size: 0.76rem;">
+            </div>
           </td>
           <td class="text-end font-monospace fw-bold text-dark dsp-row-total" data-row-id="${row.id}" style="width: 125px; font-size: 0.82rem;">
             ${fmtRupees(lineTotal)}
@@ -2942,25 +2976,7 @@ const InventoryApp = (() => {
   }
 
   function attachDspRowHandlers(tbody, ledger) {
-    // 1. Equipment select change
-    tbody.querySelectorAll('.dsp-row-item-select').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const rowId = sel.getAttribute('data-row-id');
-        const code = sel.value;
-        const row = dispatchRows.find(r => r.id === rowId);
-        if (row && code) {
-          row.itemCode = code;
-          const targetItem = ledger.find(i => i.code === code);
-          if (targetItem && targetItem.inHandQty > 0 && (!row.qty || Number(row.qty) === 0)) {
-            row.qty = 1;
-          }
-          renderDspRows();
-          recalcDispatchTotals();
-        }
-      });
-    });
-
-    // 2. Quantity inputs
+    // 1. Quantity inputs
     tbody.querySelectorAll('.dsp-row-qty').forEach(input => {
       input.addEventListener('input', () => {
         const rowId = input.getAttribute('data-row-id');
@@ -2976,14 +2992,55 @@ const InventoryApp = (() => {
           if (tr) tr.classList.toggle('table-danger', isOverStock);
           input.classList.toggle('is-invalid', isOverStock);
 
-          const total = (Number(row.qty) || 0) * (Number(item.buyingPrice) || 0);
+          const total = (Number(row.qty) || 0) * (Number(row.unitPrice) || 0);
           if (totalCell) totalCell.textContent = fmtRupees(total);
           recalcDispatchTotals();
         }
       });
     });
 
-    // 3. Remove row button
+    // 2. Historical Price Dropdown
+    tbody.querySelectorAll('.dsp-row-price-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const rowId = sel.getAttribute('data-row-id');
+        const row = dispatchRows.find(r => r.id === rowId);
+        const customInput = tbody.querySelector(`.dsp-row-custom-price[data-row-id="${rowId}"]`);
+        if (!row) return;
+
+        if (sel.value === '__manual__') {
+          row.isManualPrice = true;
+          if (customInput) {
+            customInput.classList.remove('d-none');
+            customInput.focus();
+          }
+        } else {
+          row.isManualPrice = false;
+          row.unitPrice = Number(sel.value);
+          if (customInput) customInput.classList.add('d-none');
+          const totalCell = tbody.querySelector(`.dsp-row-total[data-row-id="${rowId}"]`);
+          const total = (Number(row.qty) || 0) * (Number(row.unitPrice) || 0);
+          if (totalCell) totalCell.textContent = fmtRupees(total);
+          recalcDispatchTotals();
+        }
+      });
+    });
+
+    // 3. Custom / Manual Price input
+    tbody.querySelectorAll('.dsp-row-custom-price').forEach(input => {
+      input.addEventListener('input', () => {
+        const rowId = input.getAttribute('data-row-id');
+        const row = dispatchRows.find(r => r.id === rowId);
+        if (row) {
+          row.unitPrice = input.value === '' ? '' : Number(input.value);
+          const totalCell = tbody.querySelector(`.dsp-row-total[data-row-id="${rowId}"]`);
+          const total = (Number(row.qty) || 0) * (Number(row.unitPrice) || 0);
+          if (totalCell) totalCell.textContent = fmtRupees(total);
+          recalcDispatchTotals();
+        }
+      });
+    });
+
+    // 4. Remove row button
     tbody.querySelectorAll('.btn-remove-dsp-row').forEach(btn => {
       btn.addEventListener('click', () => {
         const rowId = btn.getAttribute('data-row-id');
@@ -3006,8 +3063,9 @@ const InventoryApp = (() => {
       if (qty <= 0) hasEmptyOrZeroQty = true;
       if (qty > inHand) hasOverStock = true;
 
+      const unitPrice = Number(row.unitPrice !== undefined ? row.unitPrice : item.buyingPrice) || 0;
       totalUnits += qty;
-      totalMaterialCost += (qty * (Number(item.buyingPrice) || 0));
+      totalMaterialCost += (qty * unitPrice);
     });
 
     const transportCost = Number(document.getElementById('dspTransportCost')?.value) || 0;
@@ -3144,8 +3202,8 @@ const InventoryApp = (() => {
     dispatchRows.forEach((r, idx) => {
       const item = ledger.find(it => it.code === r.itemCode);
       const qty = Number(r.qty);
-      const unitPrice = Number(item.buyingPrice) || 0;
-      const dispatchedCost = qty * unitPrice;
+      const unitPrice = Number(r.unitPrice !== undefined ? r.unitPrice : item.buyingPrice) || 0;
+      const dispatchedCost = round2(qty * unitPrice);
       totalDispatchedCost += dispatchedCost;
       totalDispatchedUnits += qty;
 
@@ -3195,10 +3253,12 @@ const InventoryApp = (() => {
     const bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'dispatches') renderDispatchesTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Successfully dispatched ${dispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${siteName}". Total Material Cost: ${fmtRupees(totalDispatchedCost)}.`, 'success');
@@ -3691,11 +3751,14 @@ const InventoryApp = (() => {
     return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
   }
 
-  function openNewItemModal() {
+  function openNewItemModal(preselectedCat = null) {
     populateCategorySelects();
     const modalEl = document.getElementById('modalNewItem');
     if (!modalEl) return;
 
+    const titleEl = document.getElementById('modalNewItemTitle');
+    const wrapCat = document.getElementById('wrapNewSkuCategory');
+    const wrapName = document.getElementById('wrapNewSkuName');
     const codeInput = document.getElementById('newSkuCode');
     const nameInput = document.getElementById('newSkuName');
     const catInput = document.getElementById('newSkuCategory');
@@ -3704,8 +3767,20 @@ const InventoryApp = (() => {
 
     if (codeInput) codeInput.value = generateNextSkuCode();
     if (nameInput) nameInput.value = '';
-    const cats = getCategoryList();
-    if (catInput) catInput.value = cats[0] || 'Panels';
+
+    if (preselectedCat && typeof preselectedCat === 'string') {
+      if (catInput) catInput.value = preselectedCat;
+      if (wrapCat) wrapCat.style.display = 'none';
+      if (wrapName) wrapName.className = 'col-12';
+      if (titleEl) titleEl.textContent = `Add New Item — ${preselectedCat}`;
+    } else {
+      const cats = getCategoryList();
+      if (catInput) catInput.value = cats[0] || 'Panels';
+      if (wrapCat) wrapCat.style.display = '';
+      if (wrapName) wrapName.className = 'col-md-6 col-12';
+      if (titleEl) titleEl.textContent = 'Add New Equipment Item';
+    }
+
     if (unitInput) unitInput.value = 'Nos';
     if (thresholdInput) thresholdInput.value = '5';
 
@@ -3881,11 +3956,12 @@ const InventoryApp = (() => {
     const bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'dispatches') renderDispatchesTable();
-    else if (activeTab === 'inwards') renderInwardsTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Updated item "${name}" successfully!`, 'success');
@@ -4036,10 +4112,12 @@ const InventoryApp = (() => {
     const bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'inwards') renderInwardsTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Updated inward record "${id}" successfully!`, 'success');
@@ -4062,10 +4140,12 @@ const InventoryApp = (() => {
       await DB.remove('inventory_inwards', r => (r.InwardID || r.id) === id).catch(err => console.warn('[Supabase] inventory_inwards delete error:', err));
     }
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'inwards') renderInwardsTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
     updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
@@ -4243,10 +4323,12 @@ const InventoryApp = (() => {
     const bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'dispatches') renderDispatchesTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
 
     if (typeof UI !== 'undefined') {
       UI.toast(`Updated dispatch record "${id}" successfully!`, 'success');
@@ -4269,10 +4351,12 @@ const InventoryApp = (() => {
       await DB.remove('inventory_dispatches', r => (r.DispatchID || r.id) === id).catch(err => console.warn('[Supabase] inventory_dispatches delete error:', err));
     }
 
+    updateAllTabCounters();
     renderKpiCards();
     renderCategoryChips();
-    if (activeTab === 'ledger') renderLedgerTable();
-    else if (activeTab === 'dispatches') renderDispatchesTable();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
     updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
@@ -4653,7 +4737,7 @@ const InventoryApp = (() => {
     let pricePoints = [];
     if (itemInwards.length > 0) {
       pricePoints = itemInwards.map((inw) => {
-        const rate = Number(inw.unitPrice) || Number(item.buyingPrice) || 0;
+        const rate = Number(inw.costPerUnit) || Number(inw.unitPrice) || Number(item.buyingPrice) || 0;
         const qty = Number(inw.qty) || 0;
         const total = Number(inw.totalCost) || (rate * qty);
         return {
@@ -4672,34 +4756,15 @@ const InventoryApp = (() => {
         id: 'BASE',
         date: new Date().toISOString().slice(0, 10),
         supplier: 'Catalog Base Rate (Initial)',
-        rate: Number(item.buyingPrice) || 0,
+        rate: Number(item.costPerUnit) || Number(item.buyingPrice) || 0,
         qty: 0,
         totalCost: 0,
         invoiceNo: 'CATALOG-INIT'
       }];
     }
 
-    // Rates calculation
-    const rates = pricePoints.map(p => p.rate);
-    const minRate = Math.min(...rates);
-    const maxRate = Math.max(...rates);
-    const latestRate = pricePoints[pricePoints.length - 1].rate;
-
-    const statCurrent = document.getElementById('phStatCurrent');
-    const statLowest = document.getElementById('phStatLowest');
-    const statHighest = document.getElementById('phStatHighest');
-    const statEntries = document.getElementById('phStatEntries');
-
-    if (statCurrent) statCurrent.textContent = fmtRupees(latestRate);
-    if (statLowest) statLowest.textContent = fmtRupees(minRate);
-    if (statHighest) statHighest.textContent = fmtRupees(maxRate);
-    if (statEntries) statEntries.textContent = itemInwards.length;
-
-    // Render SVG Trend Graph
+    // Render SVG Trend Graph with increase/decrease metrics and purchased quantities
     renderPriceTrendGraph(pricePoints, item);
-
-    // Render History Table
-    renderPriceHistoryTable(pricePoints);
 
     const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
     bsModal.show();
@@ -4718,12 +4783,12 @@ const InventoryApp = (() => {
     const minRate = Math.min(...rates);
     const maxRate = Math.max(...rates);
 
-    const width = 680;
-    const height = 180;
-    const paddingLeft = 65;
-    const paddingRight = 35;
-    const paddingTop = 25;
-    const paddingBottom = 35;
+    const width = 760;
+    const height = 250;
+    const paddingLeft = 70;
+    const paddingRight = 60;
+    const paddingTop = 45;
+    const paddingBottom = 40;
 
     const plotW = width - paddingLeft - paddingRight;
     const plotH = height - paddingTop - paddingBottom;
@@ -4736,8 +4801,8 @@ const InventoryApp = (() => {
       yMax = Math.ceil((yMax * 1.15) || 100);
     } else {
       const diff = yMax - yMin;
-      yMin = Math.max(0, Math.floor(yMin - diff * 0.15));
-      yMax = Math.ceil(yMax + diff * 0.15);
+      yMin = Math.max(0, Math.floor(yMin - diff * 0.20));
+      yMax = Math.ceil(yMax + diff * 0.25);
     }
 
     const getY = (val) => {
@@ -4754,7 +4819,8 @@ const InventoryApp = (() => {
     const coords = pricePoints.map((p, idx) => ({
       x: getX(idx),
       y: getY(p.rate),
-      p
+      p,
+      idx
     }));
 
     // Grid lines (3 horizontal lines)
@@ -4775,73 +4841,53 @@ const InventoryApp = (() => {
     // Dots and text labels
     let dotsSvg = '';
     coords.forEach((c) => {
+      const prev = c.idx > 0 ? pricePoints[c.idx - 1] : null;
+      const diff = prev ? round2(c.p.rate - prev.rate) : null;
+      let diffSvg = '';
+      let dotColor = '#2563eb';
+
+      if (diff !== null) {
+        if (diff > 0) {
+          diffSvg = `<text x="${c.x.toFixed(1)}" y="${(c.y - 25).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#16a34a" font-family="monospace">▲ +₹${diff.toFixed(2)}</text>`;
+          dotColor = '#16a34a';
+        } else if (diff < 0) {
+          diffSvg = `<text x="${c.x.toFixed(1)}" y="${(c.y - 25).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626" font-family="monospace">▼ -₹${Math.abs(diff).toFixed(2)}</text>`;
+          dotColor = '#dc2626';
+        } else {
+          diffSvg = `<text x="${c.x.toFixed(1)}" y="${(c.y - 25).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="monospace">= Same</text>`;
+        }
+      } else {
+        diffSvg = `<text x="${c.x.toFixed(1)}" y="${(c.y - 25).toFixed(1)}" text-anchor="middle" font-size="8" fill="#94a3b8" font-family="sans-serif">(Initial)</text>`;
+      }
+
+      const qtyLabel = c.p.qty > 0 ? `Qty: ${fmtQty(c.p.qty)} ${escapeHtml(item.unit || 'units')}` : 'Catalog Rate';
+
       dotsSvg += `
         <g class="ph-graph-dot" style="cursor: pointer;">
-          <title>${c.p.supplier}: ₹${c.p.rate.toLocaleString('en-IN')} on ${c.p.date}</title>
-          <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="#059669" stroke="#ffffff" stroke-width="2"/>
-          <text x="${c.x.toFixed(1)}" y="${(c.y - 8).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f172a" font-family="monospace">₹${Math.round(c.p.rate).toLocaleString('en-IN')}</text>
-          <text x="${c.x.toFixed(1)}" y="${(height - 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="sans-serif">${formatShortDate(c.p.date)}</text>
+          <title>${c.p.supplier}: ₹${c.p.rate.toLocaleString('en-IN')}/unit on ${c.p.date}${diff !== null ? ` (${diff > 0 ? '+' : ''}${diff.toFixed(2)})` : ''}\n${qtyLabel}</title>
+          ${diffSvg}
+          <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4.5" fill="${dotColor}" stroke="#ffffff" stroke-width="2"/>
+          <text x="${c.x.toFixed(1)}" y="${(c.y - 10).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a" font-family="monospace">₹${fmtRupees(c.p.rate)}</text>
+          <text x="${c.x.toFixed(1)}" y="${(c.y + 16).toFixed(1)}" text-anchor="middle" font-size="8.5" font-weight="600" fill="#475569" font-family="sans-serif">${qtyLabel}</text>
+          <text x="${c.x.toFixed(1)}" y="${(height - 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="sans-serif">${c.p.date && c.p.date !== 'CATALOG-INIT' ? formatShortDate(c.p.date) : 'Catalog'}</text>
         </g>
       `;
     });
 
     wrap.innerHTML = `
-      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto; max-height: 200px; display: block; overflow: visible;">
+      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto; max-height: 260px; display: block; overflow: visible;">
         <defs>
           <linearGradient id="phAreaGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#10b981" stop-opacity="0.32"/>
-            <stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.01"/>
           </linearGradient>
         </defs>
         ${gridSvg}
         <polygon points="${areaStr}" fill="url(#phAreaGradient)"/>
-        <polyline points="${pointsStr}" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="${pointsStr}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         ${dotsSvg}
       </svg>
     `;
-  }
-
-  function renderPriceHistoryTable(pricePoints) {
-    const tbody = document.getElementById('phTableBody');
-    if (!tbody) return;
-
-    if (!pricePoints || pricePoints.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">No inward purchase records recorded.</td></tr>`;
-      return;
-    }
-
-    // Display rows in reverse chronological order (newest on top)
-    const displayList = [...pricePoints].reverse();
-
-    tbody.innerHTML = displayList.map((p) => {
-      const chronoIdx = pricePoints.findIndex(pt => pt.id === p.id);
-      let trendBadge = `<span class="badge bg-light text-secondary border font-monospace" style="font-size:0.70rem;">— Baseline</span>`;
-      if (chronoIdx > 0) {
-        const prevRate = pricePoints[chronoIdx - 1].rate;
-        const diff = p.rate - prevRate;
-        if (diff > 0) {
-          trendBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace" style="font-size:0.70rem;" title="+${fmtRupees(diff)} vs previous">▲ +₹${diff.toFixed(2)}</span>`;
-        } else if (diff < 0) {
-          trendBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle font-monospace" style="font-size:0.70rem;" title="${fmtRupees(diff)} vs previous">▼ -₹${Math.abs(diff).toFixed(2)}</span>`;
-        } else {
-          trendBadge = `<span class="badge bg-light text-muted border font-monospace" style="font-size:0.70rem;">= Same Rate</span>`;
-        }
-      }
-
-      return `
-        <tr>
-          <td class="font-monospace text-secondary">${escapeHtml(p.date)}</td>
-          <td>
-            <div class="fw-semibold text-dark text-truncate" style="max-width:240px;">${escapeHtml(p.supplier)}</div>
-            ${p.invoiceNo ? `<div class="text-muted small font-monospace" style="font-size:0.70rem;">${escapeHtml(p.invoiceNo)}</div>` : ''}
-          </td>
-          <td class="text-end font-monospace fw-bold text-dark">${fmtRupees(p.rate)}</td>
-          <td class="text-center font-monospace">${p.qty > 0 ? fmtQty(p.qty) : '—'}</td>
-          <td class="text-end font-monospace fw-semibold ${p.totalCost > 0 ? 'text-emerald-700' : 'text-muted'}">${p.totalCost > 0 ? fmtRupees(p.totalCost) : '—'}</td>
-          <td class="text-center">${trendBadge}</td>
-        </tr>
-      `;
-    }).join('');
   }
 
   // --- Initializer ---

@@ -453,7 +453,7 @@
                 <th>Item</th>
                 <th style="width: 90px;" class="text-center">Stock</th>
                 <th style="width: 120px;" class="text-center">Qty</th>
-                <th style="width: 125px;" class="text-end">Unit Cost (₹)</th>
+                <th style="width: 190px;" class="text-end">Cost / Unit (₹)</th>
                 <th style="width: 125px;" class="text-end">Total (₹)</th>
                 <th style="width: 36px;" class="text-center p-0"></th>
               </tr>
@@ -512,7 +512,7 @@
         <input type="hidden" id="newSkuCode">
         <div class="row g-2">
           <!-- Row 1: Category & Item Name -->
-          <div class="col-md-6 col-12">
+          <div class="col-md-6 col-12" id="wrapNewSkuCategory">
             <label class="form-label small fw-semibold text-secondary mb-1">Category *</label>
             <select class="form-select form-select-sm" id="newSkuCategory">
               <option value="Panels">Panels</option>
@@ -526,12 +526,12 @@
               <option value="Others">Others</option>
             </select>
           </div>
-          <div class="col-md-6 col-12">
+          <div class="col-md-6 col-12" id="wrapNewSkuName">
             <label class="form-label small fw-semibold text-secondary mb-1">Equipment Item Name *</label>
             <input type="text" class="form-control form-control-sm" id="newSkuName" placeholder="e.g. Solar PV Module, Solar Inverter">
           </div>
           <!-- Row 2: Unit & Min Threshold Alert -->
-          <div class="col-md-6 col-12">
+          <div class="col-md-6 col-12" id="wrapNewSkuUnit">
             <label class="form-label small fw-semibold text-secondary mb-1">Unit of Measurement</label>
             <select class="form-select form-select-sm" id="newSkuUnit">
               <option value="Nos">Nos</option>
@@ -542,7 +542,7 @@
               <option value="Kgs">Kgs</option>
             </select>
           </div>
-          <div class="col-md-6 col-12">
+          <div class="col-md-6 col-12" id="wrapNewSkuThreshold">
             <label class="form-label small fw-semibold text-secondary mb-1">Min Threshold Alert</label>
             <input type="number" min="1" step="1" class="form-control form-control-sm font-monospace" id="newSkuMinThreshold" value="5">
           </div>
@@ -854,65 +854,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-3">
-        <!-- 4 Stat Summary Cards -->
-        <div class="row g-2 mb-3" id="phStatCards">
-          <div class="col-sm-3 col-6">
-            <div class="p-2 border rounded bg-light text-center">
-              <span class="text-secondary small d-block" style="font-size:0.70rem; text-transform:uppercase;">Current Rate</span>
-              <strong class="font-monospace text-primary fs-7" id="phStatCurrent">₹0.00</strong>
-            </div>
-          </div>
-          <div class="col-sm-3 col-6">
-            <div class="p-2 border rounded bg-light text-center">
-              <span class="text-secondary small d-block" style="font-size:0.70rem; text-transform:uppercase;">Lowest Rate</span>
-              <strong class="font-monospace text-emerald-700 fs-7" id="phStatLowest">₹0.00</strong>
-            </div>
-          </div>
-          <div class="col-sm-3 col-6">
-            <div class="p-2 border rounded bg-light text-center">
-              <span class="text-secondary small d-block" style="font-size:0.70rem; text-transform:uppercase;">Highest Rate</span>
-              <strong class="font-monospace text-danger fs-7" id="phStatHighest">₹0.00</strong>
-            </div>
-          </div>
-          <div class="col-sm-3 col-6">
-            <div class="p-2 border rounded bg-light text-center">
-              <span class="text-secondary small d-block" style="font-size:0.70rem; text-transform:uppercase;">Recorded Inwards</span>
-              <strong class="font-monospace text-dark fs-7" id="phStatEntries">0</strong>
-            </div>
-          </div>
-        </div>
-
         <!-- Price History Graph Container -->
-        <div class="border rounded p-2.5 mb-3 bg-white" style="position: relative;">
-          <div class="d-flex justify-content-between align-items-center mb-1.5 px-1">
-            <span class="small fw-semibold text-secondary" style="font-size:0.76rem;">PRICE TREND GRAPH (DATE / MONTH)</span>
-            <span class="badge bg-light text-muted border font-monospace" style="font-size:0.68rem;" id="phGraphBadge">INR (₹) vs Purchase Date</span>
+        <div class="border rounded p-3 bg-white" style="position: relative;">
+          <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+            <span class="small fw-bold text-secondary" style="font-size:0.82rem;">PRICE TREND GRAPH (DATE / MONTH)</span>
+            <span class="badge bg-light text-muted border font-monospace" style="font-size:0.72rem;" id="phGraphBadge">Cost / Unit (₹) vs Purchase Date</span>
           </div>
-          <div id="phGraphCanvasWrap" style="width: 100%; min-height: 190px; position: relative;">
+          <div id="phGraphCanvasWrap" style="width: 100%; min-height: 260px; position: relative;">
             <!-- SVG / Canvas Graph injected by JS -->
-          </div>
-        </div>
-
-        <!-- Chronological Inward Purchase Price Log -->
-        <div class="border rounded overflow-hidden">
-          <div class="bg-light px-2.5 py-1.5 border-bottom fw-semibold small text-secondary" style="font-size:0.76rem;">
-            Chronological Inward Purchase Log
-          </div>
-          <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
-            <table class="table table-sm table-striped align-middle mb-0" style="font-size:0.78rem;">
-              <thead class="table-light sticky-top">
-                <tr>
-                  <th style="width: 105px;">Date</th>
-                  <th>Supplier / Consignment</th>
-                  <th class="text-end" style="width: 130px;">Rate / Unit (₹)</th>
-                  <th class="text-center" style="width: 80px;">Qty</th>
-                  <th class="text-end" style="width: 130px;">Total Cost (₹)</th>
-                  <th class="text-center" style="width: 90px;">Trend</th>
-                </tr>
-              </thead>
-              <tbody id="phTableBody">
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
