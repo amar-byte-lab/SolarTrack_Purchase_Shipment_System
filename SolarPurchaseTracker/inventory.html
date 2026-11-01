@@ -446,67 +446,47 @@
 
         <!-- Section: Delivery / Logistics Cost & Customer Allocation (Shown when Our Project is checked) -->
         <div id="dspLogisticsSection" class="border rounded p-2.5 mb-2.5 bg-light-subtle">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="small fw-bold text-primary text-uppercase" style="font-size:0.76rem; letter-spacing:0.3px;">Delivery & Logistics Cost Tracking</span>
-            <span class="badge bg-white text-dark border font-monospace" id="dspBadgeTotalDelivery">Total Delivery Cost: ₹0.00</span>
-          </div>
+          
+          <!-- 1. Delivery Cost Section -->
+          <div class="border rounded p-2.5 bg-white mb-2.5 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom">
+              <span class="small fw-bold text-dark text-uppercase" style="font-size:0.78rem; letter-spacing:0.3px;">Delivery Cost</span>
+              <span class="badge bg-light text-primary border font-monospace fs-7 fw-bold" id="dspBadgeTotalDelivery">Total Delivery Cost: ₹0.00</span>
+            </div>
 
-          <!-- Transport Cost, Distance & Per Km Cost -->
-          <div class="row g-2 mb-2 align-items-end">
-            <div class="col-sm-4 col-6">
-              <label class="form-label small fw-semibold text-secondary mb-1">Transport Cost (₹)</label>
-              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspTransportCost" placeholder="0.00">
+            <!-- Transport Cost, Distance & Cost per KM -->
+            <div class="row g-2 mb-2 align-items-end">
+              <div class="col-sm-4 col-6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Transport Cost (₹)</label>
+                <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspTransportCost" placeholder="0.00">
+              </div>
+              <div class="col-sm-4 col-6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
+                <input type="number" min="0" step="any" class="form-control form-control-sm text-center font-monospace" id="dspDistanceKm" placeholder="0">
+              </div>
+              <div class="col-sm-4 col-12">
+                <label class="form-label small fw-semibold text-secondary mb-1">Cost per KM (₹/km)</label>
+                <input type="text" class="form-control form-control-sm text-center font-monospace bg-light fw-bold text-dark" id="dspCostPerKm" value="—" readonly tabindex="-1">
+              </div>
             </div>
-            <div class="col-sm-4 col-6">
-              <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
-              <input type="number" min="0" step="any" class="form-control form-control-sm text-center font-monospace" id="dspDistanceKm" placeholder="0">
-            </div>
-            <div class="col-sm-4 col-12">
-              <label class="form-label small fw-semibold text-secondary mb-1">Cost per KM (₹/km)</label>
-              <input type="text" class="form-control form-control-sm text-center font-monospace bg-white fw-bold text-dark" id="dspCostPerKm" value="₹0.00 / km" readonly tabindex="-1">
-            </div>
-          </div>
 
-          <!-- Incidental Extra Delivery Expenses (Food, Stay, Toll, Others with comments) -->
-          <div class="border rounded p-2 bg-white mb-2">
-            <span class="small fw-semibold text-secondary d-block mb-1.5" style="font-size:0.75rem;">Extra Delivery Expenses (Food, Stay, Toll, Others)</span>
-            <div class="row g-2 mb-1">
-              <div class="col-sm-3 col-6">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text px-1.5 text-secondary" style="font-size:0.72rem;">Food</span>
-                  <input type="number" min="0" step="any" class="form-control form-control-sm text-end dsp-extra-cost font-monospace" id="dspFoodCost" placeholder="0.00">
-                </div>
+            <!-- Extra Delivery Expenses (Single Textbox & Single Comment Box) -->
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-4 col-12">
+                <label class="form-label small fw-semibold text-secondary mb-1">Extra Delivery Expenses (Food, Stay, Toll, Others) (₹)</label>
+                <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" id="dspExtraDeliveryCost" placeholder="0.00">
               </div>
-              <div class="col-sm-3 col-6">
-                <input type="text" class="form-control form-control-sm dsp-extra-comment" id="dspFoodComment" placeholder="Food / Stay comment...">
-              </div>
-              <div class="col-sm-3 col-6">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text px-1.5 text-secondary" style="font-size:0.72rem;">Toll</span>
-                  <input type="number" min="0" step="any" class="form-control form-control-sm text-end dsp-extra-cost font-monospace" id="dspTollCost" placeholder="0.00">
-                </div>
-              </div>
-              <div class="col-sm-3 col-6">
-                <input type="text" class="form-control form-control-sm dsp-extra-comment" id="dspTollComment" placeholder="Toll gate details...">
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col-sm-3 col-6">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text px-1.5 text-secondary" style="font-size:0.72rem;">Others</span>
-                  <input type="number" min="0" step="any" class="form-control form-control-sm text-end dsp-extra-cost font-monospace" id="dspOtherDeliveryCost" placeholder="0.00">
-                </div>
-              </div>
-              <div class="col-sm-9 col-6">
-                <input type="text" class="form-control form-control-sm dsp-extra-comment" id="dspOtherDeliveryComment" placeholder="Other expenses comment (e.g. Loading / Unloading / Helper)...">
+              <div class="col-sm-8 col-12">
+                <label class="form-label small fw-semibold text-secondary mb-1">Expense Comment / Breakdown</label>
+                <input type="text" class="form-control form-control-sm" id="dspExtraDeliveryComment" placeholder="e.g. Food, lodging, toll gate, loading/unloading helper...">
               </div>
             </div>
           </div>
 
-          <!-- Customer-wise Cost Allocation Section -->
-          <div class="border rounded p-2 bg-white">
-            <div class="d-flex align-items-center justify-content-between mb-1.5">
-              <span class="small fw-semibold text-secondary" style="font-size:0.75rem;">Customer-wise Cost Allocation (Multiple Customers)</span>
+          <!-- 2. Customer-wise Cost Allocation Section -->
+          <div class="border rounded p-2.5 bg-white shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom">
+              <span class="small fw-bold text-dark text-uppercase" style="font-size:0.78rem; letter-spacing:0.3px;">Customer-wise Cost Allocation</span>
               <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-8 d-inline-flex align-items-center gap-1" id="btnAddDspCustomer">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>Add Customer</span>

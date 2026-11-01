@@ -2892,11 +2892,10 @@ const InventoryApp = (() => {
     if (transportInput) transportInput.addEventListener('input', onLogisticsChange);
     if (distanceInput) distanceInput.addEventListener('input', onLogisticsChange);
 
-    const extraSelectors = ['#dspFoodCost', '#dspFoodComment', '#dspTollCost', '#dspTollComment', '#dspOtherDeliveryCost', '#dspOtherDeliveryComment'];
-    extraSelectors.forEach(sel => {
-      const el = document.querySelector(sel);
-      if (el) el.addEventListener('input', () => recalcDispatchTotals());
-    });
+    const extraCostInput = document.getElementById('dspExtraDeliveryCost');
+    const extraCommentInput = document.getElementById('dspExtraDeliveryComment');
+    if (extraCostInput) extraCostInput.addEventListener('input', () => recalcDispatchTotals());
+    if (extraCommentInput) extraCommentInput.addEventListener('input', () => recalcDispatchTotals());
 
     const btnAddCust = document.getElementById('btnAddDspCustomer');
     if (btnAddCust) btnAddCust.addEventListener('click', () => addDspCustomerRow());
@@ -3291,11 +3290,9 @@ const InventoryApp = (() => {
     if (isOurProject) {
       const transportCost = Number(document.getElementById('dspTransportCost')?.value) || 0;
       const distanceKm = Number(document.getElementById('dspDistanceKm')?.value) || 0;
-      const foodCost = Number(document.getElementById('dspFoodCost')?.value) || 0;
-      const tollCost = Number(document.getElementById('dspTollCost')?.value) || 0;
-      const otherDeliveryCost = Number(document.getElementById('dspOtherDeliveryCost')?.value) || 0;
+      const extraDeliveryCost = Number(document.getElementById('dspExtraDeliveryCost')?.value) || 0;
 
-      totalDeliveryCost = round2(transportCost + foodCost + tollCost + otherDeliveryCost);
+      totalDeliveryCost = round2(transportCost + extraDeliveryCost);
 
       const costPerKmEl = document.getElementById('dspCostPerKm');
       if (costPerKmEl) {
@@ -3367,22 +3364,14 @@ const InventoryApp = (() => {
     const transInput = document.getElementById('dspTransportCost');
     const distInput = document.getElementById('dspDistanceKm');
     const costPerKmEl = document.getElementById('dspCostPerKm');
-    const foodInput = document.getElementById('dspFoodCost');
-    const foodComment = document.getElementById('dspFoodComment');
-    const tollInput = document.getElementById('dspTollCost');
-    const tollComment = document.getElementById('dspTollComment');
-    const otherDelInput = document.getElementById('dspOtherDeliveryCost');
-    const otherDelComment = document.getElementById('dspOtherDeliveryComment');
+    const extraDeliveryCostInput = document.getElementById('dspExtraDeliveryCost');
+    const extraDeliveryCommentInput = document.getElementById('dspExtraDeliveryComment');
 
     if (transInput) transInput.value = '';
     if (distInput) distInput.value = '';
     if (costPerKmEl) costPerKmEl.value = '—';
-    if (foodInput) foodInput.value = '';
-    if (foodComment) foodComment.value = '';
-    if (tollInput) tollInput.value = '';
-    if (tollComment) tollComment.value = '';
-    if (otherDelInput) otherDelInput.value = '';
-    if (otherDelComment) otherDelComment.value = '';
+    if (extraDeliveryCostInput) extraDeliveryCostInput.value = '';
+    if (extraDeliveryCommentInput) extraDeliveryCommentInput.value = '';
 
     // Initialize 1 default customer row
     dispatchCustomerRows = [];
@@ -3444,14 +3433,10 @@ const InventoryApp = (() => {
     const transportCost = isOurProject ? (Number(document.getElementById('dspTransportCost')?.value) || 0) : 0;
     const distanceKm = isOurProject ? (Number(document.getElementById('dspDistanceKm')?.value) || 0) : 0;
     const costPerKm = distanceKm > 0 ? round2(transportCost / distanceKm) : 0;
-    const foodCost = isOurProject ? (Number(document.getElementById('dspFoodCost')?.value) || 0) : 0;
-    const foodComment = isOurProject ? (document.getElementById('dspFoodComment')?.value.trim() || '') : '';
-    const tollCost = isOurProject ? (Number(document.getElementById('dspTollCost')?.value) || 0) : 0;
-    const tollComment = isOurProject ? (document.getElementById('dspTollComment')?.value.trim() || '') : '';
-    const otherDeliveryCost = isOurProject ? (Number(document.getElementById('dspOtherDeliveryCost')?.value) || 0) : 0;
-    const otherDeliveryComment = isOurProject ? (document.getElementById('dspOtherDeliveryComment')?.value.trim() || '') : '';
+    const extraDeliveryCost = isOurProject ? (Number(document.getElementById('dspExtraDeliveryCost')?.value) || 0) : 0;
+    const extraDeliveryComment = isOurProject ? (document.getElementById('dspExtraDeliveryComment')?.value.trim() || '') : '';
 
-    const totalDeliveryCost = round2(transportCost + foodCost + tollCost + otherDeliveryCost);
+    const totalDeliveryCost = round2(transportCost + extraDeliveryCost);
 
     const customerAllocations = isOurProject ? dispatchCustomerRows.map(crow => ({
       slNo: crow.slNo || '',
@@ -3510,12 +3495,8 @@ const InventoryApp = (() => {
       distanceKm,
       costPerKm,
       transportCost,
-      foodCost,
-      foodComment,
-      tollCost,
-      tollComment,
-      otherDeliveryCost,
-      otherDeliveryComment,
+      extraDeliveryCost,
+      extraDeliveryComment,
       totalDeliveryCost,
       customerAllocations
     };
