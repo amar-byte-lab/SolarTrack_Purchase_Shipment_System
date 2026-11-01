@@ -273,35 +273,38 @@
         
         <!-- Header Fields -->
         <div class="row g-2 mb-2">
-          <!-- Row 1: Date, Supplier, Godown -->
-          <div class="col-sm-4 col-6">
+          <!-- Row 1 (Desktop: 4 columns in 1 row | Mobile: Row 1 Date & Supplier, Row 2 Godown & Transport) -->
+          <div class="col-md-3 col-6">
             <label class="form-label small fw-semibold text-secondary mb-1">Date *</label>
             <input type="date" class="form-control form-control-sm" id="inwDate">
           </div>
-          <div class="col-sm-4 col-6">
+          <div class="col-md-3 col-6">
             <label class="form-label small fw-semibold text-secondary mb-1">Supplier Name *</label>
             <input type="text" class="form-control form-control-sm" id="inwSupplier" placeholder="Supplier / Vendor">
           </div>
-          <div class="col-sm-4 col-12">
+          <div class="col-md-3 col-6">
             <label class="form-label small fw-semibold text-secondary mb-1">Godown Location</label>
             <input type="text" class="form-control form-control-sm" id="inwLocation" placeholder="Bay A / Rack 1">
           </div>
-
-          <!-- Row 2: Transport Cost under Date, Upload Invoice under Supplier -->
-          <div class="col-sm-4 col-6">
+          <div class="col-md-3 col-6">
             <label class="form-label small fw-semibold text-secondary mb-1">Transport Cost (₹)</label>
             <input type="number" min="0" step="any" class="form-control form-control-sm text-end" id="inwTransportCost" placeholder="0.00">
           </div>
-          <div class="col-sm-8 col-6">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-              <label class="form-label small fw-semibold text-secondary mb-0">Upload Invoice</label>
-              <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2 fs-8 d-inline-flex align-items-center gap-1" id="btnInwDocUpload">
+
+          <!-- Upload Invoice (Full-width clean row for both Mobile and Desktop) -->
+          <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-white" style="border-color: #e2e8f0 !important;">
+              <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <label class="form-label small fw-semibold text-secondary mb-0 text-truncate">Upload Invoice / Challan Document</label>
+              </div>
+              <button type="button" class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 d-inline-flex align-items-center gap-1.5 flex-shrink-0" id="btnInwDocUpload">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>Upload Files</span>
               </button>
             </div>
             <input type="file" id="inwDocFileInput" accept=".xlsx,.xls,.csv,.jpeg,.jpg,.png,.pdf" multiple style="display:none;">
-            <div id="inwFilesContainer" class="inv-files-list"></div>
+            <div id="inwFilesContainer" class="inv-files-list mt-1"></div>
           </div>
         </div>
 
@@ -318,16 +321,16 @@
           <table class="table table-sm align-middle table-bordered mb-0 inv-materials-table" id="inwMaterialsTable" style="width: 100%;">
             <thead class="table-light">
               <tr>
-                <th class="text-start ps-2" style="min-width:190px;">ITEM NAME</th>
-                <th class="text-center" style="width:85px;">QTY</th>
-                <th class="text-center" style="width:85px;">COST</th>
-                <th class="text-center" style="width:105px;">TOTAL COST</th>
-                <th class="text-center" style="width:65px;">GST</th>
-                <th class="text-center" style="width:95px;">COST+GST</th>
-                <th class="text-center" style="width:115px;">TOTAL COST+GST</th>
-                <th class="text-center" style="width:115px;">DELIVERY COST</th>
-                <th class="text-center inw-th-cost-per-unit" style="width:125px;">COST PER UNIT</th>
-                <th class="text-center" style="width:36px;"></th>
+                <th class="text-start ps-2" style="min-width:170px;">ITEM NAME</th>
+                <th class="text-center" style="width:80px;">QTY</th>
+                <th class="text-end" style="width:85px;">COST</th>
+                <th class="text-end" style="width:115px;">Total (excl. GST)</th>
+                <th class="text-center" style="width:60px;">GST %</th>
+                <th class="text-end" style="width:90px;">COST+GST</th>
+                <th class="text-end" style="width:115px;">Total (incl. GST)</th>
+                <th class="text-end" style="width:105px;">DELIVERY COST</th>
+                <th class="text-end inw-th-cost-per-unit" style="width:115px;">COST PER UNIT</th>
+                <th class="text-center" style="width:32px;"></th>
               </tr>
             </thead>
             <tbody id="inwItemsTableBody" class="fs-7">

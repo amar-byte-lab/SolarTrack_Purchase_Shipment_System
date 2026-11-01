@@ -3238,14 +3238,15 @@
 
 /* Wide Modal for ERP View */
 .modal-wide-inv {
-  max-width: min(1360px, 96vw) !important;
-  width: 96vw !important;
+  max-width: 1040px !important;
+  width: 92vw !important;
+  margin: 1.75rem auto !important;
 }
-@media (max-width: 991px) and (min-width: 768px) {
+@media (max-width: 1199.98px) and (min-width: 768px) {
   .modal-wide-inv {
-    max-width: 98vw !important;
-    width: 98vw !important;
-    margin: 0.5rem auto !important;
+    max-width: 95vw !important;
+    width: 95vw !important;
+    margin: 1rem auto !important;
   }
 }
 
@@ -3309,6 +3310,16 @@
   .inv-inw-card .card-body {
     padding: 10px 12px;
   }
+  .inv-inw-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+    row-gap: 10px;
+  }
+  .inv-inw-card-col {
+    display: flex;
+    flex-direction: column;
+  }
   .inv-inw-card input.form-control {
     font-size: 0.85rem;
     height: 32px;
@@ -3318,6 +3329,24 @@
   .inv-inw-card input.form-control:focus {
     border-color: #10b981;
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+  }
+  .inv-inw-card-col .input-group {
+    height: 32px;
+  }
+  .inv-inw-card-col .input-group .form-control {
+    height: 32px;
+  }
+  .inv-inw-card-col .input-group-text {
+    font-size: 0.75rem;
+    padding: 0 8px;
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+  .inv-inw-card-kpi {
+    height: 32px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
   }
 
   /* Mobile Pop-up Item Picker Menu */
@@ -3351,39 +3380,52 @@
 .inv-materials-wrap {
   overflow-x: auto !important;
   overflow-y: visible;
-  min-height: 140px;
+  min-height: 120px;
   -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 /* Edit Shipment style Materials List table in Inventory */
 .inv-materials-table {
-  min-width: 1040px;
+  min-width: 980px;
+  font-size: 0.8125rem;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 .inv-materials-table th {
   background-color: #f8fafc;
-  color: #1e3a8a;
-  font-weight: 700;
-  font-size: 0.74rem;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.72rem;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  padding: 6px 4px;
+  padding: 8px 6px;
   border-color: #e2e8f0;
   font-family: inherit;
+  white-space: nowrap;
 }
 .inv-materials-table td {
-  padding: 3px 4px;
-  border-color: #e2e8f0;
+  padding: 4px 6px;
+  border-color: #f1f5f9;
   vertical-align: middle;
   font-family: inherit;
 }
+.inv-materials-table tbody tr:hover td {
+  background-color: #f8fafc;
+}
 .inv-materials-table input {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   background: transparent;
   font-family: inherit;
   color: #0f172a;
+  padding: 3px 6px;
+  border-radius: 4px;
 }
 .inv-materials-table input:focus {
   background: #ffffff;
-  box-shadow: 0 0 0 1px #3b82f6;
-  border-radius: 2px;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
+  border: 1px solid #10b981 !important;
 }

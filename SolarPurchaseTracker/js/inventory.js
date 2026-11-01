@@ -2071,57 +2071,61 @@ const InventoryApp = (() => {
 
             <!-- Card Body -->
             <div class="card-body">
-              <!-- QTY & Base Cost -->
-              <div class="row g-2 mb-2">
-                <div class="col-6">
+              <div class="inv-inw-card-grid">
+                <!-- Col 1: Quantity -->
+                <div class="inv-inw-card-col">
                   <label class="form-label text-secondary fs-8 fw-semibold mb-1">Quantity</label>
                   <div class="input-group input-group-sm">
-                    <input type="number" class="form-control text-center fw-bold inw-mob-qty" min="0" step="any" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0">
-                    <span class="input-group-text px-2 text-muted fs-8 bg-light">${unitName}</span>
+                    <input type="number" class="form-control text-end fw-bold inw-mob-qty" min="0" step="any" data-row-id="${row.id}" value="${row.qty !== undefined && row.qty !== null ? row.qty : ''}" placeholder="0">
+                    <span class="input-group-text px-2 text-muted fs-8 bg-light flex-shrink-0">${unitName}</span>
                   </div>
                 </div>
-                <div class="col-6">
+
+                <!-- Col 2: Cost / Unit (₹) -->
+                <div class="inv-inw-card-col">
                   <label class="form-label text-secondary fs-8 fw-semibold mb-1">Cost / Unit (₹)</label>
                   <input type="number" class="form-control form-control-sm text-end fw-semibold inw-mob-rate" min="0" step="any" data-row-id="${row.id}" value="${r || ''}" placeholder="0.00">
                 </div>
-              </div>
 
-              <!-- GST & Cost+GST -->
-              <div class="row g-2 mb-2">
-                <div class="col-5">
+                <!-- Col 3: GST % -->
+                <div class="inv-inw-card-col">
                   <label class="form-label text-secondary fs-8 fw-semibold mb-1">GST %</label>
                   <div class="input-group input-group-sm">
-                    <input type="number" class="form-control text-center inw-mob-gst" min="0" max="100" step="any" data-row-id="${row.id}" value="${g}" placeholder="18">
-                    <span class="input-group-text px-1.5 text-muted fs-8 bg-light">%</span>
+                    <input type="number" class="form-control text-end inw-mob-gst" min="0" max="100" step="any" data-row-id="${row.id}" value="${g}" placeholder="18">
+                    <span class="input-group-text px-2 text-muted fs-8 bg-light flex-shrink-0">%</span>
                   </div>
                 </div>
-                <div class="col-7">
+
+                <!-- Col 4: Cost+GST (₹) -->
+                <div class="inv-inw-card-col">
                   <label class="form-label text-secondary fs-8 fw-semibold mb-1">Cost+GST (₹)</label>
                   <input type="number" class="form-control form-control-sm text-end inw-mob-rate-with-gst" min="0" step="any" data-row-id="${row.id}" value="${rg}" placeholder="0.00">
                 </div>
-              </div>
 
-              <!-- Total Without GST & Total With GST -->
-              <div class="row g-2 mb-2 pt-1 border-top">
-                <div class="col-6">
-                  <div class="text-muted fs-8">Total (excl. GST)</div>
-                  <div class="fw-semibold text-secondary fs-7 inw-mob-twg-display" data-row-id="${row.id}">${fmtRupees(twg || 0)}</div>
+                <!-- Col 5: Total (excl. GST) -->
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Total (excl. GST)</label>
+                  <input type="number" class="form-control form-control-sm text-end fw-semibold text-secondary inw-mob-total-without-gst" min="0" step="any" data-row-id="${row.id}" value="${twg}" placeholder="0.00">
                 </div>
-                <div class="col-6 text-end">
-                  <div class="text-muted fs-8">Total (incl. GST)</div>
-                  <div class="fw-bold text-dark fs-7 inw-mob-t-display" data-row-id="${row.id}">${fmtRupees(t || 0)}</div>
-                </div>
-              </div>
 
-              <!-- Transport Cost & Landed Cost per Unit -->
-              <div class="d-flex align-items-center justify-content-between p-2 rounded bg-light-subtle border">
-                <div>
-                  <span class="text-secondary fs-8 d-block">Transport Cost</span>
-                  <input type="number" class="form-control form-control-sm text-start fw-semibold inw-mob-transport-input mt-0.5" style="width: 90px; height: 26px; font-size: 0.78rem;" min="0" step="any" data-row-id="${row.id}" value="${tc}" placeholder="0.00">
+                <!-- Col 6: Total (incl. GST) -->
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Total (incl. GST)</label>
+                  <input type="number" class="form-control form-control-sm text-end fw-bold text-dark inw-mob-total-with-gst" min="0" step="any" data-row-id="${row.id}" value="${t}" placeholder="0.00">
                 </div>
-                <div class="text-end">
-                  <span class="text-primary fs-8 fw-semibold d-block">Cost per ${unitName}</span>
-                  <span class="fw-bold text-primary fs-6 inw-mob-cpu-display" data-row-id="${row.id}">${fmtRupees(cpu || 0)}</span>
+
+                <!-- Col 7: Transport Cost -->
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Transport Cost (₹)</label>
+                  <input type="number" class="form-control form-control-sm text-end inw-mob-transport-input" min="0" step="any" data-row-id="${row.id}" value="${tc}" placeholder="0.00">
+                </div>
+
+                <!-- Col 8: Landed Cost per Unit -->
+                <div class="inv-inw-card-col">
+                  <label class="form-label text-primary fs-8 fw-semibold mb-1">Cost per ${unitName}</label>
+                  <div class="inv-inw-card-kpi d-flex align-items-center justify-content-end px-2 border rounded text-end">
+                    <span class="fw-bold text-primary fs-7 inw-mob-cpu-display" data-row-id="${row.id}">${fmtRupees(cpu || 0)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2181,6 +2185,8 @@ const InventoryApp = (() => {
     bindInputs('.inw-mob-rate', 'rate');
     bindInputs('.inw-mob-gst', 'gst');
     bindInputs('.inw-mob-rate-with-gst', 'rateWithGst');
+    bindInputs('.inw-mob-total-without-gst', 'totalWithoutGst');
+    bindInputs('.inw-mob-total-with-gst', 'totalWithGst');
     bindInputs('.inw-mob-transport-input', 'transport');
   }
 
@@ -2192,9 +2198,9 @@ const InventoryApp = (() => {
     let q = Number(row.qty) || 0;
     let r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
     let g = (row.gstRate !== undefined && row.gstRate !== null && row.gstRate !== '') ? Number(row.gstRate) : 18;
-    let rg = Number(row.rateWithGst) || (r * (1 + g / 100));
-    let twg = Number(row.totalWithoutGst) || (q * r);
-    let t = Number(row.totalWithGst) || (q * rg);
+    let rg = Number(row.rateWithGst) || round2(r * (1 + g / 100));
+    let twg = Number(row.totalWithoutGst) || round2(q * r);
+    let t = Number(row.totalWithGst) || round2(q * rg);
 
     if (field === 'qty') {
       row.qty = rawVal === '' ? '' : val;
@@ -2208,7 +2214,18 @@ const InventoryApp = (() => {
           r = round2(rg / (1 + g / 100));
           twg = round2(q * r);
           t = round2(q * rg);
+        } else if (twg > 0) {
+          r = round2(twg / q);
+          rg = round2(r * (1 + g / 100));
+          t = round2(q * rg);
+        } else if (t > 0) {
+          rg = round2(t / q);
+          r = round2(rg / (1 + g / 100));
+          twg = round2(q * r);
         }
+      } else {
+        twg = 0;
+        t = 0;
       }
     } else if (field === 'rate') {
       row.rate = rawVal === '' ? '' : val;
@@ -2217,13 +2234,30 @@ const InventoryApp = (() => {
       if (q > 0) {
         twg = round2(q * r);
         t = round2(q * rg);
+      } else {
+        twg = 0;
+        t = 0;
       }
     } else if (field === 'gst') {
       row.gstRate = val;
       g = val;
       if (r > 0) {
         rg = round2(r * (1 + g / 100));
-        if (q > 0) t = round2(q * rg);
+        if (q > 0) {
+          twg = round2(q * r);
+          t = round2(q * rg);
+        }
+      } else if (rg > 0) {
+        r = round2(rg / (1 + g / 100));
+        if (q > 0) {
+          twg = round2(q * r);
+          t = round2(q * rg);
+        }
+      } else if (twg > 0) {
+        t = round2(twg * (1 + g / 100));
+        if (q > 0) {
+          rg = round2(t / q);
+        }
       }
     } else if (field === 'rateWithGst') {
       row.rateWithGst = rawVal === '' ? '' : val;
@@ -2233,24 +2267,31 @@ const InventoryApp = (() => {
       if (q > 0) {
         twg = round2(q * r);
         t = round2(q * rg);
+      } else {
+        twg = 0;
+        t = 0;
       }
     } else if (field === 'totalWithoutGst') {
       twg = val;
-      row.totalWithoutGst = twg;
+      row.totalWithoutGst = rawVal === '' ? '' : twg;
+      t = round2(twg * (1 + g / 100));
+      row.totalWithGst = rawVal === '' ? '' : t;
       if (q > 0) {
         r = round2(twg / q);
         row.rate = r;
-        rg = round2(r * (1 + g / 100));
-        t = round2(q * rg);
+        rg = round2(t / q);
+        row.rateWithGst = rg;
       }
     } else if (field === 'totalWithGst') {
       t = val;
-      row.totalWithGst = t;
+      row.totalWithGst = rawVal === '' ? '' : t;
+      twg = round2(t / (1 + g / 100));
+      row.totalWithoutGst = rawVal === '' ? '' : twg;
       if (q > 0) {
         rg = round2(t / q);
-        r = round2(rg / (1 + g / 100));
+        row.rateWithGst = rg;
+        r = round2(twg / q);
         row.rate = r;
-        twg = round2(q * r);
       }
     } else if (field === 'transport') {
       if (rawVal.trim() === '') {
@@ -2262,6 +2303,7 @@ const InventoryApp = (() => {
       }
     }
 
+    row.rate = r;
     row.rateWithGst = rg;
     row.totalWithoutGst = twg;
     row.totalWithGst = t;
@@ -2283,6 +2325,8 @@ const InventoryApp = (() => {
       const rgEl = tr.querySelector('.inw-row-rate-with-gst');
       const twgEl = tr.querySelector('.inw-row-total-without-gst');
       const tEl = tr.querySelector('.inw-row-total-with-gst');
+      const tcEl = tr.querySelector('.inw-row-transport');
+      const cpuEl = tr.querySelector('.inw-row-cost-per-unit');
 
       if (qEl && document.activeElement !== qEl) qEl.value = row.qty !== undefined && row.qty !== null ? row.qty : '';
       if (rEl && document.activeElement !== rEl) rEl.value = row.rate || '';
@@ -2290,6 +2334,8 @@ const InventoryApp = (() => {
       if (rgEl && document.activeElement !== rgEl) rgEl.value = row.rateWithGst || '';
       if (twgEl && document.activeElement !== twgEl) twgEl.value = row.totalWithoutGst || '';
       if (tEl && document.activeElement !== tEl) tEl.value = row.totalWithGst || '';
+      if (tcEl && document.activeElement !== tcEl) tcEl.value = row.transportCost !== undefined && row.transportCost !== null ? row.transportCost : '';
+      if (cpuEl) cpuEl.value = row.costPerUnit || '';
     }
 
     // Sync Mobile elements
@@ -2299,15 +2345,19 @@ const InventoryApp = (() => {
       const rEl = card.querySelector('.inw-mob-rate');
       const gEl = card.querySelector('.inw-mob-gst');
       const rgEl = card.querySelector('.inw-mob-rate-with-gst');
-      const twgDisplay = card.querySelector('.inw-mob-twg-display');
-      const tDisplay = card.querySelector('.inw-mob-t-display');
+      const twgEl = card.querySelector('.inw-mob-total-without-gst');
+      const tEl = card.querySelector('.inw-mob-total-with-gst');
+      const tcEl = card.querySelector('.inw-mob-transport-input');
+      const cpuDisplay = card.querySelector('.inw-mob-cpu-display');
 
       if (qEl && document.activeElement !== qEl) qEl.value = row.qty !== undefined && row.qty !== null ? row.qty : '';
       if (rEl && document.activeElement !== rEl) rEl.value = row.rate || '';
       if (gEl && document.activeElement !== gEl) gEl.value = row.gstRate !== undefined ? row.gstRate : 18;
       if (rgEl && document.activeElement !== rgEl) rgEl.value = row.rateWithGst || '';
-      if (twgDisplay) twgDisplay.textContent = fmtRupees(row.totalWithoutGst || 0);
-      if (tDisplay) tDisplay.textContent = fmtRupees(row.totalWithGst || 0);
+      if (twgEl && document.activeElement !== twgEl) twgEl.value = row.totalWithoutGst || '';
+      if (tEl && document.activeElement !== tEl) tEl.value = row.totalWithGst || '';
+      if (tcEl && document.activeElement !== tcEl) tcEl.value = row.transportCost !== undefined && row.transportCost !== null ? row.transportCost : '';
+      if (cpuDisplay) cpuDisplay.textContent = fmtRupees(row.costPerUnit || 0);
     }
   }
 
@@ -2325,10 +2375,11 @@ const InventoryApp = (() => {
       const q = Number(row.qty) || 0;
       const r = Number(row.rate !== undefined ? row.rate : row.unitPrice) || 0;
       const g = (row.gstRate !== undefined && row.gstRate !== null && row.gstRate !== '') ? Number(row.gstRate) : 18;
-      const rg = round2(r * (1 + g / 100));
-      const twg = round2(q * r);
-      const t = round2(q * rg);
+      const rg = (row.rateWithGst !== undefined && row.rateWithGst !== '') ? Number(row.rateWithGst) : round2(r * (1 + g / 100));
+      const twg = (row.totalWithoutGst !== undefined && row.totalWithoutGst !== '') ? Number(row.totalWithoutGst) : round2(q * r);
+      const t = (row.totalWithGst !== undefined && row.totalWithGst !== '') ? Number(row.totalWithGst) : round2(q * rg);
 
+      row.rate = r;
       row.rateWithGst = rg;
       row.totalWithoutGst = twg;
       row.totalWithGst = t;
@@ -2393,28 +2444,32 @@ const InventoryApp = (() => {
         const twgEl = tr.querySelector('.inw-row-total-without-gst');
         const tElTot = tr.querySelector('.inw-row-total-with-gst');
         const rgEl = tr.querySelector('.inw-row-rate-with-gst');
+        const rEl = tr.querySelector('.inw-row-rate');
 
         if (tEl && document.activeElement !== tEl) tEl.value = share > 0 ? share : '';
         if (cpuEl) cpuEl.value = costPerUnit > 0 ? costPerUnit : '';
         if (twgEl && document.activeElement !== twgEl) twgEl.value = row.totalWithoutGst || '';
         if (tElTot && document.activeElement !== tElTot) tElTot.value = row.totalWithGst || '';
         if (rgEl && document.activeElement !== rgEl) rgEl.value = row.rateWithGst || '';
+        if (rEl && document.activeElement !== rEl) rEl.value = row.rate || '';
       }
 
       // Update Mobile card display
       const card = document.querySelector(`#inwMobileCardsContainer .inv-inw-card[data-row-id="${row.id}"]`);
       if (card) {
-        const mobTwg = card.querySelector('.inw-mob-twg-display');
-        const mobT = card.querySelector('.inw-mob-t-display');
+        const mobTwg = card.querySelector('.inw-mob-total-without-gst');
+        const mobT = card.querySelector('.inw-mob-total-with-gst');
         const mobTrans = card.querySelector('.inw-mob-transport-input');
         const mobCpu = card.querySelector('.inw-mob-cpu-display');
         const mobRg = card.querySelector('.inw-mob-rate-with-gst');
+        const mobR = card.querySelector('.inw-mob-rate');
 
-        if (mobTwg) mobTwg.textContent = fmtRupees(row.totalWithoutGst || 0);
-        if (mobT) mobT.textContent = fmtRupees(row.totalWithGst || 0);
+        if (mobTwg && document.activeElement !== mobTwg) mobTwg.value = row.totalWithoutGst || '';
+        if (mobT && document.activeElement !== mobT) mobT.value = row.totalWithGst || '';
         if (mobTrans && document.activeElement !== mobTrans) mobTrans.value = share > 0 ? share : '';
         if (mobCpu) mobCpu.textContent = fmtRupees(costPerUnit || 0);
         if (mobRg && document.activeElement !== mobRg) mobRg.value = row.rateWithGst || '';
+        if (mobR && document.activeElement !== mobR) mobR.value = row.rate || '';
       }
     });
 
