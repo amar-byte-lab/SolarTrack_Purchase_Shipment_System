@@ -564,7 +564,8 @@ const InventoryApp = (() => {
     }
     const tabCountDispatches = document.getElementById('tabCountDispatches');
     if (tabCountDispatches) {
-      tabCountDispatches.textContent = dispatches.length;
+      const dispatchConsignments = getGroupedDispatchConsignments(false);
+      tabCountDispatches.textContent = dispatchConsignments.length;
     }
   }
 
@@ -1061,6 +1062,58 @@ const InventoryApp = (() => {
     return rows;
   }
 
+  function getGroupedDispatchConsignments(applyFilter = true) {
+    const rawDispatches = applyFilter ? getFilteredDispatches() : [...dispatches].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const map = new Map();
+
+    rawDispatches.forEach(dsp => {
+      const key = dsp.challanNo || dsp.id;
+      if (!map.has(key)) {
+        map.set(key, {
+          key: key,
+          challanNo: dsp.challanNo || key,
+          date: dsp.date || '',
+          siteName: dsp.siteName || '',
+          vehicle: dsp.vehicle || '',
+          remarks: dsp.remarks || '',
+          isOurProject: dsp.isOurProject !== false,
+          distanceKm: dsp.distanceKm || 0,
+          costPerKm: dsp.costPerKm || 0,
+          transportCost: dsp.transportCost || 0,
+          extraDeliveryCost: dsp.extraDeliveryCost || 0,
+          extraDeliveryComment: dsp.extraDeliveryComment || '',
+          totalDeliveryCost: dsp.totalDeliveryCost || 0,
+          customerAllocations: dsp.customerAllocations || [],
+          docName: dsp.docName || null,
+          docData: dsp.docData || null,
+          documents: dsp.documents || [],
+          items: [],
+          dispatchIds: []
+        });
+      }
+
+      const grp = map.get(key);
+      grp.dispatchIds.push(dsp.id);
+      grp.items.push({
+        id: dsp.id,
+        itemCode: dsp.itemCode,
+        qty: dsp.qty,
+        unitBuyingPrice: dsp.unitBuyingPrice,
+        dispatchedCost: dsp.dispatchedCost
+      });
+
+      if ((!grp.customerAllocations || grp.customerAllocations.length === 0) && dsp.customerAllocations && dsp.customerAllocations.length > 0) {
+        grp.customerAllocations = dsp.customerAllocations;
+      }
+      if (!grp.documents || grp.documents.length === 0) {
+        if (dsp.documents && dsp.documents.length > 0) grp.documents = dsp.documents;
+        else if (dsp.docName) grp.documents = [{ name: dsp.docName, data: dsp.docData }];
+      }
+    });
+
+    return Array.from(map.values());
+  }
+
   function renderDispatchesTable() {
     const tbody = document.getElementById('invDispatchesTbody');
     const tfoot = document.getElementById('invDispatchesTfoot');
@@ -1073,12 +1126,12 @@ const InventoryApp = (() => {
       if (!currentIds.has(id)) selectedDispatches.delete(id);
     }
 
-    const rows = getFilteredDispatches();
+    const consignments = getGroupedDispatchConsignments();
 
     const tabCount = document.getElementById('tabCountDispatches');
-    if (tabCount) tabCount.textContent = rows.length;
+    if (tabCount) tabCount.textContent = consignments.length;
 
-    if (rows.length === 0) {
+    if (consignments.length === 0) {
       tbody.innerHTML = `
         <tr>
           <td colspan="5" class="text-center py-5 text-muted">
@@ -1111,9 +1164,9 @@ const InventoryApp = (() => {
       return;
     }
 
-    tbody.innerHTML = rows.map((disp, idx) => {
-      const custNames = getDispatchCustomers(disp);
-      const cleanRemarks = disp.remarks ? disp.remarks.split('|logistics:')[0].trim() : '';
+    tbody.innerHTML = consignments.map((grp, idx) => {
+      const custNames = getDispatchCustomers(grp);
+      const cleanRemarks = grp.remarks ? grp.remarks.split('|logistics:')[0].trim() : '';
 
       let custHtml = `<span class="text-muted small">—</span>`;
       if (custNames.length === 1) {
@@ -1129,9 +1182,9 @@ const InventoryApp = (() => {
       return `
         <tr>
           <td class="text-center text-muted" style="width: 40px;">${idx + 1}</td>
-          <td class="font-monospace text-secondary text-nowrap" style="width: 130px;">${disp.date}</td>
+          <td class="font-monospace text-secondary text-nowrap" style="width: 130px;">${grp.date}</td>
           <td>
-            <div class="fw-semibold text-dark">${escapeHtml(disp.siteName)}</div>
+            <div class="fw-semibold text-dark">${escapeHtml(grp.siteName)}</div>
             ${cleanRemarks ? `<div class="text-muted small">${escapeHtml(cleanRemarks)}</div>` : ''}
           </td>
           <td>
@@ -1139,10 +1192,10 @@ const InventoryApp = (() => {
           </td>
           <td class="text-center text-nowrap no-print" style="width: 85px;">
             <div class="d-inline-flex align-items-center gap-1">
-              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditDispatchModal('${disp.id}')" title="Edit Dispatch">
+              <button class="inv-row-btn btn-row-edit" onclick="InventoryApp.openEditDispatchModal('${escapeHtml(grp.key)}')" title="Edit Dispatch">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </button>
-              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteDispatch('${disp.id}')" title="Delete Dispatch">
+              <button class="inv-row-btn btn-row-delete" onclick="InventoryApp.deleteDispatch('${escapeHtml(grp.key)}')" title="Delete Dispatch">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             </div>
@@ -1153,18 +1206,18 @@ const InventoryApp = (() => {
 
     // Render Mobile Cards (Site Dispatches)
     if (cardsContainer) {
-      cardsContainer.innerHTML = rows.map((disp) => {
-        const custNames = getDispatchCustomers(disp);
-        const cleanRemarks = disp.remarks ? disp.remarks.split('|logistics:')[0].trim() : '';
+      cardsContainer.innerHTML = consignments.map((grp) => {
+        const custNames = getDispatchCustomers(grp);
+        const cleanRemarks = grp.remarks ? grp.remarks.split('|logistics:')[0].trim() : '';
 
         return `
-          <article class="inv-mobile-card" data-id="${disp.id}">
+          <article class="inv-mobile-card" data-id="${grp.key}">
             <div class="inv-card-head">
               <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
                 <div class="min-w-0 flex-grow-1">
-                  <div class="inv-card-title text-primary">${escapeHtml(disp.siteName)}</div>
+                  <div class="inv-card-title text-primary">${escapeHtml(grp.siteName)}</div>
                   <div class="inv-card-meta">
-                    <span class="font-monospace text-secondary small">${disp.date}</span>
+                    <span class="font-monospace text-secondary small">${grp.date}</span>
                     ${cleanRemarks ? `<span class="text-muted small ms-1">• ${escapeHtml(cleanRemarks)}</span>` : ''}
                   </div>
                   ${custNames.length > 0 ? `
@@ -1178,11 +1231,11 @@ const InventoryApp = (() => {
             </div>
 
             <div class="inv-card-actions justify-content-end">
-              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditDispatchModal('${disp.id}')">
+              <button type="button" class="inv-qa-btn qa-edit" onclick="InventoryApp.openEditDispatchModal('${escapeHtml(grp.key)}')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 <span>Edit</span>
               </button>
-              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteDispatch('${disp.id}')">
+              <button type="button" class="inv-qa-btn qa-delete" onclick="InventoryApp.deleteDispatch('${escapeHtml(grp.key)}')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 <span>Delete</span>
               </button>
@@ -2834,15 +2887,15 @@ const InventoryApp = (() => {
 
   function initDispatchModal() {
     const btnAdd = document.getElementById('btnAddDspRow');
-    if (btnAdd) btnAdd.addEventListener('click', () => addDspRow());
+    if (btnAdd) btnAdd.onclick = () => addDspRow();
 
     const isOurProjectChk = document.getElementById('dspIsOurProject');
     const logisticsSection = document.getElementById('dspLogisticsSection');
     if (isOurProjectChk && logisticsSection) {
-      isOurProjectChk.addEventListener('change', () => {
+      isOurProjectChk.onchange = () => {
         logisticsSection.style.display = isOurProjectChk.checked ? 'block' : 'none';
         recalcDispatchTotals();
-      });
+      };
     }
 
     const transportInput = document.getElementById('dspTransportCost');
@@ -2857,19 +2910,31 @@ const InventoryApp = (() => {
       recalcDispatchTotals();
     };
 
-    if (transportInput) transportInput.addEventListener('input', onLogisticsChange);
-    if (distanceInput) distanceInput.addEventListener('input', onLogisticsChange);
+    if (transportInput) transportInput.oninput = onLogisticsChange;
+    if (distanceInput) distanceInput.oninput = onLogisticsChange;
 
     const extraCostInput = document.getElementById('dspExtraDeliveryCost');
     const extraCommentInput = document.getElementById('dspExtraDeliveryComment');
-    if (extraCostInput) extraCostInput.addEventListener('input', () => recalcDispatchTotals());
-    if (extraCommentInput) extraCommentInput.addEventListener('input', () => recalcDispatchTotals());
+    if (extraCostInput) extraCostInput.oninput = () => recalcDispatchTotals();
+    if (extraCommentInput) extraCommentInput.oninput = () => recalcDispatchTotals();
 
     const btnAddCust = document.getElementById('btnAddDspCustomer');
-    if (btnAddCust) btnAddCust.addEventListener('click', () => addDspCustomerRow());
+    if (btnAddCust) btnAddCust.onclick = () => addDspCustomerRow();
 
     const btnSubmit = document.getElementById('btnSubmitDispatch');
-    if (btnSubmit) btnSubmit.addEventListener('click', handleSaveDispatch);
+    if (btnSubmit) btnSubmit.onclick = handleSaveDispatch;
+
+    const modalDsp = document.getElementById('modalSiteDispatch');
+    if (modalDsp && !modalDsp.dataset.hasHiddenListener) {
+      modalDsp.dataset.hasHiddenListener = 'true';
+      modalDsp.addEventListener('hidden.bs.modal', () => {
+        editingDispatchChallanNo = null;
+        const titleEl = document.getElementById('modalSiteDispatchTitle');
+        if (titleEl) titleEl.textContent = 'Dispatch Equipment to Site';
+        const btnSubmitEl = document.getElementById('btnSubmitDispatch');
+        if (btnSubmitEl) btnSubmitEl.textContent = 'Confirm Dispatch';
+      });
+    }
   }
 
   function addDspCustomerRow(slNo = '', name = '', setCost = '', installCost = '', otherCost = '', otherComment = '') {
@@ -2922,11 +2987,7 @@ const InventoryApp = (() => {
       });
     }
 
-    let html = `
-      <div class="inv-picker-item ${(!selectedSlNo && !q) ? 'selected' : ''}" onclick="InventoryApp.selectDspCustomer('${rowId}', '__custom__')" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; width: 100%; border-bottom: 1px dashed #e2e8f0; background: #fafafa; cursor: pointer;">
-        <span class="text-primary fw-semibold" style="font-size:0.78rem;">✏️ Custom / Unlisted Site...</span>
-      </div>
-    `;
+    let html = '';
 
     if (filtered.length === 0) {
       html += `<div class="p-3 text-center text-muted small">No customers matching "${escapeHtml(query)}"</div>`;
@@ -2936,14 +2997,11 @@ const InventoryApp = (() => {
     filtered.forEach(c => {
       const sl = String(c.SlNo || '');
       const isSelected = (sl && sl === String(selectedSlNo));
-      const capStr = c.ProposedCapacity ? ` [${c.ProposedCapacity}kW]` : '';
-      const consStr = c.ConsumerNo ? `Consumer: ${c.ConsumerNo}` : (c.Mobile ? c.Mobile : `Sl: ${sl}`);
 
       html += `
-        <div class="inv-picker-item ${isSelected ? 'selected' : ''}" onclick="InventoryApp.selectDspCustomer('${rowId}', '${sl}')" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; width: 100%; cursor: pointer;">
+        <div class="inv-picker-item ${isSelected ? 'selected' : ''}" onclick="InventoryApp.selectDspCustomer('${rowId}', '${sl}')" style="display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; width: 100%; cursor: pointer;">
           <div class="min-w-0 flex-grow-1 text-truncate me-2 text-start">
-            <span class="fw-semibold text-dark d-block text-truncate" style="font-size:0.78rem;">${escapeHtml(c.Name || 'Unknown')}</span>
-            <span class="text-muted small" style="font-size:0.70rem;">${escapeHtml(consStr)}${capStr}</span>
+            <span class="fw-semibold text-dark d-block text-truncate" style="font-size:0.80rem;">${escapeHtml(c.Name || 'Unknown')}</span>
           </div>
           ${isSelected ? '<span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-1.5 flex-shrink-0" style="font-size:0.65rem;">Selected</span>' : ''}
         </div>
@@ -3058,11 +3116,10 @@ const InventoryApp = (() => {
       const selectedCustomer = customers.find(c => String(c.SlNo) === selectedSlNo || (row.name && c.Name && c.Name.toLowerCase() === row.name.toLowerCase()));
       let currentDisplayName = '-- Select Customer --';
       if (selectedCustomer) {
-        currentDisplayName = `${selectedCustomer.Name || 'Unknown'} (${selectedCustomer.ConsumerNo || selectedCustomer.SlNo})${selectedCustomer.ProposedCapacity ? ` [${selectedCustomer.ProposedCapacity}kW]` : ''}`;
+        currentDisplayName = selectedCustomer.Name || 'Unknown';
       } else if (row.name) {
         currentDisplayName = row.name;
       }
-      const isCustom = (!selectedSlNo && row.name && (!selectedCustomer || selectedCustomer.Name !== row.name));
 
       return `
         <tr data-cust-row-id="${row.id}">
@@ -3076,16 +3133,13 @@ const InventoryApp = (() => {
               </button>
               <div class="inv-row-picker-menu" id="custPickerMenu_${row.id}" style="min-width: 280px; max-width: 380px;">
                 <div class="inv-row-picker-search-wrap">
-                  <input type="text" class="inv-row-picker-search-input" placeholder="Search customer name, consumer no..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value)" autocomplete="off">
+                  <input type="text" class="inv-row-picker-search-input" placeholder="Search customer name..." oninput="InventoryApp.filterCustomerPicker('${row.id}', this.value)" autocomplete="off">
                 </div>
                 <div class="inv-row-picker-list" id="custPickerList_${row.id}" style="max-height: 220px;">
                   ${renderCustomerPickerListHtml(row.id, row.slNo, '')}
                 </div>
               </div>
             </div>
-            ${isCustom ? `
-              <input type="text" class="form-control form-control-sm dsp-cust-custom-name mt-1 py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.name)}" placeholder="Enter site/customer name" style="font-size:0.74rem; height:24px;">
-            ` : ''}
           </td>
           <td style="width: 100px;">
             <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-set-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.setCost !== undefined && row.setCost !== '' ? row.setCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;" title="Set Cost (₹)">
@@ -3448,9 +3502,22 @@ const InventoryApp = (() => {
     }
   }
 
+  let editingDispatchChallanNo = null;
+
   function openDispatchModal(preselectedCode = null) {
+    editingDispatchChallanNo = null;
+
     const modalEl = document.getElementById('modalSiteDispatch');
     if (!modalEl) return;
+
+    const titleEl = document.getElementById('modalSiteDispatchTitle');
+    if (titleEl) {
+      titleEl.textContent = 'Dispatch Equipment to Site';
+    }
+    const btnSubmit = document.getElementById('btnSubmitDispatch');
+    if (btnSubmit) {
+      btnSubmit.textContent = 'Confirm Dispatch';
+    }
 
     const siteInput = document.getElementById('dspSiteName');
     const dateInput = document.getElementById('dspDate');
@@ -3528,8 +3595,12 @@ const InventoryApp = (() => {
     bsModal.show();
   }
 
-  function handleSaveDispatch() {
-    const siteName = document.getElementById('dspSiteName')?.value.trim();
+  let isSubmittingDispatch = false;
+
+  async function handleSaveDispatch() {
+    if (isSubmittingDispatch) return;
+
+    const siteName = document.getElementById('dspSiteName')?.value.trim() || '';
     const date = document.getElementById('dspDate')?.value || new Date().toISOString().slice(0, 10);
     const vehicle = document.getElementById('dspVehicle')?.value.trim() || 'Site Vehicle';
     const remarks = document.getElementById('dspRemarks')?.value.trim() || 'Project Site Handover';
@@ -3554,12 +3625,8 @@ const InventoryApp = (() => {
       totalCost: round2((Number(crow.setCost) || 0) + (Number(crow.installCost) || 0) + (Number(crow.deliveryCost) || 0) + (Number(crow.otherCost) || 0))
     })).filter(c => c.name || c.slNo || c.totalCost > 0) : [];
 
-    if (!siteName && customerAllocations.length > 0 && customerAllocations[0].name) {
-      const siteInput = document.getElementById('dspSiteName');
-      if (siteInput) siteInput.value = customerAllocations.map(c => c.name).join(', ');
-    }
-
-    const effectiveSiteName = document.getElementById('dspSiteName')?.value.trim() || siteName;
+    // Strictly validate Site Name - Never populate customer names into site name
+    const effectiveSiteName = siteName;
     if (!effectiveSiteName) {
       if (typeof UI !== 'undefined') UI.toast('Please enter the Site / Project Name', 'warning');
       document.getElementById('dspSiteName')?.focus();
@@ -3571,7 +3638,14 @@ const InventoryApp = (() => {
       return;
     }
 
+    const isEditing = Boolean(editingDispatchChallanNo);
+    const challanNoToUse = editingDispatchChallanNo || `DC-${Date.now().toString().slice(-4)}`;
+
     const ledger = getCalculatedStockLedger();
+    let oldRecords = [];
+    if (isEditing) {
+      oldRecords = dispatches.filter(d => (d.challanNo && d.challanNo === editingDispatchChallanNo) || d.id === editingDispatchChallanNo);
+    }
 
     for (let i = 0; i < dispatchRows.length; i++) {
       const r = dispatchRows[i];
@@ -3585,158 +3659,203 @@ const InventoryApp = (() => {
         if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Enter a valid quantity to dispatch`, 'warning');
         return;
       }
-      if (qty > item.inHandQty) {
-        if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Quantity exceeds available stock (${item.inHandQty})`, 'danger');
+
+      let maxAvailable = item.inHandQty;
+      if (isEditing && r.originalDispatchId) {
+        const oldRec = oldRecords.find(o => o.id === r.originalDispatchId);
+        if (oldRec) maxAvailable += Number(oldRec.qty) || 0;
+      }
+      if (qty > maxAvailable) {
+        if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Quantity exceeds available stock (${maxAvailable})`, 'danger');
         return;
       }
     }
 
-    const batchChallanNo = `DC-${Date.now().toString().slice(-4)}`;
-    let totalDispatchedCost = 0;
-    let totalDispatchedUnits = 0;
+    isSubmittingDispatch = true;
+    const btnSubmit = document.getElementById('btnSubmitDispatch');
+    const originalBtnText = btnSubmit ? btnSubmit.textContent : '';
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Saving...';
+    }
 
-    // Structured logistics metadata
-    const logisticsMeta = {
-      isOurProject,
-      distanceKm,
-      costPerKm,
-      transportCost,
-      extraDeliveryCost,
-      extraDeliveryComment,
-      totalDeliveryCost,
-      customerAllocations
-    };
-    const logisticsRemarks = remarks ? `${remarks} |logistics:${JSON.stringify(logisticsMeta)}` : `|logistics:${JSON.stringify(logisticsMeta)}`;
+    try {
+      // If editing, remove old records from memory and DB
+      if (isEditing) {
+        dispatches = dispatches.filter(d => (d.challanNo !== editingDispatchChallanNo && d.id !== editingDispatchChallanNo));
+        if (typeof DB !== 'undefined') {
+          for (const old of oldRecords) {
+            try {
+              await DB.remove('inventory_dispatches', row => (row.DispatchID || row.id) === old.id);
+            } catch (e) {}
+          }
+        }
+      }
 
-    dispatchRows.forEach((r, idx) => {
-      const item = ledger.find(it => it.code === r.itemCode);
-      const qty = Number(r.qty);
-      const unitPrice = Number(r.unitPrice !== undefined ? r.unitPrice : item.buyingPrice) || 0;
-      const dispatchedCost = round2(qty * unitPrice);
-      totalDispatchedCost += dispatchedCost;
-      totalDispatchedUnits += qty;
+      let totalDispatchedCost = 0;
+      let totalDispatchedUnits = 0;
 
-      const newDispatch = {
-        id: `DSP-${Date.now()}-${idx + 1}`,
-        date,
-        challanNo: batchChallanNo,
-        siteName: effectiveSiteName,
-        itemCode: r.itemCode,
-        qty,
-        unitBuyingPrice: unitPrice,
-        dispatchedCost,
-        transportCost: idx === 0 ? totalDeliveryCost : 0,
-        vehicle,
-        remarks: logisticsRemarks,
+      // Structured logistics metadata
+      const logisticsMeta = {
         isOurProject,
         distanceKm,
         costPerKm,
+        transportCost,
+        extraDeliveryCost,
+        extraDeliveryComment,
         totalDeliveryCost,
-        customerAllocations,
-        docName: dispatchDocFiles.map(f => f.name).join(', ') || (dispatchDocFile ? dispatchDocFile.name : null),
-        docData: dispatchDocFiles.length > 0 ? (dispatchDocFiles[0].data || dispatchDocFiles[0].url) : (dispatchDocFile ? dispatchDocFile.data : null),
-        documents: dispatchDocFiles.map(f => ({ name: f.name, size: f.size, url: f.url, data: f.data }))
+        customerAllocations
       };
+      const logisticsRemarks = remarks ? `${remarks} |logistics:${JSON.stringify(logisticsMeta)}` : `|logistics:${JSON.stringify(logisticsMeta)}`;
 
-      dispatches.unshift(newDispatch);
+      for (let idx = 0; idx < dispatchRows.length; idx++) {
+        const r = dispatchRows[idx];
+        const item = ledger.find(it => it.code === r.itemCode);
+        const qty = Number(r.qty);
+        const unitPrice = Number(r.unitPrice !== undefined ? r.unitPrice : item.buyingPrice) || 0;
+        const dispatchedCost = round2(qty * unitPrice);
+        totalDispatchedCost += dispatchedCost;
+        totalDispatchedUnits += qty;
 
-      if (typeof DB !== 'undefined') {
-        DB.insert('inventory_dispatches', {
-          DispatchID: newDispatch.id,
-          Date: newDispatch.date,
-          ChallanNo: newDispatch.challanNo,
-          SiteName: newDispatch.siteName,
-          ItemCode: newDispatch.itemCode,
-          Quantity: newDispatch.qty,
-          UnitBuyingPrice: newDispatch.unitBuyingPrice,
-          DispatchedCost: newDispatch.dispatchedCost,
-          TransportCost: newDispatch.transportCost,
-          Vehicle: newDispatch.vehicle,
-          Remarks: newDispatch.remarks,
-          DocumentName: newDispatch.docName,
-          DocumentData: newDispatch.docData,
-          CreatedAt: new Date().toISOString()
-        }).catch(() => {});
-      }
-    });
+        const newDispatch = {
+          id: (isEditing && r.originalDispatchId) ? r.originalDispatchId : `DSP-${Date.now()}-${idx + 1}`,
+          date,
+          challanNo: challanNoToUse,
+          siteName: effectiveSiteName,
+          itemCode: r.itemCode,
+          qty,
+          unitBuyingPrice: unitPrice,
+          dispatchedCost,
+          transportCost: idx === 0 ? totalDeliveryCost : 0,
+          vehicle,
+          remarks: logisticsRemarks,
+          isOurProject,
+          distanceKm,
+          costPerKm,
+          totalDeliveryCost,
+          customerAllocations,
+          docName: dispatchDocFiles.map(f => f.name).join(', ') || (dispatchDocFile ? dispatchDocFile.name : null),
+          docData: dispatchDocFiles.length > 0 ? (dispatchDocFiles[0].data || dispatchDocFiles[0].url) : (dispatchDocFile ? dispatchDocFile.data : null),
+          documents: dispatchDocFiles.map(f => ({ name: f.name, size: f.size, url: f.url, data: f.data }))
+        };
 
-    // Sync customer allocations directly to Postgres installments table
-    if (typeof DB !== 'undefined' && customerAllocations.length > 0) {
-      customerAllocations.forEach(async crow => {
-        if (!crow.slNo) return;
-        try {
-          const allInst = DB.getAll('installments') || [];
-          const cust = allInst.find(c => String(c.SlNo) === String(crow.slNo));
-          if (!cust) return;
+        dispatches.unshift(newDispatch);
 
-          let basePhone = '';
-          let expenses = {};
-          let creatorId = '';
-          let workObj = {};
-
-          if (cust.BrokerNumber) {
-            const parts = cust.BrokerNumber.split('|');
-            basePhone = parts[0] || '';
-            parts.slice(1).forEach(p => {
-              if (p.startsWith('expenses:')) {
-                try { expenses = JSON.parse(p.slice('expenses:'.length)) || {}; } catch (e) {}
-              } else if (p.startsWith('creator:')) {
-                creatorId = p.slice('creator:'.length);
-              } else if (p.startsWith('work:')) {
-                try { workObj = JSON.parse(p.slice('work:'.length)) || {}; } catch (e) {}
-              }
+        if (typeof DB !== 'undefined') {
+          try {
+            await DB.insert('inventory_dispatches', {
+              DispatchID: newDispatch.id,
+              Date: newDispatch.date,
+              ChallanNo: newDispatch.challanNo,
+              SiteName: newDispatch.siteName,
+              ItemCode: newDispatch.itemCode,
+              Quantity: newDispatch.qty,
+              UnitBuyingPrice: newDispatch.unitBuyingPrice,
+              DispatchedCost: newDispatch.dispatchedCost,
+              TransportCost: newDispatch.transportCost,
+              Vehicle: newDispatch.vehicle,
+              Remarks: newDispatch.remarks,
+              DocumentName: newDispatch.docName,
+              DocumentData: newDispatch.docData,
+              CreatedAt: new Date().toISOString()
             });
-          }
-
-          if (crow.setCost !== undefined && crow.setCost !== '') {
-            expenses.setCost = Number(crow.setCost) || 0;
-            expenses.material = Number(crow.setCost) || 0;
-          }
-          if (crow.installCost !== undefined && crow.installCost !== '') expenses.install = Number(crow.installCost) || 0;
-          if (crow.deliveryCost !== undefined && crow.deliveryCost !== '') {
-            expenses.delivery = Number(crow.deliveryCost) || 0;
-            expenses.transport = Number(crow.deliveryCost) || 0;
-          }
-          if (crow.otherCost !== undefined && crow.otherCost !== '') expenses.other = Number(crow.otherCost) || 0;
-          if (crow.otherComment) expenses.otherComment = crow.otherComment;
-
-          const calcVendor = (expenses.setCost || expenses.material || 0) + (expenses.install || 0) + (expenses.delivery || expenses.transport || 0) + (expenses.gst || 0) + (expenses.other || 0);
-
-          let newBroker = basePhone;
-          newBroker += '|expenses:' + JSON.stringify(expenses);
-          if (creatorId) newBroker += '|creator:' + creatorId;
-          if (workObj && Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
-
-          cust.BrokerNumber = newBroker;
-          cust.VendorPrice = calcVendor;
-
-          await DB.update('installments', r => Number(r.SlNo) === Number(crow.slNo), {
-            BrokerNumber: newBroker,
-            VendorPrice: calcVendor
-          });
-        } catch (e) {
-          console.warn('[Dispatch] Error syncing customer allocation to installments:', e);
+          } catch (e) {}
         }
-      });
-    }
+      }
 
-    saveData();
-    clearSelection('ledger');
+      // Sync customer allocations directly to Postgres installments table
+      if (typeof DB !== 'undefined' && customerAllocations.length > 0) {
+        for (const crow of customerAllocations) {
+          if (!crow.slNo) continue;
+          try {
+            const allInst = DB.getAll('installments') || [];
+            const cust = allInst.find(c => String(c.SlNo) === String(crow.slNo));
+            if (!cust) continue;
 
-    const modalEl = document.getElementById('modalSiteDispatch');
-    const bsModal = bootstrap.Modal.getInstance(modalEl);
-    if (bsModal) bsModal.hide();
+            let basePhone = '';
+            let expenses = {};
+            let creatorId = '';
+            let workObj = {};
 
-    updateAllTabCounters();
-    renderKpiCards();
-    renderCategoryChips();
-    renderLedgerTable();
-    renderInwardsTable();
-    renderDispatchesTable();
-    switchTab('dispatches');
+            if (cust.BrokerNumber) {
+              const parts = cust.BrokerNumber.split('|');
+              basePhone = parts[0] || '';
+              parts.slice(1).forEach(p => {
+                if (p.startsWith('expenses:')) {
+                  try { expenses = JSON.parse(p.slice('expenses:'.length)) || {}; } catch (e) {}
+                } else if (p.startsWith('creator:')) {
+                  creatorId = p.slice('creator:'.length);
+                } else if (p.startsWith('work:')) {
+                  try { workObj = JSON.parse(p.slice('work:'.length)) || {}; } catch (e) {}
+                }
+              });
+            }
 
-    if (typeof UI !== 'undefined') {
-      UI.toast(`Successfully dispatched ${dispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`, 'success');
+            if (crow.setCost !== undefined && crow.setCost !== '') {
+              expenses.setCost = Number(crow.setCost) || 0;
+              expenses.material = Number(crow.setCost) || 0;
+            }
+            if (crow.installCost !== undefined && crow.installCost !== '') expenses.install = Number(crow.installCost) || 0;
+            if (crow.deliveryCost !== undefined && crow.deliveryCost !== '') {
+              expenses.delivery = Number(crow.deliveryCost) || 0;
+              expenses.transport = Number(crow.deliveryCost) || 0;
+            }
+            if (crow.otherCost !== undefined && crow.otherCost !== '') expenses.other = Number(crow.otherCost) || 0;
+            if (crow.otherComment) expenses.otherComment = crow.otherComment;
+
+            const calcVendor = (expenses.setCost || expenses.material || 0) + (expenses.install || 0) + (expenses.delivery || expenses.transport || 0) + (expenses.gst || 0) + (expenses.other || 0);
+
+            let newBroker = basePhone;
+            newBroker += '|expenses:' + JSON.stringify(expenses);
+            if (creatorId) newBroker += '|creator:' + creatorId;
+            if (workObj && Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
+
+            cust.BrokerNumber = newBroker;
+            cust.VendorPrice = calcVendor;
+
+            await DB.update('installments', r => Number(r.SlNo) === Number(crow.slNo), {
+              BrokerNumber: newBroker,
+              VendorPrice: calcVendor
+            });
+          } catch (e) {
+            console.warn('[Dispatch] Error syncing customer allocation to installments:', e);
+          }
+        }
+      }
+
+      saveData();
+      clearSelection('ledger');
+
+      editingDispatchChallanNo = null;
+
+      const modalEl = document.getElementById('modalSiteDispatch');
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+
+      const titleEl = document.getElementById('modalSiteDispatchTitle');
+      if (titleEl) titleEl.textContent = 'Dispatch Equipment to Site';
+      if (btnSubmit) btnSubmit.textContent = 'Confirm Dispatch';
+
+      updateAllTabCounters();
+      renderKpiCards();
+      renderCategoryChips();
+      renderLedgerTable();
+      renderInwardsTable();
+      renderDispatchesTable();
+      switchTab('dispatches');
+
+      if (typeof UI !== 'undefined') {
+        UI.toast(isEditing
+          ? `Successfully updated dispatch to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`
+          : `Successfully dispatched ${dispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`,
+          'success');
+      }
+    } finally {
+      isSubmittingDispatch = false;
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = originalBtnText || 'Confirm Dispatch';
+      }
     }
   }
 
@@ -4629,6 +4748,89 @@ const InventoryApp = (() => {
   }
 
   // --- Site Dispatch History CRUD Operations ---
+  async function handleSaveEditDispatch() {
+    const id = document.getElementById('editDspId')?.value;
+    const date = document.getElementById('editDspDate')?.value || new Date().toISOString().slice(0, 10);
+    const siteName = document.getElementById('editDspSiteName')?.value.trim();
+    const itemCode = document.getElementById('editDspItemSelect')?.value;
+    const qty = Number(document.getElementById('editDspQty')?.value);
+    const unitBuyingPrice = Number(document.getElementById('editDspUnitPrice')?.value) || 0;
+    const transportCost = Number(document.getElementById('editDspTransportCost')?.value) || 0;
+    const vehicle = document.getElementById('editDspVehicle')?.value.trim() || 'Site Vehicle';
+    const remarks = document.getElementById('editDspRemarks')?.value.trim() || '';
+
+    if (!id) return;
+    if (!siteName) {
+      if (typeof UI !== 'undefined') UI.toast('Please enter the Site / Project Name', 'warning');
+      return;
+    }
+    if (!itemCode) {
+      if (typeof UI !== 'undefined') UI.toast('Please select an equipment item', 'warning');
+      return;
+    }
+    if (!qty || qty <= 0) {
+      if (typeof UI !== 'undefined') UI.toast('Please enter a valid quantity', 'warning');
+      return;
+    }
+
+    const idx = dispatches.findIndex(d => d.id === id);
+    if (idx === -1) return;
+
+    const old = dispatches[idx];
+    const dispatchedCost = round2(qty * unitBuyingPrice);
+
+    const updated = {
+      ...old,
+      date,
+      siteName,
+      itemCode,
+      qty,
+      unitBuyingPrice,
+      dispatchedCost,
+      transportCost,
+      vehicle,
+      remarks
+    };
+
+    dispatches[idx] = updated;
+
+    if (typeof DB !== 'undefined') {
+      await DB.update('inventory_dispatches', r => (r.DispatchID || r.id) === id, {
+        Date: date,
+        SiteName: siteName,
+        ItemCode: itemCode,
+        Quantity: qty,
+        UnitBuyingPrice: unitBuyingPrice,
+        DispatchedCost: dispatchedCost,
+        TransportCost: transportCost,
+        Vehicle: vehicle,
+        Remarks: remarks
+      }).catch(() => {});
+    }
+
+    saveData();
+    const modalEl = document.getElementById('modalEditDispatch');
+    const bsModal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+    if (bsModal) bsModal.hide();
+
+    updateAllTabCounters();
+    renderKpiCards();
+    renderCategoryChips();
+    renderLedgerTable();
+    renderInwardsTable();
+    renderDispatchesTable();
+
+    if (typeof UI !== 'undefined') UI.toast(`Updated dispatch for "${siteName}"`, 'success');
+  }
+
+  function recalcDspDeliveryCost() {
+    recalcDispatchTotals();
+  }
+
+  function recalcDspCustomerTotals() {
+    recalcDispatchTotals();
+  }
+
   function initEditDispatchModal() {
     const btnSubmit = document.getElementById('btnSubmitEditDispatch');
     if (btnSubmit) btnSubmit.addEventListener('click', handleSaveEditDispatch);
@@ -4658,172 +4860,164 @@ const InventoryApp = (() => {
     }
   }
 
-  function openEditDispatchModal(id) {
-    const dsp = dispatches.find(d => d.id === id);
-    if (!dsp) {
+  function openEditDispatchModal(keyOrId) {
+    const modalEl = document.getElementById('modalSiteDispatch');
+    if (!modalEl) return;
+
+    // Find all dispatch records belonging to this batch / challan
+    let matchingDispatches = dispatches.filter(d => (d.challanNo && d.challanNo === keyOrId) || d.id === keyOrId);
+    if (matchingDispatches.length === 0) {
+      const single = dispatches.find(d => d.id === keyOrId || d.challanNo === keyOrId);
+      if (single) {
+        matchingDispatches = (single.challanNo ? dispatches.filter(d => d.challanNo === single.challanNo) : [single]);
+      }
+    }
+
+    if (matchingDispatches.length === 0) {
       if (typeof UI !== 'undefined') UI.toast('Dispatch record not found', 'danger');
       return;
     }
 
-    const modalEl = document.getElementById('modalEditDispatch');
-    if (!modalEl) return;
+    const first = matchingDispatches[0];
+    const challanToUse = first.challanNo || first.id;
+    editingDispatchChallanNo = challanToUse;
 
-    const idInput = document.getElementById('editDspId');
-    const dateInput = document.getElementById('editDspDate');
-    const siteInput = document.getElementById('editDspSiteName');
-    const itemSelect = document.getElementById('editDspItemSelect');
-    const qtyInput = document.getElementById('editDspQty');
-    const priceInput = document.getElementById('editDspUnitPrice');
-    const transportInput = document.getElementById('editDspTransportCost');
-    const vehicleInput = document.getElementById('editDspVehicle');
-    const remarksInput = document.getElementById('editDspRemarks');
-    const totalEl = document.getElementById('editDspDisplayTotal');
-    const stockHelp = document.getElementById('editDspStockHelp');
-
-    if (idInput) idInput.value = dsp.id;
-    if (dateInput) dateInput.value = dsp.date || new Date().toISOString().slice(0, 10);
-    if (siteInput) siteInput.value = dsp.siteName || '';
-
-    if (itemSelect) {
-      itemSelect.innerHTML = buildGroupedItemOptions(dsp.itemCode, 'dispatch');
-      itemSelect.value = dsp.itemCode;
+    // Update modal title and button text
+    const titleEl = document.getElementById('modalSiteDispatchTitle');
+    if (titleEl) {
+      titleEl.textContent = `Edit Site Dispatch — ${first.siteName || challanToUse}`;
+    }
+    const btnSubmit = document.getElementById('btnSubmitDispatch');
+    if (btnSubmit) {
+      btnSubmit.textContent = 'Update Dispatch';
     }
 
-    if (qtyInput) qtyInput.value = dsp.qty;
-    if (priceInput) priceInput.value = dsp.unitBuyingPrice;
-    if (transportInput) transportInput.value = dsp.transportCost || 0;
-    if (vehicleInput) vehicleInput.value = dsp.vehicle || '';
-    if (remarksInput) remarksInput.value = dsp.remarks || '';
-    if (totalEl) totalEl.textContent = fmtRupees(dsp.dispatchedCost || (dsp.qty * dsp.unitBuyingPrice));
+    // Populate header inputs
+    const siteInput = document.getElementById('dspSiteName');
+    const dateInput = document.getElementById('dspDate');
+    const vehicleInput = document.getElementById('dspVehicle');
+    const remarksInput = document.getElementById('dspRemarks');
+    const isOurProjectChk = document.getElementById('dspIsOurProject');
+    const logisticsSection = document.getElementById('dspLogisticsSection');
 
-    const itmSummary = getItemSummary(dsp.itemCode);
-    const maxAvailable = itmSummary.inHand + Number(dsp.qty);
-    if (stockHelp) {
-      stockHelp.textContent = `Warehouse currently in-hand: ${itmSummary.inHand}. Max dispatchable: ${maxAvailable}.`;
+    if (siteInput) siteInput.value = first.siteName || '';
+    if (dateInput) dateInput.value = first.date || new Date().toISOString().slice(0, 10);
+    if (vehicleInput) vehicleInput.value = first.vehicle || '';
+    
+    // Remarks: clean logistics JSON tag
+    const cleanRemarks = first.remarks ? first.remarks.split('|logistics:')[0].trim() : '';
+    if (remarksInput) remarksInput.value = cleanRemarks;
+
+    // Project Dispatch Checkbox
+    const isOurProject = first.isOurProject !== false;
+    if (isOurProjectChk) isOurProjectChk.checked = isOurProject;
+    if (logisticsSection) logisticsSection.style.display = isOurProject ? 'block' : 'none';
+
+    // Parse logistics metadata from remarks if fields are not directly on the record
+    let logistics = null;
+    if (first.remarks && first.remarks.includes('|logistics:')) {
+      try {
+        logistics = JSON.parse(first.remarks.split('|logistics:')[1]);
+      } catch (e) {}
     }
 
-    // Document state
-    editDispatchDocFile = dsp.docName ? { name: dsp.docName, data: dsp.docData } : null;
-    const badge = document.getElementById('editDspFileBadge');
-    const fileNameEl = document.getElementById('editDspFileName');
-    const fileInput = document.getElementById('editDspDocInput');
-    if (fileInput) fileInput.value = '';
+    // Populate Delivery Cost
+    const transInput = document.getElementById('dspTransportCost');
+    const distInput = document.getElementById('dspDistanceKm');
+    const extraDeliveryCostInput = document.getElementById('dspExtraDeliveryCost');
+    const extraDeliveryCommentInput = document.getElementById('dspExtraDeliveryComment');
 
-    if (dsp.docName && badge && fileNameEl) {
-      fileNameEl.textContent = dsp.docName;
-      badge.style.display = 'inline-flex';
-    } else if (badge) {
-      badge.style.display = 'none';
+    const transportCostVal = first.transportCost !== undefined && first.transportCost !== null ? first.transportCost : (logistics?.transportCost || 0);
+    const distanceKmVal = first.distanceKm !== undefined && first.distanceKm !== null ? first.distanceKm : (logistics?.distanceKm || '');
+    const extraDeliveryCostVal = first.extraDeliveryCost !== undefined && first.extraDeliveryCost !== null ? first.extraDeliveryCost : (logistics?.extraDeliveryCost || '');
+    const extraDeliveryCommentVal = first.extraDeliveryComment !== undefined && first.extraDeliveryComment !== null ? first.extraDeliveryComment : (logistics?.extraDeliveryComment || '');
+
+    if (transInput) transInput.value = transportCostVal || '';
+    if (distInput) distInput.value = distanceKmVal || '';
+    if (extraDeliveryCostInput) extraDeliveryCostInput.value = extraDeliveryCostVal || '';
+    if (extraDeliveryCommentInput) extraDeliveryCommentInput.value = extraDeliveryCommentVal || '';
+    recalcDspDeliveryCost();
+
+    // Populate Documents
+    dispatchDocFiles = [];
+    if (first.documents && Array.isArray(first.documents) && first.documents.length > 0) {
+      dispatchDocFiles = [...first.documents];
+    } else if (first.docName) {
+      dispatchDocFiles = [{ name: first.docName, data: first.docData, size: first.docData ? first.docData.length : 0 }];
     }
+    dispatchDocFile = dispatchDocFiles[0] || null;
+    const dspFileInput = document.getElementById('dspDocFileInput');
+    if (dspFileInput) dspFileInput.value = '';
+    renderDspFiles();
+
+    // Populate Customer Allocations
+    let custAlloc = first.customerAllocations;
+    if ((!custAlloc || custAlloc.length === 0) && logistics?.customerAllocations) {
+      custAlloc = logistics.customerAllocations;
+    }
+
+    dispatchCustomerRows = [];
+    if (Array.isArray(custAlloc) && custAlloc.length > 0) {
+      custAlloc.forEach(c => {
+        dispatchCustomerRows.push({
+          id: 'crow_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          slNo: c.slNo || '',
+          name: c.name || '',
+          setCost: c.setCost !== undefined ? c.setCost : '',
+          installCost: c.installCost !== undefined ? c.installCost : '',
+          deliveryCost: c.deliveryCost !== undefined ? c.deliveryCost : '',
+          otherCost: c.otherCost !== undefined ? c.otherCost : '',
+          otherComment: c.otherComment || ''
+        });
+      });
+    } else {
+      addDspCustomerRow();
+    }
+    renderDspCustomerRows();
+    recalcDspCustomerTotals();
+
+    // Populate Dispatched Items
+    dispatchRows = [];
+    matchingDispatches.forEach(d => {
+      dispatchRows.push({
+        id: 'dsprow_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        itemCode: d.itemCode,
+        qty: d.qty,
+        unitPrice: d.unitBuyingPrice !== undefined ? d.unitBuyingPrice : null,
+        originalDispatchId: d.id
+      });
+    });
+
+    if (dispatchRows.length === 0) {
+      addDspRow();
+    }
+
+    renderDspRows();
+    recalcDispatchTotals();
 
     const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
     bsModal.show();
   }
 
-  function handleSaveEditDispatch() {
-    const id = document.getElementById('editDspId')?.value;
-    const date = document.getElementById('editDspDate')?.value || new Date().toISOString().slice(0, 10);
-    const siteName = document.getElementById('editDspSiteName')?.value.trim();
-    const itemCode = document.getElementById('editDspItemSelect')?.value;
-    const qty = Number(document.getElementById('editDspQty')?.value);
-    const unitBuyingPrice = Number(document.getElementById('editDspUnitPrice')?.value) || 0;
-    const transportCost = Number(document.getElementById('editDspTransportCost')?.value) || 0;
-    const vehicle = document.getElementById('editDspVehicle')?.value.trim() || 'Site Vehicle';
-    const remarks = document.getElementById('editDspRemarks')?.value.trim() || '';
+  async function deleteDispatch(keyOrId) {
+    const matching = dispatches.filter(d => (d.challanNo && d.challanNo === keyOrId) || d.id === keyOrId);
+    if (matching.length === 0) return;
 
-    if (!id) return;
-    if (!siteName) {
-      if (typeof UI !== 'undefined') UI.toast('Please enter the Site / Project Name', 'warning');
-      return;
-    }
-    if (!itemCode) {
-      if (typeof UI !== 'undefined') UI.toast('Please select an equipment item', 'warning');
-      return;
-    }
-    if (!qty || qty <= 0) {
-      if (typeof UI !== 'undefined') UI.toast('Please enter a valid dispatch quantity (> 0)', 'warning');
+    const first = matching[0];
+    const totalQty = matching.reduce((sum, d) => sum + (Number(d.qty) || 0), 0);
+
+    if (!confirm(`Are you sure you want to delete site dispatch to "${first.siteName}"?\n\nThis will restore ${totalQty} units back to physical warehouse stock.`)) {
       return;
     }
 
-    const dsp = dispatches.find(d => d.id === id);
-    if (!dsp) return;
-
-    // Check stock availability
-    const itmSummary = getItemSummary(itemCode);
-    const maxAvailable = (dsp.itemCode === itemCode) ? (itmSummary.inHand + Number(dsp.qty)) : itmSummary.inHand;
-    if (qty > maxAvailable) {
-      if (typeof UI !== 'undefined') UI.toast(`Quantity (${qty}) exceeds maximum warehouse stock available (${maxAvailable})`, 'danger');
-      return;
-    }
-
-    const dispatchedCost = qty * unitBuyingPrice;
-
-    dsp.date = date;
-    dsp.siteName = siteName;
-    dsp.itemCode = itemCode;
-    dsp.qty = qty;
-    dsp.unitBuyingPrice = unitBuyingPrice;
-    dsp.dispatchedCost = dispatchedCost;
-    dsp.transportCost = transportCost;
-    dsp.vehicle = vehicle;
-    dsp.remarks = remarks;
-
-    if (editDispatchDocFile) {
-      dsp.docName = editDispatchDocFile.name;
-      dsp.docData = editDispatchDocFile.data;
-    } else if (editDispatchDocFile === null) {
-      dsp.docName = null;
-      dsp.docData = null;
-    }
-
+    dispatches = dispatches.filter(d => !matching.some(m => m.id === d.id));
+    matching.forEach(m => selectedDispatches.delete(m.id));
     saveData();
 
     if (typeof DB !== 'undefined') {
-      DB.update('inventory_dispatches', r => (r.DispatchID || r.id) === id, {
-        Date: date,
-        SiteName: siteName,
-        ItemCode: itemCode,
-        Quantity: qty,
-        UnitBuyingPrice: unitBuyingPrice,
-        DispatchedCost: dispatchedCost,
-        TransportCost: transportCost,
-        Vehicle: vehicle,
-        Remarks: remarks,
-        DocumentName: dsp.docName,
-        DocumentData: dsp.docData
-      }).catch(err => console.warn('[Supabase] inventory_dispatches update error:', err));
-    }
-
-    const modalEl = document.getElementById('modalEditDispatch');
-    const bsModal = bootstrap.Modal.getInstance(modalEl);
-    if (bsModal) bsModal.hide();
-
-    updateAllTabCounters();
-    renderKpiCards();
-    renderCategoryChips();
-    renderLedgerTable();
-    renderInwardsTable();
-    renderDispatchesTable();
-
-    if (typeof UI !== 'undefined') {
-      UI.toast(`Updated dispatch record "${id}" successfully!`, 'success');
-    }
-  }
-
-  async function deleteDispatch(id) {
-    const dsp = dispatches.find(d => d.id === id);
-    if (!dsp) return;
-
-    if (!confirm(`Are you sure you want to delete site dispatch "${dsp.id}" to "${dsp.siteName}"?\n\nThis will restore ${dsp.qty} units back to physical warehouse stock.`)) {
-      return;
-    }
-
-    dispatches = dispatches.filter(d => d.id !== id);
-    selectedDispatches.delete(id);
-    saveData();
-
-    if (typeof DB !== 'undefined') {
-      await DB.remove('inventory_dispatches', r => (r.DispatchID || r.id) === id).catch(err => console.warn('[Supabase] inventory_dispatches delete error:', err));
+      for (const m of matching) {
+        await DB.remove('inventory_dispatches', r => (r.DispatchID || r.id) === m.id).catch(err => console.warn('[Supabase] inventory_dispatches delete error:', err));
+      }
     }
 
     updateAllTabCounters();
@@ -4835,7 +5029,7 @@ const InventoryApp = (() => {
     updateBulkActionBar();
 
     if (typeof UI !== 'undefined') {
-      UI.toast(`Deleted site dispatch "${id}". Stock restored to warehouse physical inventory.`, 'info');
+      UI.toast(`Deleted site dispatch to "${first.siteName}". Stock restored to warehouse inventory.`, 'info');
     }
   }
 
@@ -5373,13 +5567,15 @@ const InventoryApp = (() => {
 
   // --- Initializer ---
   let isInitialized = false;
+  let isInitializing = false;
 
   async function init() {
+    if (isInitializing) return;
     if (isInitialized) {
       await syncWithDatabase();
       return;
     }
-    isInitialized = true;
+    isInitializing = true;
 
     // Completely purge any legacy inventory data from browser localStorage
     try {
@@ -5435,6 +5631,8 @@ const InventoryApp = (() => {
     renderLedgerTable();
     renderDispatchesTable();
     renderInwardsTable();
+    isInitialized = true;
+    isInitializing = false;
   }
 
   return {
