@@ -2097,9 +2097,9 @@ const InventoryApp = (() => {
               </div>
             </td>
             <td><input type="number" class="form-control form-control-sm mat-rate inw-row-rate border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${r || ''}" placeholder="0.00" autocomplete="off"></td>
+            <td><input type="number" class="form-control form-control-sm mat-total-without-gst inw-row-total-without-gst border-0 p-0 text-end fw-semibold text-secondary" min="0" step="any" data-row-id="${row.id}" value="${twg}" placeholder="0.00" autocomplete="off"></td>
             <td><input type="number" class="form-control form-control-sm mat-gst inw-row-gst border-0 p-0 text-end" min="0" max="100" step="any" data-row-id="${row.id}" value="${g}" placeholder="18" autocomplete="off"></td>
             <td><input type="number" class="form-control form-control-sm mat-rate-with-gst inw-row-rate-with-gst border-0 p-0 text-end" min="0" step="any" data-row-id="${row.id}" value="${rg}" placeholder="0.00" autocomplete="off"></td>
-            <td><input type="number" class="form-control form-control-sm mat-total-without-gst inw-row-total-without-gst border-0 p-0 text-end fw-semibold text-secondary" min="0" step="any" data-row-id="${row.id}" value="${twg}" placeholder="0.00" autocomplete="off"></td>
             <td><input type="number" class="form-control form-control-sm mat-total inw-row-total-with-gst border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${t}" placeholder="0.00" autocomplete="off"></td>
             <td><input type="number" class="form-control form-control-sm mat-transport inw-row-transport border-0 p-0 text-end fw-semibold text-dark" min="0" step="any" data-row-id="${row.id}" value="${tc}" placeholder="0" autocomplete="off"></td>
             <td>
@@ -2862,17 +2862,234 @@ const InventoryApp = (() => {
   }
 
   // --- Modal 2: Site Dispatch ---
+  let dispatchCustomerRows = [];
+
   function initDispatchModal() {
     const btnAdd = document.getElementById('btnAddDspRow');
     if (btnAdd) btnAdd.addEventListener('click', () => addDspRow());
 
-    const transportInput = document.getElementById('dspTransportCost');
-    if (transportInput) {
-      transportInput.addEventListener('input', () => recalcDispatchTotals());
+    const isOurProjectChk = document.getElementById('dspIsOurProject');
+    const logisticsSection = document.getElementById('dspLogisticsSection');
+    if (isOurProjectChk && logisticsSection) {
+      isOurProjectChk.addEventListener('change', () => {
+        logisticsSection.style.display = isOurProjectChk.checked ? 'block' : 'none';
+        recalcDispatchTotals();
+      });
     }
+
+    const transportInput = document.getElementById('dspTransportCost');
+    const distanceInput = document.getElementById('dspDistanceKm');
+    const onLogisticsChange = () => {
+      const trans = Number(transportInput?.value) || 0;
+      const dist = Number(distanceInput?.value) || 0;
+      const costPerKmEl = document.getElementById('dspCostPerKm');
+      if (costPerKmEl) {
+        costPerKmEl.value = dist > 0 ? ('₹' + (trans / dist).toFixed(2) + ' / km') : '—';
+      }
+      recalcDispatchTotals();
+    };
+
+    if (transportInput) transportInput.addEventListener('input', onLogisticsChange);
+    if (distanceInput) distanceInput.addEventListener('input', onLogisticsChange);
+
+    const extraSelectors = ['#dspFoodCost', '#dspFoodComment', '#dspTollCost', '#dspTollComment', '#dspOtherDeliveryCost', '#dspOtherDeliveryComment'];
+    extraSelectors.forEach(sel => {
+      const el = document.querySelector(sel);
+      if (el) el.addEventListener('input', () => recalcDispatchTotals());
+    });
+
+    const btnAddCust = document.getElementById('btnAddDspCustomer');
+    if (btnAddCust) btnAddCust.addEventListener('click', () => addDspCustomerRow());
 
     const btnSubmit = document.getElementById('btnSubmitDispatch');
     if (btnSubmit) btnSubmit.addEventListener('click', handleSaveDispatch);
+  }
+
+  function addDspCustomerRow(slNo = '', name = '', installCost = '', otherCost = '', otherComment = '') {
+    dispatchCustomerRows.push({
+      id: 'dsp_c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      slNo: slNo || '',
+      name: name || '',
+      installCost: installCost !== '' ? installCost : '',
+      deliveryCost: '',
+      otherCost: otherCost !== '' ? otherCost : '',
+      otherComment: otherComment || '',
+      isManualDelivery: false
+    });
+    renderDspCustomerRows();
+    recalcDispatchTotals();
+  }
+
+  function removeDspCustomerRow(rowId) {
+    if (dispatchCustomerRows.length <= 1) {
+      dispatchCustomerRows = [];
+      renderDspCustomerRows();
+      recalcDispatchTotals();
+      return;
+    }
+    dispatchCustomerRows = dispatchCustomerRows.filter(r => r.id !== rowId);
+    renderDspCustomerRows();
+    recalcDispatchTotals();
+  }
+
+  function renderDspCustomerRows() {
+    const tbody = document.getElementById('dspCustomerAllocationBody');
+    if (!tbody) return;
+
+    let customers = [];
+    try {
+      if (typeof DB !== 'undefined') {
+        const raw = DB.getAll('installments') || [];
+        customers = raw.filter(r => r && r.Status !== 'Deactive');
+      }
+    } catch (e) {}
+
+    if (dispatchCustomerRows.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-2 text-muted" style="font-size:0.75rem;">
+            No customers allocated. Click "+ Add Customer" above to allocate delivery & installation costs.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = dispatchCustomerRows.map(row => {
+      const selectedSlNo = row.slNo ? String(row.slNo) : '';
+      const insCost = Number(row.installCost) || 0;
+      const delCost = Number(row.deliveryCost) || 0;
+      const othCost = Number(row.otherCost) || 0;
+      const totalCustCost = round2(insCost + delCost + othCost);
+
+      return `
+        <tr data-cust-row-id="${row.id}">
+          <td style="min-width: 170px;">
+            <select class="form-select form-select-sm dsp-cust-select py-0.5 px-1.5" data-cust-row-id="${row.id}" style="font-size:0.76rem; height: 26px;">
+              <option value="">-- Select Customer --</option>
+              ${customers.map(c => {
+                const sl = String(c.SlNo || '');
+                const isSel = (sl === selectedSlNo || (row.name && c.Name && c.Name.toLowerCase() === row.name.toLowerCase())) ? 'selected' : '';
+                const capStr = c.ProposedCapacity ? ` [${c.ProposedCapacity}kW]` : '';
+                return `<option value="${sl}" data-name="${escapeHtml(c.Name || '')}" ${isSel}>${escapeHtml(c.Name || 'Unknown')} (${c.ConsumerNo || sl})${capStr}</option>`;
+              }).join('')}
+              <option value="__custom__" ${(!selectedSlNo && row.name && !customers.some(c => c.Name === row.name)) ? 'selected' : ''}>✏️ Custom / Unlisted Site...</option>
+            </select>
+            ${(!selectedSlNo && row.name && !customers.some(c => c.Name === row.name)) ? `
+              <input type="text" class="form-control form-control-sm dsp-cust-custom-name mt-1 py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.name)}" placeholder="Enter site/customer name" style="font-size:0.74rem; height:24px;">
+            ` : ''}
+          </td>
+          <td style="width: 110px;">
+            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-install-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.installCost !== undefined && row.installCost !== '' ? row.installCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;">
+          </td>
+          <td style="width: 110px;">
+            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-delivery-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.deliveryCost !== undefined && row.deliveryCost !== '' ? row.deliveryCost : ''}" placeholder="Auto" style="height: 26px; font-size:0.76rem;">
+          </td>
+          <td style="width: 100px;">
+            <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-other-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.otherCost !== undefined && row.otherCost !== '' ? row.otherCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm dsp-cust-other-comment py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Other cost remark / purpose..." style="height: 26px; font-size:0.74rem;">
+          </td>
+          <td class="text-end font-monospace fw-bold text-dark dsp-cust-row-total" data-cust-row-id="${row.id}" style="width: 110px; font-size:0.78rem;">
+            ${fmtRupees(totalCustCost)}
+          </td>
+          <td class="text-center p-0" style="width: 32px;">
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-dsp-cust" data-cust-row-id="${row.id}" title="Remove Customer" style="font-size:0.9rem; text-decoration:none;">✕</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    attachDspCustomerRowHandlers(tbody);
+  }
+
+  function attachDspCustomerRowHandlers(tbody) {
+    tbody.querySelectorAll('.dsp-cust-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const rowId = sel.getAttribute('data-cust-row-id');
+        const row = dispatchCustomerRows.find(r => r.id === rowId);
+        if (!row) return;
+        if (sel.value === '__custom__') {
+          row.slNo = '';
+          row.name = row.name || 'Custom Site';
+          renderDspCustomerRows();
+        } else {
+          row.slNo = sel.value;
+          const opt = sel.selectedOptions[0];
+          row.name = opt ? opt.getAttribute('data-name') || opt.textContent : '';
+          renderDspCustomerRows();
+        }
+        recalcDispatchTotals();
+      });
+    });
+
+    tbody.querySelectorAll('.dsp-cust-custom-name').forEach(input => {
+      input.addEventListener('input', () => {
+        const rowId = input.getAttribute('data-cust-row-id');
+        const row = dispatchCustomerRows.find(r => r.id === rowId);
+        if (row) row.name = input.value.trim();
+      });
+    });
+
+    tbody.querySelectorAll('.dsp-cust-install-cost').forEach(input => {
+      input.addEventListener('input', () => {
+        const rowId = input.getAttribute('data-cust-row-id');
+        const row = dispatchCustomerRows.find(r => r.id === rowId);
+        if (row) {
+          row.installCost = input.value;
+          updateDspCustRowTotal(rowId);
+        }
+      });
+    });
+
+    tbody.querySelectorAll('.dsp-cust-delivery-cost').forEach(input => {
+      input.addEventListener('input', () => {
+        const rowId = input.getAttribute('data-cust-row-id');
+        const row = dispatchCustomerRows.find(r => r.id === rowId);
+        if (row) {
+          row.deliveryCost = input.value;
+          row.isManualDelivery = true;
+          updateDspCustRowTotal(rowId);
+        }
+      });
+    });
+
+    tbody.querySelectorAll('.dsp-cust-other-cost').forEach(input => {
+      input.addEventListener('input', () => {
+        const rowId = input.getAttribute('data-cust-row-id');
+        const row = dispatchCustomerRows.find(r => r.id === rowId);
+        if (row) {
+          row.otherCost = input.value;
+          updateDspCustRowTotal(rowId);
+        }
+      });
+    });
+
+    tbody.querySelectorAll('.dsp-cust-other-comment').forEach(input => {
+      input.addEventListener('input', () => {
+        const rowId = input.getAttribute('data-cust-row-id');
+        const row = dispatchCustomerRows.find(r => r.id === rowId);
+        if (row) row.otherComment = input.value;
+      });
+    });
+
+    tbody.querySelectorAll('.btn-remove-dsp-cust').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rowId = btn.getAttribute('data-cust-row-id');
+        removeDspCustomerRow(rowId);
+      });
+    });
+  }
+
+  function updateDspCustRowTotal(rowId) {
+    const row = dispatchCustomerRows.find(r => r.id === rowId);
+    if (!row) return;
+    const ins = Number(row.installCost) || 0;
+    const del = Number(row.deliveryCost) || 0;
+    const oth = Number(row.otherCost) || 0;
+    const totalEl = document.querySelector(`.dsp-cust-row-total[data-cust-row-id="${rowId}"]`);
+    if (totalEl) totalEl.textContent = fmtRupees(round2(ins + del + oth));
   }
 
   function addDspRow(itemCode = null, qty = 1) {
@@ -2948,7 +3165,7 @@ const InventoryApp = (() => {
               <span class="input-group-text px-1.5 py-0 text-secondary font-monospace" style="font-size: 0.72rem; min-width: 32px; justify-content: center; height: 28px;">${escapeHtml(item.unit || 'Nos')}</span>
             </div>
           </td>
-          <td style="width: 190px;">
+          <td style="width: 255px;">
             <div class="d-flex flex-column gap-1">
               <select class="form-select form-select-sm dsp-row-price-select font-monospace text-end py-1 px-1.5" data-row-id="${row.id}" style="font-size: 0.76rem; height: 28px;">
                 ${histPrices.map(hp => {
@@ -3068,7 +3285,41 @@ const InventoryApp = (() => {
       totalMaterialCost += (qty * unitPrice);
     });
 
-    const transportCost = Number(document.getElementById('dspTransportCost')?.value) || 0;
+    const isOurProject = document.getElementById('dspIsOurProject')?.checked ?? true;
+    let totalDeliveryCost = 0;
+
+    if (isOurProject) {
+      const transportCost = Number(document.getElementById('dspTransportCost')?.value) || 0;
+      const distanceKm = Number(document.getElementById('dspDistanceKm')?.value) || 0;
+      const foodCost = Number(document.getElementById('dspFoodCost')?.value) || 0;
+      const tollCost = Number(document.getElementById('dspTollCost')?.value) || 0;
+      const otherDeliveryCost = Number(document.getElementById('dspOtherDeliveryCost')?.value) || 0;
+
+      totalDeliveryCost = round2(transportCost + foodCost + tollCost + otherDeliveryCost);
+
+      const costPerKmEl = document.getElementById('dspCostPerKm');
+      if (costPerKmEl) {
+        costPerKmEl.value = distanceKm > 0 ? ('₹' + (transportCost / distanceKm).toFixed(2) + ' / km') : '—';
+      }
+
+      const badgeDel = document.getElementById('dspBadgeTotalDelivery');
+      if (badgeDel) badgeDel.textContent = `Total Delivery Cost: ${fmtRupees(totalDeliveryCost)}`;
+
+      // Auto-divide delivery cost across customer rows if not manually overridden
+      if (dispatchCustomerRows.length > 0) {
+        const perCustDel = round2(totalDeliveryCost / dispatchCustomerRows.length);
+        dispatchCustomerRows.forEach(crow => {
+          if (!crow.isManualDelivery) {
+            crow.deliveryCost = perCustDel > 0 ? perCustDel : '';
+            const input = document.querySelector(`.dsp-cust-delivery-cost[data-cust-row-id="${crow.id}"]`);
+            if (input && document.activeElement !== input) {
+              input.value = perCustDel > 0 ? perCustDel : '';
+            }
+          }
+          updateDspCustRowTotal(crow.id);
+        });
+      }
+    }
 
     const unitsEl = document.getElementById('dspSummaryTotalUnits');
     const transportEl = document.getElementById('dspDisplayTransportCost');
@@ -3077,7 +3328,7 @@ const InventoryApp = (() => {
     const submitBtn = document.getElementById('btnSubmitDispatch');
 
     if (unitsEl) unitsEl.textContent = `Total Units: ${fmtQty(totalUnits)}`;
-    if (transportEl) transportEl.textContent = `Transport: ${fmtRupees(transportCost)}`;
+    if (transportEl) transportEl.textContent = `Delivery: ${fmtRupees(totalDeliveryCost)}`;
     if (totalCostEl) totalCostEl.textContent = fmtRupees(totalMaterialCost);
 
     if (alertBox) {
@@ -3101,15 +3352,41 @@ const InventoryApp = (() => {
 
     const siteInput = document.getElementById('dspSiteName');
     const dateInput = document.getElementById('dspDate');
-    const transportInput = document.getElementById('dspTransportCost');
     const vehicleInput = document.getElementById('dspVehicle');
     const remarksInput = document.getElementById('dspRemarks');
+    const isOurProjectChk = document.getElementById('dspIsOurProject');
+    const logisticsSection = document.getElementById('dspLogisticsSection');
 
     if (siteInput) siteInput.value = '';
     if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
-    if (transportInput) transportInput.value = '';
     if (vehicleInput) vehicleInput.value = '';
     if (remarksInput) remarksInput.value = '';
+    if (isOurProjectChk) isOurProjectChk.checked = true;
+    if (logisticsSection) logisticsSection.style.display = 'block';
+
+    const transInput = document.getElementById('dspTransportCost');
+    const distInput = document.getElementById('dspDistanceKm');
+    const costPerKmEl = document.getElementById('dspCostPerKm');
+    const foodInput = document.getElementById('dspFoodCost');
+    const foodComment = document.getElementById('dspFoodComment');
+    const tollInput = document.getElementById('dspTollCost');
+    const tollComment = document.getElementById('dspTollComment');
+    const otherDelInput = document.getElementById('dspOtherDeliveryCost');
+    const otherDelComment = document.getElementById('dspOtherDeliveryComment');
+
+    if (transInput) transInput.value = '';
+    if (distInput) distInput.value = '';
+    if (costPerKmEl) costPerKmEl.value = '—';
+    if (foodInput) foodInput.value = '';
+    if (foodComment) foodComment.value = '';
+    if (tollInput) tollInput.value = '';
+    if (tollComment) tollComment.value = '';
+    if (otherDelInput) otherDelInput.value = '';
+    if (otherDelComment) otherDelComment.value = '';
+
+    // Initialize 1 default customer row
+    dispatchCustomerRows = [];
+    addDspCustomerRow();
 
     // Reset multiple files upload state
     dispatchDocFiles = [];
@@ -3161,10 +3438,38 @@ const InventoryApp = (() => {
     const siteName = document.getElementById('dspSiteName')?.value.trim();
     const date = document.getElementById('dspDate')?.value || new Date().toISOString().slice(0, 10);
     const vehicle = document.getElementById('dspVehicle')?.value.trim() || 'Site Vehicle';
-    const transportCost = Number(document.getElementById('dspTransportCost')?.value) || 0;
     const remarks = document.getElementById('dspRemarks')?.value.trim() || 'Project Site Handover';
+    const isOurProject = document.getElementById('dspIsOurProject')?.checked ?? true;
 
-    if (!siteName) {
+    const transportCost = isOurProject ? (Number(document.getElementById('dspTransportCost')?.value) || 0) : 0;
+    const distanceKm = isOurProject ? (Number(document.getElementById('dspDistanceKm')?.value) || 0) : 0;
+    const costPerKm = distanceKm > 0 ? round2(transportCost / distanceKm) : 0;
+    const foodCost = isOurProject ? (Number(document.getElementById('dspFoodCost')?.value) || 0) : 0;
+    const foodComment = isOurProject ? (document.getElementById('dspFoodComment')?.value.trim() || '') : '';
+    const tollCost = isOurProject ? (Number(document.getElementById('dspTollCost')?.value) || 0) : 0;
+    const tollComment = isOurProject ? (document.getElementById('dspTollComment')?.value.trim() || '') : '';
+    const otherDeliveryCost = isOurProject ? (Number(document.getElementById('dspOtherDeliveryCost')?.value) || 0) : 0;
+    const otherDeliveryComment = isOurProject ? (document.getElementById('dspOtherDeliveryComment')?.value.trim() || '') : '';
+
+    const totalDeliveryCost = round2(transportCost + foodCost + tollCost + otherDeliveryCost);
+
+    const customerAllocations = isOurProject ? dispatchCustomerRows.map(crow => ({
+      slNo: crow.slNo || '',
+      name: crow.name || '',
+      installCost: Number(crow.installCost) || 0,
+      deliveryCost: Number(crow.deliveryCost) || 0,
+      otherCost: Number(crow.otherCost) || 0,
+      otherComment: crow.otherComment || '',
+      totalCost: round2((Number(crow.installCost) || 0) + (Number(crow.deliveryCost) || 0) + (Number(crow.otherCost) || 0))
+    })).filter(c => c.name || c.slNo || c.totalCost > 0) : [];
+
+    if (!siteName && customerAllocations.length > 0 && customerAllocations[0].name) {
+      const siteInput = document.getElementById('dspSiteName');
+      if (siteInput) siteInput.value = customerAllocations.map(c => c.name).join(', ');
+    }
+
+    const effectiveSiteName = document.getElementById('dspSiteName')?.value.trim() || siteName;
+    if (!effectiveSiteName) {
       if (typeof UI !== 'undefined') UI.toast('Please enter the Site / Project Name', 'warning');
       document.getElementById('dspSiteName')?.focus();
       return;
@@ -3199,6 +3504,23 @@ const InventoryApp = (() => {
     let totalDispatchedCost = 0;
     let totalDispatchedUnits = 0;
 
+    // Structured logistics metadata
+    const logisticsMeta = {
+      isOurProject,
+      distanceKm,
+      costPerKm,
+      transportCost,
+      foodCost,
+      foodComment,
+      tollCost,
+      tollComment,
+      otherDeliveryCost,
+      otherDeliveryComment,
+      totalDeliveryCost,
+      customerAllocations
+    };
+    const logisticsRemarks = remarks ? `${remarks} |logistics:${JSON.stringify(logisticsMeta)}` : `|logistics:${JSON.stringify(logisticsMeta)}`;
+
     dispatchRows.forEach((r, idx) => {
       const item = ledger.find(it => it.code === r.itemCode);
       const qty = Number(r.qty);
@@ -3211,14 +3533,19 @@ const InventoryApp = (() => {
         id: `DSP-${Date.now()}-${idx + 1}`,
         date,
         challanNo: batchChallanNo,
-        siteName,
+        siteName: effectiveSiteName,
         itemCode: r.itemCode,
         qty,
         unitBuyingPrice: unitPrice,
         dispatchedCost,
-        transportCost: idx === 0 ? transportCost : 0,
+        transportCost: idx === 0 ? totalDeliveryCost : 0,
         vehicle,
-        remarks,
+        remarks: logisticsRemarks,
+        isOurProject,
+        distanceKm,
+        costPerKm,
+        totalDeliveryCost,
+        customerAllocations,
         docName: dispatchDocFiles.map(f => f.name).join(', ') || (dispatchDocFile ? dispatchDocFile.name : null),
         docData: dispatchDocFiles.length > 0 ? (dispatchDocFiles[0].data || dispatchDocFiles[0].url) : (dispatchDocFile ? dispatchDocFile.data : null),
         documents: dispatchDocFiles.map(f => ({ name: f.name, size: f.size, url: f.url, data: f.data }))
@@ -3261,7 +3588,7 @@ const InventoryApp = (() => {
     renderDispatchesTable();
 
     if (typeof UI !== 'undefined') {
-      UI.toast(`Successfully dispatched ${dispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${siteName}". Total Material Cost: ${fmtRupees(totalDispatchedCost)}.`, 'success');
+      UI.toast(`Successfully dispatched ${dispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`, 'success');
     }
   }
 
@@ -4867,7 +5194,7 @@ const InventoryApp = (() => {
           <title>${c.p.supplier}: ₹${c.p.rate.toLocaleString('en-IN')}/unit on ${c.p.date}${diff !== null ? ` (${diff > 0 ? '+' : ''}${diff.toFixed(2)})` : ''}\n${qtyLabel}</title>
           ${diffSvg}
           <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4.5" fill="${dotColor}" stroke="#ffffff" stroke-width="2"/>
-          <text x="${c.x.toFixed(1)}" y="${(c.y - 10).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a" font-family="monospace">₹${fmtRupees(c.p.rate)}</text>
+          <text x="${c.x.toFixed(1)}" y="${(c.y - 10).toFixed(1)}" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a" font-family="monospace">${fmtRupees(c.p.rate)}</text>
           <text x="${c.x.toFixed(1)}" y="${(c.y + 16).toFixed(1)}" text-anchor="middle" font-size="8.5" font-weight="600" fill="#475569" font-family="sans-serif">${qtyLabel}</text>
           <text x="${c.x.toFixed(1)}" y="${(height - 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="sans-serif">${c.p.date && c.p.date !== 'CATALOG-INIT' ? formatShortDate(c.p.date) : 'Catalog'}</text>
         </g>
