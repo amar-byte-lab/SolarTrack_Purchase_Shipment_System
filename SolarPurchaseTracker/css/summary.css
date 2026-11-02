@@ -160,20 +160,47 @@
   width: 100%;
 }
 
-/* Activity Tab Styles */
-.activity-timeline {
+/* Activity Tab Styles:
+   - Fixed height responsive to desktop and mobile screens.
+   - Row data / cards vertically overflow and scroll inside the container. */
+.activity-timeline,
+#activityTimelineContainer {
   position: relative;
-  padding-left: 20px;
+  height: 540px !important;
+  max-height: calc(100vh - 290px) !important;
+  min-height: 380px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-right: 6px !important;
 }
 
-.activity-timeline::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 6px;
-  width: 2px;
-  background-color: #e2e8f0;
+@media (max-width: 768px) {
+  .activity-timeline,
+  #activityTimelineContainer {
+    height: calc(100vh - 270px) !important;
+    max-height: calc(100vh - 270px) !important;
+    min-height: 320px !important;
+  }
+}
+
+/* Custom Sleek Scrollbar for Activity Timeline */
+#activityTimelineContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+#activityTimelineContainer::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+#activityTimelineContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+#activityTimelineContainer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .activity-item {

@@ -1109,84 +1109,353 @@ let actFromDate = new Date().toISOString().split('T')[0]; // Default to current 
 let actToDate = new Date().toISOString().split('T')[0];   // Default to current date only
 let actPageFilter = 'ALL';                               // 'ALL' | 'Manage Work' | 'Customer'
 let activitySearchText = '';
+const activityCacheMap = new Map();
+
+function parseToIsoDate(dStr) {
+  if (!dStr) return null;
+  if (typeof dStr !== 'string') dStr = String(dStr);
+  dStr = dStr.trim();
+  if (!dStr) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(dStr)) return dStr.substring(0, 10);
+  const m = dStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) {
+    const day = m[1].padStart(2, '0');
+    const month = m[2].padStart(2, '0');
+    const year = m[3];
+    return `${year}-${month}-${day}`;
+  }
+  try {
+    const dt = new Date(dStr);
+    if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
+  } catch (e) {}
+  return null;
+}
 
 function formatActTimestamp(iso) {
   if (!iso) return '';
   try {
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   } catch (e) {
     return String(iso);
   }
 }
 
+function getUndoneActivityMap() {
+  try {
+    const raw = localStorage.getItem('st_undone_activities');
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function markActivityAsUndone(actId, user) {
+  try {
+    const map = getUndoneActivityMap();
+    map[actId] = {
+      undoneAt: new Date().toISOString(),
+      undoneBy: user || 'Admin'
+    };
+    localStorage.setItem('st_undone_activities', JSON.stringify(map));
+  } catch (e) {}
+}
+
+async function executeUndoActivity(act) {
+  if (act.undone) throw new Error('Transaction has already been undone.');
+
+  const currentUser = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
+  const undoUser = currentUser ? (currentUser.name || currentUser.username || currentUser.userid || 'Admin') : 'Admin';
+
+  // 1. If it's a real-time logged mutation in db.js
+  if (act.id && act.id.startsWith('act_') && typeof DB.undoActivity === 'function') {
+    return await DB.undoActivity(act.id);
+  }
+
+  // 2. Undo synthesized actions based on table
+  if (act.table === 'installment_txns') {
+    const txnId = act.txnId;
+    const slNo = Number(act.recordId);
+    const amt = Number(act.amount) || 0;
+    await DB.remove('installment_txns', t => (txnId && t.TxnID === txnId) || (Number(t.SlNo) === slNo && Number(t.Amount) === amt));
+    // Re-sync customer total in installments
+    const remaining = (DB.getAll('installment_txns') || []).filter(t => Number(t.SlNo) === slNo && (t.TxnType === 'Customer' || !t.TxnType));
+    const newTotal = remaining.reduce((s, x) => s + (Number(x.Amount) || 0), 0);
+    await DB.update('installments', r => Number(r.SlNo) === slNo, { Total: newTotal });
+  } else if (act.table === 'commission_txns') {
+    const txnId = act.txnId;
+    const slNo = Number(act.recordId);
+    await DB.remove('commission_txns', t => (txnId && t.TxnID === txnId) || (Number(t.SlNo) === slNo));
+  } else if (act.table === 'installment_remarks') {
+    const remId = act.remarkId;
+    const slNo = Number(act.recordId);
+    await DB.remove('installment_remarks', r => (remId && r.RemarkID === remId) || (Number(r.SlNo) === slNo));
+  } else if (act.table === 'inventory_dispatches') {
+    const dispId = act.dispatchId;
+    await DB.remove('inventory_dispatches', d => d.DispatchID === dispId);
+  } else if (act.table === 'installments' && act.stageField) {
+    const slNo = Number(act.recordId);
+    const fld = act.stageField;
+    await DB.update('installments', r => Number(r.SlNo) === slNo, { [fld]: '' });
+  } else if (act.table === 'installments' && act.action === 'INSERT') {
+    const slNo = Number(act.recordId);
+    await DB.remove('installments', r => Number(r.SlNo) === slNo);
+  }
+
+  // Persist undone record
+  markActivityAsUndone(act.id, undoUser);
+  act.undone = true;
+  act.undoneBy = undoUser;
+  act.undoneAt = new Date().toISOString();
+  return act;
+}
+
 function getCombinedActivities() {
   const logged = (typeof DB !== 'undefined' && DB.getActivityLogs) ? DB.getActivityLogs() : [];
-
   const installments = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installments') || []) : [];
   const txns = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installment_txns') || []) : [];
+  const commTxns = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('commission_txns') || []) : [];
   const remarks = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installment_remarks') || []) : [];
+  const dispatches = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('inventory_dispatches') || []) : [];
 
-  const existingIds = new Set(logged.map(l => l.recordId + '_' + l.date + '_' + l.table));
+  const undoneMap = getUndoneActivityMap();
   const synthesized = [];
 
-  // Synthesize txns
-  txns.forEach(t => {
-    const date = t.TxnDate || (t.CreatedAt ? t.CreatedAt.split('T')[0] : '');
-    const cust = installments.find(x => Number(x.SlNo) === Number(t.SlNo));
-    const custName = cust ? cust.Name : `Customer #${t.SlNo}`;
-    const idKey = (t.TxnId || t.SlNo) + '_' + date + '_installment_txns';
-    if (!existingIds.has(idKey) && date) {
-      synthesized.push({
-        id: 'synth_txn_' + (t.TxnId || t.SlNo || Math.random()),
-        timestamp: t.CreatedAt || (date + 'T12:00:00Z'),
-        date: date,
-        time: '',
-        page: 'Customer',
-        table: 'installment_txns',
-        action: 'INSERT',
-        user: t.CreatedBy || 'Admin',
-        userRole: 'Staff',
-        recordId: t.SlNo,
-        customerName: custName,
-        changes: [
-          { field: 'Payment Received (' + (t.TxnType || 'Customer') + ')', oldVal: null, newVal: '₹' + (Number(t.Amount) || 0).toLocaleString('en-IN') + (t.Mode ? ' via ' + t.Mode : '') + (t.Note ? ' - ' + t.Note : '') }
-        ],
-        isSynthesized: true,
-        undone: false
-      });
-    }
-  });
+  const custMap = new Map();
+  installments.forEach(r => custMap.set(Number(r.SlNo), r));
 
-  // Synthesize remarks
-  remarks.forEach(r => {
-    const date = r.CreatedAt ? r.CreatedAt.split('T')[0] : '';
-    const cust = installments.find(x => Number(x.SlNo) === Number(r.SlNo));
-    const custName = cust ? cust.Name : `Customer #${r.SlNo}`;
-    const idKey = (r.RemarkId || r.SlNo) + '_' + date + '_installment_remarks';
-    if (!existingIds.has(idKey) && date) {
+  // 1. Gather all workflow stage transactions from Manage Work (installments)
+  installments.forEach(r => {
+    const slNo = Number(r.SlNo);
+    const custName = r.Name || `Customer #${slNo}`;
+    const author = r.SpecsUpdatedBy || 'Admin';
+
+    // Parse stages and dates
+    const stagesList = [
+      { field: 'LoginDate', name: '1. Login', dateVal: r.LoginDate },
+      { field: 'AgreementDate', name: '2. Agreement', dateVal: r.AgreementDate },
+      { field: r.MaterialDispatchedDate ? 'MaterialDispatchedDate' : 'DispatchedDate', name: '3. Dispatched', dateVal: r.MaterialDispatchedDate || r.DispatchedDate },
+      { field: 'InstallationDate', name: '4. Installation', dateVal: r.InstallationDate },
+      { field: r.NetMeterDate ? 'NetMeterDate' : 'NetMeter', name: '5. NetMeter', dateVal: r.NetMeterDate || (r.NetMeterPaid && r.NetMeterPayment ? (r.SpecsUpdatedAt || r.LoginDate) : null) },
+      { field: 'InspectionDate', name: '6. Inspection', dateVal: r.InspectionDate },
+      { field: r.MeterConnectedDate ? 'MeterConnectedDate' : 'ConnectionDate', name: '7. Connection', dateVal: r.MeterConnectedDate || r.ConnectionDate },
+      { field: 'CommissioningDate', name: '8. Subsidy', dateVal: r.CommissioningDate }
+    ];
+
+    stagesList.forEach(st => {
+      if (!st.dateVal) return;
+      const isoDate = parseToIsoDate(st.dateVal);
+      if (!isoDate) return;
+      const actId = `synth_stg_${slNo}_${st.field}`;
       synthesized.push({
-        id: 'synth_rem_' + (r.RemarkId || r.SlNo || Math.random()),
-        timestamp: r.CreatedAt || (date + 'T12:00:00Z'),
-        date: date,
+        id: actId,
+        timestamp: `${isoDate}T12:00:00Z`,
+        date: isoDate,
         time: '',
         page: 'Manage Work',
-        table: 'installment_remarks',
-        action: 'INSERT',
-        user: r.Author || r.CreatedBy || 'Staff',
+        table: 'installments',
+        action: 'UPDATE',
+        stageField: st.field,
+        user: author,
         userRole: 'Staff',
-        recordId: r.SlNo,
+        recordId: slNo,
         customerName: custName,
+        consumerNo: r.ConsumerNo || '',
         changes: [
-          { field: 'Remark / Comment Added', oldVal: null, newVal: r.RemarkText || r.Note || '' }
+          { field: `Workflow Stage: ${st.name}`, oldVal: null, newVal: st.dateVal }
         ],
-        isSynthesized: true,
+        undone: false
+      });
+    });
+
+    // Specifications / Assigned Brands (Manage Work)
+    if (r.SpecsUpdatedAt && (r.CommittedBrand || r.ProductSpecs)) {
+      const specDate = parseToIsoDate(r.SpecsUpdatedAt);
+      if (specDate) {
+        synthesized.push({
+          id: `synth_spec_${slNo}`,
+          timestamp: r.SpecsUpdatedAt,
+          date: specDate,
+          time: '',
+          page: 'Manage Work',
+          table: 'installments',
+          action: 'UPDATE',
+          user: r.SpecsUpdatedBy || 'Admin',
+          userRole: 'Staff',
+          recordId: slNo,
+          customerName: custName,
+          consumerNo: r.ConsumerNo || '',
+          changes: [
+            { field: 'System Specifications', oldVal: null, newVal: r.CommittedBrand || 'Assigned Brands' }
+          ],
+          undone: false
+        });
+      }
+    }
+
+    // Customer Profile Registration (Customer Page)
+    const regDate = parseToIsoDate(r.CreatedAt || r.LoginDate);
+    if (regDate) {
+      synthesized.push({
+        id: `synth_reg_${slNo}`,
+        timestamp: `${regDate}T09:00:00Z`,
+        date: regDate,
+        time: '',
+        page: 'Customer',
+        table: 'installments',
+        action: 'INSERT',
+        user: 'Admin',
+        userRole: 'Admin',
+        recordId: slNo,
+        customerName: custName,
+        consumerNo: r.ConsumerNo || '',
+        changes: [
+          { field: 'Customer Profile Created', oldVal: null, newVal: `${custName} (District: ${r.District || '-'}, Phone: ${r.MobileNumber || '-'})` }
+        ],
         undone: false
       });
     }
   });
 
-  return [...logged, ...synthesized];
+  // 2. Gather Customer Payments & Vendor Expenses (installment_txns)
+  txns.forEach(t => {
+    const isoDate = parseToIsoDate(t.TxnDate || t.CreatedAt || t.Date);
+    if (!isoDate) return;
+    const cust = custMap.get(Number(t.SlNo));
+    const custName = cust ? cust.Name : `Customer #${t.SlNo}`;
+    const isCustomer = t.TxnType === 'Customer' || !t.TxnType;
+    const actId = `synth_txn_${t.TxnID || t.SlNo + '_' + isoDate + '_' + t.Amount}`;
+    synthesized.push({
+      id: actId,
+      timestamp: t.CreatedAt || `${isoDate}T12:00:00Z`,
+      date: isoDate,
+      time: '',
+      page: 'Customer',
+      table: 'installment_txns',
+      action: 'INSERT',
+      txnId: t.TxnID,
+      amount: t.Amount,
+      user: t.CreatedBy || 'Admin',
+      userRole: 'Staff',
+      recordId: t.SlNo,
+      customerName: custName,
+      consumerNo: cust ? cust.ConsumerNo : '',
+      changes: [
+        {
+          field: isCustomer ? 'Customer Payment Received' : 'Vendor Expense Paid',
+          oldVal: null,
+          newVal: `₹${(Number(t.Amount) || 0).toLocaleString('en-IN')}${t.Remark ? ' (' + t.Remark + ')' : ''}`
+        }
+      ],
+      undone: false
+    });
+  });
+
+  // 3. Gather Broker Commission Payments (commission_txns)
+  commTxns.forEach(c => {
+    const isoDate = parseToIsoDate(c.TxnDate || c.CreatedAt || c.Date);
+    if (!isoDate) return;
+    const cust = custMap.get(Number(c.SlNo));
+    const custName = cust ? cust.Name : `Customer #${c.SlNo}`;
+    const actId = `synth_comm_${c.TxnID || c.SlNo + '_' + isoDate + '_' + c.Amount}`;
+    synthesized.push({
+      id: actId,
+      timestamp: c.CreatedAt || `${isoDate}T12:00:00Z`,
+      date: isoDate,
+      time: '',
+      page: 'Customer',
+      table: 'commission_txns',
+      action: 'INSERT',
+      txnId: c.TxnID,
+      amount: c.Amount,
+      user: c.CreatedBy || 'Admin',
+      userRole: 'Staff',
+      recordId: c.SlNo,
+      customerName: custName,
+      consumerNo: cust ? cust.ConsumerNo : '',
+      changes: [
+        {
+          field: 'Broker Commission Paid',
+          oldVal: null,
+          newVal: `₹${(Number(c.Amount) || 0).toLocaleString('en-IN')}${c.Remark ? ' (' + c.Remark + ')' : ''}`
+        }
+      ],
+      undone: false
+    });
+  });
+
+  // 4. Gather Remarks / Comments (installment_remarks)
+  remarks.forEach(r => {
+    const isoDate = parseToIsoDate(r.CreatedAt || r.Date);
+    if (!isoDate) return;
+    const cust = custMap.get(Number(r.SlNo));
+    const custName = cust ? cust.Name : `Customer #${r.SlNo}`;
+    const page = (r.Type === 'Work' || r.Type === 'Manage Work') ? 'Manage Work' : 'Customer';
+    const actId = `synth_rem_${r.RemarkID || r.SlNo + '_' + isoDate}`;
+    synthesized.push({
+      id: actId,
+      timestamp: r.CreatedAt || `${isoDate}T12:00:00Z`,
+      date: isoDate,
+      time: '',
+      page: page,
+      table: 'installment_remarks',
+      action: 'INSERT',
+      remarkId: r.RemarkID,
+      user: r.Author || r.CreatedBy || 'Staff',
+      userRole: 'Staff',
+      recordId: r.SlNo,
+      customerName: custName,
+      consumerNo: cust ? cust.ConsumerNo : '',
+      changes: [
+        { field: 'Remark / Comment Added', oldVal: null, newVal: r.Remark || r.Note || '' }
+      ],
+      undone: false
+    });
+  });
+
+  // 5. Gather Inventory Dispatches (inventory_dispatches)
+  dispatches.forEach(d => {
+    const isoDate = parseToIsoDate(d.Date || d.DispatchDate || d.CreatedAt);
+    if (!isoDate) return;
+    const actId = `synth_disp_${d.DispatchID || Math.random()}`;
+    synthesized.push({
+      id: actId,
+      timestamp: d.CreatedAt || `${isoDate}T12:00:00Z`,
+      date: isoDate,
+      time: '',
+      page: 'Manage Work',
+      table: 'inventory_dispatches',
+      action: 'INSERT',
+      dispatchId: d.DispatchID,
+      user: d.CreatedBy || 'Admin',
+      userRole: 'Staff',
+      recordId: d.ChallanNo || d.DispatchID,
+      customerName: d.SiteName || d.CustomerName || 'Material Dispatch',
+      changes: [
+        { field: 'Inventory Dispatched', oldVal: null, newVal: `${d.Quantity || ''} units of ${d.ItemCode || d.ItemName || 'Material'} (Challan: ${d.ChallanNo || '-'})` }
+      ],
+      undone: false
+    });
+  });
+
+  // Combine real-time logs and synthesized logs
+  const combined = [...logged, ...synthesized];
+
+  // Apply undone status from persistent map
+  combined.forEach(act => {
+    if (undoneMap[act.id]) {
+      act.undone = true;
+      act.undoneBy = undoneMap[act.id].undoneBy;
+      act.undoneAt = undoneMap[act.id].undoneAt;
+    }
+  });
+
+  // Keep in activityCacheMap for direct instant lookup on Undo click
+  activityCacheMap.clear();
+  combined.forEach(act => activityCacheMap.set(act.id, act));
+
+  return combined;
 }
 
 function renderActivityTab() {
@@ -1242,7 +1511,7 @@ function renderActivityTab() {
       <div class="text-center py-5 text-muted">
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-secondary opacity-50 mb-2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <div class="fw-semibold fs-7 text-dark mb-1">No database transactions found for ${rangeText}</div>
-        <div class="fs-8 text-muted">Any updates, payments, or changes on Manage Work and Customer pages will appear here with instant Undo capability.</div>
+        <div class="fs-8 text-muted">Any updates, payments, stages, or changes on Manage Work and Customer pages will appear here with instant Undo capability.</div>
       </div>
     `;
     return;
@@ -1267,16 +1536,13 @@ function renderActivityTab() {
       return `
         <div class="d-flex align-items-center flex-wrap gap-1.5 fs-8 py-0.5">
           <span class="fw-semibold text-secondary" style="min-width: 140px;">${fieldName}:</span>
-          <span class="text-danger text-decoration-line-through bg-danger-subtle px-1.5 py-0.5 rounded">${oldValStr}</span>
-          <span class="text-muted fs-9">➔</span>
+          ${chg.oldVal != null && chg.oldVal !== '' ? `<span class="text-danger text-decoration-line-through bg-danger-subtle px-1.5 py-0.5 rounded">${oldValStr}</span><span class="text-muted fs-9">➔</span>` : ''}
           <span class="text-success fw-bold bg-success-subtle px-1.5 py-0.5 rounded">${newValStr}</span>
         </div>
       `;
     }).join('');
 
-    const undoButtonHtml = act.isSynthesized 
-      ? `<span class="badge bg-light text-muted border fs-9" title="Synthesized transaction before real-time logging">System Log</span>`
-      : isUndone
+    const undoButtonHtml = isUndone
       ? `<span class="badge bg-secondary-subtle text-secondary border fs-9 d-inline-flex align-items-center gap-1">
            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
            <span>Undone by ${escapeHtml(act.undoneBy || 'Admin')}</span>
@@ -1637,23 +1903,27 @@ window.onDbReady = function () {
       const actId = undoBtn.getAttribute('data-act-id');
       if (!actId) return;
 
+      const act = activityCacheMap.get(actId);
+      if (!act) {
+        if (typeof UI !== 'undefined' && UI.toast) UI.toast('Transaction record not found.', 'warning');
+        return;
+      }
+
       const confirmed = (typeof UI !== 'undefined' && UI.confirmDialog)
         ? await UI.confirmDialog({
             title: 'Revert Database Transaction',
-            message: 'Are you sure you want to revert this database change? The previous values will be directly restored into the database.',
+            message: `Are you sure you want to revert this database change for "${act.customerName || 'Customer'}"? The change will be restored directly in the database.`,
             okText: 'Yes, Undo Change',
             cancelText: 'Cancel'
           })
-        : window.confirm('Are you sure you want to undo this transaction and revert the database?');
+        : window.confirm(`Are you sure you want to revert this database change for "${act.customerName || 'Customer'}"?`);
 
       if (!confirmed) return;
 
       try {
         undoBtn.disabled = true;
         undoBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
-        if (typeof DB !== 'undefined' && DB.undoActivity) {
-          await DB.undoActivity(actId);
-        }
+        await executeUndoActivity(act);
         if (typeof UI !== 'undefined' && UI.toast) {
           UI.toast('Transaction successfully reverted and database restored!', 'success');
         }
