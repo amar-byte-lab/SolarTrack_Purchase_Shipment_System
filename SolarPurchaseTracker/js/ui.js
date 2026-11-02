@@ -6,7 +6,7 @@
 const UI = (() => {
 
   const NAV_ITEMS = [
-    // { href: 'dashboard.html',       icon: 'grid',       label: 'Dashboard' },
+    // { href: 'quotation.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'inventory.html',       icon: 'boxes',      label: 'Inventory' },
@@ -96,9 +96,9 @@ const UI = (() => {
           }
           if (item.href === 'manage-work.html' || item.href === 'files.html') return false;
           if (roleLower === 'partner' || roleLower === 'associates') {
-            return ['dashboard.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['quotation.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['dashboard.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['quotation.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : NAV_ITEMS;
 

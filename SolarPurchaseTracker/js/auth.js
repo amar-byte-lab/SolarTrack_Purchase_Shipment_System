@@ -115,7 +115,7 @@ const Auth = (() => {
     // 1. If on login page
     if (page === 'login.html') {
       if (currentUser) {
-        window.location.href = isEmployee ? 'quotation.html' : 'dashboard.html';
+        window.location.href = 'quotation.html';
       }
       return;
     }
@@ -133,7 +133,7 @@ const Auth = (() => {
 
     // 4. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
-      window.location.href = isEmployee ? 'quotation.html' : 'dashboard.html';
+      window.location.href = 'quotation.html';
       return;
     }
 
@@ -152,19 +152,19 @@ const Auth = (() => {
 
     if (!isPowerUser) {
       if (page === 'manage-work.html' || page === 'files.html') {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'quotation.html';
         return;
       }
       if (roleLower === 'partner' || roleLower === 'associates') {
-        const allowed = ['dashboard.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+        const allowed = ['quotation.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
-          window.location.href = 'dashboard.html';
+          window.location.href = 'quotation.html';
           return;
         }
       } else {
-        const allowed = ['dashboard.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
+        const allowed = ['quotation.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
-          window.location.href = 'dashboard.html';
+          window.location.href = 'quotation.html';
           return;
         }
       }

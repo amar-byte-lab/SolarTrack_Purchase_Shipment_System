@@ -195,7 +195,7 @@
 
     if (res.success) {
       const roleLower = (res.user && res.user.role ? res.user.role : '').toLowerCase().trim();
-      window.location.href = (roleLower === 'employee') ? 'quotation.html' : 'dashboard.html';
+      window.location.href = 'quotation.html';
     } else {
       alertEl.textContent = res.error || 'Invalid User ID or Password';
       alertEl.style.display = 'block';

@@ -770,7 +770,7 @@ const FilesApp = (() => {
     const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
     const isPowerUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
     if (!isPowerUser) {
-      window.location.href = 'dashboard.html';
+      window.location.href = 'quotation.html';
       return;
     }
 
