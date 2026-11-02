@@ -1105,156 +1105,211 @@ function fallbackCopy(text) {
 }
 
 // ══ ACTIVITY TAB LOGIC ══════════════════════════════════════════════════════
-let activityFilterCategory = 'ALL';
+let actFromDate = new Date().toISOString().split('T')[0]; // Default to current date only
+let actToDate = new Date().toISOString().split('T')[0];   // Default to current date only
+let actPageFilter = 'ALL';                               // 'ALL' | 'Manage Work' | 'Customer'
 let activitySearchText = '';
+
+function formatActTimestamp(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  } catch (e) {
+    return String(iso);
+  }
+}
+
+function getCombinedActivities() {
+  const logged = (typeof DB !== 'undefined' && DB.getActivityLogs) ? DB.getActivityLogs() : [];
+
+  const installments = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installments') || []) : [];
+  const txns = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installment_txns') || []) : [];
+  const remarks = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installment_remarks') || []) : [];
+
+  const existingIds = new Set(logged.map(l => l.recordId + '_' + l.date + '_' + l.table));
+  const synthesized = [];
+
+  // Synthesize txns
+  txns.forEach(t => {
+    const date = t.TxnDate || (t.CreatedAt ? t.CreatedAt.split('T')[0] : '');
+    const cust = installments.find(x => Number(x.SlNo) === Number(t.SlNo));
+    const custName = cust ? cust.Name : `Customer #${t.SlNo}`;
+    const idKey = (t.TxnId || t.SlNo) + '_' + date + '_installment_txns';
+    if (!existingIds.has(idKey) && date) {
+      synthesized.push({
+        id: 'synth_txn_' + (t.TxnId || t.SlNo || Math.random()),
+        timestamp: t.CreatedAt || (date + 'T12:00:00Z'),
+        date: date,
+        time: '',
+        page: 'Customer',
+        table: 'installment_txns',
+        action: 'INSERT',
+        user: t.CreatedBy || 'Admin',
+        userRole: 'Staff',
+        recordId: t.SlNo,
+        customerName: custName,
+        changes: [
+          { field: 'Payment Received (' + (t.TxnType || 'Customer') + ')', oldVal: null, newVal: '₹' + (Number(t.Amount) || 0).toLocaleString('en-IN') + (t.Mode ? ' via ' + t.Mode : '') + (t.Note ? ' - ' + t.Note : '') }
+        ],
+        isSynthesized: true,
+        undone: false
+      });
+    }
+  });
+
+  // Synthesize remarks
+  remarks.forEach(r => {
+    const date = r.CreatedAt ? r.CreatedAt.split('T')[0] : '';
+    const cust = installments.find(x => Number(x.SlNo) === Number(r.SlNo));
+    const custName = cust ? cust.Name : `Customer #${r.SlNo}`;
+    const idKey = (r.RemarkId || r.SlNo) + '_' + date + '_installment_remarks';
+    if (!existingIds.has(idKey) && date) {
+      synthesized.push({
+        id: 'synth_rem_' + (r.RemarkId || r.SlNo || Math.random()),
+        timestamp: r.CreatedAt || (date + 'T12:00:00Z'),
+        date: date,
+        time: '',
+        page: 'Manage Work',
+        table: 'installment_remarks',
+        action: 'INSERT',
+        user: r.Author || r.CreatedBy || 'Staff',
+        userRole: 'Staff',
+        recordId: r.SlNo,
+        customerName: custName,
+        changes: [
+          { field: 'Remark / Comment Added', oldVal: null, newVal: r.RemarkText || r.Note || '' }
+        ],
+        isSynthesized: true,
+        undone: false
+      });
+    }
+  });
+
+  return [...logged, ...synthesized];
+}
 
 function renderActivityTab() {
   const container = document.getElementById('activityTimelineContainer');
   const countBadge = document.getElementById('activityCountBadge');
   if (!container) return;
 
-  const installments = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installments') || []) : [];
-  const txns = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installment_txns') || []) : [];
-  const dispatches = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('inventory_dispatches') || []) : [];
+  const allActivities = getCombinedActivities();
 
-  const activities = [];
-
-  // 1. Gather status milestones from installments
-  installments.forEach(r => {
-    const custName = r.Name || `Customer #${r.SlNo}`;
-    if (r.CommissioningDate) {
-      activities.push({
-        type: 'Status',
-        category: 'Subsidy Completed',
-        badgeClass: 'bg-success text-white',
-        title: `Subsidy Commissioned: ${custName}`,
-        description: `Customer ${custName} achieved Commissioning / Subsidy stage.`,
-        date: r.CommissioningDate,
-        icon: 'check'
-      });
-    }
-    if (r.MeterConnectedDate) {
-      activities.push({
-        type: 'Status',
-        category: 'Meter Connection',
-        badgeClass: 'bg-info text-dark',
-        title: `Meter Connected: ${custName}`,
-        description: `Net Meter connection verified on ${r.MeterConnectedDate}.`,
-        date: r.MeterConnectedDate,
-        icon: 'check'
-      });
-    }
-    if (r.InstallationDate) {
-      activities.push({
-        type: 'Status',
-        category: 'Installation Done',
-        badgeClass: 'bg-primary text-white',
-        title: `Installation Completed: ${custName}`,
-        description: `Solar plant physical installation finished.`,
-        date: r.InstallationDate,
-        icon: 'tool'
-      });
-    }
-    if (r.AgreementDate) {
-      activities.push({
-        type: 'Status',
-        category: 'Agreement Signed',
-        badgeClass: 'bg-secondary text-white',
-        title: `Agreement Executed: ${custName}`,
-        description: `PPA Agreement signed and documented.`,
-        date: r.AgreementDate,
-        icon: 'file-text'
-      });
-    }
-    if (r.LoginDate) {
-      activities.push({
-        type: 'Status',
-        category: 'Customer Login',
-        badgeClass: 'bg-dark text-white',
-        title: `Application Login: ${custName}`,
-        description: `New customer application recorded in system.`,
-        date: r.LoginDate,
-        icon: 'user'
-      });
-    }
+  // 1. Filter by Date Range (Defaults strictly to current date)
+  let filtered = allActivities.filter(act => {
+    if (!act.date) return false;
+    if (actFromDate && act.date < actFromDate) return false;
+    if (actToDate && act.date > actToDate) return false;
+    return true;
   });
 
-  // 2. Gather payment transactions
-  txns.forEach(t => {
-    const cust = installments.find(x => Number(x.SlNo) === Number(t.SlNo));
-    const custName = cust ? cust.Name : `Customer #${t.SlNo}`;
-    const isCustomer = t.TxnType === 'Customer' || !t.TxnType;
-    activities.push({
-      type: 'Payment',
-      category: isCustomer ? 'Customer Payment' : 'Vendor Payment',
-      badgeClass: isCustomer ? 'bg-success-subtle text-success border border-success' : 'bg-warning-subtle text-warning-emphasis border border-warning',
-      title: `${isCustomer ? 'Received Payment' : 'Vendor Expense'}: ${fmtCurr(t.Amount)}`,
-      description: `${isCustomer ? 'Received from' : 'Paid for'} ${custName} via ${t.Mode || 'Payment'}. ${t.Note ? '(' + t.Note + ')' : ''}`,
-      date: t.TxnDate || t.Date || t.CreatedAt,
-      icon: 'wallet'
-    });
-  });
-
-  // 3. Gather inventory dispatches
-  dispatches.forEach(d => {
-    activities.push({
-      type: 'Dispatch',
-      category: 'Material Dispatch',
-      badgeClass: 'bg-warning text-dark',
-      title: `Material Dispatched: ${d.CustomerName || d.JobName || 'Shipment'}`,
-      description: `Dispatched ${d.Quantity || ''} units of ${d.ItemName || 'Solar Equipment'} to ${d.CustomerName || 'site'}.`,
-      date: d.DispatchDate || d.CreatedAt,
-      icon: 'truck'
-    });
-  });
-
-  // Sort by date descending
-  activities.sort((a, b) => {
-    const dA = a.date ? new Date(a.date).getTime() : 0;
-    const dB = b.date ? new Date(b.date).getTime() : 0;
-    return dB - dA;
-  });
-
-  // Filter by category
-  let filtered = activities;
-  if (activityFilterCategory !== 'ALL') {
-    filtered = filtered.filter(a => a.type === activityFilterCategory);
+  // 2. Filter by Page Source ('ALL', 'Manage Work', 'Customer')
+  if (actPageFilter && actPageFilter !== 'ALL') {
+    filtered = filtered.filter(act => act.page === actPageFilter);
   }
 
-  // Filter by search text
+  // 3. Filter by Search Query
   if (activitySearchText) {
     const q = activitySearchText.toLowerCase();
-    filtered = filtered.filter(a =>
-      a.title.toLowerCase().includes(q) ||
-      a.description.toLowerCase().includes(q) ||
-      a.category.toLowerCase().includes(q) ||
-      String(a.date || '').toLowerCase().includes(q)
-    );
+    filtered = filtered.filter(act => {
+      const matchCust = (act.customerName || '').toLowerCase().includes(q);
+      const matchUser = (act.user || '').toLowerCase().includes(q) || (act.userRole || '').toLowerCase().includes(q);
+      const matchPage = (act.page || '').toLowerCase().includes(q);
+      const matchAction = (act.action || '').toLowerCase().includes(q);
+      const matchChanges = (act.changes || []).some(c => 
+        (c.field || '').toLowerCase().includes(q) ||
+        String(c.oldVal || '').toLowerCase().includes(q) ||
+        String(c.newVal || '').toLowerCase().includes(q)
+      );
+      return matchCust || matchUser || matchPage || matchAction || matchChanges;
+    });
   }
 
+  // Sort descending by timestamp / date
+  filtered.sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
+
   if (countBadge) {
-    countBadge.textContent = `${filtered.length} of ${activities.length} activities`;
+    countBadge.textContent = `${filtered.length} transaction${filtered.length === 1 ? '' : 's'}`;
   }
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="text-center py-5 text-muted fs-8">No activities matching current search or filters.</div>`;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const rangeText = (actFromDate === actToDate && actFromDate === todayStr)
+      ? "today (" + actFromDate + ")"
+      : "selected range (" + (actFromDate || 'Start') + " to " + (actToDate || 'End') + ")";
+    container.innerHTML = `
+      <div class="text-center py-5 text-muted">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-secondary opacity-50 mb-2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="fw-semibold fs-7 text-dark mb-1">No database transactions found for ${rangeText}</div>
+        <div class="fs-8 text-muted">Any updates, payments, or changes on Manage Work and Customer pages will appear here with instant Undo capability.</div>
+      </div>
+    `;
     return;
   }
 
   container.innerHTML = filtered.map(act => {
-    const formattedDate = act.date ? new Date(act.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent';
+    const isUndone = !!act.undone;
+    const actionBadge = act.action === 'UPDATE' 
+      ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-2 py-0.5">UPDATE</span>'
+      : act.action === 'INSERT'
+      ? '<span class="badge bg-success-subtle text-success border border-success-subtle fs-9 px-2 py-0.5">INSERT</span>'
+      : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-9 px-2 py-0.5">DELETE</span>';
+
+    const pageBadge = act.page === 'Manage Work'
+      ? '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fs-9 px-2 py-0.5">Manage Work</span>'
+      : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fs-9 px-2 py-0.5">Customer</span>';
+
+    const changesHtml = (act.changes || []).map(chg => {
+      const fieldName = escapeHtml(chg.field);
+      const oldValStr = chg.oldVal != null && chg.oldVal !== '' ? escapeHtml(String(chg.oldVal)) : '<em class="text-muted">(none)</em>';
+      const newValStr = chg.newVal != null && chg.newVal !== '' ? escapeHtml(String(chg.newVal)) : '<em class="text-muted">(cleared)</em>';
+      return `
+        <div class="d-flex align-items-center flex-wrap gap-1.5 fs-8 py-0.5">
+          <span class="fw-semibold text-secondary" style="min-width: 140px;">${fieldName}:</span>
+          <span class="text-danger text-decoration-line-through bg-danger-subtle px-1.5 py-0.5 rounded">${oldValStr}</span>
+          <span class="text-muted fs-9">➔</span>
+          <span class="text-success fw-bold bg-success-subtle px-1.5 py-0.5 rounded">${newValStr}</span>
+        </div>
+      `;
+    }).join('');
+
+    const undoButtonHtml = act.isSynthesized 
+      ? `<span class="badge bg-light text-muted border fs-9" title="Synthesized transaction before real-time logging">System Log</span>`
+      : isUndone
+      ? `<span class="badge bg-secondary-subtle text-secondary border fs-9 d-inline-flex align-items-center gap-1">
+           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+           <span>Undone by ${escapeHtml(act.undoneBy || 'Admin')}</span>
+         </span>`
+      : `<button type="button" class="btn btn-sm btn-outline-danger btn-undo-activity py-0.5 px-2.5 fs-8 d-inline-flex align-items-center gap-1 shadow-none" data-act-id="${act.id}" title="Revert this database change directly">
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+           <span>Undo</span>
+         </button>`;
+
     return `
-      <div class="activity-item d-flex align-items-start gap-3">
-        <div class="activity-marker flex-shrink-0"></div>
-        <div class="activity-card flex-grow-1">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
-            <div class="d-flex align-items-center gap-2">
-              <span class="badge ${act.badgeClass} fs-9 px-2 py-0.5">${escapeHtml(act.category)}</span>
-              <span class="fw-bold fs-8 text-dark">${escapeHtml(act.title)}</span>
+      <div class="card mb-2.5 border rounded-2 shadow-none ${isUndone ? 'opacity-75 bg-light-subtle' : 'bg-white'}" style="transition: all 0.15s ease;">
+        <div class="card-body p-2.5">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1.5 pb-1.5 border-bottom">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              ${pageBadge}
+              ${actionBadge}
+              <span class="fw-bold text-dark fs-8">${escapeHtml(act.customerName || 'Customer')}</span>
+              ${act.recordId ? `<span class="text-muted fs-9">#${escapeHtml(String(act.recordId))}</span>` : ''}
             </div>
-            <span class="text-muted fs-9">${escapeHtml(formattedDate)}</span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-light text-secondary border fs-9 d-inline-flex align-items-center gap-1">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>${escapeHtml(act.user || 'Admin')}</span>
+                <small class="text-muted">(${escapeHtml(act.userRole || 'Admin')})</small>
+              </span>
+              <span class="text-muted fs-9">${formatActTimestamp(act.timestamp)}</span>
+              ${undoButtonHtml}
+            </div>
           </div>
-          <div class="text-muted fs-8">${escapeHtml(act.description)}</div>
+          <div class="activity-changes-box ps-1">
+            <div class="text-muted fs-9 fw-semibold mb-1 text-uppercase" style="letter-spacing: 0.03em;">Changes:</div>
+            ${changesHtml}
+          </div>
         </div>
       </div>
     `;
@@ -1462,7 +1517,109 @@ window.onDbReady = function () {
     };
   }
 
-  // 8. Activity Tab Filters & Search
+  // 8. Activity Tab Filters, Date Range & Real-time Undo Wireup
+  const todayISO = new Date().toISOString().split('T')[0];
+  const inActFrom = document.getElementById('actFromDate');
+  const inActTo = document.getElementById('actToDate');
+
+  if (inActFrom) {
+    inActFrom.value = actFromDate || todayISO;
+    inActFrom.addEventListener('change', () => {
+      actFromDate = inActFrom.value;
+      clearPresetActive();
+      renderActivityTab();
+    });
+  }
+
+  if (inActTo) {
+    inActTo.value = actToDate || todayISO;
+    inActTo.addEventListener('change', () => {
+      actToDate = inActTo.value;
+      clearPresetActive();
+      renderActivityTab();
+    });
+  }
+
+  function clearPresetActive() {
+    document.querySelectorAll('#actDatePresets button').forEach(b => b.classList.remove('active'));
+  }
+
+  // Quick Date Range Presets
+  const btnToday = document.getElementById('btnActPresetToday');
+  if (btnToday) {
+    btnToday.addEventListener('click', () => {
+      clearPresetActive();
+      btnToday.classList.add('active');
+      const t = new Date().toISOString().split('T')[0];
+      actFromDate = t;
+      actToDate = t;
+      if (inActFrom) inActFrom.value = t;
+      if (inActTo) inActTo.value = t;
+      renderActivityTab();
+    });
+  }
+
+  const btnYesterday = document.getElementById('btnActPresetYesterday');
+  if (btnYesterday) {
+    btnYesterday.addEventListener('click', () => {
+      clearPresetActive();
+      btnYesterday.classList.add('active');
+      const y = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      actFromDate = y;
+      actToDate = y;
+      if (inActFrom) inActFrom.value = y;
+      if (inActTo) inActTo.value = y;
+      renderActivityTab();
+    });
+  }
+
+  const btn7Days = document.getElementById('btnActPreset7Days');
+  if (btn7Days) {
+    btn7Days.addEventListener('click', () => {
+      clearPresetActive();
+      btn7Days.classList.add('active');
+      const t = new Date().toISOString().split('T')[0];
+      const past7 = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+      actFromDate = past7;
+      actToDate = t;
+      if (inActFrom) inActFrom.value = past7;
+      if (inActTo) inActTo.value = t;
+      renderActivityTab();
+    });
+  }
+
+  const btnAll = document.getElementById('btnActPresetAll');
+  if (btnAll) {
+    btnAll.addEventListener('click', () => {
+      clearPresetActive();
+      btnAll.classList.add('active');
+      actFromDate = '';
+      actToDate = '';
+      if (inActFrom) inActFrom.value = '';
+      if (inActTo) inActTo.value = '';
+      renderActivityTab();
+    });
+  }
+
+  // Page Source Filter Buttons (All Pages / Manage Work / Customer)
+  const actPageGroup = document.getElementById('activityPageFilter');
+  if (actPageGroup) {
+    actPageGroup.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        actPageGroup.querySelectorAll('button').forEach(b => {
+          b.classList.remove('active');
+          if (b.classList.contains('btn-outline-primary')) b.className = 'btn btn-xs btn-outline-primary';
+          else if (b.classList.contains('btn-outline-success')) b.className = 'btn btn-xs btn-outline-success';
+          else b.className = 'btn btn-xs btn-outline-secondary';
+        });
+        btn.classList.add('active');
+        actPageFilter = btn.getAttribute('data-act-page') || 'ALL';
+        renderActivityTab();
+      });
+    });
+  }
+
+  // Search Input Filter
   const fActSearch = document.getElementById('fActivitySearch');
   if (fActSearch) {
     fActSearch.addEventListener('input', () => {
@@ -1471,15 +1628,45 @@ window.onDbReady = function () {
     });
   }
 
-  const actFilterContainer = document.getElementById('activityCategoryFilter');
-  if (actFilterContainer) {
-    actFilterContainer.querySelectorAll('button').forEach(btn => {
-      btn.onclick = () => {
-        actFilterContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activityFilterCategory = btn.getAttribute('data-act-filter');
+  // Direct Undo Event Delegation
+  const timelineCont = document.getElementById('activityTimelineContainer');
+  if (timelineCont) {
+    timelineCont.addEventListener('click', async (e) => {
+      const undoBtn = e.target.closest('.btn-undo-activity');
+      if (!undoBtn) return;
+      const actId = undoBtn.getAttribute('data-act-id');
+      if (!actId) return;
+
+      const confirmed = (typeof UI !== 'undefined' && UI.confirmDialog)
+        ? await UI.confirmDialog({
+            title: 'Revert Database Transaction',
+            message: 'Are you sure you want to revert this database change? The previous values will be directly restored into the database.',
+            okText: 'Yes, Undo Change',
+            cancelText: 'Cancel'
+          })
+        : window.confirm('Are you sure you want to undo this transaction and revert the database?');
+
+      if (!confirmed) return;
+
+      try {
+        undoBtn.disabled = true;
+        undoBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        if (typeof DB !== 'undefined' && DB.undoActivity) {
+          await DB.undoActivity(actId);
+        }
+        if (typeof UI !== 'undefined' && UI.toast) {
+          UI.toast('Transaction successfully reverted and database restored!', 'success');
+        }
         renderActivityTab();
-      };
+        renderSummaryTable();
+      } catch (err) {
+        if (typeof UI !== 'undefined' && UI.toast) {
+          UI.toast(err.message || 'Failed to undo transaction', 'danger');
+        } else {
+          alert('Failed to undo: ' + err.message);
+        }
+        renderActivityTab();
+      }
     });
   }
 

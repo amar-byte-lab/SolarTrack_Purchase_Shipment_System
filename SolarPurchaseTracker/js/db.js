@@ -226,10 +226,203 @@ const DB = (() => {
         return rows;
     }
 
+    const ACTIVITY_LOG_KEY = 'st_activity_transactions';
+    let _skipActivityLog = false;
+
+    function getActivityLogs() {
+        try {
+            const raw = localStorage.getItem(ACTIVITY_LOG_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveActivityLogs(logs) {
+        try {
+            const trimmed = (logs || []).slice(0, 500);
+            localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(trimmed));
+        } catch (e) {}
+    }
+
+    function recordActivity(action, key, rowOrMatch, newData) {
+        if (_skipActivityLog) return;
+        if (key !== 'installments' && key !== 'installment_txns' && key !== 'installment_remarks') return;
+
+        try {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            const path = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname.toLowerCase() : '';
+            let page = 'Customer';
+            if (path.includes('manage-work')) page = 'Manage Work';
+            else if (path.includes('summary')) page = 'Manage Work';
+            else if (path.includes('customer')) page = 'Customer';
+
+            const currentUser = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
+            const userName = currentUser ? (currentUser.name || currentUser.username || currentUser.userid || 'Admin') : 'Admin';
+            const userRole = currentUser ? (currentUser.role || 'Admin') : 'Admin';
+
+            const pkName = getPrimaryKey(key);
+
+            if (action === 'UPDATE') {
+                const originalRow = rowOrMatch;
+                if (!originalRow) return;
+
+                const changes = [];
+                const revertData = {};
+
+                for (const [k, newVal] of Object.entries(newData || {})) {
+                    if (k === 'SpecsUpdatedAt' || k === 'SpecsUpdatedBy') continue;
+                    const oldVal = originalRow[k];
+                    if (String(oldVal ?? '').trim() !== String(newVal ?? '').trim()) {
+                        changes.push({
+                            field: k,
+                            oldVal: oldVal ?? '',
+                            newVal: newVal ?? ''
+                        });
+                        revertData[k] = oldVal ?? null;
+                    }
+                }
+
+                if (changes.length === 0) return;
+
+                const recordId = originalRow[pkName] || originalRow.SlNo;
+                const custName = originalRow.Name || (cache['installments']?.find(c => Number(c.SlNo) === Number(originalRow.SlNo))?.Name) || `Customer #${recordId}`;
+                const consumerNo = originalRow.ConsumerNo || '';
+
+                const logItem = {
+                    id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    timestamp: now.toISOString(),
+                    date: dateStr,
+                    time: timeStr,
+                    page: page,
+                    table: key,
+                    action: 'UPDATE',
+                    user: userName,
+                    userRole: userRole,
+                    recordId: recordId,
+                    customerName: custName,
+                    consumerNo: consumerNo,
+                    changes: changes,
+                    revertData: revertData,
+                    previousRow: { ...originalRow },
+                    newRow: { ...originalRow, ...newData },
+                    undone: false
+                };
+
+                const logs = getActivityLogs();
+                logs.unshift(logItem);
+                saveActivityLogs(logs);
+
+            } else if (action === 'INSERT') {
+                const row = rowOrMatch;
+                if (!row) return;
+                const recordId = row[pkName] || row.SlNo;
+                const custName = row.Name || (cache['installments']?.find(c => Number(c.SlNo) === Number(row.SlNo))?.Name) || `Customer #${recordId}`;
+
+                let changes = [{ field: 'Record Created', oldVal: null, newVal: custName }];
+                if (key === 'installment_txns') {
+                    changes = [{ field: 'Payment Received', oldVal: null, newVal: '₹' + (Number(row.Amount) || 0).toLocaleString('en-IN') }];
+                }
+
+                const logItem = {
+                    id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    timestamp: now.toISOString(),
+                    date: dateStr,
+                    time: timeStr,
+                    page: page,
+                    table: key,
+                    action: 'INSERT',
+                    user: userName,
+                    userRole: userRole,
+                    recordId: recordId,
+                    customerName: custName,
+                    consumerNo: row.ConsumerNo || '',
+                    changes: changes,
+                    previousRow: null,
+                    newRow: { ...row },
+                    undone: false
+                };
+
+                const logs = getActivityLogs();
+                logs.unshift(logItem);
+                saveActivityLogs(logs);
+
+            } else if (action === 'DELETE') {
+                const row = rowOrMatch;
+                if (!row) return;
+                const recordId = row[pkName] || row.SlNo;
+                const custName = row.Name || (cache['installments']?.find(c => Number(c.SlNo) === Number(row.SlNo))?.Name) || `Customer #${recordId}`;
+
+                const logItem = {
+                    id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    timestamp: now.toISOString(),
+                    date: dateStr,
+                    time: timeStr,
+                    page: page,
+                    table: key,
+                    action: 'DELETE',
+                    user: userName,
+                    userRole: userRole,
+                    recordId: recordId,
+                    customerName: custName,
+                    consumerNo: row.ConsumerNo || '',
+                    changes: [{ field: 'Record Deleted', oldVal: custName, newVal: null }],
+                    previousRow: { ...row },
+                    newRow: null,
+                    undone: false
+                };
+
+                const logs = getActivityLogs();
+                logs.unshift(logItem);
+                saveActivityLogs(logs);
+            }
+        } catch (err) {
+            console.warn('[ActivityLog] Failed to record:', err);
+        }
+    }
+
+    async function undoActivity(actId) {
+        const logs = getActivityLogs();
+        const act = logs.find(a => a.id === actId);
+        if (!act) throw new Error('Transaction record not found.');
+        if (act.undone) throw new Error('This transaction has already been undone.');
+
+        const pkName = getPrimaryKey(act.table);
+        const currentUser = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
+        const undoUser = currentUser ? (currentUser.name || currentUser.username || currentUser.userid || 'Admin') : 'Admin';
+
+        _skipActivityLog = true;
+        try {
+            if (act.action === 'UPDATE') {
+                const pkVal = act.recordId;
+                await update(act.table, r => (r[pkName] != null && String(r[pkName]) === String(pkVal)) || (Number(r.SlNo) === Number(pkVal)), act.revertData);
+            } else if (act.action === 'INSERT') {
+                const pkVal = act.recordId;
+                await remove(act.table, r => (r[pkName] != null && String(r[pkName]) === String(pkVal)) || (Number(r.SlNo) === Number(pkVal)));
+            } else if (act.action === 'DELETE') {
+                await insert(act.table, act.previousRow);
+            }
+        } finally {
+            _skipActivityLog = false;
+        }
+
+        act.undone = true;
+        act.undoneAt = new Date().toISOString();
+        act.undoneBy = undoUser;
+        saveActivityLogs(logs);
+
+        return act;
+    }
+
     async function insert(key, row) {
         if (!cache[key]) cache[key] = [];
         cache[key].push(row);
         syncSessionCache();
+
+        recordActivity('INSERT', key, row);
 
         if (mode === 'postgres') {
             const res = await fetch(`/api/insert?table=${key}`, {
@@ -247,8 +440,12 @@ const DB = (() => {
 
     async function update(key, matchFn, newData) {
         const pkName = getPrimaryKey(key);
-        const originalRow = cache[key].find(r => matchFn(r));
+        const originalRow = cache[key]?.find(r => matchFn(r));
         const pkValue = originalRow ? (originalRow[pkName] !== undefined && originalRow[pkName] !== null ? originalRow[pkName] : originalRow[pkName ? pkName.toLowerCase() : '']) : null;
+
+        if (originalRow) {
+            recordActivity('UPDATE', key, originalRow, newData);
+        }
 
         // Update local cache
         cache[key] = cache[key].map(r => matchFn(r) ? (key === 'installments' ? normalizeInstallmentRow({ ...r, ...newData }) : { ...r, ...newData }) : r);
@@ -269,7 +466,9 @@ const DB = (() => {
 
     async function remove(key, matchFn) {
         const pkName = getPrimaryKey(key);
-        const matchingRows = cache[key].filter(r => matchFn(r));
+        const matchingRows = (cache[key] || []).filter(r => matchFn(r));
+
+        matchingRows.forEach(r => recordActivity('DELETE', key, r));
 
         // Update local cache
         cache[key] = cache[key].filter(r => !matchFn(r));
@@ -466,6 +665,8 @@ const DB = (() => {
         saveDocumentFile,
         downloadDocumentFile,
         clearCache,
+        getActivityLogs,
+        undoActivity,
     };
 
 })();
