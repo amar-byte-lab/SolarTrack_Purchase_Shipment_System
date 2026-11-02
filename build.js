@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { minify } = require('terser');
-const JavaScriptObfuscator = require('javascript-obfuscator');
 
 const SRC_DIR = path.join(__dirname, 'SolarPurchaseTracker');
 const DIST_DIR = path.join(__dirname, 'dist');
