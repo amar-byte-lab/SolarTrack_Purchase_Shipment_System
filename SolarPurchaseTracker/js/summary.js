@@ -34,7 +34,7 @@ const activeCols = new Set(DEFAULT_ACTIVE_COLS);
 // Filters State
 let modalSelectedPartners = [];
 let modalSelectedDistricts = [];
-let modalSelectedStatus = 'ALL';
+let modalSelectedStage = 'ALL';
 let modalSelectedPaymentFilters = [];
 let modalSearchText = '';
 
@@ -161,11 +161,40 @@ function getCustomerInverterMake(r) {
   return (specs?.GridTiedInverter?.Make || brandInfo.inverterMake || '-').toUpperCase();
 }
 
-// Status can be Login, Agreement or Subsidy
+// 8 Workflow Stages (Matching Manage Work exactly)
+const WORKFLOW_STAGES = [
+  { key: 'LoginDate', name: 'Login', num: 1 },
+  { key: 'AgreementDate', name: 'Agreement', num: 2 },
+  { key: 'MaterialDispatchedDate', name: 'Dispatched', num: 3 },
+  { key: 'InstallationDate', name: 'Installation', num: 4 },
+  { key: 'NetMeter', name: 'NetMeter', num: 5 },
+  { key: 'InspectionDate', name: 'Inspection', num: 6 },
+  { key: 'MeterConnectedDate', name: 'Connection', num: 7 },
+  { key: 'CommissioningDate', name: 'Subsidy', num: 8 }
+];
+
+function getRowHighestStageIdx(r) {
+  const isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  const stages = [
+    Boolean(r.LoginDate),
+    Boolean(r.AgreementDate),
+    Boolean(r.MaterialDispatchedDate),
+    Boolean(r.InstallationDate),
+    isNm,
+    Boolean(r.InspectionDate),
+    Boolean(r.MeterConnectedDate),
+    Boolean(r.CommissioningDate)
+  ];
+  let highestIdx = -1;
+  stages.forEach((d, idx) => {
+    if (d) highestIdx = Math.max(highestIdx, idx);
+  });
+  return highestIdx < 0 ? 0 : highestIdx;
+}
+
 function getCustomerWorkStatus(r) {
-  if (r.CommissioningDate || r.SubsidyDate) return 'Subsidy';
-  if (r.AgreementDate) return 'Agreement';
-  return 'Login';
+  const idx = getRowHighestStageIdx(r);
+  return WORKFLOW_STAGES[idx] ? WORKFLOW_STAGES[idx].name : 'Login';
 }
 
 // Financials and Set Cost formula: Set Cost = Material + Install + Meter + Delivery + Others
@@ -291,7 +320,10 @@ function updateModalDistrictStats() {
 
   if (modalSearchText) rows = rows.filter(r => matchesSearch(r, modalSearchText));
   if (modalSelectedPartners.length > 0) rows = rows.filter(r => matchesPartner(r, modalSelectedPartners));
-  if (modalSelectedStatus !== 'ALL') rows = rows.filter(r => getCustomerWorkStatus(r) === modalSelectedStatus);
+  if (modalSelectedStage && modalSelectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(st => st.key === modalSelectedStage);
+    if (targetIdx >= 0) rows = rows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+  }
   if (modalSelectedPaymentFilters.length > 0) rows = rows.filter(r => matchesPayment(r, modalSelectedPaymentFilters));
 
   const totalCount = rows.length;
@@ -337,7 +369,7 @@ function updateModalDistrictStats() {
   });
 }
 
-// 3. Update Status / Stage Badges Strip (Login, Agreement, Subsidy)
+// 3. Update Workflow Stage Filters (All 8 Stages: Login, Agreement, Dispatched, Installation, NetMeter, Inspection, Connection, Subsidy)
 function updateModalStageStats() {
   const container = document.getElementById('sumStageStatsContainer');
   if (!container) return;
@@ -350,35 +382,35 @@ function updateModalStageStats() {
   if (modalSelectedDistricts.length > 0) rows = rows.filter(r => matchesDistrict(r, modalSelectedDistricts));
   if (modalSelectedPaymentFilters.length > 0) rows = rows.filter(r => matchesPayment(r, modalSelectedPaymentFilters));
 
-  let loginCount = 0;
-  let agrmtCount = 0;
-  let subsidyCount = 0;
-
+  const stageCounts = [0, 0, 0, 0, 0, 0, 0, 0];
   rows.forEach(r => {
-    const st = getCustomerWorkStatus(r);
-    if (st === 'Subsidy') subsidyCount++;
-    else if (st === 'Agreement') agrmtCount++;
-    else loginCount++;
+    const idx = getRowHighestStageIdx(r);
+    if (idx >= 0 && idx < 8) {
+      stageCounts[idx]++;
+    }
   });
 
-  const isTotalActive = modalSelectedStatus === 'ALL';
   const totalCount = rows.length;
+  const isTotalActive = (modalSelectedStage === 'ALL');
 
-  container.innerHTML = `
-    <button type="button" class="stage-filter-tag ${isTotalActive ? 'active' : ''}" data-status="ALL" title="Show all stages">Total (${totalCount})</button>
-    <button type="button" class="stage-filter-tag stage-tag-1 ${modalSelectedStatus === 'Login' ? 'active' : ''}" data-status="Login" title="Filter by Login stage">Login (${loginCount})</button>
-    <button type="button" class="stage-filter-tag stage-tag-2 ${modalSelectedStatus === 'Agreement' ? 'active' : ''}" data-status="Agreement" title="Filter by Agreement stage">Agreement (${agrmtCount})</button>
-    <button type="button" class="stage-filter-tag stage-tag-8 ${modalSelectedStatus === 'Subsidy' ? 'active' : ''}" data-status="Subsidy" title="Filter by Subsidy stage">Subsidy (${subsidyCount})</button>
-  `;
+  const totalBadge = `<button type="button" class="stage-filter-tag ${isTotalActive ? 'active' : ''}" data-stage="ALL" title="Show all stages">Total (${totalCount})</button>`;
+
+  const stageBadges = WORKFLOW_STAGES.map((st, idx) => {
+    const count = stageCounts[idx] || 0;
+    const isSelected = (modalSelectedStage === st.key);
+    return `<button type="button" class="stage-filter-tag stage-tag-${st.num} ${isSelected ? 'active' : ''}" data-stage="${st.key}" title="Filter by Stage ${st.num}: ${st.name}">${st.num}. ${st.name} (${count})</button>`;
+  }).join(' ');
+
+  container.innerHTML = totalBadge + ' ' + stageBadges;
 
   container.querySelectorAll('.stage-filter-tag').forEach(btn => {
     btn.onclick = (e) => {
       e.preventDefault();
-      const stVal = btn.getAttribute('data-status');
-      if (stVal === 'ALL' || modalSelectedStatus === stVal) {
-        modalSelectedStatus = 'ALL';
+      const stVal = btn.getAttribute('data-stage');
+      if (stVal === 'ALL' || modalSelectedStage === stVal) {
+        modalSelectedStage = 'ALL';
       } else {
-        modalSelectedStatus = stVal;
+        modalSelectedStage = stVal;
       }
       updateAllModalFilterStats();
       renderSummaryTable();
@@ -386,7 +418,7 @@ function updateModalStageStats() {
   });
 }
 
-// 4. Update Payment Badges Strip (Unpaid, Partially Paid, Fully Paid)
+// 4. Update Payment Badges Strip (Total, Fully Paid, Partially Paid, Unpaid, NetMeter Paid)
 function updateModalPaymentStats() {
   const container = document.getElementById('sumPaymentStatsContainer');
   if (!container) return;
@@ -398,27 +430,43 @@ function updateModalPaymentStats() {
   if (modalSearchText) rows = rows.filter(r => matchesSearch(r, modalSearchText));
   if (modalSelectedPartners.length > 0) rows = rows.filter(r => matchesPartner(r, modalSelectedPartners));
   if (modalSelectedDistricts.length > 0) rows = rows.filter(r => matchesDistrict(r, modalSelectedDistricts));
-  if (modalSelectedStatus !== 'ALL') rows = rows.filter(r => getCustomerWorkStatus(r) === modalSelectedStatus);
+  if (modalSelectedStage && modalSelectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(st => st.key === modalSelectedStage);
+    if (targetIdx >= 0) rows = rows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+  }
 
+  let fullyPaidCount = 0;
+  let partiallyPaidCount = 0;
   let unpaidCount = 0;
-  let partialCount = 0;
-  let fullCount = 0;
+  let netMeterPaidCount = 0;
 
   rows.forEach(r => {
-    const fin = getCustomerSummaryFinancials(r, payMap);
-    if (fin.payCategory === 'Fully Paid') fullCount++;
-    else if (fin.payCategory === 'Partial Paid') partialCount++;
+    const total = payMap ? (payMap[Number(r.SlNo)] || 0) : 0;
+    const price = Number(r.CommittedPrice) || 0;
+    if (price > 0 && total >= price) fullyPaidCount++;
+    else if (total > 0) partiallyPaidCount++;
     else unpaidCount++;
+
+    let isNm = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+    if (!isNm && r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+      try {
+        const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+        const expenses = JSON.parse(jsonStr);
+        if (expenses && expenses.net_meter_paid) isNm = true;
+      } catch (e) {}
+    }
+    if (isNm) netMeterPaidCount++;
   });
 
   const isTotalActive = modalSelectedPaymentFilters.length === 0;
   const totalCount = rows.length;
 
   container.innerHTML = `
-    <button type="button" class="pay-filter-tag pay-tag-all ${isTotalActive ? 'active' : ''}" data-pay="ALL" title="Show all payment categories">Total (${totalCount})</button>
+    <button type="button" class="pay-filter-tag pay-tag-all ${isTotalActive ? 'active' : ''}" data-pay="ALL" title="Show all payment statuses">Total (${totalCount})</button>
+    <button type="button" class="pay-filter-tag pay-tag-full ${modalSelectedPaymentFilters.includes('FullyPaid') ? 'active' : ''}" data-pay="FullyPaid" title="Filter by Fully Paid">Fully Paid (${fullyPaidCount})</button>
+    <button type="button" class="pay-filter-tag pay-tag-partial ${modalSelectedPaymentFilters.includes('PartiallyPaid') ? 'active' : ''}" data-pay="PartiallyPaid" title="Filter by Partially Paid">Partially Paid (${partiallyPaidCount})</button>
     <button type="button" class="pay-filter-tag pay-tag-unpaid ${modalSelectedPaymentFilters.includes('Unpaid') ? 'active' : ''}" data-pay="Unpaid" title="Filter by Unpaid">Unpaid (${unpaidCount})</button>
-    <button type="button" class="pay-filter-tag pay-tag-partial ${modalSelectedPaymentFilters.includes('PartiallyPaid') ? 'active' : ''}" data-pay="PartiallyPaid" title="Filter by Partial Paid">Partial Paid (${partialCount})</button>
-    <button type="button" class="pay-filter-tag pay-tag-full ${modalSelectedPaymentFilters.includes('FullyPaid') ? 'active' : ''}" data-pay="FullyPaid" title="Filter by Fully Paid">Fully Paid (${fullCount})</button>
+    <button type="button" class="pay-filter-tag pay-tag-netmeter ${modalSelectedPaymentFilters.includes('NetMeterPaid') ? 'active' : ''}" data-pay="NetMeterPaid" title="Filter by Net Meter Paid">NetMeter Paid (${netMeterPaidCount})</button>
   `;
 
   container.querySelectorAll('.pay-filter-tag').forEach(btn => {
@@ -473,12 +521,39 @@ function matchesDistrict(r, districts) {
 function matchesPayment(r, payFilters) {
   if (!payFilters || payFilters.length === 0) return true;
   const payMap = getCustomerPaymentsMap();
-  const fin = getCustomerSummaryFinancials(r, payMap);
-  const cat = fin.payCategory;
-  if (payFilters.includes('Unpaid') && cat === 'Unpaid') return true;
-  if (payFilters.includes('PartiallyPaid') && cat === 'Partial Paid') return true;
-  if (payFilters.includes('FullyPaid') && cat === 'Fully Paid') return true;
-  return false;
+  const total = payMap ? (payMap[Number(r.SlNo)] || 0) : 0;
+  const price = Number(r.CommittedPrice) || 0;
+  const isFullyPaid = (price > 0 && total >= price);
+  const isPartiallyPaid = (total > 0 && !isFullyPaid);
+  const isUnpaid = (total <= 0);
+
+  let isNetMeterPaid = Boolean(r.NetMeterPaid === true || r.NetMeterPaid === 'true' || r.NetMeterPaid === 1 || r.NetMeterDate);
+  if (!isNetMeterPaid && r.BrokerNumber && r.BrokerNumber.includes('|expenses:')) {
+    try {
+      const jsonStr = r.BrokerNumber.split('|expenses:')[1].split('|')[0];
+      const expenses = JSON.parse(jsonStr);
+      if (expenses && expenses.net_meter_paid) isNetMeterPaid = true;
+    } catch (e) {}
+  }
+
+  const hasMainFilters = payFilters.some(f => f === 'FullyPaid' || f === 'PartiallyPaid' || f === 'Unpaid');
+  const hasNetMeterFilter = payFilters.includes('NetMeterPaid');
+
+  let mainMatch = true;
+  if (hasMainFilters) {
+    mainMatch = (
+      (payFilters.includes('FullyPaid') && isFullyPaid) ||
+      (payFilters.includes('PartiallyPaid') && isPartiallyPaid) ||
+      (payFilters.includes('Unpaid') && isUnpaid)
+    );
+  }
+
+  let nmMatch = true;
+  if (hasNetMeterFilter) {
+    nmMatch = isNetMeterPaid;
+  }
+
+  return mainMatch && nmMatch;
 }
 
 // Render & Manage Excluded Customers Dropdown List
@@ -626,8 +701,16 @@ function renderSummaryTable() {
   // Filter by District
   if (modalSelectedDistricts.length > 0) rows = rows.filter(r => matchesDistrict(r, modalSelectedDistricts));
 
-  // Filter by Status (Login, Agreement, Subsidy)
-  if (modalSelectedStatus !== 'ALL') rows = rows.filter(r => getCustomerWorkStatus(r) === modalSelectedStatus);
+  // Filter by Workflow Stage (All 8 Stages)
+  if (modalSelectedStage && modalSelectedStage !== 'ALL') {
+    const targetIdx = WORKFLOW_STAGES.findIndex(st => st.key === modalSelectedStage);
+    if (targetIdx >= 0) rows = rows.filter(r => getRowHighestStageIdx(r) === targetIdx);
+  }
+
+  // Filter by Payment status
+  if (modalSelectedPaymentFilters.length > 0) {
+    rows = rows.filter(r => matchesPayment(r, modalSelectedPaymentFilters));
+  }
 
   // Map each row with its financials
   const mappedRows = rows.map(r => {
@@ -641,18 +724,7 @@ function renderSummaryTable() {
     };
   });
 
-  // Filter by Payment status
   let filteredList = mappedRows;
-  if (modalSelectedPaymentFilters.length > 0) {
-    filteredList = mappedRows.filter(item => {
-      const cat = item.fin.payCategory;
-      return (
-        (modalSelectedPaymentFilters.includes('Unpaid') && cat === 'Unpaid') ||
-        (modalSelectedPaymentFilters.includes('PartiallyPaid') && cat === 'Partial Paid') ||
-        (modalSelectedPaymentFilters.includes('FullyPaid') && cat === 'Fully Paid')
-      );
-    });
-  }
 
   currentDisplayedRows = filteredList;
 
@@ -720,8 +792,13 @@ function renderSummaryTable() {
 
       let statusBadgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
       if (item.status === 'Login') statusBadgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
-      if (item.status === 'Agreement') statusBadgeClass = 'bg-info-subtle text-info-emphasis border border-info-subtle';
-      if (item.status === 'Subsidy') statusBadgeClass = 'bg-success-subtle text-success border border-success-subtle';
+      else if (item.status === 'Agreement') statusBadgeClass = 'bg-purple-subtle text-purple border border-purple-subtle';
+      else if (item.status === 'Dispatched') statusBadgeClass = 'bg-info-subtle text-info border border-info-subtle';
+      else if (item.status === 'Installation') statusBadgeClass = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+      else if (item.status === 'NetMeter') statusBadgeClass = 'bg-indigo-subtle text-indigo-emphasis border border-indigo-subtle';
+      else if (item.status === 'Inspection') statusBadgeClass = 'bg-dark-subtle text-dark border border-dark-subtle';
+      else if (item.status === 'Connection') statusBadgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+      else if (item.status === 'Subsidy') statusBadgeClass = 'bg-success-subtle text-success border border-success-subtle';
 
       tbodyHtml += `
         <tr class="sum-cust-row ${grp.rowClass || ''}">
@@ -1187,7 +1264,7 @@ window.onDbReady = function () {
       modalSearchText = '';
       modalSelectedPartners = [];
       modalSelectedDistricts = [];
-      modalSelectedStatus = 'ALL';
+      modalSelectedStage = 'ALL';
       modalSelectedPaymentFilters = [];
       document.querySelectorAll('.sum-partner-chk').forEach(c => c.checked = false);
       updateModalPartnerButton();
