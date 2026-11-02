@@ -1995,6 +1995,19 @@ const InventoryApp = (() => {
     const btnSubmit = document.getElementById('btnSubmitStockIn');
     if (btnSubmit) btnSubmit.addEventListener('click', handleSaveStockIn);
 
+    const modalInw = document.getElementById('modalStockIn');
+    if (modalInw && !modalInw.dataset.hasHiddenListener) {
+      modalInw.dataset.hasHiddenListener = 'true';
+      modalInw.addEventListener('hidden.bs.modal', () => {
+        editingConsignmentInvoiceNo = null;
+        editingConsignmentInwardIds = [];
+        const titleEl = modalInw.querySelector('.modal-title');
+        if (titleEl) titleEl.textContent = 'Stock In Consignment';
+        const submitBtnEl = document.getElementById('btnSubmitStockIn');
+        if (submitBtnEl) submitBtnEl.textContent = 'Confirm Stock In';
+      });
+    }
+
     setupFileUploads();
   }
 
@@ -2560,6 +2573,7 @@ const InventoryApp = (() => {
   }
 
   let editingConsignmentInvoiceNo = null;
+  let editingConsignmentInwardIds = [];
 
   function openStockInConsignment(invoiceNoOrId) {
     const modalEl = document.getElementById('modalStockIn');
@@ -2585,6 +2599,7 @@ const InventoryApp = (() => {
 
     const firstInw = matchingInwards[0];
     editingConsignmentInvoiceNo = firstInw.invoiceNo || firstInw.id;
+    editingConsignmentInwardIds = matchingInwards.map(rec => rec.id);
 
     // Set modal title & submit button text
     const titleEl = modalEl.querySelector('.modal-title');
@@ -2643,6 +2658,7 @@ const InventoryApp = (() => {
         inwardId: rec.id,
         itemCode: rec.itemCode,
         qty: qty,
+        originalQty: qty,
         unit: item.unit || rec.unit || 'Set',
         rate: unitPrice,
         unitPrice: unitPrice,
@@ -2667,6 +2683,7 @@ const InventoryApp = (() => {
     }
 
     editingConsignmentInvoiceNo = null;
+    editingConsignmentInwardIds = [];
 
     const modalEl = document.getElementById('modalStockIn');
     if (!modalEl) return;
@@ -2750,7 +2767,11 @@ const InventoryApp = (() => {
     bsModal.show();
   }
 
-  function handleSaveStockIn() {
+  let isSubmittingStockIn = false;
+
+  async function handleSaveStockIn() {
+    if (isSubmittingStockIn) return;
+
     const supplier = document.getElementById('inwSupplier')?.value.trim();
     const date = document.getElementById('inwDate')?.value || new Date().toISOString().slice(0, 10);
     const location = document.getElementById('inwLocation')?.value.trim() || 'Main Godown';
@@ -2785,109 +2806,145 @@ const InventoryApp = (() => {
     recalcInwardTotals();
 
     const invoiceNoToUse = editingConsignmentInvoiceNo || `INV-${Date.now().toString().slice(-6)}`;
-    const isEditing = Boolean(editingConsignmentInvoiceNo);
+    const isEditing = Boolean(editingConsignmentInvoiceNo || (editingConsignmentInwardIds && editingConsignmentInwardIds.length > 0));
 
-    // If editing existing consignment, remove previous entries from memory and DB
-    if (isEditing) {
-      const oldRecords = inwards.filter(i => (i.invoiceNo || i.id) === editingConsignmentInvoiceNo);
-      inwards = inwards.filter(i => (i.invoiceNo || i.id) !== editingConsignmentInvoiceNo);
-      if (typeof DB !== 'undefined') {
-        oldRecords.forEach(old => {
-          DB.remove('inventory_inwards', row => (row.InwardID || row.id) === old.id).catch(() => {});
-        });
-      }
+    isSubmittingStockIn = true;
+    const submitBtn = document.getElementById('btnSubmitStockIn');
+    const originalBtnText = submitBtn ? submitBtn.textContent : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
     }
 
-    let totalConsignmentCost = 0;
-    let totalConsignmentUnits = 0;
+    try {
+      // If editing existing consignment, remove previous entries from memory and DB
+      if (isEditing) {
+        const oldRecords = inwards.filter(i => 
+          (editingConsignmentInwardIds && editingConsignmentInwardIds.includes(i.id)) ||
+          (editingConsignmentInvoiceNo && (i.invoiceNo === editingConsignmentInvoiceNo || i.id === editingConsignmentInvoiceNo))
+        );
+        const oldIdSet = new Set(oldRecords.map(o => o.id));
+        inwards = inwards.filter(i => !oldIdSet.has(i.id));
 
-    const docName = inwardDocFiles.map(f => f.name).join(', ') || (inwardDocFile ? inwardDocFile.name : null);
-    const docData = inwardDocFiles.length > 0 ? (inwardDocFiles[0].data || inwardDocFiles[0].url) : (inwardDocFile ? inwardDocFile.data : null);
-    const documents = inwardDocFiles.map(f => ({ name: f.name, size: f.size, url: f.url, data: f.data }));
-
-    inwardRows.forEach((r, idx) => {
-      const qty = Number(r.qty);
-      const unitPrice = Number(r.rate !== undefined ? r.rate : r.unitPrice) || 0;
-      const gstRate = Number(r.gstRate) || 0;
-      const rowTransport = Number(r.transportCost) || 0;
-      const costPerUnit = Number(r.costPerUnit) || round2(unitPrice + (qty > 0 ? (rowTransport / qty) : 0));
-      const totalCost = round2((qty * unitPrice) + rowTransport);
-
-      totalConsignmentCost += totalCost;
-      totalConsignmentUnits += qty;
-
-      const newInward = {
-        id: isEditing && r.inwardId ? r.inwardId : `INW-${Date.now()}-${idx + 1}`,
-        date,
-        invoiceNo: invoiceNoToUse,
-        supplier,
-        itemCode: r.itemCode,
-        qty,
-        unit: r.unit || 'Set',
-        unitPrice,
-        gstRate,
-        costPerUnit,
-        transportCost: rowTransport,
-        consignmentTransportCost: transportCost,
-        totalCost,
-        location,
-        remarks,
-        docName,
-        docData,
-        documents
-      };
-
-      inwards.unshift(newInward);
-
-      // Update BuyingPrice in master inventory item
-      const masterItem = items.find(it => it.code === r.itemCode);
-      const effectiveCostPerUnit = costPerUnit > 0 ? costPerUnit : unitPrice;
-      if (masterItem && effectiveCostPerUnit > 0) {
-        masterItem.buyingPrice = effectiveCostPerUnit;
-        masterItem.costPerUnit = effectiveCostPerUnit;
-      }
-
-      // Save strictly required fields to DB: QTY, Cost (UnitPrice), GST (GstRate), Cost per unit, Transport Cost, Consignment Transport Cost
-      if (typeof DB !== 'undefined') {
-        DB.insert('inventory_inwards', {
-          InwardID: newInward.id,
-          Date: newInward.date,
-          InvoiceNo: newInward.invoiceNo,
-          Supplier: newInward.supplier,
-          ItemCode: newInward.itemCode,
-          Quantity: newInward.qty,
-          UnitPrice: newInward.unitPrice,
-          GstRate: newInward.gstRate,
-          CostPerUnit: newInward.costPerUnit,
-          TransportCost: newInward.transportCost,
-          ConsignmentTransportCost: newInward.consignmentTransportCost,
-          TotalCost: newInward.totalCost,
-          Location: newInward.location,
-          Remarks: newInward.remarks,
-          DocumentName: newInward.docName,
-          DocumentData: newInward.docData,
-          Documents: JSON.stringify(newInward.documents),
-          CreatedAt: new Date().toISOString()
-        }).catch(err => console.warn('[DB] inventory_inwards insert error:', err));
-
-        if (masterItem && effectiveCostPerUnit > 0) {
-          DB.update('inventory_items', row => (row.ItemCode || row.code) === r.itemCode, {
-            BuyingPrice: effectiveCostPerUnit
-          }).catch(() => {});
+        if (typeof DB !== 'undefined') {
+          for (const old of oldRecords) {
+            try {
+              await DB.remove('inventory_inwards', row => (row.InwardID || row.id) === old.id);
+            } catch (e) {}
+          }
         }
       }
-    });
 
-    saveData();
-    clearSelection('ledger');
+      let totalConsignmentCost = 0;
+      let totalConsignmentUnits = 0;
 
-    editingConsignmentInvoiceNo = null;
+      const docName = inwardDocFiles.map(f => f.name).join(', ') || (inwardDocFile ? inwardDocFile.name : null);
+      const docData = inwardDocFiles.length > 0 ? (inwardDocFiles[0].data || inwardDocFiles[0].url) : (inwardDocFile ? inwardDocFile.data : null);
+      const documents = inwardDocFiles.map(f => ({ name: f.name, size: f.size, url: f.url, data: f.data }));
 
-    const modalEl = document.getElementById('modalStockIn');
-    const bsModal = bootstrap.Modal.getInstance(modalEl);
-    if (bsModal) bsModal.hide();
+      for (let idx = 0; idx < inwardRows.length; idx++) {
+        const r = inwardRows[idx];
+        const qty = Number(r.qty);
+        const unitPrice = Number(r.rate !== undefined ? r.rate : r.unitPrice) || 0;
+        const gstRate = Number(r.gstRate) || 0;
+        const rowTransport = Number(r.transportCost) || 0;
+        const costPerUnit = Number(r.costPerUnit) || round2(unitPrice + (qty > 0 ? (rowTransport / qty) : 0));
+        const totalCost = round2((qty * unitPrice) + rowTransport);
 
-    updateAllTabCounters();
+        totalConsignmentCost += totalCost;
+        totalConsignmentUnits += qty;
+
+        const newInward = {
+          id: isEditing && r.inwardId ? r.inwardId : `INW-${Date.now()}-${idx + 1}`,
+          date,
+          invoiceNo: invoiceNoToUse,
+          supplier,
+          itemCode: r.itemCode,
+          qty,
+          unit: r.unit || 'Set',
+          unitPrice,
+          gstRate,
+          costPerUnit,
+          transportCost: rowTransport,
+          consignmentTransportCost: transportCost,
+          totalCost,
+          location,
+          remarks,
+          docName,
+          docData,
+          documents
+        };
+
+        inwards.unshift(newInward);
+
+        // Update BuyingPrice in master inventory item
+        const masterItem = items.find(it => it.code === r.itemCode);
+        const effectiveCostPerUnit = costPerUnit > 0 ? costPerUnit : unitPrice;
+        if (masterItem && effectiveCostPerUnit > 0) {
+          masterItem.buyingPrice = effectiveCostPerUnit;
+          masterItem.costPerUnit = effectiveCostPerUnit;
+        }
+
+        // Save strictly required fields to DB: QTY, Cost (UnitPrice), GST (GstRate), Cost per unit, Transport Cost, Consignment Transport Cost
+        if (typeof DB !== 'undefined') {
+          try {
+            await DB.insert('inventory_inwards', {
+              InwardID: newInward.id,
+              Date: newInward.date,
+              InvoiceNo: newInward.invoiceNo,
+              Supplier: newInward.supplier,
+              ItemCode: newInward.itemCode,
+              Quantity: newInward.qty,
+              UnitPrice: newInward.unitPrice,
+              GstRate: newInward.gstRate,
+              CostPerUnit: newInward.costPerUnit,
+              TransportCost: newInward.transportCost,
+              ConsignmentTransportCost: newInward.consignmentTransportCost,
+              TotalCost: newInward.totalCost,
+              Location: newInward.location,
+              Remarks: newInward.remarks,
+              DocumentName: newInward.docName,
+              DocumentData: newInward.docData,
+              Documents: JSON.stringify(newInward.documents),
+              CreatedAt: new Date().toISOString()
+            });
+          } catch (err) {
+            console.warn('[DB] inventory_inwards insert error:', err);
+          }
+
+          if (masterItem && effectiveCostPerUnit > 0) {
+            try {
+              await DB.update('inventory_items', row => (row.ItemCode || row.code) === r.itemCode, {
+                BuyingPrice: effectiveCostPerUnit
+              });
+            } catch (e) {}
+          }
+        }
+      }
+
+      saveData();
+      clearSelection('ledger');
+
+      editingConsignmentInvoiceNo = null;
+      editingConsignmentInwardIds = [];
+
+      const modalEl = document.getElementById('modalStockIn');
+      const bsModal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+      if (bsModal) bsModal.hide();
+
+      updateAllTabCounters();
+      renderKpiCards();
+      renderCategoryChips();
+      renderLedgerTable();
+      renderInwardsTable();
+      renderDispatchesTable();
+    } finally {
+      isSubmittingStockIn = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+      }
+    }
     renderKpiCards();
     renderCategoryChips();
     renderLedgerTable();
@@ -2989,6 +3046,8 @@ const InventoryApp = (() => {
       modalDsp.dataset.hasHiddenListener = 'true';
       modalDsp.addEventListener('hidden.bs.modal', () => {
         editingDispatchChallanNo = null;
+      editingDispatchIds = [];
+        editingDispatchIds = [];
         const titleEl = document.getElementById('modalSiteDispatchTitle');
         if (titleEl) titleEl.textContent = 'Dispatch Equipment to Site';
         const btnSubmitEl = document.getElementById('btnSubmitDispatch');
@@ -3476,7 +3535,8 @@ const InventoryApp = (() => {
     if (tbody) {
       tbody.innerHTML = dispatchRows.map((row) => {
         const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
-        const inHand = Number(item.inHandQty) || 0;
+        const origQty = (editingDispatchChallanNo && (!row.originalItemCode || row.originalItemCode === row.itemCode) && row.originalQty !== undefined) ? Number(row.originalQty) : 0;
+        const inHand = (Number(item.inHandQty) || 0) + origQty;
         const qty = Number(row.qty) || 0;
         const histPrices = getItemHistoricalPrices(row.itemCode);
 
@@ -3548,7 +3608,8 @@ const InventoryApp = (() => {
     if (mobContainer) {
       mobContainer.innerHTML = dispatchRows.map((row) => {
         const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
-        const inHand = Number(item.inHandQty) || 0;
+        const origQty = (editingDispatchChallanNo && (!row.originalItemCode || row.originalItemCode === row.itemCode) && row.originalQty !== undefined) ? Number(row.originalQty) : 0;
+        const inHand = (Number(item.inHandQty) || 0) + origQty;
         const qty = Number(row.qty) || 0;
         const histPrices = getItemHistoricalPrices(row.itemCode);
 
@@ -3645,7 +3706,8 @@ const InventoryApp = (() => {
         if (row) {
           row.qty = input.value === '' ? '' : Number(input.value);
           const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
-          const inHand = Number(item.inHandQty) || 0;
+          const origQty = (editingDispatchChallanNo && (!row.originalItemCode || row.originalItemCode === row.itemCode) && row.originalQty !== undefined) ? Number(row.originalQty) : 0;
+          const inHand = (Number(item.inHandQty) || 0) + origQty;
           const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
           const isOverStock = mapWithStock && ((Number(row.qty) || 0) > inHand);
 
@@ -3736,7 +3798,8 @@ const InventoryApp = (() => {
 
     dispatchRows.forEach(row => {
       const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
-      const inHand = Number(item.inHandQty) || 0;
+      const origQty = (editingDispatchChallanNo && (!row.originalItemCode || row.originalItemCode === row.itemCode) && row.originalQty !== undefined) ? Number(row.originalQty) : 0;
+      const inHand = (Number(item.inHandQty) || 0) + origQty;
       const qty = Number(row.qty) || 0;
       if (qty <= 0) hasEmptyOrZeroQty = true;
       if (mapWithStock && qty > inHand) hasOverStock = true;
@@ -3806,9 +3869,11 @@ const InventoryApp = (() => {
   }
 
   let editingDispatchChallanNo = null;
+  let editingDispatchIds = [];
 
   function openDispatchModal(preselectedCode = null) {
     editingDispatchChallanNo = null;
+    editingDispatchIds = [];
 
     const modalEl = document.getElementById('modalSiteDispatch');
     if (!modalEl) return;
@@ -3944,13 +4009,16 @@ const InventoryApp = (() => {
       return;
     }
 
-    const isEditing = Boolean(editingDispatchChallanNo);
+    const isEditing = Boolean(editingDispatchChallanNo || (editingDispatchIds && editingDispatchIds.length > 0));
     const challanNoToUse = editingDispatchChallanNo || `DC-${Date.now().toString().slice(-4)}`;
 
     const ledger = getCalculatedStockLedger();
     let oldRecords = [];
     if (isEditing) {
-      oldRecords = dispatches.filter(d => (d.challanNo && d.challanNo === editingDispatchChallanNo) || d.id === editingDispatchChallanNo);
+      oldRecords = dispatches.filter(d => 
+        (editingDispatchIds && editingDispatchIds.includes(d.id)) ||
+        (editingDispatchChallanNo && (d.challanNo === editingDispatchChallanNo || d.id === editingDispatchChallanNo))
+      );
     }
 
     const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
@@ -3969,10 +4037,15 @@ const InventoryApp = (() => {
       }
 
       if (mapWithStock) {
-        let maxAvailable = item.inHandQty;
-        if (isEditing && r.originalDispatchId) {
-          const oldRec = oldRecords.find(o => o.id === r.originalDispatchId);
-          if (oldRec) maxAvailable += Number(oldRec.qty) || 0;
+        let maxAvailable = Number(item.inHandQty) || 0;
+        if (isEditing) {
+          const origQty = (!r.originalItemCode || r.originalItemCode === r.itemCode) ? (Number(r.originalQty) || 0) : 0;
+          if (origQty > 0) {
+            maxAvailable += origQty;
+          } else if (r.originalDispatchId) {
+            const oldRec = oldRecords.find(o => o.id === r.originalDispatchId && o.itemCode === r.itemCode);
+            if (oldRec) maxAvailable += Number(oldRec.qty) || 0;
+          }
         }
         if (qty > maxAvailable) {
           if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Quantity exceeds available stock (${maxAvailable})`, 'danger');
@@ -3992,7 +4065,8 @@ const InventoryApp = (() => {
     try {
       // If editing, remove old records from memory and DB
       if (isEditing) {
-        dispatches = dispatches.filter(d => (d.challanNo !== editingDispatchChallanNo && d.id !== editingDispatchChallanNo));
+        const oldIdSet = new Set(oldRecords.map(o => o.id));
+        dispatches = dispatches.filter(d => !oldIdSet.has(d.id));
         if (typeof DB !== 'undefined') {
           for (const old of oldRecords) {
             try {
@@ -4141,6 +4215,7 @@ const InventoryApp = (() => {
       clearSelection('ledger');
 
       editingDispatchChallanNo = null;
+      editingDispatchIds = [];
 
       const modalEl = document.getElementById('modalSiteDispatch');
       const bsModal = bootstrap.Modal.getInstance(modalEl);
@@ -5032,34 +5107,7 @@ const InventoryApp = (() => {
     }
   }
 
-  async function deleteInward(id) {
-    const inw = inwards.find(i => i.id === id);
-    if (!inw) return;
 
-    if (!confirm(`Are you sure you want to delete inward consignment "${inw.id}" from "${inw.supplier}"?\n\nThis will deduct ${inw.qty} units from warehouse stock calculation.`)) {
-      return;
-    }
-
-    inwards = inwards.filter(i => i.id !== id);
-    selectedInwards.delete(id);
-    saveData();
-
-    if (typeof DB !== 'undefined') {
-      await DB.remove('inventory_inwards', r => (r.InwardID || r.id) === id).catch(err => console.warn('[Supabase] inventory_inwards delete error:', err));
-    }
-
-    updateAllTabCounters();
-    renderKpiCards();
-    renderCategoryChips();
-    renderLedgerTable();
-    renderInwardsTable();
-    renderDispatchesTable();
-    updateBulkActionBar();
-
-    if (typeof UI !== 'undefined') {
-      UI.toast(`Deleted inward record "${id}". Warehouse stock updated.`, 'info');
-    }
-  }
 
   // --- Site Dispatch History CRUD Operations ---
   async function handleSaveEditDispatch() {
@@ -5195,6 +5243,7 @@ const InventoryApp = (() => {
     const first = matchingDispatches[0];
     const challanToUse = first.challanNo || first.id;
     editingDispatchChallanNo = challanToUse;
+    editingDispatchIds = matchingDispatches.map(d => d.id);
 
     // Update modal title and button text
     const titleEl = document.getElementById('modalSiteDispatchTitle');
@@ -5309,7 +5358,9 @@ const InventoryApp = (() => {
       dispatchRows.push({
         id: 'dsprow_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         itemCode: d.itemCode,
+        originalItemCode: d.itemCode,
         qty: d.qty,
+        originalQty: Number(d.qty) || 0,
         unitPrice: d.unitBuyingPrice !== undefined ? d.unitBuyingPrice : null,
         originalDispatchId: d.id
       });
