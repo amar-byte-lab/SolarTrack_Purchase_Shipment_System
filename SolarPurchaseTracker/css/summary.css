@@ -1,0 +1,93 @@
+/* =========================================================================
+   summary.css — Styles for Summary and Activity Tabs Page
+   ========================================================================= */
+
+.summary-page {
+  background-color: #f8fafc;
+}
+
+/* Tabs Navigation Styling */
+.erp-tabs {
+  border-bottom: 1px solid #e2e8f0;
+  gap: 4px;
+}
+
+.erp-tabs .nav-link {
+  color: #64748b;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  background: transparent;
+  border-radius: 0;
+  transition: all 0.15s ease-in-out;
+}
+
+.erp-tabs .nav-link:hover {
+  color: #0f172a;
+  border-bottom-color: #cbd5e1;
+}
+
+.erp-tabs .nav-link.active {
+  color: #0284c7;
+  border-bottom: 2px solid #0284c7;
+  background: transparent;
+}
+
+/* Summary Filter Toolbar full-width adjustments */
+.mw-summary-filter-toolbar {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Full Width Table Card */
+.summary-table-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Activity Tab Styles */
+.activity-timeline {
+  position: relative;
+  padding-left: 20px;
+}
+
+.activity-timeline::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 6px;
+  width: 2px;
+  background-color: #e2e8f0;
+}
+
+.activity-item {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.activity-marker {
+  position: absolute;
+  left: -20px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #0284c7;
+  background-color: #0284c7;
+}
+
+.activity-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.activity-card:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}

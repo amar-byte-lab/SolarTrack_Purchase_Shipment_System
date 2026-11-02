@@ -7,6 +7,7 @@ const UI = (() => {
 
   const NAV_ITEMS = [
     // { href: 'quotation.html',       icon: 'grid',       label: 'Dashboard' },
+    { href: 'summary.html',         icon: 'summary',    label: 'Summary' },
     { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
     { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'inventory.html',       icon: 'boxes',      label: 'Inventory' },
@@ -20,6 +21,7 @@ const UI = (() => {
   ];
 
   const ICONS = {
+    summary: `<line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>`,
     boxes: `<path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l6 3.43a2 2 0 0 0 2.06 0l6-3.43a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L11 9.49a2 2 0 0 0-2.06 0l-5.97 3.43z" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="m12 22v-9.5" stroke="currentColor" stroke-width="1.75"/><path d="M7 17.5v-3.5L12 11l5 3v3.5" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M12 2.5 4.5 6.8v4.4l7.5 4.3 7.5-4.3V6.8L12 2.5z" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
     package: `<path d="M16.5 9.4 7.55 4.24" stroke="currentColor" stroke-width="1.75"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.75" fill="none"/><polyline points="3.29 7 12 12 20.71 7" stroke="currentColor" stroke-width="1.75" fill="none"/><line x1="12" y1="22" x2="12" y2="12" stroke="currentColor" stroke-width="1.75"/>`,
     briefcase: `<rect x="2" y="7" width="20" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="1.75" fill="none"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" stroke="currentColor" stroke-width="1.75" fill="none"/>`,
@@ -96,9 +98,9 @@ const UI = (() => {
           }
           if (item.href === 'manage-work.html' || item.href === 'files.html') return false;
           if (roleLower === 'partner' || roleLower === 'associates') {
-            return ['quotation.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['summary.html', 'quotation.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['quotation.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['summary.html', 'quotation.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : NAV_ITEMS;
 
