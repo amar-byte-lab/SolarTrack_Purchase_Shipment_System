@@ -769,6 +769,16 @@ function renderSummaryTable() {
   groupsToRender.forEach(grp => {
     if (grp.list.length === 0) return;
 
+    // Sort customers by Workflow Status serial number (1. Login to 8. Subsidy) under each payment status section
+    grp.list.sort((a, b) => {
+      const stageA = getRowHighestStageIdx(a.row);
+      const stageB = getRowHighestStageIdx(b.row);
+      if (stageA !== stageB) {
+        return stageA - stageB; // Status serial number: 1 -> 8 ascending
+      }
+      return (Number(a.row.SlNo) || 0) - (Number(b.row.SlNo) || 0);
+    });
+
     const allInGrpSelected = grp.list.length > 0 && grp.list.every(i => selectedSlNos.has(Number(i.row.SlNo)));
 
     tbodyHtml += `
@@ -940,7 +950,19 @@ function renderTableFooter(list) {
   `;
 }
 
+function isCurrentUserAdmin() {
+  const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  const role = currentUser && currentUser.role ? currentUser.role.toLowerCase().trim() : '';
+  return role === 'admin' || role === 'superadmin';
+}
+
 function updateColumnVisibilityUI() {
+  const isAdmin = isCurrentUserAdmin();
+  if (!isAdmin) {
+    activeCols.clear();
+    DEFAULT_ACTIVE_COLS.forEach(c => activeCols.add(c));
+  }
+
   SUMMARY_COLUMNS.forEach(col => {
     const isVisible = activeCols.has(col.key);
     document.querySelectorAll('.th-col-' + col.key + ', .td-col-' + col.key + ', .tfoot-col-' + col.key).forEach(el => {
@@ -1244,6 +1266,25 @@ window.onDbReady = function () {
   if (typeof UI !== 'undefined') {
     UI.renderSidebar('summary.html');
     UI.renderTopbar('Summary');
+  }
+
+  // Role-based Column Selection Control: Only Admin can customize columns; others see default columns only
+  const isAdmin = isCurrentUserAdmin();
+  const selectColsWrap = document.getElementById('selectColumnsDropdownWrap');
+  if (selectColsWrap) {
+    if (!isAdmin) {
+      selectColsWrap.classList.add('d-none');
+      selectColsWrap.style.display = 'none';
+    } else {
+      selectColsWrap.classList.remove('d-none');
+      selectColsWrap.style.display = '';
+    }
+  }
+
+  // Non-admin users strictly see only default columns
+  if (!isAdmin) {
+    activeCols.clear();
+    DEFAULT_ACTIVE_COLS.forEach(c => activeCols.add(c));
   }
 
   // 1. Search Input Listener
