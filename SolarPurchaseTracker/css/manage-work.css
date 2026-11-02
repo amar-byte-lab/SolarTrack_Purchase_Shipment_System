@@ -942,7 +942,7 @@
 
 /* ══ Summary Modal Dialog Resizing (Expand, Compress & Drag Resizable) ════ */
 .mw-summary-modal-dialog {
-  max-width: 860px !important;
+  max-width: 1280px !important;
   width: 94vw !important;
   height: 84vh !important;
   min-height: 400px !important;
@@ -994,7 +994,7 @@
   height: 100% !important;
   max-height: none !important;
   overflow-y: auto !important;
-  overflow-x: hidden;
+  overflow-x: auto !important;
 }
 
 /* ══ Expanded / Fullscreen Modal Mode (Full Height & Width) ═══════════ */
@@ -2397,3 +2397,100 @@
   background: #94a3b8;
 }
 
+
+
+/* ══ Summary Financial & Delivery Modal Specific Styles ══════════════ */
+#workSummaryModal .table-manage-work-summary {
+  width: 100% !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
+  margin-bottom: 0;
+}
+
+#workSummaryModal .mw-summary-table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.sum-cust-name {
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap !important;
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  display: inline !important;
+}
+
+.th-col-customer, .td-col-customer, .tfoot-col-customer {
+  min-width: 260px;
+  white-space: nowrap;
+}
+
+.sum-group-header-row {
+  cursor: default;
+  user-select: none;
+}
+.sum-group-header-row.group-unpaid {
+  background-color: #fef2f2 !important;
+  border-left: 4px solid #ef4444 !important;
+}
+.sum-group-header-row.group-partial {
+  background-color: #fffbeb !important;
+  border-left: 4px solid #f59e0b !important;
+}
+.sum-group-header-row.group-fully {
+  background-color: #f0fdf4 !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.sum-cust-row:hover {
+  background-color: #f8fafc;
+}
+
+.sum-comment-input {
+  width: 100% !important;
+  min-width: 110px;
+  font-size: 0.77rem !important;
+  padding: 2px 6px !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+.sum-comment-input:focus {
+  border-color: #0284c7;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+.sum-comment-input.is-saved {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4 !important;
+}
+
+.col-hidden {
+  display: none !important;
+}
+
+.table-manage-work-summary th {
+  font-size: 0.76rem !important;
+  padding: 6px 8px !important;
+  font-weight: 600;
+  color: #334155;
+  background-color: #f8fafc;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.table-manage-work-summary td {
+  padding: 4px 8px !important;
+  font-size: 0.78rem;
+}
+
+.table-manage-work-summary tfoot td {
+  background-color: #f8fafc !important;
+  border-top: 2px solid #cbd5e1 !important;
+}
+
+.th-col-material, .td-col-material, .tfoot-col-material {
+  text-align: right;
+  font-family: var(--bs-font-monospace);
+}

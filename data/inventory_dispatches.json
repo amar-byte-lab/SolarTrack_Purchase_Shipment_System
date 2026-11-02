@@ -1,0 +1,50 @@
+[
+  {
+    "DispatchID": "DSP-1793509820838-1",
+    "Date": "2026-11-01",
+    "ChallanNo": "DC-0838",
+    "SiteName": "dada",
+    "ItemCode": "PNL-001",
+    "Quantity": 1,
+    "UnitBuyingPrice": 1660,
+    "DispatchedCost": 1660,
+    "TransportCost": 200,
+    "Vehicle": "Site Vehicle",
+    "Remarks": "sada",
+    "DocumentName": null,
+    "DocumentData": null,
+    "CreatedAt": "2026-11-01T05:10:20.838Z"
+  },
+  {
+    "DispatchID": "DSP-1793541915583-1",
+    "Date": "2026-11-01",
+    "ChallanNo": "DC-5583",
+    "SiteName": "ADAIT MOHANTY, BRAJA BANDHU  SAHOO",
+    "ItemCode": "PNL-001",
+    "Quantity": 3,
+    "UnitBuyingPrice": 300,
+    "DispatchedCost": 900,
+    "TransportCost": 10000,
+    "Vehicle": "Site Vehicle",
+    "Remarks": "fdgdg |logistics:{\"isOurProject\":true,\"distanceKm\":0,\"costPerKm\":0,\"transportCost\":10000,\"extraDeliveryCost\":0,\"extraDeliveryComment\":\"\",\"totalDeliveryCost\":10000,\"customerAllocations\":[{\"slNo\":\"41\",\"name\":\"ADAIT MOHANTY\",\"setCost\":112000,\"installCost\":9000,\"deliveryCost\":5000,\"otherCost\":2000,\"otherComment\":\"fgdfg\",\"totalCost\":128000},{\"slNo\":\"89\",\"name\":\"BRAJA BANDHU  SAHOO\",\"setCost\":100000,\"installCost\":10000,\"deliveryCost\":5000,\"otherCost\":4000,\"otherComment\":\"dgfdg\",\"totalCost\":119000}]}",
+    "DocumentName": null,
+    "DocumentData": null,
+    "CreatedAt": "2026-11-01T14:05:15.583Z"
+  },
+  {
+    "DispatchID": "DSP-1793541915587-2",
+    "Date": "2026-11-01",
+    "ChallanNo": "DC-5583",
+    "SiteName": "ADAIT MOHANTY, BRAJA BANDHU  SAHOO",
+    "ItemCode": "SKU-001",
+    "Quantity": 2,
+    "UnitBuyingPrice": 300,
+    "DispatchedCost": 600,
+    "TransportCost": 0,
+    "Vehicle": "Site Vehicle",
+    "Remarks": "fdgdg |logistics:{\"isOurProject\":true,\"distanceKm\":0,\"costPerKm\":0,\"transportCost\":10000,\"extraDeliveryCost\":0,\"extraDeliveryComment\":\"\",\"totalDeliveryCost\":10000,\"customerAllocations\":[{\"slNo\":\"41\",\"name\":\"ADAIT MOHANTY\",\"setCost\":112000,\"installCost\":9000,\"deliveryCost\":5000,\"otherCost\":2000,\"otherComment\":\"fgdfg\",\"totalCost\":128000},{\"slNo\":\"89\",\"name\":\"BRAJA BANDHU  SAHOO\",\"setCost\":100000,\"installCost\":10000,\"deliveryCost\":5000,\"otherCost\":4000,\"otherComment\":\"dgfdg\",\"totalCost\":119000}]}",
+    "DocumentName": null,
+    "DocumentData": null,
+    "CreatedAt": "2026-11-01T14:05:15.587Z"
+  }
+]
