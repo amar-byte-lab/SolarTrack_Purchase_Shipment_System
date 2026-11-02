@@ -270,7 +270,7 @@ ALTER TABLE price_history ADD COLUMN IF NOT EXISTS "BatchID" TEXT;
 ALTER TABLE price_history ADD COLUMN IF NOT EXISTS "NoteName" TEXT;
 
 -- =========================================================================
--- Solar Inventory & Site Logistics Schema (PostgreSQL / Supabase)
+-- Inventory Schema (PostgreSQL / Supabase)
 -- =========================================================================
 
 CREATE TABLE IF NOT EXISTS inventory_items (

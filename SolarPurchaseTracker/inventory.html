@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solar Inventory & Site Logistics — SolarTrack</title>
+<title>Inventory — SolarTrack</title>
 <!-- Bootstrap 5 CSS for modal & layout compatibility -->
 <link rel="stylesheet" href="assets/css/bootstrap.min.css">
 <!-- App Design System Styles -->
@@ -26,67 +26,7 @@
     <!-- Modular Inventory Main View -->
     <main class="page-body inventory-body" id="inventoryAppRoot">
 
-      <!-- ══ Top Metric KPI Summary Cards (Collapsible 3-Card Enterprise Grid) ══ -->
-      <section class="inv-kpi-section is-collapsed" id="invKpiSection" aria-label="Inventory Summary">
-        <div class="inv-kpi-toggle-bar" id="btnToggleKpi" role="button" tabindex="0" aria-expanded="false" aria-controls="invKpiCollapseBody" title="Click to collapse / expand summary metrics">
-          <div class="inv-kpi-toggle-left">
-            <svg class="inv-kpi-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            <span class="inv-kpi-toggle-title">Summary</span>
-            <div class="inv-kpi-mini-strip" id="invKpiMiniStrip" style="display: inline-flex;">
-              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-sky"></span> Turnover: <strong id="miniKpiTurnover">₹0.00</strong></span>
-              <span class="mini-kpi-sep">•</span>
-              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-amber"></span> Dispatched: <strong id="miniKpiDispatched">₹0.00</strong></span>
-              <span class="mini-kpi-sep">•</span>
-              <span class="mini-kpi-item"><span class="mini-kpi-dot dot-indigo"></span> Transport Cost: <strong id="miniKpiTransport">₹0.00</strong></span>
-            </div>
-          </div>
-          <div class="inv-kpi-toggle-right">
-            <span class="inv-kpi-toggle-label" id="invKpiToggleLabel">Expand</span>
-            <svg class="inv-kpi-toggle-chevron" id="invKpiToggleChevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-          </div>
-        </div>
 
-        <div class="inv-kpi-collapse-body" id="invKpiCollapseBody">
-          <div class="inv-kpi-grid">
-            <!-- KPI 1: Turnover -->
-            <article class="inv-kpi-card kpi-sky">
-              <div class="inv-kpi-head">
-                <span class="inv-kpi-label" title="Turnover">Turnover</span>
-                <div class="inv-kpi-icon-wrap" aria-hidden="true">
-                  <!-- Indian Rupee Icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>
-                </div>
-              </div>
-              <div class="inv-kpi-value text-sky-700" id="kpiTotalTurnover">₹0.00</div>
-              <div class="inv-kpi-subtext" id="kpiSubTurnover">Total Project Orders</div>
-            </article>
-
-            <!-- KPI 2: Dispatched Material Cost -->
-            <article class="inv-kpi-card kpi-amber">
-              <div class="inv-kpi-head">
-                <span class="inv-kpi-label" title="Dispatched Material Cost">Dispatched Cost</span>
-                <div class="inv-kpi-icon-wrap" aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/></svg>
-                </div>
-              </div>
-              <div class="inv-kpi-value text-amber-700" id="kpiTotalDispatchedCost">₹0.00</div>
-              <div class="inv-kpi-subtext" id="kpiSubDispatched">Site Consumption</div>
-            </article>
-
-            <!-- KPI 3: Transportation Cost -->
-            <article class="inv-kpi-card kpi-indigo">
-              <div class="inv-kpi-head">
-                <span class="inv-kpi-label" title="Transportation Cost">Transport Cost</span>
-                <div class="inv-kpi-icon-wrap" aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
-                </div>
-              </div>
-              <div class="inv-kpi-value text-indigo-700" id="kpiTotalTransportationCost">₹0.00</div>
-              <div class="inv-kpi-subtext" id="kpiSubTransportation">Site Logistics &amp; Freight</div>
-            </article>
-          </div>
-        </div>
-      </section>
 
       <!-- ══ Data Section (Tabbed View) ═══════════════════════════════════ -->
       <div class="inv-main-card">
@@ -130,6 +70,12 @@
             <!-- Mobile & Desktop View / Filter Controls -->
             <div class="inv-toolbar-right-controls" id="invToolbarRightControls">
               <!-- Stock Status Touch Pills (Ledger Only) -->
+                            <!-- Summary Button (Desktop: Right side of Search textbox, before All) -->
+              <button type="button" class="inv-btn-summary d-none d-md-inline-flex" id="btnDesktopSummary" onclick="InventoryApp.openSummaryModal()" title="View Inventory Summary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                <span>Summary</span>
+              </button>
+
               <div class="inv-status-pills" id="invStatusPills">
                 <button type="button" class="inv-status-pill active" data-status="All">All</button>
                 <button type="button" class="inv-status-pill" data-status="in-stock"><span class="inv-badge-dot"></span> In Stock</button>
@@ -940,6 +886,89 @@
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODAL: INVENTORY SUMMARY & KPI METRICS POPUP
+     ══════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalInventorySummary" tabindex="-1" aria-labelledby="modalInventorySummaryTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          <div>
+            <h6 class="modal-title fw-bold text-dark m-0" id="modalInventorySummaryTitle">Inventory &amp; Logistics Summary</h6>
+            <div class="text-secondary small mt-0.5" style="font-size:0.75rem;">Real-time EPC Warehouse, Project Orders &amp; Site Dispatch Metrics</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="inv-kpi-grid mb-0">
+          <!-- KPI 1: Turnover -->
+          <article class="inv-kpi-card kpi-sky">
+            <div class="inv-kpi-head">
+              <span class="inv-kpi-label" title="Turnover">Turnover</span>
+              <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4.5 4.5 0 0 0 0-9"/></svg>
+              </div>
+            </div>
+            <div class="inv-kpi-value text-sky-700" id="kpiTotalTurnover">₹0.00</div>
+            <div class="inv-kpi-subtext" id="kpiSubTurnover">Total Project Orders</div>
+          </article>
+
+          <!-- KPI 2: Dispatched Material Cost -->
+          <article class="inv-kpi-card kpi-amber">
+            <div class="inv-kpi-head">
+              <span class="inv-kpi-label" title="Dispatched Material Cost">Dispatched Cost</span>
+              <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/></svg>
+              </div>
+            </div>
+            <div class="inv-kpi-value text-amber-700" id="kpiTotalDispatchedCost">₹0.00</div>
+            <div class="inv-kpi-subtext" id="kpiSubDispatched">Site Consumption</div>
+          </article>
+
+          <!-- KPI 3: Transportation Cost -->
+          <article class="inv-kpi-card kpi-indigo">
+            <div class="inv-kpi-head">
+              <span class="inv-kpi-label" title="Transportation Cost">Transport Cost</span>
+              <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+              </div>
+            </div>
+            <div class="inv-kpi-value text-indigo-700" id="kpiTotalTransportationCost">₹0.00</div>
+            <div class="inv-kpi-subtext" id="kpiSubTransportation">Site Logistics &amp; Freight</div>
+          </article>
+        </div>
+
+        <div class="row g-2 mt-2 pt-2 border-top">
+          <div class="col-4">
+            <div class="p-2 border rounded bg-light text-center">
+              <div class="text-secondary small" style="font-size:0.72rem;">Warehouse Valuation</div>
+              <div class="fw-bold text-dark font-monospace" id="modalKpiValuation" style="font-size:0.88rem;">₹0.00</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 border rounded bg-light text-center">
+              <div class="text-secondary small" style="font-size:0.72rem;">In-Hand Stock</div>
+              <div class="fw-bold text-success font-monospace" id="modalKpiInHand" style="font-size:0.88rem;">0</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 border rounded bg-light text-center">
+              <div class="text-secondary small" style="font-size:0.72rem;">Equipment SKUs</div>
+              <div class="fw-bold text-primary font-monospace" id="modalKpiSkus" style="font-size:0.88rem;">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3 border-top bg-light">
+        <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Core Scripts -->
 <script src="assets/js/bootstrap.bundle.min.js" defer></script>

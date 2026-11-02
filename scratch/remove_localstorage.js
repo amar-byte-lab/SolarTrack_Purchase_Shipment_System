@@ -62,7 +62,7 @@ const oldInit = `    loadData();
 
     if (typeof UI !== 'undefined') {
       UI.renderSidebar('inventory.html');
-      UI.renderTopbar('Solar Inventory & Site Logistics');
+      UI.renderTopbar('Inventory');
     }`;
 
 const newInit = `    // Completely purge any legacy inventory data from browser localStorage
@@ -77,7 +77,7 @@ const newInit = `    // Completely purge any legacy inventory data from browser 
 
     if (typeof UI !== 'undefined') {
       UI.renderSidebar('inventory.html');
-      UI.renderTopbar('Solar Inventory & Site Logistics');
+      UI.renderTopbar('Inventory');
     }
 
     // Await direct load from Database

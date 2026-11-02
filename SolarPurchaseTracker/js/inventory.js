@@ -612,6 +612,13 @@ const InventoryApp = (() => {
       const freightTrips = dispatches.filter(d => (Number(d.transportCost) || 0) > 0).length;
       subTransEl.textContent = freightTrips > 0 ? `${freightTrips} freight ${freightTrips === 1 ? 'trip' : 'trips'}` : 'Site Logistics & Freight';
     }
+
+    const valuationEl = document.getElementById('modalKpiValuation');
+    const inHandEl = document.getElementById('modalKpiInHand');
+    const skusEl = document.getElementById('modalKpiSkus');
+    if (valuationEl) valuationEl.textContent = fmtRupees(metrics.totalWarehouseValuation);
+    if (inHandEl) inHandEl.textContent = fmtQty(metrics.totalInHandStock);
+    if (skusEl) skusEl.textContent = metrics.totalSKUs;
   }
 
   function renderCategoryChips() {
@@ -5459,11 +5466,11 @@ const InventoryApp = (() => {
     if (activePane) activePane.style.display = 'block';
 
     const chipsWrap = document.getElementById('invCategoryChipsRow');
-    const rightControls = document.getElementById('invToolbarRightControls');
     const statusWrap = document.getElementById('invStatusPills') || document.getElementById('invStatusFilterWrap');
+    const manageCatBtn = document.getElementById('btnManageCategories');
     if (chipsWrap) chipsWrap.style.display = (tabKey === 'ledger') ? 'flex' : 'none';
-    if (rightControls) rightControls.style.display = (tabKey === 'ledger') ? '' : 'none';
-    else if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
+    if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
+    if (manageCatBtn) manageCatBtn.style.display = (tabKey === 'ledger') ? '' : 'none';
 
     updateAllTabCounters();
     if (tabKey === 'ledger') renderLedgerTable();
@@ -5490,6 +5497,21 @@ const InventoryApp = (() => {
     if (topbar) {
       const height = topbar.offsetHeight || 46;
       document.documentElement.style.setProperty('--topbar-height', `${height}px`);
+    }
+  }
+
+  // --- Inventory Summary Popup Modal ---
+  function openSummaryModal() {
+    renderKpiCards();
+    const modalEl = document.getElementById('modalInventorySummary');
+    if (modalEl) {
+      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      } else {
+        modalEl.classList.add('show');
+        modalEl.style.display = 'block';
+      }
     }
   }
 
@@ -5587,6 +5609,16 @@ const InventoryApp = (() => {
         }
         renderLedgerTable();
       });
+    }
+
+    // Summary Popup Modal Triggers (Desktop & Mobile)
+    const btnDesktopSummary = document.getElementById('btnDesktopSummary');
+    if (btnDesktopSummary) {
+      btnDesktopSummary.addEventListener('click', openSummaryModal);
+    }
+    const btnMobileSummary = document.getElementById('btnMobileSummary');
+    if (btnMobileSummary) {
+      btnMobileSummary.addEventListener('click', openSummaryModal);
     }
 
     // KPI Summary Collapsible Toggle
@@ -5909,7 +5941,13 @@ const InventoryApp = (() => {
 
     if (typeof UI !== 'undefined') {
       UI.renderSidebar('inventory.html');
-      UI.renderTopbar('Solar Inventory & Site Logistics');
+      const mobileSummaryBtn = `
+        <button type="button" class="btn btn-sm btn-outline-primary d-md-none d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-xs rounded-1" id="btnMobileSummary" onclick="InventoryApp.openSummaryModal()" title="View Inventory Summary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          <span>Summary</span>
+        </button>
+      `;
+      UI.renderTopbar('Inventory', mobileSummaryBtn);
     }
 
     // Await direct load from Database
@@ -5958,6 +5996,7 @@ const InventoryApp = (() => {
   return {
     init,
     syncWithDatabase,
+    openSummaryModal,
     setViewMode,
     toggleKpiCollapse,
     openStockInModal,

@@ -1,5 +1,5 @@
 -- =========================================================================
--- Solar Inventory & Site Logistics Schema for Remote Supabase PostgreSQL
+-- Inventory Schema for Remote Supabase PostgreSQL
 -- Run this script in your Supabase SQL Editor:
 -- https://supabase.com/dashboard/project/fqhsegrisdkclnocpqqb/sql
 -- =========================================================================
