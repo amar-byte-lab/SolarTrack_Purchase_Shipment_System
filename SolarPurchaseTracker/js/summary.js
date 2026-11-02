@@ -725,20 +725,11 @@ function renderSummaryTable() {
 
       tbodyHtml += `
         <tr class="sum-cust-row ${grp.rowClass || ''}">
-          <td class="td-col-customer">
+          <td class="td-col-customer text-nowrap">
             <div class="d-flex align-items-center gap-2">
               <input type="checkbox" class="form-check-input mt-0 sum-row-chk flex-shrink-0" data-slno="${sl}" data-group="${grp.name}" ${isChecked ? 'checked' : ''}>
-              <div class="d-flex flex-column" style="min-width: 0;">
-                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                  <span class="fw-bold text-dark fs-8" title="${escapeHtml(r.Name || '-')}">${escapeHtml(r.Name || '-')}</span>
-                  <span class="badge ${statusBadgeClass} fs-9 px-1.5 py-0.5">${item.status}</span>
-                </div>
-                <div class="text-muted fs-9 d-flex align-items-center gap-2 flex-wrap">
-                  ${r.ConsumerNo ? `<span>#${escapeHtml(r.ConsumerNo)}</span>` : ''}
-                  ${r.District ? `<span>${escapeHtml(r.District)}</span>` : ''}
-                  ${r.BrokerName ? `<span class="text-truncate" style="max-width: 140px;">(${escapeHtml(r.BrokerName)})</span>` : ''}
-                </div>
-              </div>
+              <span class="fw-bold text-dark fs-8" title="${escapeHtml(r.Name || '-')}">${escapeHtml(r.Name || '-')}</span>
+              <span class="badge ${statusBadgeClass} fs-9 px-1.5 py-0.5">${item.status}</span>
             </div>
           </td>
           <td class="td-col-pvmodule text-nowrap"><span class="badge bg-light text-dark border fs-9 fw-normal">${escapeHtml(item.moduleMake)}</span></td>
