@@ -1566,19 +1566,27 @@ const InventoryApp = (() => {
       count = 0;
     }
 
-    // Always show Action Bar
-    if (bar) bar.style.display = 'flex';
+    // Only show Action Bar on Stock Ledger tab
+    if (bar) {
+      bar.style.display = (activeTab === 'ledger') ? 'flex' : 'none';
+    }
 
-    // Stock In Bucket and Dispatch Bucket are ALWAYS SHOWN
+    if (btnAddNewSku) {
+      btnAddNewSku.style.display = (activeTab === 'ledger') ? 'inline-flex' : 'none';
+    }
+
+    // Stock In Bucket and Dispatch Bucket: ONLY icon (no text)
     if (btnBulkStockIn) {
-      btnBulkStockIn.style.display = 'inline-flex';
-      const countSuffix = (count > 0 && activeTab === 'ledger') ? ` (${count})` : '';
-      btnBulkStockIn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span>Stock In Bucket${countSuffix}</span>`;
+      btnBulkStockIn.style.display = (activeTab === 'ledger') ? 'inline-flex' : 'none';
+      const countBadge = (count > 0 && activeTab === 'ledger') ? ` <span class="badge bg-white text-dark py-0 px-1 font-monospace" style="font-size:0.68rem; border-radius:10px;">${count}</span>` : '';
+      btnBulkStockIn.title = `Stock In Bucket${count > 0 ? ` (${count} items)` : ''}`;
+      btnBulkStockIn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${countBadge}`;
     }
     if (btnBulkDispatch) {
-      btnBulkDispatch.style.display = 'inline-flex';
-      const countSuffix = (count > 0 && activeTab === 'ledger') ? ` (${count})` : '';
-      btnBulkDispatch.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg> <span>Dispatch Bucket${countSuffix}</span>`;
+      btnBulkDispatch.style.display = (activeTab === 'ledger') ? 'inline-flex' : 'none';
+      const countBadge = (count > 0 && activeTab === 'ledger') ? ` <span class="badge bg-white text-dark py-0 px-1 font-monospace" style="font-size:0.68rem; border-radius:10px;">${count}</span>` : '';
+      btnBulkDispatch.title = `Dispatch Equipment to Site${count > 0 ? ` (${count} items)` : ''}`;
+      btnBulkDispatch.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="3" width="14" height="13" rx="1"/><polygon points="15 8 19 8 22 11 22 16 15 16 15 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>${countBadge}`;
     }
 
     // Delete selected and Clear buttons: ONLY SHOW if checkbox is selected!
@@ -5465,12 +5473,29 @@ const InventoryApp = (() => {
     const activePane = document.getElementById(`pane-${tabKey}`);
     if (activePane) activePane.style.display = 'block';
 
+    // Hide Search textbox on Site Dispatches and Inward Purchases tabs
+    const searchWrap = document.querySelector('.inv-search-wrap');
+    if (searchWrap) searchWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
+
+    // Hide Summary button on Site Dispatches and Inward Purchases tabs
+    const btnDesktopSummary = document.getElementById('btnDesktopSummary');
+    if (btnDesktopSummary) btnDesktopSummary.style.display = (tabKey === 'ledger') ? '' : 'none';
+
+    const btnMobileSummary = document.getElementById('btnMobileSummary');
+    if (btnMobileSummary) btnMobileSummary.style.display = (tabKey === 'ledger') ? '' : 'none';
+
     const chipsWrap = document.getElementById('invCategoryChipsRow');
     const statusWrap = document.getElementById('invStatusPills') || document.getElementById('invStatusFilterWrap');
     const manageCatBtn = document.getElementById('btnManageCategories');
     if (chipsWrap) chipsWrap.style.display = (tabKey === 'ledger') ? 'flex' : 'none';
     if (statusWrap) statusWrap.style.display = (tabKey === 'ledger') ? '' : 'none';
     if (manageCatBtn) manageCatBtn.style.display = (tabKey === 'ledger') ? '' : 'none';
+
+    const toolbar = document.querySelector('.inv-toolbar');
+    if (toolbar) {
+      toolbar.style.display = (tabKey === 'ledger') ? '' : 'none';
+      toolbar.classList.toggle('tab-non-ledger', tabKey !== 'ledger');
+    }
 
     updateAllTabCounters();
     if (tabKey === 'ledger') renderLedgerTable();

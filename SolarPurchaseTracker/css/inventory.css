@@ -878,19 +878,14 @@
 
 /* ---------------- Data Tables (Scrollable with Fixed Header) ---------------- */
 .inv-table-wrap {
-  overflow: auto;
-  max-height: calc(100vh - 310px);
-  max-height: calc(100dvh - 310px);
-  min-height: 280px;
+  overflow-y: auto;
+  overflow-x: auto;
+  height: 480px;
+  max-height: 480px;
   background: #ffffff;
   position: relative;
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--st-border, #e2e8f0);
-}
-
-.inv-kpi-section.is-collapsed ~ .inv-main-card .inv-table-wrap {
-  max-height: calc(100vh - 240px);
-  max-height: calc(100dvh - 240px);
 }
 
 .inv-table {
@@ -2607,6 +2602,9 @@
 .inv-tree-wrap {
   padding: 0.5rem 0.75rem;
   overflow-x: auto !important;
+  overflow-y: auto !important;
+  height: 520px;
+  max-height: 520px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -3481,4 +3479,21 @@
   background: #ffffff;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
   border: 1px solid #10b981 !important;
+}
+
+/* Icon-Only Buttons for Stock In & Dispatch */
+#btnBulkStockIn,
+#btnBulkDispatch {
+  padding: 5px 9px !important;
+  min-width: 32px !important;
+  justify-content: center !important;
+}
+
+/* Toolbar and Summary adjustments when on Dispatches / Inwards tabs */
+.inv-toolbar.tab-non-ledger {
+  display: none !important;
+}
+body.tab-non-ledger #btnMobileSummary,
+body.tab-non-ledger #btnDesktopSummary {
+  display: none !important;
 }
