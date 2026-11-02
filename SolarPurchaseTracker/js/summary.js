@@ -1459,6 +1459,7 @@ function getCombinedActivities() {
 }
 
 function renderActivityTab() {
+  if (!isCurrentUserAdmin()) return;
   const container = document.getElementById('activityTimelineContainer');
   const countBadge = document.getElementById('activityCountBadge');
   if (!container) return;
@@ -1563,10 +1564,9 @@ function renderActivityTab() {
               ${act.recordId ? `<span class="text-muted fs-9">#${escapeHtml(String(act.recordId))}</span>` : ''}
             </div>
             <div class="d-flex align-items-center gap-2">
-              <span class="badge bg-light text-secondary border fs-9 d-inline-flex align-items-center gap-1">
+              <span class="badge bg-light text-secondary border fs-9 d-inline-flex align-items-center gap-1" title="User who performed this transaction">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <span>${escapeHtml(act.user || 'Admin')}</span>
-                <small class="text-muted">(${escapeHtml(act.userRole || 'Admin')})</small>
               </span>
               <span class="text-muted fs-9">${formatActTimestamp(act.timestamp)}</span>
               ${undoButtonHtml}
@@ -1589,7 +1589,9 @@ window.onDbReady = function () {
     UI.renderTopbar('Summary');
   }
 
-  // Role-based Column Selection Control: Only Admin can customize columns; others see default columns only
+  // Role-based Access Control:
+  // 1. Column Selection is Admin only
+  // 2. Activity Tab is Admin only (strictly hidden from all non-admin users)
   const isAdmin = isCurrentUserAdmin();
   const selectColsWrap = document.getElementById('selectColumnsDropdownWrap');
   if (selectColsWrap) {
@@ -1599,6 +1601,37 @@ window.onDbReady = function () {
     } else {
       selectColsWrap.classList.remove('d-none');
       selectColsWrap.style.display = '';
+    }
+  }
+
+  // Activity Tab Navigation Item & Pane: Hidden for all non-admins
+  const actNavItem = document.getElementById('tabActivityNavItem');
+  const actPane = document.getElementById('tabActivityPane');
+  const sumBtn = document.getElementById('tabSummaryBtn');
+  const sumPane = document.getElementById('tabSummaryPane');
+
+  if (!isAdmin) {
+    if (actNavItem) {
+      actNavItem.classList.add('d-none');
+      actNavItem.style.display = 'none';
+    }
+    if (actPane) {
+      actPane.classList.add('d-none');
+      actPane.style.display = 'none';
+    }
+    if (sumBtn && sumPane) {
+      sumBtn.classList.add('active');
+      sumBtn.setAttribute('aria-selected', 'true');
+      sumPane.classList.add('show', 'active');
+    }
+  } else {
+    if (actNavItem) {
+      actNavItem.classList.remove('d-none');
+      actNavItem.style.display = '';
+    }
+    if (actPane) {
+      actPane.classList.remove('d-none');
+      actPane.style.display = '';
     }
   }
 
@@ -1909,14 +1942,10 @@ window.onDbReady = function () {
         return;
       }
 
+      const confirmMsg = `Are you sure you want to revert this database transaction for "${act.customerName || 'Customer'}"? The previous data will be restored directly into the database.`;
       const confirmed = (typeof UI !== 'undefined' && UI.confirmDialog)
-        ? await UI.confirmDialog({
-            title: 'Revert Database Transaction',
-            message: `Are you sure you want to revert this database change for "${act.customerName || 'Customer'}"? The change will be restored directly in the database.`,
-            okText: 'Yes, Undo Change',
-            cancelText: 'Cancel'
-          })
-        : window.confirm(`Are you sure you want to revert this database change for "${act.customerName || 'Customer'}"?`);
+        ? await UI.confirmDialog(confirmMsg, 'Revert Database Transaction', 'Yes, Undo Change', 'btn-danger')
+        : window.confirm(confirmMsg);
 
       if (!confirmed) return;
 
@@ -1940,9 +1969,11 @@ window.onDbReady = function () {
     });
   }
 
-  // Initialize both tabs
+  // Initialize tabs
   populateModalPartners();
   updateAllModalFilterStats();
   renderSummaryTable();
-  renderActivityTab();
+  if (isAdmin) {
+    renderActivityTab();
+  }
 };
