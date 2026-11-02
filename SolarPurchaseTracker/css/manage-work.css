@@ -1678,10 +1678,22 @@
     margin-left: 0 !important;
     margin-top: 2px !important;
     flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    overflow: visible !important;
     padding-bottom: 2px !important;
-    scrollbar-width: none !important; /* Firefox */
+  }
+  .mw-toolbar-top-row {
+    overflow: visible !important;
+  }
+  .st-card.erp-toolbar {
+    overflow: visible !important;
+  }
+  #partnerMultiselectMenu {
+    position: absolute !important;
+    z-index: 1065 !important;
+    min-width: 220px !important;
+    max-width: 85vw !important;
+    max-height: 280px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
   }
   .mw-toolbar-actions::-webkit-scrollbar {
     display: none !important; /* Chrome/Safari */
@@ -2431,21 +2443,58 @@
   cursor: default;
   user-select: none;
 }
-.sum-group-header-row.group-unpaid {
-  background-color: #fef2f2 !important;
-  border-left: 4px solid #ef4444 !important;
+/* Unpaid Section Styling (Soft Red/Rose) */
+.sum-group-header-row.group-unpaid td {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+  border-left: 5px solid #dc2626 !important;
 }
-.sum-group-header-row.group-partial {
-  background-color: #fffbeb !important;
-  border-left: 4px solid #f59e0b !important;
+.sum-row-unpaid td {
+  background-color: #fff1f2 !important;
 }
-.sum-group-header-row.group-fully {
-  background-color: #f0fdf4 !important;
-  border-left: 4px solid #10b981 !important;
+.sum-row-unpaid td:first-child {
+  border-left: 4px solid #f87171 !important;
+}
+.sum-row-unpaid:hover td {
+  background-color: #fecdd3 !important;
 }
 
-.sum-cust-row:hover {
-  background-color: #f8fafc;
+/* Partial Paid Section Styling (Soft Amber/Yellow) */
+.sum-group-header-row.group-partial td {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border-left: 5px solid #d97706 !important;
+}
+.sum-row-partial td {
+  background-color: #fffbeb !important;
+}
+.sum-row-partial td:first-child {
+  border-left: 4px solid #fbbf24 !important;
+}
+.sum-row-partial:hover td {
+  background-color: #fde68a !important;
+}
+
+/* Fully Paid Section Styling (Soft Mint/Green) */
+.sum-group-header-row.group-fully td {
+  background-color: #dcfce7 !important;
+  color: #166534 !important;
+  border-left: 5px solid #16a34a !important;
+}
+.sum-row-fully td {
+  background-color: #f0fdf4 !important;
+}
+.sum-row-fully td:first-child {
+  border-left: 4px solid #4ade80 !important;
+}
+.sum-row-fully:hover td {
+  background-color: #bbf7d0 !important;
+}
+
+.sum-row-unpaid .sum-comment-input,
+.sum-row-partial .sum-comment-input,
+.sum-row-fully .sum-comment-input {
+  background-color: #ffffff !important;
 }
 
 .sum-comment-input {

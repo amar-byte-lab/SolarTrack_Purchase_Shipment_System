@@ -113,6 +113,11 @@ window.onDbReady = function () {
   });
 
   populateFilterDatalists();
+  const btnPartnerMain = document.getElementById('btnPartnerMultiselect');
+  if (btnPartnerMain) {
+    btnPartnerMain.addEventListener('click', () => populateFilterDatalists());
+    btnPartnerMain.addEventListener('show.bs.dropdown', () => populateFilterDatalists());
+  }
   updateSortHeadersUI();
   renderList();
 
@@ -202,27 +207,30 @@ function getWorkRows() {
 function populateFilterDatalists() {
   const partnerMenu = document.getElementById('partnerMultiselectMenu');
   if (partnerMenu) {
-    const allRows = getWorkRows();
+    // Read from DB.getAll('installments') or getWorkRows to ensure partners are always found on mobile
+    const dbRows = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installments') || []) : [];
+    const allRows = dbRows.length > 0 ? dbRows : (getWorkRows() || []);
     const rawPartners = allRows.map(r => r.BrokerName ? r.BrokerName.trim() : '').filter(Boolean);
     const uniquePartners = [...new Set(rawPartners)].sort();
 
-    partnerMenu.innerHTML = [
-      `<div class="form-check mb-1">
-         <input class="form-check-input partner-chk" type="checkbox" value="(No Partner)" id="chk_nopartner" ${selectedPartners.includes('(No Partner)') ? 'checked' : ''}>
-         <label class="form-check-label fs-8" for="chk_nopartner">(No Partner)</label>
-       </div>`
-    ].concat(
-      uniquePartners.map(p => `
-        <div class="form-check mb-1">
-          <input class="form-check-input partner-chk" type="checkbox" value="${p}" id="chk_partner_${p.replace(/\s+/g, '_')}" ${selectedPartners.includes(p) ? 'checked' : ''}>
-          <label class="form-check-label fs-8" for="chk_partner_${p.replace(/\s+/g, '_')}">${p}</label>
-        </div>
-      `)
-    ).join('');
+    const noPartnerHtml = `
+      <div class="form-check mb-1">
+        <input class="form-check-input partner-chk" type="checkbox" value="(No Partner)" id="chk_nopartner" ${selectedPartners.includes('(No Partner)') ? 'checked' : ''}>
+        <label class="form-check-label fs-8 cursor-pointer" for="chk_nopartner">(No Partner)</label>
+      </div>`;
 
-    document.querySelectorAll('.partner-chk').forEach(chk => {
+    const partnerHtml = uniquePartners.map(p => `
+      <div class="form-check mb-1">
+        <input class="form-check-input partner-chk" type="checkbox" value="${escapeHtml(p)}" id="chk_partner_${p.replace(/\s+/g, '_')}" ${selectedPartners.includes(p) ? 'checked' : ''}>
+        <label class="form-check-label fs-8 cursor-pointer" for="chk_partner_${p.replace(/\s+/g, '_')}">${escapeHtml(p)}</label>
+      </div>
+    `).join('');
+
+    partnerMenu.innerHTML = noPartnerHtml + partnerHtml;
+
+    partnerMenu.querySelectorAll('.partner-chk').forEach(chk => {
       chk.addEventListener('change', () => {
-        selectedPartners = Array.from(document.querySelectorAll('.partner-chk:checked')).map(c => c.value);
+        selectedPartners = Array.from(partnerMenu.querySelectorAll('.partner-chk:checked')).map(c => c.value);
         updatePartnerDropdownButton();
         renderList();
       });
@@ -614,6 +622,7 @@ function getDelayInfo(dateStr) {
 }
 
 function renderList() {
+  if (!document.querySelector('#partnerMultiselectMenu .partner-chk')) populateFilterDatalists();
   updateDistrictStats();
   updateStageStats();
   updatePaymentStats();
@@ -1911,8 +1920,9 @@ window.openWorkSummaryModal = function () {
     { key: 'profit', label: 'Profit' }
   ];
 
-  // All columns selected by default
-  const activeCols = new Set(SUMMARY_COLUMNS.map(c => c.key));
+  // Default active columns: Customer: Status, Payment (Paid), Install, Meter
+  const DEFAULT_ACTIVE_COLS = ['customer', 'payment', 'install', 'meter'];
+  const activeCols = new Set(DEFAULT_ACTIVE_COLS);
 
   // Filters State (Identical to Manage Work filters)
   let modalSelectedPartners = [...selectedPartners];
@@ -2226,6 +2236,18 @@ window.openWorkSummaryModal = function () {
     };
   }
 
+  const btnResetDefaultCols = document.getElementById('btnResetDefaultCols');
+  if (btnResetDefaultCols) {
+    btnResetDefaultCols.onclick = () => {
+      activeCols.clear();
+      DEFAULT_ACTIVE_COLS.forEach(c => activeCols.add(c));
+      colsContainer?.querySelectorAll('.col-toggle-chk').forEach(chk => {
+        chk.checked = activeCols.has(chk.getAttribute('data-col'));
+      });
+      updateColumnVisibilityUI();
+    };
+  }
+
   const btnDeselectAllCols = document.getElementById('btnDeselectAllCols');
   if (btnDeselectAllCols) {
     btnDeselectAllCols.onclick = () => {
@@ -2251,7 +2273,90 @@ window.openWorkSummaryModal = function () {
     });
   }
 
-  // Update Exclude / Restore Buttons State
+  // Render & Manage Excluded Customers Dropdown List
+  function renderExcludedCustomersList() {
+    const container = document.getElementById('excludedCustomersList');
+    const wrap = document.getElementById('excludedDropdownWrap');
+    const countEl = document.getElementById('excludedCount');
+    const headerCountEl = document.getElementById('excludedMenuHeaderCount');
+
+    const excludedArray = Array.from(excludedSlNos);
+    if (countEl) countEl.textContent = excludedArray.length;
+    if (headerCountEl) headerCountEl.textContent = excludedArray.length;
+
+    if (excludedArray.length === 0) {
+      if (wrap) {
+        wrap.classList.remove('d-inline-block');
+        wrap.classList.add('d-none');
+      }
+      const dropdownBtn = document.getElementById('btnExcludedList');
+      if (dropdownBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+        const bsDrop = bootstrap.Dropdown.getInstance(dropdownBtn);
+        if (bsDrop) bsDrop.hide();
+      }
+      return;
+    }
+
+    if (wrap) {
+      wrap.classList.remove('d-none');
+      wrap.classList.add('d-inline-block');
+    }
+
+    if (!container) return;
+
+    container.innerHTML = excludedArray.map(sl => {
+      const r = baseRows.find(b => Number(b.SlNo) === Number(sl));
+      const name = r ? (r.Name || 'Unknown') : `Customer #${sl}`;
+      const status = r ? getCustomerWorkStatus(r) : '';
+      const dist = r ? (r.District || '') : '';
+      const meta = [status, dist].filter(Boolean).join(' • ');
+
+      return `
+        <div class="d-flex align-items-center justify-content-between p-1.5 rounded border bg-light-subtle gap-2">
+          <div class="d-flex flex-column" style="min-width: 0; flex: 1;">
+            <span class="fw-bold text-dark text-truncate fs-8" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+            ${meta ? `<span class="text-muted fs-9 text-truncate">${escapeHtml(meta)}</span>` : ''}
+          </div>
+          <button type="button" class="btn btn-xs btn-outline-danger d-inline-flex align-items-center gap-1 py-0.5 px-2 fs-9 btn-remove-from-excluded flex-shrink-0" data-slno="${sl}" title="Remove from Excluded (Return to Summary)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span>Remove</span>
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click listener to each Remove button inside the excluded list
+    container.querySelectorAll('.btn-remove-from-excluded').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const sl = Number(btn.getAttribute('data-slno'));
+        excludedSlNos.delete(sl);
+        updateActionButtonsUI();
+        updateAllModalFilterStats();
+        renderSummaryTable();
+        if (typeof UI !== 'undefined' && UI.toast) {
+          UI.toast('Customer returned to summary table.', 'success', 1500);
+        }
+      };
+    });
+  }
+
+  // Restore All Excluded Customers button
+  const btnRestoreAll = document.getElementById('btnRestoreAllExcluded');
+  if (btnRestoreAll) {
+    btnRestoreAll.onclick = (e) => {
+      e.stopPropagation();
+      excludedSlNos.clear();
+      updateActionButtonsUI();
+      updateAllModalFilterStats();
+      renderSummaryTable();
+      if (typeof UI !== 'undefined' && UI.toast) {
+        UI.toast('All excluded customers returned to summary table.', 'success', 2000);
+      }
+    };
+  }
+
+  // Update Exclude / Excluded Buttons State
   function updateActionButtonsUI() {
     const btnExclude = document.getElementById('btnExcludeFromSummary');
     const excludeCountEl = document.getElementById('excludeCount');
@@ -2265,19 +2370,7 @@ window.openWorkSummaryModal = function () {
         btnExclude.classList.add('d-none');
       }
     }
-
-    const btnRestore = document.getElementById('btnRestoreExcluded');
-    const restoredCountEl = document.getElementById('restoredCount');
-    if (btnRestore && restoredCountEl) {
-      if (excludedSlNos.size > 0) {
-        btnRestore.classList.remove('d-none');
-        btnRestore.classList.add('d-inline-flex');
-        restoredCountEl.textContent = excludedSlNos.size;
-      } else {
-        btnRestore.classList.remove('d-inline-flex');
-        btnRestore.classList.add('d-none');
-      }
-    }
+    renderExcludedCustomersList();
   }
 
   // Exclude button click handler
@@ -2291,21 +2384,6 @@ window.openWorkSummaryModal = function () {
       renderSummaryTable();
       if (typeof UI !== 'undefined' && UI.toast) {
         UI.toast('Selected customer(s) excluded from summary.', 'info', 2000);
-      }
-    };
-  }
-
-  // Restore button click handler
-  const btnRestore = document.getElementById('btnRestoreExcluded');
-  if (btnRestore) {
-    btnRestore.onclick = () => {
-      excludedSlNos.clear();
-      selectedSlNos.clear();
-      updateActionButtonsUI();
-      updateAllModalFilterStats();
-      renderSummaryTable();
-      if (typeof UI !== 'undefined' && UI.toast) {
-        UI.toast('All excluded customers restored to summary.', 'success', 2000);
       }
     };
   }
@@ -2438,13 +2516,13 @@ window.openWorkSummaryModal = function () {
     const hasPayFilter = modalSelectedPaymentFilters.length > 0;
 
     if (!hasPayFilter || modalSelectedPaymentFilters.includes('Unpaid')) {
-      groupsToRender.push({ name: 'Unpaid', list: unpaidList, colorClass: 'text-danger', groupClass: 'group-unpaid' });
+      groupsToRender.push({ name: 'Unpaid', list: unpaidList, colorClass: 'text-danger', groupClass: 'group-unpaid', rowClass: 'sum-row-unpaid' });
     }
     if (!hasPayFilter || modalSelectedPaymentFilters.includes('PartiallyPaid')) {
-      groupsToRender.push({ name: 'Partial Paid', list: partialList, colorClass: 'text-warning-emphasis', groupClass: 'group-partial' });
+      groupsToRender.push({ name: 'Partial Paid', list: partialList, colorClass: 'text-warning-emphasis', groupClass: 'group-partial', rowClass: 'sum-row-partial' });
     }
     if (!hasPayFilter || modalSelectedPaymentFilters.includes('FullyPaid')) {
-      groupsToRender.push({ name: 'Fully Paid', list: fullyList, colorClass: 'text-success', groupClass: 'group-fully' });
+      groupsToRender.push({ name: 'Fully Paid', list: fullyList, colorClass: 'text-success', groupClass: 'group-fully', rowClass: 'sum-row-fully' });
     }
 
     const tbody = document.querySelector('#workSummaryTable tbody');
@@ -2494,7 +2572,7 @@ window.openWorkSummaryModal = function () {
         if (item.status === 'Subsidy') statusBadgeClass = 'bg-success-subtle text-success border border-success-subtle';
 
         tbodyHtml += `
-          <tr class="sum-cust-row">
+          <tr class="sum-cust-row ${grp.rowClass || ''}">
             <td class="td-col-customer">
               <div class="d-flex align-items-center gap-2">
                 <input type="checkbox" class="form-check-input mt-0 sum-row-chk flex-shrink-0" data-slno="${sl}" data-group="${grp.name}" ${isChecked ? 'checked' : ''}>
@@ -2668,11 +2746,9 @@ window.openWorkSummaryModal = function () {
         const r = item.row;
         const fin = item.fin;
 
-        // Serial numbering + Customer name + Status
-        const custHeader = `${serialNo}. ${(r.Name || '-').toUpperCase()} : ${item.status}`;
+        // Serial numbering + Customer name (Bold) + Status
+        const custHeader = `*${serialNo}. ${(r.Name || '-').toUpperCase()}* : ${item.status}`;
         lines.push(custHeader);
-        // Underline directly below customer name
-        lines.push('-'.repeat(Math.max(24, custHeader.length)));
 
         // Column name - value talaku talaku (one below the other)
         if (isColActive('pvmodule')) {
@@ -2753,15 +2829,50 @@ window.openWorkSummaryModal = function () {
   // Standalone Copy Button Handler
   const btnCopySummary = document.getElementById('btnCopySummary');
   if (btnCopySummary) {
-    btnCopySummary.onclick = () => {
+    btnCopySummary.onclick = async () => {
       const text = getNotepadWhatsAppCopyText();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          if (typeof UI !== 'undefined' && UI.toast) UI.toast('Summary copied to clipboard (readable WhatsApp/Notepad format)!', 'success');
-        }).catch(() => fallbackCopy(text));
-      } else {
-        fallbackCopy(text);
+
+      // Rich HTML markup with bold styling for Word / Docs / Email
+      const htmlText = text
+        .split('\n')
+        .map(line => {
+          const boldMatch = line.match(/^\*([^*]+)\*(.*)/);
+          if (boldMatch) {
+            return `<b>${boldMatch[1]}</b>${boldMatch[2]}<br>`;
+          }
+          return `${line}<br>`;
+        })
+        .join('');
+
+      let copied = false;
+      try {
+        if (navigator.clipboard && window.ClipboardItem) {
+          const textBlob = new Blob([text], { type: 'text/plain' });
+          const htmlBlob = new Blob([htmlText], { type: 'text/html' });
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/plain': textBlob,
+              'text/html': htmlBlob
+            })
+          ]);
+          copied = true;
+        }
+      } catch (e) {
+        // Fallback to writeText
       }
+
+      if (!copied) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            if (typeof UI !== 'undefined' && UI.toast) UI.toast('Summary copied to clipboard!', 'success');
+          }).catch(() => fallbackCopy(text));
+          return;
+        } else {
+          fallbackCopy(text);
+          return;
+        }
+      }
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast('Summary copied to clipboard!', 'success');
     };
   }
 
