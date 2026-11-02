@@ -732,7 +732,13 @@ const FilesApp = (() => {
     if (!file) return;
 
     const displayName = getFormattedFileName(file);
-    const ok = confirm(`Are you sure you want to remove the file "${displayName}"?\n\nThis will permanently delete the file from the project's uploads folder.`);
+    const warning = `Are you sure you want to remove the file "${displayName}"?\n\nThis will permanently delete the file from the project's uploads folder.`;
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(warning, 'Delete File', 'Delete File', 'btn-danger');
+    } else {
+      ok = confirm(warning);
+    }
     if (!ok) return;
 
     if (typeof UI !== 'undefined' && UI.showLoading) UI.showLoading(true);

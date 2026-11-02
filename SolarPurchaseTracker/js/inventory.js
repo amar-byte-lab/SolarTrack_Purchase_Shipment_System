@@ -1486,7 +1486,13 @@ const InventoryApp = (() => {
     const countItems = matching.length;
 
     const warning = `Are you sure you want to delete consignment "${consignmentName}" (${countItems} item(s), ${fmtQty(totalQty)} units)?\n\nThis will adjust in-hand stock calculation accordingly.\n\nThis action cannot be undone.`;
-    if (!confirm(warning)) return;
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(warning, 'Delete Consignment', 'Delete Consignment', 'btn-danger');
+    } else {
+      ok = confirm(warning);
+    }
+    if (!ok) return;
 
     const idsToDelete = matching.map(i => i.id);
     inwards = inwards.filter(i => !idsToDelete.includes(i.id));
@@ -1757,7 +1763,13 @@ const InventoryApp = (() => {
     const totalQty = targetDispatches.reduce((s, d) => s + (Number(d.qty) || 0), 0);
 
     const warning = `Are you sure you want to delete ${selectedIds.length} selected site dispatch record(s)?\n\nThis will restore ${fmtQty(totalQty)} units back to physical warehouse stock.\n\nThis action cannot be undone.`;
-    if (!confirm(warning)) return;
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(warning, 'Delete Selected Dispatches', 'Delete All', 'btn-danger');
+    } else {
+      ok = confirm(warning);
+    }
+    if (!ok) return;
 
     dispatches = dispatches.filter(d => !selectedIds.includes(d.id));
     selectedDispatches.clear();
@@ -1786,7 +1798,13 @@ const InventoryApp = (() => {
     const totalQty = targetInwards.reduce((s, i) => s + (Number(i.qty) || 0), 0);
 
     const warning = `Are you sure you want to delete ${selectedIds.length} selected inward consignment record(s)?\n\nThis will deduct ${fmtQty(totalQty)} units from warehouse stock calculation.\n\nThis action cannot be undone.`;
-    if (!confirm(warning)) return;
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(warning, 'Delete Selected Consignments', 'Delete All', 'btn-danger');
+    } else {
+      ok = confirm(warning);
+    }
+    if (!ok) return;
 
     inwards = inwards.filter(i => !selectedIds.includes(i.id));
     selectedInwards.clear();
@@ -5384,9 +5402,14 @@ const InventoryApp = (() => {
     const first = matching[0];
     const totalQty = matching.reduce((sum, d) => sum + (Number(d.qty) || 0), 0);
 
-    if (!confirm(`Are you sure you want to delete site dispatch to "${first.siteName}"?\n\nThis will restore ${totalQty} units back to physical warehouse stock.`)) {
-      return;
+    const warning = `Are you sure you want to delete site dispatch to "${first.siteName}"?\n\nThis will restore ${fmtQty(totalQty)} units back to physical warehouse stock.\n\nThis action cannot be undone.`;
+    let ok = false;
+    if (typeof UI !== 'undefined' && UI.confirmDialog) {
+      ok = await UI.confirmDialog(warning, 'Delete Site Dispatch', 'Delete Dispatch', 'btn-danger');
+    } else {
+      ok = confirm(warning);
     }
+    if (!ok) return;
 
     dispatches = dispatches.filter(d => !matching.some(m => m.id === d.id));
     matching.forEach(m => selectedDispatches.delete(m.id));

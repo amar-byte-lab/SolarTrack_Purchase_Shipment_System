@@ -213,7 +213,7 @@ const UI = (() => {
                 <h6 class="modal-title fw-bold text-dark fs-7" id="confirmModalTitle"></h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
-              <div class="modal-body p-3 fs-8 text-secondary" id="confirmModalBody"></div>
+              <div class="modal-body p-3 fs-8 text-secondary" id="confirmModalBody" style="white-space: pre-line;"></div>
               <div class="modal-footer py-1.5 px-3 bg-light border-top">
                 <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-sm px-3 fs-8 fw-semibold" id="confirmModalOk"></button>
