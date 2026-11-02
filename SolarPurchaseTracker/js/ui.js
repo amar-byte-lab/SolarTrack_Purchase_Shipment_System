@@ -96,11 +96,11 @@ const UI = (() => {
           if (isEmployee) {
             return ['quotation.html', 'document.html', 'sizing-calc.html'].includes(item.href);
           }
-          if (item.href === 'manage-work.html' || item.href === 'files.html') return false;
+          if (item.href === 'manage-work.html' || item.href === 'files.html' || item.href === 'inventory.html') return false;
           if (roleLower === 'partner' || roleLower === 'associates') {
-            return ['summary.html', 'quotation.html', 'customer.html', 'inventory.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
+            return ['summary.html', 'quotation.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'].includes(item.href);
           }
-          return ['summary.html', 'quotation.html', 'inventory.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
+          return ['summary.html', 'quotation.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'].includes(item.href);
         })
       : NAV_ITEMS;
 

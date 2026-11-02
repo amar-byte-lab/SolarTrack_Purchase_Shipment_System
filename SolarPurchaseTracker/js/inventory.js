@@ -5882,6 +5882,14 @@ const InventoryApp = (() => {
   let isInitializing = false;
 
   async function init() {
+    const currentUser = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    const roleLower = (currentUser && currentUser.role ? currentUser.role : '').toLowerCase().trim();
+    const isPowerUser = roleLower === 'admin' || roleLower === 'superadmin';
+    if (!isPowerUser) {
+      window.location.href = 'quotation.html';
+      return;
+    }
+
     if (isInitializing) return;
     if (isInitialized) {
       await syncWithDatabase();
