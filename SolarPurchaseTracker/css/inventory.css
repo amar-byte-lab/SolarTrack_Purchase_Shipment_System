@@ -2504,7 +2504,7 @@
 
   .inv-bulk-actions {
     display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 6px;
     width: 100%;
     margin-left: 0;
@@ -2512,12 +2512,29 @@
 
   .inv-bulk-actions .inv-btn {
     width: 100%;
+    height: 32px !important;
+    min-height: 32px !important;
     justify-content: center;
-    padding: 7px 6px;
+    padding: 6px 4px !important;
     font-size: 0.72rem;
     white-space: nowrap;
     box-sizing: border-box;
     border-radius: 4px;
+  }
+
+  .inv-bulk-actions #btnBulkStockIn,
+  .inv-bulk-actions #btnBulkDispatch {
+    padding: 6px 4px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+
+  .inv-bulk-bar.has-selection .inv-bulk-actions #btnDeleteSelected {
+    grid-column: span 2;
+  }
+
+  .inv-bulk-bar.has-selection .inv-bulk-actions #btnClearSelection {
+    grid-column: span 1;
   }
 
   .inv-bulk-actions .inv-btn svg {

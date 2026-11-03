@@ -300,21 +300,6 @@
     "UpdatedAt": null
   },
   {
-    "ItemCode": "PNL-001",
-    "ItemName": "Waaree TOPCON 605 wp",
-    "Brand": "Standard Solar",
-    "Specification": "Standard Solar Equipment",
-    "Category": "Panels",
-    "Unit": "Nos",
-    "BuyingPrice": 300,
-    "MinThreshold": 5,
-    "HSNCode": "85414011",
-    "GSTPercent": 12,
-    "Status": "Active",
-    "CreatedAt": "2026-10-27T10:00:00Z",
-    "UpdatedAt": "2026-10-31T14:58:23.393Z"
-  },
-  {
     "ItemCode": "CND-ELBOW-01",
     "ItemName": "L bow (Elbow)",
     "Brand": "Supreme / Standard",
@@ -436,17 +421,32 @@
   },
   {
     "ItemCode": "SKU-001",
-    "ItemName": "Adani Bifacial 550",
+    "ItemName": "Exide Bifacial 550 wp",
     "Brand": "Standard Solar",
-    "Specification": "Standard Solar Equipment",
+    "Specification": "Exide Bifacial 550 wp",
     "Category": "Panels",
     "Unit": "Pcs",
-    "BuyingPrice": 585.3,
+    "BuyingPrice": 0,
     "MinThreshold": 5,
     "HSNCode": "",
     "GSTPercent": 12,
     "Status": "Active",
-    "CreatedAt": "2026-10-31T15:43:33.396Z",
-    "UpdatedAt": "2026-10-31T15:48:03.196Z"
+    "CreatedAt": "2026-11-02T15:16:26.244Z",
+    "UpdatedAt": null
+  },
+  {
+    "ItemCode": "SKU-002",
+    "ItemName": "Waaree TOPCON 610 wp",
+    "Brand": "Standard Solar",
+    "Specification": "Waaree TOPCON 610 wp",
+    "Category": "Panels",
+    "Unit": "Pcs",
+    "BuyingPrice": 0,
+    "MinThreshold": 5,
+    "HSNCode": "",
+    "GSTPercent": 12,
+    "Status": "Active",
+    "CreatedAt": "2026-11-03T06:37:34.498Z",
+    "UpdatedAt": null
   }
 ]
