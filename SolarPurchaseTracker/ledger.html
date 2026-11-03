@@ -189,6 +189,67 @@
   </div>
 </div>
 
+<!-- ══ Edit Transaction Modal ════════════════════════════════════════ -->
+<div class="modal fade" id="editTxnModal" tabindex="-1" aria-labelledby="editTxnModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+    <div class="modal-content border-0 shadow-lg rounded-3">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <h6 class="modal-title fw-bold fs-7 mb-0 d-flex align-items-center gap-2" id="editTxnModalLabel">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          <span>Edit Transaction</span>
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3">
+        <form id="formEditTxn" onsubmit="event.preventDefault(); saveEditTxn();">
+          <input type="hidden" id="editTxnId">
+          <input type="hidden" id="editTxnBid">
+          
+          <!-- Transaction Type Toggle -->
+          <div class="mb-3">
+            <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Transaction Type</label>
+            <div class="btn-group w-100" role="group">
+              
+              <input type="radio" class="btn-check" name="editTxnTypeRadio" id="editTypeCredit" value="Debit" autocomplete="off">
+              <label class="btn btn-outline-success btn-sm fw-semibold py-2" for="editTypeCredit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="me-1"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                Received (Credit)
+              </label>
+
+              <input type="radio" class="btn-check" name="editTxnTypeRadio" id="editTypeDebit" value="Credit" autocomplete="off">
+              <label class="btn btn-outline-danger btn-sm fw-semibold py-2" for="editTypeDebit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="me-1"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                You gave (Debit)
+              </label>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1 fw-semibold" for="editTxnDate">Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm" id="editTxnDate" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label fs-8 text-secondary mb-1 fw-semibold" for="editTxnAmount">Amount (₹) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" id="editTxnAmount" min="0.01" step="0.01" placeholder="0.00" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fs-8 text-secondary mb-1 fw-semibold" for="editTxnRemarks">Remarks / Note</label>
+            <textarea class="form-control form-control-sm" id="editTxnRemarks" rows="2" placeholder="Optional comment or note…"></textarea>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold" id="btnSaveEditTxn">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts -->
 <script src="assets/js/bootstrap.bundle.min.js" defer></script>
 <script src="assets/js/xlsx.full.min.js" defer></script>

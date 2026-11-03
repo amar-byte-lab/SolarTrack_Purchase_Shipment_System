@@ -12,6 +12,9 @@ let _txnCache       = {};
 let _activeBid      = null;
 let _txnModal       = null;
 let _addBorrowerModal = null;
+let _editTxnModal     = null;
+let _rowClickTimer    = null;
+let _preventRowClick  = false;
 let _searchQuery    = '';
 let _filterStatus   = 'all';
 let _isMasked       = false;
@@ -28,6 +31,78 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   _txnModal = new bootstrap.Modal(document.getElementById('txnModal'), { keyboard: true });
   _addBorrowerModal = new bootstrap.Modal(document.getElementById('addBorrowerModal'), { keyboard: true });
+  const editModalEl = document.getElementById('editTxnModal');
+  if (editModalEl) {
+    _editTxnModal = new bootstrap.Modal(editModalEl, { keyboard: true });
+  }
+
+  // Setup mobile long press and outside click handlers for Khatabook rows
+  const accountListEl = document.getElementById('bwAccountList');
+  if (accountListEl) {
+    let touchTimer = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isLongPress = false;
+
+    accountListEl.addEventListener('touchstart', (e) => {
+      const row = e.target.closest('.kb-account-item');
+      if (!row || e.target.closest('.kb-row-del-btn')) return;
+
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isLongPress = false;
+
+      const bid = row.getAttribute('data-bid');
+      touchTimer = setTimeout(() => {
+        isLongPress = true;
+        _preventRowClick = true;
+        toggleRowDelete(bid);
+        if (navigator.vibrate) {
+          try { navigator.vibrate(50); } catch (_) {}
+        }
+      }, 500);
+    }, { passive: true });
+
+    accountListEl.addEventListener('touchmove', (e) => {
+      if (!touchTimer) return;
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      if (dx > 10 || dy > 10) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+      }
+    }, { passive: true });
+
+    accountListEl.addEventListener('touchend', () => {
+      if (touchTimer) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+      }
+      if (isLongPress) {
+        setTimeout(() => {
+          _preventRowClick = false;
+          isLongPress = false;
+        }, 350);
+      }
+    });
+
+    accountListEl.addEventListener('touchcancel', () => {
+      if (touchTimer) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+      }
+      isLongPress = false;
+      _preventRowClick = false;
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.kb-account-item') && !e.target.closest('.kb-row-del-btn')) {
+      document.querySelectorAll('.kb-row-del-btn').forEach(b => {
+        b.style.display = 'none';
+      });
+    }
+  });
 
   // Search
   document.getElementById('bwSearchInput')?.addEventListener('input', e => {
@@ -361,18 +436,23 @@ function renderGrid() {
     }
 
     html += `
-    <div class="kb-account-item ${isActive ? '' : 'bw-closed'}" onclick="openTxnModal(${bId})">
+    <div class="kb-account-item ${isActive ? '' : 'bw-closed'}" data-bid="${bId}" onclick="handleRowAccountClick(${bId}, event)" ondblclick="handleRowAccountDblClick(${bId}, event)">
       <div class="kb-avatar" style="background-color: ${avatarBg}">${initial}</div>
       <div class="kb-info">
-        <div class="kb-name">
+        <div class="kb-name" ondblclick="handleRowAccountDblClick(${bId}, event)" title="Double click or long press to show delete">
           ${esc(bName)}
           ${isActive ? '' : '<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Closed</span>'}
         </div>
         <div class="kb-sub">${getLastTxnSummary(b)}</div>
       </div>
-      <div class="kb-bal">
-        <div class="kb-amount ${amountClass}">${amountText}</div>
-        <div class="kb-status-label ${amountClass}">${statusLabel}</div>
+      <div class="kb-bal-col d-flex align-items-center gap-2">
+        <div class="kb-bal">
+          <div class="kb-amount ${amountClass}">${amountText}</div>
+          <div class="kb-status-label ${amountClass}">${statusLabel}</div>
+        </div>
+        <button type="button" class="btn btn-sm kb-row-del-btn" id="rowDelBtn-${bId}" style="display: none;" onclick="event.stopPropagation(); deleteBorrowerRow(${bId})" title="Delete customer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </button>
       </div>
     </div>`;
   });
@@ -530,7 +610,12 @@ function renderTxnHistory(bid) {
     if (isCredit) {
       html += `
       <div class="chat-row right" data-txn-id="${t.TxnID}">
-        <button class="txn-del" onclick="deleteTxn(${t.TxnID},${bid})">×</button>
+        <div class="chat-row-actions">
+          <button type="button" class="txn-edit" onclick="event.stopPropagation(); openEditTxnModal(${t.TxnID}, ${bid})" title="Edit transaction">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </button>
+          <button type="button" class="txn-del" onclick="event.stopPropagation(); deleteTxn(${t.TxnID}, ${bid})" title="Delete transaction">×</button>
+        </div>
         <div class="chat-bubble credit">
           <div class="bubble-label">You gave</div>
           <div class="bubble-amount">−${money(t.Amount)}</div>
@@ -547,7 +632,12 @@ function renderTxnHistory(bid) {
           ${t.Remarks ? `<div class="bubble-remarks">${esc(t.Remarks)}</div>` : ''}
           <div class="bubble-meta">${dayLabel}</div>
         </div>
-        <button class="txn-del" onclick="deleteTxn(${t.TxnID},${bid})">×</button>
+        <div class="chat-row-actions">
+          <button type="button" class="txn-edit" onclick="event.stopPropagation(); openEditTxnModal(${t.TxnID}, ${bid})" title="Edit transaction">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </button>
+          <button type="button" class="txn-del" onclick="event.stopPropagation(); deleteTxn(${t.TxnID}, ${bid})" title="Delete transaction">×</button>
+        </div>
       </div>`;
     }
   });
@@ -1328,5 +1418,142 @@ window.saveBorrower = async function() {
     UI.toast(`✓ "${name}" added successfully`, 'success');
   } catch (e) {
     UI.toast('Error: ' + e.message, 'danger');
+  }
+};
+
+// ── Double click / Mobile Long Press Account Handlers ───────────────────
+window.handleRowAccountClick = function(bId, event) {
+  if (_preventRowClick) {
+    _preventRowClick = false;
+    return;
+  }
+  if (event && event.target && event.target.closest('.kb-row-del-btn')) {
+    return;
+  }
+  if (_rowClickTimer) {
+    clearTimeout(_rowClickTimer);
+    _rowClickTimer = null;
+    return;
+  }
+  _rowClickTimer = setTimeout(() => {
+    _rowClickTimer = null;
+    openTxnModal(bId);
+  }, 230);
+};
+
+window.handleRowAccountDblClick = function(bId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  if (_rowClickTimer) {
+    clearTimeout(_rowClickTimer);
+    _rowClickTimer = null;
+  }
+  toggleRowDelete(bId);
+};
+
+window.toggleRowDelete = function(bId) {
+  const btn = document.getElementById(`rowDelBtn-${bId}`);
+  if (!btn) return;
+  const isHidden = btn.style.display === 'none' || !btn.style.display;
+  document.querySelectorAll('.kb-row-del-btn').forEach(b => {
+    if (b.id !== `rowDelBtn-${bId}`) b.style.display = 'none';
+  });
+  btn.style.display = isHidden ? 'inline-flex' : 'none';
+};
+
+window.deleteBorrowerRow = async function(bid) {
+  await removeBorrower(bid);
+};
+
+// ── Edit Transaction Modal Functions ────────────────────────────────────
+window.openEditTxnModal = function(txnId, bid) {
+  const txns = _txnCache[bid] || [];
+  const txn = txns.find(t => t.TxnID === txnId);
+  if (!txn) {
+    UI.toast('Transaction not found', 'warning');
+    return;
+  }
+  document.getElementById('editTxnId').value = txn.TxnID;
+  document.getElementById('editTxnBid').value = bid;
+  document.getElementById('editTxnDate').value = txn.TxnDate || todayISO();
+  document.getElementById('editTxnAmount').value = txn.Amount != null ? txn.Amount : '';
+  document.getElementById('editTxnRemarks').value = txn.Remarks || '';
+
+  if (txn.Type === 'Debit') {
+    document.getElementById('editTypeCredit').checked = true;
+  } else {
+    document.getElementById('editTypeDebit').checked = true;
+  }
+
+  if (!_editTxnModal && window.bootstrap) {
+    _editTxnModal = new bootstrap.Modal(document.getElementById('editTxnModal'));
+  }
+  if (_editTxnModal) _editTxnModal.show();
+};
+
+window.saveEditTxn = async function() {
+  const txnIdRaw = document.getElementById('editTxnId').value;
+  const bidRaw = document.getElementById('editTxnBid').value;
+  const txnId = parseInt(txnIdRaw, 10);
+  const bid = parseInt(bidRaw, 10);
+  const dateVal = document.getElementById('editTxnDate').value;
+  const amtRaw = document.getElementById('editTxnAmount').value;
+  const remarks = (document.getElementById('editTxnRemarks').value || '').trim();
+  const typeVal = document.querySelector('input[name="editTxnTypeRadio"]:checked')?.value || 'Credit';
+
+  if (!dateVal) {
+    UI.toast('Select a transaction date', 'warning');
+    document.getElementById('editTxnDate').focus();
+    return;
+  }
+  const amount = parseFloat(amtRaw);
+  if (!amtRaw || isNaN(amount) || amount <= 0) {
+    UI.toast('Enter a valid amount > 0', 'warning');
+    document.getElementById('editTxnAmount').focus();
+    return;
+  }
+
+  const saveBtn = document.getElementById('btnSaveEditTxn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
+  try {
+    const resp = await fetch('/api/borrower-txn-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ TxnID: txnId, TxnDate: dateVal, Amount: amount, Type: typeVal, Remarks: remarks })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.success === false) {
+      throw new Error(data.error || 'Failed to update transaction');
+    }
+
+    if (_txnCache[bid]) {
+      const idx = _txnCache[bid].findIndex(t => t.TxnID === txnId);
+      if (idx !== -1) {
+        _txnCache[bid][idx] = {
+          ..._txnCache[bid][idx],
+          TxnDate: dateVal,
+          Amount: amount,
+          Type: typeVal,
+          Remarks: remarks
+        };
+        _txnCache[bid].sort((a, b) => a.TxnDate.localeCompare(b.TxnDate) || a.TxnID - b.TxnID);
+      }
+    }
+
+    saveToLocalCache();
+    renderTxnHistory(bid);
+    updateModalBalance(bid);
+    renderGrid();
+    renderKPIs();
+
+    if (_editTxnModal) _editTxnModal.hide();
+    UI.toast('✓ Transaction updated successfully', 'success');
+  } catch (err) {
+    UI.toast('Error: ' + err.message, 'danger');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
   }
 };

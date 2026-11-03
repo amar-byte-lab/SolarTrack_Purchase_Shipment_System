@@ -542,6 +542,27 @@ async function addBorrowerTxn(body) {
   }
 }
 
+async function updateBorrowerTxn(body) {
+  try {
+    const id = parseInt(body.TxnID, 10) || body.TxnID;
+    const updates = {};
+    if (body.TxnDate !== undefined) updates.TxnDate = body.TxnDate;
+    if (body.Amount !== undefined) updates.Amount = parseFloat(body.Amount) || 0;
+    if (body.Type !== undefined) updates.Type = body.Type;
+    if (body.Remarks !== undefined) updates.Remarks = body.Remarks || '';
+
+    const { data, error } = await supabase.from('borrower_txns').update(updates).eq('TxnID', id).select();
+    if (error) {
+      console.error('[Postgres] updateBorrowerTxn error:', error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true, updated: data && data[0] ? data[0] : updates };
+  } catch (err) {
+    console.error('[Postgres] updateBorrowerTxn exception:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 async function deleteBorrowerTxn(txnID) {
   try {
     const id = parseInt(txnID, 10) || txnID;
@@ -642,6 +663,7 @@ module.exports = {
   updateBorrower,
   closeBorrower,
   addBorrowerTxn,
+  updateBorrowerTxn,
   deleteBorrowerTxn,
   deleteBorrower,
 };

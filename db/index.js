@@ -21,6 +21,7 @@ module.exports = {
   updateBorrower: (...args) => activeDriver.updateBorrower(...args),
   closeBorrower: (...args) => activeDriver.closeBorrower(...args),
   addBorrowerTxn: (...args) => activeDriver.addBorrowerTxn(...args),
+  updateBorrowerTxn: (...args) => activeDriver.updateBorrowerTxn(...args),
   deleteBorrowerTxn: (...args) => activeDriver.deleteBorrowerTxn(...args),
   deleteBorrower: (...args) => activeDriver.deleteBorrower(...args),
 };

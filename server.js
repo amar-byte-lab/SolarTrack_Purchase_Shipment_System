@@ -895,6 +895,15 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      if (pathname === '/api/borrower-txn-update') {
+        const body = await getRequestBody(req);
+        const result = await db.updateBorrowerTxn(body);
+        const dbDuration = (performance.now() - dbStartTime).toFixed(2);
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify(result || { success: true })), 'no-cache, no-store');
+        console.log(`[API] POST /api/borrower-txn-update | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms | DB: ${dbDuration}ms`);
+        return;
+      }
+
       if (pathname === '/api/borrower-txn-delete') {
         const body = await getRequestBody(req);
         await db.deleteBorrowerTxn(body.TxnID);
