@@ -709,6 +709,29 @@
   display: none;
 }
 
+/* Desktop screen: wrap category badges to next row when reaching width limit */
+@media (min-width: 769px) {
+  .inv-chips-wrap {
+    align-items: flex-start;
+    padding: 8px 14px;
+  }
+
+  .inv-chips-label {
+    margin-top: 5px;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+
+  .inv-chips-scroll {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    white-space: normal !important;
+    gap: 6px 8px;
+    padding: 0;
+    width: 100%;
+  }
+}
+
 .inv-chip,
 .inv-chip-btn {
   display: inline-flex;
@@ -2417,6 +2440,12 @@
   .inv-chips-wrap {
     padding: 6px 10px;
     gap: 6px;
+  }
+
+  .inv-chips-scroll {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
   }
 
   .inv-chip,

@@ -334,6 +334,17 @@ async function safeUpdate(tableName, matchField, val, newData) {
         delete item[match[1]];
         continue;
       }
+      if (error && error.message && error.message.includes('Could not find the table')) {
+        const pk = PRIMARY_KEYS[tableName] || 'id';
+        const rows = readLocalTable(tableName);
+        const pkVal = item[pk] !== undefined ? item[pk] : item[pk.toLowerCase()];
+        const targetVal = String(pkVal !== undefined && pkVal !== null ? pkVal : val);
+        const idx = rows.findIndex(r => String(r[pk] !== undefined ? r[pk] : r[pk.toLowerCase()]) === targetVal);
+        if (idx >= 0) rows[idx] = { ...rows[idx], ...item };
+        else rows.push(item);
+        writeLocalTable(tableName, rows);
+        return;
+      }
       console.error(`[Postgres] safeUpdate('${tableName}') error:`, error.message);
       throw new Error(`[Postgres] safeUpdate('${tableName}') failed: ${error.message}`);
     } catch (err) {
@@ -643,6 +654,14 @@ async function deleteRows(tableName, matchField, matchValues) {
   } catch (err) {
     console.warn(`[Postgres] deleteRows('${tableName}') exception:`, err.message);
   }
+  try {
+    const localRows = readLocalTable(tableName);
+    const valSet = new Set((matchValues || []).map(v => String(v)));
+    const filtered = localRows.filter(r => !valSet.has(String(r[matchField] !== undefined ? r[matchField] : r[matchField.toLowerCase()])));
+    if (filtered.length !== localRows.length) {
+      writeLocalTable(tableName, filtered);
+    }
+  } catch (err) {}
 }
 
 module.exports = {

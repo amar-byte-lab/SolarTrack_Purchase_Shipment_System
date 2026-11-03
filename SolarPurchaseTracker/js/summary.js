@@ -1201,6 +1201,22 @@ async function executeUndoActivity(act) {
   } else if (act.table === 'installments' && act.action === 'INSERT') {
     const slNo = Number(act.recordId);
     await DB.remove('installments', r => Number(r.SlNo) === slNo);
+  } else if (act.table === 'shipment_remarks') {
+    const remId = act.remarkId;
+    const shipNo = act.recordId;
+    await DB.remove('shipment_remarks', r => (remId && r.RemarkID === remId) || (r.ShipmentNo === shipNo));
+  } else if (act.table === 'shipments' && act.action === 'INSERT') {
+    const shipNo = act.recordId;
+    await DB.remove('shipments', s => (s.ShipmentNo || s.shipmentno) === shipNo);
+    await DB.deleteBatch('materials', m => (m.ShipmentNo || m.shipmentno) === shipNo);
+  } else if (act.table === 'shipments' && act.action === 'UPDATE') {
+    const shipNo = act.recordId;
+    if (act.revertData) {
+      await DB.update('shipments', s => (s.ShipmentNo || s.shipmentno) === shipNo, act.revertData);
+    }
+  } else if (act.table === 'materials' && act.action === 'INSERT') {
+    const rowId = act.recordId;
+    await DB.remove('materials', m => (m.RowID || m.rowid) === rowId);
   }
 
   // Persist undone record
@@ -1218,6 +1234,8 @@ function getCombinedActivities() {
   const commTxns = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('commission_txns') || []) : [];
   const remarks = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('installment_remarks') || []) : [];
   const dispatches = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('inventory_dispatches') || []) : [];
+  const shipments = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('shipments') || []) : [];
+  const shipmentRemarks = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('shipment_remarks') || []) : [];
 
   const undoneMap = getUndoneActivityMap();
   const synthesized = [];
@@ -1439,6 +1457,59 @@ function getCombinedActivities() {
     });
   });
 
+  // 6. Gather Shipments (shipments)
+  shipments.forEach(s => {
+    const shipNo = s.ShipmentNo;
+    if (!shipNo) return;
+    const isoDate = parseToIsoDate(s.PurchaseDate || s.CreatedAt);
+    if (!isoDate) return;
+    const type = s.ShipmentType || 'Buy';
+    const vName = s.VendorName || 'Vendor';
+    const actId = `synth_ship_${shipNo}`;
+    synthesized.push({
+      id: actId,
+      timestamp: s.CreatedAt || `${isoDate}T12:00:00Z`,
+      date: isoDate,
+      time: '',
+      page: 'Shipment',
+      table: 'shipments',
+      action: 'INSERT',
+      recordId: shipNo,
+      customerName: `${vName} (${type} ${shipNo})`,
+      consumerNo: s.InvoiceNumber || s.VehicleNumber || '',
+      changes: [
+        { field: `${type} Shipment Created`, oldVal: null, newVal: `Invoice: ${s.InvoiceNumber || '-'}${s.VehicleNumber ? ', Vehicle: ' + s.VehicleNumber : ''}` }
+      ],
+      undone: false
+    });
+  });
+
+  // 7. Gather Shipment Remarks & Payments (shipment_remarks)
+  shipmentRemarks.forEach(r => {
+    const isoDate = parseToIsoDate(r.CreatedAt || r.Date);
+    if (!isoDate) return;
+    const s = shipments.find(x => x.ShipmentNo === r.ShipmentNo);
+    const vName = s ? s.VendorName : '';
+    const actId = `synth_shiprem_${r.RemarkID || r.ShipmentNo + '_' + isoDate}`;
+    synthesized.push({
+      id: actId,
+      timestamp: r.CreatedAt || `${isoDate}T12:00:00Z`,
+      date: isoDate,
+      time: '',
+      page: 'Shipment',
+      table: 'shipment_remarks',
+      action: 'INSERT',
+      remarkId: r.RemarkID,
+      recordId: r.ShipmentNo,
+      customerName: vName ? `${vName} (${r.ShipmentNo})` : `Shipment ${r.ShipmentNo}`,
+      consumerNo: s ? (s.InvoiceNumber || s.VehicleNumber || '') : '',
+      changes: [
+        { field: 'Shipment Payment / Note', oldVal: null, newVal: r.Remark || '' }
+      ],
+      undone: false
+    });
+  });
+
   // Combine real-time logs and synthesized logs
   const combined = [...logged, ...synthesized];
 
@@ -1528,6 +1599,8 @@ function renderActivityTab() {
 
     const pageBadge = act.page === 'Manage Work'
       ? '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fs-9 px-2 py-0.5">Manage Work</span>'
+      : act.page === 'Shipment'
+      ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-9 px-2 py-0.5">Shipment</span>'
       : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fs-9 px-2 py-0.5">Customer</span>';
 
     const changesHtml = (act.changes || []).map(chg => {
@@ -1909,6 +1982,7 @@ window.onDbReady = function () {
           b.classList.remove('active');
           if (b.classList.contains('btn-outline-primary')) b.className = 'btn btn-xs btn-outline-primary';
           else if (b.classList.contains('btn-outline-success')) b.className = 'btn btn-xs btn-outline-success';
+          else if (b.classList.contains('btn-outline-warning')) b.className = 'btn btn-xs btn-outline-warning text-dark';
           else b.className = 'btn btn-xs btn-outline-secondary';
         });
         btn.classList.add('active');

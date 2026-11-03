@@ -247,7 +247,7 @@ const DB = (() => {
 
     function recordActivity(action, key, rowOrMatch, newData) {
         if (_skipActivityLog) return;
-        if (key !== 'installments' && key !== 'installment_txns' && key !== 'installment_remarks') return;
+        if (key !== 'installments' && key !== 'installment_txns' && key !== 'installment_remarks' && key !== 'shipments' && key !== 'materials' && key !== 'shipment_remarks') return;
 
         try {
             const now = new Date();
@@ -259,12 +259,38 @@ const DB = (() => {
             if (path.includes('manage-work')) page = 'Manage Work';
             else if (path.includes('summary')) page = 'Manage Work';
             else if (path.includes('customer')) page = 'Customer';
+            else if (path.includes('shipment')) page = 'Shipment';
+            else if (key === 'shipments' || key === 'materials' || key === 'shipment_remarks') page = 'Shipment';
 
             const currentUser = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
             const userName = currentUser ? (currentUser.name || currentUser.username || currentUser.userid || 'Admin') : 'Admin';
             const userRole = currentUser ? (currentUser.role || 'Admin') : 'Admin';
 
             const pkName = getPrimaryKey(key);
+
+            function getRecordMeta(r) {
+                if (!r) return { recordId: '', custName: '', consumerNo: '' };
+                const recordId = r[pkName] || r.SlNo || r.ShipmentNo || r.RowID || r.RemarkID || '';
+                let custName = '';
+                let consumerNo = r.ConsumerNo || '';
+
+                if (key === 'shipments') {
+                    const type = r.ShipmentType || 'Buy';
+                    custName = r.VendorName ? `${r.VendorName} (${type} ${recordId})` : `${type} Shipment ${recordId}`;
+                    consumerNo = r.InvoiceNumber || r.VehicleNumber || '';
+                } else if (key === 'materials') {
+                    custName = r.ItemName ? `${r.ItemName} (${r.ShipmentNo || 'Material'})` : `Material #${recordId}`;
+                    consumerNo = r.ShipmentNo || '';
+                } else if (key === 'shipment_remarks') {
+                    const s = cache['shipments']?.find(x => x.ShipmentNo === r.ShipmentNo);
+                    const vName = s ? s.VendorName : '';
+                    custName = vName ? `${vName} (${r.ShipmentNo})` : `Shipment ${r.ShipmentNo || ''}`;
+                    consumerNo = r.ShipmentNo || '';
+                } else {
+                    custName = r.Name || (cache['installments']?.find(c => Number(c.SlNo) === Number(r.SlNo))?.Name) || `Customer #${recordId}`;
+                }
+                return { recordId, custName, consumerNo };
+            }
 
             if (action === 'UPDATE') {
                 const originalRow = rowOrMatch;
@@ -288,9 +314,7 @@ const DB = (() => {
 
                 if (changes.length === 0) return;
 
-                const recordId = originalRow[pkName] || originalRow.SlNo;
-                const custName = originalRow.Name || (cache['installments']?.find(c => Number(c.SlNo) === Number(originalRow.SlNo))?.Name) || `Customer #${recordId}`;
-                const consumerNo = originalRow.ConsumerNo || '';
+                const { recordId, custName, consumerNo } = getRecordMeta(originalRow);
 
                 const logItem = {
                     id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
@@ -319,12 +343,18 @@ const DB = (() => {
             } else if (action === 'INSERT') {
                 const row = rowOrMatch;
                 if (!row) return;
-                const recordId = row[pkName] || row.SlNo;
-                const custName = row.Name || (cache['installments']?.find(c => Number(c.SlNo) === Number(row.SlNo))?.Name) || `Customer #${recordId}`;
+                const { recordId, custName, consumerNo } = getRecordMeta(row);
 
                 let changes = [{ field: 'Record Created', oldVal: null, newVal: custName }];
                 if (key === 'installment_txns') {
                     changes = [{ field: 'Payment Received', oldVal: null, newVal: '₹' + (Number(row.Amount) || 0).toLocaleString('en-IN') }];
+                } else if (key === 'shipments') {
+                    const type = row.ShipmentType || 'Buy';
+                    changes = [{ field: `${type} Shipment Created`, oldVal: null, newVal: `${row.VendorName || ''} - Transport: ₹${Number(row.TransportationCost) || 0}` }];
+                } else if (key === 'shipment_remarks') {
+                    changes = [{ field: 'Shipment Payment / Note Added', oldVal: null, newVal: row.Remark || '' }];
+                } else if (key === 'materials') {
+                    changes = [{ field: 'Shipment Item Added', oldVal: null, newVal: `${row.Quantity || 0} ${row.Unit || ''} of ${row.ItemName || ''}` }];
                 }
 
                 const logItem = {
@@ -339,7 +369,7 @@ const DB = (() => {
                     userRole: userRole,
                     recordId: recordId,
                     customerName: custName,
-                    consumerNo: row.ConsumerNo || '',
+                    consumerNo: consumerNo,
                     changes: changes,
                     previousRow: null,
                     newRow: { ...row },
@@ -353,8 +383,7 @@ const DB = (() => {
             } else if (action === 'DELETE') {
                 const row = rowOrMatch;
                 if (!row) return;
-                const recordId = row[pkName] || row.SlNo;
-                const custName = row.Name || (cache['installments']?.find(c => Number(c.SlNo) === Number(row.SlNo))?.Name) || `Customer #${recordId}`;
+                const { recordId, custName, consumerNo } = getRecordMeta(row);
 
                 const logItem = {
                     id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
@@ -368,7 +397,7 @@ const DB = (() => {
                     userRole: userRole,
                     recordId: recordId,
                     customerName: custName,
-                    consumerNo: row.ConsumerNo || '',
+                    consumerNo: consumerNo,
                     changes: [{ field: 'Record Deleted', oldVal: custName, newVal: null }],
                     previousRow: { ...row },
                     newRow: null,
@@ -402,6 +431,9 @@ const DB = (() => {
             } else if (act.action === 'INSERT') {
                 const pkVal = act.recordId;
                 await remove(act.table, r => (r[pkName] != null && String(r[pkName]) === String(pkVal)) || (Number(r.SlNo) === Number(pkVal)));
+                if (act.table === 'shipments') {
+                    await deleteBatch('materials', m => (m.ShipmentNo || m.shipmentno) === pkVal);
+                }
             } else if (act.action === 'DELETE') {
                 await insert(act.table, act.previousRow);
             }
@@ -442,6 +474,9 @@ const DB = (() => {
         const pkName = getPrimaryKey(key);
         const originalRow = cache[key]?.find(r => matchFn(r));
         const pkValue = originalRow ? (originalRow[pkName] !== undefined && originalRow[pkName] !== null ? originalRow[pkName] : originalRow[pkName ? pkName.toLowerCase() : '']) : null;
+        const targetPkValue = (pkValue !== null && pkValue !== undefined && pkValue !== '') 
+            ? pkValue 
+            : (newData && (newData[pkName] !== undefined && newData[pkName] !== null ? newData[pkName] : newData[pkName ? pkName.toLowerCase() : '']));
 
         if (originalRow) {
             recordActivity('UPDATE', key, originalRow, newData);
@@ -451,8 +486,8 @@ const DB = (() => {
         cache[key] = cache[key].map(r => matchFn(r) ? (key === 'installments' ? normalizeInstallmentRow({ ...r, ...newData }) : { ...r, ...newData }) : r);
         syncSessionCache();
 
-        if (mode === 'postgres' && pkValue !== null) {
-            const res = await fetch(`/api/update?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(pkValue)}`, {
+        if (mode === 'postgres' && targetPkValue !== null && targetPkValue !== undefined && targetPkValue !== '') {
+            const res = await fetch(`/api/update?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(targetPkValue)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newData)

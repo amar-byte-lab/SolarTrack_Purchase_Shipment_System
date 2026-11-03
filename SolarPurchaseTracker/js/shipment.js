@@ -11,6 +11,12 @@ let sortCol = 'PurchaseDate';
 let sortDir = 'desc';
 let activeTab = 'Buy';
 
+function matchShipmentNo(x, targetNo) {
+    if (!x || !targetNo) return false;
+    const no = (typeof x === 'string') ? x : (x.ShipmentNo || x.shipmentno || '');
+    return String(no).trim().toLowerCase() === String(targetNo).trim().toLowerCase();
+}
+
 let selectedColorCols = [];
 const COLORABLE_COLS = [
     { key: 'col-date', label: 'Date', default: '#ffffff' },
@@ -460,7 +466,7 @@ function toDateInputValue(d) {
     return dt.toISOString().slice(0, 10);
 }
 
-function createMaterialRow(data, defaultGstPercent = null) {
+function createMaterialRow(data, defaultGstPercent = null, skipRecalc = false) {
     const tbody = document.getElementById('editMaterialsTbody');
     if (!tbody) return;
 
@@ -479,6 +485,7 @@ function createMaterialRow(data, defaultGstPercent = null) {
     const savedTransport = data ? (data.TransportationCost !== undefined && data.TransportationCost !== null && data.TransportationCost !== '' ? Number(data.TransportationCost) : '') : '';
 
     const tr = document.createElement('tr');
+    if (data && data.Category) tr.dataset.category = data.Category;
     tr.innerHTML = `
     <td><input type="text"   class="form-control form-control-sm mat-name border-0 p-0 text-center" list="itemList" value="${data ? (data.ItemName || '') : ''}" placeholder="Item Name" autocomplete="off"></td>
     <td><input type="number" class="form-control form-control-sm mat-qty  border-0 p-0 text-end" min="0" step="any" value="${qty || ''}" autocomplete="off"></td>
@@ -519,20 +526,19 @@ function createMaterialRow(data, defaultGstPercent = null) {
             } else {
                 matTransportEl.dataset.userEdited = 'true';
                 matTransportEl.dataset.lastEditedTime = String(Date.now());
-
-                const allTransportEls = Array.from(document.querySelectorAll('#editMaterialsTbody .mat-transport'));
-                const editedEls = allTransportEls.filter(el => el.dataset.userEdited === 'true');
-                if (editedEls.length === allTransportEls.length && allTransportEls.length > 1) {
-                    editedEls.sort((a, b) => Number(a.dataset.lastEditedTime || 0) - Number(b.dataset.lastEditedTime || 0));
-                    delete editedEls[0].dataset.userEdited;
-                    delete editedEls[0].dataset.lastEditedTime;
-                }
             }
             recalcInlineForm();
         });
     }
 
+    function clearLoadedDbFlagIfNotUserEdited() {
+        if (matTransportEl && matTransportEl.dataset.userEdited !== 'true') {
+            delete matTransportEl.dataset.loadedFromDb;
+        }
+    }
+
     function onQtyInput() {
+        clearLoadedDbFlagIfNotUserEdited();
         const q = Number(qtyEl.value) || 0;
         const r = Number(rateEl.value) || 0;
         const g = Number(gstEl.value) || 0;
@@ -569,6 +575,7 @@ function createMaterialRow(data, defaultGstPercent = null) {
     }
 
     function onRateInput() {
+        clearLoadedDbFlagIfNotUserEdited();
         const q = Number(qtyEl.value) || 0;
         const r = Number(rateEl.value) || 0;
         const g = Number(gstEl.value) || 0;
@@ -595,6 +602,7 @@ function createMaterialRow(data, defaultGstPercent = null) {
     }
 
     function onGstInput() {
+        clearLoadedDbFlagIfNotUserEdited();
         const q = Number(qtyEl.value) || 0;
         const g = Number(gstEl.value) || 0;
         const r = Number(rateEl.value) || 0;
@@ -621,6 +629,7 @@ function createMaterialRow(data, defaultGstPercent = null) {
     }
 
     function onRateWithGstInput() {
+        clearLoadedDbFlagIfNotUserEdited();
         const q = Number(qtyEl.value) || 0;
         const rg = Number(rateWithGstEl.value) || 0;
         const g = Number(gstEl.value) || 0;
@@ -647,6 +656,7 @@ function createMaterialRow(data, defaultGstPercent = null) {
     }
 
     function onTotalInput() {
+        clearLoadedDbFlagIfNotUserEdited();
         const q = Number(qtyEl.value) || 0;
         const t = Number(totalEl.value) || 0;
         const g = Number(gstEl.value) || 0;
@@ -679,6 +689,7 @@ function createMaterialRow(data, defaultGstPercent = null) {
     }
 
     function onTotalWithoutGstInput() {
+        clearLoadedDbFlagIfNotUserEdited();
         const q = Number(qtyEl.value) || 0;
         const twg = Number(totalWithoutGstEl.value) || 0;
         const g = Number(gstEl.value) || 0;
@@ -739,7 +750,9 @@ function createMaterialRow(data, defaultGstPercent = null) {
     nameEl.addEventListener('input', handleItemSelection);
     nameEl.addEventListener('change', handleItemSelection);
 
-    recalcInlineForm();
+    if (!skipRecalc) {
+        recalcInlineForm();
+    }
 }
 
 window.removeMaterialRowInline = function (btn) {
@@ -753,11 +766,38 @@ window.addMaterialRowInline = function () {
     createMaterialRow(null, sysDefaultGst);
 };
 
-function recalcInlineForm() {
-    let transportCost = Number(document.getElementById('editTransportationCost').value) || 0;
+function updateSummaryLabels() {
+    const transportInput = document.getElementById('editTransportationCost');
+    const transportCost = transportInput ? (Number(transportInput.value) || 0) : 0;
     const addToMaterialCostChk = document.getElementById('editAddToMaterialCost');
     const isAddToMaterialCost = addToMaterialCostChk ? addToMaterialCostChk.checked : true;
-    const rows = document.querySelectorAll('#editMaterialsTbody tr');
+
+    const materials = readMaterialsFromInlineForm();
+    const effectiveMaterials = isAddToMaterialCost ? materials : materials.map(m => ({ ...m, TransportationCost: 0 }));
+    const result = Calc.computeShipment(effectiveMaterials, transportCost, 0);
+
+    const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
+    const lblGST = document.getElementById('lblGstAmount');
+    const lblTransport = document.getElementById('lblTransportCost');
+    const lblGrand = document.getElementById('lblGrandTotal');
+
+    if (lblSubtotal) lblSubtotal.textContent = UI.money(result.purchaseTotal);
+    if (lblGST) lblGST.textContent = UI.money(result.gstAmount);
+    if (lblTransport) lblTransport.textContent = UI.money(result.transport);
+    if (lblGrand) lblGrand.textContent = UI.money(result.grandTotal);
+}
+
+function recalcInlineForm(sourceEvent = null) {
+    const transportInput = document.getElementById('editTransportationCost');
+    const transportCost = transportInput ? (Number(transportInput.value) || 0) : 0;
+    const addToMaterialCostChk = document.getElementById('editAddToMaterialCost');
+    const isAddToMaterialCost = addToMaterialCostChk ? addToMaterialCostChk.checked : true;
+    const rows = Array.from(document.querySelectorAll('#editMaterialsTbody tr'));
+
+    if (rows.length === 0) {
+        updateSummaryLabels();
+        return;
+    }
 
     if (!isAddToMaterialCost) {
         rows.forEach(row => {
@@ -780,110 +820,105 @@ function recalcInlineForm() {
             }
         });
 
-        const rawMaterials = readMaterialsFromInlineForm();
-        const materialsNoTransport = rawMaterials.map(m => ({ ...m, TransportationCost: 0 }));
-        const result = Calc.computeShipment(materialsNoTransport, transportCost, 0);
-
-        const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
-        const lblGST = document.getElementById('lblGstAmount');
-        const lblTransport = document.getElementById('lblTransportCost');
-        const lblGrand = document.getElementById('lblGrandTotal');
-
-        if (lblSubtotal) lblSubtotal.textContent = UI.money(result.purchaseTotal);
-        if (lblGST) lblGST.textContent = UI.money(result.gstAmount);
-        if (lblTransport) lblTransport.textContent = UI.money(result.transport);
-        if (lblGrand) lblGrand.textContent = UI.money(result.grandTotal);
+        updateSummaryLabels();
         return;
     }
 
-    // 1. Enable transportEl fields when checked & restore lastVal if present
+    // 1. Enable transportEl fields when checked & restore lastVal if returning from unchecked
     rows.forEach(row => {
         const transportEl = row.querySelector('.mat-transport');
         if (transportEl) {
             transportEl.disabled = false;
-            if (transportEl.dataset.lastVal) {
+            if (transportEl.dataset.lastVal !== undefined) {
                 transportEl.value = transportEl.dataset.lastVal;
                 delete transportEl.dataset.lastVal;
             }
         }
     });
 
-    // 2. Calculate sum of user-edited transport costs on material rows
-    let sumUserEditedTransport = 0;
-    let hasUserEditedTransport = false;
-
-    rows.forEach(row => {
-        const tEl = row.querySelector('.mat-transport');
-        if (tEl && tEl.dataset.userEdited === 'true' && tEl.value.trim() !== '') {
-            sumUserEditedTransport += Number(tEl.value) || 0;
-            hasUserEditedTransport = true;
-        }
+    // 2. Check if all rows were loaded from DB and sum matches shipment transport cost
+    let canPreserveLoadedFromDb = false;
+    const allHaveLoadedFromDb = rows.every(r => {
+        const tEl = r.querySelector('.mat-transport');
+        return tEl && tEl.dataset.loadedFromDb === 'true';
     });
 
-    if (!hasUserEditedTransport) {
-        let sumLoadedTransport = 0;
-        let loadedCount = 0;
-
-        rows.forEach(row => {
-            const tEl = row.querySelector('.mat-transport');
-            if (tEl && tEl.dataset.loadedFromDb === 'true') {
-                sumLoadedTransport += Number(tEl.value) || 0;
-                loadedCount++;
+    if (allHaveLoadedFromDb && transportCost > 0) {
+        const sumLoaded = rows.reduce((s, r) => s + (Number(r.querySelector('.mat-transport')?.value) || 0), 0);
+        if (Math.abs(sumLoaded - transportCost) <= 0.05) {
+            canPreserveLoadedFromDb = true;
+            // Absorb any tiny penny drift into the last row
+            const lastRowTEl = rows[rows.length - 1].querySelector('.mat-transport');
+            if (lastRowTEl && Calc.round2(sumLoaded) !== Calc.round2(transportCost)) {
+                const diff = Calc.round2(transportCost - sumLoaded);
+                lastRowTEl.value = Calc.round2((Number(lastRowTEl.value) || 0) + diff);
             }
-        });
-
-        // Consider DB loaded values valid only if all rows were loaded, sum > 0, and sum matches shipment transportCost
-        const hasValidDbLoaded = (loadedCount === rows.length) && (sumLoadedTransport > 0) && (Calc.round2(sumLoadedTransport) === Calc.round2(transportCost));
-
-        if (!hasValidDbLoaded) {
-            let sumAllTotals = 0;
-            rows.forEach(row => {
-                sumAllTotals += Number(row.querySelector('.mat-total')?.value) || 0;
-            });
-
-            rows.forEach(row => {
-                const tEl = row.querySelector('.mat-transport');
-                const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
-                let share = 0;
-                if (sumAllTotals > 0 && transportCost > 0) {
-                    share = Calc.round2((totWithGst / sumAllTotals) * transportCost);
-                } else if (transportCost > 0 && rows.length > 0) {
-                    share = Calc.round2(transportCost / rows.length);
-                }
-                if (tEl) tEl.value = share;
-            });
         }
-    } else {
-        let remTransportCost = Math.max(0, transportCost - sumUserEditedTransport);
-        let sumUneditedTotals = 0;
-        let uneditedCount = 0;
-
-        rows.forEach(row => {
-            const tEl = row.querySelector('.mat-transport');
-            if (!tEl || tEl.dataset.userEdited !== 'true' || tEl.value.trim() === '') {
-                sumUneditedTotals += Number(row.querySelector('.mat-total')?.value) || 0;
-                uneditedCount++;
-            }
-        });
-
-        rows.forEach(row => {
-            const tEl = row.querySelector('.mat-transport');
-            if (!tEl || tEl.dataset.userEdited !== 'true' || tEl.value.trim() === '') {
-                const totWithGst = Number(row.querySelector('.mat-total')?.value) || 0;
-                let share = 0;
-                if (sumUneditedTotals > 0 && remTransportCost > 0) {
-                    share = Calc.round2((totWithGst / sumUneditedTotals) * remTransportCost);
-                } else if (remTransportCost > 0 && uneditedCount > 0) {
-                    share = Calc.round2(remTransportCost / uneditedCount);
-                } else {
-                    share = 0;
-                }
-                if (tEl) tEl.value = share;
-            }
-        });
     }
 
-    // 4. Process each row to update TRANS./UNIT, MSP/UNIT, and summary labels
+    // 3. Auto-proportionate allocation if not preserving loaded DB values
+    if (!canPreserveLoadedFromDb) {
+        const userEditedRows = [];
+        const autoRows = [];
+
+        rows.forEach(row => {
+            const tEl = row.querySelector('.mat-transport');
+            if (tEl && tEl.dataset.userEdited === 'true' && tEl.value.trim() !== '') {
+                userEditedRows.push(row);
+            } else {
+                autoRows.push(row);
+            }
+        });
+
+        const sumUserEdited = userEditedRows.reduce((s, r) => s + (Number(r.querySelector('.mat-transport')?.value) || 0), 0);
+        const remTransport = Math.max(0, Calc.round2(transportCost - sumUserEdited));
+
+        if (autoRows.length > 0) {
+            if (remTransport <= 0) {
+                autoRows.forEach(row => {
+                    const tEl = row.querySelector('.mat-transport');
+                    if (tEl) tEl.value = 0;
+                });
+            } else {
+                let sumAutoTotals = 0;
+                autoRows.forEach(row => {
+                    sumAutoTotals += Number(row.querySelector('.mat-total')?.value) || 0;
+                });
+
+                let allocatedSum = 0;
+                if (sumAutoTotals > 0) {
+                    autoRows.forEach((row, idx) => {
+                        const tEl = row.querySelector('.mat-transport');
+                        if (!tEl) return;
+                        let share = 0;
+                        if (idx === autoRows.length - 1) {
+                            share = Calc.round2(remTransport - allocatedSum);
+                        } else {
+                            const rowTot = Number(row.querySelector('.mat-total')?.value) || 0;
+                            share = Calc.round2((rowTot / sumAutoTotals) * remTransport);
+                            allocatedSum += share;
+                        }
+                        tEl.value = share >= 0 ? share : 0;
+                    });
+                } else {
+                    autoRows.forEach((row, idx) => {
+                        const tEl = row.querySelector('.mat-transport');
+                        if (!tEl) return;
+                        let share = 0;
+                        if (idx === autoRows.length - 1) {
+                            share = Calc.round2(remTransport - allocatedSum);
+                        } else {
+                            share = Calc.round2(remTransport / autoRows.length);
+                            allocatedSum += share;
+                        }
+                        tEl.value = share >= 0 ? share : 0;
+                    });
+                }
+            }
+        }
+    }
+
+    // 4. Update Trans./Unit and MSP/Unit for every row
     rows.forEach(row => {
         const transportEl = row.querySelector('.mat-transport');
         const transportUnitEl = row.querySelector('.mat-transport-unit');
@@ -897,7 +932,7 @@ function recalcInlineForm() {
         if (q > 0) {
             transportPerUnit = Calc.round2(transportShare / q);
         }
-        if (transportUnitEl) transportUnitEl.value = transportPerUnit ? transportPerUnit : 0;
+        if (transportUnitEl) transportUnitEl.value = transportPerUnit || 0;
 
         if (mspEl) {
             const autoMsp = Calc.round2(rate + transportPerUnit);
@@ -905,20 +940,10 @@ function recalcInlineForm() {
         }
     });
 
-    // 5. Read updated materials AFTER fields are populated
-    const materials = readMaterialsFromInlineForm();
-    const result = Calc.computeShipment(materials, transportCost, 0);
-
-    const lblSubtotal = document.getElementById('lblMaterialsSubtotal');
-    const lblGST = document.getElementById('lblGstAmount');
-    const lblTransport = document.getElementById('lblTransportCost');
-    const lblGrand = document.getElementById('lblGrandTotal');
-
-    if (lblSubtotal) lblSubtotal.textContent = UI.money(result.purchaseTotal);
-    if (lblGST) lblGST.textContent = UI.money(result.gstAmount);
-    if (lblTransport) lblTransport.textContent = UI.money(result.transport);
-    if (lblGrand) lblGrand.textContent = UI.money(result.grandTotal);
+    // 5. Update summary labels
+    updateSummaryLabels();
 }
+
 
 function readMaterialsFromInlineForm() {
     const rows = document.querySelectorAll('#editMaterialsTbody tr');
@@ -926,7 +951,7 @@ function readMaterialsFromInlineForm() {
     return Array.from(rows).map(row => {
         const itemName = row.querySelector('.mat-name')?.value?.trim() || '';
         const matched = items.find(i => i.ItemName && i.ItemName.toLowerCase() === itemName.toLowerCase());
-        const category = matched ? (matched.Category || '') : '';
+        const category = (matched ? matched.Category : '') || row.dataset.category || '';
 
         const qty = Number(row.querySelector('.mat-qty')?.value) || 0;
         const rate = Number(row.querySelector('.mat-rate')?.value) || 0;
@@ -1016,7 +1041,14 @@ function setupModalListenersOnce() {
 
     // Calculation inputs recalculate form
     document.getElementById('shipmentFormModal').addEventListener('input', (e) => {
-        if (e.target.classList.contains('edit-calc-input')) {
+        if (e.target.id === 'editTransportationCost') {
+            document.querySelectorAll('#editMaterialsTbody .mat-transport').forEach(tEl => {
+                if (tEl.dataset.userEdited !== 'true') {
+                    delete tEl.dataset.loadedFromDb;
+                }
+            });
+            recalcInlineForm();
+        } else if (e.target.classList.contains('edit-calc-input')) {
             recalcInlineForm();
         }
     });
@@ -1063,7 +1095,7 @@ window.addInlineRow = function () {
 
     // Set defaults in inputs
     document.getElementById('editPurchaseDate').value = UI.todayISO();
-    document.getElementById('editShipmentType').value = 'Buy';
+    document.getElementById('editShipmentType').value = (activeTab === 'Sell' ? 'Sell' : 'Buy');
     updateModalPaidLabel();
     document.getElementById('editVendorName').value = '';
     document.getElementById('editVehicleNumber').value = '';
@@ -1081,17 +1113,17 @@ window.addInlineRow = function () {
     const matTbody = document.getElementById('editMaterialsTbody');
     if (matTbody) {
         matTbody.innerHTML = '';
-        createMaterialRow(null, Utils.getDefaultGST(18));
+        createMaterialRow(null, Utils.getDefaultGST(18), true);
     }
 
-    recalcInlineForm();
+    recalcInlineForm('init_load');
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('shipmentFormModal'));
     modal.show();
 };
 
 window.editRow = function (shipmentNo) {
-    const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+    const s = DB.getAll('shipments').find(x => matchShipmentNo(x, shipmentNo));
     if (!s) return;
 
     editingShipmentNo = shipmentNo;
@@ -1122,19 +1154,19 @@ window.editRow = function (shipmentNo) {
     setupModalListenersOnce();
     renderUploadedDocsList();
 
-    const editMats = DB.getAll('materials').filter(m => m.ShipmentNo === shipmentNo);
+    const editMats = DB.getAll('materials').filter(m => matchShipmentNo(m, shipmentNo));
     const matTbody = document.getElementById('editMaterialsTbody');
     if (matTbody) {
         matTbody.innerHTML = '';
         const defaultGst = (s.GSTPercentage !== undefined && s.GSTPercentage !== null && s.GSTPercentage !== '') ? Number(s.GSTPercentage) : Utils.getDefaultGST(18);
         if (editMats.length) {
-            editMats.forEach(m => createMaterialRow(m, defaultGst));
+            editMats.forEach(m => createMaterialRow(m, defaultGst, true));
         } else {
-            createMaterialRow(null, defaultGst);
+            createMaterialRow(null, defaultGst, true);
         }
     }
 
-    recalcInlineForm();
+    recalcInlineForm('init_load');
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('shipmentFormModal'));
     modal.show();
@@ -1160,11 +1192,11 @@ window.saveInline = async function (shipmentNo) {
         return;
     }
 
-    const existingShipment = DB.getAll('shipments').find(s => s.ShipmentNo === shipmentNo);
+    const existingShipment = DB.getAll('shipments').find(s => matchShipmentNo(s, shipmentNo));
     const isEdit = !isAddingNew || !!existingShipment;
     const purchaseDate = document.getElementById('editPurchaseDate').value;
     const vendorName = document.getElementById('editVendorName').value.trim();
-    const shipmentType = document.getElementById('editShipmentType').value;
+    const shipmentType = document.getElementById('editShipmentType').value || 'Buy';
 
     const transportationCost = document.getElementById('editTransportationCost').value;
     const elVendorPaid = document.getElementById('editVendorPaid');
@@ -1233,18 +1265,20 @@ window.saveInline = async function (shipmentNo) {
             Documents: docNames,
             Remarks: remarks,
             AddToMaterialCost: addToMaterialCostVal,
-            CreatedAt: isEdit ? (existingShipment?.CreatedAt || new Date().toISOString()) : new Date().toISOString(),
+            CreatedAt: isEdit ? (existingShipment?.CreatedAt || existingShipment?.createdat || new Date().toISOString()) : new Date().toISOString(),
         };
 
-        const exists = DB.getAll('shipments').some(s => s.ShipmentNo === shipmentNo);
+        if (existingShipment && existingShipment.Status) {
+            shipmentRow.Status = existingShipment.Status;
+        }
+
+        const exists = DB.getAll('shipments').some(s => matchShipmentNo(s, shipmentNo));
         if (exists) {
-            await DB.update('shipments', s => s.ShipmentNo === shipmentNo, shipmentRow);
+            await DB.update('shipments', s => matchShipmentNo(s, shipmentNo), shipmentRow);
         } else {
             await DB.insert('shipments', shipmentRow);
         }
 
-        // Replace all material rows for this shipment
-        const allMaterials = DB.getAll('materials').filter(m => m.ShipmentNo !== shipmentNo);
         const newRows = materials.map(m => {
             const transportShareVal = addToMaterialCostVal === 1
                 ? (m.TransportationCost !== undefined && m.TransportationCost !== null && m.TransportationCost !== '' ? Number(m.TransportationCost) : 0)
@@ -1254,24 +1288,38 @@ window.saveInline = async function (shipmentNo) {
                 RowID: Utils.uid('MAT'),
                 ShipmentNo: shipmentNo,
                 ItemName: m.ItemName,
-                Category: m.Category,
+                Category: m.Category || '',
                 Quantity: m.Quantity,
-                Unit: m.Unit,
+                Unit: m.Unit || '',
                 PurchaseRate: m.PurchaseRate,
                 TotalPurchaseValue: m.TotalPurchaseValue || Calc.round2(m.Quantity * m.PurchaseRate * (1 + (m.GSTPercentage || 0) / 100)),
                 GSTPercentage: m.GSTPercentage,
                 TransportationCost: transportShareVal,
             };
         });
-        await DB.replaceAll('materials', [...allMaterials, ...newRows]);
+
+        // Safely delete only the materials belonging to this specific shipment and insert the updated ones
+        await DB.deleteBatch('materials', m => matchShipmentNo(m, shipmentNo));
+        if (newRows.length > 0) {
+            await DB.insertBatch('materials', newRows);
+        }
 
         // Auto-add any new vendor/items to their masters
-        await autoAddVendorIfMissing(vendorName);
-        for (const m of materials) await autoAddItemIfMissing(m);
+        try {
+            await autoAddVendorIfMissing(vendorName);
+            for (const m of materials) await autoAddItemIfMissing(m);
+        } catch (masterErr) {
+            console.warn('Auto-add masters warning:', masterErr);
+        }
 
         UI.showLoading(false);
         UI.toast(`Shipment ${shipmentNo} saved successfully.`, 'success');
         populateDatalists();
+
+        // Ensure the active tab matches the saved shipment type so it is immediately visible
+        if (typeof window.switchMainTab === 'function' && shipmentType && shipmentType !== activeTab) {
+            window.switchMainTab(shipmentType);
+        }
         cancelInline();
     } catch (e) {
         UI.showLoading(false);
@@ -1281,22 +1329,30 @@ window.saveInline = async function (shipmentNo) {
 
 async function autoAddVendorIfMissing(name) {
     if (!name) return;
-    const vendors = DB.getAll('vendors');
-    if (!vendors.some(v => v.VendorName === name)) {
-        await DB.insert('vendors', { VendorName: name, Address: '', Phone: '', GSTIN: '', Email: '', Remarks: 'Auto-added from Shipment' });
+    try {
+        const vendors = DB.getAll('vendors');
+        if (!vendors.some(v => (v.VendorName || '').toLowerCase() === name.toLowerCase())) {
+            await DB.insert('vendors', { VendorName: name, Address: '', Phone: '', GSTIN: '', Email: '', Remarks: 'Auto-added from Shipment' });
+        }
+    } catch (e) {
+        console.warn('autoAddVendorIfMissing warning:', e);
     }
 }
 
 async function autoAddItemIfMissing(m) {
     if (!m.ItemName) return;
-    const items = DB.getAll('items');
-    if (!items.some(i => i.ItemName === m.ItemName)) {
-        await DB.insert('items', { ItemName: m.ItemName, Category: m.Category || '', Unit: m.Unit || '', HSNCode: '', GSTPercent: '', Status: 'Active' });
+    try {
+        const items = DB.getAll('items');
+        if (!items.some(i => (i.ItemName || '').toLowerCase() === m.ItemName.toLowerCase())) {
+            await DB.insert('items', { ItemName: m.ItemName, Category: m.Category || '', Unit: m.Unit || '', HSNCode: '', GSTPercent: '', Status: 'Active' });
+        }
+    } catch (e) {
+        console.warn('autoAddItemIfMissing warning:', e);
     }
 }
 
 window.deleteShipment = async function (shipmentNo) {
-    const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+    const s = DB.getAll('shipments').find(x => matchShipmentNo(x, shipmentNo));
     if (!s) return;
 
     const ok = await UI.confirmDialog(`Soft delete shipment ${shipmentNo}? It will be hidden from active list but preserved in database.`, 'Delete Shipment', 'Soft Delete', 'btn-danger');
@@ -1304,7 +1360,7 @@ window.deleteShipment = async function (shipmentNo) {
 
     UI.showLoading(true);
     try {
-        await DB.update('shipments', x => x.ShipmentNo === shipmentNo, {
+        await DB.update('shipments', x => matchShipmentNo(x, shipmentNo), {
             ...s,
             Status: 'Deleted',
             DeletedAt: new Date().toISOString()
@@ -1319,12 +1375,12 @@ window.deleteShipment = async function (shipmentNo) {
 };
 
 window.restoreShipment = async function (shipmentNo) {
-    const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+    const s = DB.getAll('shipments').find(x => matchShipmentNo(x, shipmentNo));
     if (!s) return;
 
     UI.showLoading(true);
     try {
-        await DB.update('shipments', x => x.ShipmentNo === shipmentNo, {
+        await DB.update('shipments', x => matchShipmentNo(x, shipmentNo), {
             ...s,
             Status: 'Active',
             DeletedAt: null
@@ -1806,7 +1862,7 @@ window.deletePaymentLog = async function (remarkId) {
 async function savePaymentEntry() {
     if (!activePayShipmentNo || activePayShipmentNo === 'TOTAL') return;
     const shipmentNo = activePayShipmentNo;
-    const s = DB.getAll('shipments').find(x => x.ShipmentNo === shipmentNo);
+    const s = DB.getAll('shipments').find(x => matchShipmentNo(x, shipmentNo));
     if (!s) return;
 
     const dateVal = document.getElementById('payInputDate').value;
