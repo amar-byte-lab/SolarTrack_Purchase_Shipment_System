@@ -2638,7 +2638,7 @@ const InventoryApp = (() => {
 
     if (dateInput) dateInput.value = firstInw.date || new Date().toISOString().slice(0, 10);
     if (supplierInput) supplierInput.value = firstInw.supplier || '';
-    if (locationInput) locationInput.value = firstInw.location || 'Main Godown — Bay A';
+    if (locationInput) locationInput.value = firstInw.location || 'Talamundali';
 
     // Consignment Transport Cost
     const savedConsignmentTransport = Number(firstInw.consignmentTransportCost !== undefined ? firstInw.consignmentTransportCost : firstInw.ConsignmentTransportCost);
@@ -2723,7 +2723,7 @@ const InventoryApp = (() => {
 
     if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
     if (supplierInput) supplierInput.value = '';
-    if (locationInput) locationInput.value = 'Main Godown — Bay A';
+    if (locationInput) locationInput.value = 'Talamundali';
     if (transportInput) transportInput.value = '';
     if (remarksInput) remarksInput.value = '';
 
@@ -3328,7 +3328,7 @@ const InventoryApp = (() => {
               <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-other-cost py-0.5 px-1" data-cust-row-id="${row.id}" value="${row.otherCost !== undefined && row.otherCost !== '' ? row.otherCost : ''}" placeholder="0.00" style="height: 26px; font-size:0.76rem;">
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm dsp-cust-other-comment py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Other cost remark / purpose..." style="height: 26px; font-size:0.74rem;">
+              <input type="text" class="form-control form-control-sm dsp-cust-other-comment py-0.5 px-1.5" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Remark..." style="height: 26px; font-size:0.74rem;">
             </td>
             <td class="text-end font-monospace fw-bold text-dark dsp-cust-row-total" data-cust-row-id="${row.id}" style="width: 105px; font-size:0.78rem;">
               ${fmtRupees(totalCustCost)}
@@ -3400,8 +3400,8 @@ const InventoryApp = (() => {
                   <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace dsp-cust-other-cost" data-cust-row-id="${row.id}" value="${row.otherCost !== undefined && row.otherCost !== '' ? row.otherCost : ''}" placeholder="0.00">
                 </div>
                 <div class="inv-inw-card-col" style="grid-column: span 2;">
-                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Other Remark / Note</label>
-                  <input type="text" class="form-control form-control-sm dsp-cust-other-comment" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Other cost remark...">
+                  <label class="form-label text-secondary fs-8 fw-semibold mb-1">Remark</label>
+                  <input type="text" class="form-control form-control-sm dsp-cust-other-comment" data-cust-row-id="${row.id}" value="${escapeHtml(row.otherComment || '')}" placeholder="Remark...">
                 </div>
                 <div class="inv-inw-card-col" style="grid-column: span 2;">
                   <div class="d-flex justify-content-between align-items-center p-1.5">
@@ -3536,7 +3536,12 @@ const InventoryApp = (() => {
   }
 
   function removeDspRow(rowId) {
-    if (dispatchRows.length <= 1) return;
+    if (dispatchRows.length <= 1) {
+      dispatchRows = [];
+      renderDspRows();
+      recalcDispatchTotals();
+      return;
+    }
     dispatchRows = dispatchRows.filter(r => r.id !== rowId);
     renderDspRows();
     recalcDispatchTotals();
@@ -3551,7 +3556,16 @@ const InventoryApp = (() => {
     const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
 
     if (tbody) {
-      tbody.innerHTML = dispatchRows.map((row) => {
+      if (dispatchRows.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-2 text-muted" style="font-size:0.75rem;">
+              No equipment items added. Click "+ Add Item" above if you wish to dispatch equipment.
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = dispatchRows.map((row) => {
         const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
         const origQty = (editingDispatchChallanNo && (!row.originalItemCode || row.originalItemCode === row.itemCode) && row.originalQty !== undefined) ? Number(row.originalQty) : 0;
         const inHand = (Number(item.inHandQty) || 0) + origQty;
@@ -3615,16 +3629,24 @@ const InventoryApp = (() => {
               ${fmtRupees(lineTotal)}
             </td>
             <td class="text-center p-0" style="width: 36px;">
-              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center btn-remove-dsp-row" data-row-id="${row.id}" style="width:26px; height:26px; border-radius: 4px;" title="Remove" ${dispatchRows.length <= 1 ? 'disabled style="width:26px; height:26px; opacity:0.25; cursor:not-allowed;"' : ''}>✕</button>
+              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-inline-flex align-items-center justify-content-center btn-remove-dsp-row" data-row-id="${row.id}" style="width:26px; height:26px; border-radius: 4px;" title="Remove">✕</button>
             </td>
           </tr>
         `;
       }).join('');
+      }
       attachDspRowHandlers(tbody, ledger);
     }
 
     if (mobContainer) {
-      mobContainer.innerHTML = dispatchRows.map((row) => {
+      if (dispatchRows.length === 0) {
+        mobContainer.innerHTML = `
+          <div class="text-center py-2 text-muted border rounded p-2" style="font-size:0.75rem;">
+            No equipment items added. Click "+ Add Item" above if you wish to dispatch equipment.
+          </div>
+        `;
+      } else {
+        mobContainer.innerHTML = dispatchRows.map((row) => {
         const item = ledger.find(i => i.code === row.itemCode) || ledger[0] || {};
         const origQty = (editingDispatchChallanNo && (!row.originalItemCode || row.originalItemCode === row.itemCode) && row.originalQty !== undefined) ? Number(row.originalQty) : 0;
         const inHand = (Number(item.inHandQty) || 0) + origQty;
@@ -3659,7 +3681,7 @@ const InventoryApp = (() => {
                   </div>
                 </div>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center flex-shrink-0 btn-remove-dsp-row" data-row-id="${row.id}" style="width: 26px; height: 26px; border-radius: 4px;" title="Remove Item" ${dispatchRows.length <= 1 ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : ''}>✕</button>
+              <button type="button" class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center flex-shrink-0 btn-remove-dsp-row" data-row-id="${row.id}" style="width: 26px; height: 26px; border-radius: 4px;" title="Remove Item">✕</button>
             </div>
 
             <!-- Card Body -->
@@ -3709,6 +3731,7 @@ const InventoryApp = (() => {
           </div>
         `;
       }).join('');
+      }
       attachDspRowHandlers(mobContainer, ledger);
     }
   }
@@ -3811,7 +3834,6 @@ const InventoryApp = (() => {
     let totalMaterialCost = 0;
     let totalUnits = 0;
     let hasOverStock = false;
-    let hasEmptyOrZeroQty = false;
     const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
 
     dispatchRows.forEach(row => {
@@ -3819,12 +3841,12 @@ const InventoryApp = (() => {
       const origQty = (editingDispatchChallanNo && (!row.originalItemCode || row.originalItemCode === row.itemCode) && row.originalQty !== undefined) ? Number(row.originalQty) : 0;
       const inHand = (Number(item.inHandQty) || 0) + origQty;
       const qty = Number(row.qty) || 0;
-      if (qty <= 0) hasEmptyOrZeroQty = true;
-      if (mapWithStock && qty > inHand) hasOverStock = true;
-
-      const unitPrice = Number(row.unitPrice !== undefined ? row.unitPrice : item.buyingPrice) || 0;
-      totalUnits += qty;
-      totalMaterialCost += (qty * unitPrice);
+      if (qty > 0) {
+        if (mapWithStock && qty > inHand) hasOverStock = true;
+        const unitPrice = Number(row.unitPrice !== undefined ? row.unitPrice : item.buyingPrice) || 0;
+        totalUnits += qty;
+        totalMaterialCost += (qty * unitPrice);
+      }
     });
 
     const isOurProject = document.getElementById('dspIsOurProject')?.checked ?? true;
@@ -3875,9 +3897,6 @@ const InventoryApp = (() => {
       if (hasOverStock) {
         alertBox.style.display = 'block';
         alertBox.textContent = 'Requested quantity exceeds warehouse stock. Please adjust quantities.';
-        if (submitBtn) submitBtn.disabled = true;
-      } else if (hasEmptyOrZeroQty) {
-        alertBox.style.display = 'none';
         if (submitBtn) submitBtn.disabled = true;
       } else {
         alertBox.style.display = 'none';
@@ -3966,15 +3985,7 @@ const InventoryApp = (() => {
         };
       });
     } else {
-      const availableLedger = ledger.filter(i => i.inHandQty > 0);
-      let targetItem = availableLedger.length > 0 ? availableLedger[0] : ledger[0];
-      dispatchRows = [
-        {
-          id: 'dsp_' + Date.now(),
-          itemCode: targetItem ? targetItem.code : '',
-          qty: targetItem && targetItem.inHandQty > 0 ? 1 : ''
-        }
-      ];
+      dispatchRows = [];
     }
 
     renderDspRows();
@@ -4022,10 +4033,8 @@ const InventoryApp = (() => {
       return;
     }
 
-    if (!dispatchRows || dispatchRows.length === 0) {
-      if (typeof UI !== 'undefined') UI.toast('Please add at least one item to dispatch', 'warning');
-      return;
-    }
+    // Filter active items with valid code & quantity
+    const activeDispatchRows = (dispatchRows || []).filter(r => r.itemCode && Number(r.qty) > 0);
 
     const isEditing = Boolean(editingDispatchChallanNo || (editingDispatchIds && editingDispatchIds.length > 0));
     const challanNoToUse = editingDispatchChallanNo || `DC-${Date.now().toString().slice(-4)}`;
@@ -4041,18 +4050,14 @@ const InventoryApp = (() => {
 
     const mapWithStock = document.getElementById('dspMapWithStock')?.checked ?? true;
 
-    for (let i = 0; i < dispatchRows.length; i++) {
-      const r = dispatchRows[i];
+    for (let i = 0; i < activeDispatchRows.length; i++) {
+      const r = activeDispatchRows[i];
       const item = ledger.find(it => it.code === r.itemCode);
       if (!item) {
         if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Item not found in catalog`, 'warning');
         return;
       }
       const qty = Number(r.qty);
-      if (!qty || qty <= 0) {
-        if (typeof UI !== 'undefined') UI.toast(`Row #${i + 1}: Enter a valid quantity to dispatch`, 'warning');
-        return;
-      }
 
       if (mapWithStock) {
         let maxAvailable = Number(item.inHandQty) || 0;
@@ -4113,25 +4118,17 @@ const InventoryApp = (() => {
       const cleanRemarks = remarks ? remarks.replace(/\s*\|mapWithStock:(true|false)/g, '').replace(/\s*\|logistics:[\s\S]*/g, '').trim() : '';
       const logisticsRemarks = cleanRemarks ? `${cleanRemarks}${stockTag} |logistics:${JSON.stringify(logisticsMeta)}` : `${stockTag} |logistics:${JSON.stringify(logisticsMeta)}`;
 
-      for (let idx = 0; idx < dispatchRows.length; idx++) {
-        const r = dispatchRows[idx];
-        const item = ledger.find(it => it.code === r.itemCode);
-        const qty = Number(r.qty);
-        const unitPrice = Number(r.unitPrice !== undefined ? r.unitPrice : item.buyingPrice) || 0;
-        const dispatchedCost = round2(qty * unitPrice);
-        totalDispatchedCost += dispatchedCost;
-        totalDispatchedUnits += qty;
-
+      if (activeDispatchRows.length === 0) {
         const newDispatch = {
-          id: (isEditing && r.originalDispatchId) ? r.originalDispatchId : `DSP-${Date.now()}-${idx + 1}`,
+          id: (isEditing && editingDispatchIds && editingDispatchIds.length > 0) ? editingDispatchIds[0] : `DSP-${Date.now()}-1`,
           date,
           challanNo: challanNoToUse,
           siteName: effectiveSiteName,
-          itemCode: r.itemCode,
-          qty,
-          unitBuyingPrice: unitPrice,
-          dispatchedCost,
-          transportCost: idx === 0 ? totalDeliveryCost : 0,
+          itemCode: null,
+          qty: 0,
+          unitBuyingPrice: 0,
+          dispatchedCost: 0,
+          transportCost: totalDeliveryCost,
           vehicle,
           remarks: logisticsRemarks,
           isOurProject,
@@ -4154,10 +4151,10 @@ const InventoryApp = (() => {
               Date: newDispatch.date,
               ChallanNo: newDispatch.challanNo,
               SiteName: newDispatch.siteName,
-              ItemCode: newDispatch.itemCode,
-              Quantity: newDispatch.qty,
-              UnitBuyingPrice: newDispatch.unitBuyingPrice,
-              DispatchedCost: newDispatch.dispatchedCost,
+              ItemCode: null,
+              Quantity: 0,
+              UnitBuyingPrice: 0,
+              DispatchedCost: 0,
               TransportCost: newDispatch.transportCost,
               Vehicle: newDispatch.vehicle,
               Remarks: newDispatch.remarks,
@@ -4166,6 +4163,62 @@ const InventoryApp = (() => {
               CreatedAt: new Date().toISOString()
             });
           } catch (e) {}
+        }
+      } else {
+        for (let idx = 0; idx < activeDispatchRows.length; idx++) {
+          const r = activeDispatchRows[idx];
+          const item = ledger.find(it => it.code === r.itemCode);
+          const qty = Number(r.qty);
+          const unitPrice = Number(r.unitPrice !== undefined ? r.unitPrice : item.buyingPrice) || 0;
+          const dispatchedCost = round2(qty * unitPrice);
+          totalDispatchedCost += dispatchedCost;
+          totalDispatchedUnits += qty;
+
+          const newDispatch = {
+            id: (isEditing && r.originalDispatchId) ? r.originalDispatchId : `DSP-${Date.now()}-${idx + 1}`,
+            date,
+            challanNo: challanNoToUse,
+            siteName: effectiveSiteName,
+            itemCode: r.itemCode,
+            qty,
+            unitBuyingPrice: unitPrice,
+            dispatchedCost,
+            transportCost: idx === 0 ? totalDeliveryCost : 0,
+            vehicle,
+            remarks: logisticsRemarks,
+            isOurProject,
+            mapWithStock,
+            distanceKm,
+            costPerKm,
+            totalDeliveryCost,
+            customerAllocations,
+            docName: dispatchDocFiles.map(f => f.name).join(', ') || (dispatchDocFile ? dispatchDocFile.name : null),
+            docData: dispatchDocFiles.length > 0 ? (dispatchDocFiles[0].data || dispatchDocFiles[0].url) : (dispatchDocFile ? dispatchDocFile.data : null),
+            documents: dispatchDocFiles.map(f => ({ name: f.name, size: f.size, url: f.url, data: f.data }))
+          };
+
+          dispatches.unshift(newDispatch);
+
+          if (typeof DB !== 'undefined') {
+            try {
+              await DB.insert('inventory_dispatches', {
+                DispatchID: newDispatch.id,
+                Date: newDispatch.date,
+                ChallanNo: newDispatch.challanNo,
+                SiteName: newDispatch.siteName,
+                ItemCode: newDispatch.itemCode,
+                Quantity: newDispatch.qty,
+                UnitBuyingPrice: newDispatch.unitBuyingPrice,
+                DispatchedCost: newDispatch.dispatchedCost,
+                TransportCost: newDispatch.transportCost,
+                Vehicle: newDispatch.vehicle,
+                Remarks: newDispatch.remarks,
+                DocumentName: newDispatch.docName,
+                DocumentData: newDispatch.docData,
+                CreatedAt: new Date().toISOString()
+              });
+            } catch (e) {}
+          }
         }
       }
 
@@ -4254,7 +4307,9 @@ const InventoryApp = (() => {
       if (typeof UI !== 'undefined') {
         UI.toast(isEditing
           ? `Successfully updated dispatch to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`
-          : `Successfully dispatched ${dispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`,
+          : (activeDispatchRows.length > 0
+              ? `Successfully dispatched ${activeDispatchRows.length} items (${fmtQty(totalDispatchedUnits)} units) to "${effectiveSiteName}". Material Cost: ${fmtRupees(totalDispatchedCost)}. Delivery: ${fmtRupees(totalDeliveryCost)}.`
+              : `Successfully recorded dispatch to "${effectiveSiteName}". Delivery: ${fmtRupees(totalDeliveryCost)}.`),
           'success');
       }
     } finally {
@@ -5373,20 +5428,18 @@ const InventoryApp = (() => {
     // Populate Dispatched Items
     dispatchRows = [];
     matchingDispatches.forEach(d => {
-      dispatchRows.push({
-        id: 'dsprow_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        itemCode: d.itemCode,
-        originalItemCode: d.itemCode,
-        qty: d.qty,
-        originalQty: Number(d.qty) || 0,
-        unitPrice: d.unitBuyingPrice !== undefined ? d.unitBuyingPrice : null,
-        originalDispatchId: d.id
-      });
+      if (d.itemCode && (Number(d.qty) > 0 || d.qty !== '')) {
+        dispatchRows.push({
+          id: 'dsprow_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          itemCode: d.itemCode,
+          originalItemCode: d.itemCode,
+          qty: d.qty,
+          originalQty: Number(d.qty) || 0,
+          unitPrice: d.unitBuyingPrice !== undefined ? d.unitBuyingPrice : null,
+          originalDispatchId: d.id
+        });
+      }
     });
-
-    if (dispatchRows.length === 0) {
-      addDspRow();
-    }
 
     renderDspRows();
     recalcDispatchTotals();

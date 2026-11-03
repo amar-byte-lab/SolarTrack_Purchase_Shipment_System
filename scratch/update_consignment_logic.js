@@ -59,7 +59,7 @@ const replacement = `  let editingConsignmentInvoiceNo = null;
 
     if (dateInput) dateInput.value = firstInw.date || new Date().toISOString().slice(0, 10);
     if (supplierInput) supplierInput.value = firstInw.supplier || '';
-    if (locationInput) locationInput.value = firstInw.location || 'Main Godown — Bay A';
+    if (locationInput) locationInput.value = firstInw.location || 'Talamundali';
 
     // Consignment Transport Cost
     const savedConsignmentTransport = Number(firstInw.consignmentTransportCost !== undefined ? firstInw.consignmentTransportCost : firstInw.ConsignmentTransportCost);
@@ -142,7 +142,7 @@ const replacement = `  let editingConsignmentInvoiceNo = null;
 
     if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
     if (supplierInput) supplierInput.value = '';
-    if (locationInput) locationInput.value = 'Main Godown — Bay A';
+    if (locationInput) locationInput.value = 'Talamundali';
     if (transportInput) transportInput.value = '';
     if (remarksInput) remarksInput.value = '';
 

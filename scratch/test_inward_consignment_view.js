@@ -16,7 +16,7 @@ const db = require('../db');
     TransportCost: 500,
     ConsignmentTransportCost: 500,
     TotalCost: 22900,
-    Location: 'Main Godown — Bay A',
+    Location: 'Talamundali',
     Remarks: 'First batch test'
   };
   const item2 = {
@@ -32,7 +32,7 @@ const db = require('../db');
     TransportCost: 0,
     ConsignmentTransportCost: 500,
     TotalCost: 59000,
-    Location: 'Main Godown — Bay A',
+    Location: 'Talamundali',
     Remarks: 'First batch test'
   };
 
