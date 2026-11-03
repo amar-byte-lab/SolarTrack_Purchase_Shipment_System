@@ -3995,6 +3995,101 @@ const InventoryApp = (() => {
     bsModal.show();
   }
 
+  // Helper to sync or clear customer dispatch expenses directly in Postgres installments table
+  async function syncCustomerExpenseAllocation(slNo, alloc = null) {
+    if (!slNo || typeof DB === 'undefined') return;
+    try {
+      const allInst = DB.getAll('installments') || [];
+      const cust = allInst.find(c => String(c.SlNo) === String(slNo));
+      if (!cust) return;
+
+      let basePhone = '';
+      let expenses = {};
+      let creatorId = '';
+      let workObj = {};
+
+      if (cust.BrokerNumber) {
+        const parts = cust.BrokerNumber.split('|');
+        basePhone = parts[0] || '';
+        parts.slice(1).forEach(p => {
+          if (p.startsWith('expenses:')) {
+            try { expenses = JSON.parse(p.slice('expenses:'.length)) || {}; } catch (e) {}
+          } else if (p.startsWith('creator:')) {
+            creatorId = p.slice('creator:'.length);
+          } else if (p.startsWith('work:')) {
+            try { workObj = JSON.parse(p.slice('work:'.length)) || {}; } catch (e) {}
+          }
+        });
+      }
+
+      if (alloc) {
+        // Updating customer with new allocation
+        if (alloc.setCost !== undefined && alloc.setCost !== '') {
+          expenses.setCost = Number(alloc.setCost) || 0;
+          expenses.material = Number(alloc.setCost) || 0;
+        } else {
+          delete expenses.setCost;
+          delete expenses.material;
+        }
+        if (alloc.installCost !== undefined && alloc.installCost !== '') {
+          expenses.install = Number(alloc.installCost) || 0;
+        } else {
+          delete expenses.install;
+        }
+        if (alloc.deliveryCost !== undefined && alloc.deliveryCost !== '') {
+          expenses.delivery = Number(alloc.deliveryCost) || 0;
+          expenses.transport = Number(alloc.deliveryCost) || 0;
+        } else {
+          delete expenses.delivery;
+          delete expenses.transport;
+        }
+        if (alloc.otherCost !== undefined && alloc.otherCost !== '') {
+          expenses.other = Number(alloc.otherCost) || 0;
+        } else {
+          delete expenses.other;
+        }
+        if (alloc.otherComment) {
+          expenses.otherComment = alloc.otherComment;
+        } else {
+          delete expenses.otherComment;
+        }
+      } else {
+        // Clearing dispatch expenses when customer is replaced or removed
+        delete expenses.setCost;
+        delete expenses.material;
+        delete expenses.install;
+        delete expenses.delivery;
+        delete expenses.transport;
+        delete expenses.other;
+        delete expenses.otherComment;
+      }
+
+      const calcVendor = (expenses.setCost || expenses.material || 0) +
+                         (expenses.install || 0) +
+                         (expenses.delivery || expenses.transport || 0) +
+                         (expenses.gst || 0) +
+                         (expenses.partner || 0) +
+                         (expenses.other || 0);
+
+      let newBroker = basePhone;
+      if (Object.keys(expenses).length > 0) {
+        newBroker += '|expenses:' + JSON.stringify(expenses);
+      }
+      if (creatorId) newBroker += '|creator:' + creatorId;
+      if (workObj && Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
+
+      cust.BrokerNumber = newBroker;
+      cust.VendorPrice = calcVendor;
+
+      await DB.update('installments', r => Number(r.SlNo) === Number(slNo), {
+        BrokerNumber: newBroker,
+        VendorPrice: calcVendor
+      });
+    } catch (e) {
+      console.warn('[Dispatch] Error syncing customer expense allocation:', e);
+    }
+  }
+
   let isSubmittingDispatch = false;
 
   async function handleSaveDispatch() {
@@ -4223,62 +4318,40 @@ const InventoryApp = (() => {
       }
 
       // Sync customer allocations directly to Postgres installments table
-      if (typeof DB !== 'undefined' && customerAllocations.length > 0) {
+      if (typeof DB !== 'undefined') {
+        // 1. Identify old customer allocations if editing
+        let oldCustomerAllocations = [];
+        if (isEditing && oldRecords && oldRecords.length > 0) {
+          for (const o of oldRecords) {
+            if (Array.isArray(o.customerAllocations) && o.customerAllocations.length > 0) {
+              oldCustomerAllocations = o.customerAllocations;
+              break;
+            }
+            if (o.remarks && o.remarks.includes('|logistics:')) {
+              try {
+                const meta = JSON.parse(o.remarks.split('|logistics:')[1]);
+                if (Array.isArray(meta?.customerAllocations) && meta.customerAllocations.length > 0) {
+                  oldCustomerAllocations = meta.customerAllocations;
+                  break;
+                }
+              } catch (e) {}
+            }
+          }
+        }
+
+        // 2. Identify customers that were removed or changed from this dispatch
+        const newSlNoSet = new Set(customerAllocations.filter(c => c.slNo).map(c => String(c.slNo)));
+        const removedOldAllocations = oldCustomerAllocations.filter(oldC => oldC.slNo && !newSlNoSet.has(String(oldC.slNo)));
+
+        // 3. Clear expenses for old customers that were removed or changed
+        for (const oldC of removedOldAllocations) {
+          await syncCustomerExpenseAllocation(oldC.slNo, null);
+        }
+
+        // 4. Update expenses for currently allocated customers
         for (const crow of customerAllocations) {
           if (!crow.slNo) continue;
-          try {
-            const allInst = DB.getAll('installments') || [];
-            const cust = allInst.find(c => String(c.SlNo) === String(crow.slNo));
-            if (!cust) continue;
-
-            let basePhone = '';
-            let expenses = {};
-            let creatorId = '';
-            let workObj = {};
-
-            if (cust.BrokerNumber) {
-              const parts = cust.BrokerNumber.split('|');
-              basePhone = parts[0] || '';
-              parts.slice(1).forEach(p => {
-                if (p.startsWith('expenses:')) {
-                  try { expenses = JSON.parse(p.slice('expenses:'.length)) || {}; } catch (e) {}
-                } else if (p.startsWith('creator:')) {
-                  creatorId = p.slice('creator:'.length);
-                } else if (p.startsWith('work:')) {
-                  try { workObj = JSON.parse(p.slice('work:'.length)) || {}; } catch (e) {}
-                }
-              });
-            }
-
-            if (crow.setCost !== undefined && crow.setCost !== '') {
-              expenses.setCost = Number(crow.setCost) || 0;
-              expenses.material = Number(crow.setCost) || 0;
-            }
-            if (crow.installCost !== undefined && crow.installCost !== '') expenses.install = Number(crow.installCost) || 0;
-            if (crow.deliveryCost !== undefined && crow.deliveryCost !== '') {
-              expenses.delivery = Number(crow.deliveryCost) || 0;
-              expenses.transport = Number(crow.deliveryCost) || 0;
-            }
-            if (crow.otherCost !== undefined && crow.otherCost !== '') expenses.other = Number(crow.otherCost) || 0;
-            if (crow.otherComment) expenses.otherComment = crow.otherComment;
-
-            const calcVendor = (expenses.setCost || expenses.material || 0) + (expenses.install || 0) + (expenses.delivery || expenses.transport || 0) + (expenses.gst || 0) + (expenses.other || 0);
-
-            let newBroker = basePhone;
-            newBroker += '|expenses:' + JSON.stringify(expenses);
-            if (creatorId) newBroker += '|creator:' + creatorId;
-            if (workObj && Object.keys(workObj).length > 0) newBroker += '|work:' + JSON.stringify(workObj);
-
-            cust.BrokerNumber = newBroker;
-            cust.VendorPrice = calcVendor;
-
-            await DB.update('installments', r => Number(r.SlNo) === Number(crow.slNo), {
-              BrokerNumber: newBroker,
-              VendorPrice: calcVendor
-            });
-          } catch (e) {
-            console.warn('[Dispatch] Error syncing customer allocation to installments:', e);
-          }
+          await syncCustomerExpenseAllocation(crow.slNo, crow);
         }
       }
 
@@ -5469,6 +5542,30 @@ const InventoryApp = (() => {
     saveData();
 
     if (typeof DB !== 'undefined') {
+      // Clear allocated customer expenses from installments table
+      let delCustAllocations = [];
+      for (const m of matching) {
+        if (Array.isArray(m.customerAllocations) && m.customerAllocations.length > 0) {
+          delCustAllocations = m.customerAllocations;
+          break;
+        }
+        if (m.remarks && m.remarks.includes('|logistics:')) {
+          try {
+            const meta = JSON.parse(m.remarks.split('|logistics:')[1]);
+            if (Array.isArray(meta?.customerAllocations) && meta.customerAllocations.length > 0) {
+              delCustAllocations = meta.customerAllocations;
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+
+      for (const crow of delCustAllocations) {
+        if (crow.slNo) {
+          await syncCustomerExpenseAllocation(crow.slNo, null);
+        }
+      }
+
       for (const m of matching) {
         await DB.remove('inventory_dispatches', r => (r.DispatchID || r.id) === m.id).catch(err => console.warn('[Supabase] inventory_dispatches delete error:', err));
       }
