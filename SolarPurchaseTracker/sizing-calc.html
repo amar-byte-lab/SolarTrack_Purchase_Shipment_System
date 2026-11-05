@@ -947,61 +947,57 @@
       <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
         
         <!-- Modal Header -->
-        <div class="modal-header bg-dark text-white py-2.5 px-3.5 border-bottom border-secondary d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #0b1329 0%, #1e293b 100%) !important;">
-          <div class="d-flex align-items-center gap-2 min-w-0">
-            <span class="fs-5">⚡</span>
-            <div>
-              <h5 class="modal-title fw-bold text-white fs-6 mb-0 d-flex align-items-center gap-2">
-                <span>Single Line Diagram (SLD) & Electrical Schematic</span>
-                <span class="badge bg-primary text-white rounded-pill px-2 py-0.5 fs-8" id="sldModalSystemTitle">Off-Grid Solar</span>
-              </h5>
-              <div class="text-white-50 fs-9">IS/IEC 60364 & IEC 62548 Compliant Engineering Circuit Schematic with Dedicated Earth Pits</div>
-            </div>
+        <div class="modal-header bg-dark text-white py-2 px-3 border-bottom border-secondary d-flex align-items-center justify-content-between flex-nowrap gap-2" style="background: linear-gradient(135deg, #0b1329 0%, #1e293b 100%) !important;">
+          <div class="min-w-0 flex-grow-1">
+            <h5 class="modal-title fw-bold text-white fs-6 mb-0 text-truncate">
+              Single Line Diagram (SLD) &amp; Electrical Schematic
+            </h5>
+            <div class="text-white-50 fs-9 d-none d-sm-block text-truncate">IS/IEC 60364 &amp; IEC 62548 Compliant Engineering Circuit Schematic with Dedicated Earth Pits</div>
           </div>
 
-          <!-- Header Action Toolbar -->
-          <div class="d-flex align-items-center gap-2 flex-wrap">
+          <!-- Header Action Toolbar (Mobile Responsive) -->
+          <div class="d-flex align-items-center gap-1.5 flex-nowrap flex-shrink-0">
             <!-- Theme Toggle -->
-            <button type="button" class="btn btn-sm btn-outline-light px-2.5 py-1 fs-8 fw-semibold sld-btn-tool" onclick="SizingSchematic.toggleTheme()" title="Toggle Dark Blueprint / Engineering Light Mode">
-              <span class="sld-theme-icon">🌙 Dark Blueprint</span>
+            <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 fs-8 fw-semibold sld-btn-tool" onclick="SizingSchematic.toggleTheme()" title="Toggle Dark Blueprint / Engineering Light Mode">
+              <span class="sld-theme-icon">🌙 Dark</span>
             </button>
 
             <!-- Zoom Controls -->
             <div class="btn-group shadow-2xs">
               <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 fs-8 fw-bold" onclick="SizingSchematic.zoom(-0.2, 'modal')" title="Zoom Out">-</button>
-              <button type="button" class="btn btn-sm btn-outline-light px-2.5 py-1 fs-8 fw-bold" id="sldModalZoomText" disabled style="min-width: 54px; opacity: 1;">100%</button>
+              <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 fs-8 fw-bold d-none d-sm-inline-block" id="sldModalZoomText" disabled style="min-width: 46px; opacity: 1;">100%</button>
               <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 fs-8 fw-bold" onclick="SizingSchematic.zoom(0.2, 'modal')" title="Zoom In">+</button>
-              <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 fs-8 fw-bold" onclick="SizingSchematic.resetZoom('modal')" title="Reset Fit">⟲ Fit</button>
+              <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 fs-8 fw-bold" onclick="SizingSchematic.resetZoom('modal')" title="Reset Fit">⟲</button>
             </div>
 
             <!-- Export SVG -->
             <button type="button" class="btn btn-sm btn-success px-2.5 py-1 fs-8 fw-bold d-flex align-items-center gap-1 shadow-2xs" onclick="SizingSchematic.exportSvg()" title="Download Scalable Vector Graphics (.svg) Schematic">
-              <span>📥 Export SVG</span>
+              <span>📥 <span class="d-none d-sm-inline">Export SVG</span></span>
             </button>
 
-            <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white ms-0.5" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
         </div>
 
-        <!-- System Type Quick Switcher Bar in Modal -->
-        <div class="bg-light p-2 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-          <div class="d-flex align-items-center gap-1.5 flex-wrap">
-            <span class="fs-8 fw-bold text-secondary me-1">System Type:</span>
-            <button type="button" class="btn btn-sm btn-primary px-3 py-1 fs-8 fw-bold rounded-pill sld-system-tab-btn" data-sys-type="off-grid" onclick="SizingSchematic.switchSystemFromModal('off-grid')">
+        <!-- System Type Quick Switcher Bar in Modal (Strictly Single Row on All Devices) -->
+        <div class="bg-light px-2.5 py-1.5 border-bottom d-flex align-items-center justify-content-between flex-nowrap gap-2 overflow-hidden">
+          <div class="d-flex align-items-center gap-1.5 flex-nowrap overflow-x-auto sld-system-tabs-scroll flex-grow-1 min-w-0 py-0.5">
+            <span class="fs-8 fw-bold text-secondary me-1 text-nowrap flex-shrink-0">System:</span>
+            <button type="button" class="btn btn-sm btn-primary px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" data-sys-type="off-grid" onclick="SizingSchematic.switchSystemFromModal('off-grid')">
               ☀️ Off-Grid (PCU)
             </button>
-            <button type="button" class="btn btn-sm btn-light text-dark px-3 py-1 fs-8 fw-bold rounded-pill sld-system-tab-btn" data-sys-type="on-grid" onclick="SizingSchematic.switchSystemFromModal('on-grid')">
+            <button type="button" class="btn btn-sm btn-light text-dark px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" data-sys-type="on-grid" onclick="SizingSchematic.switchSystemFromModal('on-grid')">
               ⚡ On-Grid (GTI)
             </button>
-            <button type="button" class="btn btn-sm btn-light text-dark px-3 py-1 fs-8 fw-bold rounded-pill sld-system-tab-btn" data-sys-type="hybrid" onclick="SizingSchematic.switchSystemFromModal('hybrid')">
+            <button type="button" class="btn btn-sm btn-light text-dark px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" data-sys-type="hybrid" onclick="SizingSchematic.switchSystemFromModal('hybrid')">
               🔄 Hybrid (Bi-Directional)
             </button>
-            <button type="button" class="btn btn-sm btn-light text-dark px-3 py-1 fs-8 fw-bold rounded-pill sld-system-tab-btn" data-sys-type="without-solar" onclick="SizingSchematic.switchSystemFromModal('without-solar')">
+            <button type="button" class="btn btn-sm btn-light text-dark px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" data-sys-type="without-solar" onclick="SizingSchematic.switchSystemFromModal('without-solar')">
               🔋 Without Solar (Home UPS)
             </button>
           </div>
-          <div class="fs-9 text-muted fst-italic">
-            💡 Drag canvas to pan • Scroll wheel to zoom in/out • Hover or click components for ratings
+          <div class="fs-9 text-muted fst-italic text-nowrap d-none d-lg-block flex-shrink-0 ps-2">
+            💡 Drag canvas to pan • Scroll wheel to zoom
           </div>
         </div>
 
@@ -1013,7 +1009,7 @@
           </div>
 
           <!-- Color-Coded Flow Legend Bar -->
-          <div class="sld-legend-bar px-3 py-2 border-top">
+          <div class="sld-legend-bar px-3 py-1.5 border-top d-flex align-items-center flex-nowrap overflow-x-auto">
             <span class="sld-legend-item"><span class="sld-legend-indicator dc-pos"></span> DC Positive (+ Bright Red)</span>
             <span class="sld-legend-item"><span class="sld-legend-indicator dc-neg"></span> DC Negative (- Black)</span>
             <span class="sld-legend-item"><span class="sld-legend-indicator ac-phase"></span> AC Phase / Line (L Red/Orange)</span>

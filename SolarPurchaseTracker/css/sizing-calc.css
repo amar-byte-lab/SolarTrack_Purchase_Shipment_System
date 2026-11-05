@@ -1192,6 +1192,18 @@
   stroke-width: 2.2 !important;
 }
 
+/* Horizontal scrollable System Type tabs row for mobile & desktop (Strictly Single Row) */
+.sld-system-tabs-scroll {
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.sld-system-tabs-scroll::-webkit-scrollbar {
+  display: none !important;
+}
+
 /* Color Coded Flow Legend Bar */
 .sld-legend-bar {
   background: #f8fafc;
@@ -1200,9 +1212,14 @@
   font-size: 0.72rem;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  row-gap: 5px;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  gap: 12px;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+}
+.sld-legend-bar::-webkit-scrollbar {
+  display: none !important;
 }
 
 .sld-legend-item {
@@ -1322,5 +1339,24 @@
   border-color: #94a3b8;
   color: #0f172a;
 }
+
+@media (max-width: 576px) {
+  #sldSchematicModal .modal-header {
+    padding: 8px 10px !important;
+  }
+  #sldSchematicModal .modal-title {
+    font-size: 0.82rem !important;
+  }
+  .sld-btn-tool {
+    height: 26px !important;
+    padding: 0 6px !important;
+    font-size: 0.7rem !important;
+  }
+  .sld-system-tab-btn {
+    font-size: 0.72rem !important;
+    padding: 3px 8px !important;
+  }
+}
+
 
 

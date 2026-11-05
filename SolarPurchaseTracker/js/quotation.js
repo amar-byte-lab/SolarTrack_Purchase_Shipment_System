@@ -484,7 +484,7 @@ function generatePrintItemsGrid() {
     let slNo = r.type === 'item' ? (idx + 1).toString() : '';
     let priceText = r.price < 0 ? `-₹${Math.abs(r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}` : `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
     
-    // Rowspan columns (Total Value, CGST, SGST, Amount) - only output on the first row of merge
+    // Rowspan columns (Total Value, CGST, SGST) - only output on the first row of merge
     let rowspanHtml = '';
     if (idx === 0) {
       const totalValText = `₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -498,9 +498,6 @@ function generatePrintItemsGrid() {
         </td>
         <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-size: 8.8pt; padding: 4px 6px;">
           ${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
-        </td>
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold; font-size: 9.2pt; padding: 4px 6px;">
-          ₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
         </td>
       `;
     }
@@ -523,16 +520,11 @@ function generatePrintItemsGrid() {
     `);
   });
 
-  // Add Total row
+  // Add Grand Total row
   html.push(`
     <tr style="font-weight: bold; background-color: #fafafa;">
-      <td style="border: 1px solid #000; padding: 4px 5px;"></td>
-      <td style="border: 1px solid #000; text-align: left; padding: 4px 5px; font-size: 8.8pt;">Grand Total</td>
-      <td style="border: 1px solid #000; padding: 4px 5px;"></td>
-      ${totalValueMode === 'each' ? `<td style="border: 1px solid #000; text-align: right; padding: 4px 5px; font-family: monospace; font-size: 8.8pt;">₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>` : ''}
-      <td style="border: 1px solid #000; text-align: center; padding: 4px 5px; font-family: monospace; font-size: 8.8pt;">${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-      <td style="border: 1px solid #000; text-align: center; padding: 4px 5px; font-family: monospace; font-size: 8.8pt;">${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-      <td style="border: 1px solid #000; text-align: right; padding: 4px 5px; font-family: monospace; font-size: 9.5pt;">₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+      <td colspan="4" style="border: 1px solid #000; text-align: left; padding: 4px 8px; font-size: 9pt;">Grand Total</td>
+      <td colspan="2" style="border: 1px solid #000; text-align: right; padding: 4px 8px; font-family: monospace; font-size: 9.5pt;">₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
     </tr>
   `);
 
