@@ -742,11 +742,9 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/logout') {
-        res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
+        res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage"');
         res.setHeader('Set-Cookie', 'session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store, must-revalidate');
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true })), 'no-cache, no-store');
         return;
       }
 

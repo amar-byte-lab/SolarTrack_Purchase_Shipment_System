@@ -18,8 +18,7 @@ const Auth = (() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
   }
 
-  async function clearAllCacheAndStorage() {
-    // 1. Clear Web Storages
+  function clearAllCacheAndStorage() {
     try {
       localStorage.clear();
     } catch (e) {
@@ -32,7 +31,6 @@ const Auth = (() => {
       console.warn('SessionStorage clear error:', e);
     }
 
-    // 2. Clear Document Cookies
     try {
       const cookies = document.cookie.split(";");
       for (let i = 0; i < cookies.length; i++) {
@@ -48,27 +46,26 @@ const Auth = (() => {
       console.warn('Cookies clear error:', e);
     }
 
-    // 3. Clear Cache Storage API (HTTP caches & Service Worker caches)
     try {
       if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(key => caches.delete(key)));
+        caches.keys().then(names => {
+          names.forEach(name => caches.delete(name));
+        });
       }
     } catch (e) {
       console.warn('Cache Storage clear error:', e);
     }
 
-    // 4. Unregister Service Workers
     try {
       if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map(r => r.unregister()));
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(r => r.unregister());
+        });
       }
     } catch (e) {
       console.warn('Service Worker unregister error:', e);
     }
 
-    // 5. Clear application in-memory cache
     try {
       if (typeof DB !== 'undefined' && DB.clearCache) {
         DB.clearCache();
@@ -79,25 +76,15 @@ const Auth = (() => {
   }
 
   async function logout() {
+    clearAllCacheAndStorage();
     try {
-      await clearAllCacheAndStorage();
-    } catch (e) {
-      console.warn('Storage cleanup error:', e);
-    }
-
-    try {
-      // Await server logout response so browser processes Clear-Site-Data header
-      await fetch('/api/logout', { method: 'POST', keepalive: true });
-    } catch (e) {
-      console.warn('Logout API call error:', e);
-    }
-
-    // Replace history entry to prevent back-button navigation to authenticated screen
-    window.location.replace('login.html');
+      fetch('/api/logout', { method: 'POST', keepalive: true }).catch(() => {});
+    } catch (e) {}
+    window.location.href = 'login.html';
   }
 
   async function login(userid, password) {
-    await clearAllCacheAndStorage();
+    clearAllCacheAndStorage();
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
@@ -140,13 +127,13 @@ const Auth = (() => {
 
     // 3. If user is not logged in -> redirect to login.html
     if (!currentUser) {
-      window.location.replace('login.html');
+      window.location.href = 'login.html';
       return;
     }
 
     // 4. Handle index.html forwarding for logged in users
     if (page === 'index.html') {
-      window.location.replace('quotation.html');
+      window.location.href = 'quotation.html';
       return;
     }
 
@@ -157,7 +144,7 @@ const Auth = (() => {
       // Employee role has exclusive access only to Quotation, Document, and Calculator pages
       const allowed = ['quotation.html', 'document.html', 'sizing-calc.html', 'agreement.html'];
       if (!allowed.includes(page)) {
-        window.location.replace('quotation.html');
+        window.location.href = 'quotation.html';
         return;
       }
       return;
@@ -165,34 +152,27 @@ const Auth = (() => {
 
     if (!isPowerUser) {
       if (page === 'manage-work.html' || page === 'files.html' || page === 'inventory.html') {
-        window.location.replace('quotation.html');
+        window.location.href = 'quotation.html';
         return;
       }
       if (roleLower === 'partner' || roleLower === 'associates') {
         const allowed = ['summary.html', 'quotation.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
-          window.location.replace('quotation.html');
+          window.location.href = 'quotation.html';
           return;
         }
       } else {
         const allowed = ['summary.html', 'quotation.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
         if (!allowed.includes(page)) {
-          window.location.replace('quotation.html');
+          window.location.href = 'quotation.html';
           return;
         }
       }
     }
   }
 
-  // Handle bfcache: if navigating back to a page after logout, re-verify authentication
-  window.addEventListener('pageshow', (event) => {
-    if (event.persisted) {
-      checkAccess();
-    }
-  });
-
   // Execute access check immediately
   checkAccess();
 
-  return { getUser, setUser, logout, login, checkAccess, clearAllCacheAndStorage };
+  return { getUser, setUser, logout, login, checkAccess };
 })();
