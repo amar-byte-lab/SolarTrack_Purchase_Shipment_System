@@ -2086,6 +2086,15 @@
    * Opens the full-screen SLD Modal.
    */
   function openModal(systemType) {
+    if (!systemType && window.SizingUI && typeof window.SizingUI.getCurrentSystemType === 'function') {
+      systemType = window.SizingUI.getCurrentSystemType();
+    }
+    if (!systemType) {
+      const activeDropdownItem = document.querySelector('.system-dropdown-item.active');
+      if (activeDropdownItem && activeDropdownItem.dataset.systemType) {
+        systemType = activeDropdownItem.dataset.systemType;
+      }
+    }
     if (systemType) {
       sldState.currentSystem = systemType;
     }
@@ -2094,7 +2103,7 @@
 
     const modalEl = document.getElementById('sldSchematicModal');
     if (modalEl && typeof bootstrap !== 'undefined') {
-      const bsModal = new bootstrap.Modal(modalEl);
+      const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
       bsModal.show();
     }
   }

@@ -28,50 +28,13 @@
           <div class="col-lg-6" id="colStep1Wrapper">
             <div class="step-card h-100 p-3.5 p-md-4 mb-0" id="secSystemType">
               <div>
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-1">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-1">
                   <div>
                     <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
                   </div>
-                  <button type="button" class="btn btn-xs btn-outline-primary fw-semibold px-2.5 py-1 fs-8 rounded-pill d-flex align-items-center gap-1 shadow-2xs" onclick="SizingSchematic.openModal()" title="View Complete High-Detail SLD in Modal">
+                  <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 py-1 fs-8 rounded-pill d-flex align-items-center gap-1.5 shadow-2xs" onclick="SizingSchematic.openModal()" title="Click to view Single Line & Circuit Schematic in Popup Modal">
                     <span>⚡ Detailed SLD Diagram</span>
                   </button>
-                </div>
-
-                <!-- SINGLE LINE & SCHEMATIC CIRCUIT DIAGRAM COMPONENT (PLACED DIRECTLY ABOVE SYSTEM TYPE DROPDOWN) -->
-                <div class="sld-container mb-3" id="sldSchematicInlineContainer">
-                  <div class="sld-header-bar d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-2 min-w-0">
-                      <span class="badge bg-primary text-white rounded-pill px-2 py-0.5 fs-9 fw-bold flex-shrink-0">⚡ SLD Circuit</span>
-                      <span class="fw-bold text-dark fs-8 text-truncate" id="sldInlineSystemTitle">System Schematic</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
-                      <button type="button" class="btn btn-sm btn-white border px-2 py-0.5 fs-9 fw-semibold text-secondary sld-btn-tool" onclick="SizingSchematic.toggleTheme()" title="Toggle Dark Blueprint / Light Drawing Mode">
-                        <span class="sld-theme-icon">🌙 Dark</span>
-                      </button>
-                      <button type="button" class="btn btn-sm btn-white border px-1.5 py-0.5 fs-9 fw-bold text-secondary sld-btn-tool" onclick="SizingSchematic.zoom(0.15, 'inline')" title="Zoom In">+</button>
-                      <button type="button" class="btn btn-sm btn-white border px-1.5 py-0.5 fs-9 fw-bold text-secondary sld-btn-tool" onclick="SizingSchematic.zoom(-0.15, 'inline')" title="Zoom Out">-</button>
-                      <button type="button" class="btn btn-sm btn-white border px-1.5 py-0.5 fs-9 fw-bold text-secondary sld-btn-tool" onclick="SizingSchematic.resetZoom('inline')" title="Reset Fit">⟲</button>
-                      <button type="button" class="btn btn-sm btn-primary px-2.5 py-0.5 fs-9 fw-bold text-white sld-btn-tool shadow-2xs" onclick="SizingSchematic.openModal()" title="Open Fullscreen Detailed Schematic">
-                        <span>🔍 Enlarge</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Responsive SVG Canvas for Circuit Diagram -->
-                  <div class="sld-svg-canvas sld-inline-canvas sld-theme-dark" id="sldInlineSvgWrapper" title="Drag to pan, scroll to zoom, hover items for electrical ratings">
-                    <!-- Rendered dynamically by sizing-schematic.js -->
-                  </div>
-
-                  <!-- Color-Coded Flow Legend Bar -->
-                  <div class="sld-legend-bar">
-                    <span class="sld-legend-item"><span class="sld-legend-indicator dc-pos"></span> DC+</span>
-                    <span class="sld-legend-item"><span class="sld-legend-indicator dc-neg"></span> DC-</span>
-                    <span class="sld-legend-item"><span class="sld-legend-indicator ac-phase"></span> Phase (L)</span>
-                    <span class="sld-legend-item"><span class="sld-legend-indicator ac-neutral"></span> Neutral (N)</span>
-                    <span class="sld-legend-item"><span class="sld-legend-indicator earth-pe"></span> Earth (⏚ PE)</span>
-                    <span class="sld-legend-item text-primary"><span style="font-size: 10px;">⇄</span> Bi-Dir</span>
-                    <span class="sld-legend-item text-muted ms-auto fs-9">Tri-Earth Pits</span>
-                  </div>
                 </div>
 
                 <!-- Custom Rich Dropdown Trigger & Menu -->
