@@ -344,6 +344,101 @@
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
 
+/* Number input spinner removal so numbers are 100% visible without obstruction */
+.appliance-config-table input[type="number"]::-webkit-outer-spin-button,
+.appliance-config-table input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.appliance-config-table input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
+.appliance-config-table th.col-chk,
+.appliance-config-table td.col-chk {
+  width: 28px;
+  text-align: center !important;
+}
+
+.appliance-config-table th.col-app,
+.appliance-config-table td.col-app {
+  text-align: left !important;
+}
+
+.appliance-config-table th.col-qty,
+.appliance-config-table td.col-qty {
+  width: 48px;
+  text-align: left !important;
+}
+
+.appliance-config-table th.col-watt,
+.appliance-config-table td.col-watt {
+  width: 80px;
+  text-align: left !important;
+}
+
+.appliance-config-table th.col-time,
+.appliance-config-table td.col-time {
+  width: 62px;
+  text-align: left !important;
+}
+
+.appliance-config-table .input-qty {
+  width: 100% !important;
+  max-width: 42px !important;
+  text-align: left !important;
+  padding: 3px 6px !important;
+}
+
+.appliance-config-table .input-watt {
+  width: 100% !important;
+  max-width: 74px !important;
+  text-align: left !important;
+  padding: 3px 6px !important;
+}
+
+.appliance-config-table .input-time {
+  width: 100% !important;
+  max-width: 44px !important;
+  text-align: left !important;
+  padding: 3px 6px !important;
+}
+
+/* Modal Header Action Buttons (Reset & Apply Alignment & Spacing) */
+.modal-header-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.modal-header-actions .btn-header-action {
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s ease !important;
+}
+
+.modal-header-actions .btn-header-action:hover {
+  transform: translateY(-1px);
+}
+
+.modal-header-actions .btn-close {
+  margin-left: 6px !important;
+  padding: 6px !important;
+  font-size: 0.75rem !important;
+  align-self: center !important;
+}
+
 .modal-footer-action-group {
   display: flex !important;
   align-items: center !important;
@@ -869,14 +964,24 @@
 
   .appliance-config-table th,
   .backup-config-table th {
-    padding: 5px 2px !important;
+    padding: 5px 3px !important;
     font-size: 0.65rem !important;
+    text-align: left !important;
+  }
+
+  .appliance-config-table th.col-chk {
+    text-align: center !important;
   }
 
   .appliance-config-table td,
   .backup-config-table td {
-    padding: 4px 2px !important;
+    padding: 4px 3px !important;
     font-size: 0.72rem !important;
+    text-align: left !important;
+  }
+
+  .appliance-config-table td.col-chk {
+    text-align: center !important;
   }
 
   .appliance-config-table .col-chk {
@@ -889,39 +994,42 @@
   }
 
   .appliance-config-table .col-qty {
-    width: 36px !important;
-    max-width: 36px !important;
+    width: 42px !important;
+    max-width: 42px !important;
   }
 
   .appliance-config-table .col-watt {
-    width: 54px !important;
-    max-width: 54px !important;
+    width: 74px !important;
+    max-width: 74px !important;
   }
 
   .appliance-config-table .col-time {
-    width: 44px !important;
-    max-width: 44px !important;
+    width: 58px !important;
+    max-width: 58px !important;
   }
 
   .appliance-config-table .input-qty {
-    width: 32px !important;
-    height: 24px !important;
-    padding: 1px 2px !important;
-    font-size: 0.72rem !important;
+    width: 36px !important;
+    height: 26px !important;
+    padding: 2px 4px !important;
+    font-size: 0.74rem !important;
+    text-align: left !important;
   }
 
   .appliance-config-table .input-watt {
-    width: 48px !important;
-    height: 24px !important;
-    padding: 1px 2px !important;
-    font-size: 0.72rem !important;
+    width: 68px !important;
+    height: 26px !important;
+    padding: 2px 5px !important;
+    font-size: 0.74rem !important;
+    text-align: left !important;
   }
 
   .appliance-config-table .input-time {
-    width: 36px !important;
-    height: 24px !important;
-    padding: 1px 2px !important;
-    font-size: 0.72rem !important;
+    width: 38px !important;
+    height: 26px !important;
+    padding: 2px 4px !important;
+    font-size: 0.74rem !important;
+    text-align: left !important;
   }
 
   .appliance-config-table .app-bracket-wh {

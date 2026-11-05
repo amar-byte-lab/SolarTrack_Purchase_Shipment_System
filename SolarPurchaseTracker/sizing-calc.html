@@ -168,7 +168,7 @@
               <div>
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3.5 pb-1">
                   <div>
-                    <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Connected Load</h6>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Load</h6>
                   </div>
                   <div>
                     <button type="button" class="btn btn-outline-primary btn-sm fs-8 py-1 px-2.5 rounded-2 d-inline-flex align-items-center gap-1.5 shadow-2xs fw-semibold" onclick="SizingUI.openStandardLoadModal()" title="Standard Load per Unit Calculator">
@@ -413,18 +413,18 @@
           <div class="d-flex align-items-center gap-2 min-w-0">
             <span class="fs-5 flex-shrink-0">🏠</span>
             <div class="min-w-0">
-              <h5 class="modal-title fw-bold text-dark fs-6 mb-0 text-truncate">Appliances & Connected Load</h5>
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0 text-truncate">Appliances & Load</h5>
               <div class="text-muted fs-8 text-truncate d-none d-sm-block">Configure household appliances, quantities & daily operating hours</div>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 fs-8 fw-semibold" id="btnResetAppliances" onclick="SizingUI.resetAppliancesToDefault()" title="Reset appliances to default">
+          <div class="modal-header-actions flex-shrink-0 ms-2">
+            <button type="button" class="btn btn-outline-secondary btn-header-action" id="btnResetAppliances" onclick="SizingUI.resetAppliancesToDefault()" title="Reset appliances to default">
               ↺ Reset
             </button>
-            <button type="button" class="btn btn-sm btn-primary py-1 px-2.5 fs-8 fw-bold" data-bs-dismiss="modal" onclick="SizingUI.applyModalChanges()" title="Save and apply">
+            <button type="button" class="btn btn-primary btn-header-action" data-bs-dismiss="modal" onclick="SizingUI.applyModalChanges()" title="Save and apply">
               Apply
             </button>
-            <button type="button" class="btn-close ms-0.5" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
         </div>
         <div class="modal-body p-2 p-md-3">
@@ -442,11 +442,11 @@
             <table class="table table-hover align-middle mb-0 appliance-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 32px;" class="text-center p-1 col-chk" title="Select Appliance"></th>
-                  <th class="p-1 col-app" style="min-width: 100px;">Appliance</th>
-                  <th style="width: 48px;" class="text-center p-1 col-qty">Qty</th>
-                  <th style="width: 85px;" class="text-center p-1 col-watt">Watt</th>
-                  <th style="width: 70px;" class="text-center p-1 col-time">Daily Time</th>
+                  <th class="text-center p-1 col-chk" style="width: 28px;" title="Select Appliance"></th>
+                  <th class="p-1 col-app text-start">Appliance</th>
+                  <th class="p-1 col-qty text-start">Qty</th>
+                  <th class="p-1 col-watt text-start">Watt</th>
+                  <th class="p-1 col-time text-start">Daily Time</th>
                 </tr>
               </thead>
               <tbody id="modalApplianceTableBody">
@@ -454,25 +454,25 @@
               </tbody>
               <tfoot class="table-light border-top sticky-bottom" style="z-index: 2;">
                 <tr class="bg-light">
-                  <td class="text-center p-1 col-chk" style="width: 32px;">
+                  <td class="text-center p-1 col-chk">
                     <span class="text-muted fs-8">➕</span>
                   </td>
-                  <td class="p-1 col-app" style="min-width: 100px;">
+                  <td class="p-1 col-app text-start">
                     <input type="text" class="form-control form-control-sm p-1 fs-8" id="txtCustomAppName" 
                       placeholder="Add custom appliance..." style="height: 28px; width: 100%;">
                   </td>
-                  <td class="text-center p-1 col-qty" style="width: 48px;">
-                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-bold mx-auto fs-8 input-qty" id="txtCustomAppQty" 
-                      value="1" title="Quantity" style="width: 42px; height: 28px;">
+                  <td class="text-start p-1 col-qty">
+                    <input type="number" min="1" class="form-control form-control-sm text-start p-1 fw-bold fs-8 input-qty" id="txtCustomAppQty" 
+                      value="1" title="Quantity" style="height: 28px;">
                   </td>
-                  <td class="text-center p-1 col-watt" style="width: 85px;">
-                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-semibold mx-auto fs-8 input-watt" id="txtCustomAppWatts" 
-                      placeholder="Watts" style="width: 68px; height: 28px;">
+                  <td class="text-start p-1 col-watt">
+                    <input type="number" min="1" class="form-control form-control-sm text-start p-1 fw-semibold fs-8 input-watt" id="txtCustomAppWatts" 
+                      placeholder="Watts" style="height: 28px;">
                   </td>
-                  <td class="text-center p-1 col-time" style="width: 70px;">
-                    <div class="d-flex align-items-center justify-content-center gap-1">
-                      <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center p-1 fw-semibold fs-8 input-time" id="txtCustomAppHours" 
-                        value="4" title="Daily running hours" style="width: 38px; height: 28px;">
+                  <td class="text-start p-1 col-time">
+                    <div class="d-flex align-items-center gap-1">
+                      <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-start p-1 fw-semibold fs-8 input-time" id="txtCustomAppHours" 
+                        value="4" title="Daily running hours" style="height: 28px;">
                       <button type="button" class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs btn-add-custom-app" id="btnAddCustomApp" 
                         style="width: 24px; height: 24px; font-size: 1rem; font-weight: bold; line-height: 1;" title="Add Custom Appliance" onclick="SizingUI.addCustomAppliance()">
                         +
