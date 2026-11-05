@@ -572,6 +572,25 @@ const SizingRecommendations = (() => {
     const found = pool.find(item => item.product.id === productId);
     if (found) {
       state.userSelectedOverrides[category] = found;
+
+      // When inverter override is chosen, synchronize battery voltage and re-align recommendations
+      if (category === 'inverter' && found.product && found.product.batteryVoltage !== undefined) {
+        if (state.userSelectedOverrides.battery && state.userSelectedOverrides.battery.targetInverterVoltage !== found.product.batteryVoltage) {
+          state.userSelectedOverrides.battery = null;
+        }
+        if (state.sizingResult) {
+          state.sizingResult.inverter = {
+            ...state.sizingResult.inverter,
+            batteryVoltage: found.product.batteryVoltage,
+            kW: found.product.ratedKw,
+            kVA: found.product.ratedKva,
+            model: found.product.model,
+            brand: found.product.manufacturer
+          };
+          fetchRecommendations();
+        }
+      }
+
       render();
       renderFlipkartBody();
       

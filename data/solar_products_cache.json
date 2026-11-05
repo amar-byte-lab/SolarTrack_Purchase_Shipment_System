@@ -1,5 +1,5 @@
 {
-  "lastRefreshed": "2026-11-05T09:49:03.526Z",
+  "lastRefreshed": "2026-11-05T10:41:47.362Z",
   "catalogue": {
     "panels": [
       {
@@ -27,7 +27,7 @@
         "productPageUrl": "https://www.luminousindia.com/solar-panel-550w-mono-perc.html",
         "imageUrl": "",
         "source": "Luminous Official Technical Catalogue & BIS Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_panel_LUM-540M-144HC",
@@ -54,7 +54,7 @@
         "productPageUrl": "https://www.luminousindia.com/solar-panel-540w-mono-perc.html",
         "imageUrl": "",
         "source": "Luminous Official Technical Catalogue & BIS Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_panel_LUM-445M-120HC",
@@ -81,7 +81,7 @@
         "productPageUrl": "https://www.luminousindia.com/solar-panel-445w-mono.html",
         "imageUrl": "",
         "source": "Luminous Official Technical Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_panel_LUM-335P-72C",
@@ -108,7 +108,7 @@
         "productPageUrl": "https://www.luminousindia.com/solar-panel-335w-poly.html",
         "imageUrl": "",
         "source": "Luminous Official Technical Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "waaree_panel_WS-580-TOPCON",
@@ -135,7 +135,7 @@
         "productPageUrl": "https://www.waaree.com/solar-panels/topcon-580w",
         "imageUrl": "",
         "source": "Waaree Aditya TOPCon Official Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_panel_WXS-550-HC",
@@ -162,7 +162,7 @@
         "productPageUrl": "https://www.waaree.com/solar-panels/mono-perc-550w",
         "imageUrl": "",
         "source": "Waaree Arka Mono PERC Official Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_panel_WXS-545-BIFI",
@@ -189,7 +189,7 @@
         "productPageUrl": "https://www.waaree.com/solar-panels/bifacial-545w",
         "imageUrl": "",
         "source": "Waaree Bi-55 Dual Glass Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_panel_WXS-440-HC",
@@ -216,7 +216,7 @@
         "productPageUrl": "https://www.waaree.com/solar-panels/mono-440w",
         "imageUrl": "",
         "source": "Waaree Technical Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_panel_AS-SHINE-580-TOPCON",
@@ -243,7 +243,7 @@
         "productPageUrl": "https://www.adanisolar.com/products/topcon-580w",
         "imageUrl": "",
         "source": "Adani Solar Shine N-Type TOPCon Official Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_panel_AS-ETERNAL-550-HC",
@@ -270,7 +270,7 @@
         "productPageUrl": "https://www.adanisolar.com/products/eternal-550w",
         "imageUrl": "",
         "source": "Adani Solar Eternal Series Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_panel_AS-ETERNAL-540-HC",
@@ -297,7 +297,7 @@
         "productPageUrl": "https://www.adanisolar.com/products/eternal-540w",
         "imageUrl": "",
         "source": "Adani Solar Eternal Series Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_panel_AS-ELAN-545-BIFI",
@@ -324,7 +324,7 @@
         "productPageUrl": "https://www.adanisolar.com/products/elan-545w",
         "imageUrl": "",
         "source": "Adani Solar Elan Dual Glass Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_panel_VS-SURYAVA-580-TOPCON",
@@ -351,7 +351,7 @@
         "productPageUrl": "https://www.vikramsolar.com/suryava-topcon-series/",
         "imageUrl": "",
         "source": "Vikram Solar Suryava TOPCon Official Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_panel_VS-SOMERA-550-HC",
@@ -378,7 +378,7 @@
         "productPageUrl": "https://www.vikramsolar.com/somera-grand-series/",
         "imageUrl": "",
         "source": "Vikram Solar Somera Grand Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_panel_VS-SOMERA-540-HC",
@@ -405,7 +405,7 @@
         "productPageUrl": "https://www.vikramsolar.com/somera-grand-series/",
         "imageUrl": "",
         "source": "Vikram Solar Somera Grand Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_panel_VS-PREVA-545-BIFI",
@@ -432,7 +432,7 @@
         "productPageUrl": "https://www.vikramsolar.com/preva-series/",
         "imageUrl": "",
         "source": "Vikram Solar Preva Dual Glass Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_panel_TP-580-TOPCON",
@@ -459,7 +459,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/solar-modules/topcon-580w/",
         "imageUrl": "",
         "source": "Tata Power Solar TOPCon Official Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_panel_TP-550M-144HC",
@@ -486,7 +486,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/solar-modules/mono-perc-550w/",
         "imageUrl": "",
         "source": "Tata Power Solar Mono PERC Official Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_panel_TP-545M-144HC",
@@ -513,7 +513,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/solar-modules/mono-perc-545w/",
         "imageUrl": "",
         "source": "Tata Power Solar Mono PERC Official Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_panel_TP-440M-120HC",
@@ -540,7 +540,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/solar-modules/mono-440w/",
         "imageUrl": "",
         "source": "Tata Power Solar Technical Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       }
     ],
     "inverters": [
@@ -576,7 +576,7 @@
         "productPageUrl": "https://www.luminousindia.com/nxi-130-3kw.html",
         "imageUrl": "",
         "source": "Luminous NXi GTI Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_NXi_150__5_0_kW_1-Ph_",
@@ -610,7 +610,75 @@
         "productPageUrl": "https://www.luminousindia.com/nxi-150-5kw.html",
         "imageUrl": "",
         "source": "Luminous NXi GTI Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
+      },
+      {
+        "id": "luminous_inverter_NXi_303__3_0_kW_3-Ph_",
+        "manufacturer": "Luminous",
+        "manufacturerId": "luminous",
+        "category": "inverters",
+        "model": "NXi 303 (3.0 kW 3-Ph)",
+        "series": "NXi Grid-Tied Inverter",
+        "ratedKw": 3,
+        "ratedKva": 3,
+        "inverterType": "on-grid",
+        "inverterTypeLabel": "Grid-Tied (GTI)",
+        "phase": "3-Phase",
+        "phaseLabel": "3-Phase (415V)",
+        "mpptCount": 1,
+        "maxPvInputKw": 4.5,
+        "maxDcVoltage": 1000,
+        "mpptVoltageRange": "160V - 850V",
+        "mpptMinVolt": 160,
+        "mpptMaxVolt": 850,
+        "maxInputCurrentA": 14,
+        "batteryVoltage": 0,
+        "batteryCompatibility": "None (Grid-Tied Direct AC)",
+        "maxEfficiencyPct": 98,
+        "continuousWatts": 3000,
+        "surgeWatts": 3300,
+        "surgeDurationSec": 5,
+        "ipRating": "IP65",
+        "warrantyYears": 5,
+        "datasheetUrl": "https://www.luminousindia.com/solar-grid-tie-inverter.html",
+        "productPageUrl": "https://www.luminousindia.com/nxi-303-3kw.html",
+        "imageUrl": "",
+        "source": "Luminous NXi GTI 3-Phase Technical Datasheet",
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
+      },
+      {
+        "id": "luminous_inverter_NXi_305__5_0_kW_3-Ph_",
+        "manufacturer": "Luminous",
+        "manufacturerId": "luminous",
+        "category": "inverters",
+        "model": "NXi 305 (5.0 kW 3-Ph)",
+        "series": "NXi Grid-Tied Inverter",
+        "ratedKw": 5,
+        "ratedKva": 5,
+        "inverterType": "on-grid",
+        "inverterTypeLabel": "Grid-Tied (GTI)",
+        "phase": "3-Phase",
+        "phaseLabel": "3-Phase (415V)",
+        "mpptCount": 2,
+        "maxPvInputKw": 7.5,
+        "maxDcVoltage": 1000,
+        "mpptVoltageRange": "160V - 850V",
+        "mpptMinVolt": 160,
+        "mpptMaxVolt": 850,
+        "maxInputCurrentA": 20,
+        "batteryVoltage": 0,
+        "batteryCompatibility": "None (Grid-Tied Direct AC)",
+        "maxEfficiencyPct": 98.3,
+        "continuousWatts": 5000,
+        "surgeWatts": 5500,
+        "surgeDurationSec": 5,
+        "ipRating": "IP65",
+        "warrantyYears": 5,
+        "datasheetUrl": "https://www.luminousindia.com/solar-grid-tie-inverter.html",
+        "productPageUrl": "https://www.luminousindia.com/nxi-305-5kw.html",
+        "imageUrl": "",
+        "source": "Luminous NXi GTI 3-Phase Technical Datasheet",
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_NXi_310__10_0_kW_3-Ph_",
@@ -644,7 +712,7 @@
         "productPageUrl": "https://www.luminousindia.com/nxi-310-10kw.html",
         "imageUrl": "",
         "source": "Luminous NXi GTI 3-Phase Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Solarverter_Pro_2kVA___24V",
@@ -678,7 +746,7 @@
         "productPageUrl": "https://www.luminousindia.com/solarverter-pro-2kva-24v.html",
         "imageUrl": "",
         "source": "Luminous Solarverter Pro Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Solarverter_Pro_3_5kVA___48V",
@@ -712,7 +780,7 @@
         "productPageUrl": "https://www.luminousindia.com/solarverter-pro-3-5kva-48v.html",
         "imageUrl": "",
         "source": "Luminous Solarverter Pro Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Solarverter_Pro_5kVA___48V",
@@ -746,7 +814,7 @@
         "productPageUrl": "https://www.luminousindia.com/solarverter-pro-5kva-48v.html",
         "imageUrl": "",
         "source": "Luminous Solarverter Pro Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Solarverter_Pro_7_5kVA___96V",
@@ -780,7 +848,7 @@
         "productPageUrl": "https://www.luminousindia.com/solarverter-pro-7-5kva.html",
         "imageUrl": "",
         "source": "Luminous Solarverter Pro Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Luminous_Hybrid_5kW___48V",
@@ -814,7 +882,7 @@
         "productPageUrl": "https://www.luminousindia.com/hybrid-5kw.html",
         "imageUrl": "",
         "source": "Luminous Hybrid Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Zelio__1100_Pure_Sine_Wave_UPS",
@@ -848,7 +916,7 @@
         "productPageUrl": "https://www.luminousindia.com/inverters-and-ups.html",
         "imageUrl": "",
         "source": "Luminous Home UPS Technical Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Cruze__2kVA_Pure_Sine_Wave_UPS",
@@ -882,7 +950,7 @@
         "productPageUrl": "https://www.luminousindia.com/inverters-and-ups.html",
         "imageUrl": "",
         "source": "Luminous Home UPS Technical Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_inverter_Optimus_2800__Heavy_Duty_UPS",
@@ -916,7 +984,7 @@
         "productPageUrl": "https://www.luminousindia.com/inverters-and-ups.html",
         "imageUrl": "",
         "source": "Luminous Home UPS Technical Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "waaree_inverter_Waaree_Primus_3kW_1-Ph_GTI",
@@ -950,7 +1018,7 @@
         "productPageUrl": "https://www.waaree.com/solar-inverters/primus-3kw",
         "imageUrl": "",
         "source": "Waaree Primus GTI Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_inverter_Waaree_Primus_5kW_1-Ph_GTI",
@@ -984,7 +1052,41 @@
         "productPageUrl": "https://www.waaree.com/solar-inverters/primus-5kw",
         "imageUrl": "",
         "source": "Waaree Primus GTI Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
+      },
+      {
+        "id": "waaree_inverter_Waaree_Primus_5kW_3-Ph_GTI",
+        "manufacturer": "Waaree",
+        "manufacturerId": "waaree",
+        "category": "inverters",
+        "model": "Waaree Primus 5kW 3-Ph GTI",
+        "series": "Primus Three-Phase On-Grid Series",
+        "ratedKw": 5,
+        "ratedKva": 5,
+        "inverterType": "on-grid",
+        "inverterTypeLabel": "Grid-Tied (GTI)",
+        "phase": "3-Phase",
+        "phaseLabel": "3-Phase (415V)",
+        "mpptCount": 2,
+        "maxPvInputKw": 7.5,
+        "maxDcVoltage": 1000,
+        "mpptVoltageRange": "160V - 850V",
+        "mpptMinVolt": 160,
+        "mpptMaxVolt": 850,
+        "maxInputCurrentA": 20,
+        "batteryVoltage": 0,
+        "batteryCompatibility": "None (Grid-Tied Direct AC)",
+        "maxEfficiencyPct": 98.3,
+        "continuousWatts": 5000,
+        "surgeWatts": 5500,
+        "surgeDurationSec": 5,
+        "ipRating": "IP65",
+        "warrantyYears": 5,
+        "datasheetUrl": "https://www.waaree.com/solar-inverters",
+        "productPageUrl": "https://www.waaree.com/solar-inverters/primus-5kw-3ph",
+        "imageUrl": "",
+        "source": "Waaree Primus 3-Phase Datasheet",
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_inverter_Waaree_Primus_10kW_3-Ph_GTI",
@@ -1018,7 +1120,7 @@
         "productPageUrl": "https://www.waaree.com/solar-inverters/primus-10kw",
         "imageUrl": "",
         "source": "Waaree Primus 3-Phase Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_inverter_Waaree_W1-HY-5K__5kW_Hybrid_",
@@ -1052,7 +1154,7 @@
         "productPageUrl": "https://www.waaree.com/solar-inverters/hybrid-5k",
         "imageUrl": "",
         "source": "Waaree Hybrid Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_inverter_Waaree_3_5kVA___48V_Solar_PCU",
@@ -1086,7 +1188,7 @@
         "productPageUrl": "https://www.waaree.com/solar-inverters/pcu-3-5kva",
         "imageUrl": "",
         "source": "Waaree Off-Grid PCU Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_inverter_Adani_Sol-GTI_3kW_1-Ph",
@@ -1120,7 +1222,7 @@
         "productPageUrl": "https://www.adanisolar.com/inverters/gti-3kw",
         "imageUrl": "",
         "source": "Adani Solar Inverter Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_inverter_Adani_Sol-GTI_5kW_1-Ph",
@@ -1154,7 +1256,7 @@
         "productPageUrl": "https://www.adanisolar.com/inverters/gti-5kw",
         "imageUrl": "",
         "source": "Adani Solar Inverter Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_inverter_Adani_Sol-GTI_10kW_3-Ph",
@@ -1188,7 +1290,7 @@
         "productPageUrl": "https://www.adanisolar.com/inverters/gti-10kw",
         "imageUrl": "",
         "source": "Adani Solar Three-Phase GTI Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_inverter_Adani_Sol-HY-5K__5kW_Hybrid_",
@@ -1222,7 +1324,7 @@
         "productPageUrl": "https://www.adanisolar.com/inverters/hybrid-5kw",
         "imageUrl": "",
         "source": "Adani Hybrid Inverter Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_inverter_Vikram_Sol-GTI_3kW_1-Ph",
@@ -1256,7 +1358,7 @@
         "productPageUrl": "https://www.vikramsolar.com/products/inverters-3kw",
         "imageUrl": "",
         "source": "Vikram Solar Inverter Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_inverter_Vikram_Sol-GTI_5kW_1-Ph",
@@ -1290,7 +1392,7 @@
         "productPageUrl": "https://www.vikramsolar.com/products/inverters-5kw",
         "imageUrl": "",
         "source": "Vikram Solar Inverter Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_inverter_Vikram_Sol-GTI_10kW_3-Ph",
@@ -1324,7 +1426,7 @@
         "productPageUrl": "https://www.vikramsolar.com/products/inverters-10kw",
         "imageUrl": "",
         "source": "Vikram Solar Inverter Catalogue",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_inverter_Vikram_Sol-HY-5K__5kW_Hybrid_",
@@ -1358,7 +1460,7 @@
         "productPageUrl": "https://www.vikramsolar.com/products/hybrid-5kw",
         "imageUrl": "",
         "source": "Vikram Hybrid Inverter Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_inverter_TP_Solar-GTI_3kW_1-Ph",
@@ -1392,7 +1494,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/inverters/gti-3kw/",
         "imageUrl": "",
         "source": "Tata Power Solar GTI Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_inverter_TP_Solar-GTI_5kW_1-Ph",
@@ -1426,7 +1528,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/inverters/gti-5kw/",
         "imageUrl": "",
         "source": "Tata Power Solar GTI Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_inverter_TP_Solar-GTI_10kW_3-Ph",
@@ -1460,7 +1562,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/inverters/gti-10kw/",
         "imageUrl": "",
         "source": "Tata Power Solar 3-Phase Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_inverter_TP_Solar-HY-5K__5kW_Hybrid_",
@@ -1494,7 +1596,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/inverters/hybrid-5kw/",
         "imageUrl": "",
         "source": "Tata Power Hybrid Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       }
     ],
     "batteries": [
@@ -1521,7 +1623,7 @@
         "productPageUrl": "https://www.luminousindia.com/solar-battery-150ah-lptt12150h.html",
         "imageUrl": "",
         "source": "Luminous Solar Tubular Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_battery_Solar_LPTT_12200H",
@@ -1546,7 +1648,7 @@
         "productPageUrl": "https://www.luminousindia.com/solar-battery-200ah-lptt12200h.html",
         "imageUrl": "",
         "source": "Luminous Solar Tubular Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_battery_Li-ON_1250__12_8V_100Ah_",
@@ -1571,7 +1673,7 @@
         "productPageUrl": "https://www.luminousindia.com/li-on-1250.html",
         "imageUrl": "",
         "source": "Luminous Li-ON Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_battery_Li-ON_48100__48V_100Ah_",
@@ -1596,7 +1698,7 @@
         "productPageUrl": "https://www.luminousindia.com/li-on-48100.html",
         "imageUrl": "",
         "source": "Luminous Li-ON Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "luminous_battery_Inverlast_IL_1054FP__12V_150Ah_",
@@ -1621,7 +1723,7 @@
         "productPageUrl": "https://www.luminousindia.com/inverlast-150ah.html",
         "imageUrl": "",
         "source": "Luminous Flat Plate Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.524Z"
+        "lastUpdated": "2026-11-05T10:41:47.357Z"
       },
       {
         "id": "waaree_battery_Waaree_LiFePO4_48V_100Ah",
@@ -1646,7 +1748,7 @@
         "productPageUrl": "https://www.waaree.com/solar-batteries/lithium-48v-100ah",
         "imageUrl": "",
         "source": "Waaree Energy Storage Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_battery_Waaree_WTT-150_Solar_Tubular",
@@ -1671,7 +1773,7 @@
         "productPageUrl": "https://www.waaree.com/solar-batteries/tubular-150ah",
         "imageUrl": "",
         "source": "Waaree Deep Cycle Tubular Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_battery_Waaree_WTT-200_Solar_Tubular",
@@ -1696,7 +1798,7 @@
         "productPageUrl": "https://www.waaree.com/solar-batteries/tubular-200ah",
         "imageUrl": "",
         "source": "Waaree Deep Cycle Tubular Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "waaree_battery_Waaree_WFP-150_Flat_Plate__12V_150Ah_",
@@ -1721,7 +1823,7 @@
         "productPageUrl": "https://www.waaree.com/flat-plate-150ah",
         "imageUrl": "",
         "source": "Waaree Flat Plate Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_battery_Adani_SolStore_LFP_48V_100Ah",
@@ -1746,7 +1848,7 @@
         "productPageUrl": "https://www.adanisolar.com/storage/lfp-48v-100ah",
         "imageUrl": "",
         "source": "Adani SolStore LFP Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_battery_Adani_SolTubular_12V_150Ah",
@@ -1771,7 +1873,7 @@
         "productPageUrl": "https://www.adanisolar.com/storage/tubular-150ah",
         "imageUrl": "",
         "source": "Adani Deep Cycle Tubular Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "adani_battery_Adani_SolFlat_12V_150Ah",
@@ -1796,7 +1898,7 @@
         "productPageUrl": "https://www.adanisolar.com/storage/solflat-150ah",
         "imageUrl": "",
         "source": "Adani Solar Flat Plate Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_battery_Vikram_V-Store_48V_100Ah_LFP",
@@ -1821,7 +1923,7 @@
         "productPageUrl": "https://www.vikramsolar.com/products/v-store-48v",
         "imageUrl": "",
         "source": "Vikram V-Store LFP Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_battery_Vikram_V-Tube_12V_150Ah_Tubular",
@@ -1846,7 +1948,7 @@
         "productPageUrl": "https://www.vikramsolar.com/products/v-tube-150ah",
         "imageUrl": "",
         "source": "Vikram Tall Tubular Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "vikram_battery_Vikram_V-Flat_12V_150Ah_Flat_Plate",
@@ -1871,7 +1973,7 @@
         "productPageUrl": "https://www.vikramsolar.com/products/v-flat-150ah",
         "imageUrl": "",
         "source": "Vikram Solar Flat Plate Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_battery_TP_PowerPack_LFP_48V_100Ah",
@@ -1896,7 +1998,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/storage/powerpack-48v-100ah/",
         "imageUrl": "",
         "source": "Tata Power LFP Storage Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_battery_TP_SolarTubular_12V_150Ah",
@@ -1921,7 +2023,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/storage/tubular-150ah/",
         "imageUrl": "",
         "source": "Tata Power Tall Tubular Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_battery_TP_SolarTubular_12V_200Ah",
@@ -1946,7 +2048,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/storage/tubular-200ah/",
         "imageUrl": "",
         "source": "Tata Power Tall Tubular Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       },
       {
         "id": "tatapower_battery_TP_SolarFlat_12V_150Ah_Flat_Plate",
@@ -1971,7 +2073,7 @@
         "productPageUrl": "https://www.tatapowersolar.com/storage/solarflat-150ah/",
         "imageUrl": "",
         "source": "Tata Power Flat Plate Technical Datasheet",
-        "lastUpdated": "2026-11-05T09:49:03.525Z"
+        "lastUpdated": "2026-11-05T10:41:47.358Z"
       }
     ]
   }

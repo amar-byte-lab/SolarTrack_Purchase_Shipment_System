@@ -167,7 +167,7 @@ const SizingCalc = (() => {
     const SINGLE_PHASE_MAX_LIMIT_KW = 5.0;
 
     // Estimate daily battery recharge demand for Off-Grid / autonomous systems
-    const activeBackupW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 500);
+    const activeBackupW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 0);
     let targetBackupEnergyWh = 0;
     let effectiveBackupHours = backupHours;
 
@@ -184,8 +184,11 @@ const SizingCalc = (() => {
     if (backupApplianceDailyWh > 0) {
       targetBackupEnergyWh = backupApplianceDailyWh;
       effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
-    } else {
+    } else if (activeBackupW > 0) {
       targetBackupEnergyWh = Math.round(activeBackupW * backupHours);
+      effectiveBackupHours = backupHours;
+    } else {
+      targetBackupEnergyWh = 0;
       effectiveBackupHours = backupHours;
     }
 
@@ -508,11 +511,8 @@ const SizingCalc = (() => {
     if (isSinglePhase) {
       candidates = candidates.filter(c => c.phase === '1-Phase' || !c.phase);
     } else {
-      // 3-Phase preference for >= 6kW or if 3-Phase is explicitly chosen
-      const threePhaseCandidates = candidates.filter(c => c.phase === '3-Phase');
-      if (threePhaseCandidates.length > 0) {
-        candidates = threePhaseCandidates;
-      }
+      // 3-Phase connection strictly requires 3-Phase inverters
+      candidates = candidates.filter(c => c.phase === '3-Phase');
     }
 
     // If PV input requirement exists, prioritize candidates that satisfy maxPvInput
@@ -710,6 +710,43 @@ const SizingCalc = (() => {
       dod = 0.75;
     }
 
+    // 0. Zero Load / No Backup Load Corner Case Handling
+    if ((!backupLoadW || backupLoadW <= 0) && (!targetBackupEnergyWh || targetBackupEnergyWh <= 0)) {
+      const defaultSysV = inverterBatteryVoltage || 12;
+      return {
+        energyCalculationBasis,
+        backupLoadW: 0,
+        backupEnergyWh: 0,
+        backupEnergyKwh: 0,
+        requiredBatteryWh: 0,
+        requiredBatteryKwh: 0,
+        systemVoltage: defaultSysV,
+        systemBankAh: 0,
+        requiredAh: 0,
+        maxDischargeCurrentA: 0,
+        peakDischargeCurrentA: 0,
+        batteryType: isLithium ? 'Lithium LFP' : (isTubular ? 'Tall Tubular Lead-Acid' : 'Flat Plate Lead-Acid'),
+        selectedBrand: 'N/A',
+        selectedModel: 'No Backup Load Selected',
+        singleBatteryVolt: 12,
+        singleBatteryAh: 0,
+        singleBatteryKwh: 0,
+        capacityRating: 'N/A',
+        dodPct: Math.round(dod * 100),
+        inverterEffPct: Math.round(eff * 100),
+        series: 0,
+        parallel: 0,
+        totalUnits: 0,
+        totalInstalledKwh: 0,
+        usableKwh: 0,
+        actualBackupHours: 0,
+        configurationText: 'Please select appliances to calculate battery bank',
+        dischargeCheckOk: true,
+        maxDischargeCurrentCapacityA: 0,
+        isZeroLoad: true
+      };
+    }
+
     // 1. Calculate Backup Energy (kWh & Wh)
     const loadKw = (Math.max(10, backupLoadW || 500)) / 1000;
     let backupEnergyWh = 0;
@@ -745,9 +782,13 @@ const SizingCalc = (() => {
     const contDischargeCurrentA = Math.round((loadKw * 1000) / (systemVoltage * eff));
     const peakDischargeCurrentA = Math.round((peakSurgeW || backupLoadW * 2) / (systemVoltage * eff));
 
-    // 4. Search Database for matching active battery models
+    // 4. Search Database for matching active battery models (with over-voltage guard)
     const activeBatteries = (batteryList || []).filter(b => {
       if (!b.active) return false;
+      // Over-voltage guard: battery nominal voltage cannot exceed system DC bus voltage
+      if (b.voltage > systemVoltage && !(b.voltage <= 14 && systemVoltage === 12) && !(b.voltage <= 28 && systemVoltage === 24) && !(b.voltage <= 55 && systemVoltage === 48)) {
+        return false;
+      }
       if (isLithium) return b.type.toLowerCase().includes('lithium');
       if (isTubular) return b.type.toLowerCase().includes('tubular');
       if (isFlatPlate) return b.type.toLowerCase().includes('flat plate');
@@ -764,7 +805,7 @@ const SizingCalc = (() => {
           if (systemVoltage === 48) return b.voltage >= 40 && b.voltage <= 55;
           return b.voltage === systemVoltage;
         });
-        const pool = voltMatch.length > 0 ? voltMatch : activeBatteries;
+        const pool = voltMatch.length > 0 ? voltMatch : activeBatteries.filter(b => b.voltage <= systemVoltage);
         const sorted = [...pool].sort((a, b) => Math.abs(a.ah - requiredAh) - Math.abs(b.ah - requiredAh));
         selectedBat = sorted[0];
       } else {
@@ -785,6 +826,12 @@ const SizingCalc = (() => {
     let series = 1;
     if (singleVolt < systemVoltage) {
       series = Math.max(1, Math.round(systemVoltage / singleVolt));
+    }
+
+    // High-Voltage DC Bus BMS guard for Lithium:
+    let lithiumBmsWarning = null;
+    if (isLithium && series > 2) {
+      lithiumBmsWarning = `⚠️ High-Voltage DC bus (${systemVoltage}V) requires industrial centralized HV-BMS rack storage. Standard 12V/24V consumer Lithium packs cannot be wired in series > 2. Consider Tall Tubular Lead-Acid series bank.`;
     }
 
     const stringKwh = series * singleKwh;
@@ -834,7 +881,9 @@ const SizingCalc = (() => {
       actualBackupHours,
       configurationText: `${totalUnits} × ${singleVolt}V ${singleAh}Ah (${series} Series × ${parallel} Parallel)`,
       dischargeCheckOk,
-      maxDischargeCurrentCapacityA: dischargeCapA
+      maxDischargeCurrentCapacityA: dischargeCapA,
+      lithiumBmsWarning,
+      isZeroLoad: false
     };
   }
 

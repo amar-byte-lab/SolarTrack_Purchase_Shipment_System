@@ -2734,7 +2734,25 @@ const SizingUI = (() => {
       let activeBatObj = curBat === 'tubular' ? batLa : (curBat === 'flat-plate' ? batFp : batLi);
       const activeBackupWatts = (activeBatObj && activeBatObj.backupLoadW) || res.backupLoadW || res.connectedLoadW;
 
-      if (curBat === 'lithium') {
+      if (activeBatObj && activeBatObj.isZeroLoad) {
+        heroStatHtml = `
+          <div class="big-stat-badge text-muted">0 Units</div>
+          <div class="sub-stat-text">No Backup Load Configured</div>
+        `;
+        specBoxHtml = `
+          <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1 text-center py-4">
+            <span class="fs-4 d-block mb-1">🔋</span>
+            <div class="fw-bold text-dark fs-7 mb-1">No Emergency Backup Load Configured</div>
+            <div class="fs-8 text-muted">Please configure appliances in Step 2 to calculate required battery storage capacity.</div>
+          </div>
+        `;
+      } else if (curBat === 'lithium') {
+        const bmsWarningHtml = batLi.lithiumBmsWarning ? `
+          <div class="p-2 rounded-2 bg-warning-subtle border border-warning-subtle text-dark fs-9 mb-2">
+            ${batLi.lithiumBmsWarning}
+          </div>
+        ` : '';
+
         heroStatHtml = `
           <div class="big-stat-badge text-success">${batLi.systemVoltage}V ${batLi.systemBankAh}Ah</div>
           <div class="sub-stat-text">${batLi.totalInstalledKwh} kWh Lithium LFP Bank</div>
@@ -2746,6 +2764,8 @@ const SizingUI = (() => {
             </div>
             <div class="fs-8 text-muted mb-2.5">High Efficiency LiFePO4 (LFP) with built-in Smart BMS</div>
             
+            ${bmsWarningHtml}
+
             <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-dark ps-1">
               <li>• 10–12+ Yrs Lifespan (~3000–5000 Cycles)</li>
               <li>• 100% Zero Maintenance • Wall-Mount / Compact</li>

@@ -32,9 +32,16 @@ class SolarRecommendationService {
     const inverterRecommendation = this.recommendInverters(sizingResult, productsData.inverters);
 
     // 3. Solar Battery Recommendation
-    const targetBatteryVoltage = inverterRecommendation && inverterRecommendation.bestMatch
-      ? inverterRecommendation.bestMatch.product.batteryVoltage
-      : (sizingResult.inverter ? sizingResult.inverter.batteryVoltage : 48);
+    // Synchronize DC bus voltage: prioritize sizingResult.inverter voltage, then inverterRecommendation
+    let targetBatteryVoltage = 48;
+    if (sizingResult.inverter && Number(sizingResult.inverter.batteryVoltage) > 0) {
+      targetBatteryVoltage = Number(sizingResult.inverter.batteryVoltage);
+    } else if (inverterRecommendation && inverterRecommendation.bestMatch && Number(inverterRecommendation.bestMatch.product.batteryVoltage) > 0) {
+      targetBatteryVoltage = Number(inverterRecommendation.bestMatch.product.batteryVoltage);
+    } else {
+      const bLoad = Number(sizingResult.backupLoadW || sizingResult.connectedLoadW) || 500;
+      targetBatteryVoltage = bLoad <= 1000 ? 12 : (bLoad <= 2000 ? 24 : 48);
+    }
 
     const batteryRecommendation = this.recommendBatteries(sizingResult, productsData.batteries, targetBatteryVoltage);
 
@@ -142,7 +149,7 @@ class SolarRecommendationService {
 
     const sysType = sizingResult.systemType || 'on-grid';
     const reqContinuousW = Number(sizingResult.requiredContinuousW) || 3000;
-    const reqPeakSurgeW = Number(sizingResult.requiredPeakSurgeW) || 5000;
+    const reqPeakSurgeW = Number(sizingResult.requiredPeakSurgeW) || reqContinuousW;
     const connectionPhase = sizingResult.connectionPhase || '1-Phase';
     const isSinglePhase = connectionPhase === '1-Phase';
     const reqPvKw = (sizingResult.solar && sizingResult.solar.actualArrayKwp) ? Number(sizingResult.solar.actualArrayKwp) : 0;
@@ -162,17 +169,33 @@ class SolarRecommendationService {
       const contCapW = inv.continuousWatts || (inv.ratedKw * 1000);
       const surgeCapW = inv.surgeWatts || (contCapW * 2);
 
-      let isCapacityOk = contCapW >= reqContinuousW * 0.9;
-      let isSurgeOk = surgeCapW >= reqPeakSurgeW;
-      let isPhaseOk = isSinglePhase ? inv.phase === '1-Phase' : true;
-      let isPvOk = reqPvKw > 0 ? (inv.maxPvInputKw ? inv.maxPvInputKw >= reqPvKw * 0.95 : true) : true;
+      // 1. Strict Phase Matching: Single Phase requires 1-Phase; Three-Phase requires 3-Phase!
+      const isPhaseOk = isSinglePhase 
+        ? (inv.phase === '1-Phase' || !inv.phase)
+        : (inv.phase === '3-Phase');
 
-      // Scoring
+      // 2. Strict Continuous Capacity: 100% capacity required (Zero tolerance for undersizing)
+      const isCapacityOk = contCapW >= reqContinuousW;
+
+      // 3. Peak Motor Surge Inrush Handling:
+      const isSurgeOk = surgeCapW >= reqPeakSurgeW;
+
+      // 4. PV Input Capacity:
+      const isPvOk = reqPvKw > 0 ? (inv.maxPvInputKw ? inv.maxPvInputKw >= reqPvKw * 0.95 : true) : true;
+
+      // 5. Statutory 1-Phase 5.0 kW DISCOM limit check:
+      const exceedsSinglePhaseStatutory = isSinglePhase && (contCapW > 5000 || inv.ratedKw > 5.0);
+
+      // Scoring Engine
       let score = 100;
-      if (!isPhaseOk) score -= 50;
-      if (!isCapacityOk) score -= 30;
-      if (!isSurgeOk) score -= 20;
-      if (reqPvKw > 0 && !isPvOk) score -= 20;
+      if (!isPhaseOk) score -= 300; // Strict phase mismatch penalty
+      if (!isCapacityOk) {
+        const deficitW = reqContinuousW - contCapW;
+        score -= (100 + (deficitW / 1000) * 30); // Under-capacity heavy penalty
+      }
+      if (!isSurgeOk) score -= 80; // Motor surge inrush failure penalty
+      if (reqPvKw > 0 && !isPvOk) score -= 40;
+      if (exceedsSinglePhaseStatutory) score -= 150; // DISCOM limit violation
 
       // Prefer models closest to continuous requirement without massive wasteful oversizing
       const kwDiff = Math.abs(contCapW - reqContinuousW);
@@ -181,13 +204,15 @@ class SolarRecommendationService {
       let compatibilityStatus = 'Compatible';
       const details = [];
 
-      if (isCapacityOk && isSurgeOk && isPhaseOk) {
+      if (isCapacityOk && isSurgeOk && isPhaseOk && !exceedsSinglePhaseStatutory) {
         compatibilityStatus = '100% Electrically Matched';
-        details.push(`Handles continuous load (${reqContinuousW}W) & motor peak surge (${reqPeakSurgeW}W).`);
+        details.push(`Handles continuous load (${reqContinuousW}W) & motor surge (${reqPeakSurgeW}W) on ${inv.phase}.`);
       } else {
-        if (!isPhaseOk) details.push(`Phase mismatch: Requires ${connectionPhase}, inverter is ${inv.phase}.`);
-        if (!isCapacityOk) details.push(`Rating (${contCapW}W) below target (${reqContinuousW}W).`);
-        if (!isSurgeOk) details.push(`Surge capacity (${surgeCapW}W) below peak motor requirement (${reqPeakSurgeW}W).`);
+        if (!isPhaseOk) details.push(`Phase mismatch: Customer connection is ${connectionPhase}, inverter is ${inv.phase}.`);
+        if (!isCapacityOk) details.push(`Rating (${contCapW}W) below target (${reqContinuousW}W) — Overload trip risk.`);
+        if (!isSurgeOk) details.push(`Surge rating (${surgeCapW}W) below motor peak inrush (${reqPeakSurgeW}W).`);
+        if (exceedsSinglePhaseStatutory) details.push(`Exceeds DISCOM 5.0 kW 1-Phase statutory grid limit.`);
+        compatibilityStatus = (!isPhaseOk || !isCapacityOk) ? 'Incompatible' : 'Partial Match (Review Warning)';
       }
 
       if (reqPvKw > 0) {
@@ -200,19 +225,22 @@ class SolarRecommendationService {
         peakSurgeW: reqPeakSurgeW,
         score,
         compatibilityStatus,
-        compatibilityDetails: details.join(' ')
+        compatibilityDetails: details.join(' '),
+        isElectricallyCompliant: isCapacityOk && isSurgeOk && isPhaseOk && !exceedsSinglePhaseStatutory
       };
     });
 
     evaluated.sort((a, b) => b.score - a.score);
 
-    const bestMatch = evaluated[0] || null;
-    const alternative = evaluated.length > 1 ? evaluated[1] : null;
+    // Best match must be electrically compliant if available
+    const compliantMatches = evaluated.filter(e => e.isElectricallyCompliant);
+    const bestMatch = (compliantMatches.length > 0 ? compliantMatches[0] : evaluated[0]) || null;
+    const alternative = compliantMatches.length > 1 ? compliantMatches[1] : (evaluated.length > 1 ? evaluated[1] : null);
 
     return {
       applicable: true,
-      bestMatch: bestMatch ? { ...bestMatch, rankBadge: 'Best Technical Match' } : null,
-      alternative: alternative ? { ...alternative, rankBadge: 'Alternative Inverter' } : null,
+      bestMatch: bestMatch ? { ...bestMatch, rankBadge: bestMatch.isElectricallyCompliant ? 'Best Technical Match' : 'Review Recommendation' } : null,
+      alternative: alternative ? { ...alternative, rankBadge: alternative.isElectricallyCompliant ? 'Alternative Inverter' : 'Review Alternative' } : null,
       allCompatible: evaluated
     };
   }
@@ -240,56 +268,142 @@ class SolarRecommendationService {
       };
     }
 
-    // Filter by user's chosen battery chemistry if specified (tubular, flat-plate, lithium)
     const selectedChemistry = (sizingResult.selectedBatteryType || sizingResult.batteryType || '').toLowerCase().trim();
     let pool = availableBatteries;
 
     if (selectedChemistry === 'tubular') {
-      pool = availableBatteries.filter(b => b.chemistryCategory === 'tubular');
+      const tub = availableBatteries.filter(b => b.chemistryCategory === 'tubular');
+      if (tub.length > 0) pool = tub;
     } else if (selectedChemistry === 'flat-plate' || selectedChemistry === 'flat_plate' || selectedChemistry === 'flatplate') {
-      pool = availableBatteries.filter(b => b.chemistryCategory === 'flat-plate');
+      const fp = availableBatteries.filter(b => b.chemistryCategory === 'flat-plate');
+      if (fp.length > 0) pool = fp;
     } else if (selectedChemistry === 'lithium' || selectedChemistry === 'lfp') {
-      pool = availableBatteries.filter(b => b.chemistryCategory === 'lithium');
+      const li = availableBatteries.filter(b => b.chemistryCategory === 'lithium');
+      if (li.length > 0) pool = li;
     }
 
-    if (!pool || pool.length === 0) {
-      pool = availableBatteries;
+    const rawBackupWh = Number(sizingResult.targetBackupEnergyWh || sizingResult.backupEnergyWh) || 0;
+    const rawBackupLoadW = Number(sizingResult.backupLoadW || sizingResult.connectedLoadW) || 0;
+
+    // Handle corner case: Zero appliance / Zero load
+    if (rawBackupLoadW <= 0 && rawBackupWh <= 0) {
+      return {
+        applicable: true,
+        selectedChemistry: selectedChemistry || 'all',
+        targetInverterVoltage: Number(targetInverterVoltage) || 48,
+        requiredBackupKwh: 0,
+        bestMatch: null,
+        alternative: null,
+        allCompatible: [],
+        reason: 'No backup load configured. Please select appliances to size battery backup.'
+      };
     }
 
-    const backupEnergyWh = Number(sizingResult.targetBackupEnergyWh || sizingResult.backupEnergyWh) || 4000;
+    const backupEnergyWh = rawBackupWh > 0 ? rawBackupWh : Math.round(rawBackupLoadW * (Number(sizingResult.backupHours) || 4));
     const backupEnergyKwh = Math.round((backupEnergyWh / 1000) * 100) / 100;
-    const backupLoadW = Number(sizingResult.backupLoadW || sizingResult.connectedLoadW) || 1000;
+    const backupLoadW = rawBackupLoadW > 0 ? rawBackupLoadW : 500;
     const invVoltage = Number(targetInverterVoltage) || 48;
     const invEff = 0.90;
 
     const evaluated = pool.map(bat => {
       const dod = (bat.dodPct || 75) / 100;
-      const requiredNominalKwh = backupEnergyKwh / (dod * invEff);
+      const isLithium = bat.chemistryCategory === 'lithium';
 
-      // Determine series count to match inverter DC bus voltage
-      let seriesCount = 1;
-      if (bat.nominalVoltage < invVoltage) {
-        seriesCount = Math.max(1, Math.round(invVoltage / bat.nominalVoltage));
+      // 1. Critical Electrical Safety Check: Over-Voltage Detection
+      if (bat.nominalVoltage > invVoltage) {
+        return {
+          product: bat,
+          targetInverterVoltage: invVoltage,
+          requiredBackupKwh: backupEnergyKwh,
+          requiredUnits: 0,
+          seriesCount: 0,
+          parallelCount: 0,
+          configurationText: 'Incompatible (Over-Voltage)',
+          totalInstalledKwh: 0,
+          usableKwh: 0,
+          estBackupHours: 0,
+          totalBankAh: 0,
+          dischargeCheckOk: false,
+          score: -999,
+          compatibilityStatus: 'Incompatible (Over-Voltage)',
+          compatibilityDetails: `Battery voltage (${bat.nominalVoltage}V) exceeds inverter DC bus (${invVoltage}V). Severe electrical damage risk!`
+        };
       }
 
+      // 2. Integer Series Ratio Check
+      const rawRatio = invVoltage / bat.nominalVoltage;
+      const seriesCount = Math.max(1, Math.round(rawRatio));
+      const isIntegerMatch = Math.abs(seriesCount * bat.nominalVoltage - invVoltage) <= 2.5;
+
+      if (!isIntegerMatch) {
+        return {
+          product: bat,
+          targetInverterVoltage: invVoltage,
+          requiredBackupKwh: backupEnergyKwh,
+          requiredUnits: 0,
+          seriesCount: 0,
+          parallelCount: 0,
+          configurationText: 'Incompatible (Voltage Mismatch)',
+          totalInstalledKwh: 0,
+          usableKwh: 0,
+          estBackupHours: 0,
+          totalBankAh: 0,
+          dischargeCheckOk: false,
+          score: -999,
+          compatibilityStatus: 'Incompatible (Voltage Mismatch)',
+          compatibilityDetails: `Cannot form ${invVoltage}V DC bus using ${bat.nominalVoltage}V batteries in series.`
+        };
+      }
+
+      // 3. Lithium BMS Series Protection Rule:
+      // Standard low-voltage Lithium packs with integrated BMS cannot be connected in series > 2 strings.
+      if (isLithium && seriesCount > 2) {
+        return {
+          product: bat,
+          targetInverterVoltage: invVoltage,
+          requiredBackupKwh: backupEnergyKwh,
+          requiredUnits: 0,
+          seriesCount,
+          parallelCount: 0,
+          configurationText: 'Incompatible (Lithium BMS Series Limit)',
+          totalInstalledKwh: 0,
+          usableKwh: 0,
+          estBackupHours: 0,
+          totalBankAh: 0,
+          dischargeCheckOk: false,
+          score: -900,
+          compatibilityStatus: 'Incompatible (BMS Limit)',
+          compatibilityDetails: `Lithium LFP packs with internal BMS cannot be wired in ${seriesCount} series strings (${invVoltage}V). Use native ${invVoltage}V Lithium pack or Tall Tubular Lead-Acid bank.`
+        };
+      }
+
+      // 4. Required Energy & C-Rate Sizing:
+      const requiredNominalKwh = backupEnergyKwh / (dod * invEff);
       const stringKwh = seriesCount * bat.nominalEnergyKwh;
-      const parallelCount = Math.max(1, Math.ceil(requiredNominalKwh / stringKwh));
+      let parallelCount = Math.max(1, Math.ceil(requiredNominalKwh / stringKwh));
+
+      // 5. Safe Discharge C-Rate Enforcement (Increment parallel strings until discharge current is safely met)
+      const dischargeCurrentA = Math.round(backupLoadW / (invVoltage * invEff));
+      const maxSingleContDischargeA = bat.maxContinuousDischargeA || (bat.capacityAh * (isLithium ? 0.5 : 0.3));
+
+      while ((maxSingleContDischargeA * parallelCount) < dischargeCurrentA) {
+        parallelCount++;
+      }
+
       const totalUnits = seriesCount * parallelCount;
       const totalBankAh = parallelCount * bat.capacityAh;
       const totalInstalledKwh = Math.round((totalUnits * bat.nominalEnergyKwh) * 100) / 100;
       const usableKwh = Math.round((totalInstalledKwh * dod * invEff) * 100) / 100;
       const estBackupHours = Math.round((usableKwh / (backupLoadW / 1000)) * 10) / 10;
-
-      // Discharge current check
-      const dischargeCurrentA = Math.round(backupLoadW / (invVoltage * invEff));
-      const maxContinuousDischargeA = (bat.maxContinuousDischargeA || bat.capacityAh * 0.5) * parallelCount;
-      const isDischargeSafe = maxContinuousDischargeA >= dischargeCurrentA;
+      const isDischargeSafe = (maxSingleContDischargeA * parallelCount) >= dischargeCurrentA;
 
       let score = 100;
-      if (bat.chemistryCategory === 'lithium') score += 20;
+      if (isLithium) score += 20;
       score += (bat.dodPct - 70) * 2;
-      score -= Math.abs(usableKwh - backupEnergyKwh) * 5;
-      if (!isDischargeSafe) score -= 30;
+      // Bonus for native voltage match (seriesCount === 1)
+      if (seriesCount === 1) score += 15;
+      score -= Math.abs(usableKwh - backupEnergyKwh) * 4;
+      if (!isDischargeSafe) score -= 40;
 
       const configText = seriesCount > 1 
         ? `${totalUnits} Units (${seriesCount} in Series × ${parallelCount} Parallel strings)`
@@ -316,8 +430,9 @@ class SolarRecommendationService {
 
     evaluated.sort((a, b) => b.score - a.score);
 
-    const bestMatch = evaluated[0] || null;
-    const alternative = evaluated.length > 1 ? evaluated[1] : null;
+    const validMatches = evaluated.filter(e => e.score > 0);
+    const bestMatch = validMatches[0] || null;
+    const alternative = validMatches.length > 1 ? validMatches[1] : null;
 
     let rankBadge = 'Recommended Technical Match';
     if (selectedChemistry === 'tubular') rankBadge = 'Recommended Solar Tubular';
