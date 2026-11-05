@@ -137,6 +137,7 @@ const DB = (() => {
 
             await Promise.all([...fetchPromises, borrowerListPromise]);
             syncSessionCache();
+            syncActivityLogs().catch(() => {});
             return true;
         } catch (e) {
             console.warn('Backend server unavailable, falling back to offline browser cache:', e);
@@ -242,7 +243,84 @@ const DB = (() => {
         try {
             const trimmed = (logs || []).slice(0, 500);
             localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(trimmed));
+            fetch('/api/activity-logs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(trimmed)
+            }).catch(() => {});
         } catch (e) {}
+    }
+
+    async function syncActivityLogs() {
+        try {
+            const res = await fetch('/api/activity-logs');
+            if (res.ok) {
+                const serverLogs = await res.json();
+                if (Array.isArray(serverLogs)) {
+                    const localLogs = getActivityLogs();
+                    const map = new Map();
+                    serverLogs.forEach(l => { if (l && l.id) map.set(l.id, l); });
+                    localLogs.forEach(l => {
+                        if (l && l.id) {
+                            const existing = map.get(l.id);
+                            map.set(l.id, existing ? { ...existing, ...l } : l);
+                        }
+                    });
+                    const merged = Array.from(map.values())
+                        .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date))
+                        .slice(0, 500);
+                    localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(merged));
+                    if (merged.length > serverLogs.length) {
+                        fetch('/api/activity-logs', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(merged)
+                        }).catch(() => {});
+                    }
+                    return merged;
+                }
+            }
+        } catch (e) {}
+        return getActivityLogs();
+    }
+
+    function logCustomActivity({ table, page, action, recordId, customerName, consumerNo, changes, revertData, revertMaterials, previousRow, newRow }) {
+        try {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-CA');
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const currentUser = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
+            const userName = currentUser ? (currentUser.name || currentUser.username || currentUser.userid || 'Admin') : 'Admin';
+            const userRole = currentUser ? (currentUser.role || 'Admin') : 'Admin';
+
+            const logItem = {
+                id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                timestamp: now.toISOString(),
+                date: dateStr,
+                time: timeStr,
+                page: page || 'Shipment',
+                table: table || 'shipments',
+                action: action || 'UPDATE',
+                user: userName,
+                userRole: userRole,
+                recordId: recordId,
+                customerName: customerName,
+                consumerNo: consumerNo || '',
+                changes: changes || [],
+                revertData: revertData || null,
+                revertMaterials: revertMaterials || null,
+                previousRow: previousRow || null,
+                newRow: newRow || null,
+                undone: false
+            };
+
+            const logs = getActivityLogs();
+            logs.unshift(logItem);
+            saveActivityLogs(logs);
+            return logItem;
+        } catch (e) {
+            console.warn('[ActivityLog] Failed to log custom activity:', e);
+        }
     }
 
     function recordActivity(action, key, rowOrMatch, newData) {
@@ -428,6 +506,12 @@ const DB = (() => {
             if (act.action === 'UPDATE') {
                 const pkVal = act.recordId;
                 await update(act.table, r => (r[pkName] != null && String(r[pkName]) === String(pkVal)) || (Number(r.SlNo) === Number(pkVal)), act.revertData);
+                if (act.table === 'shipments' && act.revertMaterials) {
+                    await deleteBatch('materials', m => (m.ShipmentNo || m.shipmentno) === pkVal);
+                    if (act.revertMaterials.length > 0) {
+                        await insertBatch('materials', act.revertMaterials);
+                    }
+                }
             } else if (act.action === 'INSERT') {
                 const pkVal = act.recordId;
                 await remove(act.table, r => (r[pkName] != null && String(r[pkName]) === String(pkVal)) || (Number(r.SlNo) === Number(pkVal)));
@@ -701,6 +785,9 @@ const DB = (() => {
         downloadDocumentFile,
         clearCache,
         getActivityLogs,
+        saveActivityLogs,
+        syncActivityLogs,
+        logCustomActivity,
         undoActivity,
     };
 

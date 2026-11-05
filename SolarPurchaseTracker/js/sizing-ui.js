@@ -8,16 +8,16 @@ const SizingUI = (() => {
 
   const COMMON_APPLIANCES = [
     { id: 'led', name: 'LED Light', watts: 10, defaultQty: 5, initialQty: 5, defaultHours: 14, icon: '💡', checked: true, isBackup: true },
-    { id: 'fan', name: 'Fan', watts: 70, defaultQty: 3, initialQty: 3, defaultHours: 14, icon: '🌀', checked: true, isBackup: true },
-    { id: 'tv', name: 'TV', watts: 120, defaultQty: 1, initialQty: 1, defaultHours: 14, icon: '📺', checked: true, isBackup: true },
-    { id: 'fridge', name: 'Refrigerator', watts: 200, defaultQty: 1, initialQty: 1, defaultHours: 24, icon: '❄️', checked: true, isBackup: true },
-    { id: 'comp', name: 'Computer / Laptop', watts: 150, defaultQty: 0, initialQty: 1, defaultHours: 6, icon: '💻', checked: false, isBackup: true },
-    { id: 'wm', name: 'Washing Machine', watts: 500, defaultQty: 0, initialQty: 1, defaultHours: 1, icon: '🧺', checked: false, isBackup: false },
+    { id: 'fan', name: 'Fan', watts: 55, defaultQty: 3, initialQty: 3, defaultHours: 14, icon: '🌀', checked: true, isBackup: true },
+    { id: 'tv', name: 'TV', watts: 65, defaultQty: 1, initialQty: 1, defaultHours: 14, icon: '📺', checked: true, isBackup: true },
+    { id: 'fridge', name: 'Refrigerator', watts: 30, defaultQty: 1, initialQty: 1, defaultHours: 24, icon: '❄️', checked: true, isBackup: true },
+    { id: 'comp', name: 'Computer / Laptop', watts: 28, defaultQty: 0, initialQty: 1, defaultHours: 6, icon: '💻', checked: false, isBackup: true },
+    { id: 'wm', name: 'Washing Machine', watts: 240, defaultQty: 0, initialQty: 1, defaultHours: 1, icon: '🧺', checked: false, isBackup: false },
     { id: 'geyser', name: 'Geyser', watts: 2000, defaultQty: 0, initialQty: 1, defaultHours: 1, icon: '🚿', checked: false, isBackup: false },
-    { id: 'iron', name: 'Iron', watts: 1000, defaultQty: 0, initialQty: 1, defaultHours: 0.5, icon: '👔', checked: false, isBackup: false },
-    { id: 'induction', name: 'Induction Cooker', watts: 2000, defaultQty: 0, initialQty: 1, defaultHours: 2, icon: '🍳', checked: false, isBackup: false },
-    { id: 'ac', name: 'Air Conditioner (AC)', watts: 1800, defaultQty: 0, initialQty: 1, defaultHours: 8, isHeavy: true, icon: '❄️', checked: false, isBackup: false },
-    { id: 'pump', name: 'Water Pump', watts: 746, defaultQty: 0, initialQty: 1, defaultHours: 1, isHeavy: true, icon: '🚰', checked: false, isBackup: false },
+    { id: 'iron', name: 'Iron', watts: 350, defaultQty: 0, initialQty: 1, defaultHours: 0.5, icon: '👔', checked: false, isBackup: false },
+    { id: 'induction', name: 'Induction Cooker', watts: 1160, defaultQty: 0, initialQty: 1, defaultHours: 2, icon: '🍳', checked: false, isBackup: false },
+    { id: 'ac', name: 'Air Conditioner (AC)', watts: 850, defaultQty: 0, initialQty: 1, defaultHours: 8, isHeavy: true, icon: '❄️', checked: false, isBackup: false },
+    { id: 'pump', name: 'Water Pump', watts: 1066, defaultQty: 0, initialQty: 1, defaultHours: 1, isHeavy: true, icon: '🚰', checked: false, isBackup: false },
     { id: 'other', name: 'Other Load', watts: 100, defaultQty: 0, initialQty: 1, defaultHours: 2, icon: '🔌', checked: false, isBackup: true }
   ];
 
@@ -685,44 +685,13 @@ const SizingUI = (() => {
     if (!tbody) return;
 
     tbody.innerHTML = state.appliances.map((app, index) => {
-      let wattInputHtml = '';
-
-      if (app.isCalculated) {
-        wattInputHtml = `
-          <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8 text-primary" style="width: 68px; height: 26px;" 
-            value="${app.watts}" 
-            title="Calculated Load: ${app.watts}W operating avg (${app.ratedWatts || app.watts}W rated). Click 🧮 or edit manually."
-            oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
-            onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
-        `;
-      } else if (app.id === 'ac') {
-        const ton = state.acConfig.ton || '1.5';
-        wattInputHtml = `
-          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 68px; height: 26px;" onchange="SizingUI.updateAcTon(this.value)">
-            <option value="0.5" ${ton === '0.5' ? 'selected' : ''}>0.5T</option>
-            <option value="1" ${ton === '1' ? 'selected' : ''}>1.0T</option>
-            <option value="1.5" ${ton === '1.5' ? 'selected' : ''}>1.5T</option>
-            <option value="2" ${ton === '2' ? 'selected' : ''}>2.0T</option>
-          </select>
-        `;
-      } else if (app.id === 'pump') {
-        const hp = state.pumpConfig.hp || '1';
-        wattInputHtml = `
-          <select class="form-select form-select-sm fw-semibold mx-auto p-0 text-center fs-8" style="width: 68px; height: 26px;" onchange="SizingUI.updatePumpHp(this.value)">
-            <option value="0.5" ${hp === '0.5' ? 'selected' : ''}>0.5HP</option>
-            <option value="1" ${hp === '1' ? 'selected' : ''}>1.0HP</option>
-            <option value="1.5" ${hp === '1.5' ? 'selected' : ''}>1.5HP</option>
-            <option value="2" ${hp === '2' ? 'selected' : ''}>2.0HP</option>
-          </select>
-        `;
-      } else {
-        wattInputHtml = `
-          <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 68px; height: 26px;" 
-            value="${app.watts}" 
-            oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
-            onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
-        `;
-      }
+      const wattInputHtml = `
+        <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 68px; height: 26px;" 
+          value="${app.watts}" 
+          title="${app.name} Load: ${app.watts}W"
+          oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
+          onchange="SizingUI.updateApplianceWatt(${index}, this.value)">
+      `;
 
       const hoursHtml = `
         <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 44px; height: 26px;" 
@@ -763,15 +732,10 @@ const SizingUI = (() => {
           <td class="text-center p-1" style="width: 48px;">
             ${qtyHtml}
           </td>
-          <!-- Watt + Calculator Button -->
-          <td class="text-center p-1" style="width: 104px;">
-            <div class="d-flex align-items-center justify-content-center gap-1">
+          <!-- Watt -->
+          <td class="text-center p-1" style="width: 85px;">
+            <div class="d-flex align-items-center justify-content-center">
               ${wattInputHtml}
-              <button type="button" class="btn-calc-row ${app.isCalculated ? 'is-calculated' : ''}" 
-                onclick="event.stopPropagation(); SizingUI.openLoadCalculator(${index})" 
-                title="Calculate Standard Load">
-                🧮
-              </button>
             </div>
           </td>
           <!-- Daily Time -->
@@ -820,25 +784,11 @@ const SizingUI = (() => {
     const pumpSec = document.getElementById('heavyPumpSection');
 
     if (acSec) {
-      if (acApp && acApp.checked && acApp.defaultQty > 0) {
-        acSec.style.display = 'block';
-        if (!state.acConfig.actualWatts) {
-          const tonWatts = { '0.5': 600, '1': 1200, '1.5': 1800, '2': 2400 }[state.acConfig.ton] || 1800;
-          acApp.watts = tonWatts;
-        }
-      } else {
-        acSec.style.display = 'none';
-      }
+      acSec.style.display = (acApp && acApp.checked && Number(acApp.defaultQty) > 0) ? 'block' : 'none';
     }
 
     if (pumpSec) {
-      if (pumpApp && pumpApp.checked && pumpApp.defaultQty > 0) {
-        pumpSec.style.display = 'block';
-        const hpWatts = { '0.5': 373, '1': 746, '1.5': 1119, '2': 1492 }[state.pumpConfig.hp] || 746;
-        pumpApp.watts = hpWatts;
-      } else {
-        pumpSec.style.display = 'none';
-      }
+      pumpSec.style.display = (pumpApp && pumpApp.checked && Number(pumpApp.defaultQty) > 0) ? 'block' : 'none';
     }
   }
 
@@ -963,8 +913,8 @@ const SizingUI = (() => {
       case 'iron':
         return {
           ironType: 'dry',
-          ratedWatts: Number(app.watts) || 1000,
-          thermostatDuty: 'medium',
+          ratedWatts: 1000,
+          thermostatDuty: 'low',
           sessionDurationMin: 30,
           daysPerWeek: 7,
           dailyHours: defHours || 0.5
@@ -979,19 +929,19 @@ const SizingUI = (() => {
         };
       case 'ac':
         return {
-          ton: state.acConfig.ton || '1.5',
+          ton: forcePristine ? '1.5' : (state.acConfig.ton || '1.5'),
           starRating: '3',
-          technology: state.acConfig.acType || 'inverter',
+          technology: forcePristine ? 'inverter' : (state.acConfig.acType || 'inverter'),
           ambientTemp: 'normal',
           setpoint: '24',
           roomSize: 'medium',
           insulation: 'average',
           dailyHours: defHours || 8,
-          manualWatts: state.acConfig.actualWatts || ''
+          manualWatts: forcePristine ? '' : (state.acConfig.actualWatts || '')
         };
       case 'pump':
         return {
-          motorHp: state.pumpConfig.hp || '1',
+          motorHp: forcePristine ? '1' : (state.pumpConfig.hp || '1'),
           pumpType: 'monoblock',
           motorEfficiency: 70,
           totalHeadM: 25,
@@ -1038,6 +988,188 @@ const SizingUI = (() => {
     return map[cat] || 'Standard Electrical Model';
   }
 
+  /* ---------------- 1.B Standard Electrical Load (Per Unit) ---------------- */
+  function openStandardLoadModal() {
+    renderStandardLoadTable();
+    const modalEl = document.getElementById('standardLoadModal');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  }
+
+  function getAppStandardSpecSummary(app) {
+    const cat = getAppTypeCategory(app.id, app.name);
+    const p = app.calcParams || getDefaultCalcParams(app);
+    if (cat === 'ac') {
+      const ton = (p && p.ton) || state.acConfig.ton || '1.5';
+      const tech = (p && p.technology) || state.acConfig.acType || 'inverter';
+      return `${ton} Ton ${tech === 'inverter' ? 'Inverter' : 'Fixed Speed'}`;
+    }
+    if (cat === 'pump') {
+      const hp = (p && p.motorHp) || state.pumpConfig.hp || '1';
+      return `${hp} HP Monoblock (${Math.round((Number(hp) || 1) * 746)}W shaft)`;
+    }
+    if (cat === 'tv') {
+      const size = (p && p.screenSize) || '43';
+      const disp = (p && p.displayType ? p.displayType.toUpperCase() : 'LED');
+      return `${size}" ${disp} TV`;
+    }
+    if (cat === 'fridge') {
+      const cap = (p && p.capacityL) || '240';
+      const star = (p && p.starRating) || '3';
+      return `${cap}L ${star}-Star Refrigerator`;
+    }
+    if (cat === 'fan') {
+      const type = (p && p.fanType) || 'induction';
+      return type === 'bldc' ? 'BLDC Energy Saver (32W)' : 'Standard Induction (70-75W)';
+    }
+    if (cat === 'comp') {
+      const dev = (p && p.deviceType) || 'laptop';
+      return dev === 'desktop' ? 'Desktop Workstation (~150-250W)' : 'Laptop Notebook (~65W)';
+    }
+    if (cat === 'wm') {
+      const type = (p && p.wmType) || 'topLoad';
+      return type === 'frontLoad' ? 'Front Load (Hot/Cold Wash)' : 'Top Load Automatic (7kg)';
+    }
+    if (cat === 'geyser') {
+      const w = (p && p.ratedWatts) || 2000;
+      return `${w}W Storage Geyser`;
+    }
+    if (cat === 'iron') {
+      const type = (p && p.ironType) || 'dry';
+      return type === 'steam' ? 'Steam Iron (1600W)' : 'Dry Iron (1000W)';
+    }
+    if (cat === 'induction') {
+      const w = (p && p.ratedWatts) || 2000;
+      return `${w}W Induction Cooktop`;
+    }
+    if (cat === 'led') {
+      const w = (p && p.bulbWatts) || 10;
+      return `${w}W Standard LED Bulb`;
+    }
+    return 'Standard Rating';
+  }
+
+  function renderStandardLoadTable() {
+    const tbody = document.getElementById('standardLoadTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = state.appliances.map((app, index) => {
+      const specSummary = getAppStandardSpecSummary(app);
+      const isConfigurable = ['tv', 'fridge', 'comp', 'wm', 'geyser', 'iron', 'induction', 'ac', 'pump', 'fan', 'led'].includes(getAppTypeCategory(app.id, app.name));
+
+      return `
+        <tr id="rowStdLoad_${index}">
+          <!-- Appliance -->
+          <td class="p-2">
+            <div class="d-flex align-items-center gap-1.5">
+              <span class="fs-6 flex-shrink-0">${app.icon || '⚡'}</span>
+              <div>
+                <strong class="text-dark fs-8 d-block">${app.name}</strong>
+                ${app.isHeavy ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-9 px-1">Heavy Load</span>' : ''}
+              </div>
+            </div>
+          </td>
+          <!-- Standard Spec / Model -->
+          <td class="p-2">
+            <span class="badge bg-light text-dark border fs-8 text-wrap text-start fw-normal px-2 py-1">
+              ${specSummary}
+            </span>
+          </td>
+          <!-- Per Unit Watt -->
+          <td class="text-center p-2">
+            <div class="d-flex align-items-center justify-content-center gap-1">
+              <input type="number" min="1" class="form-control form-control-sm text-center fw-bold fs-8" style="width: 76px; height: 28px;"
+                value="${app.watts}"
+                title="Standard Watts for 1 unit of ${app.name}"
+                oninput="SizingUI.updateStandardLoadWatt(${index}, this.value)"
+                onchange="SizingUI.updateStandardLoadWatt(${index}, this.value)">
+              <span class="text-secondary fs-8 fw-semibold">W</span>
+            </div>
+          </td>
+          <!-- Action / Specs -->
+          <td class="text-center p-2">
+            ${isConfigurable ? `
+              <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2 fs-8 fw-semibold d-inline-flex align-items-center gap-1"
+                onclick="SizingUI.openLoadCalculatorFromStandard(${index})" title="Configure technical specs for ${app.name}">
+                <span>⚙️</span>
+                <span>Specs</span>
+              </button>
+            ` : `
+              <span class="text-muted fs-9">—</span>
+            `}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function updateStandardLoadWatt(index, value) {
+    const app = state.appliances[index];
+    if (!app) return;
+    const w = Math.max(1, Number(value) || 0);
+    app.watts = w;
+    app.ratedWatts = w;
+    app.isCalculated = true;
+
+    if (app.id === 'ac') {
+      state.acConfig.actualWatts = String(w);
+    }
+
+    renderModalApplianceList();
+    updateModalStats();
+    updateItemBracketDom(index);
+    renderApplianceSummaryCard();
+    calculateAndRender();
+  }
+
+  function openLoadCalculatorFromStandard(index) {
+    const stdModalEl = document.getElementById('standardLoadModal');
+    if (stdModalEl) {
+      const bsModal = bootstrap.Modal.getInstance(stdModalEl) || bootstrap.Modal.getOrCreateInstance(stdModalEl);
+      bsModal.hide();
+    }
+    calcModalState.returnToStandardModal = true;
+    calcModalState.returnToConfigModal = false;
+    openLoadCalculator(index);
+  }
+
+  function resetStandardLoadsToDefault() {
+    state.acConfig = {
+      ton: '1.5',
+      acType: 'inverter',
+      actualWatts: ''
+    };
+    state.pumpConfig = {
+      hp: '1'
+    };
+
+    const selTon = document.getElementById('selAcTon');
+    if (selTon) selTon.value = '1.5';
+    const selAcType = document.getElementById('selAcType');
+    if (selAcType) selAcType.value = 'inverter';
+    const selHp = document.getElementById('selPumpHp');
+    if (selHp) selHp.value = '1';
+
+    state.appliances.forEach((app) => {
+      const defParams = getDefaultCalcParams({ id: app.id, name: app.name }, true);
+      app.calcParams = JSON.parse(JSON.stringify(defParams));
+      const res = SizingCalc.StandardLoadCalc.calculate(app.id, app.name, defParams);
+      app.watts = res.averageWatts;
+      app.ratedWatts = res.ratedWatts;
+      app.calcResult = JSON.parse(JSON.stringify(res));
+      app.isCalculated = false;
+    });
+
+    renderStandardLoadTable();
+    renderModalApplianceList();
+    updateModalStats();
+    renderApplianceSummaryCard();
+    calculateAndRender();
+    UI.toast('Reset all appliances & specifications to standard defaults!', 'info');
+  }
+
   function openLoadCalculator(index) {
     const app = state.appliances[index];
     if (!app) return;
@@ -1051,7 +1183,7 @@ const SizingUI = (() => {
     const subtitleEl = document.getElementById('calcModalSubtitle');
     const iconEl = document.getElementById('calcModalIcon');
     if (titleEl) titleEl.textContent = `${app.name} — Standard Load Calculator`;
-    if (subtitleEl) subtitleEl.textContent = `Configure engineering parameters for ${app.name} & calculate accurate rated and operating energy.`;
+    if (subtitleEl) subtitleEl.textContent = `Configure technical parameters to calculate standard per-unit rated power for ${app.name}.`;
     if (iconEl) iconEl.textContent = app.icon || '🧮';
 
     renderCalcModalInputs();
@@ -1062,9 +1194,8 @@ const SizingUI = (() => {
 
     const configModalEl = document.getElementById('applianceConfigModal');
     const isConfigOpen = configModalEl && (configModalEl.classList.contains('show') || configModalEl.style.display === 'block');
-    calcModalState.returnToConfigModal = !!isConfigOpen;
-
     if (isConfigOpen) {
+      calcModalState.returnToConfigModal = true;
       const configBsModal = bootstrap.Modal.getInstance(configModalEl) || bootstrap.Modal.getOrCreateInstance(configModalEl);
       const onConfigHidden = () => {
         configModalEl.removeEventListener('hidden.bs.modal', onConfigHidden);
@@ -1081,17 +1212,14 @@ const SizingUI = (() => {
 
   function renderCalcModalInputs() {
     const specsContainer = document.getElementById('calcSecSpecsContainer');
-    const usageContainer = document.getElementById('calcSecUsageContainer');
     const specBadge = document.getElementById('calcSpecBadge');
-    const usageBadge = document.getElementById('calcUsageBadge');
 
-    if (!specsContainer || !usageContainer) return;
+    if (!specsContainer) return;
 
     const cat = getAppTypeCategory(calcModalState.appId, calcModalState.appName);
     const p = calcModalState.currentParams;
 
-    if (specBadge) specBadge.textContent = `${cat.toUpperCase()} Technical Specs`;
-    if (usageBadge) usageBadge.textContent = 'Daily Schedule';
+    if (specBadge) specBadge.textContent = `${cat.toUpperCase()} Technical Parameters`;
 
     let specsHtml = '';
     let usageHtml = '';
@@ -1743,7 +1871,8 @@ const SizingUI = (() => {
     }
 
     specsContainer.innerHTML = specsHtml;
-    usageContainer.innerHTML = usageHtml;
+    const usageContainer = document.getElementById('calcSecUsageContainer');
+    if (usageContainer) usageContainer.innerHTML = usageHtml;
   }
 
   function onCalcParamChange(key, value) {
@@ -1795,13 +1924,10 @@ const SizingUI = (() => {
     const app = state.appliances[calcModalState.appIndex];
     if (!app) return;
 
-    // Apply calculated results
+    // Apply calculated standard per-unit rated/average power
+    // (Operating duration / daily hours is NOT overwritten here, as it is entered during calculation time)
     app.watts = res.averageWatts;
     app.ratedWatts = res.ratedWatts;
-    app.defaultHours = res.dailyHours;
-    if (state.energyCalculationBasis !== 'backup_duration') {
-      app.scheduleHours = res.dailyHours;
-    }
 
     // Sync heavy config if applicable
     if (app.id === 'ac') {
@@ -1824,12 +1950,26 @@ const SizingUI = (() => {
     }
 
     // Refresh UI
+    renderStandardLoadTable();
     renderModalApplianceList();
     updateModalStats();
     updateItemBracketDom(calcModalState.appIndex);
     renderApplianceSummaryCard();
     calculateAndRender();
-    UI.toast(`Applied calculated load: ${res.averageWatts}W (${res.dailyHours}h) to ${app.name}!`, 'success');
+    UI.toast(`Applied standard load: ${res.averageWatts}W per unit for ${app.name}!`, 'success');
+
+    // Return to originating modal if applicable
+    if (calcModalState.returnToStandardModal) {
+      const stdModalEl = document.getElementById('standardLoadModal');
+      if (stdModalEl) {
+        bootstrap.Modal.getOrCreateInstance(stdModalEl).show();
+      }
+    } else if (calcModalState.returnToConfigModal) {
+      const configModalEl = document.getElementById('applianceConfigModal');
+      if (configModalEl) {
+        bootstrap.Modal.getOrCreateInstance(configModalEl).show();
+      }
+    }
   }
 
   function cancelLoadCalculation() {
@@ -1838,9 +1978,34 @@ const SizingUI = (() => {
       const modal = bootstrap.Modal.getInstance(modalEl);
       if (modal) modal.hide();
     }
+    if (calcModalState.returnToStandardModal) {
+      const stdModalEl = document.getElementById('standardLoadModal');
+      if (stdModalEl) {
+        bootstrap.Modal.getOrCreateInstance(stdModalEl).show();
+      }
+    } else if (calcModalState.returnToConfigModal) {
+      const configModalEl = document.getElementById('applianceConfigModal');
+      if (configModalEl) {
+        bootstrap.Modal.getOrCreateInstance(configModalEl).show();
+      }
+    }
   }
 
   function resetCalcParameters() {
+    if (calcModalState.appId === 'ac') {
+      state.acConfig.ton = '1.5';
+      state.acConfig.acType = 'inverter';
+      state.acConfig.actualWatts = '';
+      const selTon = document.getElementById('selAcTon');
+      if (selTon) selTon.value = '1.5';
+      const selAcType = document.getElementById('selAcType');
+      if (selAcType) selAcType.value = 'inverter';
+    } else if (calcModalState.appId === 'pump') {
+      state.pumpConfig.hp = '1';
+      const selHp = document.getElementById('selPumpHp');
+      if (selHp) selHp.value = '1';
+    }
+
     calcModalState.currentParams = getDefaultCalcParams({ id: calcModalState.appId, name: calcModalState.appName }, true);
     renderCalcModalInputs();
     calculateCurrentModalLoad();
@@ -2200,14 +2365,21 @@ const SizingUI = (() => {
     state.acConfig.ton = tonVal;
     const acApp = state.appliances.find(a => a.id === 'ac');
     if (acApp) {
-      const tonWatts = { '0.5': 600, '1': 1200, '1.5': 1800, '2': 2400 }[tonVal] || 1800;
-      acApp.watts = tonWatts;
+      const res = SizingCalc.StandardLoadCalc.calculate('ac', 'ac', {
+        ton: tonVal,
+        technology: state.acConfig.acType || 'inverter',
+        starRating: '3'
+      });
+      acApp.watts = res.averageWatts;
+      acApp.ratedWatts = res.ratedWatts;
       state.acConfig.actualWatts = '';
       const acIndex = state.appliances.findIndex(a => a.id === 'ac');
       if (acIndex !== -1) updateItemBracketDom(acIndex);
     }
     const selAcTonEl = document.getElementById('selAcTon');
     if (selAcTonEl) selAcTonEl.value = tonVal;
+    renderModalApplianceList();
+    renderStandardLoadTable();
     updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -2215,6 +2387,20 @@ const SizingUI = (() => {
 
   function updateAcType(typeVal) {
     state.acConfig.acType = typeVal;
+    const acApp = state.appliances.find(a => a.id === 'ac');
+    if (acApp) {
+      const res = SizingCalc.StandardLoadCalc.calculate('ac', 'ac', {
+        ton: state.acConfig.ton || '1.5',
+        technology: typeVal,
+        starRating: '3'
+      });
+      acApp.watts = res.averageWatts;
+      acApp.ratedWatts = res.ratedWatts;
+    }
+    renderModalApplianceList();
+    renderStandardLoadTable();
+    updateModalStats();
+    renderApplianceSummaryCard();
     calculateAndRender();
   }
 
@@ -2226,6 +2412,8 @@ const SizingUI = (() => {
       const acIndex = state.appliances.findIndex(a => a.id === 'ac');
       if (acIndex !== -1) updateItemBracketDom(acIndex);
     }
+    renderModalApplianceList();
+    renderStandardLoadTable();
     updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -2235,13 +2423,20 @@ const SizingUI = (() => {
     state.pumpConfig.hp = hpVal;
     const pumpApp = state.appliances.find(a => a.id === 'pump');
     if (pumpApp) {
-      const hpWatts = { '0.5': 373, '1': 746, '1.5': 1119, '2': 1492 }[hpVal] || 746;
-      pumpApp.watts = hpWatts;
+      const res = SizingCalc.StandardLoadCalc.calculate('pump', 'pump', {
+        motorHp: hpVal,
+        pumpType: 'monoblock',
+        motorEfficiency: 70
+      });
+      pumpApp.watts = res.averageWatts;
+      pumpApp.ratedWatts = res.ratedWatts;
       const pumpIndex = state.appliances.findIndex(a => a.id === 'pump');
       if (pumpIndex !== -1) updateItemBracketDom(pumpIndex);
     }
     const selPumpHpEl = document.getElementById('selPumpHp');
     if (selPumpHpEl) selPumpHpEl.value = hpVal;
+    renderModalApplianceList();
+    renderStandardLoadTable();
     updateModalStats();
     renderApplianceSummaryCard();
     calculateAndRender();
@@ -3250,6 +3445,11 @@ Generated by Shri Trutiyadev Solar Enterprise Calculate System Variables`;
     presetBackup,
     resetBackupToDefault,
     openLoadCalculator,
+    openStandardLoadModal,
+    renderStandardLoadTable,
+    updateStandardLoadWatt,
+    openLoadCalculatorFromStandard,
+    resetStandardLoadsToDefault,
     calculateCurrentModalLoad,
     applyLoadCalculation,
     cancelLoadCalculation,

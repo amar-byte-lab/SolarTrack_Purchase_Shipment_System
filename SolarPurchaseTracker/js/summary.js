@@ -1459,29 +1459,53 @@ function getCombinedActivities() {
 
   // 6. Gather Shipments (shipments)
   shipments.forEach(s => {
-    const shipNo = s.ShipmentNo;
+    const shipNo = s.ShipmentNo || s.shipmentno;
     if (!shipNo) return;
-    const isoDate = parseToIsoDate(s.PurchaseDate || s.CreatedAt);
-    if (!isoDate) return;
-    const type = s.ShipmentType || 'Buy';
-    const vName = s.VendorName || 'Vendor';
-    const actId = `synth_ship_${shipNo}`;
-    synthesized.push({
-      id: actId,
-      timestamp: s.CreatedAt || `${isoDate}T12:00:00Z`,
-      date: isoDate,
-      time: '',
-      page: 'Shipment',
-      table: 'shipments',
-      action: 'INSERT',
-      recordId: shipNo,
-      customerName: `${vName} (${type} ${shipNo})`,
-      consumerNo: s.InvoiceNumber || s.VehicleNumber || '',
-      changes: [
-        { field: `${type} Shipment Created`, oldVal: null, newVal: `Invoice: ${s.InvoiceNumber || '-'}${s.VehicleNumber ? ', Vehicle: ' + s.VehicleNumber : ''}` }
-      ],
-      undone: false
-    });
+    const isoDate = parseToIsoDate(s.PurchaseDate || s.CreatedAt || s.purchasedate || s.createdat);
+    const type = s.ShipmentType || s.shipmenttype || 'Buy';
+    const vName = s.VendorName || s.vendorname || 'Vendor';
+
+    if (isoDate) {
+      synthesized.push({
+        id: `synth_ship_${shipNo}`,
+        timestamp: s.CreatedAt || s.createdat || `${isoDate}T12:00:00Z`,
+        date: isoDate,
+        time: '',
+        page: 'Shipment',
+        table: 'shipments',
+        action: 'INSERT',
+        recordId: shipNo,
+        customerName: `${vName} (${type} ${shipNo})`,
+        consumerNo: s.InvoiceNumber || s.VehicleNumber || s.invoicenumber || s.vehiclenumber || '',
+        changes: [
+          { field: `${type} Shipment Created`, oldVal: null, newVal: `Invoice: ${s.InvoiceNumber || s.invoicenumber || '-'}${s.VehicleNumber || s.vehiclenumber ? ', Vehicle: ' + (s.VehicleNumber || s.vehiclenumber) : ''}` }
+        ],
+        undone: false
+      });
+    }
+
+    const upd = s.UpdatedAt || s.updatedat;
+    if (upd) {
+      const updIsoDate = parseToIsoDate(upd);
+      if (updIsoDate && updIsoDate !== isoDate) {
+        synthesized.push({
+          id: `synth_ship_upd_${shipNo}`,
+          timestamp: upd,
+          date: updIsoDate,
+          time: '',
+          page: 'Shipment',
+          table: 'shipments',
+          action: 'UPDATE',
+          recordId: shipNo,
+          customerName: `${vName} (${type} ${shipNo})`,
+          consumerNo: s.InvoiceNumber || s.VehicleNumber || s.invoicenumber || s.vehiclenumber || '',
+          changes: [
+            { field: `${type} Shipment Updated`, oldVal: 'Previous State', newVal: `Transport: ₹${s.TransportationCost || s.transportationcost || 0}` }
+          ],
+          undone: false
+        });
+      }
+    }
   });
 
   // 7. Gather Shipment Remarks & Payments (shipment_remarks)
@@ -1529,11 +1553,15 @@ function getCombinedActivities() {
   return combined;
 }
 
-function renderActivityTab() {
+async function renderActivityTab() {
   if (!isCurrentUserAdmin()) return;
   const container = document.getElementById('activityTimelineContainer');
   const countBadge = document.getElementById('activityCountBadge');
   if (!container) return;
+
+  if (typeof DB !== 'undefined' && typeof DB.syncActivityLogs === 'function') {
+    await DB.syncActivityLogs().catch(() => {});
+  }
 
   const allActivities = getCombinedActivities();
 

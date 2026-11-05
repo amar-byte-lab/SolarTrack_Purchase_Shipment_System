@@ -1193,6 +1193,7 @@ window.saveInline = async function (shipmentNo) {
     }
 
     const existingShipment = DB.getAll('shipments').find(s => matchShipmentNo(s, shipmentNo));
+    const oldMaterials = existingShipment ? (DB.getAll('materials').filter(m => matchShipmentNo(m, shipmentNo)) || []) : [];
     const isEdit = !isAddingNew || !!existingShipment;
     const purchaseDate = document.getElementById('editPurchaseDate').value;
     const vendorName = document.getElementById('editVendorName').value.trim();
@@ -1266,6 +1267,7 @@ window.saveInline = async function (shipmentNo) {
             Remarks: remarks,
             AddToMaterialCost: addToMaterialCostVal,
             CreatedAt: isEdit ? (existingShipment?.CreatedAt || existingShipment?.createdat || new Date().toISOString()) : new Date().toISOString(),
+            UpdatedAt: new Date().toISOString(),
         };
 
         if (existingShipment && existingShipment.Status) {
@@ -1302,6 +1304,95 @@ window.saveInline = async function (shipmentNo) {
         await DB.deleteBatch('materials', m => matchShipmentNo(m, shipmentNo));
         if (newRows.length > 0) {
             await DB.insertBatch('materials', newRows);
+        }
+
+        // Log transaction to Activity Tracker
+        try {
+            if (typeof DB.logCustomActivity === 'function') {
+                const allChanges = [];
+                const revertData = {};
+
+                if (isEdit && existingShipment) {
+                    const checkFields = [
+                        { key: 'VendorName', label: shipmentType === 'Sell' ? 'Customer Name' : 'Vendor Name' },
+                        { key: 'PurchaseDate', label: shipmentType === 'Sell' ? 'Sale Date' : 'Purchase Date' },
+                        { key: 'TransportationCost', label: 'Transportation Cost', prefix: '₹' },
+                        { key: 'VehicleNumber', label: 'Vehicle Number' },
+                        { key: 'InvoiceNumber', label: 'Invoice Number' },
+                        { key: 'VendorPaid', label: shipmentType === 'Sell' ? 'Customer Paid' : 'Vendor Paid', prefix: '₹' },
+                        { key: 'TransportPaid', label: 'Transport Paid', prefix: '₹' },
+                        { key: 'Remarks', label: 'Remarks' },
+                        { key: 'AddToMaterialCost', label: 'Add Transport to Material Cost' }
+                    ];
+
+                    for (const f of checkFields) {
+                        const oldV = existingShipment[f.key];
+                        const newV = shipmentRow[f.key];
+                        if (String(oldV ?? '').trim() !== String(newV ?? '').trim()) {
+                            allChanges.push({
+                                field: f.label,
+                                oldVal: (f.prefix || '') + (oldV ?? '-'),
+                                newVal: (f.prefix || '') + (newV ?? '-')
+                            });
+                            revertData[f.key] = oldV ?? null;
+                        }
+                    }
+
+                    const oldMatsSummary = oldMaterials.map(m => `${m.Quantity} ${m.Unit || ''} ${m.ItemName} @ ₹${m.PurchaseRate}`).join(', ');
+                    const newMatsSummary = newRows.map(m => `${m.Quantity} ${m.Unit || ''} ${m.ItemName} @ ₹${m.PurchaseRate}`).join(', ');
+
+                    if (oldMatsSummary !== newMatsSummary || oldMaterials.length !== newRows.length) {
+                        allChanges.push({
+                            field: 'Material Items',
+                            oldVal: oldMatsSummary || '(none)',
+                            newVal: newMatsSummary || '(none)'
+                        });
+                    }
+
+                    if (allChanges.length === 0) {
+                        allChanges.push({
+                            field: `${shipmentType} Shipment Saved`,
+                            oldVal: 'Previous State',
+                            newVal: `${newRows.length} items, Total: ₹${materials.reduce((s, m) => s + (Number(m.TotalPurchaseValue) || 0), 0).toLocaleString('en-IN')}`
+                        });
+                    }
+
+                    DB.logCustomActivity({
+                        table: 'shipments',
+                        page: 'Shipment',
+                        action: 'UPDATE',
+                        recordId: shipmentNo,
+                        customerName: `${vendorName} (${shipmentType} ${shipmentNo})`,
+                        consumerNo: invoiceNumber || vehicleNumber || '',
+                        changes: allChanges,
+                        revertData: existingShipment,
+                        revertMaterials: oldMaterials,
+                        previousRow: { ...existingShipment },
+                        newRow: { ...shipmentRow }
+                    });
+                } else {
+                    allChanges.push({
+                        field: `${shipmentType} Shipment Created`,
+                        oldVal: null,
+                        newVal: `${vendorName} - ${newRows.length} item(s), Transport: ₹${transportationCost}`
+                    });
+
+                    DB.logCustomActivity({
+                        table: 'shipments',
+                        page: 'Shipment',
+                        action: 'INSERT',
+                        recordId: shipmentNo,
+                        customerName: `${vendorName} (${shipmentType} ${shipmentNo})`,
+                        consumerNo: invoiceNumber || vehicleNumber || '',
+                        changes: allChanges,
+                        revertData: null,
+                        previousRow: null,
+                        newRow: { ...shipmentRow }
+                    });
+                }
+            }
+        } catch (actErr) {
+            console.warn('[Shipment] Failed to log activity:', actErr);
         }
 
         // Auto-add any new vendor/items to their masters

@@ -39,6 +39,10 @@ const BILLS_DIR = path.join(UPLOADS_DIR, 'bills');
 if (!fs.existsSync(BILLS_DIR)) fs.mkdirSync(BILLS_DIR, { recursive: true });
 const BILLS_INDEX_FILE = path.join(BILLS_DIR, 'bills.json');
 
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+const ACTIVITY_LOGS_FILE = path.join(DATA_DIR, 'activity_logs.json');
+
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -922,6 +926,38 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       // ── End Borrower API ────────────────────────────────────────────────
+
+      // ── Activity Logs API ───────────────────────────────────────────────
+      if (pathname === '/api/activity-logs') {
+        let logs = [];
+        if (fs.existsSync(ACTIVITY_LOGS_FILE)) {
+          try { logs = JSON.parse(fs.readFileSync(ACTIVITY_LOGS_FILE, 'utf8')); } catch (e) {}
+        }
+        if (!Array.isArray(logs)) logs = [];
+
+        if (req.method === 'POST') {
+          const body = await getRequestBody(req);
+          if (body) {
+            const items = Array.isArray(body) ? body : [body];
+            const itemMap = new Map();
+            logs.forEach(l => { if (l && l.id) itemMap.set(l.id, l); });
+            items.forEach(l => {
+              if (l && l.id) {
+                itemMap.set(l.id, { ...(itemMap.get(l.id) || {}), ...l });
+              }
+            });
+            logs = Array.from(itemMap.values())
+              .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date))
+              .slice(0, 1000);
+            fs.writeFileSync(ACTIVITY_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf8');
+          }
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, count: logs.length })), 'no-cache, no-store');
+          return;
+        } else {
+          sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify(logs)), 'no-cache, no-store');
+          return;
+        }
+      }
 
       sendResponse(req, res, 404, 'application/json', Buffer.from(JSON.stringify({ error: 'Endpoint not found' })), 'no-cache, no-store');
     } catch (e) {
