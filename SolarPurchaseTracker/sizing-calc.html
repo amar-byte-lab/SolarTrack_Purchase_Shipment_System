@@ -318,6 +318,11 @@
           <!-- Rendered dynamically by sizing-ui.js -->
         </div>
 
+        <!-- REFERENCE COMPANY & PRODUCT RECOMMENDATIONS CONTAINER -->
+        <div class="mt-2.5 mb-2" id="secProductRecommendationsContainer">
+          <!-- Rendered dynamically by sizing-recommendations.js -->
+        </div>
+
         <!-- COST RECOVERY & INVESTMENT CALCULATOR (ODISHA OERC TARIFF) -->
         <div class="mt-2" id="secCostRecoveryContainer">
           <div class="step-card p-3.5 p-md-4 mb-2">
@@ -846,10 +851,103 @@
     </div>
   </div>
 
+  <!-- 4. REFERENCE MANUFACTURER PRODUCT COMPARISON MODAL -->
+  <div class="modal fade" id="solarProductComparisonModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-light border-bottom py-2.5 px-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="fs-5">🔄</span>
+            <div>
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0" id="compModalTitle">
+                Manufacturer Product Comparison
+              </h5>
+              <div class="text-muted fs-8">Compare certified models and select an alternate product</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-2.5 p-md-3" id="compModalTableBody">
+          <!-- Rendered dynamically by sizing-recommendations.js -->
+        </div>
+        <div class="modal-footer bg-light py-2 px-3">
+          <button type="button" class="btn btn-sm btn-secondary fs-8 fw-semibold px-3" data-bs-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. DYNAMIC MULTI-BRAND PRODUCT RECOMMENDATION MODAL (FLIPKART STYLE) -->
+  <div class="modal fade" id="solarProductFlipkartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+        
+        <!-- Flipkart Style Header -->
+        <div class="modal-header text-white py-2.5 px-3.5" style="background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);">
+          <div class="d-flex align-items-center gap-2.5">
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h5 class="modal-title fw-bold text-white fs-6 mb-0" id="flipkartModalTitle">
+                  Market Product Recommendations
+                </h5>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="SizingRecommendations.closeFlipkartModal()"></button>
+        </div>
+
+        <!-- Filter & Category Navigation Tabs Bar -->
+        <div class="bg-light border-bottom px-3 px-sm-3.5 py-2">
+          <!-- Category Tabs (Strictly Single Line) -->
+          <div class="w-100">
+            <ul class="nav nav-pills d-flex flex-nowrap w-100 gap-1 gap-sm-2 mb-0" id="pillsFlipkartCategory" role="tablist" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+              <li class="nav-item flex-fill" role="presentation" style="min-width: 0;">
+                <button class="nav-link active fw-bold fs-8 py-1.5 px-1 px-sm-2 rounded-pill shadow-2xs w-100 text-nowrap d-flex align-items-center justify-content-center gap-1" id="tabFlipkartInverters" onclick="SizingRecommendations.switchFlipkartTab('inverters')" type="button">
+                  <span>⚡ Inverters</span> <span class="badge bg-primary rounded-pill" id="badgeTabInvertersCount">0</span>
+                </button>
+              </li>
+              <li class="nav-item flex-fill" role="presentation" style="min-width: 0;">
+                <button class="nav-link fw-bold fs-8 py-1.5 px-1 px-sm-2 rounded-pill shadow-2xs w-100 text-nowrap d-flex align-items-center justify-content-center gap-1 text-dark bg-white border" id="tabFlipkartBatteries" onclick="SizingRecommendations.switchFlipkartTab('batteries')" type="button">
+                  <span>🔋 Batteries</span> <span class="badge bg-success rounded-pill" id="badgeTabBatteriesCount">0</span>
+                </button>
+              </li>
+              <li class="nav-item flex-fill" role="presentation" style="min-width: 0;">
+                <button class="nav-link fw-bold fs-8 py-1.5 px-1 px-sm-2 rounded-pill shadow-2xs w-100 text-nowrap d-flex align-items-center justify-content-center gap-1 text-dark bg-white border" id="tabFlipkartPanels" onclick="SizingRecommendations.switchFlipkartTab('panels')" type="button">
+                  <span>☀️ Solar Panels</span> <span class="badge bg-warning text-dark rounded-pill" id="badgeTabPanelsCount">0</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Specification Context Banner (Clean, bold, highly visible text) -->
+          <div class="mt-2 py-2 px-3 rounded-2 bg-light border border-secondary-subtle shadow-2xs" id="flipkartSpecBanner">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Flipkart Product Grid / List Body -->
+        <div class="modal-body p-3 p-md-3.5 bg-body-tertiary" id="flipkartModalBody" style="min-height: 420px; max-height: 70vh; overflow-y: auto;">
+          <!-- Product cards rendered dynamically -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer bg-light py-2 px-3.5 d-flex justify-content-between align-items-center">
+          <button type="button" class="btn btn-sm btn-secondary fs-8 fw-semibold px-3" data-bs-dismiss="modal" onclick="SizingRecommendations.closeFlipkartModal()">
+            Close
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/bootstrap.bundle.min.js" defer></script>
-  <script src="js/ui.js?v=1.0.2" defer></script>
-  <script src="js/sizing-db.js?v=1.0.0" defer></script>
-  <script src="js/sizing-calc.js?v=1.0.0" defer></script>
-  <script src="js/sizing-ui.js?v=1.0.0" defer></script>
+  <script src="js/ui.js?v=1.0.5" defer></script>
+  <script src="js/sizing-db.js?v=1.0.5" defer></script>
+  <script src="js/sizing-calc.js?v=1.0.5" defer></script>
+  <script src="js/sizing-ui.js?v=1.0.5" defer></script>
+  <script src="js/sizing-recommendations.js?v=1.0.5" defer></script>
 </body>
 </html>

@@ -29,6 +29,8 @@ const http = require('http');
 const zlib = require('zlib');
 const { exec } = require('child_process');
 const db = require('./db');
+const solarProductService = require('./server/services/SolarProductService');
+const solarRecommendationService = require('./server/services/SolarRecommendationService');
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'SolarPurchaseTracker');
@@ -957,6 +959,49 @@ const server = http.createServer(async (req, res) => {
           sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify(logs)), 'no-cache, no-store');
           return;
         }
+      }
+
+      // --- Solar Reference Company & Product Recommendation Endpoints ---
+      if (pathname === '/api/solar/manufacturers' && req.method === 'GET') {
+        const list = solarProductService.getManufacturers();
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, manufacturers: list })), 'no-cache');
+        console.log(`[API] GET /api/solar/manufacturers | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms`);
+        return;
+      }
+
+      if (pathname === '/api/solar/products' && req.method === 'GET') {
+        const manufacturerId = parsedUrl.searchParams.get('manufacturer') || 'luminous';
+        const category = parsedUrl.searchParams.get('category') || '';
+        const technology = parsedUrl.searchParams.get('technology') || '';
+        const phase = parsedUrl.searchParams.get('phase') || '';
+        const inverterType = parsedUrl.searchParams.get('inverterType') || '';
+        const batteryChemistry = parsedUrl.searchParams.get('batteryChemistry') || '';
+
+        const data = solarProductService.getProducts({
+          manufacturerId,
+          category,
+          technology,
+          phase,
+          inverterType,
+          batteryChemistry
+        });
+
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, ...data })), 'no-cache');
+        console.log(`[API] GET /api/solar/products?m=${manufacturerId} | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms`);
+        return;
+      }
+
+      if (pathname === '/api/solar/recommendations' && req.method === 'POST') {
+        const payload = await getRequestBody(req);
+        const sizingResult = payload ? (payload.sizingResult || {}) : {};
+        const manufacturerId = payload ? (payload.manufacturerId || 'luminous') : 'luminous';
+        const filters = payload ? (payload.filters || {}) : {};
+
+        const recommendations = solarRecommendationService.getRecommendations(sizingResult, manufacturerId, filters);
+
+        sendResponse(req, res, 200, 'application/json', Buffer.from(JSON.stringify({ success: true, ...recommendations })), 'no-cache');
+        console.log(`[API] POST /api/solar/recommendations (${manufacturerId}) | 200 OK | Total: ${(performance.now() - reqStartTime).toFixed(2)}ms`);
+        return;
       }
 
       sendResponse(req, res, 404, 'application/json', Buffer.from(JSON.stringify({ error: 'Endpoint not found' })), 'no-cache, no-store');
