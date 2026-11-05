@@ -1102,3 +1102,225 @@
   color: #2563eb;
 }
 
+/* =========================================================================
+   SINGLE LINE DIAGRAM (SLD) & CIRCUIT SCHEMATIC COMPONENT
+   ========================================================================= */
+
+.sld-container {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  transition: all 0.2s ease;
+}
+
+.sld-container:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+.sld-header-bar {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+}
+
+.sld-svg-canvas {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+  cursor: grab;
+  transition: background-color 0.25s ease;
+}
+
+.sld-svg-canvas:active {
+  cursor: grabbing;
+}
+
+.sld-inline-canvas {
+  height: 240px;
+}
+
+@media (max-width: 768px) {
+  .sld-inline-canvas {
+    height: 200px;
+  }
+}
+
+.sld-modal-canvas {
+  height: 520px;
+  min-height: 440px;
+}
+
+@media (max-width: 768px) {
+  .sld-modal-canvas {
+    height: 380px;
+    min-height: 320px;
+  }
+}
+
+.sld-svg-canvas svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: all;
+  will-change: transform;
+}
+
+.sld-theme-dark {
+  background: #0b1329 !important;
+}
+
+.sld-theme-light {
+  background: #f8fafc !important;
+}
+
+/* Interactive SVG item hover & animations */
+.sld-interactive-item {
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.sld-interactive-item:hover .sld-box-rect {
+  stroke: #38bdf8 !important;
+  stroke-width: 2.2 !important;
+}
+
+.sld-earth-pit-item:hover rect {
+  stroke: #4ade80 !important;
+  stroke-width: 2.2 !important;
+}
+
+/* Color Coded Flow Legend Bar */
+.sld-legend-bar {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  row-gap: 5px;
+}
+
+.sld-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #475569;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sld-legend-indicator {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.sld-legend-indicator.dc-pos {
+  background: #ef4444;
+}
+
+.sld-legend-indicator.dc-neg {
+  background: #1e293b;
+}
+
+.sld-legend-indicator.ac-phase {
+  background: #dc2626;
+}
+
+.sld-legend-indicator.ac-neutral {
+  background: #0284c7;
+  border-bottom: 1px dashed #ffffff;
+}
+
+.sld-legend-indicator.earth-pe {
+  background: linear-gradient(90deg, #16a34a 50%, #eab308 50%);
+  background-size: 8px 4px;
+}
+
+/* Floating Engineering Tooltip */
+.sld-spec-tooltip {
+  position: absolute;
+  z-index: 9999;
+  display: none;
+  width: 320px;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(8px);
+  border: 1px solid #38bdf8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #f8fafc;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.25);
+  pointer-events: none;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: opacity 0.15s ease;
+}
+
+.sld-tooltip-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #38bdf8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 5px;
+  margin-bottom: 6px;
+}
+
+.sld-tooltip-body {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sld-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.sld-tip-lbl {
+  color: #94a3b8;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.sld-tooltip-footer {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  font-size: 0.65rem;
+  color: #64748b;
+  text-align: right;
+  font-style: italic;
+}
+
+/* Fullscreen / Modal SLD Toolbar Buttons */
+.sld-btn-tool {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  transition: all 0.15s ease;
+}
+
+.sld-btn-tool:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+
