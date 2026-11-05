@@ -431,6 +431,19 @@
   }
 
   /**
+   * Helper to escape special XML characters (&, <, >, ", ') inside SVG text.
+   */
+  function escapeXml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  /**
    * Helper to format an interactive SVG component box.
    */
   function makeBox({ id, x, y, w, h, title, subtitle, badge, badgeColor = '#3b82f6', isDark = true, icon = '' }) {
@@ -439,6 +452,10 @@
     const titleFill = isDark ? '#f8fafc' : '#0f172a';
     const subFill = isDark ? '#94a3b8' : '#64748b';
     const shadowFilter = isDark ? 'url(#box-shadow-dark)' : 'url(#box-shadow)';
+
+    const safeTitle = escapeXml(title);
+    const safeSub = escapeXml(subtitle);
+    const safeBadge = escapeXml(badge);
 
     return `
       <g class="sld-interactive-item" data-comp-id="${id}" cursor="pointer">
@@ -449,14 +466,14 @@
         <!-- Header Ribbon / Icon -->
         <g transform="translate(${x + 10}, ${y + 14})">
           <text x="0" y="0" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="${titleFill}">
-            ${icon} ${title}
+            ${icon} ${safeTitle}
           </text>
         </g>
         
         <!-- Subtitle / Type -->
         <g transform="translate(${x + 10}, ${y + 30})">
           <text x="0" y="0" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="${subFill}">
-            ${subtitle}
+            ${safeSub}
           </text>
         </g>
         
@@ -464,7 +481,7 @@
         ${badge ? `
           <rect x="${x + 10}" y="${y + h - 22}" width="${w - 20}" height="15" rx="3" fill="${badgeColor}" fill-opacity="0.15" stroke="${badgeColor}" stroke-width="0.8" />
           <text x="${x + w / 2}" y="${y + h - 11}" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="${badgeColor}" text-anchor="middle">
-            ${badge}
+            ${safeBadge}
           </text>
         ` : ''}
       </g>
@@ -480,6 +497,10 @@
     const pitBg = isDark ? '#1a2234' : '#f1f5f9';
     const border = isDark ? '#22c55e' : '#16a34a';
 
+    const safeName = escapeXml(name);
+    const safeTag = escapeXml(tag);
+    const safeCode = escapeXml(code);
+
     return `
       <g class="sld-interactive-item sld-earth-pit-item" data-comp-id="${id}" cursor="pointer" transform="translate(${x}, ${y})">
         <!-- Earth Pit Enclosure Chamber -->
@@ -492,9 +513,9 @@
         <line x1="-4" y1="22" x2="4" y2="22" stroke="#16a34a" stroke-width="1.5" />
         
         <!-- Earth Pit Labels -->
-        <text x="0" y="32" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="${textFill}" text-anchor="middle">${name}</text>
-        <text x="0" y="47" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="${subFill}" text-anchor="middle">${tag}</text>
-        <text x="0" y="58" font-family="system-ui, sans-serif" font-size="6.5" font-weight="500" fill="${isDark ? '#94a3b8' : '#64748b'}" text-anchor="middle">${code}</text>
+        <text x="0" y="32" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="${textFill}" text-anchor="middle">${safeName}</text>
+        <text x="0" y="47" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="${subFill}" text-anchor="middle">${safeTag}</text>
+        <text x="0" y="58" font-family="system-ui, sans-serif" font-size="6.5" font-weight="500" fill="${isDark ? '#94a3b8' : '#64748b'}" text-anchor="middle">${safeCode}</text>
       </g>
     `;
   }
@@ -794,7 +815,7 @@
           y: 440,
           name: 'LA Earth Pit',
           tag: 'Pit 1 (LA Only)',
-          code: 'R < 5Ω | IEC 62305',
+          code: 'R ≤ 5Ω | IEC 62305',
           isDark
         })}
 
@@ -805,7 +826,7 @@
           y: 440,
           name: 'DC Earth Pit',
           tag: 'Pit 2 (DC Array & SPD)',
-          code: 'R < 5Ω | IEC 62548',
+          code: 'R ≤ 5Ω | IEC 62548',
           isDark
         })}
 
@@ -816,7 +837,7 @@
           y: 440,
           name: 'AC Earth Pit',
           tag: 'Pit 3 (Inverter & ACDB)',
-          code: 'R < 5Ω | IS 3043',
+          code: 'R ≤ 5Ω | IS 3043',
           isDark
         })}
 
@@ -1108,7 +1129,7 @@
           y: 440,
           name: 'DC Earth Pit',
           tag: 'Pit 1 (Structure & DCDB)',
-          code: 'R < 5Ω | IEC 62548',
+          code: 'R ≤ 5Ω | IEC 62548',
           isDark
         })}
 
@@ -1119,7 +1140,7 @@
           y: 440,
           name: 'AC & Equipment Pit',
           tag: 'Pit 2 (PCU, Batt & ACDB)',
-          code: 'R < 5Ω | IS 3043',
+          code: 'R ≤ 5Ω | IS 3043',
           isDark
         })}
 
@@ -1453,7 +1474,7 @@
           y: 440,
           name: 'LA Earth Pit',
           tag: 'Pit 1 (LA Only)',
-          code: 'R < 5Ω | IEC 62305',
+          code: 'R ≤ 5Ω | IEC 62305',
           isDark
         })}
 
@@ -1464,7 +1485,7 @@
           y: 440,
           name: 'DC Earth Pit',
           tag: 'Pit 2 (PV & Dual SPD)',
-          code: 'R < 5Ω | IEC 62548',
+          code: 'R ≤ 5Ω | IEC 62548',
           isDark
         })}
 
@@ -1475,7 +1496,7 @@
           y: 440,
           name: 'AC & ESS Pit',
           tag: 'Pit 3 (Inverter, Batt & DB)',
-          code: 'R < 5Ω | IS 3043',
+          code: 'R ≤ 5Ω | IS 3043',
           isDark
         })}
 
@@ -1752,7 +1773,7 @@
           y: 440,
           name: 'Consumer Earth Pit',
           tag: 'Main Premises Earth',
-          code: 'R < 5Ω | IS 3043',
+          code: 'R ≤ 5Ω | IS 3043',
           isDark
         })}
 
@@ -1777,21 +1798,39 @@
   }
 
   /**
+   * Sanitizes the full SVG string to ensure 100% strict XML validity in all browsers.
+   */
+  function sanitizeSvgXml(rawSvg) {
+    if (!rawSvg) return '';
+    // 1. Replace any & not part of a valid XML entity with &amp;
+    let clean = rawSvg.replace(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[a-fA-F0-9]+);)/g, '&amp;');
+    // 2. Replace any < that does not start a valid XML tag/comment
+    clean = clean.replace(/<(?![a-zA-Z/?!])/g, '&lt;');
+    return clean;
+  }
+
+  /**
    * Main Render Router based on system type.
    */
   function generateSvgContent(systemType, isDark) {
+    let raw = '';
     switch (systemType) {
       case 'on-grid':
-        return getOnGridSvg(isDark);
+        raw = getOnGridSvg(isDark);
+        break;
       case 'off-grid':
-        return getOffGridSvg(isDark);
+        raw = getOffGridSvg(isDark);
+        break;
       case 'hybrid':
-        return getHybridSvg(isDark);
+        raw = getHybridSvg(isDark);
+        break;
       case 'without-solar':
-        return getWithoutSolarSvg(isDark);
+        raw = getWithoutSolarSvg(isDark);
+        break;
       default:
-        return getOffGridSvg(isDark);
+        raw = getOffGridSvg(isDark);
     }
+    return sanitizeSvgXml(raw);
   }
 
   /**
