@@ -828,20 +828,119 @@
     margin: 8px !important;
   }
 
-  .modal-body {
-    padding: 8px !important;
+  /* Auto-adjust Appliance Configuration Modal to Mobile Screens */
+  #applianceConfigModal .modal-dialog {
+    margin: 6px auto !important;
+    width: calc(100% - 12px) !important;
+    max-width: calc(100% - 12px) !important;
+  }
+
+  #applianceConfigModal .modal-content {
+    width: 100% !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+
+  #applianceConfigModal .modal-header {
+    padding: 8px 10px !important;
+  }
+
+  #applianceConfigModal .modal-header .modal-title {
+    font-size: 0.88rem !important;
+  }
+
+  #applianceConfigModal .modal-body {
+    padding: 8px 6px !important;
+  }
+
+  #applianceConfigModal .table-responsive {
+    margin-bottom: 6px !important;
+    max-height: calc(100vh - 150px) !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Compact Table Layout for full-width screen fit */
+  .appliance-config-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    font-size: 0.72rem !important;
   }
 
   .appliance-config-table th,
   .backup-config-table th {
-    padding: 5px 3px !important;
+    padding: 5px 2px !important;
     font-size: 0.65rem !important;
   }
 
   .appliance-config-table td,
   .backup-config-table td {
-    padding: 4px 3px !important;
+    padding: 4px 2px !important;
     font-size: 0.72rem !important;
+  }
+
+  .appliance-config-table .col-chk {
+    width: 24px !important;
+    max-width: 24px !important;
+  }
+
+  .appliance-config-table .col-app {
+    width: auto !important;
+  }
+
+  .appliance-config-table .col-qty {
+    width: 36px !important;
+    max-width: 36px !important;
+  }
+
+  .appliance-config-table .col-watt {
+    width: 54px !important;
+    max-width: 54px !important;
+  }
+
+  .appliance-config-table .col-time {
+    width: 44px !important;
+    max-width: 44px !important;
+  }
+
+  .appliance-config-table .input-qty {
+    width: 32px !important;
+    height: 24px !important;
+    padding: 1px 2px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .appliance-config-table .input-watt {
+    width: 48px !important;
+    height: 24px !important;
+    padding: 1px 2px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .appliance-config-table .input-time {
+    width: 36px !important;
+    height: 24px !important;
+    padding: 1px 2px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .appliance-config-table .app-bracket-wh {
+    font-size: 0.65rem !important;
+    display: inline-block !important;
+    margin-left: 2px !important;
+    line-height: 1 !important;
+  }
+
+  .appliance-config-table #txtCustomAppName {
+    font-size: 0.72rem !important;
+    height: 24px !important;
+    padding: 2px 4px !important;
+  }
+
+  .appliance-config-table .btn-add-custom-app {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 0.85rem !important;
   }
 }
 

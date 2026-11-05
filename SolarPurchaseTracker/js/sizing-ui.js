@@ -671,7 +671,7 @@ const SizingUI = (() => {
 
     tbody.innerHTML = state.appliances.map((app, index) => {
       const wattInputHtml = `
-        <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 68px; height: 26px;" 
+        <input type="number" min="1" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8 input-watt" style="width: 68px; height: 26px;" 
           value="${app.watts}" 
           title="${app.name} Load: ${app.watts}W"
           oninput="SizingUI.updateApplianceWatt(${index}, this.value)"
@@ -679,15 +679,17 @@ const SizingUI = (() => {
       `;
 
       const hoursHtml = `
-        <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8" style="width: 44px; height: 26px;" 
+        <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fw-semibold mx-auto p-1 fs-8 input-time" style="width: 44px; height: 26px;" 
           value="${app.defaultHours || 4}" 
+          title="Daily hours"
           oninput="SizingUI.updateApplianceHours(${index}, this.value)"
           onchange="SizingUI.updateApplianceHours(${index}, this.value)">
       `;
 
       const qtyHtml = `
-        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold mx-auto p-1 fs-8" style="width: 38px; height: 26px;" 
+        <input type="number" min="0" class="form-control form-control-sm text-center fw-bold mx-auto p-1 fs-8 input-qty" style="width: 38px; height: 26px;" 
           value="${app.defaultQty}" 
+          title="Quantity"
           oninput="SizingUI.setQty(${index}, this.value)"
           onchange="SizingUI.setQty(${index}, this.value)">
       `;
@@ -697,34 +699,34 @@ const SizingUI = (() => {
       return `
         <tr class="${isChecked ? 'table-primary-subtle' : 'opacity-75 bg-light-subtle'}" id="rowApp_${index}">
           <!-- Checkbox -->
-          <td class="text-center p-1" style="width: 32px;">
+          <td class="text-center p-1 col-chk" style="width: 32px;">
             <input class="form-check-input mt-0" type="checkbox" id="chkApp_${index}" ${isChecked ? 'checked' : ''} 
               onchange="SizingUI.toggleApplianceChecked(${index}, this.checked)" style="width: 15px; height: 15px; cursor: pointer;">
           </td>
           <!-- Appliance Name + Energy -->
-          <td class="p-1" style="min-width: 120px; overflow: hidden;">
+          <td class="p-1 col-app" style="min-width: 90px; overflow: hidden;">
             <label class="form-check-label d-flex align-items-center justify-content-between gap-1 mb-0 w-100" for="chkApp_${index}" style="cursor: pointer;" title="${app.name}">
               <span class="d-inline-flex align-items-center text-truncate" style="min-width: 0;">
-                <span class="me-1 fs-7.5">${app.icon || '⚡'}</span>
+                <span class="me-1 fs-7.5 flex-shrink-0">${app.icon || '⚡'}</span>
                 <span class="fw-semibold ${isChecked ? 'text-dark' : 'text-secondary'} fs-8 text-truncate">${app.name}</span>
               </span>
-              <span class="text-primary fs-8 fw-semibold flex-shrink-0 align-self-center ms-1" id="bracketEnergy_${index}">
+              <span class="text-primary fs-8 fw-semibold flex-shrink-0 align-self-center ms-1 app-bracket-wh" id="bracketEnergy_${index}">
                 (${getItemBracketText(app, false)})
               </span>
             </label>
           </td>
           <!-- Qty -->
-          <td class="text-center p-1" style="width: 48px;">
+          <td class="text-center p-1 col-qty" style="width: 48px;">
             ${qtyHtml}
           </td>
           <!-- Watt -->
-          <td class="text-center p-1" style="width: 85px;">
+          <td class="text-center p-1 col-watt" style="width: 85px;">
             <div class="d-flex align-items-center justify-content-center">
               ${wattInputHtml}
             </div>
           </td>
           <!-- Daily Time -->
-          <td class="text-center p-1" style="width: 70px;">
+          <td class="text-center p-1 col-time" style="width: 70px;">
             ${hoursHtml}
           </td>
         </tr>

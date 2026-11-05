@@ -409,17 +409,25 @@
   <div class="modal fade" id="applianceConfigModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content shadow-lg border-0">
-        <div class="modal-header bg-light border-bottom py-2.5 px-3">
-          <div class="d-flex align-items-center gap-2">
-            <span class="fs-5">🏠</span>
-            <div>
-              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Appliances & Connected Load</h5>
-              <div class="text-muted fs-8">Configure household appliances, quantities & daily operating hours</div>
+        <div class="modal-header bg-light border-bottom py-2 px-2.5 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <span class="fs-5 flex-shrink-0">🏠</span>
+            <div class="min-w-0">
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0 text-truncate">Appliances & Connected Load</h5>
+              <div class="text-muted fs-8 text-truncate d-none d-sm-block">Configure household appliances, quantities & daily operating hours</div>
             </div>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 fs-8 fw-semibold" id="btnResetAppliances" onclick="SizingUI.resetAppliancesToDefault()" title="Reset appliances to default">
+              ↺ Reset
+            </button>
+            <button type="button" class="btn btn-sm btn-primary py-1 px-2.5 fs-8 fw-bold" data-bs-dismiss="modal" onclick="SizingUI.applyModalChanges()" title="Save and apply">
+              Apply
+            </button>
+            <button type="button" class="btn-close ms-0.5" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
         </div>
-        <div class="modal-body p-2.5 p-md-3">
+        <div class="modal-body p-2 p-md-3">
           
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 px-1">
             <h6 class="fw-bold text-dark mb-0 fs-7">Appliances List & Usage Hours</h6>
@@ -434,11 +442,11 @@
             <table class="table table-hover align-middle mb-0 appliance-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 32px;" class="text-center p-1" title="Select Appliance"></th>
-                  <th style="min-width: 120px;" class="p-1">Appliance</th>
-                  <th style="width: 48px;" class="text-center p-1">Qty</th>
-                  <th style="width: 85px;" class="text-center p-1">Watt</th>
-                  <th style="width: 70px;" class="text-center p-1">Daily Time</th>
+                  <th style="width: 32px;" class="text-center p-1 col-chk" title="Select Appliance"></th>
+                  <th class="p-1 col-app" style="min-width: 100px;">Appliance</th>
+                  <th style="width: 48px;" class="text-center p-1 col-qty">Qty</th>
+                  <th style="width: 85px;" class="text-center p-1 col-watt">Watt</th>
+                  <th style="width: 70px;" class="text-center p-1 col-time">Daily Time</th>
                 </tr>
               </thead>
               <tbody id="modalApplianceTableBody">
@@ -446,26 +454,26 @@
               </tbody>
               <tfoot class="table-light border-top sticky-bottom" style="z-index: 2;">
                 <tr class="bg-light">
-                  <td class="text-center p-1" style="width: 32px;">
+                  <td class="text-center p-1 col-chk" style="width: 32px;">
                     <span class="text-muted fs-8">➕</span>
                   </td>
-                  <td class="p-1" style="min-width: 120px;">
+                  <td class="p-1 col-app" style="min-width: 100px;">
                     <input type="text" class="form-control form-control-sm p-1 fs-8" id="txtCustomAppName" 
                       placeholder="Add custom appliance..." style="height: 28px; width: 100%;">
                   </td>
-                  <td class="text-center p-1" style="width: 48px;">
-                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-bold mx-auto fs-8" id="txtCustomAppQty" 
+                  <td class="text-center p-1 col-qty" style="width: 48px;">
+                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-bold mx-auto fs-8 input-qty" id="txtCustomAppQty" 
                       value="1" title="Quantity" style="width: 42px; height: 28px;">
                   </td>
-                  <td class="text-center p-1" style="width: 85px;">
-                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-semibold mx-auto fs-8" id="txtCustomAppWatts" 
+                  <td class="text-center p-1 col-watt" style="width: 85px;">
+                    <input type="number" min="1" class="form-control form-control-sm text-center p-1 fw-semibold mx-auto fs-8 input-watt" id="txtCustomAppWatts" 
                       placeholder="Watts" style="width: 68px; height: 28px;">
                   </td>
-                  <td class="text-center p-1" style="width: 70px;">
+                  <td class="text-center p-1 col-time" style="width: 70px;">
                     <div class="d-flex align-items-center justify-content-center gap-1">
-                      <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center p-1 fw-semibold fs-8" id="txtCustomAppHours" 
+                      <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center p-1 fw-semibold fs-8 input-time" id="txtCustomAppHours" 
                         value="4" title="Daily running hours" style="width: 38px; height: 28px;">
-                      <button type="button" class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs" id="btnAddCustomApp" 
+                      <button type="button" class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs btn-add-custom-app" id="btnAddCustomApp" 
                         style="width: 24px; height: 24px; font-size: 1rem; font-weight: bold; line-height: 1;" title="Add Custom Appliance" onclick="SizingUI.addCustomAppliance()">
                         +
                       </button>
@@ -477,7 +485,7 @@
           </div>
 
           <!-- Heavy Load AC Details (Collapsible/Dynamic) -->
-          <div id="heavyAcSection" class="p-3 bg-light rounded-3 border mt-3" style="display:none;">
+          <div id="heavyAcSection" class="p-2.5 bg-light rounded-3 border mt-2.5" style="display:none;">
             <h6 class="fw-bold text-primary fs-7 mb-2">❄️ Air Conditioner (AC) Heavy Load Details</h6>
             <div class="row g-2">
               <div class="col-6 col-md-4">
@@ -504,7 +512,7 @@
           </div>
 
           <!-- Heavy Load Water Pump Details -->
-          <div id="heavyPumpSection" class="p-3 bg-light rounded-3 border mt-3" style="display:none;">
+          <div id="heavyPumpSection" class="p-2.5 bg-light rounded-3 border mt-2.5" style="display:none;">
             <h6 class="fw-bold text-primary fs-7 mb-2">🚰 Water Pump Heavy Load Details</h6>
             <div class="row g-2">
               <div class="col-12">
@@ -519,19 +527,6 @@
             </div>
           </div>
 
-        </div>
-        <div class="modal-footer bg-light d-flex justify-content-between align-items-center flex-nowrap py-2.5 px-3">
-          <div class="fs-8 text-secondary text-nowrap">
-            Connected: <strong class="text-dark fs-7.5 fw-bold" id="modalFooterConnectedLoad">0 W</strong> • Daily: <strong class="text-primary fs-7.5 fw-bold" id="modalFooterDailyEnergy">0 Wh/day</strong>
-          </div>
-          <div class="modal-footer-action-group d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-1.5 fs-8 text-nowrap" id="btnResetAppliances" onclick="SizingUI.resetAppliancesToDefault()" title="Reset appliances to default">
-              ↺ Reset
-            </button>
-            <button type="button" class="btn btn-sm btn-primary fw-bold px-3.5 py-1.5 fs-8 text-nowrap" data-bs-dismiss="modal" onclick="SizingUI.applyModalChanges()">
-              Apply
-            </button>
-          </div>
         </div>
       </div>
     </div>
