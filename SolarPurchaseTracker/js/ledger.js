@@ -96,10 +96,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Setup desktop double click and mobile long press for transaction rows in ledger popup
+  const txnListEl = document.getElementById('txnList');
+  if (txnListEl) {
+    // 1. Desktop Double Click
+    txnListEl.addEventListener('dblclick', (e) => {
+      const row = e.target.closest('.chat-row');
+      if (!row || e.target.closest('.chat-row-actions')) return;
+      toggleTxnRowActions(row);
+    });
+
+    // 2. Mobile Long Press (Hold)
+    let txnTouchTimer = null;
+    let txnTouchStartX = 0;
+    let txnTouchStartY = 0;
+
+    txnListEl.addEventListener('touchstart', (e) => {
+      const row = e.target.closest('.chat-row');
+      if (!row || e.target.closest('.chat-row-actions')) return;
+
+      txnTouchStartX = e.touches[0].clientX;
+      txnTouchStartY = e.touches[0].clientY;
+
+      txnTouchTimer = setTimeout(() => {
+        toggleTxnRowActions(row, true);
+        if (navigator.vibrate) {
+          try { navigator.vibrate(50); } catch (_) {}
+        }
+      }, 500);
+    }, { passive: true });
+
+    txnListEl.addEventListener('touchmove', (e) => {
+      if (!txnTouchTimer) return;
+      const dx = Math.abs(e.touches[0].clientX - txnTouchStartX);
+      const dy = Math.abs(e.touches[0].clientY - txnTouchStartY);
+      if (dx > 10 || dy > 10) {
+        clearTimeout(txnTouchTimer);
+        txnTouchTimer = null;
+      }
+    }, { passive: true });
+
+    txnListEl.addEventListener('touchend', () => {
+      if (txnTouchTimer) {
+        clearTimeout(txnTouchTimer);
+        txnTouchTimer = null;
+      }
+    });
+
+    txnListEl.addEventListener('touchcancel', () => {
+      if (txnTouchTimer) {
+        clearTimeout(txnTouchTimer);
+        txnTouchTimer = null;
+      }
+    });
+  }
+
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.kb-account-item') && !e.target.closest('.kb-row-del-btn')) {
       document.querySelectorAll('.kb-row-del-btn').forEach(b => {
         b.style.display = 'none';
+      });
+    }
+
+    if (!e.target.closest('.chat-row') && !e.target.closest('.chat-row-actions')) {
+      document.querySelectorAll('#txnList .chat-row.actions-visible').forEach(r => {
+        r.classList.remove('actions-visible');
       });
     }
   });
@@ -589,6 +650,20 @@ function updateModalBalance(bid) {
   else                  { balEl.textContent = '✓ Settled'; balEl.className = 'bw-modal-bal zero'; }
 }
 
+function toggleTxnRowActions(row, forceOpen = false) {
+  if (!row) return;
+  const isAlreadyOpen = row.classList.contains('actions-visible');
+  document.querySelectorAll('#txnList .chat-row.actions-visible').forEach(r => {
+    if (r !== row) r.classList.remove('actions-visible');
+  });
+
+  if (forceOpen || !isAlreadyOpen) {
+    row.classList.add('actions-visible');
+  } else {
+    row.classList.remove('actions-visible');
+  }
+}
+
 function renderTxnHistory(bid) {
   const txns    = getBorrowerTxns(bid);
   const listEl  = document.getElementById('txnList');
@@ -612,9 +687,11 @@ function renderTxnHistory(bid) {
       <div class="chat-row right" data-txn-id="${t.TxnID}">
         <div class="chat-row-actions">
           <button type="button" class="txn-edit" onclick="event.stopPropagation(); openEditTxnModal(${t.TxnID}, ${bid})" title="Edit transaction">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
           </button>
-          <button type="button" class="txn-del" onclick="event.stopPropagation(); deleteTxn(${t.TxnID}, ${bid})" title="Delete transaction">×</button>
+          <button type="button" class="txn-del" onclick="event.stopPropagation(); deleteTxn(${t.TxnID}, ${bid})" title="Delete transaction">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
         <div class="chat-bubble credit">
           <div class="bubble-label">You gave</div>
@@ -634,9 +711,11 @@ function renderTxnHistory(bid) {
         </div>
         <div class="chat-row-actions">
           <button type="button" class="txn-edit" onclick="event.stopPropagation(); openEditTxnModal(${t.TxnID}, ${bid})" title="Edit transaction">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
           </button>
-          <button type="button" class="txn-del" onclick="event.stopPropagation(); deleteTxn(${t.TxnID}, ${bid})" title="Delete transaction">×</button>
+          <button type="button" class="txn-del" onclick="event.stopPropagation(); deleteTxn(${t.TxnID}, ${bid})" title="Delete transaction">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
       </div>`;
     }
