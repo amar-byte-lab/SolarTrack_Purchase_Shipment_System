@@ -174,36 +174,37 @@ const SizingCalc = (() => {
     const monthlyUnitsVal = Number(input.monthlyUnits) || 0;
     const dailyDemandFromMonthlyUnits = monthlyUnitsVal > 0 ? (monthlyUnitsVal / 30) : 0;
 
+    let dailyDemandKwh = 0;
     if (isMonthlyUnitsBasis) {
-      if (sysTypeKey === 'off-grid') {
-        // Off-Grid 24-hr autonomous continuous operation:
-        // Daytime peak solar (~7h: 9AM-4PM) powers load directly (~29.2% of daily energy).
-        // Night/Non-solar hours (~17h: 4PM-9AM) must be powered 100% by the Battery Bank (17/24 = 70.83% of daily energy).
-        const dailyKwh = dailyDemandFromMonthlyUnits > 0 ? dailyDemandFromMonthlyUnits : (estimatedDailyKwh || 10);
-        targetBackupEnergyWh = Math.round(dailyKwh * 1000 * (17 / 24));
-        effectiveBackupHours = 17;
-      } else {
-        // For Hybrid & Without Solar in monthly units mode:
-        targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
-        effectiveBackupHours = backupLoadW > 0 ? (targetBackupEnergyWh / backupLoadW) : backupHours;
-      }
-    } else if (isApplianceScheduleBasis) {
-      targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
-      effectiveBackupHours = backupLoadW > 0 ? (targetBackupEnergyWh / backupLoadW) : backupHours;
+      dailyDemandKwh = dailyDemandFromMonthlyUnits > 0 ? dailyDemandFromMonthlyUnits : (estimatedDailyKwh || 10);
     } else {
-      targetBackupEnergyWh = backupApplianceDailyWh > 0 ? backupApplianceDailyWh : (activeBackupW * backupHours);
-      effectiveBackupHours = backupLoadW > 0 ? (targetBackupEnergyWh / backupLoadW) : backupHours;
+      dailyDemandKwh = estimatedDailyKwh > 0 ? estimatedDailyKwh : (dailyDemandFromMonthlyUnits || (Number(input.dailyUsageKwh) || 10));
     }
 
+    if (backupApplianceDailyWh > 0) {
+      targetBackupEnergyWh = backupApplianceDailyWh;
+      effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
+    } else {
+      targetBackupEnergyWh = Math.round(activeBackupW * backupHours);
+      effectiveBackupHours = backupHours;
+    }
+
+    if (isMonthlyUnitsBasis && sysTypeKey === 'off-grid' && backupApplianceDailyWh <= 0) {
+      targetBackupEnergyWh = Math.round(dailyDemandKwh * 1000 * (17 / 24));
+      effectiveBackupHours = 17;
+    }
+
+    const backupEnergyKwh = Math.round((targetBackupEnergyWh / 1000) * 100) / 100;
     const estBatteryRechargeKwh = targetBackupEnergyWh / (0.88 * 1000); // 88% battery roundtrip charging efficiency
 
     let solarResult = null;
-    if (sysMeta.requiresSolar) {
+    if (sysMeta.requiresSolar && sysTypeKey !== 'without-solar') {
       solarResult = calculateSolar({
         systemType: sysTypeKey,
         energyCalculationBasis,
-        monthlyUnits: Number(input.monthlyUnits) || 0,
-        dailyUsageKwh: Number(input.dailyUsageKwh) || estimatedDailyKwh,
+        dailyDemandKwh,
+        monthlyUnits: monthlyUnitsVal,
+        dailyUsageKwh: dailyDemandKwh,
         batteryRechargeKwh: estBatteryRechargeKwh,
         peakSunHours: Number(params.peakSunHours) || 5.0,
         pvSystemEfficiencyPct: Number(params.pvSystemEfficiencyPct) || 78,
@@ -377,8 +378,11 @@ const SizingCalc = (() => {
       backupHours: effectiveBackupHours,
       requestedBackupHours: backupHours,
       energyCalculationBasis,
-      dailyEnergyWh: Math.round(totalApplianceDailyWh),
-      dailyEnergyKwh: Math.round((totalApplianceDailyWh / 1000) * 100) / 100,
+      dailyEnergyWh: Math.round(dailyDemandKwh * 1000),
+      dailyEnergyKwh: Math.round(dailyDemandKwh * 100) / 100,
+      dailyDemandKwh: Math.round(dailyDemandKwh * 100) / 100,
+      backupEnergyWh: Math.round(targetBackupEnergyWh),
+      backupEnergyKwh: backupEnergyKwh,
       totalApplianceDailyWh: Math.round(totalApplianceDailyWh),
       backupApplianceDailyWh: Math.round(backupApplianceDailyWh),
       targetBackupEnergyWh: Math.round(targetBackupEnergyWh),
@@ -395,6 +399,8 @@ const SizingCalc = (() => {
       warnings,
       estimatedDailyKwh: Math.round(estimatedDailyKwh * 100) / 100,
       calculationDetails: {
+        dailyDemandKwh: Math.round(dailyDemandKwh * 100) / 100,
+        backupEnergyKwh: backupEnergyKwh,
         baseRunningLoadW,
         maxMotorSurgeDeltaW,
         safetyMarginW: Math.round(baseRunningLoadW * (safetyMarginPct / 100)),
@@ -846,6 +852,7 @@ const SizingCalc = (() => {
   function calculateSolar({
     systemType,
     energyCalculationBasis = 'monthly_units',
+    dailyDemandKwh,
     monthlyUnits,
     dailyUsageKwh,
     batteryRechargeKwh = 0,
@@ -858,29 +865,33 @@ const SizingCalc = (() => {
     shadingOrientationLossPct = 3,
     sanctionedLoadKw = 3
   }) {
-    let dailyDemandKwh = 0;
-
-    if (energyCalculationBasis === 'monthly_units') {
-      const units = Number(monthlyUnits) || 300;
-      dailyDemandKwh = units / 30;
-    } else {
-      // appliance_load, appliance_schedule, backup_duration: Daily demand is customer's total daily energy
-      dailyDemandKwh = Math.max(0.1, Number(dailyUsageKwh) || 0);
+    if (systemType === 'without-solar') {
+      return null;
     }
 
-    // For Off-Grid Solar, Solar PV must generate enough energy during daylight hours (~7h) to power daytime loads
-    // AND fully recharge the battery bank (accounting for ~88% roundtrip charging efficiency)
-    let totalSolarDailyTargetKwh = dailyDemandKwh;
-    if (systemType === 'off-grid') {
-      if (energyCalculationBasis === 'backup_duration') {
-        const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : (dailyDemandKwh / 0.88);
-        const daytimeDirectKwh = Math.max(0.5, dailyDemandKwh * 0.4);
-        totalSolarDailyTargetKwh = Math.max(dailyDemandKwh * 1.10, daytimeDirectKwh + batteryChargeNeedKwh);
+    let dailyDemand = Number(dailyDemandKwh);
+    if (!dailyDemand || dailyDemand <= 0) {
+      if (energyCalculationBasis === 'monthly_units') {
+        const units = Number(monthlyUnits) || 300;
+        dailyDemand = units / 30;
       } else {
-        const daytimeDirectKwh = dailyDemandKwh * (7 / 24);
-        const batteryChargeNeedKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : ((dailyDemandKwh * (17 / 24)) / 0.88);
-        totalSolarDailyTargetKwh = Math.max(dailyDemandKwh * 1.10, daytimeDirectKwh + batteryChargeNeedKwh);
+        dailyDemand = Math.max(0.1, Number(dailyUsageKwh) || 10);
       }
+    }
+
+    // Determine target daily solar generation with respect to Select System Type
+    let totalSolarDailyTargetKwh = dailyDemand;
+    if (systemType === 'off-grid') {
+      // In autonomous Off-Grid, Solar PV must generate enough energy during daylight hours (~7h)
+      // to power daytime loads (~35%) AND fully recharge the battery bank (accounting for ~88% roundtrip charging efficiency)
+      const daytimeDirectKwh = Math.max(0.5, dailyDemand * 0.35);
+      const bRechargeKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : (dailyDemand * 0.65 / 0.88);
+      totalSolarDailyTargetKwh = Math.max(dailyDemand * 1.15, daytimeDirectKwh + bRechargeKwh);
+    } else if (systemType === 'hybrid') {
+      // In Hybrid solar, Solar PV powers daytime load, charges the battery, and exports surplus
+      const daytimeDirectKwh = Math.max(0.5, dailyDemand * 0.35);
+      const bRechargeKwh = batteryRechargeKwh > 0 ? batteryRechargeKwh : 0;
+      totalSolarDailyTargetKwh = Math.max(dailyDemand, daytimeDirectKwh + bRechargeKwh);
     }
 
     const sunHours = Math.max(1, Number(peakSunHours) || 5.0);
@@ -901,9 +912,9 @@ const SizingCalc = (() => {
     // Required Solar kWp for daily energy demand
     const requiredSolarKwp = totalSolarDailyTargetKwh / (sunHours * prEff);
 
-    // Standard 550Wp Mono PERC Half-Cut Panels
+    // Standard 550Wp Mono PERC Half-Cut Panels (Minimum 2 panels for functional string)
     const panelWatts = 550;
-    const panelCount = Math.ceil((requiredSolarKwp * 1000) / panelWatts);
+    const panelCount = Math.max(2, Math.ceil((requiredSolarKwp * 1000) / panelWatts));
     const actualArrayKwp = Math.round(((panelCount * panelWatts) / 1000) * 100) / 100;
 
     // Real-world generation output accounting for all system losses
@@ -921,8 +932,8 @@ const SizingCalc = (() => {
     const permissibleArrayKwp = Math.round(((permissiblePanelCount * panelWatts) / 1000) * 100) / 100;
 
     return {
-      dailyDemandKwh: Math.round(dailyDemandKwh * 100) / 100,
-      monthlyUnits: Math.round(dailyDemandKwh * 30),
+      dailyDemandKwh: Math.round(dailyDemand * 100) / 100,
+      monthlyUnits: Math.round(dailyDemand * 30),
       requiredSolarKwp: Math.round(requiredSolarKwp * 100) / 100,
       actualArrayKwp,
       recommendedKwp: actualArrayKwp,

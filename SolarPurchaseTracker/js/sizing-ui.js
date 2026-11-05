@@ -469,50 +469,35 @@ const SizingUI = (() => {
 
   function updateOnGridDemandDisplay(calcResult) {
     let dailyKwh = 0;
-    const basis = state.energyCalculationBasis || 'monthly_units';
-
-    if (basis === 'monthly_units') {
-      const txt = document.getElementById('txtMonthlyUnits');
-      const units = Number(state.monthlyUnits !== '' && state.monthlyUnits !== undefined ? state.monthlyUnits : (txt ? txt.value : 300)) || 300;
-      dailyKwh = units / 30;
+    if (calcResult && calcResult.dailyDemandKwh !== undefined) {
+      dailyKwh = calcResult.dailyDemandKwh;
     } else {
-      // appliance_load, appliance_schedule, backup_duration: Exactly equals Total Daily Energy
-      let totalDailyWh = 0;
-      state.appliances.forEach(app => {
-        if (app.checked && Number(app.defaultQty) > 0) {
-          totalDailyWh += (Number(app.watts) || 0) * Number(app.defaultQty) * (Number(app.defaultHours) || 1);
-        }
-      });
-      dailyKwh = totalDailyWh / 1000;
+      const basis = state.energyCalculationBasis || 'monthly_units';
+      if (basis === 'monthly_units') {
+        const txt = document.getElementById('txtMonthlyUnits');
+        const units = Number(state.monthlyUnits !== '' && state.monthlyUnits !== undefined ? state.monthlyUnits : (txt ? txt.value : 300)) || 300;
+        dailyKwh = units / 30;
+      } else {
+        let totalDailyWh = 0;
+        state.appliances.forEach(app => {
+          if (app.checked && Number(app.defaultQty) > 0) {
+            totalDailyWh += (Number(app.watts) || 0) * Number(app.defaultQty) * (Number(app.defaultHours) || 1);
+          }
+        });
+        dailyKwh = totalDailyWh / 1000;
+      }
     }
-
-    const sunHours = 5.0;
-    const pr = 0.78;
-    let solarTargetKwh = dailyKwh;
-    if (state.systemType === 'off-grid') {
-      let backupW = 0;
-      state.appliances.forEach(app => {
-        if (app.checked && Number(app.defaultQty) > 0 && app.isBackup !== false) {
-          backupW += (Number(app.watts) || 0) * Number(app.defaultQty);
-        }
-      });
-      const bHours = Number(state.backupHours) || 4;
-      const bEnergyKwh = (backupW * bHours) / 1000;
-      const bRechargeKwh = bEnergyKwh / 0.88;
-      const daytimeKwh = Math.max(0.5, dailyKwh * 0.4);
-      solarTargetKwh = daytimeKwh + bRechargeKwh;
-    }
-    const targetKwp = (solarTargetKwh / (sunHours * pr)).toFixed(2);
-    const panelCount = Math.ceil((targetKwp * 1000) / 550);
-    const actualKwp = ((panelCount * 550) / 1000).toFixed(2);
 
     const lblMonthlyDaily = document.getElementById('lblMonthlyBasisDailyDemand');
     if (lblMonthlyDaily) lblMonthlyDaily.textContent = `${Number(dailyKwh).toFixed(2)} kWh / day`;
 
     const lblDaily = document.getElementById('lblOnGridDailyDemand');
     if (lblDaily) lblDaily.textContent = `${Number(dailyKwh).toFixed(2)} kWh / day`;
-    const lblKwp = document.getElementById('lblOnGridTargetKwp');
-    if (lblKwp) lblKwp.textContent = `~${actualKwp} kWp (${panelCount} Panels)`;
+
+    if (calcResult && calcResult.solar) {
+      const lblKwp = document.getElementById('lblOnGridTargetKwp');
+      if (lblKwp) lblKwp.textContent = `~${calcResult.solar.actualArrayKwp} kWp (${calcResult.solar.panelCount} Panels)`;
+    }
   }
 
   /* ---------------- Main Page Step 2 Summary Card ---------------- */
@@ -2549,13 +2534,30 @@ const SizingUI = (() => {
     const txtHours = document.getElementById('txtBackupHours');
     const backupHoursVal = Number(state.backupHours !== undefined ? state.backupHours : (txtHours ? txtHours.value : 4)) || 4;
 
+    let calcDailyWh = 0;
+    let calcBackupWh = 0;
+    activeAppliances.forEach(a => {
+      const q = Number(a.defaultQty) || 0;
+      const w = Number(a.watts) || 0;
+      const h = Number(a.defaultHours) || 1;
+      calcDailyWh += w * q * h;
+      if (a.isBackup !== false) {
+        const bQ = (a.backupQty !== undefined && Number(a.backupQty) > 0) ? Math.min(q, Number(a.backupQty)) : q;
+        const bH = Number(a.backupHours !== undefined ? a.backupHours : backupHoursVal) || 4;
+        calcBackupWh += w * bQ * bH;
+      }
+    });
+
+    state.dailyUsageKwh = calcDailyWh / 1000;
+    state.backupEnergyKwh = calcBackupWh / 1000;
+
     const result = SizingCalc.calculateSystem({
       systemType: state.systemType,
       connectionPhase: state.connectionPhase || '1-Phase',
       sanctionedLoadKw: Number(state.sanctionedLoadKw) || 3,
       appliances: activeAppliances,
       monthlyUnits: monthlyUnitsVal,
-      dailyUsageKwh: Number(state.dailyUsageKwh) || 0,
+      dailyUsageKwh: calcDailyWh / 1000,
       backupHours: backupHoursVal,
       energyCalculationBasis: state.energyCalculationBasis || 'backup_duration',
       batteryType: state.selectedBatteryType || 'lithium'
