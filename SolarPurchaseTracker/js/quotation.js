@@ -406,18 +406,21 @@ function generatePrintItemsGrid() {
 
   let discountVal = 0;
   let taxableValue = subtotal;
-  if (activeAdjustments.discount.active) {
+  if (activeAdjustments.discount && activeAdjustments.discount.active) {
     discountVal = activeAdjustments.discount.value || 0;
     taxableValue = Math.max(0, subtotal - discountVal);
   }
 
-  // Tax rates
-  const gstActive = activeAdjustments.gst ? activeAdjustments.gst.active : false;
-  const gstRate = gstActive ? activeAdjustments.gst.value : 0;
-  const cgstActive = activeAdjustments.cgst.active;
-  const cgstRate = cgstActive ? activeAdjustments.cgst.value : 0;
-  const sgstActive = activeAdjustments.sgst.active;
-  const sgstRate = sgstActive ? activeAdjustments.sgst.value : 0;
+  // Tax rates & exclusivity
+  const gstActive = Boolean(activeAdjustments.gst && activeAdjustments.gst.active);
+  const gstRate = gstActive ? (activeAdjustments.gst.value || 0) : 0;
+  const cgstActive = Boolean(activeAdjustments.cgst && activeAdjustments.cgst.active);
+  const cgstRate = cgstActive ? (activeAdjustments.cgst.value || 0) : 0;
+  const sgstActive = Boolean(activeAdjustments.sgst && activeAdjustments.sgst.active);
+  const sgstRate = sgstActive ? (activeAdjustments.sgst.value || 0) : 0;
+
+  // Split mode: if CGST or SGST is active. GST mode: if GST active or neither active.
+  const isSplitTaxMode = cgstActive || sgstActive;
 
   let gstAmount = 0;
   if (gstActive) gstAmount = (taxableValue * gstRate) / 100;
@@ -427,106 +430,206 @@ function generatePrintItemsGrid() {
   if (sgstActive) sgstAmount = (taxableValue * sgstRate) / 100;
 
   // Extra charges
-  let otherCharges = 0;
-  if (activeAdjustments.transport.active) otherCharges += activeAdjustments.transport.value || 0;
-  if (activeAdjustments.labour.active) otherCharges += activeAdjustments.labour.value || 0;
-  if (activeAdjustments.other.active) otherCharges += activeAdjustments.other.value || 0;
+  let transportVal = 0;
+  if (activeAdjustments.transport && activeAdjustments.transport.active) {
+    transportVal = activeAdjustments.transport.value || 0;
+  }
+  let labourVal = 0;
+  if (activeAdjustments.labour && activeAdjustments.labour.active) {
+    labourVal = activeAdjustments.labour.value || 0;
+  }
+  let otherVal = 0;
+  if (activeAdjustments.other && activeAdjustments.other.active) {
+    otherVal = activeAdjustments.other.value || 0;
+  }
 
-  const grandTotal = Math.max(0, taxableValue + gstAmount + cgstAmount + sgstAmount + otherCharges);
+  const grandTotal = Math.max(0, taxableValue + gstAmount + cgstAmount + sgstAmount + transportVal + labourVal + otherVal);
 
-  // Update table headers with dynamic rates
+  // Update table headers with dynamic rates & visibility
+  const gstHeader = document.getElementById('printGstHeader');
   const cgstHeader = document.getElementById('printCgstHeader');
   const sgstHeader = document.getElementById('printSgstHeader');
-  if (cgstHeader) cgstHeader.textContent = cgstActive ? `CGST Rate ${cgstRate}%` : 'CGST Rate';
-  if (sgstHeader) sgstHeader.textContent = sgstActive ? `SGST Rate ${sgstRate}%` : 'SGST Rate';
 
-  // Build grid row array
-  let printRows = [];
+  if (isSplitTaxMode) {
+    if (gstHeader) gstHeader.style.display = 'none';
+    if (cgstHeader) {
+      cgstHeader.style.display = '';
+      cgstHeader.textContent = cgstActive ? `CGST Rate ${cgstRate}%` : 'CGST Rate';
+    }
+    if (sgstHeader) {
+      sgstHeader.style.display = '';
+      sgstHeader.textContent = sgstActive ? `SGST Rate ${sgstRate}%` : 'SGST Rate';
+    }
+  } else {
+    if (gstHeader) {
+      gstHeader.style.display = '';
+      gstHeader.textContent = gstActive ? `GST Rate ${gstRate}%` : 'GST Rate';
+    }
+    if (cgstHeader) cgstHeader.style.display = 'none';
+    if (sgstHeader) sgstHeader.style.display = 'none';
+  }
 
-  // Group 1: Normal Items
+  // Extract Product Items
+  const items = [];
   rows.forEach(row => {
-    const itemName = row.querySelector('.q-item-name').value.trim();
-    const qty = Number(row.querySelector('.q-qty').value) || 1;
+    const itemName = row.querySelector('.q-item-name')?.value.trim() || '';
+    const qty = Number(row.querySelector('.q-qty')?.value) || 1;
     const price = Number(row.getAttribute('data-price')) || 0;
-    printRows.push({ type: 'item', desc: itemName, qty: `${qty} SET`, price: price });
+    items.push({ desc: itemName, qty: `${qty} SET`, price: price });
   });
 
-  // Group 2: Add dynamic adjustment lines as standalone transparent item rows inside basic price column
-  if (activeAdjustments.discount.active && discountVal > 0) {
-    printRows.push({ type: 'adj', desc: 'Less: Discount', qty: '-', price: -discountVal });
-  }
-  if (gstActive && gstAmount > 0) {
-    printRows.push({ type: 'adj', desc: `Add: GST (${gstRate}%)`, qty: '-', price: gstAmount });
-  }
-  if (activeAdjustments.transport.active && activeAdjustments.transport.value > 0) {
-    printRows.push({ type: 'adj', desc: 'Add: Transportation Charges', qty: '-', price: activeAdjustments.transport.value });
-  }
-  if (activeAdjustments.labour.active && activeAdjustments.labour.value > 0) {
-    printRows.push({ type: 'adj', desc: 'Add: Labour Charges', qty: '-', price: activeAdjustments.labour.value });
-  }
-  if (activeAdjustments.other.active && activeAdjustments.other.value > 0) {
-    printRows.push({ type: 'adj', desc: 'Add: Other Charges', qty: '-', price: activeAdjustments.other.value });
-  }
-
-  // Count rows to merge
-  const totalMergeRows = printRows.length;
+  const itemCount = items.length;
   let html = [];
 
-  // Calculate sum of basic prices column for the total row
-  let sumBasicPrices = subtotal;
-  if (activeAdjustments.discount.active) sumBasicPrices -= discountVal;
-  if (gstActive) sumBasicPrices += gstAmount;
-  if (activeAdjustments.transport.active) sumBasicPrices += activeAdjustments.transport.value || 0;
-  if (activeAdjustments.labour.active) sumBasicPrices += activeAdjustments.labour.value || 0;
-  if (activeAdjustments.other.active) sumBasicPrices += activeAdjustments.other.value || 0;
+  // 1. Render Product Items
+  items.forEach((item, idx) => {
+    const slNo = (idx + 1).toString();
+    const itemPriceText = `₹${item.price.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-  printRows.forEach((r, idx) => {
-    let slNo = r.type === 'item' ? (idx + 1).toString() : '';
-    let priceText = r.price < 0 ? `-₹${Math.abs(r.price).toLocaleString('en-IN', {minimumFractionDigits:2})}` : `₹${r.price.toLocaleString('en-IN', {minimumFractionDigits:2})}`;
-    
-    // Rowspan columns (Total Value, CGST, SGST) - only output on the first row of merge
-    let rowspanHtml = '';
-    if (idx === 0) {
-      const totalValText = `₹${sumBasicPrices.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      rowspanHtml = `
-        ${totalValueMode === 'merged' ? `
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.8pt; padding: 4px 6px;">
-          ${totalValText}
-        </td>` : ''}
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-size: 8.8pt; padding: 4px 6px;">
-          ${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
-        </td>
-        <td rowspan="${totalMergeRows}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-size: 8.8pt; padding: 4px 6px;">
-          ${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
-        </td>
-      `;
-    }
+    let totalValTd = '';
+    let taxTds = '';
 
-    let itemValueHtml = '';
-    if (totalValueMode === 'each') {
-      itemValueHtml = `
-        <td style="border: 1px solid #000; text-align: right; padding: 3.5px 4.5px; font-family: monospace; font-size: 8.5pt;">${priceText}</td>
-      `;
+    if (totalValueMode === 'merged') {
+      if (idx === 0) {
+        totalValTd = `<td rowspan="${itemCount}" style="border: 1px solid #000; text-align: right; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.8pt; padding: 4px 6px;">₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+        if (isSplitTaxMode) {
+          taxTds = `
+            <td rowspan="${itemCount}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.5pt; padding: 4px 6px;">
+              ${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
+            </td>
+            <td rowspan="${itemCount}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.5pt; padding: 4px 6px;">
+              ${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
+            </td>
+          `;
+        } else {
+          taxTds = `
+            <td rowspan="${itemCount}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.5pt; padding: 4px 6px;">
+              ${gstActive ? '₹' + gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
+            </td>
+          `;
+        }
+      }
+    } else {
+      totalValTd = `<td style="border: 1px solid #000; text-align: right; padding: 3.5px 4.5px; font-family: monospace; font-size: 8.5pt;">${itemPriceText}</td>`;
+      if (idx === 0) {
+        if (isSplitTaxMode) {
+          taxTds = `
+            <td rowspan="${itemCount}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.5pt; padding: 4px 6px;">
+              ${cgstActive ? '₹' + cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
+            </td>
+            <td rowspan="${itemCount}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.5pt; padding: 4px 6px;">
+              ${sgstActive ? '₹' + sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
+            </td>
+          `;
+        } else {
+          taxTds = `
+            <td rowspan="${itemCount}" style="border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: bold; font-family: monospace; font-size: 8.5pt; padding: 4px 6px;">
+              ${gstActive ? '₹' + gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}
+            </td>
+          `;
+        }
+      }
     }
 
     html.push(`
       <tr>
         <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22;">${slNo}</td>
-        <td style="border: 1px solid #000; text-align: left; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22; ${r.type === 'adj' ? 'font-style: italic; font-weight: 500;' : ''}">${r.desc}</td>
-        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22;">${r.qty}</td>
-        ${itemValueHtml}
-        ${rowspanHtml}
+        <td style="border: 1px solid #000; text-align: left; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22;">${item.desc}</td>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt; line-height: 1.22;">${item.qty}</td>
+        ${totalValTd}
+        ${taxTds}
       </tr>
     `);
   });
 
-  // Add Grand Total row
+  // Empty tax cells helper for adjustment rows
+  const emptyTaxTd = isSplitTaxMode ? 
+    '<td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;">-</td><td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;">-</td>' :
+    '<td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;">-</td>';
+
+  // 2. Render Adjustments Rows (Discount, Transportation, Labour, Other)
+  if (activeAdjustments.discount && activeAdjustments.discount.active && discountVal > 0) {
+    html.push(`
+      <tr style="background-color: #fff9f9;">
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;"></td>
+        <td style="border: 1px solid #000; text-align: left; padding: 3.5px 4.5px; font-size: 8.5pt; font-style: italic; font-weight: 600; color: #b02a37;">Less: Discount</td>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;">-</td>
+        <td style="border: 1px solid #000; text-align: right; padding: 3.5px 4.5px; font-family: monospace; font-size: 8.5pt; font-weight: bold; color: #b02a37;">-₹${discountVal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+        ${emptyTaxTd}
+      </tr>
+    `);
+  }
+
+  if (activeAdjustments.transport && activeAdjustments.transport.active && transportVal > 0) {
+    html.push(`
+      <tr>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;"></td>
+        <td style="border: 1px solid #000; text-align: left; padding: 3.5px 4.5px; font-size: 8.5pt; font-style: italic; font-weight: 600;">Add: Transportation Charges</td>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;">-</td>
+        <td style="border: 1px solid #000; text-align: right; padding: 3.5px 4.5px; font-family: monospace; font-size: 8.5pt; font-weight: bold;">+₹${transportVal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+        ${emptyTaxTd}
+      </tr>
+    `);
+  }
+
+  if (activeAdjustments.labour && activeAdjustments.labour.active && labourVal > 0) {
+    html.push(`
+      <tr>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;"></td>
+        <td style="border: 1px solid #000; text-align: left; padding: 3.5px 4.5px; font-size: 8.5pt; font-style: italic; font-weight: 600;">Add: Labour Charges</td>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;">-</td>
+        <td style="border: 1px solid #000; text-align: right; padding: 3.5px 4.5px; font-family: monospace; font-size: 8.5pt; font-weight: bold;">+₹${labourVal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+        ${emptyTaxTd}
+      </tr>
+    `);
+  }
+
+  if (activeAdjustments.other && activeAdjustments.other.active && otherVal > 0) {
+    html.push(`
+      <tr>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;"></td>
+        <td style="border: 1px solid #000; text-align: left; padding: 3.5px 4.5px; font-size: 8.5pt; font-style: italic; font-weight: 600;">Add: Other Charges</td>
+        <td style="border: 1px solid #000; text-align: center; padding: 3.5px 4.5px; font-size: 8.5pt;">-</td>
+        <td style="border: 1px solid #000; text-align: right; padding: 3.5px 4.5px; font-family: monospace; font-size: 8.5pt; font-weight: bold;">+₹${otherVal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+        ${emptyTaxTd}
+      </tr>
+    `);
+  }
+
+  // 3. Totals and Subsidy Summary Rows
+  const valColspan = isSplitTaxMode ? 3 : 2;
+
+  // Grand Total row
   html.push(`
     <tr style="font-weight: bold; background-color: #fafafa;">
-      <td colspan="4" style="border: 1px solid #000; text-align: left; padding: 4px 8px; font-size: 9pt;">Grand Total</td>
-      <td colspan="2" style="border: 1px solid #000; text-align: right; padding: 4px 8px; font-family: monospace; font-size: 9.5pt;">₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+      <td colspan="3" style="border: 1px solid #000; text-align: right; padding: 4px 8px; font-size: 9pt;">Grand Total</td>
+      <td colspan="${valColspan}" style="border: 1px solid #000; text-align: right; padding: 4px 8px; font-family: monospace; font-size: 9.5pt;">₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
     </tr>
   `);
+
+  // Subsidy rows if applicable
+  const subSelect = document.getElementById('qSubsidySelect');
+  if (subSelect && subSelect.value !== '') {
+    const selectedIndex = Number(subSelect.value);
+    const sub = offerSubsidiesList[selectedIndex];
+    if (sub) {
+      const stateAmt = sub.state || 0;
+      const centralAmt = sub.central || 0;
+      const totalSubsidy = stateAmt + centralAmt;
+      const netPayable = Math.max(0, grandTotal - totalSubsidy);
+
+      html.push(`
+        <tr style="font-weight: bold; color: #198754; background-color: #f8fff9;">
+          <td colspan="3" style="border: 1px solid #000; text-align: right; padding: 3px 8px; font-size: 8.5pt;">Less: Total Govt. Subsidy (${sub.kw} KW)</td>
+          <td colspan="${valColspan}" style="border: 1px solid #000; text-align: right; padding: 3px 8px; font-family: monospace; font-size: 8.8pt;">-₹${totalSubsidy.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+        </tr>
+        <tr style="font-weight: bold; color: #0d6efd; background-color: #f0f7ff;">
+          <td colspan="3" style="border: 1px solid #000; text-align: right; padding: 4px 8px; font-size: 9pt;">Net Customer Payable</td>
+          <td colspan="${valColspan}" style="border: 1px solid #000; text-align: right; padding: 4px 8px; font-family: monospace; font-size: 9.5pt;">₹${netPayable.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+        </tr>
+      `);
+    }
+  }
 
   tbody.innerHTML = html.join('');
 
@@ -1239,16 +1342,51 @@ function renderAdjustmentLines() {
 }
 
 function updateAdjustmentButtonsUI() {
+  const isGstActive = Boolean(activeAdjustments.gst && activeAdjustments.gst.active);
+  const isCgstOrSgstActive = Boolean((activeAdjustments.cgst && activeAdjustments.cgst.active) || 
+                                     (activeAdjustments.sgst && activeAdjustments.sgst.active));
+
   for (const [key, adj] of Object.entries(activeAdjustments)) {
     const btn = document.getElementById('btnAdd_' + key);
-    if (btn) {
-      btn.style.display = adj.active ? 'none' : 'inline-block';
+    if (!btn) continue;
+
+    if (adj.active) {
+      btn.style.display = 'none';
+      continue;
+    }
+
+    // Mutual exclusivity between GST and CGST/SGST:
+    if (key === 'gst') {
+      btn.style.display = isCgstOrSgstActive ? 'none' : 'inline-block';
+    } else if (key === 'cgst' || key === 'sgst') {
+      btn.style.display = isGstActive ? 'none' : 'inline-block';
+    } else {
+      btn.style.display = 'inline-block';
     }
   }
 }
 
 window.addAdjustmentLine = function(key) {
   if (activeAdjustments[key]) {
+    // If adding GST, deactivate and clear CGST & SGST
+    if (key === 'gst') {
+      if (activeAdjustments.cgst) {
+        activeAdjustments.cgst.active = false;
+        activeAdjustments.cgst.value = 0;
+      }
+      if (activeAdjustments.sgst) {
+        activeAdjustments.sgst.active = false;
+        activeAdjustments.sgst.value = 0;
+      }
+    }
+    // If adding CGST or SGST, deactivate and clear GST
+    if (key === 'cgst' || key === 'sgst') {
+      if (activeAdjustments.gst) {
+        activeAdjustments.gst.active = false;
+        activeAdjustments.gst.value = 0;
+      }
+    }
+
     activeAdjustments[key].active = true;
     if (!activeAdjustments[key].value) {
       const defaultGst = (typeof Utils !== 'undefined' && Utils.getDefaultGST) ? Utils.getDefaultGST(18) : 18;
@@ -1309,13 +1447,22 @@ function recalculateOffer() {
     });
   }
 
+  // Ensure mutual exclusivity between GST and CGST/SGST
+  const isGstActive = Boolean(activeAdjustments.gst && activeAdjustments.gst.active);
+  const isCgstOrSgstActive = Boolean((activeAdjustments.cgst && activeAdjustments.cgst.active) || 
+                                     (activeAdjustments.sgst && activeAdjustments.sgst.active));
+  if (isGstActive && isCgstOrSgstActive) {
+    if (activeAdjustments.cgst) { activeAdjustments.cgst.active = false; activeAdjustments.cgst.value = 0; }
+    if (activeAdjustments.sgst) { activeAdjustments.sgst.active = false; activeAdjustments.sgst.value = 0; }
+  }
+
   // Calculate dynamic adjustments sequentially
   let runningTotal = subtotal;
   let discountVal = 0;
   let taxableValue = subtotal;
 
-  // 1. Calculate discount first to compute taxable value for tax calculation (CGST/SGST)
-  if (activeAdjustments.discount.active) {
+  // 1. Calculate discount first to compute taxable value for tax calculation
+  if (activeAdjustments.discount && activeAdjustments.discount.active) {
     discountVal = activeAdjustments.discount.value || 0;
     taxableValue = Math.max(0, subtotal - discountVal);
     runningTotal = taxableValue;
@@ -1330,27 +1477,27 @@ function recalculateOffer() {
   }
 
   let cgstAmount = 0;
-  if (activeAdjustments.cgst.active) {
+  if (activeAdjustments.cgst && activeAdjustments.cgst.active) {
     const cgstPercent = activeAdjustments.cgst.value || 0;
     cgstAmount = (taxableValue * cgstPercent) / 100;
     runningTotal += cgstAmount;
   }
 
   let sgstAmount = 0;
-  if (activeAdjustments.sgst.active) {
+  if (activeAdjustments.sgst && activeAdjustments.sgst.active) {
     const sgstPercent = activeAdjustments.sgst.value || 0;
     sgstAmount = (taxableValue * sgstPercent) / 100;
     runningTotal += sgstAmount;
   }
 
   // 3. Add other charges (rupee values)
-  if (activeAdjustments.transport.active) {
+  if (activeAdjustments.transport && activeAdjustments.transport.active) {
     runningTotal += (activeAdjustments.transport.value || 0);
   }
-  if (activeAdjustments.labour.active) {
+  if (activeAdjustments.labour && activeAdjustments.labour.active) {
     runningTotal += (activeAdjustments.labour.value || 0);
   }
-  if (activeAdjustments.other.active) {
+  if (activeAdjustments.other && activeAdjustments.other.active) {
     runningTotal += (activeAdjustments.other.value || 0);
   }
 
@@ -1418,8 +1565,8 @@ function recalculateOffer() {
     if (tblNetRow) tblNetRow.style.display = 'none';
   }
 
-
-
+  // Synchronize print quotation table in real time
+  generatePrintItemsGrid();
 }
 
 function getPngLogoDataUrl(src) {
@@ -1756,12 +1903,14 @@ window.exportQuotationToDocx = async function() {
     taxableValue = Math.max(0, subtotal - discountVal);
   }
 
-  const gstActive = activeAdjustments.gst ? activeAdjustments.gst.active : false;
-  const gstRate = gstActive ? activeAdjustments.gst.value : 0;
-  const cgstActive = activeAdjustments.cgst.active;
-  const cgstRate = cgstActive ? activeAdjustments.cgst.value : 0;
-  const sgstActive = activeAdjustments.sgst.active;
-  const sgstRate = sgstActive ? activeAdjustments.sgst.value : 0;
+  const gstActive = Boolean(activeAdjustments.gst && activeAdjustments.gst.active);
+  const gstRate = gstActive ? (activeAdjustments.gst.value || 0) : 0;
+  const cgstActive = Boolean(activeAdjustments.cgst && activeAdjustments.cgst.active);
+  const cgstRate = cgstActive ? (activeAdjustments.cgst.value || 0) : 0;
+  const sgstActive = Boolean(activeAdjustments.sgst && activeAdjustments.sgst.active);
+  const sgstRate = sgstActive ? (activeAdjustments.sgst.value || 0) : 0;
+
+  const isSplitTaxMode = cgstActive || sgstActive;
 
   let gstAmount = 0;
   if (gstActive) gstAmount = (taxableValue * gstRate) / 100;
@@ -1770,72 +1919,97 @@ window.exportQuotationToDocx = async function() {
   let sgstAmount = 0;
   if (sgstActive) sgstAmount = (taxableValue * sgstRate) / 100;
 
-  let otherCharges = 0;
-  if (activeAdjustments.transport.active) otherCharges += activeAdjustments.transport.value || 0;
-  if (activeAdjustments.labour.active) otherCharges += activeAdjustments.labour.value || 0;
-  if (activeAdjustments.other.active) otherCharges += activeAdjustments.other.value || 0;
+  let transportVal = 0;
+  if (activeAdjustments.transport && activeAdjustments.transport.active) {
+    transportVal = activeAdjustments.transport.value || 0;
+  }
+  let labourVal = 0;
+  if (activeAdjustments.labour && activeAdjustments.labour.active) {
+    labourVal = activeAdjustments.labour.value || 0;
+  }
+  let otherVal = 0;
+  if (activeAdjustments.other && activeAdjustments.other.active) {
+    otherVal = activeAdjustments.other.value || 0;
+  }
 
-  const grandTotal = Math.max(0, taxableValue + gstAmount + cgstAmount + sgstAmount + otherCharges);
+  const grandTotal = Math.max(0, taxableValue + gstAmount + cgstAmount + sgstAmount + transportVal + labourVal + otherVal);
 
   let printRows = [];
   quoteRows.forEach(row => {
-    const itemName = row.querySelector('.q-item-name').value.trim();
-    const qty = Number(row.querySelector('.q-qty').value) || 1;
+    const itemName = row.querySelector('.q-item-name')?.value.trim() || '';
+    const qty = Number(row.querySelector('.q-qty')?.value) || 1;
     const price = Number(row.getAttribute('data-price')) || 0;
     printRows.push({ type: 'item', desc: itemName, qty: `${qty} SET`, price: price });
   });
 
-  if (activeAdjustments.discount.active && discountVal > 0) {
+  if (activeAdjustments.discount && activeAdjustments.discount.active && discountVal > 0) {
     printRows.push({ type: 'adj', desc: 'Less: Discount', qty: '-', price: -discountVal });
   }
-  if (gstActive && gstAmount > 0) {
-    printRows.push({ type: 'adj', desc: `Add: GST (${gstRate}%)`, qty: '-', price: gstAmount });
+  if (activeAdjustments.transport && activeAdjustments.transport.active && transportVal > 0) {
+    printRows.push({ type: 'adj', desc: 'Add: Transportation Charges', qty: '-', price: transportVal });
   }
-  if (activeAdjustments.transport.active && activeAdjustments.transport.value > 0) {
-    printRows.push({ type: 'adj', desc: 'Add: Transportation Charges', qty: '-', price: activeAdjustments.transport.value });
+  if (activeAdjustments.labour && activeAdjustments.labour.active && labourVal > 0) {
+    printRows.push({ type: 'adj', desc: 'Add: Labour Charges', qty: '-', price: labourVal });
   }
-  if (activeAdjustments.labour.active && activeAdjustments.labour.value > 0) {
-    printRows.push({ type: 'adj', desc: 'Add: Labour Charges', qty: '-', price: activeAdjustments.labour.value });
-  }
-  if (activeAdjustments.other.active && activeAdjustments.other.value > 0) {
-    printRows.push({ type: 'adj', desc: 'Add: Other Charges', qty: '-', price: activeAdjustments.other.value });
-  }
-  if (cgstActive && cgstAmount > 0) {
-    printRows.push({ type: 'adj', desc: `Add: CGST (${cgstRate}%)`, qty: '-', price: cgstAmount });
-  }
-  if (sgstActive && sgstAmount > 0) {
-    printRows.push({ type: 'adj', desc: `Add: SGST (${sgstRate}%)`, qty: '-', price: sgstAmount });
+  if (activeAdjustments.other && activeAdjustments.other.active && otherVal > 0) {
+    printRows.push({ type: 'adj', desc: 'Add: Other Charges', qty: '-', price: otherVal });
   }
 
-  // Header Row (4 Columns)
-  const headerRow = new TableRow({
-    children: [
+  // Header Row with dynamic tax columns (total 10400 DXA)
+  const headerCells = [
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "Sl No", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+      width: { size: 624, type: WidthType.DXA },
+      shading: { fill: "F2F2F2" },
+      verticalAlign: VerticalAlign.CENTER
+    }),
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "Description of Goods", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+      width: { size: 5408, type: WidthType.DXA },
+      shading: { fill: "F2F2F2" },
+      verticalAlign: VerticalAlign.CENTER
+    }),
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "Qty.", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+      width: { size: 1040, type: WidthType.DXA },
+      shading: { fill: "F2F2F2" },
+      verticalAlign: VerticalAlign.CENTER
+    }),
+    new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: "Total Value (₹)", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+      width: { size: 1560, type: WidthType.DXA },
+      shading: { fill: "F2F2F2" },
+      verticalAlign: VerticalAlign.CENTER
+    })
+  ];
+
+  if (isSplitTaxMode) {
+    headerCells.push(
       new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: "Sl No", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
-        width: { size: 624, type: WidthType.DXA },
+        children: [new Paragraph({ children: [new TextRun({ text: cgstActive ? `CGST (${cgstRate}%)` : "CGST Rate", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 884, type: WidthType.DXA },
         shading: { fill: "F2F2F2" },
         verticalAlign: VerticalAlign.CENTER
       }),
       new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: "Description of Goods", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
-        width: { size: 7176, type: WidthType.DXA },
-        shading: { fill: "F2F2F2" },
-        verticalAlign: VerticalAlign.CENTER
-      }),
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: "Qty.", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
-        width: { size: 1040, type: WidthType.DXA },
-        shading: { fill: "F2F2F2" },
-        verticalAlign: VerticalAlign.CENTER
-      }),
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: "Total Value (₹)", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
-        width: { size: 1560, type: WidthType.DXA },
+        children: [new Paragraph({ children: [new TextRun({ text: sgstActive ? `SGST (${sgstRate}%)` : "SGST Rate", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 884, type: WidthType.DXA },
         shading: { fill: "F2F2F2" },
         verticalAlign: VerticalAlign.CENTER
       })
-    ]
-  });
+    );
+  } else {
+    headerCells.push(
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: gstActive ? `GST (${gstRate}%)` : "GST Rate", bold: true, size: 21, font: "Times New Roman" })], alignment: AlignmentType.CENTER })],
+        width: { size: 1768, type: WidthType.DXA },
+        shading: { fill: "F2F2F2" },
+        verticalAlign: VerticalAlign.CENTER
+      })
+    );
+  }
+
+  const headerRow = new TableRow({ children: headerCells });
 
   const docTableRows = [headerRow];
   let itemIndex = 0;
@@ -1851,6 +2025,8 @@ window.exportQuotationToDocx = async function() {
     }
 
     let totalCell = null;
+    let taxCells = [];
+
     if (totalValueMode === 'merged') {
       if (r.type === 'item') {
         if (itemIndex === 0) {
@@ -1860,6 +2036,32 @@ window.exportQuotationToDocx = async function() {
             verticalAlign: VerticalAlign.CENTER,
             verticalMerge: "restart"
           });
+
+          if (isSplitTaxMode) {
+            taxCells.push(
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: cgstActive ? `₹${cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "-", size: 20, font: "Times New Roman", bold: true })], alignment: AlignmentType.CENTER })],
+                width: { size: 884, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
+                verticalMerge: "restart"
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: sgstActive ? `₹${sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "-", size: 20, font: "Times New Roman", bold: true })], alignment: AlignmentType.CENTER })],
+                width: { size: 884, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
+                verticalMerge: "restart"
+              })
+            );
+          } else {
+            taxCells.push(
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: gstActive ? `₹${gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "-", size: 20, font: "Times New Roman", bold: true })], alignment: AlignmentType.CENTER })],
+                width: { size: 1768, type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
+                verticalMerge: "restart"
+              })
+            );
+          }
         } else {
           totalCell = new TableCell({
             children: [],
@@ -1867,6 +2069,17 @@ window.exportQuotationToDocx = async function() {
             verticalAlign: VerticalAlign.CENTER,
             verticalMerge: "continue"
           });
+
+          if (isSplitTaxMode) {
+            taxCells.push(
+              new TableCell({ children: [], width: { size: 884, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, verticalMerge: "continue" }),
+              new TableCell({ children: [], width: { size: 884, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, verticalMerge: "continue" })
+            );
+          } else {
+            taxCells.push(
+              new TableCell({ children: [], width: { size: 1768, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, verticalMerge: "continue" })
+            );
+          }
         }
         itemIndex++;
       } else {
@@ -1875,6 +2088,16 @@ window.exportQuotationToDocx = async function() {
           width: { size: 1560, type: WidthType.DXA },
           verticalAlign: VerticalAlign.CENTER
         });
+        if (isSplitTaxMode) {
+          taxCells.push(
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "-", size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })], width: { size: 884, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "-", size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })], width: { size: 884, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER })
+          );
+        } else {
+          taxCells.push(
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "-", size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })], width: { size: 1768, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER })
+          );
+        }
       }
     } else {
       totalCell = new TableCell({
@@ -1882,6 +2105,16 @@ window.exportQuotationToDocx = async function() {
         width: { size: 1560, type: WidthType.DXA },
         verticalAlign: VerticalAlign.CENTER
       });
+      if (isSplitTaxMode) {
+        taxCells.push(
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "-", size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })], width: { size: 884, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "-", size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })], width: { size: 884, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER })
+        );
+      } else {
+        taxCells.push(
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "-", size: 20, font: "Times New Roman" })], alignment: AlignmentType.CENTER })], width: { size: 1768, type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER })
+        );
+      }
     }
     
     const cells = [
@@ -1892,7 +2125,7 @@ window.exportQuotationToDocx = async function() {
       }),
       new TableCell({
         children: [new Paragraph({ children: [new TextRun({ text: r.desc, size: 20, font: "Times New Roman", italic: r.type === 'adj', bold: r.type === 'adj' })], alignment: AlignmentType.LEFT })],
-        width: { size: 7176, type: WidthType.DXA },
+        width: { size: 5408, type: WidthType.DXA },
         verticalAlign: VerticalAlign.CENTER
       }),
       new TableCell({
@@ -1900,7 +2133,8 @@ window.exportQuotationToDocx = async function() {
         width: { size: 1040, type: WidthType.DXA },
         verticalAlign: VerticalAlign.CENTER
       }),
-      totalCell
+      totalCell,
+      ...taxCells
     ];
     
     docTableRows.push(new TableRow({ children: cells }));
@@ -1914,8 +2148,8 @@ window.exportQuotationToDocx = async function() {
       shading: { fill: "FAFAFA" }
     }),
     new TableCell({
-      children: [new Paragraph({ children: [new TextRun({ text: "Grand Total", bold: true, size: 20, font: "Times New Roman" })], alignment: AlignmentType.LEFT })],
-      width: { size: 7176, type: WidthType.DXA },
+      children: [new Paragraph({ children: [new TextRun({ text: "Grand Total", bold: true, size: 20, font: "Times New Roman" })], alignment: AlignmentType.RIGHT })],
+      width: { size: 5408, type: WidthType.DXA },
       shading: { fill: "FAFAFA" }
     }),
     new TableCell({
@@ -1925,7 +2159,8 @@ window.exportQuotationToDocx = async function() {
     }),
     new TableCell({
       children: [new Paragraph({ children: [new TextRun({ text: `₹${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, bold: true, size: 20, font: "Times New Roman" })], alignment: AlignmentType.RIGHT })],
-      width: { size: 1560, type: WidthType.DXA },
+      width: { size: isSplitTaxMode ? (1560 + 884 + 884) : (1560 + 1768), type: WidthType.DXA },
+      columnSpan: isSplitTaxMode ? 3 : 2,
       shading: { fill: "FAFAFA" }
     })
   ];
