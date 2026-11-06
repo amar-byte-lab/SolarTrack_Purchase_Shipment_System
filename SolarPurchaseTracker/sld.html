@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Single Line Diagram (SLD) &amp; Electrical Schematic — Solar Track</title>
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/sizing-calc.css">
+  <script src="js/auth.js"></script>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- Sidebar loaded dynamically -->
+    <div id="sidebar"></div>
+
+    <div class="main-content">
+      <!-- Topbar loaded dynamically -->
+      <div class="topbar" id="topbar"></div>
+
+      <div class="page-body p-2 p-md-3 d-flex flex-column" style="min-height: calc(100vh - 65px);">
+
+        <!-- HEADER CONTROLS BAR: TITLE, SYSTEM TYPE DROPDOWN & CAD TOOLBAR -->
+        <div class="card border-0 shadow-sm rounded-3 mb-2 bg-white">
+          <div class="card-body p-2.5 p-md-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5">
+              
+              <!-- Left: Title & Standards Subtitle -->
+              <div class="min-w-0">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fs-5">⚡</span>
+                  <h5 class="fw-bold text-dark mb-0 fs-6 text-truncate">
+                    Single Line Diagram (SLD) &amp; Electrical Schematic
+                  </h5>
+                </div>
+                <div class="text-muted fs-8 text-truncate mt-0.5">
+                  IS/IEC 60364 &amp; IEC 62548 Compliant Engineering Circuit Schematic with Dedicated Earth Pits
+                </div>
+              </div>
+
+              <!-- Middle: Select System Type Dropdown -->
+              <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 min-w-0">
+                <label for="sldSystemSelect" class="form-label mb-0 fw-bold fs-8 text-nowrap text-secondary d-none d-sm-inline">
+                  Select System Type:
+                </label>
+                <select id="sldSystemSelect" class="form-select form-select-sm fw-bold border-primary shadow-2xs text-dark" 
+                  style="min-width: 250px; border-width: 1.6px;" onchange="SizingSchematic.switchSystem(this.value)">
+                  <option value="off-grid">☀️ Off-Grid Solar PV (Standalone PCU &amp; Battery)</option>
+                  <option value="on-grid">⚡ On-Grid Solar PV (GTI / Grid-Tied)</option>
+                  <option value="hybrid">🔄 Hybrid Solar PV (Bi-Directional ESS &amp; Net Meter)</option>
+                  <option value="without-solar">🔋 Without Solar System (Home UPS / Inverter)</option>
+                </select>
+              </div>
+
+              <!-- Right: Full CAD Action Toolbar -->
+              <div class="d-flex align-items-center gap-1.5 flex-wrap flex-shrink-0 ms-auto">
+                <!-- Theme Toggle -->
+                <button type="button" class="btn btn-sm btn-outline-secondary px-2.5 py-1 fs-8 fw-semibold sld-btn-tool" 
+                  onclick="SizingSchematic.toggleTheme()" title="Toggle Dark Blueprint / Engineering Light Mode">
+                  <span class="sld-theme-icon">🌙 Dark</span>
+                </button>
+
+                <!-- Zoom Controls -->
+                <div class="btn-group shadow-2xs">
+                  <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-1 fs-8 fw-bold" 
+                    onclick="SizingSchematic.zoom(-0.2, 'page')" title="Zoom Out">-</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-1 fs-8 fw-bold" 
+                    id="sldPageZoomText" disabled style="min-width: 48px; opacity: 1;">100%</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-1 fs-8 fw-bold" 
+                    onclick="SizingSchematic.zoom(0.2, 'page')" title="Zoom In">+</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-1 fs-8 fw-bold" 
+                    onclick="SizingSchematic.resetZoom('page')" title="Reset Fit">⟲</button>
+                </div>
+
+                <!-- Reset Layout -->
+                <button type="button" class="btn btn-sm btn-outline-warning px-2.5 py-1 fs-8 fw-semibold sld-btn-tool text-dark" 
+                  onclick="SizingSchematic.resetLayout('page')" title="Reset all moved blocks and wires back to original engineering layout">
+                  <span>↺ <span class="d-none d-sm-inline">Reset Layout</span></span>
+                </button>
+
+                <!-- Export SVG -->
+                <button type="button" class="btn btn-sm btn-success px-2.5 py-1 fs-8 fw-bold d-flex align-items-center gap-1 shadow-2xs" 
+                  onclick="SizingSchematic.exportSvg()" title="Download Scalable Vector Graphics (.svg) Schematic">
+                  <span>📥 <span class="d-none d-sm-inline">Export SVG</span></span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Quick System Switcher Tabs Bar -->
+          <div class="bg-light px-3 py-1.5 border-top d-flex align-items-center justify-content-between flex-nowrap gap-2 overflow-hidden">
+            <div class="d-flex align-items-center gap-1.5 flex-nowrap overflow-x-auto sld-system-tabs-scroll flex-grow-1 min-w-0 py-0.5">
+              <button type="button" class="btn btn-sm btn-primary px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" 
+                data-sys-type="off-grid" onclick="SizingSchematic.switchSystem('off-grid')">
+                ☀️ Off-Grid (PCU)
+              </button>
+              <button type="button" class="btn btn-sm btn-light text-dark px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" 
+                data-sys-type="on-grid" onclick="SizingSchematic.switchSystem('on-grid')">
+                ⚡ On-Grid (GTI)
+              </button>
+              <button type="button" class="btn btn-sm btn-light text-dark px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" 
+                data-sys-type="hybrid" onclick="SizingSchematic.switchSystem('hybrid')">
+                🔄 Hybrid (Bi-Directional)
+              </button>
+              <button type="button" class="btn btn-sm btn-light text-dark px-2.5 py-1 fs-8 fw-bold rounded-pill text-nowrap flex-shrink-0 sld-system-tab-btn" 
+                data-sys-type="without-solar" onclick="SizingSchematic.switchSystem('without-solar')">
+                🔋 Without Solar (Home UPS)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FULL-PAGE HIGH-DEFINITION CAD CANVAS -->
+        <div class="card border-0 shadow-sm rounded-3 flex-grow-1 overflow-hidden d-flex flex-column bg-dark">
+          <div class="sld-svg-canvas sld-theme-dark w-100 flex-grow-1" id="sldFullPageSvgWrapper" 
+            style="height: calc(100vh - 250px); min-height: 560px; overflow: hidden; position: relative;">
+            <!-- Rendered dynamically by sizing-schematic.js -->
+          </div>
+
+          <!-- Color-Coded Flow Legend (Row-Wise Layout) -->
+          <div class="sld-legend-box px-3 py-2 border-top bg-light">
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <span class="fs-8 fw-bold text-dark text-uppercase tracking-wider">
+                Circuit Wiring &amp; Conductor Flow Legend
+              </span>
+              <span class="fs-9 text-muted d-none d-sm-inline">IS/IEC 60364 &amp; IS 3043:2018 Standards</span>
+            </div>
+
+            <div class="sld-legend-grid">
+              <!-- Row 1: DC Circuits -->
+              <div class="sld-legend-row d-flex align-items-center flex-wrap gap-2.5 py-1 border-bottom border-light-subtle">
+                <span class="badge bg-secondary-subtle text-secondary fs-9 px-2 py-0.5 fw-bold" style="min-width: 95px; text-align: center;">DC SOLAR:</span>
+                <span class="sld-legend-item">
+                  <span class="sld-legend-indicator dc-pos"></span>
+                  <span class="fw-bold text-dark">DC Positive (+ Bright Red)</span>
+                </span>
+                <span class="sld-legend-item ms-sm-3">
+                  <span class="sld-legend-indicator dc-neg"></span>
+                  <span class="fw-bold text-dark">DC Negative (- Black)</span>
+                </span>
+              </div>
+
+              <!-- Row 2: AC Circuits -->
+              <div class="sld-legend-row d-flex align-items-center flex-wrap gap-2.5 py-1 border-bottom border-light-subtle">
+                <span class="badge bg-secondary-subtle text-secondary fs-9 px-2 py-0.5 fw-bold" style="min-width: 95px; text-align: center;">AC POWER:</span>
+                <span class="sld-legend-item">
+                  <span class="sld-legend-indicator ac-phase"></span>
+                  <span class="fw-bold text-dark">AC Phase / Line (L Red/Orange)</span>
+                </span>
+                <span class="sld-legend-item ms-sm-3">
+                  <span class="sld-legend-indicator ac-neutral"></span>
+                  <span class="fw-bold text-dark">AC Neutral (N Cyan Dashed)</span>
+                </span>
+                <span class="sld-legend-item ms-sm-3">
+                  <span class="sld-legend-indicator earth-pe"></span>
+                  <span class="fw-bold text-dark">Protective Earth (PE Striped Green/Yellow)</span>
+                </span>
+              </div>
+
+              <!-- Row 3: Grid Power Flow & Grounding -->
+              <div class="sld-legend-row d-flex align-items-center flex-wrap gap-2.5 py-1">
+                <span class="badge bg-secondary-subtle text-secondary fs-9 px-2 py-0.5 fw-bold" style="min-width: 95px; text-align: center;">FLOW &amp; EARTH:</span>
+                <span class="sld-legend-item text-primary">
+                  <span class="fs-6 fw-bold">⇄</span>
+                  <span class="fw-bold">Bi-Directional Power Flow</span>
+                </span>
+                <span class="sld-legend-item text-success ms-sm-3">
+                  <span class="fs-6 fw-bold">⏚</span>
+                  <span class="fw-bold">Dedicated Separate Earth Pits (LA, DC, AC)</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Component Inspection Drawer / Detail Card -->
+        <div id="sldDetailDrawer">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/bootstrap.bundle.min.js" defer></script>
+  <script src="js/ui.js?v=1.0.6" defer></script>
+  <script src="js/sizing-schematic.js?v=1.0.1" defer></script>
+  <script src="js/sld-page.js?v=1.0.0" defer></script>
+</body>
+</html>

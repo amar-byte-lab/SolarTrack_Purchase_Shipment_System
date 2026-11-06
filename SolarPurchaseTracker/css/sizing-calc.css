@@ -1149,6 +1149,18 @@
   }
 }
 
+.sld-page-canvas {
+  height: calc(100vh - 250px);
+  min-height: 560px;
+}
+
+@media (max-width: 768px) {
+  .sld-page-canvas {
+    height: 480px;
+    min-height: 400px;
+  }
+}
+
 .sld-modal-canvas {
   height: 580px;
   min-height: 480px;
@@ -1225,37 +1237,42 @@
 }
 
 /* Color Coded Flow Legend Bar */
+.sld-legend-box {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.sld-legend-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.sld-legend-row {
+  font-size: 0.76rem;
+}
+
 .sld-legend-bar {
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
-  padding: 6px 10px;
-  font-size: 0.72rem;
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  gap: 12px;
-  -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none !important;
-}
-.sld-legend-bar::-webkit-scrollbar {
-  display: none !important;
+  padding: 8px 12px;
+  font-size: 0.76rem;
 }
 
 .sld-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: #475569;
+  gap: 6px;
+  color: #334155;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .sld-legend-indicator {
-  width: 14px;
-  height: 4px;
+  width: 16px;
+  height: 5px;
   border-radius: 2px;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .sld-legend-indicator.dc-pos {

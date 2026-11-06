@@ -21,6 +21,8 @@
     theme: 'dark', // 'dark' (blueprint) or 'light' (engineering white)
     inlineZoom: 1,
     inlinePan: { x: 0, y: 0 },
+    pageZoom: 1,
+    pagePan: { x: 0, y: 0 },
     modalZoom: 1,
     modalPan: { x: 0, y: 0 },
     positions: {
@@ -2276,7 +2278,10 @@
     // B. Canvas Panning via Mouse Dragging on Background
     let isCanvasPanning = false;
     let panStart = { x: 0, y: 0 };
-    let panOffset = scope === 'modal' ? { ...sldState.modalPan } : { ...sldState.inlinePan };
+    let panOffset = { x: 0, y: 0 };
+    if (scope === 'modal') panOffset = { ...sldState.modalPan };
+    else if (scope === 'page') panOffset = { ...sldState.pagePan };
+    else panOffset = { ...sldState.inlinePan };
 
     svgEl.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
@@ -2346,6 +2351,8 @@
         svgEl.style.cursor = 'grab';
         if (scope === 'modal') {
           sldState.modalPan = { ...panOffset };
+        } else if (scope === 'page') {
+          sldState.pagePan = { ...panOffset };
         } else {
           sldState.inlinePan = { ...panOffset };
         }
@@ -2368,14 +2375,20 @@
   }
 
   function applyTransform(svgEl, scope, pan) {
-    const zoomLevel = scope === 'modal' ? sldState.modalZoom : sldState.inlineZoom;
+    let zoomLevel = sldState.inlineZoom;
+    if (scope === 'modal') zoomLevel = sldState.modalZoom;
+    else if (scope === 'page') zoomLevel = sldState.pageZoom;
+
     svgEl.style.transformOrigin = 'center center';
     svgEl.style.transform = `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})`;
     svgEl.style.transition = 'transform 0.05s ease-out';
   }
 
   function zoom(delta, scope = 'modal') {
-    let currentZoom = scope === 'modal' ? sldState.modalZoom : sldState.inlineZoom;
+    let currentZoom = sldState.inlineZoom;
+    if (scope === 'modal') currentZoom = sldState.modalZoom;
+    else if (scope === 'page') currentZoom = sldState.pageZoom;
+
     let newZoom = Math.max(0.6, Math.min(2.8, currentZoom + delta));
 
     if (scope === 'modal') {
@@ -2383,6 +2396,12 @@
       const modalSvg = document.querySelector('#sldModalSvgWrapper svg');
       if (modalSvg) applyTransform(modalSvg, 'modal', sldState.modalPan);
       const zoomText = document.getElementById('sldModalZoomText');
+      if (zoomText) zoomText.textContent = `${Math.round(newZoom * 100)}%`;
+    } else if (scope === 'page') {
+      sldState.pageZoom = newZoom;
+      const pageSvg = document.querySelector('#sldFullPageSvgWrapper svg');
+      if (pageSvg) applyTransform(pageSvg, 'page', sldState.pagePan);
+      const zoomText = document.getElementById('sldPageZoomText');
       if (zoomText) zoomText.textContent = `${Math.round(newZoom * 100)}%`;
     } else {
       sldState.inlineZoom = newZoom;
@@ -2398,6 +2417,13 @@
       const modalSvg = document.querySelector('#sldModalSvgWrapper svg');
       if (modalSvg) applyTransform(modalSvg, 'modal', { x: 0, y: 0 });
       const zoomText = document.getElementById('sldModalZoomText');
+      if (zoomText) zoomText.textContent = '100%';
+    } else if (scope === 'page') {
+      sldState.pageZoom = 1;
+      sldState.pagePan = { x: 0, y: 0 };
+      const pageSvg = document.querySelector('#sldFullPageSvgWrapper svg');
+      if (pageSvg) applyTransform(pageSvg, 'page', { x: 0, y: 0 });
+      const zoomText = document.getElementById('sldPageZoomText');
       if (zoomText) zoomText.textContent = '100%';
     } else {
       sldState.inlineZoom = 1;
@@ -2417,6 +2443,11 @@
     sldState.theme = sldState.theme === 'dark' ? 'light' : 'dark';
     const isDark = sldState.theme === 'dark';
 
+    const fullPageCanvas = document.getElementById('sldFullPageSvgWrapper');
+    if (fullPageCanvas) {
+      fullPageCanvas.classList.toggle('sld-theme-dark', isDark);
+      fullPageCanvas.classList.toggle('sld-theme-light', !isDark);
+    }
     const modalCanvas = document.getElementById('sldModalSvgWrapper');
     if (modalCanvas) {
       modalCanvas.classList.toggle('sld-theme-dark', isDark);
@@ -2539,6 +2570,14 @@
 
     const svgContent = generateSvgContent(current, isDark);
 
+    const fullPageContainer = document.getElementById('sldFullPageSvgWrapper');
+    if (fullPageContainer) {
+      fullPageContainer.innerHTML = svgContent;
+      attachSvgEvents(fullPageContainer, 'page');
+      const pageSvg = fullPageContainer.querySelector('svg');
+      if (pageSvg) applyTransform(pageSvg, 'page', sldState.pagePan);
+    }
+
     const modalContainer = document.getElementById('sldModalSvgWrapper');
     if (modalContainer) {
       modalContainer.innerHTML = svgContent;
@@ -2556,6 +2595,8 @@
     }
 
     updateActiveBadges(current);
+    const sysSelect = document.getElementById('sldSystemSelect');
+    if (sysSelect && sysSelect.value !== current) sysSelect.value = current;
   }
 
   function openModal(systemType) {
@@ -2621,6 +2662,14 @@
     resetLayout,
     toggleTheme,
     exportSvg,
+    switchSystem: function (type) {
+      if (type) {
+        sldState.currentSystem = type;
+        render(type);
+        resetZoom('page');
+        resetZoom('modal');
+      }
+    },
     switchSystemFromModal: function (type) {
       if (window.SizingUI && typeof window.SizingUI.selectSystemTypeOption === 'function') {
         window.SizingUI.selectSystemTypeOption(type);

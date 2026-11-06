@@ -32,9 +32,14 @@
                   <div>
                     <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
                   </div>
-                  <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 py-1 fs-8 rounded-pill d-flex align-items-center gap-1.5 shadow-2xs" onclick="SizingSchematic.openModal()" title="Click to view Single Line & Circuit Schematic in Popup Modal">
-                    <span>⚡ Detailed SLD Diagram</span>
-                  </button>
+                  <div class="d-flex align-items-center gap-1.5">
+                    <a href="sld.html" class="btn btn-sm btn-primary fw-bold px-2.5 py-1 fs-8 rounded-pill d-flex align-items-center gap-1 shadow-2xs text-decoration-none" title="Open Full Page Single Line Diagram">
+                      <span>⚡ SLD Page</span>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-2.5 py-1 fs-8 rounded-pill d-flex align-items-center gap-1 shadow-2xs" onclick="SizingSchematic.openModal()" title="Click to view Single Line & Circuit Schematic in Popup Modal">
+                      <span>🔍 Modal</span>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Custom Rich Dropdown Trigger & Menu -->
@@ -1001,9 +1006,6 @@
               🔋 Without Solar (Home UPS)
             </button>
           </div>
-          <div class="fs-9 text-muted fst-italic text-nowrap d-none d-lg-block flex-shrink-0 ps-2">
-            💡 Click &amp; drag any component to move with wires • Drag background to pan • Scroll to zoom
-          </div>
         </div>
 
         <!-- Modal Body: High-Definition Canvas & Inspector -->
@@ -1013,23 +1015,63 @@
             <!-- Rendered dynamically by sizing-schematic.js -->
           </div>
 
-          <!-- Color-Coded Flow Legend Bar -->
-          <div class="sld-legend-bar px-3 py-1.5 border-top d-flex align-items-center flex-nowrap overflow-x-auto">
-            <span class="sld-legend-item"><span class="sld-legend-indicator dc-pos"></span> DC Positive (+ Bright Red)</span>
-            <span class="sld-legend-item"><span class="sld-legend-indicator dc-neg"></span> DC Negative (- Black)</span>
-            <span class="sld-legend-item"><span class="sld-legend-indicator ac-phase"></span> AC Phase / Line (L Red/Orange)</span>
-            <span class="sld-legend-item"><span class="sld-legend-indicator ac-neutral"></span> AC Neutral (N Cyan Dashed)</span>
-            <span class="sld-legend-item"><span class="sld-legend-indicator earth-pe"></span> Protective Earth (PE Striped Green/Yellow)</span>
-            <span class="sld-legend-item text-primary"><span style="font-size: 11px;">⇄</span> Bi-Directional Power Flow</span>
-            <span class="sld-legend-item text-success fw-bold ms-auto">⏚ Dedicated Separate Earth Pits (LA, DC, AC)</span>
+          <!-- Color-Coded Flow Legend (Row-Wise Layout) -->
+          <div class="sld-legend-box px-3 py-2 border-top bg-light">
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <span class="fs-8 fw-bold text-dark text-uppercase tracking-wider">
+                Circuit Wiring &amp; Conductor Flow Legend
+              </span>
+              <span class="fs-9 text-muted d-none d-sm-inline">IS/IEC 60364 &amp; IS 3043:2018 Standards</span>
+            </div>
+
+            <div class="sld-legend-grid">
+              <!-- Row 1: DC Circuits -->
+              <div class="sld-legend-row d-flex align-items-center flex-wrap gap-2.5 py-1 border-bottom border-light-subtle">
+                <span class="badge bg-secondary-subtle text-secondary fs-9 px-2 py-0.5 fw-bold" style="min-width: 95px; text-align: center;">DC SOLAR:</span>
+                <span class="sld-legend-item">
+                  <span class="sld-legend-indicator dc-pos"></span>
+                  <span class="fw-bold text-dark">DC Positive (+ Bright Red)</span>
+                </span>
+                <span class="sld-legend-item ms-sm-3">
+                  <span class="sld-legend-indicator dc-neg"></span>
+                  <span class="fw-bold text-dark">DC Negative (- Black)</span>
+                </span>
+              </div>
+
+              <!-- Row 2: AC Circuits -->
+              <div class="sld-legend-row d-flex align-items-center flex-wrap gap-2.5 py-1 border-bottom border-light-subtle">
+                <span class="badge bg-secondary-subtle text-secondary fs-9 px-2 py-0.5 fw-bold" style="min-width: 95px; text-align: center;">AC POWER:</span>
+                <span class="sld-legend-item">
+                  <span class="sld-legend-indicator ac-phase"></span>
+                  <span class="fw-bold text-dark">AC Phase / Line (L Red/Orange)</span>
+                </span>
+                <span class="sld-legend-item ms-sm-3">
+                  <span class="sld-legend-indicator ac-neutral"></span>
+                  <span class="fw-bold text-dark">AC Neutral (N Cyan Dashed)</span>
+                </span>
+                <span class="sld-legend-item ms-sm-3">
+                  <span class="sld-legend-indicator earth-pe"></span>
+                  <span class="fw-bold text-dark">Protective Earth (PE Striped Green/Yellow)</span>
+                </span>
+              </div>
+
+              <!-- Row 3: Grid Power Flow & Grounding -->
+              <div class="sld-legend-row d-flex align-items-center flex-wrap gap-2.5 py-1">
+                <span class="badge bg-secondary-subtle text-secondary fs-9 px-2 py-0.5 fw-bold" style="min-width: 95px; text-align: center;">FLOW &amp; EARTH:</span>
+                <span class="sld-legend-item text-primary">
+                  <span class="fs-6 fw-bold">⇄</span>
+                  <span class="fw-bold">Bi-Directional Power Flow</span>
+                </span>
+                <span class="sld-legend-item text-success ms-sm-3">
+                  <span class="fs-6 fw-bold">⏚</span>
+                  <span class="fw-bold">Dedicated Separate Earth Pits (LA, DC, AC)</span>
+                </span>
+              </div>
+            </div>
           </div>
 
           <!-- Component Inspection Drawer / Detail Card -->
-          <div class="p-3 bg-white border-top" id="sldDetailDrawer">
-            <div class="d-flex align-items-center justify-content-between text-muted fs-8">
-              <span>👆 Click on any electrical component (Solar Array, DCDB, Inverter, Net Meter, Earth Pits) to view complete technical ratings, protection standards & terminal wiring details.</span>
-              <span class="badge bg-light text-secondary border">Interactive CAD Inspector</span>
-            </div>
+          <div id="sldDetailDrawer">
           </div>
         </div>
 
