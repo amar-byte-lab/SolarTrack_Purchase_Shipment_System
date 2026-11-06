@@ -1150,8 +1150,8 @@
 }
 
 .sld-modal-canvas {
-  height: 520px;
-  min-height: 440px;
+  height: 580px;
+  min-height: 480px;
 }
 
 @media (max-width: 768px) {
@@ -1179,7 +1179,27 @@
 
 /* Interactive SVG item hover & animations */
 .sld-interactive-item {
-  transition: filter 0.2s ease, transform 0.2s ease;
+  transition: filter 0.15s ease;
+}
+
+.sld-draggable-block {
+  cursor: grab;
+  user-select: none;
+}
+
+.sld-draggable-block:active,
+.sld-draggable-block.is-dragging {
+  cursor: grabbing !important;
+}
+
+.sld-draggable-block.is-dragging .sld-box-rect {
+  stroke: #f59e0b !important;
+  stroke-width: 2.5 !important;
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.65)) !important;
+}
+
+.sld-draggable-block.is-dragging rect {
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.65)) !important;
 }
 
 .sld-interactive-item:hover .sld-box-rect {

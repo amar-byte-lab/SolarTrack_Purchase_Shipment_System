@@ -970,6 +970,11 @@
               <button type="button" class="btn btn-sm btn-outline-light px-2 py-1 fs-8 fw-bold" onclick="SizingSchematic.resetZoom('modal')" title="Reset Fit">⟲</button>
             </div>
 
+            <!-- Reset Layout -->
+            <button type="button" class="btn btn-sm btn-outline-warning px-2.5 py-1 fs-8 fw-semibold sld-btn-tool" onclick="SizingSchematic.resetLayout('modal')" title="Reset all moved blocks and wires back to original layout">
+              <span>↺ <span class="d-none d-sm-inline">Reset Layout</span></span>
+            </button>
+
             <!-- Export SVG -->
             <button type="button" class="btn btn-sm btn-success px-2.5 py-1 fs-8 fw-bold d-flex align-items-center gap-1 shadow-2xs" onclick="SizingSchematic.exportSvg()" title="Download Scalable Vector Graphics (.svg) Schematic">
               <span>📥 <span class="d-none d-sm-inline">Export SVG</span></span>
@@ -997,7 +1002,7 @@
             </button>
           </div>
           <div class="fs-9 text-muted fst-italic text-nowrap d-none d-lg-block flex-shrink-0 ps-2">
-            💡 Drag canvas to pan • Scroll wheel to zoom
+            💡 Click &amp; drag any component to move with wires • Drag background to pan • Scroll to zoom
           </div>
         </div>
 

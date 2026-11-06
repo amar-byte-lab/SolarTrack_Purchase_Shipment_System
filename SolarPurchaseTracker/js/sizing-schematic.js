@@ -1,13 +1,15 @@
 /**
  * sizing-schematic.js — Single Line & Schematic Circuit Diagram Component
- * Interactive, responsive, high-detail electrical Single Line Diagram (SLD)
+ * Interactive, draggable, high-detail electrical Single Line Diagram (SLD)
  * for Solar PV and Inverter-Battery systems (On-Grid, Off-Grid, Hybrid, Without Solar).
  *
  * Adheres to Indian & International Electrical Standards:
- * - IS/IEC 60364, IEC 62548, IS 3043 (Earthing Practice), CEA Regulations
- * - DC Wiring: Positive (+) Bright Red, Negative (-) Black
- * - AC Single/Three Phase: Phase (L/R) Red/Orange, Neutral (N) Cyan Dashed, PE Striped Green
- * - Dedicated Separate Earth Pits: LA Earth Pit, DC Earth Pit, AC Earth Pit
+ * - IS/IEC 60364, IEC 62548 (PV Array Design), IS 3043:2018 (Earthing Practice), CEA Regulations 2021
+ * - Mandatory Minimum 3.0m - 5.0m Separation between Earth Pits (d >= 2 x Electrode Length)
+ * - Enlarged block dimensions with high-legibility bold typography and contrast halos
+ * - Non-overlapping wiring corridors with CAD standard Jumper Bridge Arcs
+ * - Detailed Solar PV Array series daisy-chain stringing topology & MC4 terminations
+ * - Real-time Drag-and-Drop blocks with dynamically adjusting connection wires
  */
 
 (function () {
@@ -21,52 +23,59 @@
     inlinePan: { x: 0, y: 0 },
     modalZoom: 1,
     modalPan: { x: 0, y: 0 },
-    isDragging: false,
-    dragStart: { x: 0, y: 0 },
-    activeTarget: null,
-    selectedComponentId: null
+    positions: {
+      'on-grid': {},
+      'off-grid': {},
+      'hybrid': {},
+      'without-solar': {}
+    },
+    activeDragBlock: null,
+    dragStartSvg: { x: 0, y: 0 },
+    blockStartPos: { dx: 0, dy: 0 },
+    dragMoved: false
   };
 
-  // Comprehensive Engineering Specifications Database for Interactive Tooltips
+  // Comprehensive Engineering Specifications Database
   const COMPONENT_DETAILS = {
     // ON-GRID COMPONENTS
     'la-ongrid': {
       title: '⚡ Lightning Arrester (LA)',
       type: 'Early Streamer Emission (ESE) / Franklin Rod Terminal',
-      location: 'Highest Point on Rooftop / Parapet',
-      specs: 'Class I/II Protection, 10/350µs Impulse Current: 25kA',
-      connections: 'Dedicated 25x3 mm Copper / GI Down-Conductor',
-      grounding: 'Direct low-impedance route to Dedicated LA Earth Pit (< 5Ω)',
-      standards: 'IEC 62305 / IS 2309 Standards'
+      location: 'Highest Point on Rooftop / Parapet Structure',
+      specs: 'Class I/II Protection, 10/350µs Impulse Current: 25kA | Protection Radius: 48m',
+      connections: 'Dedicated 25x3 mm Copper / GI Down-Conductor routed externally',
+      grounding: 'Direct low-impedance route to Pit 1 (LA Earth Pit) < 5Ω; strictly isolated from DC/AC pits',
+      standards: 'IEC 62305 / IS/IEC 62305 / IS 2309 Standards'
     },
     'pv-ongrid': {
-      title: '☀️ Solar PV Array (Grid-Tied Strings)',
-      type: 'Mono PERC / TOPCon Bifacial Modules (16-24 Panels/String)',
+      title: '☀️ Solar PV Array (Series String Daisy-Chain)',
+      type: 'Mono PERC / TOPCon Bifacial Modules (Series Stringing Topology)',
       location: 'Elevated Rooftop Anodized Aluminium Mounting Structure',
-      specs: 'Voc: 48.5V per module | String Voc: ~580V DC | Imp: 13.5A | STC Power: 550Wp/module',
-      connections: '4 sq.mm UV-Resistant Dual-Insulated Solar DC Cables with MC4 Connectors',
-      grounding: 'Module Frames & Structure Bonded to DC Earth Pit via 10 sq.mm Green Conductor',
-      standards: 'IEC 61215 / IEC 61730 / IS 14286'
+      specs: 'Module Voc: ~48.5V | String Configuration: 12-16 Panels in Series | String Voc: ~582V-776V DC | Imp: 13.5A | STC Power: 550Wp/module',
+      protection: 'Module frame anodized bonding, Bypass Diodes in IP68 Junction Box, UV-resistant dual-insulated solar DC cables',
+      connections: 'Series Daisy-Chain: (+) of module n connected to (-) of module n+1. String output terminated into DCDB via weatherproof locking MC4 connectors.',
+      grounding: 'Module Aluminium Frames & Structure bonded via 10 sq.mm Green Conductor directly to Pit 2 (DC Earth Pit)',
+      standards: 'IEC 61215 / IEC 61730 / IS 14286 / IEC 62548'
     },
     'dcdb-ongrid': {
       title: '🛡️ DC Distribution Box (DCDB)',
       type: '1-In / 1-Out or 2-In / 2-Out Solar DC Protection Enclosure',
-      location: 'Near Inverter / Inbound DC Array Entry',
-      specs: '1000V DC Rotary Isolator (32A) + 15A/20A gPV Cylindrical Cartridge Fuses (+ & -)',
+      location: 'Near Inverter / Inbound DC Array Entry Point',
+      specs: '1000V DC Rotary Isolator (32A) + 15A/20A gPV Cylindrical Cartridge Fuses (+ & - legs)',
       protection: 'Type II DC Surge Protection Device (SPD): Uc 1000V DC, In 20kA, Imax 40kA, Up < 3.8kV',
-      connections: 'DC (+) Bright Red, DC (-) Black 4/6 sq.mm Cables',
-      grounding: 'SPD Ground Terminal routed directly to DC Earth Pit',
-      standards: 'IEC 61643-31 / IEC 60269-6'
+      connections: 'DC (+) Bright Red, DC (-) Black 4/6 sq.mm Cables from PV Array -> Output to Inverter DC Inputs',
+      grounding: 'SPD Ground Terminal routed directly to Pit 2 (DC Earth Pit) via 6 sq.mm Green Conductor',
+      standards: 'IEC 61643-31 / IEC 60269-6 / IS 60947-3'
     },
     'gti-ongrid': {
       title: '⚡ Grid-Tied Inverter (GTI / On-Grid)',
       type: 'Transformerless Pure Sine Wave Grid-Interactive Inverter',
       location: 'Well-Ventilated Indoor / Shaded Outdoor Wall',
-      specs: 'Efficiency: 98.4% | Dual MPPT (150V-550V DC) | AC Output: 230V 1-Phase / 415V 3-Phase 50Hz',
-      protection: 'Anti-Islanding Protection (IEEE 1547 / UL 1741), Overvoltage, Ground Fault (GFCI)',
-      connections: 'DC Input: (+/-) Terminals | AC Output: L, N, PE Terminals',
-      grounding: 'Double Chassis / Enclosure Grounding to AC Earth Pit',
-      standards: 'IEC 62109-1/-2, IEC 61727, VDE-AR-N 4105'
+      specs: 'Efficiency: 98.4% | Dual MPPT Operating Window: 150V-850V DC | AC Output: 230V 1-Phase / 415V 3-Phase 50Hz',
+      protection: 'Anti-Islanding Protection (IEEE 1547 / UL 1741), Ground Fault GFCI, AC/DC Overvoltage, Short Circuit',
+      connections: 'DC Input: MC4 (+/-) Terminals | AC Output: L (Phase), N (Neutral), PE (Ground) Terminals to ACDB',
+      grounding: 'Double Chassis / Enclosure Grounding to Pit 3 (AC Earth Pit) via 10 sq.mm Copper Conductor',
+      standards: 'IEC 62109-1/-2, IEC 61727, VDE-AR-N 4105, CEA 2021'
     },
     'acdb-ongrid': {
       title: '⚡ AC Distribution Box (ACDB)',
@@ -75,7 +84,7 @@
       specs: '2-Pole / 4-Pole Class C MCB (32A/63A, 10kA breaking capacity)',
       protection: 'Type II AC SPD: Uc 320V/440V, In 20kA, Imax 40kA with fast MOV varistors',
       connections: 'Inverter AC Feed in -> Output to Bi-Directional Net Meter',
-      grounding: 'ACDB Enclosure & SPD Ground bonded to AC Earth Pit',
+      grounding: 'ACDB Enclosure & SPD Ground bonded to Pit 3 (AC Earth Pit)',
       standards: 'IEC 60947-2 / IS/IEC 60898-1'
     },
     'netmeter-ongrid': {
@@ -84,309 +93,1612 @@
       location: 'Main Consumer Incomer / Boundary EB Meter Board',
       specs: 'Registers Import kWh (Grid to Consumer) and Export kWh (Solar Surplus to Grid)',
       connections: 'Bi-directional Phase (L), Neutral (N), Utility Ground (PE)',
-      grounding: 'Meter casing earthing via Distribution Board busbar',
+      grounding: 'Meter casing earthing via Distribution Board busbar to AC Pit',
       standards: 'IS 13779 / CEA Net-Metering Regulations 2021'
     },
     'grid-ongrid': {
       title: '🏭 Utility Grid / Electricity Board (EB)',
       type: 'State DISCOM 1-Phase 230V / 3-Phase 415V LT Distribution',
       location: 'Local Distribution Substation / Transformer Pole',
-      specs: '50 Hz ± 1%, Grid Impedance: Low, Unlimited Fault Current Source',
+      specs: '50 Hz ± 1%, Grid Impedance: Low, Fault Current Source',
       connections: 'Service cable drop to Consumer Net Meter',
       grounding: 'DISCOM Distribution Neutral Ground at Distribution Transformer'
     },
     'loads-ongrid': {
       title: '🏠 Home LT Distribution & Appliances',
       type: 'Connected Consumer Single/Three Phase Loads',
-      location: 'Residential / Commercial Premises',
-      specs: '230V 50Hz, Total load fed dynamically from Solar + Grid Import',
-      connections: 'Phase (L) and Neutral (N) with dedicated 2.5 sq.mm PE earth loops',
-      grounding: 'Appliance 3-pin earth lugs bonded to AC/Home Earth Busbar'
+      location: 'Internal Household Distribution',
+      specs: '230V AC 50Hz Standard Household Loads (Lighting, AC, Appliances)',
+      connections: 'Phase (L) and Neutral (N) from Main LT Panel',
+      grounding: 'Bonded to AC Consumer Earth'
     },
 
     // OFF-GRID COMPONENTS
+    'la-offgrid': {
+      title: '⚡ Lightning Arrester (LA)',
+      type: 'Early Streamer Emission (ESE) / Franklin Rod Terminal',
+      location: 'Highest Point on Rooftop / Parapet Structure',
+      specs: 'Class I/II Protection, 10/350µs Impulse Current: 25kA',
+      connections: 'Dedicated 25x3 mm Solid Cu / GI Down Conductor',
+      grounding: 'Direct low-impedance route to Pit 1 (LA Earth Pit) < 5Ω',
+      standards: 'IEC 62305 / IS 2309 Standards'
+    },
     'pv-offgrid': {
-      title: '☀️ Solar PV Array (Off-Grid Strings)',
-      type: 'High-Efficiency Crystalline Solar Panels',
-      location: 'Rooftop Anodized Aluminium Mounting Structure',
-      specs: 'Voc: ~48V per panel | Series/Parallel String Voc: ~140V-200V DC | Imp: 18A-26A',
-      connections: 'DC Positive (+) Bright Red, DC Negative (-) Black 6 sq.mm Cable',
-      grounding: 'Module Frames bonded to DC Earth Pit via copper earthing lead',
-      standards: 'IEC 61215 / MNRE Off-Grid Standards'
+      title: '☀️ Off-Grid Solar PV Array (Series-Parallel Strings)',
+      type: 'Mono PERC Half-Cut High Efficiency Modules',
+      location: 'Rooftop Mount / Ground Mount Structure',
+      specs: 'String Voc: 140V-250V DC (sized to match MPPT charger max input) | Total Power: Sized for daily kWh load',
+      protection: 'Series fuse protection, MC4 Y-connectors for parallel strings, bypass diodes',
+      connections: 'Series string daisy-chain with MC4 connectors into DCDB',
+      grounding: 'Structure Ground (10 sq.mm Cu) to Pit 2 (DC Earth Pit)',
+      standards: 'IEC 61215 / IEC 62548'
     },
     'dcdb-offgrid': {
-      title: '🛡️ DCDB (DC Fuse & SPD Box)',
-      type: 'DC Protection Enclosure for Off-Grid Array',
-      location: 'Between Solar Array and PCU',
-      specs: '1000V DC 25A gPV Cartridge Fuses (+ & -) + Type II DC SPD',
-      protection: 'Clamps high-voltage lightning surges to safe potential',
-      connections: 'DC Array (+/-) In -> DC Out to PCU MPPT Terminals',
-      grounding: 'SPD Ground Lug wired directly to DC Earth Pit',
+      title: '🛡️ Off-Grid DCDB Box',
+      type: 'Solar DC Protection & Disconnect',
+      location: 'Adjacent to Solar PCU',
+      specs: '600V/1000V DC Isolator switch + gPV cartridge fuses (positive & negative)',
+      protection: 'Type II DC Surge Protection Device (SPD 600V/1000V DC)',
+      connections: 'PV Array Input -> PCU Solar Charger Input',
+      grounding: 'SPD Ground to Pit 2 (DC Earth Pit)',
       standards: 'IEC 61643-31'
     },
     'pcu-offgrid': {
       title: '⚡ Off-Grid Solar PCU (Power Conditioning Unit)',
-      type: 'Integrated MPPT Solar Charger + Pure Sine Wave Inverter',
-      location: 'Indoor Equipment Room / Utility Area',
-      specs: 'Internal 50A-80A MPPT | Pure Sine Wave 230V 50Hz Inverter | Efficiency: 93%',
-      logic: 'Intelligent Priority Controller: 1st Solar -> 2nd Battery -> 3rd Grid Bypass',
-      connections: 'PV DC (+/-), Battery DC (+/-), Aux Grid AC IN, Inverter AC OUT (L, N, PE)',
-      grounding: 'Metal Enclosure double-grounded to AC/Equipment Earth Pit',
-      standards: 'IEC 62109, IS 16221'
+      type: 'Integrated Pure Sine Wave Inverter + High Efficiency MPPT Charge Controller',
+      location: 'Cool, Ventilated Utility Room near Battery Bank',
+      specs: 'MPPT Efficiency >98% | Inverter Efficiency >93% | Pure Sine Wave Output 230V 50Hz',
+      protection: 'Battery overcharge, deep discharge, overload, short circuit, reverse polarity, isolated neutral',
+      connections: 'DC Inputs from DCDB + Heavy DC Cables to Battery Bank + AC Input from Grid/Gen + AC Output to ACDB',
+      grounding: 'Double Chassis Earthing to Pit 3 (AC Earth Pit)',
+      standards: 'IEC 62109, IS 16221, IS 16169'
     },
-    'battery-offgrid': {
-      title: '🔋 Deep Cycle Battery Bank',
-      type: 'Tubular Deep-Cycle Lead-Acid (C10) or Lithium LiFePO4 (0.5C/1C)',
-      location: 'Heavy-Duty Acid-Resistant Battery Rack',
-      specs: 'System Voltage: 12V / 24V / 48V / 96V DC | Capacity: 150Ah - 300Ah',
-      protection: 'Heavy-Duty DC Breaker / HRC Fuse on Battery Positive Cable',
-      connections: '25-35 sq.mm Flexible Copper Battery Cables with Pressed Lug Boots',
-      grounding: 'Battery Metal Rack & Safety Ground bonded to AC/Equipment Earth',
-      standards: 'IS 13369 / IS 16046 (Lithium)'
-    },
-    'aux-grid-offgrid': {
-      title: '🔌 Auxiliary EB / DG Bypass Input',
-      type: 'Grid / Diesel Generator Auxiliary Feed',
-      location: 'Service Input to PCU AC In Port',
-      specs: 'Single Phase 230V AC 50Hz for Emergency Rainy Season Charging',
-      connections: 'Phase (L), Neutral (N), Utility Earth (PE)',
-      grounding: 'Ground linked to main electrical service earth'
+    'batt-offgrid': {
+      title: '🔋 Deep-Cycle Solar Battery Bank',
+      type: 'C10 Rated Solar Tubular Lead-Acid or LiFePO4 Lithium Battery Bank',
+      location: 'Dedicated Acid-Resistant Battery Rack / Lithium Enclosure',
+      specs: 'System Voltage: 24V / 48V / 96V DC | Capacity: Sized for autonomy (1-2 days backup)',
+      protection: 'High-current DC HRC Fuse / DC MCB Disconnect on positive rail',
+      connections: 'Heavy 25 sq.mm - 50 sq.mm Flexible Copper Battery Interlinks',
+      grounding: 'Enclosure / Rack Earthing to Pit 3 (AC Earth Pit)',
+      standards: 'IS 13369 / IS 1651 / IEC 62619 (Lithium)'
     },
     'acdb-offgrid': {
-      title: '⚡ ACDB / Output Distribution Sub-Panel',
-      type: 'Inverter Output Protection & Distribution Board',
-      location: 'Output side of Off-Grid PCU',
-      specs: 'Double-Pole Inverter Output MCB (16A/25A) + Isolated Neutral Busbar',
-      connections: 'Inverter Phase (L) and Isolated Inverter Neutral (N)',
-      grounding: 'Ground Busbar connected to AC Earth Pit'
+      title: '⚡ Off-Grid AC Distribution Box',
+      type: 'Consumer Load Disconnect & MCB Sub-Panel',
+      location: 'Next to Solar PCU',
+      specs: 'Double Pole (DP) MCB + High Sensitivity 30mA RCCB / RCBO (Human Shock Protection)',
+      protection: 'Class C MCB for inductive motor loads + Type II AC SPD',
+      connections: 'PCU AC Output In -> Sub-Circuits Out',
+      grounding: 'Bonded to Pit 3 (AC Earth Pit)',
+      standards: 'IS 12640 / IEC 61008'
+    },
+    'gen-offgrid': {
+      title: '⚙️ Auxiliary Backup Generator / Grid Feed',
+      type: 'Manual/Auto-Start DG Set or Single-Phase Grid Service Cable',
+      location: 'Outdoor Generator Shed / Service Boundary',
+      specs: '230V AC 50Hz Auxiliary Alternator Output to PCU AC Incomer',
+      connections: 'L, N, PE routed to PCU auxiliary charging terminal',
+      grounding: 'Generator Frame bonded to Earth Pit'
     },
     'loads-offgrid': {
-      title: '💡 Dedicated Backup / Inverter Loads',
-      type: 'Critical Protected Household / Commercial Appliances',
-      location: 'Interior Distribution Circuits',
-      specs: 'Ceiling Fans, LED Lights, Refrigerators, Wi-Fi Routers, Computers & Televisions',
-      connections: 'Fed strictly from PCU Inverter Output (Isolated from Grid Outages)',
-      grounding: 'All appliance chassis bonded to Equipment Earth'
+      title: '💡 Essential Backup Load Circuits',
+      type: 'Off-Grid Dedicated Household / Commercial Circuits',
+      location: 'Consumer Distribution Board',
+      specs: 'Lighting, Fans, Refrigerator, Computer, Communication Gear',
+      connections: 'Phase (L) and Neutral (N) from Off-Grid ACDB',
+      grounding: 'Consumer Protective Earth (PE)'
     },
 
     // HYBRID COMPONENTS
+    'la-hybrid': {
+      title: '⚡ Lightning Arrester (LA)',
+      type: 'Early Streamer Emission (ESE) / Franklin Rod Terminal',
+      location: 'Highest Point on Rooftop / Parapet',
+      specs: 'Class I/II Protection, 10/350µs Impulse Current: 25kA',
+      connections: 'Dedicated 25x3 mm Solid Cu / GI Down Conductor',
+      grounding: 'Direct low-impedance route to Pit 1 (LA Earth Pit) < 5Ω',
+      standards: 'IEC 62305'
+    },
     'pv-hybrid': {
-      title: '☀️ Solar PV Array (Dual Strings PV1 & PV2)',
-      type: 'High-Efficiency Bifacial Mono PERC / N-Type Cells',
-      location: 'Dual-Oriented Rooftop Structure',
-      specs: 'String 1 & String 2 Voc: ~450V DC each | Dual MPPT Tracking',
-      connections: 'Two pairs of 4 sq.mm DC Solar Cables (+ & -)',
-      grounding: 'Structure bonded with solid copper wire to DC Earth Pit'
+      title: '☀️ Hybrid Solar PV Array (Series Daisy-Chain)',
+      type: 'Bifacial Mono PERC / TOPCon Modules with Series Stringing',
+      location: 'Rooftop Mounting Structure',
+      specs: 'Dual MPPT String Architecture | Voc per String: ~600V DC | Imp: 13.5A',
+      connections: 'Series Daisy-Chain (+/-) to DCDB with MC4 Connectors',
+      grounding: 'Structure Ground (10 sq.mm) to Pit 2 (DC Earth Pit)',
+      standards: 'IEC 62548 / IEC 61215'
     },
     'dcdb-hybrid': {
-      title: '🛡️ Dual-String DCDB',
-      type: 'Multi-Channel DC Protection Panel',
-      location: 'Inverter DC Input Entry',
-      specs: 'Dual 1000V DC Isolators, 4x 15A gPV Fuses, Dual Type II DC SPDs',
-      connections: 'PV1 (+/-) & PV2 (+/-) Inputs -> Hybrid Inverter MPPT1 & MPPT2',
-      grounding: 'Both SPD ground lugs tied to DC Earth Pit'
+      title: '🛡️ Hybrid DCDB Box',
+      type: 'Dual-MPPT Solar DC Protection Enclosure',
+      location: 'Near Hybrid Inverter',
+      specs: 'Dual 1000V DC Isolators + gPV Fuses + Type II DC SPD',
+      protection: 'Surge Suppression 1000V DC, Up < 3.8kV',
+      connections: 'PV Strings In -> Hybrid Inverter MPPT 1 & 2',
+      grounding: 'SPD Ground to Pit 2 (DC Earth Pit)',
+      standards: 'IEC 61643-31'
     },
-    'inverter-hybrid': {
-      title: '🔄 Hybrid Bi-Directional Inverter',
-      type: 'Grid-Tied + Battery Energy Storage Bi-Directional Converter',
-      location: 'Utility Room / Plant Wall',
-      specs: 'Dual MPPT + 48V/HV DC Battery Bi-Directional Port + Dual AC Ports (Grid + EPS)',
-      features: '< 10ms Automatic Transfer Switch (ATS) for Zero-Downtime UPS capability',
-      connections: 'PV Inputs, Battery Bus, Grid Port (L, N, PE), EPS Backup Port (L, N, PE)',
-      grounding: 'Dual Chassis Ground terminals wired to AC/ESS Earth Pit'
+    'hybrid-inv': {
+      title: '🔄 Bi-Directional Hybrid Inverter',
+      type: 'Grid-Interactive + Energy Storage System (ESS) Inverter',
+      location: 'Dedicated Power Room / Shaded Wall',
+      specs: 'Smart Energy Management: Solar -> Battery -> Load -> Grid Export | Dual Output (Grid Port + EPS Backup Port)',
+      protection: 'Transfer switch < 10ms (seamless UPS mode), Anti-islanding, DC/AC SPD, Battery BMS CAN bus',
+      connections: 'DC PV In + Battery DC + AC Grid Bi-Dir + AC Critical Load Dedicated Port',
+      grounding: 'Chassis Earth to Pit 3 (AC Earth Pit)',
+      standards: 'IEC 62109, IEEE 1547, VDE-AR-N 4105'
     },
-    'battery-hybrid': {
-      title: '🔋 Energy Storage System (LiFePO4 ESS)',
-      type: 'Smart Lithium Iron Phosphate Battery with Integrated BMS',
-      location: 'Floor-Mounted Battery Cabinet',
-      specs: 'Nominal Voltage: 48V / 51.2V | DOD: 90% | CAN / RS485 Communication with Inverter',
-      protection: 'Built-in 100A/125A DC Isolator Breaker + BMS Over-current/Thermal Cutoff',
-      connections: 'Bi-Directional Heavy DC Copper Bus (+ Red, - Black) + RJ45 Data Cable',
-      grounding: 'Cabinet Frame bonded to AC/ESS Earth Pit'
+    'batt-hybrid': {
+      title: '🔋 High-Voltage / 48V LiFePO4 Energy Storage (ESS)',
+      type: 'Lithium Iron Phosphate (LFP) Smart Battery with Active BMS',
+      location: 'Indoor Climate-Controlled Environment',
+      specs: '6000+ Cycles @ 90% DoD | Active Cell Balancing | CAN / RS485 Communication with Inverter',
+      protection: 'Built-in Electronic BMS (Overcurrent, Overvoltage, Short Circuit, Thermal Runaway Protection)',
+      connections: 'Heavy DC Power Connectors + Cat6 CAN Communication Cable to Hybrid Inverter',
+      grounding: 'Battery Metal Rack Grounded to AC Earth Pit',
+      standards: 'IEC 62619 / UL 1973 / UN 38.3'
     },
-    'acdb-grid-hybrid': {
-      title: '⚡ Grid-Side ACDB',
-      type: 'Grid-Interactive Protection Board',
-      location: 'Between Inverter Grid Port and Net Meter',
-      specs: '4-Pole/2-Pole AC MCB + Type II AC SPD',
-      connections: 'Bi-directional AC Feed to Utility Net Meter and Non-Essential Home Loads',
-      grounding: 'Grounded to AC Earth Pit'
+    'crit-loads': {
+      title: '⚡ Essential / Critical Loads Sub-Panel',
+      type: 'Dedicated Uninterruptible Power Supply (UPS / EPS) Sub-Panel',
+      location: 'Protected Sub-Distribution',
+      specs: 'Continuous 230V AC Power during Grid Outages (<10ms switchover)',
+      connections: 'Fed strictly from Hybrid Inverter EPS / Critical Output Port',
+      grounding: 'Protective Earth (PE)'
+    },
+    'acdb-hybrid': {
+      title: '⚡ Main Hybrid ACDB Panel',
+      type: 'Bi-Directional AC Combiner & Grid Intertie Board',
+      location: 'Adjacent to Hybrid Inverter & Meter Board',
+      specs: 'Class C AC MCB + Type II AC SPD + Manual Bypass Switch',
+      connections: 'Interconnects Inverter Grid Port, Utility Net Meter & Normal Loads',
+      grounding: 'Enclosure and SPD bonded to Pit 3 (AC Earth Pit)',
+      standards: 'IS/IEC 60898 / IEC 60947'
     },
     'netmeter-hybrid': {
-      title: '🔄 Bi-Directional Net Meter',
-      type: '4-Quadrant Smart Metering Terminal',
-      location: 'Utility Supply Boundary',
-      specs: 'Imports from EB when solar+battery depleted; Exports surplus green solar energy to EB',
-      connections: 'Utility Grid <-> Consumer Distribution'
+      title: '🔄 Hybrid Bi-Directional Net Meter',
+      type: 'Smart Bi-Directional Utility Billing Meter',
+      location: 'Boundary Meter Board',
+      specs: 'Measures net solar export after battery is fully charged & home loads are fulfilled',
+      connections: 'Utility Grid Incomer <-> Main ACDB',
+      grounding: 'Consumer Earth Busbar'
     },
     'grid-hybrid': {
-      title: '🏭 Utility Grid / Electricity Board',
-      type: 'DISCOM LT Grid Feed (230V 1-Ph / 415V 3-Ph)',
-      location: 'External Utility Supply',
-      specs: 'Provides grid backup and receives exported clean solar electricity'
+      title: '🏭 DISCOM Utility Grid',
+      type: 'LT Single/Three Phase Grid Service',
+      location: 'Local Transformer Drop',
+      specs: '230V/415V 50Hz Infinite Bus',
+      connections: 'Service cable to Net Meter',
+      grounding: 'Substation Transformer Ground'
     },
-    'subdb-eps-hybrid': {
-      title: '🛡️ EPS / Backup Sub-Panel',
-      type: 'Critical Load Sub-Distribution Board',
-      location: 'Downstream of Inverter EPS / UPS Port',
-      specs: 'Fed through <10ms ATS; powers critical loads uninterrupted during grid blackouts',
-      connections: 'EPS Line (L), Isolated Backup Neutral (N), Ground (PE)',
-      grounding: 'Dedicated sub-panel earth linked to AC Earth Pit'
-    },
-    'loads-critical-hybrid': {
-      title: '💡 Essential Backup Loads (EPS)',
-      type: 'Protected Priority Circuits',
-      location: 'Interior Circuits',
-      specs: 'Lighting, Fans, Refrigerator, Wi-Fi, Security Cameras & Sensitive Electronics (Never loses power)'
-    },
-    'loads-noncritical-hybrid': {
-      title: '❄️ Non-Essential / Heavy Loads',
-      type: 'High-Wattage Grid-Dependent Appliances',
-      location: 'Direct Grid / Main DB Circuits',
-      specs: 'Air Conditioners, Heat Pumps, Water Heaters, EV Car Charger (Shed during grid outage)'
+    'main-loads': {
+      title: '🏠 Normal Non-Critical Loads',
+      type: 'Standard LT Household / Commercial Appliances',
+      location: 'Main Distribution Board',
+      specs: 'High power non-backup loads (EV Charger, Water Heater, Heavy HVAC)',
+      connections: 'Fed from Grid / Main ACDB; shed during grid outage to conserve battery',
+      grounding: 'Consumer Earth PE'
     },
 
-    // WITHOUT SOLAR COMPONENTS
-    'grid-withoutsolar': {
-      title: '🏭 Utility EB Grid Service Feed',
-      type: 'Incoming DISCOM LT Overhead / Underground Service Line',
-      location: 'Consumer Property Incomer',
-      specs: 'Single Phase 230V / Three Phase 415V 50Hz Standard Utility Feed',
-      connections: 'Phase (L), Neutral (N), Utility Earth Wire (PE)',
-      grounding: 'Supplier Grounding System'
+    // WITHOUT SOLAR (HOME UPS) COMPONENTS
+    'grid-nosolar': {
+      title: '🏭 Utility Grid / Electricity Board (EB)',
+      type: 'Standard 230V 1-Phase LT Consumer Service',
+      location: 'Main Electric Meter Board',
+      specs: '230V AC ± 10%, 50 Hz LT Supply',
+      connections: 'Incomer Service Cable to Main Distribution Board',
+      grounding: 'Neutral Ground at Distribution Transformer'
     },
-    'meter-withoutsolar': {
-      title: '⚡ Energy Meter (EB Billing Meter)',
-      type: 'Single / Three Phase Electronic Revenue Meter',
-      location: 'Meter Board at Property Entrance',
-      specs: 'Records Total Active Energy (kWh) consumed from DISCOM',
-      connections: 'Incomer Service Cable -> Outgoing to Main Distribution Board'
+    'maindb-nosolar': {
+      title: '⚡ Main Distribution Board (MDB)',
+      type: 'Consumer Incomer & Protection Board',
+      location: 'Entry Foyer / Electrical Nook',
+      specs: 'Double Pole (DP) MCB + 30mA RCCB + Type II AC SPD',
+      protection: 'Overcurrent, Short-circuit, Earth Leakage Human Shock Protection',
+      connections: 'Grid In -> Feed to Home UPS Incomer and High-Power Bypass Circuits',
+      grounding: 'Direct heavy copper conductor to Pit 3 (Consumer AC Earth Pit)',
+      standards: 'IS 12640 / IS/IEC 60898'
     },
-    'mdb-withoutsolar': {
-      title: '🏢 Main Distribution Board (MDB)',
-      type: 'Main Service Panel with Earth Leakage Protection',
-      location: 'Main Electrical Panel Room / Hallway',
-      specs: 'Main DP MCB (32A/40A) + 30mA ELCB / RCCB (Residual Current Circuit Breaker)',
-      protection: 'Protects entire premises against short circuits, overloads, and human touch leakage',
-      connections: 'Phase busbar, Neutral busbar, Earthing busbar',
-      grounding: 'Direct heavy link to Consumer / EB Earth Pit (< 5Ω)'
+    'ups-nosolar': {
+      title: '⚡ Pure Sine Wave Home UPS / Inverter',
+      type: 'Static Standby / Line-Interactive Pure Sine Wave UPS',
+      location: 'Ventilated Utility Shelf or Battery Trolley',
+      specs: 'Efficiency: 88-92% | Microcontroller PWM/DSP pure sine wave output | Fast Transfer Time < 15ms',
+      protection: 'Overload with auto-reset, battery low alarm/cutoff, short-circuit, reverse polarity protection',
+      connections: 'AC Input from Main DB + Heavy DC Cables to Battery Bank + AC Output to Dedicated Backup Sub-Board',
+      grounding: 'Chassis Earth Pin to Consumer AC Earth Pit',
+      standards: 'IS 16221 / IEC 62040'
     },
-    'heavyloads-withoutsolar': {
-      title: '❄️ Non-Backup Heavy Appliances',
-      type: 'High Consumption Utility-Only Loads',
-      location: 'Direct Circuits from Main MDB',
-      specs: 'Air Conditioners (1.5 - 2 Ton), Geyser / Water Heaters (2-3 kW), Water Pumping Motor (1-2 HP)',
-      operation: 'Directly powered by EB Grid; automatically cut off during power outages to protect UPS'
+    'batt-nosolar': {
+      title: '🔋 Heavy Duty Inverter Battery Bank',
+      type: 'Tall Tubular Lead-Acid (C20) or LiFePO4 Battery',
+      location: 'Sturdy Insulated Battery Trolley',
+      specs: '12V / 24V DC System | 150Ah - 220Ah Tubular Deep Cycle (High Acid Volume)',
+      protection: 'Inline Fast-Acting DC Fuse / MCB on positive battery cable',
+      connections: 'Heavy 16-25 sq.mm Flexible Multistrand Copper Cables with crimped brass lugs',
+      grounding: 'Isolated Enclosure Rack',
+      standards: 'IS 13369 / IS 1651'
     },
-    'ups-withoutsolar': {
-      title: '⚡ Home UPS / Inverter Unit',
-      type: 'Microcontroller Pure Sine Wave Home UPS Inverter-Charger',
-      location: 'Utility Area / Inverter Trolley',
-      specs: 'Rating: 900VA - 2500VA | Transfer Time: < 15ms | Automatic Multi-Stage Battery Charger',
-      operation: 'Grid Healthy: Charges battery and bypasses grid to loads | Grid Down: Instantly inverts DC to 230V AC',
-      connections: 'Input 3-Pin Wall Plug (L, N, PE) -> Battery DC Terminals (+/-) -> Output 3-Pin / Sub-DB',
-      grounding: 'Chassis ground via 3-pin plug earth pin to MDB Earth Busbar'
-    },
-    'battery-withoutsolar': {
-      title: '🔋 Inverter Battery Bank',
-      type: 'Tall Tubular Lead-Acid (12V / 24V) or Inverter Lithium Battery',
-      location: 'Heavy-Duty Inverter Trolley / Battery Stand',
-      specs: 'Voltage: 12V (Single) or 24V (Twin Series) | Capacity: 150Ah - 220Ah (C20 Rating)',
-      connections: 'Heavy-duty copper battery cables with insulated safety terminal boots',
-      protection: 'Terminals covered with anti-corrosion petroleum jelly and shroud covers'
-    },
-    'subdb-withoutsolar': {
-      title: '🛡️ Backup Sub-Distribution Board',
-      type: 'Inverter Output Distribution Panel',
-      location: 'Downstream of Home UPS Output',
-      specs: 'Single-Pole MCBs (6A/10A) feeding individual inverter backup circuits',
-      connections: 'Inverter Phase (L), Inverter Neutral (N), Equipment Earth (PE)'
-    },
-    'criticalloads-withoutsolar': {
-      title: '💡 Critical Backup Household Loads',
-      type: 'Essential Home Lighting & Communication Loads',
-      location: 'Living Rooms, Bedrooms & Kitchen',
-      specs: 'Ceiling Fans, LED Bulbs & Tubes, Wi-Fi Router, Television, Phone / Laptop Chargers'
+    'loads-nosolar': {
+      title: '💡 Dedicated Home Inverter Loads',
+      type: 'Essential Domestic Circuits',
+      location: 'Household Rooms',
+      specs: 'LED Lights, Ceiling Fans, Wi-Fi Router, Television, Laptop charging',
+      connections: 'Phase (L) and Neutral (N) from UPS AC Output Socket',
+      grounding: 'Protected Consumer Earth (PE)'
     },
 
-    // EARTH PITS
+    // EARTH PITS (ALL SYSTEMS)
     'pit-la': {
-      title: '⏚ LA Earth Pit (Lightning Arrester)',
-      type: 'Dedicated Chemical Compound Lightning Earth Pit',
-      location: 'External Ground / Outdoor Earth Yard (Minimum 3m away from other pits)',
-      specs: 'Heavy Copper-Bonded Steel Rod (3m long, 17.2mm dia) encased in Carbon / Bentonite Compound',
-      resistance: 'Earth Resistance strictly < 5 Ohms (Ideally < 3 Ohms)',
-      function: 'Safely dissipates direct lightning surge strokes without back-feeding into building wiring',
-      standards: 'IS 3043:2018 / IEC 62305'
+      title: '⏚ Pit 1: Dedicated Lightning Arrester Earth Pit',
+      type: 'Chemical Maintenance-Free Copper-Bonded Electrode Pit',
+      location: 'Outdoor Terrestrial Soil Horizon (Outside Building Footprint)',
+      specs: 'Electrode: 3.0m length x 17.2mm dia (250 micron copper) + Carbon/Bentonite Earth Enhancing Compound',
+      protection: 'Surge Impulse Dissipation: <= 5 Ohms',
+      connections: 'Dedicated 25x3 mm Copper / GI Down Conductor from Rooftop LA Terminal only',
+      grounding: 'STRICTLY ISOLATED: Must maintain >= 3.0m to 5.0m separation distance from DC & AC earth pits to prevent sphere of influence overlap (IS 3043:2018 & IEC 62305)',
+      standards: 'IS 3043:2018 / IEC 62305 / IEEE 80'
     },
     'pit-dc': {
-      title: '⏚ DC Earth Pit (Solar Array & DCDB)',
-      type: 'Dedicated Solar DC Grounding Pit',
-      location: 'Near Inbound Solar Cable Riser in Outdoor Earth Yard',
-      specs: 'Copper-Bonded Rod with Earth Chamber & Testing Link',
-      connectedTo: '1. Rooftop Solar Module Aluminium Mounting Structure\n2. DCDB Type II SPD Earth Terminal',
-      resistance: '< 5 Ohms per MNRE / CEA Guidelines',
-      standards: 'IEC 62548 / IS 3043'
+      title: '⏚ Pit 2: Dedicated Solar DC Earth Pit',
+      type: 'Chemical Copper-Bonded Grounding Electrode with Inspection Chamber',
+      location: 'Outdoor Terrestrial Ground, Min 3m distance from LA Pit',
+      specs: 'Electrode: 3.0m length x 17.2mm dia | Earth Resistance <= 5 Ohms',
+      connections: 'Solar PV Module Structure Grounding (10 sq.mm) + DCDB Surge Protective Device (SPD) Ground (6 sq.mm)',
+      grounding: 'Strictly isolated from LA Pit. Maintains >= 3m separation from AC Pit according to IS 3043 / IEC 62548.',
+      standards: 'IS 3043:2018 / IEC 62548 / CEA Regulations'
     },
     'pit-ac': {
-      title: '⏚ AC Earth Pit (Inverter & ACDB)',
-      type: 'Equipment Protective Earth (PE) Grounding Pit',
-      location: 'External Earth Yard near Main Incomer',
-      specs: 'Copper Bonded Electrode in Low-Resistivity Conductive Backfill Compound',
-      connectedTo: '1. Inverter Metal Enclosure (Body)\n2. ACDB Enclosure & AC SPD Earth\n3. Neutral Ground where specified',
-      resistance: '< 5 Ohms',
-      standards: 'IS 3043 / IS/IEC 60364'
-    },
-    'pit-consumer': {
-      title: '⏚ Consumer / EB Utility Earth Pit',
-      type: 'Main Low-Voltage Consumer Earth Pit',
-      location: 'Property Boundary / Meter Room',
-      specs: 'GI / Copper Plate or Chemical Rod Pit with inspection test well',
-      connectedTo: 'Main Distribution Board Earthing Busbar, extending to UPS plug and appliance sockets',
-      resistance: '< 5 Ohms per Indian Electricity Rules',
-      standards: 'IS 3043:2018'
+      title: '⏚ Pit 3: Dedicated AC Power Earth Pit',
+      type: 'Chemical Copper-Bonded Low Impedance Earth Pit',
+      location: 'Outdoor Terrestrial Ground, Min 3m distance from DC Pit',
+      specs: 'Electrode: 3.0m length x 17.2mm dia | Earth Resistance <= 5 Ohms (Combined System <= 2 Ohms)',
+      connections: 'Inverter Chassis Body Ground + ACDB SPD Ground + Main AC Distribution Board Earth Busbar',
+      grounding: 'IS 3043:2018 Mandate: Minimum 3.0m physical separation ensures independent dissipation of AC fault current without transient voltage migration to DC solar array.',
+      standards: 'IS 3043:2018 / IS/IEC 60364 / CEA 2021'
     }
   };
 
-  /**
-   * Generates shared SVG definitions (gradients, filters, marker arrowheads, patterns).
-   */
+  /* =========================================================================
+     ENLARGED & HIGH-LEGIBILITY SYSTEM ARCHITECTURAL CONFIGURATIONS
+     (Generous viewBox: 1260 x 650 with bold, crystal-clear typography)
+     ========================================================================= */
+  const SYSTEM_CONFIGS = {
+    // 1. ON-GRID
+    'on-grid': {
+      viewBox: '0 0 1260 650',
+      title: 'ON-GRID SOLAR PV SYSTEM SCHEMATIC (SINGLE LINE DIAGRAM)',
+      subtitle: 'Standard: IEC 62548 / IS 3043:2018 | Dedicated Tri-Earth Pits | Bi-Directional Net-Metered Injection',
+      blocks: {
+        'la-ongrid': {
+          type: 'la',
+          x: 60, y: 45, w: 90, h: 75,
+          title: '⚡ Rooftop LA',
+          subtitle: 'ESE / Franklin',
+          badge: 'Class I/II 25kA',
+          badgeColor: '#f59e0b',
+          ports: {
+            down_cond: { x: 45, y: 75 }
+          }
+        },
+        'pv-ongrid': {
+          type: 'pv-array',
+          x: 45, y: 145, w: 200, h: 145,
+          title: 'Solar PV Array',
+          subtitle: 'Series String Daisy-Chain',
+          badge: 'Voc: ~580V DC | 13.5A',
+          badgeColor: '#0284c7',
+          icon: '☀️',
+          ports: {
+            out_pos: { x: 200, y: 40 },
+            out_neg: { x: 200, y: 65 },
+            frame_gnd: { x: 100, y: 145 }
+          }
+        },
+        'dcdb-ongrid': {
+          type: 'box',
+          x: 300, y: 145, w: 155, h: 145,
+          title: 'DCDB Box',
+          subtitle: 'Isolator + gPV + SPD',
+          badge: 'Type II DC SPD 1000V',
+          badgeColor: '#ef4444',
+          icon: '🛡️',
+          ports: {
+            in_pos: { x: 0, y: 40 },
+            in_neg: { x: 0, y: 65 },
+            out_pos: { x: 155, y: 40 },
+            out_neg: { x: 155, y: 65 },
+            spd_gnd: { x: 77, y: 145 }
+          }
+        },
+        'gti-ongrid': {
+          type: 'box',
+          x: 515, y: 135, w: 185, h: 165,
+          title: 'Grid-Tied Inverter',
+          subtitle: 'Pure Sine Wave GTI',
+          badge: '230V/415V 50Hz | η>98%',
+          badgeColor: '#3b82f6',
+          icon: '⚡',
+          hasInverterSymbol: true,
+          ports: {
+            in_pos: { x: 0, y: 50 },
+            in_neg: { x: 0, y: 75 },
+            out_L: { x: 185, y: 40 },
+            out_N: { x: 185, y: 65 },
+            out_PE: { x: 185, y: 90 },
+            chassis_gnd: { x: 92, y: 165 }
+          }
+        },
+        'acdb-ongrid': {
+          type: 'box',
+          x: 760, y: 135, w: 155, h: 165,
+          title: 'ACDB Box',
+          subtitle: 'AC MCB + AC SPD',
+          badge: 'Class C MCB | 320V SPD',
+          badgeColor: '#dc2626',
+          icon: '⚡',
+          ports: {
+            in_L: { x: 0, y: 40 },
+            in_N: { x: 0, y: 65 },
+            in_PE: { x: 0, y: 90 },
+            out_L: { x: 155, y: 40 },
+            out_N: { x: 155, y: 65 },
+            spd_gnd: { x: 77, y: 165 }
+          }
+        },
+        'netmeter-ongrid': {
+          type: 'box',
+          x: 975, y: 135, w: 140, h: 165,
+          title: 'Net Meter',
+          subtitle: 'Dual / Bi-Directional',
+          badge: 'Import / Export kWh',
+          badgeColor: '#0284c7',
+          icon: '🔄',
+          hasNetMeterLcd: true,
+          ports: {
+            in_L: { x: 0, y: 40 },
+            in_N: { x: 0, y: 65 },
+            out_L: { x: 140, y: 40 },
+            out_N: { x: 140, y: 65 }
+          }
+        },
+        'grid-ongrid': {
+          type: 'box',
+          x: 1150, y: 55, w: 100, h: 90,
+          title: 'EB Grid',
+          subtitle: 'DISCOM LT Line',
+          badge: '230V/415V',
+          badgeColor: '#6366f1',
+          icon: '🏭',
+          ports: {
+            in_L: { x: 0, y: 30 },
+            in_N: { x: 0, y: 55 }
+          }
+        },
+        'loads-ongrid': {
+          type: 'box',
+          x: 1150, y: 260, w: 100, h: 100,
+          title: 'Home Load',
+          subtitle: 'LT Sub-Board',
+          badge: 'Lights, AC, TV',
+          badgeColor: '#10b981',
+          icon: '🏠',
+          ports: {
+            in_L: { x: 0, y: 30 },
+            in_N: { x: 0, y: 55 }
+          }
+        },
+        'pit-la': {
+          type: 'earth-pit',
+          x: 105, y: 540, w: 90, h: 60,
+          name: 'LA Earth Pit',
+          tag: 'Pit 1 (LA Only)',
+          code: 'R ≤ 5Ω | IEC 62305',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        },
+        'pit-dc': {
+          type: 'earth-pit',
+          x: 400, y: 540, w: 90, h: 60,
+          name: 'DC Earth Pit',
+          tag: 'Pit 2 (DC Array & SPD)',
+          code: 'R ≤ 5Ω | IEC 62548',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        },
+        'pit-ac': {
+          type: 'earth-pit',
+          x: 835, y: 540, w: 90, h: 60,
+          name: 'AC Earth Pit',
+          tag: 'Pit 3 (Inverter & ACDB)',
+          code: 'R ≤ 5Ω | IS 3043',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        }
+      },
+      wires: [
+        {
+          id: 'wire-la-pit',
+          from: { blockId: 'la-ongrid', port: 'down_cond' },
+          to: { blockId: 'pit-la', port: 'top' },
+          type: 'la-down',
+          routing: 'direct',
+          label: '25x3 mm Cu Down Conductor',
+          labelOffset: { dx: 14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-pv-dcdb-pos',
+          from: { blockId: 'pv-ongrid', port: 'out_pos' },
+          to: { blockId: 'dcdb-ongrid', port: 'in_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'DC (+) 4/6 sq.mm',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-pv-dcdb-neg',
+          from: { blockId: 'pv-ongrid', port: 'out_neg' },
+          to: { blockId: 'dcdb-ongrid', port: 'in_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'DC (-) 4/6 sq.mm',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-pv-gnd',
+          from: { blockId: 'pv-ongrid', port: 'frame_gnd' },
+          to: { blockId: 'pit-dc', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'PV Structure Ground (10 sq.mm Cu)',
+          labelOffset: { dx: 20, dy: -8 }
+        },
+        {
+          id: 'wire-dcdb-gti-pos',
+          from: { blockId: 'dcdb-ongrid', port: 'out_pos' },
+          to: { blockId: 'gti-ongrid', port: 'in_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'DC (+) To GTI',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-dcdb-gti-neg',
+          from: { blockId: 'dcdb-ongrid', port: 'out_neg' },
+          to: { blockId: 'gti-ongrid', port: 'in_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'DC (-) To GTI',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-dcdb-spd-gnd',
+          from: { blockId: 'dcdb-ongrid', port: 'spd_gnd' },
+          to: { blockId: 'pit-dc', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'DC SPD Earth (6 sq.mm)',
+          labelOffset: { dx: 10, dy: -40 }
+        },
+        {
+          id: 'wire-gti-acdb-L',
+          from: { blockId: 'gti-ongrid', port: 'out_L' },
+          to: { blockId: 'acdb-ongrid', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'direct',
+          label: 'L (Phase Red)',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-gti-acdb-N',
+          from: { blockId: 'gti-ongrid', port: 'out_N' },
+          to: { blockId: 'acdb-ongrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct',
+          label: 'N (Cyan Dashed)',
+          labelOffset: { dx: 0, dy: -9 }
+        },
+        {
+          id: 'wire-gti-acdb-PE',
+          from: { blockId: 'gti-ongrid', port: 'out_PE' },
+          to: { blockId: 'acdb-ongrid', port: 'in_PE' },
+          type: 'earth',
+          routing: 'direct',
+          label: 'PE (Striped Green)',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-gti-chassis-gnd',
+          from: { blockId: 'gti-ongrid', port: 'chassis_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'Inverter Body Ground (10 sq.mm)',
+          labelOffset: { dx: 20, dy: -8 }
+        },
+        {
+          id: 'wire-acdb-spd-gnd',
+          from: { blockId: 'acdb-ongrid', port: 'spd_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'ACDB SPD Ground (6 sq.mm)',
+          labelOffset: { dx: 10, dy: -40 }
+        },
+        {
+          id: 'wire-acdb-netmeter-L',
+          from: { blockId: 'acdb-ongrid', port: 'out_L' },
+          to: { blockId: 'netmeter-ongrid', port: 'in_L' },
+          type: 'bidi-phase',
+          routing: 'direct',
+          label: 'Bi-Dir Flow ⮂',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-acdb-netmeter-N',
+          from: { blockId: 'acdb-ongrid', port: 'out_N' },
+          to: { blockId: 'netmeter-ongrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-netmeter-grid-L',
+          from: { blockId: 'netmeter-ongrid', port: 'out_L' },
+          to: { blockId: 'grid-ongrid', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'step-hv',
+          label: 'Grid Export/Import',
+          labelOffset: { dx: 12, dy: -8 }
+        },
+        {
+          id: 'wire-netmeter-grid-N',
+          from: { blockId: 'netmeter-ongrid', port: 'out_N' },
+          to: { blockId: 'grid-ongrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'step-hv'
+        },
+        {
+          id: 'wire-netmeter-loads-L',
+          from: { blockId: 'netmeter-ongrid', port: 'out_L' },
+          to: { blockId: 'loads-ongrid', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'step-hv',
+          label: 'To Consumer Loads',
+          labelOffset: { dx: 12, dy: 16 }
+        },
+        {
+          id: 'wire-netmeter-loads-N',
+          from: { blockId: 'netmeter-ongrid', port: 'out_N' },
+          to: { blockId: 'loads-ongrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'step-hv'
+        }
+      ],
+      earthDimensions: [
+        {
+          fromId: 'pit-la',
+          toId: 'pit-dc',
+          y: 566,
+          label: 'Min 3.0m - 5.0m Separation (IS 3043:2018 / IEC 62305: d ≥ 2×L)'
+        },
+        {
+          fromId: 'pit-dc',
+          toId: 'pit-ac',
+          y: 566,
+          label: 'Min 3.0m Separation (Sphere of Influence Isolation)'
+        }
+      ]
+    },
+
+    // 2. OFF-GRID
+    'off-grid': {
+      viewBox: '0 0 1260 650',
+      title: 'OFF-GRID SOLAR PV SYSTEM SCHEMATIC (STANDALONE PCU & BATTERY)',
+      subtitle: 'Integrated MPPT Charger + Pure Sine Wave Inverter + Deep Cycle Battery Bank + Dedicated Isolated Earth Pits',
+      blocks: {
+        'la-offgrid': {
+          type: 'la',
+          x: 60, y: 40, w: 90, h: 75,
+          title: '⚡ Rooftop LA',
+          subtitle: 'ESE / Franklin',
+          badge: 'Class I/II 25kA',
+          badgeColor: '#f59e0b',
+          ports: {
+            down_cond: { x: 45, y: 75 }
+          }
+        },
+        'pv-offgrid': {
+          type: 'pv-array',
+          x: 45, y: 135, w: 200, h: 145,
+          title: 'Solar PV Array',
+          subtitle: 'Series String Daisy-Chain',
+          badge: 'String Voc: 140V-250V DC',
+          badgeColor: '#0284c7',
+          icon: '☀️',
+          ports: {
+            out_pos: { x: 200, y: 40 },
+            out_neg: { x: 200, y: 65 },
+            frame_gnd: { x: 100, y: 145 }
+          }
+        },
+        'dcdb-offgrid': {
+          type: 'box',
+          x: 300, y: 135, w: 155, h: 145,
+          title: 'DCDB Box',
+          subtitle: 'Fuse + DC SPD',
+          badge: 'gPV Fuse + DC SPD',
+          badgeColor: '#ef4444',
+          icon: '🛡️',
+          ports: {
+            in_pos: { x: 0, y: 40 },
+            in_neg: { x: 0, y: 65 },
+            out_pos: { x: 155, y: 40 },
+            out_neg: { x: 155, y: 65 },
+            spd_gnd: { x: 77, y: 145 }
+          }
+        },
+        'pcu-offgrid': {
+          type: 'box',
+          x: 510, y: 105, w: 205, h: 180,
+          title: 'Off-Grid Solar PCU',
+          subtitle: 'MPPT CC + Inverter',
+          badge: 'Solar > Battery > Grid',
+          badgeColor: '#3b82f6',
+          icon: '⚡',
+          hasPcuDiagram: true,
+          ports: {
+            in_pv_pos: { x: 0, y: 40 },
+            in_pv_neg: { x: 0, y: 65 },
+            aux_in_L: { x: 205, y: 35 },
+            aux_in_N: { x: 205, y: 55 },
+            out_ac_L: { x: 205, y: 80 },
+            out_ac_N: { x: 205, y: 100 },
+            out_ac_PE: { x: 205, y: 120 },
+            batt_pos: { x: 65, y: 180 },
+            batt_neg: { x: 135, y: 180 },
+            chassis_gnd: { x: 100, y: 180 }
+          }
+        },
+        'batt-offgrid': {
+          type: 'box',
+          x: 510, y: 340, w: 205, h: 120,
+          title: 'Battery Bank',
+          subtitle: 'C10 Tubular / LiFePO4',
+          badge: '24V/48V High Autonomy',
+          badgeColor: '#0d9488',
+          icon: '🔋',
+          hasBatteryCells: true,
+          ports: {
+            in_batt_pos: { x: 65, y: 0 },
+            in_batt_neg: { x: 135, y: 0 },
+            rack_gnd: { x: 170, y: 120 }
+          }
+        },
+        'acdb-offgrid': {
+          type: 'box',
+          x: 775, y: 115, w: 155, h: 165,
+          title: 'Off-Grid ACDB',
+          subtitle: 'DP MCB + 30mA RCCB',
+          badge: 'Isolated Neutral System',
+          badgeColor: '#dc2626',
+          icon: '⚡',
+          ports: {
+            in_L: { x: 0, y: 40 },
+            in_N: { x: 0, y: 65 },
+            in_PE: { x: 0, y: 90 },
+            out_L: { x: 155, y: 40 },
+            out_N: { x: 155, y: 65 },
+            out_PE: { x: 155, y: 90 },
+            spd_gnd: { x: 77, y: 165 }
+          }
+        },
+        'gen-offgrid': {
+          type: 'box',
+          x: 995, y: 45, w: 130, h: 95,
+          title: 'Backup Gen / Grid',
+          subtitle: 'Auxiliary AC Feed',
+          badge: '230V 50Hz Incomer',
+          badgeColor: '#6366f1',
+          icon: '⚙️',
+          ports: {
+            out_L: { x: 0, y: 30 },
+            out_N: { x: 0, y: 55 }
+          }
+        },
+        'loads-offgrid': {
+          type: 'box',
+          x: 995, y: 190, w: 130, h: 110,
+          title: 'Home Priority Loads',
+          subtitle: 'Continuous Supply',
+          badge: 'Lights, Fans, Fridge',
+          badgeColor: '#10b981',
+          icon: '💡',
+          ports: {
+            in_L: { x: 0, y: 30 },
+            in_N: { x: 0, y: 55 },
+            in_PE: { x: 0, y: 80 }
+          }
+        },
+        'pit-la': {
+          type: 'earth-pit',
+          x: 105, y: 540, w: 90, h: 60,
+          name: 'LA Earth Pit',
+          tag: 'Pit 1 (LA Only)',
+          code: 'R ≤ 5Ω | IEC 62305',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        },
+        'pit-dc': {
+          type: 'earth-pit',
+          x: 400, y: 540, w: 90, h: 60,
+          name: 'DC Earth Pit',
+          tag: 'Pit 2 (DC Array & SPD)',
+          code: 'R ≤ 5Ω | IEC 62548',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        },
+        'pit-ac': {
+          type: 'earth-pit',
+          x: 850, y: 540, w: 90, h: 60,
+          name: 'AC Earth Pit',
+          tag: 'Pit 3 (PCU & ACDB)',
+          code: 'R ≤ 5Ω | IS 3043',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        }
+      },
+      wires: [
+        {
+          id: 'wire-la-pit',
+          from: { blockId: 'la-offgrid', port: 'down_cond' },
+          to: { blockId: 'pit-la', port: 'top' },
+          type: 'la-down',
+          routing: 'direct',
+          label: '25x3 mm Cu Down Conductor',
+          labelOffset: { dx: 14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-pv-dcdb-pos',
+          from: { blockId: 'pv-offgrid', port: 'out_pos' },
+          to: { blockId: 'dcdb-offgrid', port: 'in_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'DC (+) 4/6 sq.mm',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-pv-dcdb-neg',
+          from: { blockId: 'pv-offgrid', port: 'out_neg' },
+          to: { blockId: 'dcdb-offgrid', port: 'in_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'DC (-) 4/6 sq.mm',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-pv-gnd',
+          from: { blockId: 'pv-offgrid', port: 'frame_gnd' },
+          to: { blockId: 'pit-dc', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'PV Frame Ground (10 sq.mm Cu)',
+          labelOffset: { dx: 20, dy: -8 }
+        },
+        {
+          id: 'wire-dcdb-pcu-pos',
+          from: { blockId: 'dcdb-offgrid', port: 'out_pos' },
+          to: { blockId: 'pcu-offgrid', port: 'in_pv_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'PV Input (+)',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-dcdb-pcu-neg',
+          from: { blockId: 'dcdb-offgrid', port: 'out_neg' },
+          to: { blockId: 'pcu-offgrid', port: 'in_pv_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'PV Input (-)',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-dcdb-spd-gnd',
+          from: { blockId: 'dcdb-offgrid', port: 'spd_gnd' },
+          to: { blockId: 'pit-dc', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'DC SPD Earth (6 sq.mm)',
+          labelOffset: { dx: 10, dy: -40 }
+        },
+        {
+          id: 'wire-pcu-batt-pos',
+          from: { blockId: 'pcu-offgrid', port: 'batt_pos' },
+          to: { blockId: 'batt-offgrid', port: 'in_batt_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: '25 sq.mm DC (+) with Fuse',
+          labelOffset: { dx: -14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-pcu-batt-neg',
+          from: { blockId: 'pcu-offgrid', port: 'batt_neg' },
+          to: { blockId: 'batt-offgrid', port: 'in_batt_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: '25 sq.mm DC (-)',
+          labelOffset: { dx: 14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-gen-pcu-L',
+          from: { blockId: 'gen-offgrid', port: 'out_L' },
+          to: { blockId: 'pcu-offgrid', port: 'aux_in_L' },
+          type: 'ac-phase',
+          routing: 'step-hv',
+          label: 'Aux Grid/Gen Incomer',
+          labelOffset: { dx: -14, dy: -8 }
+        },
+        {
+          id: 'wire-gen-pcu-N',
+          from: { blockId: 'gen-offgrid', port: 'out_N' },
+          to: { blockId: 'pcu-offgrid', port: 'aux_in_N' },
+          type: 'ac-neutral',
+          routing: 'step-hv'
+        },
+        {
+          id: 'wire-pcu-acdb-L',
+          from: { blockId: 'pcu-offgrid', port: 'out_ac_L' },
+          to: { blockId: 'acdb-offgrid', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'direct',
+          label: 'PCU Inverter Output',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-pcu-acdb-N',
+          from: { blockId: 'pcu-offgrid', port: 'out_ac_N' },
+          to: { blockId: 'acdb-offgrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-pcu-acdb-PE',
+          from: { blockId: 'pcu-offgrid', port: 'out_ac_PE' },
+          to: { blockId: 'acdb-offgrid', port: 'in_PE' },
+          type: 'earth',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-pcu-chassis-gnd',
+          from: { blockId: 'pcu-offgrid', port: 'chassis_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'PCU Double Body Ground (10 sq.mm)',
+          labelOffset: { dx: 20, dy: -8 }
+        },
+        {
+          id: 'wire-batt-gnd',
+          from: { blockId: 'batt-offgrid', port: 'rack_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'Battery Enclosure Ground',
+          labelOffset: { dx: 14, dy: -24 }
+        },
+        {
+          id: 'wire-acdb-spd-gnd',
+          from: { blockId: 'acdb-offgrid', port: 'spd_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'ACDB SPD Earth',
+          labelOffset: { dx: 10, dy: -40 }
+        },
+        {
+          id: 'wire-acdb-loads-L',
+          from: { blockId: 'acdb-offgrid', port: 'out_L' },
+          to: { blockId: 'loads-offgrid', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'direct',
+          label: 'To Loads',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-acdb-loads-N',
+          from: { blockId: 'acdb-offgrid', port: 'out_N' },
+          to: { blockId: 'loads-offgrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-acdb-loads-PE',
+          from: { blockId: 'acdb-offgrid', port: 'out_PE' },
+          to: { blockId: 'loads-offgrid', port: 'in_PE' },
+          type: 'earth',
+          routing: 'direct'
+        }
+      ],
+      earthDimensions: [
+        {
+          fromId: 'pit-la',
+          toId: 'pit-dc',
+          y: 566,
+          label: 'Min 3.0m - 5.0m Separation (IS 3043:2018 / IEC 62305: d ≥ 2×L)'
+        },
+        {
+          fromId: 'pit-dc',
+          toId: 'pit-ac',
+          y: 566,
+          label: 'Min 3.0m Separation (Sphere of Influence Isolation)'
+        }
+      ]
+    },
+
+    // 3. HYBRID
+    'hybrid': {
+      viewBox: '0 0 1260 650',
+      title: 'HYBRID SOLAR PV SYSTEM SCHEMATIC (BI-DIRECTIONAL ESS + NET METER)',
+      subtitle: 'Integrated Grid-Interactive Inverter + High/Low-Volt LiFePO4 ESS + Critical EPS Output + Dedicated Earth Pits',
+      blocks: {
+        'la-hybrid': {
+          type: 'la',
+          x: 55, y: 35, w: 90, h: 75,
+          title: '⚡ Rooftop LA',
+          subtitle: 'ESE / Franklin',
+          badge: 'Class I/II 25kA',
+          badgeColor: '#f59e0b',
+          ports: {
+            down_cond: { x: 45, y: 75 }
+          }
+        },
+        'pv-hybrid': {
+          type: 'pv-array',
+          x: 40, y: 130, w: 200, h: 145,
+          title: 'Hybrid PV Array',
+          subtitle: 'Series String Daisy-Chain',
+          badge: 'Dual MPPT | ~600V DC',
+          badgeColor: '#0284c7',
+          icon: '☀️',
+          ports: {
+            out_pos: { x: 200, y: 40 },
+            out_neg: { x: 200, y: 65 },
+            frame_gnd: { x: 100, y: 145 }
+          }
+        },
+        'dcdb-hybrid': {
+          type: 'box',
+          x: 290, y: 130, w: 155, h: 145,
+          title: 'Hybrid DCDB',
+          subtitle: 'Dual-MPPT DCDB',
+          badge: '1000V DC SPD + Fuses',
+          badgeColor: '#ef4444',
+          icon: '🛡️',
+          ports: {
+            in_pos: { x: 0, y: 40 },
+            in_neg: { x: 0, y: 65 },
+            out_pos: { x: 155, y: 40 },
+            out_neg: { x: 155, y: 65 },
+            spd_gnd: { x: 77, y: 145 }
+          }
+        },
+        'hybrid-inv': {
+          type: 'box',
+          x: 495, y: 105, w: 205, h: 185,
+          title: 'Hybrid Inverter',
+          subtitle: 'Bi-Directional Multi-Port',
+          badge: 'Solar+Batt+Grid+EPS',
+          badgeColor: '#3b82f6',
+          icon: '🔄',
+          hasInverterSymbol: true,
+          ports: {
+            in_pv_pos: { x: 0, y: 40 },
+            in_pv_neg: { x: 0, y: 65 },
+            eps_L: { x: 205, y: 35 },
+            eps_N: { x: 205, y: 55 },
+            grid_L: { x: 205, y: 95 },
+            grid_N: { x: 205, y: 115 },
+            grid_PE: { x: 205, y: 135 },
+            batt_pos: { x: 65, y: 185 },
+            batt_neg: { x: 135, y: 185 },
+            chassis_gnd: { x: 100, y: 185 }
+          }
+        },
+        'batt-hybrid': {
+          type: 'box',
+          x: 495, y: 345, w: 205, h: 120,
+          title: 'LiFePO4 ESS Battery',
+          subtitle: 'Lithium Battery + BMS',
+          badge: 'CAN/RS485 Active BMS',
+          badgeColor: '#0d9488',
+          icon: '🔋',
+          hasBatteryCells: true,
+          ports: {
+            in_batt_pos: { x: 65, y: 0 },
+            in_batt_neg: { x: 135, y: 0 },
+            rack_gnd: { x: 170, y: 120 }
+          }
+        },
+        'crit-loads': {
+          type: 'box',
+          x: 760, y: 65, w: 145, h: 95,
+          title: 'Critical Loads Panel',
+          subtitle: 'UPS EPS Port (<10ms)',
+          badge: 'Zero Blackout Power',
+          badgeColor: '#10b981',
+          icon: '⚡',
+          ports: {
+            in_L: { x: 0, y: 30 },
+            in_N: { x: 0, y: 55 }
+          }
+        },
+        'acdb-hybrid': {
+          type: 'box',
+          x: 760, y: 195, w: 145, h: 140,
+          title: 'Main ACDB Panel',
+          subtitle: 'Bi-Directional Combiner',
+          badge: 'Class C MCB + AC SPD',
+          badgeColor: '#dc2626',
+          icon: '⚡',
+          ports: {
+            in_L: { x: 0, y: 35 },
+            in_N: { x: 0, y: 55 },
+            in_PE: { x: 0, y: 75 },
+            out_L: { x: 145, y: 35 },
+            out_N: { x: 145, y: 55 },
+            out_loads_L: { x: 145, y: 90 },
+            out_loads_N: { x: 145, y: 110 },
+            spd_gnd: { x: 72, y: 140 }
+          }
+        },
+        'netmeter-hybrid': {
+          type: 'box',
+          x: 960, y: 195, w: 130, h: 140,
+          title: 'Net Meter',
+          subtitle: 'Bi-Directional Smart',
+          badge: 'Import / Export kWh',
+          badgeColor: '#0284c7',
+          icon: '🔄',
+          hasNetMeterLcd: true,
+          ports: {
+            in_L: { x: 0, y: 35 },
+            in_N: { x: 0, y: 55 },
+            out_L: { x: 130, y: 35 },
+            out_N: { x: 130, y: 55 }
+          }
+        },
+        'grid-hybrid': {
+          type: 'box',
+          x: 1140, y: 110, w: 105, h: 90,
+          title: 'EB Grid',
+          subtitle: 'DISCOM LT Line',
+          badge: '230V/415V',
+          badgeColor: '#6366f1',
+          icon: '🏭',
+          ports: {
+            in_L: { x: 0, y: 30 },
+            in_N: { x: 0, y: 55 }
+          }
+        },
+        'main-loads': {
+          type: 'box',
+          x: 1140, y: 250, w: 105, h: 100,
+          title: 'Normal Loads',
+          subtitle: 'Non-Backup LT Board',
+          badge: 'High Power Loads',
+          badgeColor: '#64748b',
+          icon: '🏠',
+          ports: {
+            in_L: { x: 0, y: 30 },
+            in_N: { x: 0, y: 55 }
+          }
+        },
+        'pit-la': {
+          type: 'earth-pit',
+          x: 100, y: 540, w: 90, h: 60,
+          name: 'LA Earth Pit',
+          tag: 'Pit 1 (LA Only)',
+          code: 'R ≤ 5Ω | IEC 62305',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        },
+        'pit-dc': {
+          type: 'earth-pit',
+          x: 370, y: 540, w: 90, h: 60,
+          name: 'DC Earth Pit',
+          tag: 'Pit 2 (DC Array & SPD)',
+          code: 'R ≤ 5Ω | IEC 62548',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        },
+        'pit-ac': {
+          type: 'earth-pit',
+          x: 850, y: 540, w: 90, h: 60,
+          name: 'AC Earth Pit',
+          tag: 'Pit 3 (Inverter & ACDB)',
+          code: 'R ≤ 5Ω | IS 3043',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        }
+      },
+      wires: [
+        {
+          id: 'wire-la-pit',
+          from: { blockId: 'la-hybrid', port: 'down_cond' },
+          to: { blockId: 'pit-la', port: 'top' },
+          type: 'la-down',
+          routing: 'direct',
+          label: '25x3 mm Cu Down Conductor',
+          labelOffset: { dx: 14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-pv-dcdb-pos',
+          from: { blockId: 'pv-hybrid', port: 'out_pos' },
+          to: { blockId: 'dcdb-hybrid', port: 'in_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'DC (+) 4/6 sq.mm',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-pv-dcdb-neg',
+          from: { blockId: 'pv-hybrid', port: 'out_neg' },
+          to: { blockId: 'dcdb-hybrid', port: 'in_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'DC (-) 4/6 sq.mm',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-pv-gnd',
+          from: { blockId: 'pv-hybrid', port: 'frame_gnd' },
+          to: { blockId: 'pit-dc', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'PV Structure Ground',
+          labelOffset: { dx: 20, dy: -8 }
+        },
+        {
+          id: 'wire-dcdb-inv-pos',
+          from: { blockId: 'dcdb-hybrid', port: 'out_pos' },
+          to: { blockId: 'hybrid-inv', port: 'in_pv_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'PV Input (+)',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-dcdb-inv-neg',
+          from: { blockId: 'dcdb-hybrid', port: 'out_neg' },
+          to: { blockId: 'hybrid-inv', port: 'in_pv_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'PV Input (-)',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-dcdb-spd-gnd',
+          from: { blockId: 'dcdb-hybrid', port: 'spd_gnd' },
+          to: { blockId: 'pit-dc', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'DC SPD Earth',
+          labelOffset: { dx: 10, dy: -40 }
+        },
+        {
+          id: 'wire-inv-batt-pos',
+          from: { blockId: 'hybrid-inv', port: 'batt_pos' },
+          to: { blockId: 'batt-hybrid', port: 'in_batt_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'Heavy DC (+) + CAN BMS',
+          labelOffset: { dx: -14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-inv-batt-neg',
+          from: { blockId: 'hybrid-inv', port: 'batt_neg' },
+          to: { blockId: 'batt-hybrid', port: 'in_batt_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'Heavy DC (-)',
+          labelOffset: { dx: 14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-inv-crit-L',
+          from: { blockId: 'hybrid-inv', port: 'eps_L' },
+          to: { blockId: 'crit-loads', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'direct',
+          label: 'EPS Port (<10ms UPS)',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-inv-crit-N',
+          from: { blockId: 'hybrid-inv', port: 'eps_N' },
+          to: { blockId: 'crit-loads', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-inv-acdb-L',
+          from: { blockId: 'hybrid-inv', port: 'grid_L' },
+          to: { blockId: 'acdb-hybrid', port: 'in_L' },
+          type: 'bidi-phase',
+          routing: 'direct',
+          label: 'Bi-Dir Intertie ⮂',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-inv-acdb-N',
+          from: { blockId: 'hybrid-inv', port: 'grid_N' },
+          to: { blockId: 'acdb-hybrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-inv-acdb-PE',
+          from: { blockId: 'hybrid-inv', port: 'grid_PE' },
+          to: { blockId: 'acdb-hybrid', port: 'in_PE' },
+          type: 'earth',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-inv-chassis-gnd',
+          from: { blockId: 'hybrid-inv', port: 'chassis_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'Inverter Body Ground (10 sq.mm)',
+          labelOffset: { dx: 20, dy: -8 }
+        },
+        {
+          id: 'wire-batt-gnd',
+          from: { blockId: 'batt-hybrid', port: 'rack_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'Battery Enclosure Ground',
+          labelOffset: { dx: 14, dy: -24 }
+        },
+        {
+          id: 'wire-acdb-spd-gnd',
+          from: { blockId: 'acdb-hybrid', port: 'spd_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'ACDB SPD Earth',
+          labelOffset: { dx: 10, dy: -40 }
+        },
+        {
+          id: 'wire-acdb-netmeter-L',
+          from: { blockId: 'acdb-hybrid', port: 'out_L' },
+          to: { blockId: 'netmeter-hybrid', port: 'in_L' },
+          type: 'bidi-phase',
+          routing: 'direct',
+          label: 'Net Meter ⮂',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-acdb-netmeter-N',
+          from: { blockId: 'acdb-hybrid', port: 'out_N' },
+          to: { blockId: 'netmeter-hybrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-netmeter-grid-L',
+          from: { blockId: 'netmeter-hybrid', port: 'out_L' },
+          to: { blockId: 'grid-hybrid', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'step-hv',
+          label: 'To Grid',
+          labelOffset: { dx: 12, dy: -8 }
+        },
+        {
+          id: 'wire-netmeter-grid-N',
+          from: { blockId: 'netmeter-hybrid', port: 'out_N' },
+          to: { blockId: 'grid-hybrid', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'step-hv'
+        },
+        {
+          id: 'wire-acdb-loads-L',
+          from: { blockId: 'acdb-hybrid', port: 'out_loads_L' },
+          to: { blockId: 'main-loads', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'step-hv',
+          label: 'To Normal Loads',
+          labelOffset: { dx: 12, dy: 16 }
+        },
+        {
+          id: 'wire-acdb-loads-N',
+          from: { blockId: 'acdb-hybrid', port: 'out_loads_N' },
+          to: { blockId: 'main-loads', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'step-hv'
+        }
+      ],
+      earthDimensions: [
+        {
+          fromId: 'pit-la',
+          toId: 'pit-dc',
+          y: 566,
+          label: 'Min 3.0m - 5.0m Separation (IS 3043:2018 / IEC 62305: d ≥ 2×L)'
+        },
+        {
+          fromId: 'pit-dc',
+          toId: 'pit-ac',
+          y: 566,
+          label: 'Min 3.0m Separation (Sphere of Influence Isolation)'
+        }
+      ]
+    },
+
+    // 4. WITHOUT SOLAR (HOME UPS)
+    'without-solar': {
+      viewBox: '0 0 1260 650',
+      title: 'WITHOUT SOLAR HOME UPS / INVERTER SYSTEM SCHEMATIC',
+      subtitle: 'Utility Grid Incomer + Main DB (MCB/RCCB) + Pure Sine Wave Inverter + Battery Bank + Isolated Consumer Earthing',
+      blocks: {
+        'grid-nosolar': {
+          type: 'box',
+          x: 60, y: 165, w: 130, h: 120,
+          title: 'EB Utility Grid',
+          subtitle: 'DISCOM 1-Phase LT',
+          badge: '230V AC 50Hz Supply',
+          badgeColor: '#6366f1',
+          icon: '🏭',
+          ports: {
+            out_L: { x: 130, y: 40 },
+            out_N: { x: 130, y: 65 }
+          }
+        },
+        'maindb-nosolar': {
+          type: 'box',
+          x: 255, y: 155, w: 165, h: 150,
+          title: 'Main Dist. Board',
+          subtitle: 'DP MCB + 30mA RCCB',
+          badge: 'Class C MCB + AC SPD',
+          badgeColor: '#dc2626',
+          icon: '⚡',
+          ports: {
+            in_L: { x: 0, y: 50 },
+            in_N: { x: 0, y: 75 },
+            out_L: { x: 165, y: 45 },
+            out_N: { x: 165, y: 70 },
+            out_PE: { x: 165, y: 95 },
+            earth_bus: { x: 82, y: 150 }
+          }
+        },
+        'ups-nosolar': {
+          type: 'box',
+          x: 485, y: 135, w: 205, h: 175,
+          title: 'Home UPS / Inverter',
+          subtitle: 'Pure Sine Wave Inverter',
+          badge: 'DSP Microcontroller Inverter',
+          badgeColor: '#3b82f6',
+          icon: '⚡',
+          hasInverterSymbol: true,
+          ports: {
+            in_ac_L: { x: 0, y: 45 },
+            in_ac_N: { x: 0, y: 70 },
+            in_ac_PE: { x: 0, y: 95 },
+            out_ac_L: { x: 205, y: 50 },
+            out_ac_N: { x: 205, y: 75 },
+            out_ac_PE: { x: 205, y: 100 },
+            batt_pos: { x: 65, y: 175 },
+            batt_neg: { x: 135, y: 175 },
+            chassis_gnd: { x: 100, y: 175 }
+          }
+        },
+        'batt-nosolar': {
+          type: 'box',
+          x: 485, y: 365, w: 205, h: 120,
+          title: 'Inverter Battery',
+          subtitle: 'Tall Tubular / LiFePO4',
+          badge: '12V/24V 150Ah-220Ah',
+          badgeColor: '#0d9488',
+          icon: '🔋',
+          hasBatteryCells: true,
+          ports: {
+            in_batt_pos: { x: 65, y: 0 },
+            in_batt_neg: { x: 135, y: 0 }
+          }
+        },
+        'loads-nosolar': {
+          type: 'box',
+          x: 760, y: 155, w: 165, h: 150,
+          title: 'Dedicated Loads',
+          subtitle: 'Essential Backup DB',
+          badge: 'LED, Fans, TV, Wi-Fi',
+          badgeColor: '#10b981',
+          icon: '💡',
+          ports: {
+            in_L: { x: 0, y: 45 },
+            in_N: { x: 0, y: 70 },
+            in_PE: { x: 0, y: 95 }
+          }
+        },
+        'pit-ac': {
+          type: 'earth-pit',
+          x: 585, y: 540, w: 105, h: 65,
+          name: 'AC Earth Pit',
+          tag: 'Pit 1 (Consumer Ground)',
+          code: 'R ≤ 5Ω | IS 3043:2018',
+          ports: {
+            top: { x: 0, y: -15 }
+          }
+        }
+      },
+      wires: [
+        {
+          id: 'wire-grid-maindb-L',
+          from: { blockId: 'grid-nosolar', port: 'out_L' },
+          to: { blockId: 'maindb-nosolar', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'direct',
+          label: 'Grid Phase (L)',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-grid-maindb-N',
+          from: { blockId: 'grid-nosolar', port: 'out_N' },
+          to: { blockId: 'maindb-nosolar', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct',
+          label: 'Grid Neutral (N)',
+          labelOffset: { dx: 0, dy: 16 }
+        },
+        {
+          id: 'wire-maindb-earth',
+          from: { blockId: 'maindb-nosolar', port: 'earth_bus' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'step-vh',
+          label: 'Main DB Earth Bus (10 sq.mm Cu)',
+          labelOffset: { dx: 20, dy: -8 }
+        },
+        {
+          id: 'wire-maindb-ups-L',
+          from: { blockId: 'maindb-nosolar', port: 'out_L' },
+          to: { blockId: 'ups-nosolar', port: 'in_ac_L' },
+          type: 'ac-phase',
+          routing: 'direct',
+          label: 'UPS Incomer Phase',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-maindb-ups-N',
+          from: { blockId: 'maindb-nosolar', port: 'out_N' },
+          to: { blockId: 'ups-nosolar', port: 'in_ac_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-maindb-ups-PE',
+          from: { blockId: 'maindb-nosolar', port: 'out_PE' },
+          to: { blockId: 'ups-nosolar', port: 'in_ac_PE' },
+          type: 'earth',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-ups-batt-pos',
+          from: { blockId: 'ups-nosolar', port: 'batt_pos' },
+          to: { blockId: 'batt-nosolar', port: 'in_batt_pos' },
+          type: 'dc-pos',
+          routing: 'direct',
+          label: 'Heavy DC (+) with Fuse',
+          labelOffset: { dx: -14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-ups-batt-neg',
+          from: { blockId: 'ups-nosolar', port: 'batt_neg' },
+          to: { blockId: 'batt-nosolar', port: 'in_batt_neg' },
+          type: 'dc-neg',
+          routing: 'direct',
+          label: 'Heavy DC (-)',
+          labelOffset: { dx: 14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-ups-chassis-gnd',
+          from: { blockId: 'ups-nosolar', port: 'chassis_gnd' },
+          to: { blockId: 'pit-ac', port: 'top' },
+          type: 'earth',
+          routing: 'direct',
+          label: 'Chassis Earth Pin',
+          labelOffset: { dx: 14, dy: 0 },
+          verticalLabel: true
+        },
+        {
+          id: 'wire-ups-loads-L',
+          from: { blockId: 'ups-nosolar', port: 'out_ac_L' },
+          to: { blockId: 'loads-nosolar', port: 'in_L' },
+          type: 'ac-phase',
+          routing: 'direct',
+          label: 'Inverter Output Phase',
+          labelOffset: { dx: 0, dy: -10 }
+        },
+        {
+          id: 'wire-ups-loads-N',
+          from: { blockId: 'ups-nosolar', port: 'out_ac_N' },
+          to: { blockId: 'loads-nosolar', port: 'in_N' },
+          type: 'ac-neutral',
+          routing: 'direct'
+        },
+        {
+          id: 'wire-ups-loads-PE',
+          from: { blockId: 'ups-nosolar', port: 'out_ac_PE' },
+          to: { blockId: 'loads-nosolar', port: 'in_PE' },
+          type: 'earth',
+          routing: 'direct'
+        }
+      ],
+      earthDimensions: []
+    }
+  };
+
+  /* =========================================================================
+     SVG SHARED DEFS (MARKERS, FILTERS, PATTERNS, GRADIENTS)
+     ========================================================================= */
   function getSharedDefs() {
     return `
       <defs>
         <!-- Arrowhead Markers -->
-        <marker id="arr-dc-pos" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <marker id="arr-dc-pos" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
           <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ef4444" />
         </marker>
-        <marker id="arr-dc-neg" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <marker id="arr-dc-neg" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
           <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#334155" />
         </marker>
-        <marker id="arr-ac-phase" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <marker id="arr-ac-phase" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
           <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626" />
         </marker>
-        <marker id="arr-ac-neutral" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <marker id="arr-ac-neutral" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
           <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284c7" />
         </marker>
-        <marker id="arr-earth" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <marker id="arr-earth" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
           <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a" />
         </marker>
-        <marker id="arr-bidi-start" viewBox="0 0 10 10" refX="3" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <marker id="arr-bidi-start" viewBox="0 0 10 10" refX="3" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
           <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#0284c7" />
         </marker>
-        <marker id="arr-bidi-end" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <marker id="arr-bidi-end" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
           <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284c7" />
+        </marker>
+
+        <!-- Dimension Line Markers (Earthing Distance) -->
+        <marker id="arr-dim-start" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+          <path d="M 8 2 L 2 5 L 8 8 z" fill="#10b981" />
+        </marker>
+        <marker id="arr-dim-end" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+          <path d="M 2 2 L 8 5 L 2 8 z" fill="#10b981" />
         </marker>
 
         <!-- Drop Shadows & Glow Filters -->
         <filter id="box-shadow" x="-5%" y="-5%" width="115%" height="115%">
-          <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.12" />
+          <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-opacity="0.14" />
         </filter>
         <filter id="box-shadow-dark" x="-5%" y="-5%" width="115%" height="115%">
-          <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.45" />
-        </filter>
-        <filter id="glow-line" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          <feDropShadow dx="0" dy="4" stdDeviation="4.5" flood-color="#000000" flood-opacity="0.55" />
         </filter>
 
         <!-- Striped Ground Wire Pattern (Green & Yellow) -->
@@ -395,44 +1707,15 @@
           <line x1="4" y1="0" x2="4" y2="8" stroke="#eab308" stroke-width="4" />
         </pattern>
 
-        <!-- Solar Cells Mesh Pattern -->
-        <pattern id="pv-cell-grid" width="16" height="24" patternUnits="userSpaceOnUse">
-          <rect width="16" height="24" fill="#0f172a" stroke="#38bdf8" stroke-width="0.75" />
-          <line x1="8" y1="0" x2="8" y2="24" stroke="#94a3b8" stroke-width="0.3" stroke-dasharray="2,2" />
+        <!-- Solar Cells Mesh Pattern (Higher Definition) -->
+        <pattern id="pv-cell-grid" width="14" height="20" patternUnits="userSpaceOnUse">
+          <rect width="14" height="20" fill="#0f172a" stroke="#38bdf8" stroke-width="0.75" />
+          <line x1="7" y1="0" x2="7" y2="20" stroke="#94a3b8" stroke-width="0.35" stroke-dasharray="1.5,1.5" />
         </pattern>
-
-        <!-- Component Box Gradients -->
-        <linearGradient id="grad-pv" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#0284c7" />
-          <stop offset="100%" stop-color="#0369a1" />
-        </linearGradient>
-        <linearGradient id="grad-box-dark" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#1e293b" />
-          <stop offset="100%" stop-color="#0f172a" />
-        </linearGradient>
-        <linearGradient id="grad-box-light" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#ffffff" />
-          <stop offset="100%" stop-color="#f8fafc" />
-        </linearGradient>
-        <linearGradient id="grad-inverter" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#3b82f6" />
-          <stop offset="100%" stop-color="#1d4ed8" />
-        </linearGradient>
-        <linearGradient id="grad-battery" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#0d9488" />
-          <stop offset="100%" stop-color="#0f766e" />
-        </linearGradient>
-        <linearGradient id="grad-pit" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#78350f" />
-          <stop offset="100%" stop-color="#451a03" />
-        </linearGradient>
       </defs>
     `;
   }
 
-  /**
-   * Helper to escape special XML characters (&, <, >, ", ') inside SVG text.
-   */
   function escapeXml(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -443,1517 +1726,623 @@
       .replace(/'/g, '&apos;');
   }
 
-  /**
-   * Helper to format an interactive SVG component box.
-   */
-  function makeBox({ id, x, y, w, h, title, subtitle, badge, badgeColor = '#3b82f6', isDark = true, icon = '' }) {
-    const bgFill = isDark ? '#111e38' : '#ffffff';
-    const borderStroke = isDark ? '#263b63' : '#cbd5e1';
-    const titleFill = isDark ? '#f8fafc' : '#0f172a';
-    const subFill = isDark ? '#94a3b8' : '#64748b';
-    const shadowFilter = isDark ? 'url(#box-shadow-dark)' : 'url(#box-shadow)';
-
-    const safeTitle = escapeXml(title);
-    const safeSub = escapeXml(subtitle);
-    const safeBadge = escapeXml(badge);
-
-    return `
-      <g class="sld-interactive-item" data-comp-id="${id}" cursor="pointer">
-        <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" ry="8" 
-          fill="${bgFill}" stroke="${borderStroke}" stroke-width="1.6" filter="${shadowFilter}" 
-          class="sld-box-rect" />
-        
-        <!-- Header Ribbon / Icon -->
-        <g transform="translate(${x + 10}, ${y + 14})">
-          <text x="0" y="0" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="${titleFill}">
-            ${icon} ${safeTitle}
-          </text>
-        </g>
-        
-        <!-- Subtitle / Type -->
-        <g transform="translate(${x + 10}, ${y + 30})">
-          <text x="0" y="0" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="${subFill}">
-            ${safeSub}
-          </text>
-        </g>
-        
-        <!-- Technical Badge -->
-        ${badge ? `
-          <rect x="${x + 10}" y="${y + h - 22}" width="${w - 20}" height="15" rx="3" fill="${badgeColor}" fill-opacity="0.15" stroke="${badgeColor}" stroke-width="0.8" />
-          <text x="${x + w / 2}" y="${y + h - 11}" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="${badgeColor}" text-anchor="middle">
-            ${safeBadge}
-          </text>
-        ` : ''}
-      </g>
-    `;
-  }
-
-  /**
-   * Helper to format an Earth Pit Symbol & Rod in the SVG.
-   */
-  function makeEarthPit({ id, x, y, name, tag, code, isDark = true }) {
-    const textFill = isDark ? '#f8fafc' : '#0f172a';
-    const subFill = isDark ? '#4ade80' : '#15803d';
-    const pitBg = isDark ? '#1a2234' : '#f1f5f9';
-    const border = isDark ? '#22c55e' : '#16a34a';
-
-    const safeName = escapeXml(name);
-    const safeTag = escapeXml(tag);
-    const safeCode = escapeXml(code);
-
-    return `
-      <g class="sld-interactive-item sld-earth-pit-item" data-comp-id="${id}" cursor="pointer" transform="translate(${x}, ${y})">
-        <!-- Earth Pit Enclosure Chamber -->
-        <rect x="-38" y="-12" width="76" height="52" rx="6" fill="${pitBg}" stroke="${border}" stroke-width="1.4" />
-        
-        <!-- Ground / Earthing Symbol (⏚) -->
-        <line x1="0" y1="-2" x2="0" y2="12" stroke="#16a34a" stroke-width="2.5" />
-        <line x1="-12" y1="12" x2="12" y2="12" stroke="#16a34a" stroke-width="2.5" />
-        <line x1="-8" y1="17" x2="8" y2="17" stroke="#16a34a" stroke-width="2" />
-        <line x1="-4" y1="22" x2="4" y2="22" stroke="#16a34a" stroke-width="1.5" />
-        
-        <!-- Earth Pit Labels -->
-        <text x="0" y="32" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="${textFill}" text-anchor="middle">${safeName}</text>
-        <text x="0" y="47" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="${subFill}" text-anchor="middle">${safeTag}</text>
-        <text x="0" y="58" font-family="system-ui, sans-serif" font-size="6.5" font-weight="500" fill="${isDark ? '#94a3b8' : '#64748b'}" text-anchor="middle">${safeCode}</text>
-      </g>
-    `;
-  }
-
-  /**
-   * Helper to format terminal connection pin dots (+, -, L, N, PE).
-   */
-  function makeTerminal(x, y, label, type = 'dc-pos') {
+  /* =========================================================================
+     BLOCK RENDERERS (LARGE, CRISP, HIGH-LEGIBILITY)
+     ========================================================================= */
+  function renderTerminalBadge(x, y, label, type) {
     let fill = '#ef4444';
-    let text = label;
     if (type === 'dc-neg') fill = '#1e293b';
     if (type === 'ac-phase') fill = '#dc2626';
     if (type === 'ac-neutral') fill = '#0284c7';
     if (type === 'earth') fill = '#16a34a';
 
     return `
-      <g transform="translate(${x}, ${y})">
-        <circle cx="0" cy="0" r="6" fill="${fill}" stroke="#ffffff" stroke-width="1.2" />
-        <text x="0" y="2.5" font-family="system-ui, sans-serif" font-size="6.5" font-weight="800" fill="#ffffff" text-anchor="middle">${text}</text>
+      <g transform="translate(${x}, ${y})" class="sld-terminal-node">
+        <circle cx="0" cy="0" r="6" fill="${fill}" stroke="#ffffff" stroke-width="1.3" />
+        <text x="0" y="3" font-family="system-ui, sans-serif" font-size="7.5" font-weight="900" fill="#ffffff" text-anchor="middle">${escapeXml(label)}</text>
+      </g>
+    `;
+  }
+
+  function renderBlockGraphic(blockId, block, isDark) {
+    const bgFill = isDark ? '#111e38' : '#ffffff';
+    const borderStroke = isDark ? '#2b4474' : '#cbd5e1';
+    const titleFill = isDark ? '#f8fafc' : '#0f172a';
+    const subFill = isDark ? '#94a3b8' : '#64748b';
+    const shadowFilter = isDark ? 'url(#box-shadow-dark)' : 'url(#box-shadow)';
+
+    // 1. Lightning Arrester
+    if (block.type === 'la') {
+      return `
+        <g class="sld-draggable-block sld-interactive-item" data-comp-id="${blockId}" cursor="grab">
+          <g transform="translate(${block.w / 2}, 0)">
+            <path d="M 0 0 L 0 38 M -10 38 L 10 38 M 0 0 L -8 14 M 0 0 L 8 14" stroke="#f59e0b" stroke-width="2.8" fill="none" />
+          </g>
+          <rect x="0" y="40" width="${block.w}" height="35" rx="5" fill="${isDark ? '#1e293b' : '#ffffff'}" stroke="#f59e0b" stroke-width="1.5" class="sld-box-rect" />
+          <text x="${block.w / 2}" y="54" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="${isDark ? '#f8fafc' : '#0f172a'}" text-anchor="middle">${escapeXml(block.title)}</text>
+          <text x="${block.w / 2}" y="66" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#f59e0b" text-anchor="middle">${escapeXml(block.subtitle)}</text>
+          ${renderTerminalBadge(block.ports.down_cond.x, block.ports.down_cond.y, '⏚', 'earth')}
+        </g>
+      `;
+    }
+
+    // 2. Earth Pit
+    if (block.type === 'earth-pit') {
+      const textFill = isDark ? '#f8fafc' : '#0f172a';
+      const subFill = isDark ? '#4ade80' : '#15803d';
+      const pitBg = isDark ? '#1a2234' : '#f1f5f9';
+      const border = isDark ? '#22c55e' : '#16a34a';
+
+      return `
+        <g class="sld-draggable-block sld-interactive-item sld-earth-pit-item" data-comp-id="${blockId}" cursor="grab">
+          <!-- Earth Pit Enclosure Chamber -->
+          <rect x="-45" y="-15" width="90" height="60" rx="8" fill="${pitBg}" stroke="${border}" stroke-width="1.6" class="sld-box-rect" />
+          
+          <!-- Ground Earthing Symbol (⏚) -->
+          <line x1="0" y1="-4" x2="0" y2="14" stroke="#16a34a" stroke-width="2.8" />
+          <line x1="-14" y1="14" x2="14" y2="14" stroke="#16a34a" stroke-width="2.8" />
+          <line x1="-9" y1="19" x2="9" y2="19" stroke="#16a34a" stroke-width="2.2" />
+          <line x1="-4" y1="24" x2="4" y2="24" stroke="#16a34a" stroke-width="1.8" />
+          
+          <!-- Labels (Large, bold, high-contrast) -->
+          <text x="0" y="37" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="${textFill}" text-anchor="middle">${escapeXml(block.name)}</text>
+          <text x="0" y="50" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="${subFill}" text-anchor="middle">${escapeXml(block.tag)}</text>
+          <text x="0" y="63" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#64748b'}" text-anchor="middle">${escapeXml(block.code)}</text>
+          ${renderTerminalBadge(0, -15, '⏚', 'earth')}
+        </g>
+      `;
+    }
+
+    // 3. Solar PV Array with Series String Daisy-Chain Graphic
+    if (block.type === 'pv-array') {
+      return `
+        <g class="sld-draggable-block sld-interactive-item" data-comp-id="${blockId}" cursor="grab">
+          <rect x="0" y="0" width="${block.w}" height="${block.h}" rx="9" ry="9" 
+            fill="${bgFill}" stroke="${borderStroke}" stroke-width="1.8" filter="${shadowFilter}" class="sld-box-rect" />
+          
+          <!-- Header -->
+          <text x="12" y="19" font-family="system-ui, sans-serif" font-size="12.5" font-weight="800" fill="${titleFill}">
+            ${block.icon} ${escapeXml(block.title)}
+          </text>
+          <text x="12" y="33" font-family="system-ui, sans-serif" font-size="9.5" font-weight="600" fill="${subFill}">
+            ${escapeXml(block.subtitle)}
+          </text>
+
+          <!-- Series Daisy-Chain Internal Solar Modules Diagram -->
+          <g transform="translate(12, 42)">
+            <!-- Module 1 -->
+            <rect x="0" y="0" width="48" height="32" rx="3" fill="url(#pv-cell-grid)" stroke="#38bdf8" stroke-width="1" />
+            <text x="24" y="20" font-family="sans-serif" font-size="8" font-weight="800" fill="#ffffff" text-anchor="middle">Mod 1</text>
+            <circle cx="4" cy="16" r="3" fill="#ef4444" />
+            <circle cx="44" cy="16" r="3" fill="#334155" />
+
+            <!-- Series Daisy Chain Loop 1->2 -->
+            <path d="M 44 16 C 56 16, 56 16, 64 16" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,1.5" fill="none" />
+
+            <!-- Module 2 -->
+            <rect x="64" y="0" width="48" height="32" rx="3" fill="url(#pv-cell-grid)" stroke="#38bdf8" stroke-width="1" />
+            <text x="88" y="20" font-family="sans-serif" font-size="8" font-weight="800" fill="#ffffff" text-anchor="middle">Mod 2</text>
+            <circle cx="68" cy="16" r="3" fill="#ef4444" />
+            <circle cx="108" cy="16" r="3" fill="#334155" />
+
+            <!-- Series Daisy Chain Loop 2->3 -->
+            <path d="M 108 16 C 120 16, 120 16, 128 16" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="3,1.5" fill="none" />
+
+            <!-- Module 3 -->
+            <rect x="128" y="0" width="48" height="32" rx="3" fill="url(#pv-cell-grid)" stroke="#38bdf8" stroke-width="1" />
+            <text x="152" y="20" font-family="sans-serif" font-size="8" font-weight="800" fill="#ffffff" text-anchor="middle">Mod 3</text>
+            <circle cx="132" cy="16" r="3" fill="#ef4444" />
+            <circle cx="172" cy="16" r="3" fill="#334155" />
+          </g>
+
+          <!-- String Interconnection Explanation -->
+          <text x="${block.w / 2}" y="92" font-family="system-ui, sans-serif" font-size="8" font-weight="800" fill="#38bdf8" text-anchor="middle">
+            Series String: (+) to (-) Daisy-Chain (Sum Voc)
+          </text>
+          <text x="${block.w / 2}" y="105" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="${isDark ? '#cbd5e1' : '#475569'}" text-anchor="middle">
+            Weatherproof MC4 Locking Terminations
+          </text>
+
+          <!-- Technical Badge -->
+          <rect x="12" y="${block.h - 26}" width="${block.w - 24}" height="18" rx="4" fill="${block.badgeColor}" fill-opacity="0.18" stroke="${block.badgeColor}" stroke-width="1" />
+          <text x="${block.w / 2}" y="${block.h - 13}" font-family="system-ui, sans-serif" font-size="9.5" font-weight="800" fill="${block.badgeColor}" text-anchor="middle">
+            ${escapeXml(block.badge)}
+          </text>
+
+          <!-- Terminals -->
+          ${renderTerminalBadge(block.ports.out_pos.x, block.ports.out_pos.y, '+', 'dc-pos')}
+          ${renderTerminalBadge(block.ports.out_neg.x, block.ports.out_neg.y, '-', 'dc-neg')}
+          ${renderTerminalBadge(block.ports.frame_gnd.x, block.ports.frame_gnd.y, '⏚', 'earth')}
+        </g>
+      `;
+    }
+
+    // 4. Standard Component Box with Terminals and Custom Internal Graphics
+    let internalGraphics = '';
+
+    if (block.hasInverterSymbol) {
+      internalGraphics = `
+        <g transform="translate(${block.w / 2}, 78)">
+          <circle cx="0" cy="0" r="16" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#3b82f6" stroke-width="1.5" />
+          <text x="-9" y="-2" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="#ef4444">=</text>
+          <text x="2" y="5" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#3b82f6">∿</text>
+        </g>
+      `;
+    } else if (block.hasNetMeterLcd) {
+      internalGraphics = `
+        <g transform="translate(16, 75)">
+          <rect x="0" y="0" width="${block.w - 32}" height="24" rx="4" fill="${isDark ? '#022c22' : '#dcfce7'}" stroke="#10b981" stroke-width="1" />
+          <text x="${(block.w - 32) / 2}" y="16" font-family="monospace" font-size="10" font-weight="800" fill="#10b981" text-anchor="middle">
+            ⮂ 004820 kWh
+          </text>
+        </g>
+      `;
+    } else if (block.hasBatteryCells) {
+      internalGraphics = `
+        <g transform="translate(18, 52)">
+          <rect x="0" y="0" width="36" height="24" rx="3" fill="${isDark ? '#1e293b' : '#f1f5f9'}" stroke="#0d9488" stroke-width="1" />
+          <rect x="44" y="0" width="36" height="24" rx="3" fill="${isDark ? '#1e293b' : '#f1f5f9'}" stroke="#0d9488" stroke-width="1" />
+          <rect x="88" y="0" width="36" height="24" rx="3" fill="${isDark ? '#1e293b' : '#f1f5f9'}" stroke="#0d9488" stroke-width="1" />
+          <rect x="132" y="0" width="36" height="24" rx="3" fill="${isDark ? '#1e293b' : '#f1f5f9'}" stroke="#0d9488" stroke-width="1" />
+          <text x="84" y="16" font-family="sans-serif" font-size="8.5" font-weight="800" fill="#0d9488" text-anchor="middle">CELL STACK</text>
+        </g>
+      `;
+    } else if (block.hasPcuDiagram) {
+      internalGraphics = `
+        <g transform="translate(18, 56)">
+          <rect x="0" y="0" width="78" height="28" rx="4" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#38bdf8" stroke-width="1.2" />
+          <text x="39" y="18" font-family="system-ui, sans-serif" font-size="8.5" font-weight="800" fill="#38bdf8" text-anchor="middle">MPPT CC</text>
+
+          <rect x="91" y="0" width="78" height="28" rx="4" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#3b82f6" stroke-width="1.2" />
+          <text x="130" y="18" font-family="system-ui, sans-serif" font-size="8.5" font-weight="800" fill="#3b82f6" text-anchor="middle">INVERTER</text>
+        </g>
+      `;
+    }
+
+    // Terminals markup
+    let terminalsMarkup = '';
+    if (block.ports) {
+      Object.entries(block.ports).forEach(([portName, port]) => {
+        let label = '+';
+        let type = 'dc-pos';
+        if (portName.includes('neg')) { label = '-'; type = 'dc-neg'; }
+        else if (portName.includes('_L')) { label = 'L'; type = 'ac-phase'; }
+        else if (portName.includes('_N')) { label = 'N'; type = 'ac-neutral'; }
+        else if (portName.includes('_PE') || portName.includes('gnd') || portName.includes('earth')) { label = '⏚'; type = 'earth'; }
+        terminalsMarkup += renderTerminalBadge(port.x, port.y, label, type);
+      });
+    }
+
+    return `
+      <g class="sld-draggable-block sld-interactive-item" data-comp-id="${blockId}" cursor="grab">
+        <rect x="0" y="0" width="${block.w}" height="${block.h}" rx="9" ry="9" 
+          fill="${bgFill}" stroke="${borderStroke}" stroke-width="1.8" filter="${shadowFilter}" class="sld-box-rect" />
+        
+        <text x="12" y="19" font-family="system-ui, sans-serif" font-size="12.5" font-weight="800" fill="${titleFill}">
+          ${block.icon || ''} ${escapeXml(block.title)}
+        </text>
+        
+        <text x="12" y="33" font-family="system-ui, sans-serif" font-size="9.5" font-weight="600" fill="${subFill}">
+          ${escapeXml(block.subtitle)}
+        </text>
+
+        ${internalGraphics}
+
+        ${block.badge ? `
+          <rect x="12" y="${block.h - 26}" width="${block.w - 24}" height="18" rx="4" fill="${block.badgeColor || '#3b82f6'}" fill-opacity="0.18" stroke="${block.badgeColor || '#3b82f6'}" stroke-width="1" />
+          <text x="${block.w / 2}" y="${block.h - 13}" font-family="system-ui, sans-serif" font-size="9.5" font-weight="800" fill="${block.badgeColor || '#3b82f6'}" text-anchor="middle">
+            ${escapeXml(block.badge)}
+          </text>
+        ` : ''}
+
+        ${terminalsMarkup}
       </g>
     `;
   }
 
   /* =========================================================================
-     1. ON-GRID SOLAR SYSTEM (Grid-Tied / GTI)
+     DYNAMIC WIRE COMPUTATION (WITH CAD JUMPER BRIDGE ARCS)
      ========================================================================= */
-  function getOnGridSvg(isDark) {
-    const bgFill = isDark ? '#0b1329' : '#f8fafc';
-    const conductorText = isDark ? '#94a3b8' : '#475569';
+  function computeWireData(wire, sysConfig, positions) {
+    const fromBlock = sysConfig.blocks[wire.from.blockId];
+    const toBlock = sysConfig.blocks[wire.to.blockId];
+    if (!fromBlock || !toBlock) return null;
 
-    return `
-      <svg viewBox="0 0 1020 540" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-        ${getSharedDefs()}
-        <rect width="1020" height="540" fill="${bgFill}" />
+    const fromPos = positions[wire.from.blockId] || { dx: 0, dy: 0 };
+    const toPos = positions[wire.to.blockId] || { dx: 0, dy: 0 };
 
-        <!-- Engineering Grid Watermark (Light dashed grid) -->
-        <g opacity="${isDark ? '0.07' : '0.04'}" stroke="#38bdf8" stroke-width="1">
-          <line x1="0" y1="130" x2="1020" y2="130" stroke-dasharray="4,4" />
-          <line x1="0" y1="230" x2="1020" y2="230" stroke-dasharray="4,4" />
-          <line x1="0" y1="360" x2="1020" y2="360" stroke-dasharray="4,4" />
-          <line x1="220" y1="0" x2="220" y2="540" stroke-dasharray="4,4" />
-          <line x1="420" y1="0" x2="420" y2="540" stroke-dasharray="4,4" />
-          <line x1="620" y1="0" x2="620" y2="540" stroke-dasharray="4,4" />
-          <line x1="820" y1="0" x2="820" y2="540" stroke-dasharray="4,4" />
-        </g>
+    const fromPort = fromBlock.ports[wire.from.port] || { x: 0, y: 0 };
+    const toPort = toBlock.ports[wire.to.port] || { x: 0, y: 0 };
 
-        <!-- Title Banner -->
-        <g transform="translate(30, 28)">
-          <text font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="${isDark ? '#38bdf8' : '#0284c7'}">
-            ON-GRID SOLAR PV SYSTEM SCHEMATIC (SINGLE LINE DIAGRAM)
-          </text>
-          <text y="14" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="${isDark ? '#64748b' : '#94a3b8'}">
-            Standard: IEC 62548 / IS 3043 | Tri-Earth Pit System | Bi-Directional Net-Metered Injection
-          </text>
-        </g>
+    const x1 = fromBlock.x + fromPos.dx + fromPort.x;
+    const y1 = fromBlock.y + fromPos.dy + fromPort.y;
+    const x2 = toBlock.x + toPos.dx + toPort.x;
+    const y2 = toBlock.y + toPos.dy + toPort.y;
 
-        <!-- 1. LIGHTNING ARRESTER (ROOFTOP) -->
-        <g class="sld-interactive-item" data-comp-id="la-ongrid" cursor="pointer" transform="translate(70, 55)">
-          <path d="M 0 0 L 0 35 M -8 35 L 8 35 M 0 0 L -6 12 M 0 0 L 6 12" stroke="#f59e0b" stroke-width="2.5" fill="none" />
-          <rect x="-35" y="38" width="70" height="28" rx="4" fill="${isDark ? '#1e293b' : '#ffffff'}" stroke="#f59e0b" stroke-width="1.2" />
-          <text x="0" y="49" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="${isDark ? '#f8fafc' : '#0f172a'}" text-anchor="middle">⚡ Rooftop LA</text>
-          <text x="0" y="60" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#f59e0b" text-anchor="middle">ESE / Franklin</text>
-        </g>
+    let pathD = '';
+    let lblX = (x1 + x2) / 2;
+    let lblY = (y1 + y2) / 2;
 
-        <!-- Conductor: LA down to Pit 1 (Striped Yellow/Green copper tape) -->
-        <path d="M 70 120 L 70 425" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-earth)" />
-        <text x="75" y="270" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#f59e0b" transform="rotate(-90 75 270)">
-          25x3 mm Solid Cu / GI Down Conductor
-        </text>
+    if (wire.routing === 'direct') {
+      pathD = `M ${x1} ${y1} L ${x2} ${y2}`;
+    } else if (wire.routing === 'step-vh') {
+      pathD = `M ${x1} ${y1} L ${x1} ${y2} L ${x2} ${y2}`;
+      lblX = x1;
+      lblY = (y1 + y2) / 2;
+    } else if (wire.routing === 'step-hv') {
+      pathD = `M ${x1} ${y1} L ${x2} ${y1} L ${x2} ${y2}`;
+      lblX = (x1 + x2) / 2;
+      lblY = y1;
+    } else if (wire.routing === 'step-hvh') {
+      const midX = (x1 + x2) / 2;
+      pathD = `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
+      lblX = midX;
+      lblY = (y1 + y2) / 2;
+    }
 
-        <!-- 2. SOLAR PV ARRAY -->
-        ${makeBox({
-          id: 'pv-ongrid',
-          x: 40,
-          y: 130,
-          w: 135,
-          h: 110,
-          title: 'Solar PV Array',
-          subtitle: 'Mono PERC / TOPCon',
-          badge: 'Voc: ~580V DC | 13.5A',
-          badgeColor: '#0284c7',
-          isDark,
-          icon: '☀️'
-        })}
-        <!-- Internal Panel Cell Graphic -->
-        <g transform="translate(50, 172)">
-          <rect x="0" y="0" width="115" height="18" fill="url(#pv-cell-grid)" rx="2" />
-        </g>
+    if (wire.labelOffset) {
+      lblX += wire.labelOffset.dx;
+      lblY += wire.labelOffset.dy;
+    }
 
-        <!-- Terminals on PV Array -->
-        ${makeTerminal(175, 155, '+', 'dc-pos')}
-        ${makeTerminal(175, 175, '-', 'dc-neg')}
+    return { pathD, lblX, lblY };
+  }
 
-        <!-- Structure Earthing Line from PV Frame to DC Earth Pit -->
-        <path d="M 105 240 L 105 380 L 255 380 L 255 425" stroke="#16a34a" stroke-width="2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="145" y="374" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a">
-          Structure Ground (10 sq.mm Cu)
-        </text>
+  function getWireStyleAttributes(type, isDark) {
+    if (type === 'dc-pos') {
+      return 'stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#arr-dc-pos)"';
+    } else if (type === 'dc-neg') {
+      const col = isDark ? '#475569' : '#1e293b';
+      return `stroke="${col}" stroke-width="3" fill="none" marker-end="url(#arr-dc-neg)"`;
+    } else if (type === 'ac-phase') {
+      return 'stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)"';
+    } else if (type === 'ac-neutral') {
+      return 'stroke="#0284c7" stroke-width="2.5" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)"';
+    } else if (type === 'earth') {
+      return 'stroke="#16a34a" stroke-width="2.5" fill="none" marker-end="url(#arr-earth)"';
+    } else if (type === 'la-down') {
+      return 'stroke="#f59e0b" stroke-width="2.6" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-earth)"';
+    } else if (type === 'bidi-phase') {
+      return 'stroke="#0284c7" stroke-width="3.2" fill="none" marker-start="url(#arr-bidi-start)" marker-end="url(#arr-bidi-end)"';
+    }
+    return 'stroke="#38bdf8" stroke-width="2.2" fill="none"';
+  }
 
-        <!-- DC Cables from PV Array to DCDB -->
-        <!-- DC Positive (+) -->
-        <path d="M 175 155 L 225 155" stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#arr-dc-pos)" />
-        <!-- DC Negative (-) -->
-        <path d="M 175 175 L 225 175" stroke="#1e293b" stroke-width="3" fill="none" marker-end="url(#arr-dc-neg)" />
-        <text x="180" y="148" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#ef4444">DC (+)</text>
-        <text x="180" y="190" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="${isDark ? '#94a3b8' : '#334155'}">DC (-)</text>
-
-        <!-- 3. DC DISTRIBUTION BOX (DCDB) -->
-        ${makeBox({
-          id: 'dcdb-ongrid',
-          x: 225,
-          y: 130,
-          w: 125,
-          h: 110,
-          title: 'DCDB Box',
-          subtitle: 'Isolator + gPV + SPD',
-          badge: 'Type II DC SPD 1000V',
-          badgeColor: '#ef4444',
-          isDark,
-          icon: '🛡️'
-        })}
-        <!-- Terminals on DCDB -->
-        ${makeTerminal(225, 155, '+', 'dc-pos')}
-        ${makeTerminal(225, 175, '-', 'dc-neg')}
-        ${makeTerminal(350, 155, '+', 'dc-pos')}
-        ${makeTerminal(350, 175, '-', 'dc-neg')}
-
-        <!-- SPD Ground Conductor from DCDB to DC Earth Pit -->
-        <path d="M 285 240 L 285 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="290" y="320" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a" transform="rotate(-90 290 320)">
-          DC SPD Earth (6 sq.mm)
-        </text>
-
-        <!-- DC Cables from DCDB to GTI Inverter -->
-        <path d="M 350 155 L 415 155" stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 350 175 L 415 175" stroke="#1e293b" stroke-width="3" fill="none" marker-end="url(#arr-dc-neg)" />
-        <text x="362" y="148" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#ef4444">4/6 sq.mm</text>
-
-        <!-- 4. GRID-TIED INVERTER (GTI) -->
-        ${makeBox({
-          id: 'gti-ongrid',
-          x: 415,
-          y: 120,
-          w: 145,
-          h: 130,
-          title: 'Grid-Tied Inverter',
-          subtitle: 'Pure Sine Wave GTI',
-          badge: '230V / 415V 50Hz | η>98%',
-          badgeColor: '#3b82f6',
-          isDark,
-          icon: '⚡'
-        })}
-        <!-- Inverter Conversion Symbol: DC = -> AC ~ -->
-        <g transform="translate(487, 168)">
-          <circle cx="0" cy="0" r="14" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#3b82f6" stroke-width="1.2" />
-          <text x="-8" y="-2" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#ef4444">=</text>
-          <text x="2" y="4" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3b82f6">∿</text>
-        </g>
-        <!-- Inverter Terminals -->
-        ${makeTerminal(415, 155, '+', 'dc-pos')}
-        ${makeTerminal(415, 175, '-', 'dc-neg')}
-        ${makeTerminal(560, 150, 'L', 'ac-phase')}
-        ${makeTerminal(560, 170, 'N', 'ac-neutral')}
-        ${makeTerminal(560, 190, '⏚', 'earth')}
-
-        <!-- Inverter Dual Chassis Ground to AC Earth Pit -->
-        <path d="M 487 250 L 487 390 L 590 390 L 590 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="500" y="384" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a">
-          Double Inverter Body Ground (10 sq.mm)
-        </text>
-
-        <!-- AC Output from GTI to ACDB -->
-        <!-- AC Phase (L) -->
-        <path d="M 560 150 L 620 150" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <!-- AC Neutral (N) -->
-        <path d="M 560 170 L 620 170" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-        <!-- AC Earth (PE) -->
-        <path d="M 560 190 L 620 190" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="568" y="142" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#dc2626">L (Phase)</text>
-        <text x="568" y="165" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#0284c7">N (Neutral)</text>
-
-        <!-- 5. AC DISTRIBUTION BOX (ACDB) -->
-        ${makeBox({
-          id: 'acdb-ongrid',
-          x: 620,
-          y: 125,
-          w: 120,
-          h: 120,
-          title: 'ACDB Box',
-          subtitle: 'AC MCB + AC SPD',
-          badge: 'Class C MCB | 320V SPD',
-          badgeColor: '#dc2626',
-          isDark,
-          icon: '⚡'
-        })}
-        <!-- Terminals on ACDB -->
-        ${makeTerminal(620, 150, 'L', 'ac-phase')}
-        ${makeTerminal(620, 170, 'N', 'ac-neutral')}
-        ${makeTerminal(620, 190, '⏚', 'earth')}
-        ${makeTerminal(740, 150, 'L', 'ac-phase')}
-        ${makeTerminal(740, 170, 'N', 'ac-neutral')}
-
-        <!-- ACDB SPD Earth to AC Earth Pit -->
-        <path d="M 680 245 L 680 390 L 615 390 L 615 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="685" y="320" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a" transform="rotate(-90 685 320)">
-          ACDB SPD Earth (6 sq.mm)
-        </text>
-
-        <!-- Bi-Directional Line between ACDB and Net Meter -->
-        <path d="M 740 150 L 795 150" stroke="#0284c7" stroke-width="3" fill="none" marker-start="url(#arr-bidi-start)" marker-end="url(#arr-bidi-end)" />
-        <path d="M 740 170 L 795 170" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" />
-        <text x="745" y="142" font-family="system-ui, sans-serif" font-size="7" font-weight="800" fill="#0284c7">
-          Bi-Dir Flow ⮂
-        </text>
-
-        <!-- 6. BI-DIRECTIONAL NET METER -->
-        ${makeBox({
-          id: 'netmeter-ongrid',
-          x: 795,
-          y: 125,
-          w: 110,
-          h: 120,
-          title: 'Net Meter',
-          subtitle: 'Dual / Bi-Directional',
-          badge: 'Import / Export kWh',
-          badgeColor: '#0284c7',
-          isDark,
-          icon: '🔄'
-        })}
-        <!-- LCD Display Graphic -->
-        <rect x="815" y="165" width="70" height="20" rx="3" fill="${isDark ? '#022c22' : '#dcfce7'}" stroke="#10b981" stroke-width="0.8" />
-        <text x="850" y="178" font-family="monospace" font-size="8" font-weight="700" fill="#10b981" text-anchor="middle">
-          ⮂ 004820 kWh
-        </text>
-        ${makeTerminal(795, 150, 'L', 'ac-phase')}
-        ${makeTerminal(795, 170, 'N', 'ac-neutral')}
-        ${makeTerminal(905, 150, 'L', 'ac-phase')}
-        ${makeTerminal(905, 170, 'N', 'ac-neutral')}
-
-        <!-- Junction Split between Utility Grid and Home Loads -->
-        <circle cx="940" cy="150" r="4" fill="#dc2626" />
-        <circle cx="940" cy="170" r="3.5" fill="#0284c7" />
-        <path d="M 905 150 L 940 150" stroke="#dc2626" stroke-width="2.8" fill="none" />
-        <path d="M 905 170 L 940 170" stroke="#0284c7" stroke-width="2.2" stroke-dasharray="6,3" fill="none" />
-
-        <!-- Line Upwards to Utility Grid -->
-        <path d="M 940 150 L 940 70 L 950 70" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 945 170 L 945 85 L 950 85" stroke="#0284c7" stroke-width="2" stroke-dasharray="6,3" fill="none" />
-
-        <!-- Line Downwards to Home Loads -->
-        <path d="M 940 150 L 940 240 L 950 240" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 945 170 L 945 255 L 950 255" stroke="#0284c7" stroke-width="2" stroke-dasharray="6,3" fill="none" />
-
-        <!-- 7. UTILITY EB GRID -->
-        ${makeBox({
-          id: 'grid-ongrid',
-          x: 935,
-          y: 40,
-          w: 75,
-          h: 75,
-          title: 'EB Grid',
-          subtitle: 'DISCOM LT Line',
-          badge: '230V/415V',
-          badgeColor: '#6366f1',
-          isDark,
-          icon: '🏭'
-        })}
-
-        <!-- 8. HOME LT DISTRIBUTION & LOADS -->
-        ${makeBox({
-          id: 'loads-ongrid',
-          x: 935,
-          y: 215,
-          w: 75,
-          h: 85,
-          title: 'Home Load',
-          subtitle: 'LT Sub-Board',
-          badge: 'Lights, AC, TV',
-          badgeColor: '#10b981',
-          isDark,
-          icon: '🏠'
-        })}
-
-        <!-- =========================================================================
-             EARTHING & GROUNDING PITS SECTION (STRICTLY ISOLATED TRIPLE PITS)
-             ========================================================================= -->
-        <!-- Ground Line Reference Banner -->
-        <line x1="30" y1="425" x2="990" y2="425" stroke="${isDark ? '#334155' : '#cbd5e1'}" stroke-width="1.5" stroke-dasharray="4,4" />
-        <text x="35" y="420" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="${isDark ? '#64748b' : '#94a3b8'}">
-          GROUND LEVEL (TERRESTRIAL SOIL HORIZON) ─────────────────────────────────────────────────────────────────
-        </text>
-
-        <!-- PIT 1: Dedicated LA Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-la',
-          x: 70,
-          y: 440,
-          name: 'LA Earth Pit',
-          tag: 'Pit 1 (LA Only)',
-          code: 'R ≤ 5Ω | IEC 62305',
-          isDark
-        })}
-
-        <!-- PIT 2: Dedicated DC Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-dc',
-          x: 270,
-          y: 440,
-          name: 'DC Earth Pit',
-          tag: 'Pit 2 (DC Array & SPD)',
-          code: 'R ≤ 5Ω | IEC 62548',
-          isDark
-        })}
-
-        <!-- PIT 3: Dedicated AC Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-ac',
-          x: 600,
-          y: 440,
-          name: 'AC Earth Pit',
-          tag: 'Pit 3 (Inverter & ACDB)',
-          code: 'R ≤ 5Ω | IS 3043',
-          isDark
-        })}
-
-        <!-- Earthing Legend Annotation Box -->
-        <g transform="translate(730, 435)">
-          <rect width="260" height="75" rx="6" fill="${isDark ? '#111e38' : '#ffffff'}" stroke="${isDark ? '#263b63' : '#e2e8f0'}" stroke-width="1.2" />
-          <text x="12" y="18" font-family="system-ui, sans-serif" font-size="8" font-weight="800" fill="${isDark ? '#f8fafc' : '#0f172a'}">
-            EARTHING CODING STANDARDS:
-          </text>
-          <circle cx="18" cy="32" r="4" fill="#f59e0b" />
-          <text x="28" y="35" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">
-            LA Pit: Dedicated to Rooftop Lightning Protection
-          </text>
-          <circle cx="18" cy="48" r="4" fill="#16a34a" />
-          <text x="28" y="51" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">
-            DC Pit: Module Structure + DCDB SPD Ground
-          </text>
-          <circle cx="18" cy="64" r="4" fill="#3b82f6" />
-          <text x="28" y="67" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">
-            AC Pit: Inverter Chassis + ACDB SPD + Grid Ground
-          </text>
-        </g>
-      </svg>
-    `;
+  function getWireLabelColor(type, isDark) {
+    if (type === 'dc-pos') return '#ef4444';
+    if (type === 'dc-neg') return isDark ? '#94a3b8' : '#334155';
+    if (type === 'ac-phase') return '#dc2626';
+    if (type === 'ac-neutral') return '#0284c7';
+    if (type === 'earth') return '#16a34a';
+    if (type === 'la-down') return '#f59e0b';
+    if (type === 'bidi-phase') return '#0284c7';
+    return isDark ? '#94a3b8' : '#475569';
   }
 
   /* =========================================================================
-     2. OFF-GRID SOLAR SYSTEM (Standalone PCU)
+     SVG DIAGRAM GENERATION
      ========================================================================= */
-  function getOffGridSvg(isDark) {
-    const bgFill = isDark ? '#0b1329' : '#f8fafc';
-
-    return `
-      <svg viewBox="0 0 1020 540" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-        ${getSharedDefs()}
-        <rect width="1020" height="540" fill="${bgFill}" />
-
-        <!-- Title Banner -->
-        <g transform="translate(30, 28)">
-          <text font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="${isDark ? '#38bdf8' : '#0284c7'}">
-            OFF-GRID SOLAR PV SYSTEM SCHEMATIC (STANDALONE PCU & BATTERY)
-          </text>
-          <text y="14" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="${isDark ? '#64748b' : '#94a3b8'}">
-            Integrated MPPT Charger + Pure Sine Wave Inverter + Deep Cycle Battery Bank + Isolated Neutral
-          </text>
-        </g>
-
-        <!-- 1. SOLAR PV ARRAY -->
-        ${makeBox({
-          id: 'pv-offgrid',
-          x: 40,
-          y: 90,
-          w: 135,
-          h: 110,
-          title: 'Solar PV Array',
-          subtitle: 'Series / Parallel Strings',
-          badge: 'String Voc: 140V-200V DC',
-          badgeColor: '#0284c7',
-          isDark,
-          icon: '☀️'
-        })}
-        <!-- Internal Panel Cell Graphic -->
-        <g transform="translate(50, 132)">
-          <rect x="0" y="0" width="115" height="18" fill="url(#pv-cell-grid)" rx="2" />
-        </g>
-        ${makeTerminal(175, 115, '+', 'dc-pos')}
-        ${makeTerminal(175, 135, '-', 'dc-neg')}
-
-        <!-- Module Structure Earthing to DC Pit -->
-        <path d="M 105 200 L 105 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="110" y="320" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a" transform="rotate(-90 110 320)">
-          PV Frame Ground (10 sq.mm Cu)
-        </text>
-
-        <!-- DC Cables from Array to DCDB -->
-        <path d="M 175 115 L 225 115" stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 175 135 L 225 135" stroke="#1e293b" stroke-width="3" fill="none" marker-end="url(#arr-dc-neg)" />
-        <text x="182" y="108" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#ef4444">DC (+)</text>
-        <text x="182" y="150" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="${isDark ? '#94a3b8' : '#334155'}">DC (-)</text>
-
-        <!-- 2. DCDB BOX -->
-        ${makeBox({
-          id: 'dcdb-offgrid',
-          x: 225,
-          y: 90,
-          w: 120,
-          h: 110,
-          title: 'DCDB Box',
-          subtitle: 'Fuse + DC SPD',
-          badge: 'gPV Fuse + DC SPD',
-          badgeColor: '#ef4444',
-          isDark,
-          icon: '🛡️'
-        })}
-        ${makeTerminal(225, 115, '+', 'dc-pos')}
-        ${makeTerminal(225, 135, '-', 'dc-neg')}
-        ${makeTerminal(345, 115, '+', 'dc-pos')}
-        ${makeTerminal(345, 135, '-', 'dc-neg')}
-
-        <!-- DCDB SPD Earth to DC Earth Pit -->
-        <path d="M 285 200 L 285 360 L 115 360 L 115 425" stroke="#16a34a" stroke-width="2" fill="none" />
-        <text x="290" y="270" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a" transform="rotate(-90 290 270)">
-          DC SPD Earth (6 sq.mm)
-        </text>
-
-        <!-- DC Cables from DCDB to Solar PCU -->
-        <path d="M 345 115 L 420 115" stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 345 135 L 420 135" stroke="#1e293b" stroke-width="3" fill="none" marker-end="url(#arr-dc-neg)" />
-        <text x="358" y="108" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#ef4444">PV Input</text>
-
-        <!-- 3. OFF-GRID SOLAR PCU (Central Unit) -->
-        ${makeBox({
-          id: 'pcu-offgrid',
-          x: 420,
-          y: 75,
-          w: 175,
-          h: 170,
-          title: 'Off-Grid Solar PCU',
-          subtitle: 'MPPT Charger + Inverter',
-          badge: 'Solar > Battery > Grid',
-          badgeColor: '#3b82f6',
-          isDark,
-          icon: '⚡'
-        })}
-        <!-- Internal Architecture Diagram inside PCU -->
-        <g transform="translate(435, 125)">
-          <rect x="0" y="0" width="60" height="26" rx="3" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#38bdf8" stroke-width="1" />
-          <text x="30" y="16" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#38bdf8" text-anchor="middle">MPPT CC</text>
-
-          <rect x="85" y="0" width="60" height="26" rx="3" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#3b82f6" stroke-width="1" />
-          <text x="115" y="16" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#3b82f6" text-anchor="middle">Inverter ∿</text>
-
-          <path d="M 60 13 L 85 13" stroke="#eab308" stroke-width="1.8" marker-end="url(#arr-ac-phase)" />
-        </g>
-
-        <!-- PCU Terminals -->
-        ${makeTerminal(420, 115, '+', 'dc-pos')}
-        ${makeTerminal(420, 135, '-', 'dc-neg')}
-        ${makeTerminal(470, 245, '+', 'dc-pos')}
-        ${makeTerminal(530, 245, '-', 'dc-neg')}
-        ${makeTerminal(595, 115, 'L', 'ac-phase')}
-        ${makeTerminal(595, 135, 'N', 'ac-neutral')}
-        ${makeTerminal(595, 155, '⏚', 'earth')}
-
-        <!-- PCU Metal Chassis Double Earth to AC Earth Pit -->
-        <path d="M 505 245 L 505 380 L 630 380 L 630 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="515" y="374" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a">
-          PCU Body Ground (10 sq.mm)
-        </text>
-
-        <!-- 4. DEEP CYCLE BATTERY BANK (Under PCU) -->
-        ${makeBox({
-          id: 'battery-offgrid',
-          x: 420,
-          y: 295,
-          w: 175,
-          h: 110,
-          title: 'Battery Bank',
-          subtitle: 'Tubular / Lithium LiFePO4',
-          badge: '12V / 24V / 48V / 96V DC',
-          badgeColor: '#0d9488',
-          isDark,
-          icon: '🔋'
-        })}
-        <!-- Internal Battery Cell Stacks Graphic -->
-        <g transform="translate(445, 335)">
-          <rect x="0" y="0" width="30" height="22" rx="2" fill="${isDark ? '#134e4a' : '#ccfbf1'}" stroke="#0d9488" stroke-width="1" />
-          <rect x="45" y="0" width="30" height="22" rx="2" fill="${isDark ? '#134e4a' : '#ccfbf1'}" stroke="#0d9488" stroke-width="1" />
-          <rect x="90" y="0" width="30" height="22" rx="2" fill="${isDark ? '#134e4a' : '#ccfbf1'}" stroke="#0d9488" stroke-width="1" />
-          <text x="15" y="14" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#0d9488" text-anchor="middle">Cell 1</text>
-          <text x="60" y="14" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#0d9488" text-anchor="middle">Cell 2</text>
-          <text x="105" y="14" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#0d9488" text-anchor="middle">Cell 3</text>
-        </g>
-        ${makeTerminal(470, 295, '+', 'dc-pos')}
-        ${makeTerminal(530, 295, '-', 'dc-neg')}
-
-        <!-- Battery DC Cables to PCU with Breaker Symbol -->
-        <path d="M 470 245 L 470 295" stroke="#ef4444" stroke-width="3.5" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 530 245 L 530 295" stroke="#1e293b" stroke-width="3.5" fill="none" marker-end="url(#arr-dc-neg)" />
-        <!-- Battery In-line DC Fuse / Breaker Pill -->
-        <rect x="458" y="260" width="24" height="12" rx="2" fill="#ef4444" />
-        <text x="470" y="269" font-family="system-ui, sans-serif" font-size="6.5" font-weight="800" fill="#ffffff" text-anchor="middle">FUSE</text>
-        <text x="440" y="278" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#ef4444">25 sq.mm</text>
-
-        <!-- Battery Rack Frame Ground to Equipment Earth Pit -->
-        <path d="M 595 350 L 645 350 L 645 425" stroke="#16a34a" stroke-width="2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="650" y="380" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a">
-          Rack Earth
-        </text>
-
-        <!-- 5. AUXILIARY GRID / DG BYPASS FEED (Left side of PCU) -->
-        ${makeBox({
-          id: 'aux-grid-offgrid',
-          x: 235,
-          y: 250,
-          w: 110,
-          h: 80,
-          title: 'Aux Grid / DG',
-          subtitle: 'Emergency Bypass In',
-          badge: '230V AC Charger',
-          badgeColor: '#6366f1',
-          isDark,
-          icon: '🔌'
-        })}
-        <!-- Aux Feed into PCU -->
-        <path d="M 345 285 L 420 210" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="5,3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <text x="350" y="240" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#f59e0b">
-          Aux Grid / DG In
-        </text>
-
-        <!-- 6. ACDB / OUTPUT SUB-PANEL -->
-        ${makeBox({
-          id: 'acdb-offgrid',
-          x: 645,
-          y: 90,
-          w: 125,
-          h: 110,
-          title: 'Output ACDB',
-          subtitle: 'Distribution Sub-Panel',
-          badge: 'Isolated Inverter N',
-          badgeColor: '#dc2626',
-          isDark,
-          icon: '⚡'
-        })}
-        ${makeTerminal(645, 115, 'L', 'ac-phase')}
-        ${makeTerminal(645, 135, 'N', 'ac-neutral')}
-        ${makeTerminal(645, 155, '⏚', 'earth')}
-        ${makeTerminal(770, 115, 'L', 'ac-phase')}
-        ${makeTerminal(770, 135, 'N', 'ac-neutral')}
-
-        <!-- Inverter Output Lines to ACDB -->
-        <path d="M 595 115 L 645 115" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 595 135 L 645 135" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-        <path d="M 595 155 L 645 155" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-
-        <!-- ACDB Earth to AC Earth Pit -->
-        <path d="M 705 200 L 705 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="710" y="320" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a" transform="rotate(-90 710 320)">
-          ACDB Earth (6 sq.mm)
-        </text>
-
-        <!-- AC Lines to Dedicated Backup Loads -->
-        <path d="M 770 115 L 825 115" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 770 135 L 825 135" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-        <text x="775" y="108" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#dc2626">L (Phase)</text>
-        <text x="775" y="148" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#0284c7">N (Isolated)</text>
-
-        <!-- 7. DEDICATED BACKUP LOADS -->
-        ${makeBox({
-          id: 'loads-offgrid',
-          x: 825,
-          y: 75,
-          w: 165,
-          h: 155,
-          title: 'Dedicated Backup Loads',
-          subtitle: 'Protected Critical Circuits',
-          badge: '100% Off-Grid Reliability',
-          badgeColor: '#10b981',
-          isDark,
-          icon: '💡'
-        })}
-        <!-- Load Icons Grid -->
-        <g transform="translate(840, 120)">
-          <rect x="0" y="0" width="65" height="30" rx="3" fill="${isDark ? '#064e3b' : '#d1fae5'}" />
-          <text x="32" y="19" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#10b981" text-anchor="middle">💡 Lights & Fans</text>
-
-          <rect x="75" y="0" width="65" height="30" rx="3" fill="${isDark ? '#064e3b' : '#d1fae5'}" />
-          <text x="107" y="19" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#10b981" text-anchor="middle">❄️ Refrigerator</text>
-
-          <rect x="0" y="38" width="65" height="30" rx="3" fill="${isDark ? '#064e3b' : '#d1fae5'}" />
-          <text x="32" y="57" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#10b981" text-anchor="middle">📺 TV / WiFi</text>
-
-          <rect x="75" y="38" width="65" height="30" rx="3" fill="${isDark ? '#064e3b' : '#d1fae5'}" />
-          <text x="107" y="57" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#10b981" text-anchor="middle">💻 Computers</text>
-        </g>
-
-        <!-- =========================================================================
-             EARTHING PITS (DC Pit & AC/Equipment Pit)
-             ========================================================================= -->
-        <line x1="30" y1="425" x2="990" y2="425" stroke="${isDark ? '#334155' : '#cbd5e1'}" stroke-width="1.5" stroke-dasharray="4,4" />
-        <text x="35" y="420" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="${isDark ? '#64748b' : '#94a3b8'}">
-          GROUND LEVEL (TERRESTRIAL SOIL HORIZON) ─────────────────────────────────────────────────────────────────
-        </text>
-
-        <!-- PIT 1: DC Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-dc',
-          x: 110,
-          y: 440,
-          name: 'DC Earth Pit',
-          tag: 'Pit 1 (Structure & DCDB)',
-          code: 'R ≤ 5Ω | IEC 62548',
-          isDark
-        })}
-
-        <!-- PIT 2: AC & Equipment Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-ac',
-          x: 670,
-          y: 440,
-          name: 'AC & Equipment Pit',
-          tag: 'Pit 2 (PCU, Batt & ACDB)',
-          code: 'R ≤ 5Ω | IS 3043',
-          isDark
-        })}
-
-        <!-- Note Annotation Card -->
-        <g transform="translate(760, 435)">
-          <rect width="230" height="75" rx="6" fill="${isDark ? '#111e38' : '#ffffff'}" stroke="${isDark ? '#263b63' : '#e2e8f0'}" stroke-width="1.2" />
-          <text x="12" y="18" font-family="system-ui, sans-serif" font-size="8" font-weight="800" fill="${isDark ? '#f8fafc' : '#0f172a'}">
-            OFF-GRID SAFETY ARCHITECTURE:
-          </text>
-          <text x="12" y="35" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">
-            • Isolated Inverter Output Neutral
-          </text>
-          <text x="12" y="50" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">
-            • Safe separation between Utility & Inverter
-          </text>
-          <text x="12" y="65" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#16a34a">
-            • Dedicated DC and Equipment Earth Pits
-          </text>
-        </g>
-      </svg>
-    `;
-  }
-
-  /* =========================================================================
-     3. HYBRID SOLAR SYSTEM (Bi-Directional Solar + ESS + Net Metered Grid)
-     ========================================================================= */
-  function getHybridSvg(isDark) {
-    const bgFill = isDark ? '#0b1329' : '#f8fafc';
-
-    return `
-      <svg viewBox="0 0 1020 540" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-        ${getSharedDefs()}
-        <rect width="1020" height="540" fill="${bgFill}" />
-
-        <!-- Title Banner -->
-        <g transform="translate(30, 28)">
-          <text font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="${isDark ? '#38bdf8' : '#0284c7'}">
-            HYBRID SOLAR PV SYSTEM SCHEMATIC (BI-DIRECTIONAL + ESS + NET-METERED GRID)
-          </text>
-          <text y="14" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="${isDark ? '#64748b' : '#94a3b8'}">
-            Bi-Directional Inverter + LiFePO4 ESS + Dual Port (Grid Export & &lt;10ms EPS Backup) + Tri-Grounding
-          </text>
-        </g>
-
-        <!-- 1. ROOFTOP LIGHTNING ARRESTER -->
-        <g class="sld-interactive-item" data-comp-id="la-ongrid" cursor="pointer" transform="translate(60, 50)">
-          <path d="M 0 0 L 0 35 M -8 35 L 8 35 M 0 0 L -6 12 M 0 0 L 6 12" stroke="#f59e0b" stroke-width="2.5" fill="none" />
-          <rect x="-30" y="38" width="60" height="24" rx="4" fill="${isDark ? '#1e293b' : '#ffffff'}" stroke="#f59e0b" stroke-width="1.2" />
-          <text x="0" y="52" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#f59e0b" text-anchor="middle">⚡ Rooftop LA</text>
-        </g>
-        <path d="M 60 110 L 60 425" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-earth)" />
-        <text x="65" y="270" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#f59e0b" transform="rotate(-90 65 270)">
-          LA Down Conductor to Pit 1
-        </text>
-
-        <!-- 2. SOLAR PV ARRAY (DUAL STRINGS PV1 & PV2) -->
-        ${makeBox({
-          id: 'pv-hybrid',
-          x: 40,
-          y: 120,
-          w: 135,
-          h: 125,
-          title: 'Solar PV Array',
-          subtitle: 'Dual Strings (PV1 & PV2)',
-          badge: 'Dual MPPT Strings',
-          badgeColor: '#0284c7',
-          isDark,
-          icon: '☀️'
-        })}
-        <!-- Internal Panel Cell Graphic -->
-        <g transform="translate(50, 160)">
-          <rect x="0" y="0" width="115" height="15" fill="url(#pv-cell-grid)" rx="2" />
-          <rect x="0" y="20" width="115" height="15" fill="url(#pv-cell-grid)" rx="2" />
-        </g>
-        ${makeTerminal(175, 140, '1+', 'dc-pos')}
-        ${makeTerminal(175, 160, '1-', 'dc-neg')}
-        ${makeTerminal(175, 190, '2+', 'dc-pos')}
-        ${makeTerminal(175, 210, '2-', 'dc-neg')}
-
-        <!-- Module Structure Earthing to DC Pit -->
-        <path d="M 105 245 L 105 380 L 250 380 L 250 425" stroke="#16a34a" stroke-width="2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="145" y="374" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a">
-          Structure Ground (10 sq.mm Cu)
-        </text>
-
-        <!-- 3. DUAL STRING DCDB -->
-        ${makeBox({
-          id: 'dcdb-hybrid',
-          x: 220,
-          y: 120,
-          w: 120,
-          h: 125,
-          title: 'Dual DCDB',
-          subtitle: '2-In / 2-Out Protection',
-          badge: 'Dual SPD + gPV',
-          badgeColor: '#ef4444',
-          isDark,
-          icon: '🛡️'
-        })}
-        <!-- DCDB Connections -->
-        <path d="M 175 140 L 220 140" stroke="#ef4444" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 175 160 L 220 160" stroke="#1e293b" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-neg)" />
-        <path d="M 175 190 L 220 190" stroke="#ef4444" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 175 210 L 220 210" stroke="#1e293b" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-neg)" />
-        <text x="180" y="134" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="#ef4444">PV1 DC (+)</text>
-        <text x="180" y="184" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="#ef4444">PV2 DC (+)</text>
-        <text x="180" y="222" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="${isDark ? '#94a3b8' : '#334155'}">DC (-)</text>
-
-        ${makeTerminal(340, 140, '1+', 'dc-pos')}
-        ${makeTerminal(340, 160, '1-', 'dc-neg')}
-        ${makeTerminal(340, 190, '2+', 'dc-pos')}
-        ${makeTerminal(340, 210, '2-', 'dc-neg')}
-
-        <!-- DCDB SPD Earth to DC Pit -->
-        <path d="M 280 245 L 280 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="285" y="330" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a" transform="rotate(-90 285 330)">
-          Dual DC SPD Earth (6 sq.mm)
-        </text>
-
-        <!-- DC Cables from DCDB to Hybrid Inverter -->
-        <path d="M 340 140 L 405 140" stroke="#ef4444" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 340 160 L 405 160" stroke="#1e293b" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-neg)" />
-        <path d="M 340 190 L 405 190" stroke="#ef4444" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 340 210 L 405 210" stroke="#1e293b" stroke-width="2.5" fill="none" marker-end="url(#arr-dc-neg)" />
-        <text x="350" y="134" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="#ef4444">MPPT1</text>
-        <text x="350" y="184" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="#ef4444">MPPT2</text>
-
-        <!-- 4. HYBRID BI-DIRECTIONAL INVERTER -->
-        ${makeBox({
-          id: 'inverter-hybrid',
-          x: 405,
-          y: 95,
-          w: 165,
-          h: 175,
-          title: 'Hybrid Inverter',
-          subtitle: 'Bi-Directional + ATS',
-          badge: 'Grid + &lt;10ms EPS Backup',
-          badgeColor: '#3b82f6',
-          isDark,
-          icon: '🔄'
-        })}
-        <!-- Internal Multi-Port Graphic -->
-        <g transform="translate(425, 145)">
-          <rect x="0" y="0" width="125" height="42" rx="4" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#3b82f6" stroke-width="1" />
-          <text x="62" y="16" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#38bdf8" text-anchor="middle">
-            Bi-Directional Converter
-          </text>
-          <text x="62" y="32" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#10b981" text-anchor="middle">
-            ⚡ &lt;10ms Seamless ATS
-          </text>
-        </g>
-        <!-- Inverter Terminals -->
-        ${makeTerminal(405, 140, '1+', 'dc-pos')}
-        ${makeTerminal(405, 160, '1-', 'dc-neg')}
-        ${makeTerminal(405, 190, '2+', 'dc-pos')}
-        ${makeTerminal(405, 210, '2-', 'dc-neg')}
-        <!-- Battery Port Terminals -->
-        ${makeTerminal(455, 270, 'B+', 'dc-pos')}
-        ${makeTerminal(515, 270, 'B-', 'dc-neg')}
-        <!-- Grid Port (Top Right) -->
-        ${makeTerminal(570, 125, 'GL', 'ac-phase')}
-        ${makeTerminal(570, 145, 'GN', 'ac-neutral')}
-        <!-- EPS Backup Port (Bottom Right) -->
-        ${makeTerminal(570, 205, 'EL', 'ac-phase')}
-        ${makeTerminal(570, 225, 'EN', 'ac-neutral')}
-
-        <!-- Inverter Double Ground to AC/ESS Pit -->
-        <path d="M 485 270 L 485 390 L 590 390 L 590 425" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="495" y="384" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a">
-          Inverter Body Ground (10 sq.mm)
-        </text>
-
-        <!-- 5. ENERGY STORAGE SYSTEM (LiFePO4 ESS) -->
-        ${makeBox({
-          id: 'battery-hybrid',
-          x: 405,
-          y: 315,
-          w: 165,
-          h: 100,
-          title: 'LiFePO4 ESS Bank',
-          subtitle: 'Smart BMS Battery',
-          badge: '48V / HV DC | CAN Bus',
-          badgeColor: '#0d9488',
-          isDark,
-          icon: '🔋'
-        })}
-        ${makeTerminal(455, 315, 'B+', 'dc-pos')}
-        ${makeTerminal(515, 315, 'B-', 'dc-neg')}
-
-        <!-- Bi-Directional Heavy DC Cables to ESS -->
-        <path d="M 455 270 L 455 315" stroke="#ef4444" stroke-width="3.5" fill="none" marker-start="url(#arr-bidi-start)" marker-end="url(#arr-bidi-end)" />
-        <path d="M 515 270 L 515 315" stroke="#1e293b" stroke-width="3.5" fill="none" marker-start="url(#arr-bidi-start)" marker-end="url(#arr-bidi-end)" />
-        <!-- BMS Communication Cable (Cyan dashed) -->
-        <path d="M 485 270 L 485 315" stroke="#06b6d4" stroke-width="1.8" stroke-dasharray="3,2" fill="none" />
-        <text x="490" y="295" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="#06b6d4">BMS CAN</text>
-
-        <!-- ESS Cabinet Safety Earth -->
-        <path d="M 570 365 L 610 365 L 610 425" stroke="#16a34a" stroke-width="2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="615" y="380" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a">
-          ESS Cabinet Earth
-        </text>
-
-        <!-- =========================================================================
-             UPPER BRANCH: GRID PORT -> GRID ACDB -> NET METER -> EB GRID & HEAVY LOADS
-             ========================================================================= -->
-        <!-- 6. GRID-SIDE ACDB -->
-        ${makeBox({
-          id: 'acdb-grid-hybrid',
-          x: 620,
-          y: 85,
-          w: 110,
-          h: 90,
-          title: 'Grid ACDB',
-          subtitle: 'Bi-Dir Incomer',
-          badge: 'AC MCB + SPD',
-          badgeColor: '#dc2626',
-          isDark,
-          icon: '⚡'
-        })}
-        <!-- Lines from Hybrid Grid Port to Grid ACDB -->
-        <path d="M 570 125 L 620 125" stroke="#dc2626" stroke-width="2.8" fill="none" marker-start="url(#arr-bidi-start)" marker-end="url(#arr-bidi-end)" />
-        <path d="M 570 145 L 620 145" stroke="#0284c7" stroke-width="2.2" stroke-dasharray="6,3" fill="none" />
-        <text x="575" y="118" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="#dc2626">Grid L</text>
-
-        <!-- 7. BI-DIRECTIONAL NET METER -->
-        ${makeBox({
-          id: 'netmeter-hybrid',
-          x: 760,
-          y: 85,
-          w: 105,
-          h: 90,
-          title: 'Net Meter',
-          subtitle: 'Import / Export',
-          badge: '4-Quadrant',
-          badgeColor: '#0284c7',
-          isDark,
-          icon: '🔄'
-        })}
-        <!-- Lines from Grid ACDB to Net Meter -->
-        <path d="M 730 125 L 760 125" stroke="#0284c7" stroke-width="2.8" fill="none" marker-start="url(#arr-bidi-start)" marker-end="url(#arr-bidi-end)" />
-        <path d="M 730 145 L 760 145" stroke="#0284c7" stroke-width="2" stroke-dasharray="6,3" fill="none" />
-
-        <!-- Split after Net Meter to Utility Grid & Non-Essential Heavy Loads -->
-        <circle cx="895" cy="125" r="3.5" fill="#dc2626" />
-        <path d="M 865 125 L 895 125" stroke="#dc2626" stroke-width="2.8" fill="none" />
-        <path d="M 895 125 L 895 65 L 925 65" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 895 125 L 895 155 L 925 155" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#arr-ac-phase)" />
-
-        <!-- 8. UTILITY EB GRID -->
-        ${makeBox({
-          id: 'grid-hybrid',
-          x: 925,
-          y: 40,
-          w: 80,
-          h: 65,
-          title: 'EB Grid',
-          subtitle: 'DISCOM Feed',
-          badge: '230V/415V',
-          badgeColor: '#6366f1',
-          isDark,
-          icon: '🏭'
-        })}
-
-        <!-- 9. NON-ESSENTIAL HEAVY LOADS -->
-        ${makeBox({
-          id: 'loads-noncritical-hybrid',
-          x: 925,
-          y: 125,
-          w: 80,
-          h: 75,
-          title: 'Heavy Loads',
-          subtitle: 'Grid-Fed Only',
-          badge: 'AC, Geyser, EV',
-          badgeColor: '#f97316',
-          isDark,
-          icon: '❄️'
-        })}
-
-        <!-- =========================================================================
-             LOWER BRANCH: EPS PORT -> EPS SUB-PANEL -> CRITICAL BACKUP LOADS
-             ========================================================================= -->
-        <!-- 10. EPS BACKUP SUB-PANEL -->
-        ${makeBox({
-          id: 'subdb-eps-hybrid',
-          x: 620,
-          y: 200,
-          w: 110,
-          h: 90,
-          title: 'EPS Sub-Panel',
-          subtitle: 'UPS Backup Port',
-          badge: '&lt;10ms ATS Sub-DB',
-          badgeColor: '#10b981',
-          isDark,
-          icon: '🛡️'
-        })}
-        <!-- Lines from Hybrid EPS Port to EPS Sub-Panel -->
-        <path d="M 570 205 L 620 205" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 570 225 L 620 225" stroke="#0284c7" stroke-width="2.2" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-        <text x="575" y="198" font-family="system-ui, sans-serif" font-size="6.5" font-weight="700" fill="#10b981">EPS L</text>
-
-        <!-- 11. CRITICAL BACKUP APPLIANCES -->
-        ${makeBox({
-          id: 'loads-critical-hybrid',
-          x: 760,
-          y: 200,
-          w: 155,
-          h: 90,
-          title: 'Critical Backup Loads',
-          subtitle: 'Essential Uninterrupted',
-          badge: 'Lights, WiFi, Fridge, Med',
-          badgeColor: '#10b981',
-          isDark,
-          icon: '💡'
-        })}
-        <!-- Lines from EPS Panel to Critical Loads -->
-        <path d="M 730 225 L 760 225" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 730 245 L 760 245" stroke="#0284c7" stroke-width="2.2" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-
-        <!-- =========================================================================
-             EARTHING PITS (LA Pit, DC Pit, AC & ESS Pit)
-             ========================================================================= -->
-        <line x1="30" y1="425" x2="990" y2="425" stroke="${isDark ? '#334155' : '#cbd5e1'}" stroke-width="1.5" stroke-dasharray="4,4" />
-        <text x="35" y="420" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="${isDark ? '#64748b' : '#94a3b8'}">
-          GROUND LEVEL (TERRESTRIAL SOIL HORIZON) ─────────────────────────────────────────────────────────────────
-        </text>
-
-        <!-- PIT 1: Dedicated LA Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-la',
-          x: 60,
-          y: 440,
-          name: 'LA Earth Pit',
-          tag: 'Pit 1 (LA Only)',
-          code: 'R ≤ 5Ω | IEC 62305',
-          isDark
-        })}
-
-        <!-- PIT 2: Dedicated DC Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-dc',
-          x: 270,
-          y: 440,
-          name: 'DC Earth Pit',
-          tag: 'Pit 2 (PV & Dual SPD)',
-          code: 'R ≤ 5Ω | IEC 62548',
-          isDark
-        })}
-
-        <!-- PIT 3: Dedicated AC & ESS Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-ac',
-          x: 600,
-          y: 440,
-          name: 'AC & ESS Pit',
-          tag: 'Pit 3 (Inverter, Batt & DB)',
-          code: 'R ≤ 5Ω | IS 3043',
-          isDark
-        })}
-
-        <!-- Hybrid Annotation Card -->
-        <g transform="translate(730, 435)">
-          <rect width="260" height="75" rx="6" fill="${isDark ? '#111e38' : '#ffffff'}" stroke="${isDark ? '#263b63' : '#e2e8f0'}" stroke-width="1.2" />
-          <text x="12" y="18" font-family="system-ui, sans-serif" font-size="8" font-weight="800" fill="${isDark ? '#f8fafc' : '#0f172a'}">
-            HYBRID SMART DUAL-PORT LOGIC:
-          </text>
-          <text x="12" y="35" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#38bdf8">
-            • Grid Port: Bi-directional energy export & import
-          </text>
-          <text x="12" y="50" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#10b981">
-            • EPS Port: Zero interruption during blackout (&lt;10ms)
-          </text>
-          <text x="12" y="65" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#0d9488">
-            • Smart BMS: Automatic LiFePO4 battery protection
-          </text>
-        </g>
-      </svg>
-    `;
-  }
-
-  /* =========================================================================
-     4. WITHOUT SOLAR (Home UPS / Inverter-Battery Backup)
-     ========================================================================= */
-  function getWithoutSolarSvg(isDark) {
-    const bgFill = isDark ? '#0b1329' : '#f8fafc';
-
-    return `
-      <svg viewBox="0 0 1020 540" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-        ${getSharedDefs()}
-        <rect width="1020" height="540" fill="${bgFill}" />
-
-        <!-- Title Banner -->
-        <g transform="translate(30, 28)">
-          <text font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="${isDark ? '#38bdf8' : '#0284c7'}">
-            WITHOUT SOLAR (HOME UPS / INVERTER-BATTERY BACKUP SCHEMATIC)
-          </text>
-          <text y="14" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="${isDark ? '#64748b' : '#94a3b8'}">
-            Utility Grid Supply + Energy Meter + Main DB (ELCB) + Home UPS + Tubular/Lithium Battery + Sub-DB
-          </text>
-        </g>
-
-        <!-- 1. UTILITY EB GRID INCOMER -->
-        ${makeBox({
-          id: 'grid-withoutsolar',
-          x: 40,
-          y: 110,
-          w: 120,
-          h: 115,
-          title: 'EB Service Feed',
-          subtitle: 'Utility Grid Incomer',
-          badge: '1-Ph 230V / 3-Ph 415V',
-          badgeColor: '#6366f1',
-          isDark,
-          icon: '🏭'
-        })}
-        <!-- Terminals on Grid Incomer -->
-        ${makeTerminal(160, 135, 'L', 'ac-phase')}
-        ${makeTerminal(160, 155, 'N', 'ac-neutral')}
-        ${makeTerminal(160, 175, '⏚', 'earth')}
-
-        <!-- Incomer Service Cable to Energy Meter -->
-        <path d="M 160 135 L 210 135" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 160 155 L 210 155" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-        <path d="M 160 175 L 210 175" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="165" y="128" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#dc2626">L</text>
-        <text x="165" y="150" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#0284c7">N</text>
-        <text x="165" y="170" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#16a34a">PE</text>
-
-        <!-- 2. ENERGY METER (EB Revenue Meter) -->
-        ${makeBox({
-          id: 'meter-withoutsolar',
-          x: 210,
-          y: 110,
-          w: 110,
-          h: 115,
-          title: 'Energy Meter',
-          subtitle: 'EB Billing Meter',
-          badge: 'Active kWh Meter',
-          badgeColor: '#0284c7',
-          isDark,
-          icon: '⚡'
-        })}
-        <rect x="225" y="150" width="80" height="18" rx="2" fill="${isDark ? '#022c22' : '#dcfce7'}" stroke="#10b981" stroke-width="0.8" />
-        <text x="265" y="162" font-family="monospace" font-size="8" font-weight="700" fill="#10b981" text-anchor="middle">
-          01294.5 kWh
-        </text>
-        ${makeTerminal(210, 135, 'L', 'ac-phase')}
-        ${makeTerminal(210, 155, 'N', 'ac-neutral')}
-        ${makeTerminal(320, 135, 'L', 'ac-phase')}
-        ${makeTerminal(320, 155, 'N', 'ac-neutral')}
-
-        <!-- Cable from Meter to Main DB -->
-        <path d="M 320 135 L 375 135" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 320 155 L 375 155" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-
-        <!-- 3. MAIN DISTRIBUTION BOARD (MDB) -->
-        ${makeBox({
-          id: 'mdb-withoutsolar',
-          x: 375,
-          y: 95,
-          w: 145,
-          h: 145,
-          title: 'Main DB (MDB)',
-          subtitle: 'Main DP MCB + ELCB',
-          badge: '30mA RCCB Safety',
-          badgeColor: '#dc2626',
-          isDark,
-          icon: '🏢'
-        })}
-        <!-- Internal Busbars Graphic -->
-        <g transform="translate(390, 140)">
-          <rect x="0" y="0" width="115" height="40" rx="3" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#ef4444" stroke-width="1" />
-          <text x="57" y="16" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#ef4444" text-anchor="middle">DP MCB + ELCB</text>
-          <text x="57" y="32" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#10b981" text-anchor="middle">Earth Busbar (PE)</text>
-        </g>
-        ${makeTerminal(375, 135, 'L', 'ac-phase')}
-        ${makeTerminal(375, 155, 'N', 'ac-neutral')}
-        ${makeTerminal(520, 135, 'L', 'ac-phase')}
-        ${makeTerminal(520, 155, 'N', 'ac-neutral')}
-        ${makeTerminal(520, 175, '⏚', 'earth')}
-
-        <!-- MDB Earth Busbar connected to Consumer Earth Pit -->
-        <path d="M 445 240 L 445 425" stroke="#16a34a" stroke-width="2.5" fill="none" marker-end="url(#arr-earth)" />
-        <text x="450" y="330" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#16a34a" transform="rotate(-90 450 330)">
-          Main Earth Lead to Pit (16 sq.mm Cu)
-        </text>
-
-        <!-- SPLIT FROM MDB: BRANCH A -> NON-BACKUP HEAVY LOADS -->
-        <path d="M 445 195 L 445 290 L 265 290" stroke="#dc2626" stroke-width="2.5" fill="none" marker-end="url(#arr-ac-phase)" />
-        <text x="330" y="284" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#f97316">
-          Direct Raw AC Feed
-        </text>
-
-        <!-- 4. NON-BACKUP HEAVY APPLIANCES -->
-        ${makeBox({
-          id: 'heavyloads-withoutsolar',
-          x: 140,
-          y: 260,
-          w: 125,
-          h: 110,
-          title: 'Heavy Loads',
-          subtitle: 'Non-Backup Grid-Only',
-          badge: 'AC, Geyser, Motor',
-          badgeColor: '#f97316',
-          isDark,
-          icon: '❄️'
-        })}
-        <g transform="translate(150, 305)">
-          <text x="0" y="0" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• Air Conditioner 1.5 Ton</text>
-          <text x="0" y="14" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• Water Geyser (2kW)</text>
-          <text x="0" y="28" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• Pumping Motor (1.5HP)</text>
-        </g>
-
-        <!-- SPLIT FROM MDB: BRANCH B -> RAW AC FEED TO HOME UPS -->
-        <path d="M 520 135 L 585 135" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 520 155 L 585 155" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-        <path d="M 520 175 L 585 175" stroke="#16a34a" stroke-width="2.2" fill="none" marker-end="url(#arr-earth)" />
-        <text x="526" y="128" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#dc2626">Raw In</text>
-
-        <!-- 5. HOME UPS / INVERTER UNIT -->
-        ${makeBox({
-          id: 'ups-withoutsolar',
-          x: 585,
-          y: 95,
-          w: 155,
-          h: 155,
-          title: 'Home UPS / Inverter',
-          subtitle: 'Bi-Directional Charger',
-          badge: '&lt;15ms Fast Transfer',
-          badgeColor: '#3b82f6',
-          isDark,
-          icon: '⚡'
-        })}
-        <g transform="translate(605, 140)">
-          <rect x="0" y="0" width="115" height="36" rx="3" fill="${isDark ? '#1e293b' : '#e2e8f0'}" stroke="#3b82f6" stroke-width="1" />
-          <text x="57" y="15" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#38bdf8" text-anchor="middle">AC-DC Charger</text>
-          <text x="57" y="29" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#3b82f6" text-anchor="middle">DC-AC Inverter ∿</text>
-        </g>
-        ${makeTerminal(585, 135, 'L', 'ac-phase')}
-        ${makeTerminal(585, 155, 'N', 'ac-neutral')}
-        ${makeTerminal(585, 175, '⏚', 'earth')}
-        <!-- Battery Terminals at bottom -->
-        ${makeTerminal(630, 250, '+', 'dc-pos')}
-        ${makeTerminal(690, 250, '-', 'dc-neg')}
-        <!-- Output Terminals -->
-        ${makeTerminal(740, 135, 'L', 'ac-phase')}
-        ${makeTerminal(740, 155, 'N', 'ac-neutral')}
-
-        <!-- 6. INVERTER BATTERY BANK -->
-        ${makeBox({
-          id: 'battery-withoutsolar',
-          x: 585,
-          y: 300,
-          w: 155,
-          h: 105,
-          title: 'Inverter Battery',
-          subtitle: 'Tubular / Lithium Bank',
-          badge: '12V / 24V / 48V DC',
-          badgeColor: '#0d9488',
-          isDark,
-          icon: '🔋'
-        })}
-        <!-- Terminals on Battery -->
-        ${makeTerminal(630, 300, '+', 'dc-pos')}
-        ${makeTerminal(690, 300, '-', 'dc-neg')}
-
-        <!-- Heavy DC Battery Cables with Lug Shrouds -->
-        <path d="M 630 250 L 630 300" stroke="#ef4444" stroke-width="3.5" fill="none" marker-end="url(#arr-dc-pos)" />
-        <path d="M 690 250 L 690 300" stroke="#1e293b" stroke-width="3.5" fill="none" marker-end="url(#arr-dc-neg)" />
-        <text x="602" y="278" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#ef4444">16/25 sq.mm</text>
-
-        <!-- 7. BACKUP SUB-DISTRIBUTION BOARD -->
-        ${makeBox({
-          id: 'subdb-withoutsolar',
-          x: 775,
-          y: 105,
-          w: 110,
-          h: 125,
-          title: 'Backup Sub-DB',
-          subtitle: 'Circuit MCBs',
-          badge: 'Inverter Phase',
-          badgeColor: '#dc2626',
-          isDark,
-          icon: '🛡️'
-        })}
-        <!-- Lines from UPS Output to Backup Sub-DB -->
-        <path d="M 740 135 L 775 135" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 740 155 L 775 155" stroke="#0284c7" stroke-width="2.4" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-        <text x="745" y="128" font-family="system-ui, sans-serif" font-size="7" font-weight="700" fill="#dc2626">Inv L</text>
-
-        <!-- Earth path extending from MDB to Sub-DB -->
-        <path d="M 520 175 L 585 175 M 740 175 L 775 175" stroke="#16a34a" stroke-width="2" fill="none" />
-
-        <!-- 8. CRITICAL BACKUP LOADS -->
-        ${makeBox({
-          id: 'criticalloads-withoutsolar',
-          x: 915,
-          y: 95,
-          w: 95,
-          h: 145,
-          title: 'Backup Loads',
-          subtitle: 'Continuous Power',
-          badge: 'Fans, Lights, TV',
-          badgeColor: '#10b981',
-          isDark,
-          icon: '💡'
-        })}
-        <g transform="translate(923, 140)">
-          <text x="0" y="0" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• Ceiling Fans</text>
-          <text x="0" y="16" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• LED Lights</text>
-          <text x="0" y="32" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• Wi-Fi Router</text>
-          <text x="0" y="48" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• Television</text>
-          <text x="0" y="64" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">• Laptop Charging</text>
-        </g>
-        <!-- Lines from Sub-DB to Critical Loads -->
-        <path d="M 885 135 L 915 135" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#arr-ac-phase)" />
-        <path d="M 885 155 L 915 155" stroke="#0284c7" stroke-width="2.2" stroke-dasharray="6,3" fill="none" marker-end="url(#arr-ac-neutral)" />
-
-        <!-- =========================================================================
-             EARTHING PIT (CONSUMER / EB EARTH PIT)
-             ========================================================================= -->
-        <line x1="30" y1="425" x2="990" y2="425" stroke="${isDark ? '#334155' : '#cbd5e1'}" stroke-width="1.5" stroke-dasharray="4,4" />
-        <text x="35" y="420" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="${isDark ? '#64748b' : '#94a3b8'}">
-          GROUND LEVEL (TERRESTRIAL SOIL HORIZON) ─────────────────────────────────────────────────────────────────
-        </text>
-
-        <!-- Single Consumer Earth Pit -->
-        ${makeEarthPit({
-          id: 'pit-consumer',
-          x: 445,
-          y: 440,
-          name: 'Consumer Earth Pit',
-          tag: 'Main Premises Earth',
-          code: 'R ≤ 5Ω | IS 3043',
-          isDark
-        })}
-
-        <!-- Without Solar Safety Annotation Box -->
-        <g transform="translate(620, 435)">
-          <rect width="370" height="75" rx="6" fill="${isDark ? '#111e38' : '#ffffff'}" stroke="${isDark ? '#263b63' : '#e2e8f0'}" stroke-width="1.2" />
-          <text x="12" y="18" font-family="system-ui, sans-serif" font-size="8" font-weight="800" fill="${isDark ? '#f8fafc' : '#0f172a'}">
-            STANDALONE HOME UPS EARTHING & PROTECTION:
-          </text>
-          <text x="12" y="35" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">
-            • Main DB ELCB / RCCB (30mA) provides human touch shock protection
-          </text>
-          <text x="12" y="50" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="${isDark ? '#cbd5e1' : '#475569'}">
-            • Solid equipment earthing via 3-pin plug extends to UPS chassis and battery trolley
-          </text>
-          <text x="12" y="65" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#f97316">
-            • Heavy loads (AC, Geyser, Motor) bypass UPS to prevent inverter overloading
-          </text>
-        </g>
-      </svg>
-    `;
-  }
-
-  /**
-   * Sanitizes the full SVG string to ensure 100% strict XML validity in all browsers.
-   */
-  function sanitizeSvgXml(rawSvg) {
-    if (!rawSvg) return '';
-    // 1. Replace any & not part of a valid XML entity with &amp;
-    let clean = rawSvg.replace(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[a-fA-F0-9]+);)/g, '&amp;');
-    // 2. Replace any < that does not start a valid XML tag/comment
-    clean = clean.replace(/<(?![a-zA-Z/?!])/g, '&lt;');
-    return clean;
-  }
-
-  /**
-   * Main Render Router based on system type.
-   */
   function generateSvgContent(systemType, isDark) {
-    let raw = '';
-    switch (systemType) {
-      case 'on-grid':
-        raw = getOnGridSvg(isDark);
-        break;
-      case 'off-grid':
-        raw = getOffGridSvg(isDark);
-        break;
-      case 'hybrid':
-        raw = getHybridSvg(isDark);
-        break;
-      case 'without-solar':
-        raw = getWithoutSolarSvg(isDark);
-        break;
-      default:
-        raw = getOffGridSvg(isDark);
-    }
-    return sanitizeSvgXml(raw);
-  }
+    const config = SYSTEM_CONFIGS[systemType] || SYSTEM_CONFIGS['on-grid'];
+    const positions = sldState.positions[systemType] || {};
+    const bgFill = isDark ? '#0b1329' : '#f8fafc';
+    const textHaloStroke = isDark ? '#0b1329' : '#f8fafc';
 
-  /**
-   * Render or re-render schematic in both inline and modal containers.
-   */
-  function render(systemType) {
-    if (systemType) {
-      sldState.currentSystem = systemType;
-    }
-    const current = sldState.currentSystem;
-    const isDark = sldState.theme === 'dark';
+    // 1. Render Wires Layer
+    let wiresMarkup = '<g class="sld-wires-layer">';
+    config.wires.forEach(wire => {
+      const data = computeWireData(wire, config, positions);
+      if (!data) return;
 
-    // 1. Inline Container
-    const inlineContainer = document.getElementById('sldInlineSvgWrapper');
-    if (inlineContainer) {
-      inlineContainer.innerHTML = generateSvgContent(current, isDark);
-      inlineContainer.className = `sld-svg-canvas ${isDark ? 'sld-theme-dark' : 'sld-theme-light'}`;
-      attachSvgEvents(inlineContainer, 'inline');
-    }
+      const styleAttrs = getWireStyleAttributes(wire.type, isDark);
+      const labelCol = getWireLabelColor(wire.type, isDark);
 
-    // 2. Modal Container
-    const modalContainer = document.getElementById('sldModalSvgWrapper');
-    if (modalContainer) {
-      modalContainer.innerHTML = generateSvgContent(current, isDark);
-      modalContainer.className = `sld-svg-canvas ${isDark ? 'sld-theme-dark' : 'sld-theme-light'}`;
-      attachSvgEvents(modalContainer, 'modal');
-    }
+      wiresMarkup += `
+        <path id="wire-${wire.id}" d="${data.pathD}" ${styleAttrs} />
+      `;
 
-    // Update active badges & buttons
-    updateActiveBadges(current);
-  }
-
-  /**
-   * Updates title, badges and active buttons.
-   */
-  function updateActiveBadges(current) {
-    const names = {
-      'off-grid': 'Off-Grid Solar (Standalone PCU + Battery)',
-      'on-grid': 'On-Grid Solar (Grid-Tied GTI + Net Meter)',
-      'hybrid': 'Hybrid Solar (Bi-Directional + ESS + Net Meter)',
-      'without-solar': 'Without Solar (Home UPS Inverter-Battery)'
-    };
-
-    const inlineTitle = document.getElementById('sldInlineSystemTitle');
-    if (inlineTitle) {
-      inlineTitle.textContent = names[current] || current;
-    }
-
-    const modalTitle = document.getElementById('sldModalSystemTitle');
-    if (modalTitle) {
-      modalTitle.textContent = names[current] || current;
-    }
-
-    // Modal quick-selector buttons
-    const selectorBtns = document.querySelectorAll('.sld-system-tab-btn');
-    selectorBtns.forEach(btn => {
-      const type = btn.getAttribute('data-sys-type');
-      if (type === current) {
-        btn.classList.add('btn-primary', 'active');
-        btn.classList.remove('btn-outline-secondary', 'btn-light');
-      } else {
-        btn.classList.remove('btn-primary', 'active');
-        btn.classList.add('btn-light', 'text-dark');
+      if (wire.label) {
+        if (wire.verticalLabel) {
+          wiresMarkup += `
+            <text id="wire-lbl-${wire.id}" x="${data.lblX}" y="${data.lblY}" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="${labelCol}" stroke="${textHaloStroke}" stroke-width="3" paint-order="stroke fill" stroke-linejoin="round" transform="rotate(-90 ${data.lblX} ${data.lblY})">
+              ${escapeXml(wire.label)}
+            </text>
+          `;
+        } else {
+          wiresMarkup += `
+            <text id="wire-lbl-${wire.id}" x="${data.lblX}" y="${data.lblY}" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="${labelCol}" stroke="${textHaloStroke}" stroke-width="3" paint-order="stroke fill" stroke-linejoin="round" text-anchor="middle">
+              ${escapeXml(wire.label)}
+            </text>
+          `;
+        }
       }
     });
+    wiresMarkup += '</g>';
+
+    // 2. Render Earth Pit Separation Dimension Lines (IS 3043:2018 / IEC 62305)
+    let earthDimMarkup = '<g class="sld-earth-dimensions-layer">';
+    if (config.earthDimensions && config.earthDimensions.length > 0) {
+      config.earthDimensions.forEach((dim, idx) => {
+        const fromB = config.blocks[dim.fromId];
+        const toB = config.blocks[dim.toId];
+        if (fromB && toB) {
+          const p1 = positions[dim.fromId] || { dx: 0, dy: 0 };
+          const p2 = positions[dim.toId] || { dx: 0, dy: 0 };
+          const x1 = fromB.x + p1.dx + 48;
+          const x2 = toB.x + p2.dx - 48;
+          const y = dim.y;
+          const midX = (x1 + x2) / 2;
+
+          earthDimMarkup += `
+            <path id="earth-dim-${idx}" d="M ${x1} ${y} L ${x2} ${y}" stroke="#10b981" stroke-width="1.8" stroke-dasharray="5,2.5" marker-start="url(#arr-dim-start)" marker-end="url(#arr-dim-end)" />
+            <text id="earth-dim-lbl-${idx}" x="${midX}" y="${y - 8}" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="#10b981" stroke="${textHaloStroke}" stroke-width="3" paint-order="stroke fill" stroke-linejoin="round" text-anchor="middle">
+              ${escapeXml(dim.label)}
+            </text>
+          `;
+        }
+      });
+    }
+    earthDimMarkup += '</g>';
+
+    // 3. Render Blocks Layer
+    let blocksMarkup = '<g class="sld-blocks-layer">';
+    Object.entries(config.blocks).forEach(([blockId, block]) => {
+      const pos = positions[blockId] || { dx: 0, dy: 0 };
+      const curX = block.x + pos.dx;
+      const curY = block.y + pos.dy;
+
+      blocksMarkup += `
+        <g id="block-wrapper-${blockId}" transform="translate(${curX}, ${curY})">
+          ${renderBlockGraphic(blockId, block, isDark)}
+        </g>
+      `;
+    });
+    blocksMarkup += '</g>';
+
+    return `
+      <svg viewBox="${config.viewBox}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+        ${getSharedDefs()}
+        <rect width="1260" height="650" fill="${bgFill}" class="sld-bg-canvas" />
+
+        <!-- Engineering Grid Watermark -->
+        <g opacity="${isDark ? '0.06' : '0.03'}" stroke="#38bdf8" stroke-width="1">
+          <line x1="0" y1="130" x2="1260" y2="130" stroke-dasharray="4,4" />
+          <line x1="0" y1="290" x2="1260" y2="290" stroke-dasharray="4,4" />
+          <line x1="0" y1="460" x2="1260" y2="460" stroke-dasharray="4,4" />
+          <line x1="250" y1="0" x2="250" y2="650" stroke-dasharray="4,4" />
+          <line x1="480" y1="0" x2="480" y2="650" stroke-dasharray="4,4" />
+          <line x1="720" y1="0" x2="720" y2="650" stroke-dasharray="4,4" />
+          <line x1="950" y1="0" x2="950" y2="650" stroke-dasharray="4,4" />
+        </g>
+
+        <!-- Title Banner -->
+        <g transform="translate(35, 30)">
+          <text font-family="system-ui, sans-serif" font-size="14" font-weight="900" fill="${isDark ? '#38bdf8' : '#0284c7'}">
+            ${config.title}
+          </text>
+          <text y="17" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="${isDark ? '#94a3b8' : '#64748b'}">
+            ${config.subtitle}
+          </text>
+        </g>
+
+        <!-- Ground Horizon Guideline -->
+        <line x1="30" y1="515" x2="1230" y2="515" stroke="${isDark ? '#334155' : '#cbd5e1'}" stroke-width="1.8" stroke-dasharray="5,4" />
+        <text x="35" y="508" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="${isDark ? '#94a3b8' : '#475569'}">
+          TERRESTRIAL SOIL LEVEL (IS 3043:2018 &amp; IEC 62305 MANDATORY GROUND HORIZON) ──────────────────────────────────────────────────────────────────────────
+        </text>
+
+        <!-- Dynamic Wires -->
+        ${wiresMarkup}
+
+        <!-- Earth Separation Dimension Lines -->
+        ${earthDimMarkup}
+
+        <!-- Draggable Blocks -->
+        ${blocksMarkup}
+
+        <!-- Earthing Standard Code Annotation Box -->
+        <g transform="translate(930, 530)">
+          <rect width="300" height="85" rx="7" fill="${isDark ? '#111e38' : '#ffffff'}" stroke="${isDark ? '#263b63' : '#e2e8f0'}" stroke-width="1.4" />
+          <text x="14" y="20" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="${isDark ? '#f8fafc' : '#0f172a'}">
+            MANDATORY EARTHING DISTANCE (IS 3043 / IEC 62305):
+          </text>
+          <circle cx="20" cy="35" r="4" fill="#f59e0b" />
+          <text x="32" y="38" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="${isDark ? '#cbd5e1' : '#475569'}">
+            Min 3.0m - 5.0m Isolation: Eliminates Sphere of Influence Overlap
+          </text>
+          <circle cx="20" cy="53" r="4" fill="#16a34a" />
+          <text x="32" y="56" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="${isDark ? '#cbd5e1' : '#475569'}">
+            Pit 1 (LA): Dedicated Rooftop Down Conductor only
+          </text>
+          <circle cx="20" cy="71" r="4" fill="#3b82f6" />
+          <text x="32" y="74" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="${isDark ? '#cbd5e1' : '#475569'}">
+            Pit 2 (DC) &amp; Pit 3 (AC): Strictly Independent Dispersal
+          </text>
+        </g>
+      </svg>
+    `;
   }
 
-  /**
-   * Attaches pan, zoom, hover and click events to interactive SVG elements.
-   */
-  function attachSvgEvents(container, scope = 'inline') {
+  /* =========================================================================
+     INTERACTION ENGINE (DRAGGING, WIRES SYNC, PAN, ZOOM, TOOLTIPS)
+     ========================================================================= */
+  function getSvgPoint(e, svgEl) {
+    const pt = svgEl.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const ctm = svgEl.getScreenCTM();
+    if (ctm) {
+      return pt.matrixTransform(ctm.inverse());
+    }
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function updateConnectedWires(svgEl, sysType, blockId) {
+    const config = SYSTEM_CONFIGS[sysType];
+    if (!config) return;
+
+    const positions = sldState.positions[sysType] || {};
+
+    // 1. Update wires
+    config.wires.forEach(wire => {
+      if (wire.from.blockId === blockId || wire.to.blockId === blockId) {
+        const wireEl = svgEl.querySelector(`#wire-${wire.id}`);
+        const lblEl = svgEl.querySelector(`#wire-lbl-${wire.id}`);
+
+        const data = computeWireData(wire, config, positions);
+        if (data) {
+          if (wireEl) wireEl.setAttribute('d', data.pathD);
+          if (lblEl) {
+            lblEl.setAttribute('x', data.lblX);
+            lblEl.setAttribute('y', data.lblY);
+            if (wire.verticalLabel) {
+              lblEl.setAttribute('transform', `rotate(-90 ${data.lblX} ${data.lblY})`);
+            }
+          }
+        }
+      }
+    });
+
+    // 2. Update Earth dimensions if earth pit moved
+    if (config.earthDimensions) {
+      config.earthDimensions.forEach((dim, idx) => {
+        if (dim.fromId === blockId || dim.toId === blockId) {
+          const dimEl = svgEl.querySelector(`#earth-dim-${idx}`);
+          const dimLbl = svgEl.querySelector(`#earth-dim-lbl-${idx}`);
+
+          const fromB = config.blocks[dim.fromId];
+          const toB = config.blocks[dim.toId];
+          if (fromB && toB) {
+            const p1 = positions[dim.fromId] || { dx: 0, dy: 0 };
+            const p2 = positions[dim.toId] || { dx: 0, dy: 0 };
+            const x1 = fromB.x + p1.dx + 48;
+            const x2 = toB.x + p2.dx - 48;
+            const y = dim.y;
+            const midX = (x1 + x2) / 2;
+
+            if (dimEl) dimEl.setAttribute('d', `M ${x1} ${y} L ${x2} ${y}`);
+            if (dimLbl) {
+              dimLbl.setAttribute('x', midX);
+              dimLbl.setAttribute('y', y - 8);
+            }
+          }
+        }
+      });
+    }
+  }
+
+  function attachSvgEvents(container, scope = 'modal') {
     const svgEl = container.querySelector('svg');
     if (!svgEl) return;
 
-    // Component hover & click tooltips
-    const items = svgEl.querySelectorAll('.sld-interactive-item');
-    items.forEach(item => {
-      const compId = item.getAttribute('data-comp-id');
+    const sysType = sldState.currentSystem;
+    const config = SYSTEM_CONFIGS[sysType];
+    if (!config) return;
+
+    // A. Attach block dragging and clicking
+    const draggableBlocks = svgEl.querySelectorAll('.sld-draggable-block');
+    draggableBlocks.forEach(blockEl => {
+      const compId = blockEl.getAttribute('data-comp-id');
       const spec = COMPONENT_DETAILS[compId];
 
-      if (!spec) return;
-
-      // Mouse enter / touch hover
-      item.addEventListener('mouseenter', e => {
-        showTooltip(e, spec);
-        item.style.filter = 'drop-shadow(0 0 6px rgba(56, 189, 248, 0.75))';
+      // Mouse Hover for Tooltip
+      blockEl.addEventListener('mouseenter', e => {
+        if (!sldState.activeDragBlock && spec) {
+          showTooltip(e, spec);
+        }
       });
 
-      item.addEventListener('mouseleave', () => {
+      blockEl.addEventListener('mouseleave', () => {
         hideTooltip();
-        item.style.filter = '';
       });
 
-      // Click to pin / show detail panel in modal
-      item.addEventListener('click', e => {
-        e.stopPropagation();
-        showDetailDrawer(spec);
+      // Mouse Down to Start Dragging Block
+      blockEl.addEventListener('mousedown', e => {
+        if (e.button !== 0) return; // Only left click
+        e.stopPropagation(); // Do not pan canvas!
+        hideTooltip();
+
+        sldState.activeDragBlock = compId;
+        sldState.dragStartSvg = getSvgPoint(e, svgEl);
+
+        const currentPos = sldState.positions[sysType][compId] || { dx: 0, dy: 0 };
+        sldState.blockStartPos = { ...currentPos };
+        sldState.dragMoved = false;
+
+        blockEl.classList.add('is-dragging');
       });
     });
 
-    // Zoom & Pan via Mouse Dragging
-    let isPanning = false;
-    let startPoint = { x: 0, y: 0 };
+    // B. Canvas Panning via Mouse Dragging on Background
+    let isCanvasPanning = false;
+    let panStart = { x: 0, y: 0 };
     let panOffset = scope === 'modal' ? { ...sldState.modalPan } : { ...sldState.inlinePan };
 
     svgEl.addEventListener('mousedown', e => {
-      // Only left mouse button
       if (e.button !== 0) return;
-      isPanning = true;
-      startPoint = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+      if (sldState.activeDragBlock) return; // Don't pan if dragging a block
+      isCanvasPanning = true;
+      panStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
       svgEl.style.cursor = 'grabbing';
     });
 
-    window.addEventListener('mousemove', e => {
-      if (!isPanning) return;
-      panOffset.x = e.clientX - startPoint.x;
-      panOffset.y = e.clientY - startPoint.y;
-      applyTransform(svgEl, scope, panOffset);
-    });
+    // Global Window MouseMove for Both Block Dragging and Canvas Panning
+    const onMouseMove = e => {
+      // 1. Block Dragging Active
+      if (sldState.activeDragBlock) {
+        const curSvgPt = getSvgPoint(e, svgEl);
+        const deltaX = curSvgPt.x - sldState.dragStartSvg.x;
+        const deltaY = curSvgPt.y - sldState.dragStartSvg.y;
 
-    window.addEventListener('mouseup', () => {
-      if (isPanning) {
-        isPanning = false;
+        if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+          sldState.dragMoved = true;
+        }
+
+        const newDx = sldState.blockStartPos.dx + deltaX;
+        const newDy = sldState.blockStartPos.dy + deltaY;
+
+        sldState.positions[sysType][sldState.activeDragBlock] = { dx: newDx, dy: newDy };
+
+        const blockCfg = config.blocks[sldState.activeDragBlock];
+        if (blockCfg) {
+          const wrapperEl = svgEl.querySelector(`#block-wrapper-${sldState.activeDragBlock}`);
+          if (wrapperEl) {
+            wrapperEl.setAttribute('transform', `translate(${blockCfg.x + newDx}, ${blockCfg.y + newDy})`);
+          }
+        }
+
+        updateConnectedWires(svgEl, sysType, sldState.activeDragBlock);
+        return;
+      }
+
+      // 2. Canvas Panning Active
+      if (isCanvasPanning) {
+        panOffset.x = e.clientX - panStart.x;
+        panOffset.y = e.clientY - panStart.y;
+        applyTransform(svgEl, scope, panOffset);
+      }
+    };
+
+    const onMouseUp = () => {
+      // End Block Dragging
+      if (sldState.activeDragBlock) {
+        const compId = sldState.activeDragBlock;
+        const blockEl = svgEl.querySelector(`[data-comp-id="${compId}"]`);
+        if (blockEl) blockEl.classList.remove('is-dragging');
+
+        // If it was just a quick click (<4px movement), show inspector drawer
+        if (!sldState.dragMoved) {
+          const spec = COMPONENT_DETAILS[compId];
+          if (spec) showDetailDrawer(spec);
+        }
+
+        sldState.activeDragBlock = null;
+        sldState.dragMoved = false;
+      }
+
+      // End Canvas Panning
+      if (isCanvasPanning) {
+        isCanvasPanning = false;
         svgEl.style.cursor = 'grab';
         if (scope === 'modal') {
           sldState.modalPan = { ...panOffset };
@@ -1961,7 +2350,14 @@
           sldState.inlinePan = { ...panOffset };
         }
       }
-    });
+    };
+
+    window.removeEventListener('mousemove', container._activeMouseMove);
+    window.removeEventListener('mouseup', container._activeMouseUp);
+    container._activeMouseMove = onMouseMove;
+    container._activeMouseUp = onMouseUp;
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
 
     // Mouse Wheel Zoom
     svgEl.addEventListener('wheel', e => {
@@ -1971,9 +2367,6 @@
     }, { passive: false });
   }
 
-  /**
-   * Applies CSS zoom and pan transform to SVG element.
-   */
   function applyTransform(svgEl, scope, pan) {
     const zoomLevel = scope === 'modal' ? sldState.modalZoom : sldState.inlineZoom;
     svgEl.style.transformOrigin = 'center center';
@@ -1981,10 +2374,7 @@
     svgEl.style.transition = 'transform 0.05s ease-out';
   }
 
-  /**
-   * Zoom In / Out / Reset Controls.
-   */
-  function zoom(delta, scope = 'inline') {
+  function zoom(delta, scope = 'modal') {
     let currentZoom = scope === 'modal' ? sldState.modalZoom : sldState.inlineZoom;
     let newZoom = Math.max(0.6, Math.min(2.8, currentZoom + delta));
 
@@ -2001,14 +2391,14 @@
     }
   }
 
-  function resetZoom(scope = 'inline') {
+  function resetZoom(scope = 'modal') {
     if (scope === 'modal') {
       sldState.modalZoom = 1;
       sldState.modalPan = { x: 0, y: 0 };
       const modalSvg = document.querySelector('#sldModalSvgWrapper svg');
       if (modalSvg) applyTransform(modalSvg, 'modal', { x: 0, y: 0 });
       const zoomText = document.getElementById('sldModalZoomText');
-      if (zoomText) zoomText.textContent = `100%`;
+      if (zoomText) zoomText.textContent = '100%';
     } else {
       sldState.inlineZoom = 1;
       sldState.inlinePan = { x: 0, y: 0 };
@@ -2017,25 +2407,30 @@
     }
   }
 
-  /**
-   * Theme Switcher (Dark Blueprint vs Engineering Light).
-   */
+  function resetLayout(scope = 'modal') {
+    const sysType = sldState.currentSystem;
+    sldState.positions[sysType] = {};
+    render(sysType);
+  }
+
   function toggleTheme() {
     sldState.theme = sldState.theme === 'dark' ? 'light' : 'dark';
     const isDark = sldState.theme === 'dark';
 
-    // Update toggle icons
-    const themeBtnIcons = document.querySelectorAll('.sld-theme-icon');
-    themeBtnIcons.forEach(icon => {
-      icon.textContent = isDark ? '🌙 Dark Blueprint' : '☀️ Light Drawing';
+    const modalCanvas = document.getElementById('sldModalSvgWrapper');
+    if (modalCanvas) {
+      modalCanvas.classList.toggle('sld-theme-dark', isDark);
+      modalCanvas.classList.toggle('sld-theme-light', !isDark);
+    }
+
+    const themeIcons = document.querySelectorAll('.sld-theme-icon');
+    themeIcons.forEach(icon => {
+      icon.textContent = isDark ? '🌙 Dark' : '☀️ Light';
     });
 
     render();
   }
 
-  /**
-   * Hover Tooltip Logic.
-   */
   function showTooltip(e, spec) {
     let tip = document.getElementById('sldFloatingTooltip');
     if (!tip) {
@@ -2056,7 +2451,7 @@
         ${spec.connections ? `<div class="sld-tip-row"><span class="sld-tip-lbl">Terminals:</span> <span>${spec.connections}</span></div>` : ''}
         ${spec.grounding ? `<div class="sld-tip-row"><span class="sld-tip-lbl">Earthing:</span> <span class="text-success fw-bold">${spec.grounding}</span></div>` : ''}
       </div>
-      <div class="sld-tooltip-footer">Click component for detailed engineering sheet</div>
+      <div class="sld-tooltip-footer">Click component for detailed engineering sheet • Drag to move with wires</div>
     `;
 
     tip.style.display = 'block';
@@ -2080,9 +2475,6 @@
     }
   }
 
-  /**
-   * Bottom Detail Drawer in Modal for in-depth inspection.
-   */
   function showDetailDrawer(spec) {
     const drawer = document.getElementById('sldDetailDrawer');
     if (!drawer) return;
@@ -2107,7 +2499,12 @@
           ` : ''}
           ${spec.grounding ? `
             <div class="col-md-6">
-              <span class="text-secondary fw-semibold">Earthing / Pit:</span> <span class="text-success fw-bold">${spec.grounding}</span>
+              <span class="text-secondary fw-semibold">Earthing / Isolation:</span> <span class="text-success fw-bold">${spec.grounding}</span>
+            </div>
+          ` : ''}
+          ${spec.connections ? `
+            <div class="col-12">
+              <span class="text-secondary fw-semibold">Wiring Topology:</span> <span class="text-dark">${spec.connections}</span>
             </div>
           ` : ''}
           ${spec.standards ? `
@@ -2121,9 +2518,46 @@
     drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  /**
-   * Opens the full-screen SLD Modal.
-   */
+  function updateActiveBadges(current) {
+    const buttons = document.querySelectorAll('.sld-system-tab-btn');
+    buttons.forEach(btn => {
+      const type = btn.getAttribute('data-sys-type');
+      if (type === current) {
+        btn.classList.remove('btn-light', 'text-dark');
+        btn.classList.add('btn-primary', 'text-white');
+      } else {
+        btn.classList.remove('btn-primary', 'text-white');
+        btn.classList.add('btn-light', 'text-dark');
+      }
+    });
+  }
+
+  function render(systemType) {
+    if (systemType) sldState.currentSystem = systemType;
+    const current = sldState.currentSystem;
+    const isDark = sldState.theme === 'dark';
+
+    const svgContent = generateSvgContent(current, isDark);
+
+    const modalContainer = document.getElementById('sldModalSvgWrapper');
+    if (modalContainer) {
+      modalContainer.innerHTML = svgContent;
+      attachSvgEvents(modalContainer, 'modal');
+      const modalSvg = modalContainer.querySelector('svg');
+      if (modalSvg) applyTransform(modalSvg, 'modal', sldState.modalPan);
+    }
+
+    const inlineContainer = document.getElementById('sldInlineSvgWrapper');
+    if (inlineContainer) {
+      inlineContainer.innerHTML = svgContent;
+      attachSvgEvents(inlineContainer, 'inline');
+      const inlineSvg = inlineContainer.querySelector('svg');
+      if (inlineSvg) applyTransform(inlineSvg, 'inline', sldState.inlinePan);
+    }
+
+    updateActiveBadges(current);
+  }
+
   function openModal(systemType) {
     if (!systemType && window.SizingUI && typeof window.SizingUI.getCurrentSystemType === 'function') {
       systemType = window.SizingUI.getCurrentSystemType();
@@ -2147,9 +2581,6 @@
     }
   }
 
-  /**
-   * Exports the currently active SVG as a standalone .svg file.
-   */
   function exportSvg() {
     const current = sldState.currentSystem;
     const isDark = sldState.theme === 'dark';
@@ -2165,11 +2596,7 @@
     URL.revokeObjectURL(url);
   }
 
-  /**
-   * Initializes the Schematic component on DOM load.
-   */
   function init() {
-    // Detect system from SizingUI state if available
     let initialType = 'off-grid';
     if (window.SizingUI && typeof window.SizingUI.getCurrentSystemType === 'function') {
       initialType = window.SizingUI.getCurrentSystemType() || 'off-grid';
@@ -2191,6 +2618,7 @@
     openModal,
     zoom,
     resetZoom,
+    resetLayout,
     toggleTheme,
     exportSvg,
     switchSystemFromModal: function (type) {
@@ -2202,7 +2630,6 @@
     }
   };
 
-  // Auto-init on DOMContentLoaded or immediate if already ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
