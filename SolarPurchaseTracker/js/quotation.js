@@ -226,6 +226,59 @@ function getSelectedOfficeAddress() {
   return addresses[0] || '';
 }
 
+function formatDeclarationPoints(termsText) {
+  if (!termsText || !termsText.trim()) return '';
+
+  const rawLines = termsText.split('\n').map(l => l.trim()).filter(Boolean);
+  const items = [];
+  let currentItem = null;
+
+  rawLines.forEach(line => {
+    // Check if line starts with a number (e.g. "1.", "1)", "(1)") or bullet ("*", "-", "•")
+    const match = line.match(/^(\d+[\.\)]|\(\d+\)|\*|\-|\u2022)\s*(.*)$/);
+    if (match) {
+      if (currentItem) items.push(currentItem);
+      currentItem = {
+        marker: match[1].replace(/^[\*\-]$/, '•'),
+        text: match[2]
+      };
+    } else {
+      // Continuation of previous item, or new item if none
+      if (currentItem) {
+        currentItem.text += (currentItem.text ? ' ' : '') + line;
+      } else {
+        currentItem = {
+          marker: '•',
+          text: line
+        };
+      }
+    }
+  });
+  if (currentItem) items.push(currentItem);
+
+  if (items.length === 0) {
+    rawLines.forEach((line, idx) => {
+      items.push({ marker: `${idx + 1}.`, text: line });
+    });
+  }
+
+  return items.map((item, idx) => {
+    const marker = item.marker || `${idx + 1}.`;
+    return `
+      <div style="display: table; width: 100%; border-collapse: collapse; margin-bottom: 3.5px; font-size: 7.6pt; line-height: 1.35;">
+        <div style="display: table-row;">
+          <div style="display: table-cell; width: 18px; min-width: 18px; max-width: 22px; vertical-align: top; font-weight: bold; color: #000; text-align: left; padding-right: 3px;">
+            ${marker}
+          </div>
+          <div style="display: table-cell; vertical-align: top; text-align: left; color: #111;">
+            ${item.text}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function syncPrintLabels() {
   const settings = DB.getAll('settings');
   const getSetting = (key, def = '') => (settings.find(s => s.Key === key) || {}).Value ?? def;
@@ -330,23 +383,12 @@ function syncPrintLabels() {
   if (elBankAcNo) elBankAcNo.textContent = acNoVal;
   if (elBankIFS) elBankIFS.textContent = ifsVal;
 
-  // 7. Terms and Conditions
-  const termsText = getSetting('CompanyTerms', '');
+  // 7. Terms and Conditions / Declaration
+  const defaultTerms = `1. This quotation shows the actual price of goods described; all particulars are true and correct.\n2. Advance to be paid within 7 days of quotation date, else price may vary as per company revision.\n3. All disputes subject to Bhubaneswar jurisdiction only.\n4. Products once sold cannot be returned.`;
+  const termsText = getSetting('CompanyTerms', defaultTerms);
   const printTermsLbl = document.getElementById('lblCompanyTermsPrint');
   if (printTermsLbl) {
-    if (termsText) {
-      const lines = termsText.split('\n').map(l => l.trim()).filter(Boolean);
-      printTermsLbl.innerHTML = lines.map(line => {
-        let content = line;
-        const hasPoint = /^(?:\d+\.|\*|\-|\u2022)/.test(line);
-        if (!hasPoint) {
-          content = `• ${line}`;
-        }
-        return `<div class="mb-1" style="padding-left: 18px; text-indent: -18px; line-height: 1.35; text-align: left;">${content}</div>`;
-      }).join('');
-    } else {
-      printTermsLbl.innerHTML = '';
-    }
+    printTermsLbl.innerHTML = formatDeclarationPoints(termsText);
   }
 
   // 8. Subsidy Scheme Table Cell
@@ -917,16 +959,7 @@ function loadCompanyProfileSettings() {
   const termsLblPrint = document.getElementById('lblCompanyTermsPrint');
   if (termsSection && termsLbl) {
     if (termsText) {
-      const lines = termsText.split('\n').map(l => l.trim()).filter(Boolean);
-      const formattedHtml = lines.map(line => {
-        let content = line;
-        const hasPoint = /^(?:\d+\.|\*|\-|\u2022)/.test(line);
-        if (!hasPoint) {
-          content = `• ${line}`;
-        }
-        return `<div class="mb-1" style="padding-left: 18px; text-indent: -18px; line-height: 1.4; text-align: left;">${content}</div>`;
-      }).join('');
-      
+      const formattedHtml = formatDeclarationPoints(termsText);
       termsLbl.innerHTML = formattedHtml;
       if (termsLblPrint) termsLblPrint.innerHTML = formattedHtml;
       termsSection.style.display = 'block';
@@ -2345,39 +2378,42 @@ window.exportQuotationToDocx = async function() {
   ];
 
   // Fetch dynamic terms
-  const termsTextDocx = getSetting('CompanyTerms', '');
-  if (termsTextDocx) {
-    const lines = termsTextDocx.split('\n').map(l => l.trim()).filter(Boolean);
-    lines.forEach(line => {
-      let content = line;
-      const hasPoint = /^(?:\d+\.|\*|\-|\u2022)/.test(line);
-      if (!hasPoint) {
-        content = `• ${line}`;
+  const termsTextDocx = getSetting('CompanyTerms', defaultTerms);
+  const rawLinesDocx = (termsTextDocx || defaultTerms).split('\n').map(l => l.trim()).filter(Boolean);
+  const itemsDocx = [];
+  let currentItemDocx = null;
+
+  rawLinesDocx.forEach(line => {
+    const match = line.match(/^(\d+[\.\)]|\(\d+\)|\*|\-|\u2022)\s*(.*)$/);
+    if (match) {
+      if (currentItemDocx) itemsDocx.push(currentItemDocx);
+      currentItemDocx = {
+        marker: match[1].replace(/^[\*\-]$/, '•'),
+        text: match[2]
+      };
+    } else {
+      if (currentItemDocx) {
+        currentItemDocx.text += (currentItemDocx.text ? ' ' : '') + line;
+      } else {
+        currentItemDocx = { marker: '•', text: line };
       }
-      rightColParagraphs.push(
-        new Paragraph({
-          children: [new TextRun({ text: content, size: 18, font: "Times New Roman" })],
-          spacing: { after: 10 }
-        })
-      );
-    });
-  } else {
-    // Default fallback to the 4 declaration points
-    const defaultDeclPoints = [
-      "1. This quotation shows the actual price of goods described; all particulars are true and correct.",
-      "2. Advance to be paid within 7 days of quotation date, else price may vary as per company revision.",
-      "3. All disputes subject to Bhubaneswar jurisdiction only.",
-      "4. Products once sold cannot be returned."
-    ];
-    defaultDeclPoints.forEach(pt => {
-      rightColParagraphs.push(
-        new Paragraph({
-          children: [new TextRun({ text: pt, size: 18, font: "Times New Roman" })],
-          spacing: { after: 10 }
-        })
-      );
-    });
-  }
+    }
+  });
+  if (currentItemDocx) itemsDocx.push(currentItemDocx);
+
+  itemsDocx.forEach((item, idx) => {
+    const marker = item.marker || `${idx + 1}.`;
+    rightColParagraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `${marker} `, bold: true, size: 18, font: "Times New Roman" }),
+          new TextRun({ text: item.text, size: 18, font: "Times New Roman" })
+        ],
+        indent: { left: 360, hanging: 360 },
+        spacing: { after: 30 }
+      })
+    );
+  });
 
   bottomBlockTable = new Table({
     width: { size: TOTAL_TABLE_WIDTH, type: WidthType.DXA },
