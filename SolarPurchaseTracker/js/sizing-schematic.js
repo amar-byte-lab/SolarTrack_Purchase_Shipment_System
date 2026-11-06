@@ -2170,13 +2170,22 @@
      ========================================================================= */
   function getSvgPoint(e, svgEl) {
     const pt = svgEl.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    if (clientX === undefined && e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (clientX === undefined && e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    }
+    pt.x = clientX || 0;
+    pt.y = clientY || 0;
     const ctm = svgEl.getScreenCTM();
     if (ctm) {
       return pt.matrixTransform(ctm.inverse());
     }
-    return { x: e.clientX, y: e.clientY };
+    return { x: clientX || 0, y: clientY || 0 };
   }
 
   function updateConnectedWires(svgEl, sysType, blockId) {
@@ -2247,9 +2256,9 @@
       const compId = blockEl.getAttribute('data-comp-id');
       const spec = COMPONENT_DETAILS[compId];
 
-      // Mouse Hover for Tooltip
+      // Mouse Hover for Tooltip (desktop)
       blockEl.addEventListener('mouseenter', e => {
-        if (!sldState.activeDragBlock && spec) {
+        if (!sldState.activeDragBlock && spec && !document.body.classList.contains('sld-fullscreen-active')) {
           showTooltip(e, spec);
         }
       });
@@ -2273,12 +2282,30 @@
 
         blockEl.classList.add('is-dragging');
       });
+
+      // Touch Start to Drag Block (Mobile)
+      blockEl.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        e.stopPropagation();
+        hideTooltip();
+
+        sldState.activeDragBlock = compId;
+        sldState.dragStartSvg = getSvgPoint(e, svgEl);
+
+        const currentPos = sldState.positions[sysType][compId] || { dx: 0, dy: 0 };
+        sldState.blockStartPos = { ...currentPos };
+        sldState.dragMoved = false;
+
+        blockEl.classList.add('is-dragging');
+      }, { passive: false });
     });
 
-    // B. Canvas Panning via Mouse Dragging on Background
+    // B. Canvas Panning via Mouse Dragging or Touch Dragging on Background
     let isCanvasPanning = false;
     let panStart = { x: 0, y: 0 };
     let panOffset = { x: 0, y: 0 };
+    let touchPinchDist = null;
+
     if (scope === 'modal') panOffset = { ...sldState.modalPan };
     else if (scope === 'page') panOffset = { ...sldState.pagePan };
     else panOffset = { ...sldState.inlinePan };
@@ -2290,6 +2317,21 @@
       panStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
       svgEl.style.cursor = 'grabbing';
     });
+
+    svgEl.addEventListener('touchstart', e => {
+      if (sldState.activeDragBlock) return;
+      if (e.touches.length === 1) {
+        isCanvasPanning = true;
+        const touch = e.touches[0];
+        panStart = { x: touch.clientX - panOffset.x, y: touch.clientY - panOffset.y };
+      } else if (e.touches.length === 2) {
+        // Pinch-to-zoom start
+        isCanvasPanning = false;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        touchPinchDist = Math.hypot(dx, dy);
+      }
+    }, { passive: false });
 
     // Global Window MouseMove for Both Block Dragging and Canvas Panning
     const onMouseMove = e => {
@@ -2335,8 +2377,8 @@
         const blockEl = svgEl.querySelector(`[data-comp-id="${compId}"]`);
         if (blockEl) blockEl.classList.remove('is-dragging');
 
-        // If it was just a quick click (<4px movement), show inspector drawer
-        if (!sldState.dragMoved) {
+        // If it was just a quick click (<4px movement) and not in fullscreen, show inspector drawer
+        if (!sldState.dragMoved && !document.body.classList.contains('sld-fullscreen-active')) {
           const spec = COMPONENT_DETAILS[compId];
           if (spec) showDetailDrawer(spec);
         }
@@ -2359,12 +2401,75 @@
       }
     };
 
+    // Mobile Touch Move & End Handlers
+    const onTouchMove = e => {
+      if (sldState.activeDragBlock && e.touches.length === 1) {
+        if (e.cancelable) e.preventDefault();
+        const curSvgPt = getSvgPoint(e.touches[0], svgEl);
+        const deltaX = curSvgPt.x - sldState.dragStartSvg.x;
+        const deltaY = curSvgPt.y - sldState.dragStartSvg.y;
+
+        if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+          sldState.dragMoved = true;
+        }
+
+        const newDx = sldState.blockStartPos.dx + deltaX;
+        const newDy = sldState.blockStartPos.dy + deltaY;
+
+        sldState.positions[sysType][sldState.activeDragBlock] = { dx: newDx, dy: newDy };
+
+        const blockCfg = config.blocks[sldState.activeDragBlock];
+        if (blockCfg) {
+          const wrapperEl = svgEl.querySelector(`#block-wrapper-${sldState.activeDragBlock}`);
+          if (wrapperEl) {
+            wrapperEl.setAttribute('transform', `translate(${blockCfg.x + newDx}, ${blockCfg.y + newDy})`);
+          }
+        }
+
+        updateConnectedWires(svgEl, sysType, sldState.activeDragBlock);
+        return;
+      }
+
+      if (e.touches.length === 2 && touchPinchDist) {
+        if (e.cancelable) e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const newDist = Math.hypot(dx, dy);
+        const factor = (newDist - touchPinchDist) / 120;
+        if (Math.abs(factor) > 0.03) {
+          zoom(factor, scope);
+          touchPinchDist = newDist;
+        }
+        return;
+      }
+
+      if (isCanvasPanning && e.touches.length === 1) {
+        if (e.cancelable) e.preventDefault();
+        const touch = e.touches[0];
+        panOffset.x = touch.clientX - panStart.x;
+        panOffset.y = touch.clientY - panStart.y;
+        applyTransform(svgEl, scope, panOffset);
+      }
+    };
+
+    const onTouchEnd = () => {
+      touchPinchDist = null;
+      onMouseUp();
+    };
+
     window.removeEventListener('mousemove', container._activeMouseMove);
     window.removeEventListener('mouseup', container._activeMouseUp);
     container._activeMouseMove = onMouseMove;
     container._activeMouseUp = onMouseUp;
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+
+    window.removeEventListener('touchmove', container._activeTouchMove);
+    window.removeEventListener('touchend', container._activeTouchEnd);
+    container._activeTouchMove = onTouchMove;
+    container._activeTouchEnd = onTouchEnd;
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
 
     // Mouse Wheel Zoom
     svgEl.addEventListener('wheel', e => {
@@ -2507,40 +2612,56 @@
   }
 
   function showDetailDrawer(spec) {
+    if (document.body.classList.contains('sld-fullscreen-active')) return;
     const drawer = document.getElementById('sldDetailDrawer');
     if (!drawer) return;
 
     drawer.innerHTML = `
-      <div class="p-3 bg-white border rounded-3 shadow-sm">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h6 class="fw-bold text-dark mb-0 fs-7">${spec.title}</h6>
-          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fs-9">Electrical Specification</span>
-        </div>
-        <div class="row g-2 fs-8">
-          <div class="col-md-6">
-            <span class="text-secondary fw-semibold">Classification:</span> <span class="text-dark">${spec.type}</span>
+      <div class="p-2.5 p-md-3 bg-white border rounded-3 shadow-sm sld-detail-card">
+        <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary text-white px-2 py-0.5 fs-9 fw-bold">RATING</span>
+            <h6 class="fw-bold text-dark mb-0 fs-7">${spec.title}</h6>
           </div>
-          <div class="col-md-6">
-            <span class="text-secondary fw-semibold">Operating Specs:</span> <span class="text-primary fw-bold">${spec.specs || 'Standard Industrial Rating'}</span>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5 fs-9 fw-semibold">${spec.type}</span>
+        </div>
+        <div class="row g-2 fs-8 sld-spec-grid">
+          <div class="col-12 col-sm-6">
+            <div class="p-2 rounded-2 bg-light border-start border-3 border-primary h-100">
+              <span class="text-secondary fw-semibold d-block fs-9 text-uppercase">Operating Specs:</span>
+              <span class="text-primary fw-bold fs-8">${spec.specs || 'Standard Industrial Rating'}</span>
+            </div>
           </div>
           ${spec.protection ? `
-            <div class="col-md-6">
-              <span class="text-secondary fw-semibold">Protection:</span> <span class="text-danger fw-semibold">${spec.protection}</span>
+            <div class="col-12 col-sm-6">
+              <div class="p-2 rounded-2 bg-light border-start border-3 border-danger h-100">
+                <span class="text-secondary fw-semibold d-block fs-9 text-uppercase">Protection:</span>
+                <span class="text-danger fw-semibold fs-8">${spec.protection}</span>
+              </div>
             </div>
           ` : ''}
           ${spec.grounding ? `
-            <div class="col-md-6">
-              <span class="text-secondary fw-semibold">Earthing / Isolation:</span> <span class="text-success fw-bold">${spec.grounding}</span>
+            <div class="col-12 col-sm-6">
+              <div class="p-2 rounded-2 bg-light border-start border-3 border-success h-100">
+                <span class="text-secondary fw-semibold d-block fs-9 text-uppercase">Earthing / Isolation:</span>
+                <span class="text-success fw-bold fs-8">${spec.grounding}</span>
+              </div>
             </div>
           ` : ''}
           ${spec.connections ? `
             <div class="col-12">
-              <span class="text-secondary fw-semibold">Wiring Topology:</span> <span class="text-dark">${spec.connections}</span>
+              <div class="p-2 rounded-2 bg-light border-start border-3 border-info">
+                <span class="text-secondary fw-semibold d-block fs-9 text-uppercase">Wiring Topology:</span>
+                <span class="text-dark fs-8">${spec.connections}</span>
+              </div>
             </div>
           ` : ''}
           ${spec.standards ? `
             <div class="col-12">
-              <span class="text-secondary fw-semibold">Compliance Standards:</span> <span class="badge bg-light text-dark border">${spec.standards}</span>
+              <div class="p-2 rounded-2 bg-light border-start border-3 border-secondary">
+                <span class="text-secondary fw-semibold d-block fs-9 text-uppercase">Compliance Standards:</span>
+                <span class="badge bg-white text-dark border mt-0.5">${spec.standards}</span>
+              </div>
             </div>
           ` : ''}
         </div>
@@ -2572,7 +2693,7 @@
 
     const fullPageContainer = document.getElementById('sldFullPageSvgWrapper');
     if (fullPageContainer) {
-      fullPageContainer.innerHTML = svgContent;
+      fullPageContainer.innerHTML = svgContent + renderFloatingControls();
       attachSvgEvents(fullPageContainer, 'page');
       const pageSvg = fullPageContainer.querySelector('svg');
       if (pageSvg) applyTransform(pageSvg, 'page', sldState.pagePan);
@@ -2652,6 +2773,116 @@
     render(initialType);
   }
 
+  function renderFloatingControls() {
+    return `
+      <div class="sld-floating-controls" id="sldFloatingControls">
+        <div class="sld-floating-bar d-flex align-items-center gap-1.5 p-1 rounded-3">
+          <button type="button" class="btn btn-sm btn-dark text-white border-secondary py-0.5 px-2 fs-8 fw-bold" onclick="SizingSchematic.zoom(-0.25, 'page')" title="Zoom Out">−</button>
+          <button type="button" class="btn btn-sm btn-dark text-white border-secondary py-0.5 px-2 fs-8 fw-bold" onclick="SizingSchematic.resetZoom('page')" title="Fit to Screen">⟲ Fit</button>
+          <button type="button" class="btn btn-sm btn-dark text-white border-secondary py-0.5 px-2 fs-8 fw-bold" onclick="SizingSchematic.zoom(0.25, 'page')" title="Zoom In">+</button>
+          <button type="button" class="btn btn-sm btn-outline-warning py-0.5 px-2 fs-8 fw-semibold" onclick="SizingSchematic.resetLayout('page')" title="Reset Positions">↺ Layout</button>
+          <button type="button" class="btn btn-sm btn-outline-info py-0.5 px-2 fs-8 fw-semibold" onclick="SizingSchematic.toggleTheme()" title="Toggle Theme">🌓</button>
+          <button type="button" class="btn btn-sm btn-danger py-0.5 px-2.5 fs-8 fw-bold ms-1" onclick="SizingSchematic.exitLandscapeFullscreen()" title="Exit Landscape Fullscreen">✕ Exit</button>
+        </div>
+      </div>
+      <div class="sld-rotate-prompt" id="sldRotatePrompt">
+        <span>📱 Rotate phone to landscape for optimal schematic view</span>
+        <button type="button" class="btn-close btn-close-white ms-1.5 p-0" style="font-size: 0.55rem; filter: invert(1);" onclick="this.parentElement.style.display='none'"></button>
+      </div>
+    `;
+  }
+
+  function enterLandscapeFullscreen() {
+    document.body.classList.add('sld-fullscreen-active');
+    const wrapper = document.getElementById('sldFullPageSvgWrapper');
+    if (wrapper) wrapper.classList.add('sld-fullscreen-view');
+
+    const elem = wrapper || document.documentElement;
+    try {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      }
+    } catch (e) {
+      console.warn('Fullscreen request:', e);
+    }
+
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch (e) {
+      console.warn('Orientation lock:', e);
+    }
+
+    setTimeout(() => {
+      resetZoom('page');
+    }, 100);
+  }
+
+  function exitLandscapeFullscreen() {
+    document.body.classList.remove('sld-fullscreen-active');
+    const wrapper = document.getElementById('sldFullPageSvgWrapper');
+    if (wrapper) wrapper.classList.remove('sld-fullscreen-view');
+
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    } catch (e) {
+      console.warn('Exit fullscreen:', e);
+    }
+
+    try {
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    } catch (e) {
+      console.warn('Orientation unlock:', e);
+    }
+
+    setTimeout(() => {
+      resetZoom('page');
+    }, 100);
+  }
+
+  function toggleLandscapeFullscreen() {
+    if (document.body.classList.contains('sld-fullscreen-active') || document.fullscreenElement || document.webkitFullscreenElement) {
+      exitLandscapeFullscreen();
+    } else {
+      enterLandscapeFullscreen();
+    }
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && document.body.classList.contains('sld-fullscreen-active')) {
+      document.body.classList.remove('sld-fullscreen-active');
+      const wrapper = document.getElementById('sldFullPageSvgWrapper');
+      if (wrapper) wrapper.classList.remove('sld-fullscreen-view');
+      setTimeout(() => resetZoom('page'), 80);
+    }
+  });
+
+  document.addEventListener('webkitfullscreenchange', () => {
+    if (!document.webkitFullscreenElement && document.body.classList.contains('sld-fullscreen-active')) {
+      document.body.classList.remove('sld-fullscreen-active');
+      const wrapper = document.getElementById('sldFullPageSvgWrapper');
+      if (wrapper) wrapper.classList.remove('sld-fullscreen-view');
+      setTimeout(() => resetZoom('page'), 80);
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (document.body.classList.contains('sld-fullscreen-active')) {
+      setTimeout(() => resetZoom('page'), 120);
+    }
+  });
+
   // Export public API
   window.SizingSchematic = {
     init,
@@ -2662,6 +2893,9 @@
     resetLayout,
     toggleTheme,
     exportSvg,
+    enterLandscapeFullscreen,
+    exitLandscapeFullscreen,
+    toggleLandscapeFullscreen,
     switchSystem: function (type) {
       if (type) {
         sldState.currentSystem = type;
