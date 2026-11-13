@@ -314,27 +314,31 @@ async function safeUpdate(tableName, matchField, val, newData) {
     item.Specification = item.Specification || item.ItemName || 'Standard Solar Equipment';
   }
   if (tableName === 'installments') {
-    let currentBrokerNumber = item.BrokerNumber;
-    if (!currentBrokerNumber) {
-      try {
-        const matchVal = (field === 'SlNo' || field === 'id' || field === 'BorrowerID') && !isNaN(val) ? Number(val) : val;
-        const { data: existingRows } = await supabase.from('installments').select('BrokerNumber').eq(field, matchVal).limit(1);
-        if (existingRows && existingRows[0]) {
-          currentBrokerNumber = existingRows[0].BrokerNumber || '';
-        } else {
-          const local = readLocalTable('installments');
-          const localMatch = local.find(r => String(r[field]) === String(matchVal));
-          if (localMatch) currentBrokerNumber = localMatch.BrokerNumber || '';
-        }
-      } catch (e) {
-        console.warn('[Postgres] Error fetching current BrokerNumber for merge in safeUpdate:', e.message);
+    let existingBrokerNumber = '';
+    try {
+      const matchVal = (field === 'SlNo' || field === 'id' || field === 'BorrowerID') && !isNaN(val) ? Number(val) : val;
+      const { data: existingRows } = await supabase.from('installments').select('BrokerNumber').eq(field, matchVal).limit(1);
+      if (existingRows && existingRows[0]) {
+        existingBrokerNumber = existingRows[0].BrokerNumber || '';
+      } else {
         const local = readLocalTable('installments');
-        const localMatch = local.find(r => String(r[field]) === String(val));
-        if (localMatch) currentBrokerNumber = localMatch.BrokerNumber || '';
+        const localMatch = local.find(r => String(r[field]) === String(matchVal));
+        if (localMatch) existingBrokerNumber = localMatch.BrokerNumber || '';
       }
+    } catch (e) {
+      console.warn('[Postgres] Error fetching current BrokerNumber for merge in safeUpdate:', e.message);
+      const local = readLocalTable('installments');
+      const localMatch = local.find(r => String(r[field]) === String(val));
+      if (localMatch) existingBrokerNumber = localMatch.BrokerNumber || '';
     }
 
-    const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(currentBrokerNumber || '');
+    const { basePhone: exPhone, expensesJson: exExp, creatorId: exCreator, workObj: exWork } = parseBrokerNumber(existingBrokerNumber || '');
+    const { basePhone: newPhone, expensesJson: newExp, creatorId: newCreator, workObj: newWork } = parseBrokerNumber(item.BrokerNumber || '');
+
+    const basePhone = newPhone || exPhone;
+    const creatorId = newCreator || exCreator;
+    let updatedExpensesJson = newExp || exExp;
+    const workObj = { ...exWork, ...(newWork || {}) };
 
     // Synchronize work milestone stages and hierarchy fields into workObj
     const workKeys = [
@@ -368,7 +372,6 @@ async function safeUpdate(tableName, matchField, val, newData) {
     }
 
     // Update net meter payment/paid flags in expenses if present
-    let updatedExpensesJson = expensesJson;
     if (updatedExpensesJson && (item.NetMeterPayment !== undefined || item.NetMeterPaid !== undefined)) {
       try {
         const exp = JSON.parse(updatedExpensesJson);

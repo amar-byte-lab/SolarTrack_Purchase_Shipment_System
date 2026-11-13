@@ -2836,7 +2836,11 @@ window.renderModuleSerialInputs = function(initialSerials = null, initialCapacit
   const badge = document.getElementById('lblModuleSerialCount');
   if (!countInput || !container) return;
 
-  const count = Math.max(0, parseInt(countInput.value, 10) || 0);
+  const rawCount = parseInt(String(countInput.value || '').replace(/[^0-9]/g, ''), 10);
+  const count = Math.max(0, (!isNaN(rawCount) && rawCount > 0) ? rawCount : ((initialSerials && Array.isArray(initialSerials) && initialSerials.length) ? initialSerials.length : 0));
+  if (count > 0 && !countInput.value) {
+    countInput.value = count;
+  }
   if (badge) badge.textContent = `${count} Serial${count === 1 ? '' : 's'}`;
 
   if (count === 0) {
@@ -3128,13 +3132,12 @@ window.openProductModal = function(slNo) {
       specs = {};
     }
   }
-  if (!specs || Object.keys(specs).length === 0) {
+  if (!specs || typeof specs !== 'object' || Object.keys(specs).length === 0) {
     if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
       try {
-        const workIdx = r.BrokerNumber.indexOf('|work:');
-        const workData = JSON.parse(r.BrokerNumber.slice(workIdx + 6));
-        if (workData.ProductSpecs) {
-          r.ProductSpecs = workData.ProductSpecs;
+        const { workObj } = parseBrokerNumberForWork(r.BrokerNumber);
+        if (workObj && workObj.ProductSpecs) {
+          r.ProductSpecs = workObj.ProductSpecs;
           specs = typeof r.ProductSpecs === 'string' ? JSON.parse(r.ProductSpecs) : r.ProductSpecs;
         }
       } catch (e) {}
@@ -3432,14 +3435,15 @@ window.saveProductPopupSpecs = async function() {
   // Serialize ProductSpecs and work metadata into BrokerNumber
   const workUpdates = {
     ProductSpecs: specs,
-    SubDivision: r.SubDivision || '',
-    DivisionName: r.DivisionName || '',
-    CircleName: r.CircleName || '',
-    ApplicationNumber: r.ApplicationNumber || '',
-    ProposedCapacity: r.ProposedCapacity || '',
     SpecsUpdatedBy: username,
     SpecsUpdatedAt: nowIso
   };
+  if (r.SubDivision) workUpdates.SubDivision = r.SubDivision;
+  if (r.DivisionName) workUpdates.DivisionName = r.DivisionName;
+  if (r.CircleName) workUpdates.CircleName = r.CircleName;
+  if (r.ApplicationNumber) workUpdates.ApplicationNumber = r.ApplicationNumber;
+  if (r.ProposedCapacity) workUpdates.ProposedCapacity = r.ProposedCapacity;
+
   const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(r.BrokerNumber || '', workUpdates);
 
   UI.showLoading(true);
@@ -3461,11 +3465,22 @@ window.saveProductPopupSpecs = async function() {
 
     await DB.update('installments', x => Number(x.SlNo) === slNo, updatePayload);
 
-    // Hide modal on successful save
+    // Hide modal cleanly on successful save
     const modalEl = document.getElementById('productModal');
     if (modalEl) {
-      const bsModal = bootstrap.Modal.getInstance(modalEl);
-      if (bsModal) bsModal.hide();
+      const bsModal = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+        ? (bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl))
+        : null;
+      if (bsModal) {
+        try { bsModal.hide(); } catch (_) {}
+      }
+      modalEl.classList.remove('show');
+      modalEl.setAttribute('aria-hidden', 'true');
+      modalEl.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+      document.body.style.removeProperty('overflow');
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
     }
 
     UI.toast('Specifications saved successfully to database.', 'success');
