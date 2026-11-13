@@ -100,9 +100,9 @@ const UI = (() => {
           }
           if (item.href === 'manage-work.html' || item.href === 'files.html' || item.href === 'inventory.html') return false;
           if (roleLower === 'partner' || roleLower === 'associates') {
-            return ['summary.html', 'quotation.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html', 'sld.html'].includes(item.href);
+            return ['summary.html', 'quotation.html', 'customer.html', 'work-note.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html', 'sld.html'].includes(item.href);
           }
-          return ['summary.html', 'quotation.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html', 'sld.html'].includes(item.href);
+          return ['summary.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html', 'sld.html'].includes(item.href);
         })
       : NAV_ITEMS;
 

@@ -141,8 +141,8 @@ const Auth = (() => {
     const isPowerUser = roleLower === 'admin' || roleLower === 'superadmin';
     
     if (isEmployee) {
-      // Employee role has exclusive access only to Quotation, Document, and Calculator pages
-      const allowed = ['quotation.html', 'document.html', 'sizing-calc.html', 'agreement.html'];
+      // Employee role has access to Quotation, Document, Calculator, Agreement, and SLD Diagram pages
+      const allowed = ['quotation.html', 'document.html', 'sizing-calc.html', 'agreement.html', 'sld.html'];
       if (!allowed.includes(page)) {
         window.location.href = 'quotation.html';
         return;
@@ -156,13 +156,13 @@ const Auth = (() => {
         return;
       }
       if (roleLower === 'partner' || roleLower === 'associates') {
-        const allowed = ['summary.html', 'quotation.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html'];
+        const allowed = ['summary.html', 'quotation.html', 'customer.html', 'work-note.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html', 'sld.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'quotation.html';
           return;
         }
       } else {
-        const allowed = ['summary.html', 'quotation.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html'];
+        const allowed = ['summary.html', 'quotation.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html', 'sld.html'];
         if (!allowed.includes(page)) {
           window.location.href = 'quotation.html';
           return;
