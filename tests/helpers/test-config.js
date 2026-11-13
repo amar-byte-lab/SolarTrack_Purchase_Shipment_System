@@ -9,10 +9,8 @@ require('dotenv').config();
 const db = require('../../db');
 const http = require('http');
 
-let baseSlNo = 990000 + (process.pid % 1000) * 10;
 function getNextTestSlNo() {
-  baseSlNo += 1;
-  return baseSlNo;
+  return 990000 + Math.floor(Math.random() * 8000) + Math.floor(Date.now() % 1000);
 }
 
 /**

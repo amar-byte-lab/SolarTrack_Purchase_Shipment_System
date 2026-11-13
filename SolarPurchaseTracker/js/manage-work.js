@@ -970,8 +970,7 @@ function renderList() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </button>
             </div>
-            ${paymentHtml}
-            <button type="button" class="btn btn-sm btn-link p-0 mw-card-toggle-btn text-primary ms-1" onclick="window.toggleCardExpansion(${slNo}, event)" title="${toggleBtnTitle}">
+            <button type="button" class="btn btn-sm btn-link p-0 mw-card-toggle-btn text-primary ms-auto" onclick="window.toggleCardExpansion(${slNo}, event)" title="${toggleBtnTitle}">
               <i class="bi ${toggleBtnIcon} fs-7"></i>
             </button>
           </div>
@@ -1088,7 +1087,10 @@ function renderList() {
           </div>
         </td>
 
-        <!-- 10. Bottom Collapse Row/Bar for Mobile Card -->
+        <!-- 10. Payment Section in Expanded Card (At end of stages) -->
+        ${renderCardPaymentSection(r, total, price, pending, isFullyPaid, false)}
+
+        <!-- 11. Bottom Collapse Row/Bar for Mobile Card -->
         <td class="mw-bottom-collapse-td" onclick="window.toggleCardExpansion(${slNo}, event)" title="Collapse Card">
           <div class="mw-bottom-collapse-inner text-center w-100">
             <button type="button" class="btn btn-xs btn-light border text-secondary rounded-pill px-3 py-0.5 d-inline-flex align-items-center gap-1 shadow-none" style="font-size: 0.70rem;">
@@ -1721,3 +1723,536 @@ window.toggleNetMeterEdit = function (slNo) {
 };
 
 
+
+
+// ══ Customer Payment & Extra Customer Price Section (Manage Work) ════════════
+function renderCardPaymentSection(r, total, price, pending, isFullyPaid, isCollapsed) {
+  const slNo = r.SlNo;
+  const hasPayment = total > 0;
+  const costVal = (price != null && !isNaN(price)) ? Number(price) : 0;
+  const autocalcPending = Math.max(0, costVal - total);
+
+  const custTxns = (DB.getAll('installment_txns') || []).filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+  );
+  const sortedTxns = [...custTxns].sort((a, b) => new Date(a.TxnDate) - new Date(b.TxnDate));
+  const latestTxn = sortedTxns.length ? sortedTxns[sortedTxns.length - 1] : null;
+  const paidDate = latestTxn && latestTxn.TxnDate ? latestTxn.TxnDate : UI.todayISO();
+
+  return `
+    <td class="mw-card-payment-td" colspan="9" onclick="event.stopPropagation();">
+      <div class="mw-payment-section-box w-100 d-flex flex-column gap-1.5">
+        
+        <!-- 1. Payment Toggle button (Label left, toggle switch right aligned) -->
+        <div class="d-flex align-items-center justify-content-between flex-nowrap gap-2 w-100">
+          <span class="fw-bold text-dark fs-8 text-nowrap" style="font-size: 0.76rem;">Payment:</span>
+
+          <div class="d-flex align-items-center gap-2 flex-nowrap ms-auto">
+            ${isFullyPaid ? `
+              <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace text-nowrap" style="font-size: 0.70rem; padding: 2px 6px;">
+                ✓ Fully Paid
+              </span>
+            ` : ''}
+            <label class="mw-switch" title="${isFullyPaid ? 'Fully Paid' : (hasPayment ? 'Payment Active (Click to clear payment)' : 'Toggle ON to enter Cost & Payment')}">
+              <input type="checkbox" id="chkWorkPayToggle_${slNo}" ${hasPayment ? 'checked' : ''} onchange="window.handleWorkCustomerPaymentToggle(this, ${slNo})">
+              <span class="mw-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Details section: Cost, Paid & Pending controls (no underline/border) -->
+        <div class="mw-payment-details-wrap ${hasPayment ? 'd-flex' : 'd-none'} flex-column gap-2 pt-1" id="workPayDetailsSection_${slNo}">
+          
+          <!-- Row 1: Cost -->
+          <div class="d-flex align-items-center gap-1.5 w-100 row-cost" style="min-width: 0;">
+            <span class="fw-semibold text-secondary text-nowrap mw-pay-row-lbl">Cost:</span>
+            <div class="input-group input-group-sm flex-grow-1 mw-pay-input-grow" style="min-width: 0;">
+              <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.70rem; height: 28px;">₹</span>
+              <input type="number" step="any" min="0" class="form-control form-control-sm px-1.5 py-0 font-monospace text-dark fw-semibold" id="workCustCost_${slNo}" value="${costVal}" placeholder="0" title="Customer Cost (₹)" style="font-size: 0.75rem; height: 28px; background-color: #ffffff;" disabled onkeydown="if(event.key==='Enter') window.saveWorkCustCostInline(${slNo}); else if(event.key==='Escape') window.cancelWorkCustCostEdit(${slNo});">
+            </div>
+            <div class="mw-pay-btn-cell d-inline-flex align-items-center gap-1 flex-shrink-0">
+              <button type="button" class="btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnWorkCostEdit_${slNo}" onclick="window.toggleWorkCustCostEdit(${slNo})" title="Edit Cost">
+                ${UI.icon('pencil', 12)}
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-success erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnWorkCostSave_${slNo}" onclick="window.saveWorkCustCostInline(${slNo})" title="Save Cost">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnWorkCostCancel_${slNo}" onclick="window.cancelWorkCustCostEdit(${slNo})" title="Cancel Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Paid -->
+          <div class="d-flex align-items-center gap-1.5 w-100 row-paid" style="min-width: 0;">
+            <span class="fw-semibold text-secondary text-nowrap mw-pay-row-lbl">Paid:</span>
+            <div class="flex-grow-1 d-flex align-items-center gap-1 mw-pending-inputs-wrap" style="min-width: 0;">
+              <div class="input-group input-group-sm mw-pending-amt-group" style="min-width: 60px;">
+                <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.70rem; height: 28px;">₹</span>
+                <input type="number" step="any" min="0" class="form-control form-control-sm px-1.5 py-0 font-monospace text-success fw-bold" id="workCustPaid_${slNo}" value="${Math.round(total)}" placeholder="0" title="Customer Paid Amount (₹)" style="font-size: 0.75rem; height: 28px; background-color: #ffffff;" disabled onkeydown="if(event.key==='Enter') window.saveWorkCustPaidInline(${slNo}); else if(event.key==='Escape') window.cancelWorkCustPaidEdit(${slNo});">
+              </div>
+              <input type="date" class="form-control form-control-sm erp-pay-date mw-pending-date-input" id="workCustPaidDate_${slNo}" value="${paidDate}" title="Payment Date" disabled>
+            </div>
+            <div class="mw-pay-btn-cell d-inline-flex align-items-center gap-1 flex-shrink-0">
+              <button type="button" class="btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnWorkPaidEdit_${slNo}" onclick="window.toggleWorkCustPaidEdit(${slNo})" title="Edit Paid Amount">
+                ${UI.icon('pencil', 12)}
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-success erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnWorkPaidSave_${slNo}" onclick="window.saveWorkCustPaidInline(${slNo})" title="Save Paid Amount">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnWorkPaidCancel_${slNo}" onclick="window.cancelWorkCustPaidEdit(${slNo})" title="Cancel Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 3: Pending -->
+          <div class="d-flex align-items-center gap-1.5 w-100 row-pending" style="min-width: 0;">
+            <span class="fw-semibold text-secondary text-nowrap mw-pay-row-lbl">Pending:</span>
+            <div class="flex-grow-1 d-flex align-items-center gap-1 mw-pending-inputs-wrap" style="min-width: 0;">
+              <div class="input-group input-group-sm mw-pending-amt-group" style="min-width: 60px;">
+                <span class="input-group-text px-1 py-0 text-muted" style="font-size: 0.70rem; height: 28px;">₹</span>
+                <input type="number" step="any" min="0" class="form-control form-control-sm px-1.5 py-0 font-monospace text-danger fw-bold" id="workPayPendingAmt_${slNo}" value="${autocalcPending}" placeholder="0" title="Autocalculated Pending Amount to Pay" style="font-size: 0.75rem; height: 28px; background-color: #ffffff;" disabled onkeydown="if(event.key==='Enter') window.saveWorkCustomerQuickPayment(${slNo}); else if(event.key==='Escape') window.cancelWorkPayEdit(${slNo});">
+              </div>
+              <input type="date" class="form-control form-control-sm erp-pay-date mw-pending-date-input" id="workPayDate_${slNo}" value="${UI.todayISO()}" title="Payment Date" disabled>
+            </div>
+            <div class="mw-pay-btn-cell d-inline-flex align-items-center gap-1 flex-shrink-0">
+              <button type="button" class="btn btn-sm btn-outline-primary erp-pay-action-btn p-0 d-inline-flex align-items-center justify-content-center" id="btnWorkPayEdit_${slNo}" onclick="window.toggleWorkPayEdit(${slNo})" title="Edit / Add Payment" ${isFullyPaid ? 'disabled' : ''}>
+                ${UI.icon('pencil', 12)}
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-success erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnWorkPaySave_${slNo}" onclick="window.saveWorkCustomerQuickPayment(${slNo})" title="Save Payment">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary erp-pay-action-btn p-0 d-none align-items-center justify-content-center" id="btnWorkPayCancel_${slNo}" onclick="window.cancelWorkPayEdit(${slNo})" title="Cancel Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </td>
+  `;
+}
+
+async function syncInstallmentTotal(slNo, txnType = 'Customer') {
+  const txns = (DB.getAll('installment_txns') || []).filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === txnType || (txnType === 'Customer' && (!t.TxnType || t.TxnType === '')))
+  );
+  const sum = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
+  
+  const existing = (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNo));
+  if (existing) {
+    const updateData = {};
+    if (txnType === 'Customer') {
+      updateData.Total = sum;
+      const currentPrice = Number(existing.CommittedPrice) || 0;
+      if (sum > currentPrice) {
+        updateData.CommittedPrice = sum;
+      }
+    } else {
+      updateData.VendorPaid = sum;
+    }
+    await saveWorkProgress(slNo, updateData);
+  }
+}
+
+window.handleWorkCustomerPaymentToggle = async function(chkEl, slNo) {
+  const r = (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) return;
+
+  const txns = (DB.getAll('installment_txns') || []).filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+  );
+  const total = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
+  const detailsSection = document.getElementById(`workPayDetailsSection_${slNo}`);
+
+  if (chkEl.checked) {
+    if (detailsSection) {
+      detailsSection.classList.remove('d-none');
+      detailsSection.classList.add('d-flex');
+    }
+  } else {
+    if (total > 0) {
+      const ok = await UI.confirmDialog(
+        `Clear payment of ₹${Math.round(total).toLocaleString('en-IN')} for customer ${r.Name || 'Sl No ' + slNo}? This will reset paid amount to ₹0 and recalculate the pending price.`,
+        'Clear Customer Payment',
+        'Clear Payment',
+        'btn-danger'
+      );
+      if (!ok) {
+        chkEl.checked = true;
+        return;
+      }
+
+      UI.showLoading(true);
+      try {
+        await DB.remove('installment_txns', t => 
+          Number(t.SlNo) === Number(slNo) && 
+          (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+        );
+        await syncInstallmentTotal(slNo, 'Customer');
+        UI.toast('Customer payments cleared and pending price updated.', 'info');
+        renderList();
+      } catch (err) {
+        UI.toast('Error clearing payment: ' + err.message, 'danger');
+        chkEl.checked = true;
+      } finally {
+        UI.showLoading(false);
+      }
+    } else {
+      if (detailsSection) {
+        detailsSection.classList.add('d-none');
+        detailsSection.classList.remove('d-flex');
+      }
+    }
+  }
+};
+
+window.toggleWorkCustCostEdit = function(slNo) {
+  const input = document.getElementById(`workCustCost_${slNo}`);
+  const btnEdit = document.getElementById(`btnWorkCostEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnWorkCostSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnWorkCostCancel_${slNo}`);
+  if (!input) return;
+
+  input.dataset.origVal = input.value;
+  input.disabled = false;
+  input.focus();
+  input.select();
+
+  if (btnEdit) btnEdit.classList.add('d-none');
+  if (btnSave) {
+    btnSave.classList.remove('d-none');
+    btnSave.classList.add('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.remove('d-none');
+    btnCancel.classList.add('d-inline-flex');
+  }
+};
+
+window.cancelWorkCustCostEdit = function(slNo) {
+  const input = document.getElementById(`workCustCost_${slNo}`);
+  const btnEdit = document.getElementById(`btnWorkCostEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnWorkCostSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnWorkCostCancel_${slNo}`);
+  if (!input) return;
+
+  if (input.dataset.origVal !== undefined) {
+    input.value = input.dataset.origVal;
+  }
+  input.disabled = true;
+
+  if (btnSave) {
+    btnSave.classList.add('d-none');
+    btnSave.classList.remove('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.add('d-none');
+    btnCancel.classList.remove('d-inline-flex');
+  }
+  if (btnEdit) {
+    btnEdit.classList.remove('d-none');
+  }
+};
+
+window.saveWorkCustCostInline = async function(slNo) {
+  const input = document.getElementById(`workCustCost_${slNo}`);
+  if (!input) return;
+
+  const newCost = Number(input.value) || 0;
+  if (newCost < 0) {
+    UI.toast('Cost cannot be negative.', 'warning');
+    input.focus();
+    return;
+  }
+
+  const existing = (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNo));
+  if (!existing) return;
+
+  UI.showLoading(true);
+  try {
+    await saveWorkProgress(slNo, { CommittedPrice: newCost });
+    UI.toast(`Cost updated to ₹${Math.round(newCost).toLocaleString('en-IN')}`, 'success');
+    renderList();
+  } catch (err) {
+    UI.toast('Error saving cost: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+window.toggleWorkCustPaidEdit = function(slNo) {
+  const input = document.getElementById(`workCustPaid_${slNo}`);
+  const dateInput = document.getElementById(`workCustPaidDate_${slNo}`);
+  const btnEdit = document.getElementById(`btnWorkPaidEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnWorkPaidSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnWorkPaidCancel_${slNo}`);
+  if (!input) return;
+
+  input.dataset.origVal = input.value;
+  if (dateInput) {
+    dateInput.dataset.origVal = dateInput.value;
+    dateInput.disabled = false;
+  }
+  input.disabled = false;
+  input.focus();
+  input.select();
+
+  if (btnEdit) btnEdit.classList.add('d-none');
+  if (btnSave) {
+    btnSave.classList.remove('d-none');
+    btnSave.classList.add('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.remove('d-none');
+    btnCancel.classList.add('d-inline-flex');
+  }
+};
+
+window.cancelWorkCustPaidEdit = function(slNo) {
+  const input = document.getElementById(`workCustPaid_${slNo}`);
+  const dateInput = document.getElementById(`workCustPaidDate_${slNo}`);
+  const btnEdit = document.getElementById(`btnWorkPaidEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnWorkPaidSave_${slNo}`);
+  const btnCancel = document.getElementById(`btnWorkPaidCancel_${slNo}`);
+  if (!input) return;
+
+  if (input.dataset.origVal !== undefined) {
+    input.value = input.dataset.origVal;
+  }
+  if (dateInput && dateInput.dataset.origVal !== undefined) {
+    dateInput.value = dateInput.dataset.origVal;
+  }
+  input.disabled = true;
+  if (dateInput) dateInput.disabled = true;
+
+  if (btnSave) {
+    btnSave.classList.add('d-none');
+    btnSave.classList.remove('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.add('d-none');
+    btnCancel.classList.remove('d-inline-flex');
+  }
+  if (btnEdit) {
+    btnEdit.classList.remove('d-none');
+  }
+};
+
+window.saveWorkCustPaidInline = async function(slNo) {
+  const input = document.getElementById(`workCustPaid_${slNo}`);
+  const dateInput = document.getElementById(`workCustPaidDate_${slNo}`);
+  if (!input) return;
+
+  const newPaid = Number(input.value) || 0;
+  if (newPaid < 0) {
+    UI.toast('Paid amount cannot be negative.', 'warning');
+    input.focus();
+    return;
+  }
+
+  const payDate = dateInput ? (dateInput.value || UI.todayISO()) : UI.todayISO();
+
+  const existing = (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNo));
+  if (!existing) return;
+
+  const txns = (DB.getAll('installment_txns') || []).filter(t => 
+    Number(t.SlNo) === Number(slNo) && 
+    (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+  );
+  const currentTotal = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
+  const sortedTxns = [...txns].sort((a, b) => new Date(a.TxnDate) - new Date(b.TxnDate));
+  const latestTxn = sortedTxns.length ? sortedTxns[sortedTxns.length - 1] : null;
+
+  if (newPaid === currentTotal && latestTxn && latestTxn.TxnDate === payDate) {
+    window.cancelWorkCustPaidEdit(slNo);
+    return;
+  }
+
+  const custName = existing.Name || `Customer #${slNo}`;
+  const formattedAmt = `₹${Math.round(newPaid).toLocaleString('en-IN')}`;
+  const formattedDate = (typeof UI !== 'undefined' && UI.fmtDate) ? UI.fmtDate(payDate) : payDate;
+  const ok = await UI.confirmDialog(
+    `Update total paid amount for "${custName}" to ${formattedAmt} dated ${formattedDate}? This will update the payment record and recalculate pending balance.`,
+    'Confirm Paid Amount Update',
+    'Yes, Update Paid',
+    'btn-primary'
+  );
+  if (!ok) {
+    window.cancelWorkCustPaidEdit(slNo);
+    return;
+  }
+
+  UI.showLoading(true);
+  try {
+    if (newPaid === 0) {
+      await DB.remove('installment_txns', t => 
+        Number(t.SlNo) === Number(slNo) && 
+        (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === '')
+      );
+    } else if (txns.length === 0) {
+      await DB.insert('installment_txns', {
+        TxnID: 'CTXN_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        SlNo: Number(slNo),
+        TxnDate: payDate,
+        Amount: newPaid,
+        TxnType: 'Customer',
+        Remark: 'Direct Paid Update (Manage Work)'
+      });
+    } else if (txns.length === 1) {
+      await DB.update('installment_txns', t => t.TxnID === txns[0].TxnID, {
+        Amount: newPaid,
+        TxnDate: payDate
+      });
+    } else {
+      const delta = newPaid - currentTotal;
+      if (delta !== 0) {
+        await DB.insert('installment_txns', {
+          TxnID: 'CTXN_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          SlNo: Number(slNo),
+          TxnDate: payDate,
+          Amount: delta,
+          TxnType: 'Customer',
+          Remark: 'Payment Adjustment (Manage Work)'
+        });
+      } else if (latestTxn) {
+        await DB.update('installment_txns', t => t.TxnID === latestTxn.TxnID, {
+          TxnDate: payDate
+        });
+      }
+    }
+
+    await syncInstallmentTotal(slNo, 'Customer');
+    UI.toast(`Paid amount updated to ${formattedAmt} (${formattedDate})`, 'success');
+    renderList();
+  } catch (err) {
+    UI.toast('Error saving paid amount: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};
+
+window.toggleWorkPayEdit = function(slNo) {
+  const amtInput = document.getElementById(`workPayPendingAmt_${slNo}`);
+  const dateInput = document.getElementById(`workPayDate_${slNo}`);
+  const btnEdit = document.getElementById(`btnWorkPayEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnWorkPaySave_${slNo}`);
+  const btnCancel = document.getElementById(`btnWorkPayCancel_${slNo}`);
+  if (!amtInput) return;
+
+  amtInput.dataset.origVal = amtInput.value;
+  if (dateInput) {
+    dateInput.dataset.origVal = dateInput.value;
+    dateInput.disabled = false;
+  }
+  amtInput.disabled = false;
+  amtInput.focus();
+  amtInput.select();
+
+  if (btnEdit) btnEdit.classList.add('d-none');
+  if (btnSave) {
+    btnSave.classList.remove('d-none');
+    btnSave.classList.add('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.remove('d-none');
+    btnCancel.classList.add('d-inline-flex');
+  }
+};
+
+window.cancelWorkPayEdit = function(slNo) {
+  const amtInput = document.getElementById(`workPayPendingAmt_${slNo}`);
+  const dateInput = document.getElementById(`workPayDate_${slNo}`);
+  const btnEdit = document.getElementById(`btnWorkPayEdit_${slNo}`);
+  const btnSave = document.getElementById(`btnWorkPaySave_${slNo}`);
+  const btnCancel = document.getElementById(`btnWorkPayCancel_${slNo}`);
+  if (!amtInput) return;
+
+  if (amtInput.dataset.origVal !== undefined) {
+    amtInput.value = amtInput.dataset.origVal;
+  }
+  if (dateInput && dateInput.dataset.origVal !== undefined) {
+    dateInput.value = dateInput.dataset.origVal;
+  }
+  amtInput.disabled = true;
+  if (dateInput) dateInput.disabled = true;
+
+  if (btnSave) {
+    btnSave.classList.add('d-none');
+    btnSave.classList.remove('d-inline-flex');
+  }
+  if (btnCancel) {
+    btnCancel.classList.add('d-none');
+    btnCancel.classList.remove('d-inline-flex');
+  }
+  if (btnEdit) {
+    btnEdit.classList.remove('d-none');
+  }
+};
+
+window.saveWorkCustomerQuickPayment = async function(slNo) {
+  const r = (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNo));
+  if (!r) return;
+
+  const amtInput = document.getElementById(`workPayPendingAmt_${slNo}`);
+  const dateInput = document.getElementById(`workPayDate_${slNo}`);
+
+  const payDate = dateInput ? (dateInput.value || UI.todayISO()) : UI.todayISO();
+  const payAmt = amtInput ? (Number(amtInput.value) || 0) : 0;
+
+  if (payAmt <= 0) {
+    UI.toast('Please enter a valid payment amount greater than 0.', 'warning');
+    if (amtInput) amtInput.focus();
+    return;
+  }
+
+  const custName = r.Name || `Customer #${slNo}`;
+  const formattedAmt = `₹${Number(payAmt).toLocaleString('en-IN')}`;
+  const formattedDate = (typeof UI !== 'undefined' && UI.fmtDate) ? UI.fmtDate(payDate) : payDate;
+  const ok = await UI.confirmDialog(
+    `Are you sure you want to add payment of ${formattedAmt} dated ${formattedDate} for "${custName}"? This will update the customer payment and pending balance.`,
+    'Confirm Payment Save',
+    'Yes, Save Payment',
+    'btn-primary'
+  );
+  if (!ok) {
+    window.cancelWorkPayEdit(slNo);
+    return;
+  }
+
+  UI.showLoading(true);
+  try {
+    await DB.insert('installment_txns', {
+      TxnID: 'CTXN_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      SlNo: Number(slNo),
+      TxnDate: payDate,
+      Amount: payAmt,
+      TxnType: 'Customer',
+      Remark: 'Customer Payment (Manage Work)'
+    });
+
+    await syncInstallmentTotal(slNo, 'Customer');
+    const updatedRec = (DB.getAll('installments') || []).find(x => Number(x.SlNo) === Number(slNo));
+    const finalPrice = updatedRec ? (Number(updatedRec.CommittedPrice) || 0) : 0;
+    const finalTotal = updatedRec ? (Number(updatedRec.Total) || 0) : 0;
+    const prevPrice = Number(r.CommittedPrice) || 0;
+    if (finalPrice > prevPrice) {
+      UI.toast(`Payment of ${formattedAmt} added. Cost updated to ₹${Math.round(finalPrice).toLocaleString('en-IN')}.`, 'success');
+    } else if (finalTotal >= finalPrice && finalPrice > 0) {
+      UI.toast(`Payment of ${formattedAmt} added. Customer is fully paid.`, 'success');
+    } else {
+      UI.toast(`Payment of ${formattedAmt} added. Pending balance updated.`, 'success');
+    }
+    renderList();
+  } catch (err) {
+    UI.toast('Error saving payment: ' + err.message, 'danger');
+  } finally {
+    UI.showLoading(false);
+  }
+};

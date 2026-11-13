@@ -360,7 +360,7 @@
   }
 
   /* ── Collapsed: hide all stage cells ── */
-  .table-manage-work tr.mw-card-collapsed td:not(:nth-child(1)):not(.td-progress-col):not(.mw-bottom-collapse-td) {
+  .table-manage-work tr.mw-card-collapsed td:not(:nth-child(1)):not(.td-progress-col):not(.mw-bottom-collapse-td):not(.mw-card-payment-td) {
     display: none !important;
   }
 
@@ -378,7 +378,7 @@
   }
 
   /* ── Expanded card: stage cells — 2 per row, auto-shrink controls ── */
-  .table-manage-work tr.mw-card-expanded td:nth-child(n+2):not(.mw-bottom-collapse-td):not(.td-progress-col) {
+  .table-manage-work tr.mw-card-expanded td:nth-child(n+2):not(.mw-bottom-collapse-td):not(.td-progress-col):not(.mw-card-payment-td) {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -403,7 +403,7 @@
   }
 
   /* Stage label prefix */
-  .table-manage-work tr.mw-card-expanded td:nth-child(n+2):not(.mw-bottom-collapse-td):not(.td-progress-col)::before {
+  .table-manage-work tr.mw-card-expanded td:nth-child(n+2):not(.mw-bottom-collapse-td):not(.td-progress-col):not(.mw-card-payment-td)::before {
     font-size: 0.72rem !important;
     font-weight: 700 !important;
     letter-spacing: 0.01em !important;
@@ -1999,7 +1999,7 @@
   }
 
   /* ── Stages (2 through 9): Single-Row Layout — label left, controls right ── */
-  .table-manage-work td:nth-child(n+2) {
+  .table-manage-work td:nth-child(n+2):not(.mw-card-payment-td):not(.mw-bottom-collapse-td):not(.td-progress-col) {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -2023,7 +2023,7 @@
   }
 
   /* Stage Name Labels */
-  .table-manage-work td:nth-child(n+2)::before {
+  .table-manage-work td:nth-child(n+2):not(.mw-card-payment-td):not(.mw-bottom-collapse-td):not(.td-progress-col)::before {
     font-size: 0.70rem !important;
     font-weight: 700 !important;
     letter-spacing: 0.01em !important;
@@ -2542,4 +2542,135 @@
 .th-col-material, .td-col-material, .tfoot-col-material {
   text-align: right;
   font-family: var(--bs-font-monospace);
+}
+
+
+/* ══ Card Payment & Price Section (Manage Work) ═══════════════════════ */
+.table-manage-work td.mw-card-payment-td {
+  display: block !important;
+  width: 100% !important;
+  flex: 0 0 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 8px 10px !important;
+  margin-top: 8px !important;
+  background: #f8fafc !important;
+  border: 1px solid #dbeafe !important;
+  border-radius: 8px !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.table-manage-work td.mw-card-payment-td::before {
+  display: none !important;
+  content: '' !important;
+}
+
+/* Strictly hide payment section when card is collapsed */
+.table-manage-work tr.mw-card-collapsed td.mw-card-payment-td {
+  display: none !important;
+}
+
+.table-manage-work tr.mw-card-expanded td.mw-card-payment-td {
+  display: block !important;
+}
+
+.mw-payment-section-box {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.mw-payment-details-wrap {
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.mw-payment-details-wrap .row-cost,
+.mw-payment-details-wrap .row-paid,
+.mw-payment-details-wrap .row-pending {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.mw-payment-details-wrap .mw-pay-row-lbl {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  flex-shrink: 0 !important;
+  font-size: 0.74rem !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+}
+
+.mw-payment-details-wrap .mw-pay-input-grow {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.mw-payment-details-wrap .mw-pending-inputs-wrap {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: 100% !important;
+}
+
+.mw-payment-details-wrap .mw-pending-amt-group {
+  flex: 1 1 52% !important;
+  min-width: 58px !important;
+  width: auto !important;
+}
+
+.mw-payment-details-wrap .mw-pending-date-input,
+.mw-card-payment-td .mw-pending-date-input {
+  flex: 1 1 48% !important;
+  min-width: 72px !important;
+  max-width: 110px !important;
+  width: auto !important;
+  height: 28px !important;
+  font-size: 0.70rem !important;
+  padding: 2px 2px !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  flex-shrink: 1 !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+}
+
+.mw-payment-details-wrap .mw-pay-btn-cell {
+  width: auto !important;
+  min-width: 26px !important;
+  height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0 !important;
+  gap: 3px !important;
+}
+
+.mw-card-payment-td .erp-pay-action-btn {
+  width: 26px !important;
+  min-width: 26px !important;
+  height: 28px !important;
+  border-radius: 4px !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.mw-card-payment-td .erp-pay-action-btn.d-none {
+  display: none !important;
 }
