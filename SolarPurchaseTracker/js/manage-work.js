@@ -11,6 +11,7 @@ let selectedStage = 'ALL';
 let selectedPaymentFilters = [];
 let isCollapseAll = true;
 let expandedSlNo = null;
+let cardActiveTabs = {}; // Map of slNo -> 'process' | 'payment'
 
 const WORKFLOW_STAGES = [
   { key: 'LoginDate', name: 'Login', num: 1 },
@@ -133,8 +134,8 @@ window.onDbReady = function () {
       const tr = e.target.closest('tr');
       if (!tr || tr.classList.contains('no-print') || tr.classList.contains('mw-empty-state-row')) return;
 
-      // If clicked inside input, select, datepicker, toggle switch, or expand/collapse buttons
-      if (e.target.closest('input') || e.target.closest('select') || e.target.closest('.mw-switch') || e.target.closest('.mw-card-toggle-btn') || e.target.closest('.mw-bottom-collapse-td')) {
+      // If clicked inside input, select, datepicker, toggle switch, expand/collapse buttons, or card tabs
+      if (e.target.closest('input') || e.target.closest('select') || e.target.closest('.mw-switch') || e.target.closest('.mw-card-toggle-btn') || e.target.closest('.mw-bottom-collapse-td') || e.target.closest('.mw-card-tab-btn') || e.target.closest('.mw-card-tabs-bar')) {
         document.querySelectorAll('#manageWorkTable tbody tr').forEach(r => {
           if (r !== tr) r.classList.remove('selected-row');
         });
@@ -154,6 +155,28 @@ window.onDbReady = function () {
       }
     });
   }
+};
+
+window.switchCardTab = function (slNo, tab, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const sl = Number(slNo);
+  cardActiveTabs[sl] = tab;
+
+  const tr = document.querySelector(`tr.mw-card-row[data-slno="${sl}"]`);
+  if (!tr) return;
+
+  tr.setAttribute('data-active-tab', tab);
+
+  tr.querySelectorAll('.mw-card-tab-btn').forEach(btn => {
+    if (btn.getAttribute('data-tab') === tab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
 };
 
 window.toggleCardExpansion = function (slNo, event) {
@@ -956,8 +979,10 @@ function renderList() {
       `;
     }
 
+    const activeTab = cardActiveTabs[slNo] || 'process';
+
     return `
-      <tr data-slno="${slNo}" class="mw-card-row mw-card-expanded ${isDeactive ? 'deactive-row' : ''} ${isAllComplete ? 'stage-complete-all' : ''}">
+      <tr data-slno="${slNo}" data-active-tab="${activeTab}" class="mw-card-row mw-card-expanded ${isDeactive ? 'deactive-row' : ''} ${isAllComplete ? 'stage-complete-all' : ''}">
         <!-- 1. Customer Cell -->
         <td class="td-customer-col" onclick="window.toggleCardExpansion(${slNo}, event)" style="cursor: pointer;">
           <div class="mw-customer-cell">
@@ -972,6 +997,15 @@ function renderList() {
             </div>
             <button type="button" class="btn btn-sm btn-link p-0 mw-card-toggle-btn text-primary ms-auto" onclick="window.toggleCardExpansion(${slNo}, event)" title="${toggleBtnTitle}">
               <i class="bi ${toggleBtnIcon} fs-7"></i>
+            </button>
+          </div>
+          <!-- 2 Tabs: Process & Payment (under Name header) -->
+          <div class="mw-card-tabs-bar" onclick="event.stopPropagation();">
+            <button type="button" class="mw-card-tab-btn ${activeTab === 'process' ? 'active' : ''}" data-tab="process" onclick="window.switchCardTab(${slNo}, 'process', event)">
+              <i class="bi bi-diagram-3"></i> <span>Process</span>
+            </button>
+            <button type="button" class="mw-card-tab-btn ${activeTab === 'payment' ? 'active' : ''}" data-tab="payment" onclick="window.switchCardTab(${slNo}, 'payment', event)">
+              <i class="bi bi-credit-card"></i> <span>Payment</span>
             </button>
           </div>
         </td>
