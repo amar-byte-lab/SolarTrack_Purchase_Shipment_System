@@ -1,35 +1,5 @@
 [
   {
-    "ItemCode": "INV-001",
-    "ItemName": "Inverter",
-    "Brand": "Standard Solar",
-    "Specification": "Solar On-Grid / Hybrid Inverter",
-    "Category": "Inverters",
-    "Unit": "Nos",
-    "BuyingPrice": 0,
-    "MinThreshold": 3,
-    "HSNCode": "85044090",
-    "GSTPercent": 12,
-    "Status": "Active",
-    "CreatedAt": "2026-10-27T10:00:00Z",
-    "UpdatedAt": null
-  },
-  {
-    "ItemCode": "CBL-DC-01",
-    "ItemName": "DC Wire",
-    "Brand": "Polycab / Standard",
-    "Specification": "Solar DC Cable UV Protected",
-    "Category": "Cables",
-    "Unit": "Meters",
-    "BuyingPrice": 0,
-    "MinThreshold": 100,
-    "HSNCode": "85444990",
-    "GSTPercent": 18,
-    "Status": "Active",
-    "CreatedAt": "2026-10-27T10:00:00Z",
-    "UpdatedAt": null
-  },
-  {
     "ItemCode": "CBL-AC-01",
     "ItemName": "AC Wire",
     "Brand": "Polycab / Standard",
@@ -300,6 +270,36 @@
     "UpdatedAt": null
   },
   {
+    "ItemCode": "INV-001",
+    "ItemName": "Inverter",
+    "Brand": "Standard Solar",
+    "Specification": "Standard Solar Equipment",
+    "Category": "Inverters",
+    "Unit": "Nos",
+    "BuyingPrice": 2357.14,
+    "MinThreshold": 3,
+    "HSNCode": "85044090",
+    "GSTPercent": 12,
+    "Status": "Active",
+    "CreatedAt": "2026-10-27T10:00:00Z",
+    "UpdatedAt": null
+  },
+  {
+    "ItemCode": "CBL-DC-01",
+    "ItemName": "DC Wire",
+    "Brand": "Standard Solar",
+    "Specification": "Standard Solar Equipment",
+    "Category": "Cables",
+    "Unit": "Meters",
+    "BuyingPrice": 234,
+    "MinThreshold": 100,
+    "HSNCode": "85444990",
+    "GSTPercent": 18,
+    "Status": "Active",
+    "CreatedAt": "2026-10-27T10:00:00Z",
+    "UpdatedAt": null
+  },
+  {
     "ItemCode": "CND-ELBOW-01",
     "ItemName": "L bow (Elbow)",
     "Brand": "Supreme / Standard",
@@ -420,21 +420,6 @@
     "UpdatedAt": null
   },
   {
-    "ItemCode": "SKU-001",
-    "ItemName": "Exide Bifacial 550 wp",
-    "Brand": "Standard Solar",
-    "Specification": "Exide Bifacial 550 wp",
-    "Category": "Panels",
-    "Unit": "Pcs",
-    "BuyingPrice": 0,
-    "MinThreshold": 5,
-    "HSNCode": "",
-    "GSTPercent": 12,
-    "Status": "Active",
-    "CreatedAt": "2026-11-02T15:16:26.244Z",
-    "UpdatedAt": null
-  },
-  {
     "ItemCode": "SKU-002",
     "ItemName": "Waaree TOPCON 610 wp",
     "Brand": "Standard Solar",
@@ -447,6 +432,36 @@
     "GSTPercent": 12,
     "Status": "Active",
     "CreatedAt": "2026-11-03T06:37:34.498Z",
+    "UpdatedAt": null
+  },
+  {
+    "ItemCode": "SKU-003",
+    "ItemName": "ADANI TOPCON",
+    "Brand": "Standard Solar",
+    "Specification": "ADANI TOPCON",
+    "Category": "Panels",
+    "Unit": "Pcs",
+    "BuyingPrice": 0,
+    "MinThreshold": 5,
+    "HSNCode": "",
+    "GSTPercent": 12,
+    "Status": "Active",
+    "CreatedAt": "2026-11-09T14:53:38.952Z",
+    "UpdatedAt": null
+  },
+  {
+    "ItemCode": "SKU-001",
+    "ItemName": "Exide Bifacial 550 wp",
+    "Brand": "Standard Solar",
+    "Specification": "Standard Solar Equipment",
+    "Category": "Panels",
+    "Unit": "Pcs",
+    "BuyingPrice": 1178.57,
+    "MinThreshold": 5,
+    "HSNCode": "",
+    "GSTPercent": 12,
+    "Status": "Active",
+    "CreatedAt": "2026-11-02T15:16:26.244Z",
     "UpdatedAt": null
   }
 ]

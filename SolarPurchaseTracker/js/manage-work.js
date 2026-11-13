@@ -118,6 +118,11 @@ window.onDbReady = function () {
     btnPartnerMain.addEventListener('click', () => populateFilterDatalists());
     btnPartnerMain.addEventListener('show.bs.dropdown', () => populateFilterDatalists());
   }
+  const btnSave = document.getElementById('btnSaveCustomer');
+  if (btnSave) {
+    btnSave.onclick = saveCustomerModalRecord;
+  }
+
   updateSortHeadersUI();
   renderList();
 
@@ -1032,9 +1037,9 @@ function renderList() {
               <span class="mw-slider"></span>
             </label>
             <div class="mw-stage-input-wrap ${isNetMeterPaid ? '' : 'd-none'}" id="wrap_NetMeter_${slNo}">
-              <div class="input-group input-group-sm mw-netmeter-input-group">
+              <div class="input-group input-group-sm mw-netmeter-input-group mw-netmeter-pay-group">
                 <span class="input-group-text p-1 text-muted" style="font-size: 0.70rem;">₹</span>
-                <input type="number" class="form-control mw-netmeter-amount" id="nmAmount_${slNo}" value="${netMeterPayment}" placeholder="Amount" readonly style="background-color: #f8fafc;" onchange="window.saveNetMeterInline(${slNo})">
+                <input type="number" step="any" min="0" class="form-control mw-netmeter-amount" id="nmAmount_${slNo}" value="${netMeterPayment}" placeholder="Amount" style="background-color: #ffffff;" onchange="window.saveNetMeterInline(${slNo})" onkeydown="if(event.key==='Enter'){this.blur();}">
                 <button type="button" class="btn btn-sm btn-outline-primary p-0 d-inline-flex align-items-center justify-content-center" id="btnNmEdit_${slNo}" onclick="window.toggleNetMeterEdit(${slNo})" title="Edit Payment">
                   <i class="bi bi-pencil" style="font-size: 0.70rem;"></i>
                 </button>
@@ -1342,6 +1347,11 @@ window.openCustomerModal = function(slNo) {
     loginDateInput.onchange = updateModalLoginDelayBadge;
   }
 
+  const btnSaveModal = document.getElementById('btnSaveCustomer');
+  if (btnSaveModal) {
+    btnSaveModal.onclick = saveCustomerModalRecord;
+  }
+
   updateModalCalculations();
   modal.show();
 };
@@ -1388,6 +1398,11 @@ async function saveCustomerModalRecord() {
 
   const calculatedVendorPrice = expenses.material + expenses.install + expenses.transport + expenses.gst + expenses.other;
   let phoneClean = existingRow && existingRow.BrokerNumber ? existingRow.BrokerNumber.split('|')[0] : '';
+  if (!phoneClean && existingRow && existingRow.BrokerName) {
+    const vendors = (typeof DB !== 'undefined' && DB.getAll) ? (DB.getAll('vendors') || []) : [];
+    const v = vendors.find(x => x.VendorName === existingRow.BrokerName);
+    if (v && v.Phone) phoneClean = v.Phone;
+  }
 
   const workMeta = {
     SubDivision: document.getElementById('cSubDivision') ? document.getElementById('cSubDivision').value.trim() : (existingRow ? (existingRow.SubDivision || '') : ''),
@@ -1401,12 +1416,15 @@ async function saveCustomerModalRecord() {
     if (existingRow.ProductSpecs) workMeta.ProductSpecs = existingRow.ProductSpecs;
     if (existingRow.SpecsUpdatedBy) workMeta.SpecsUpdatedBy = existingRow.SpecsUpdatedBy;
     if (existingRow.SpecsUpdatedAt) workMeta.SpecsUpdatedAt = existingRow.SpecsUpdatedAt;
-    ['AgreementDate', 'MaterialDispatchedDate', 'NetMeterDate', 'InspectionDate', 'MeterConnectedDate', 'SubsidyDate'].forEach(k => {
+    ['AgreementDate', 'MaterialDispatchedDate', 'InstallationDate', 'NetMeterDate', 'InspectionDate', 'MeterConnectedDate', 'CommissioningDate'].forEach(k => {
       if (existingRow[k]) workMeta[k] = existingRow[k];
     });
   }
 
-  const baseForMeta = existingRow && existingRow.BrokerNumber ? existingRow.BrokerNumber : (phoneClean + creatorSuffix + '|expenses:' + JSON.stringify(expenses));
+  // Construct base string ensuring the new expenses JSON from the modal is used
+  const expensesPart = '|expenses:' + JSON.stringify(expenses);
+  const creatorPart = creatorSuffix || (currentUser ? '|creator:' + currentUser.userid : '');
+  const baseForMeta = phoneClean + creatorPart + expensesPart;
   const formattedBrokerNumber = formatBrokerNumberWithWorkMeta(baseForMeta, workMeta);
 
   const rowData = {
@@ -1423,12 +1441,22 @@ async function saveCustomerModalRecord() {
     CommittedBrand: document.getElementById('cBrand') ? document.getElementById('cBrand').value.trim() : (existingRow ? (existingRow.CommittedBrand || '') : ''),
     CommittedPrice: Number(document.getElementById('cPrice')?.value) || 0,
     VendorPrice: calculatedVendorPrice,
-    LoginDate: document.getElementById('cLoginDate')?.value || null,
+    LoginDate: document.getElementById('cLoginDate')?.value || (existingRow ? existingRow.LoginDate : null),
+    InstallationDate: existingRow ? (existingRow.InstallationDate || null) : null,
+    CommissioningDate: existingRow ? (existingRow.CommissioningDate || null) : null,
+    AgreementDate: existingRow ? (existingRow.AgreementDate || null) : null,
+    MaterialDispatchedDate: existingRow ? (existingRow.MaterialDispatchedDate || null) : null,
+    NetMeterDate: existingRow ? (existingRow.NetMeterDate || null) : null,
+    InspectionDate: existingRow ? (existingRow.InspectionDate || null) : null,
+    MeterConnectedDate: existingRow ? (existingRow.MeterConnectedDate || null) : null,
     BrokerName: document.getElementById('cBrokerName') ? document.getElementById('cBrokerName').value.trim() : (existingRow ? (existingRow.BrokerName || '') : ''),
     BrokerNumber: formattedBrokerNumber,
     Commission: Number(document.getElementById('cCommission')?.value) || 0,
     NetMeterPayment: expenses.net_meter_payment,
-    NetMeterPaid: expenses.net_meter_paid
+    NetMeterPaid: expenses.net_meter_paid,
+    ProductSpecs: existingRow ? (existingRow.ProductSpecs || null) : null,
+    SpecsUpdatedBy: existingRow ? (existingRow.SpecsUpdatedBy || null) : null,
+    SpecsUpdatedAt: existingRow ? (existingRow.SpecsUpdatedAt || null) : null
   };
 
   if (typeof UI !== 'undefined' && UI.showLoading) UI.showLoading(true);
@@ -1479,7 +1507,15 @@ function formatBrokerNumberWithWorkMeta(existingBrokerNumber, workUpdates) {
     });
   }
 
-  Object.assign(workObj, workUpdates);
+  if (workUpdates && typeof workUpdates === 'object') {
+    Object.keys(workUpdates).forEach(k => {
+      if (workUpdates[k] === '' || workUpdates[k] === null || workUpdates[k] === undefined) {
+        delete workObj[k];
+      } else {
+        workObj[k] = workUpdates[k];
+      }
+    });
+  }
 
   if (expensesJson && (workUpdates.NetMeterPayment !== undefined || workUpdates.NetMeterPaid !== undefined)) {
     try {
@@ -1645,6 +1681,15 @@ window.handleNetMeterToggle = async function (toggleEl, slNo) {
     await saveWorkProgress(slNo, patch, { NetMeterDate: '', NetMeterPayment: 0, NetMeterPaid: false });
   }
   renderList();
+  if (isChecked) {
+    setTimeout(() => {
+      const amountInput = document.getElementById(`nmAmount_${slNo}`);
+      if (amountInput) {
+        amountInput.focus();
+        amountInput.select();
+      }
+    }, 100);
+  }
 };
 
 window.handleNetMeterDateChange = async function (slNo, dateVal) {
@@ -1653,111 +1698,26 @@ window.handleNetMeterDateChange = async function (slNo, dateVal) {
   renderList();
 };
 
+window.saveNetMeterInline = async function (slNo) {
+  const amountInput = document.getElementById(`nmAmount_${slNo}`);
+  const dateInput = document.getElementById(`nmDate_${slNo}`);
+  const paymentVal = amountInput && amountInput.value !== '' ? Number(amountInput.value) : 0;
+  const dateVal = dateInput?.value || '';
+
+  const patch = {
+    NetMeterPaid: true,
+    NetMeterDate: dateVal,
+    NetMeterPayment: paymentVal
+  };
+  await saveWorkProgress(slNo, patch, { NetMeterDate: dateVal, NetMeterPayment: paymentVal, NetMeterPaid: true });
+  renderList();
+};
+
 window.toggleNetMeterEdit = function (slNo) {
-  const input = document.getElementById(`nmPayInput_${slNo}`);
-  const btnEdit = document.getElementById(`btnNmEdit_${slNo}`);
-  const btnSave = document.getElementById(`btnNmSave_${slNo}`);
-  const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
+  const input = document.getElementById(`nmAmount_${slNo}`);
   if (!input) return;
-
-  const group = input.closest('.mw-netmeter-pay-group');
-  if (group) group.classList.add('is-editing');
-
-  input.dataset.origVal = input.value;
-  input.disabled = false;
   input.focus();
   input.select();
-
-  if (btnEdit) btnEdit.classList.add('d-none');
-  if (btnSave) {
-    btnSave.classList.remove('d-none');
-    btnSave.classList.add('d-inline-flex');
-  }
-  if (btnCancel) {
-    btnCancel.classList.remove('d-none');
-    btnCancel.classList.add('d-inline-flex');
-  }
 };
 
-window.cancelNetMeterEdit = function (slNo) {
-  const input = document.getElementById(`nmPayInput_${slNo}`);
-  const btnEdit = document.getElementById(`btnNmEdit_${slNo}`);
-  const btnSave = document.getElementById(`btnNmSave_${slNo}`);
-  const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
-  if (!input) return;
-
-  const group = input.closest('.mw-netmeter-pay-group');
-  if (group) group.classList.remove('is-editing');
-
-  if (input.dataset.origVal !== undefined) {
-    input.value = input.dataset.origVal;
-  }
-  input.disabled = true;
-
-  if (btnSave) {
-    btnSave.classList.add('d-none');
-    btnSave.classList.remove('d-inline-flex');
-  }
-  if (btnCancel) {
-    btnCancel.classList.add('d-none');
-    btnCancel.classList.remove('d-inline-flex');
-  }
-  if (btnEdit) {
-    btnEdit.classList.remove('d-none');
-  }
-};
-
-window.saveNetMeterPayment = async function (slNo) {
-  const input = document.getElementById(`nmPayInput_${slNo}`);
-  const btnEdit = document.getElementById(`btnNmEdit_${slNo}`);
-  const btnSave = document.getElementById(`btnNmSave_${slNo}`);
-  const btnCancel = document.getElementById(`btnNmCancel_${slNo}`);
-  if (!input) return;
-
-  const group = input.closest('.mw-netmeter-pay-group');
-  if (group) group.classList.remove('is-editing');
-
-  const paymentVal = input.value.trim();
-  const numVal = paymentVal ? Number(paymentVal) : 0;
-
-  const existing = (DB.getAll('installments') || []).find(r => Number(r.SlNo) === Number(slNo));
-  const custName = existing?.Name || `Customer #${slNo}`;
-  const consumerNo = existing?.ConsumerNo ? ` (CN: ${existing.ConsumerNo})` : '';
-  const formattedAmt = `₹${numVal.toLocaleString('en-IN')}`;
-
-  const confirmed = await UI.confirmDialog(
-    `Are you sure you want to save NetMeter payment of ${formattedAmt} for "${custName}"${consumerNo}?`,
-    'Confirm NetMeter Payment',
-    'Yes, Save Payment',
-    'btn-primary'
-  );
-
-  if (!confirmed) {
-    window.cancelNetMeterEdit(slNo);
-    return;
-  }
-
-  try {
-    const patch = { NetMeterPayment: numVal };
-    await saveWorkProgress(slNo, patch, { NetMeterPayment: numVal });
-    input.dataset.origVal = input.value;
-    input.disabled = true;
-
-    if (btnSave) {
-      btnSave.classList.add('d-none');
-      btnSave.classList.remove('d-inline-flex');
-    }
-    if (btnCancel) {
-      btnCancel.classList.add('d-none');
-      btnCancel.classList.remove('d-inline-flex');
-    }
-    if (btnEdit) {
-      btnEdit.classList.remove('d-none');
-    }
-    UI.toast(`NetMeter payment updated to ${formattedAmt}`, 'success');
-    renderList();
-  } catch (err) {
-    UI.toast('Error saving NetMeter payment: ' + err.message, 'danger');
-  }
-};
 

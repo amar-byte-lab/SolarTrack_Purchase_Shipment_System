@@ -67,7 +67,10 @@ const VALID_INSTALLMENT_COLS = new Set([
   'Total', 'CommittedPrice', 'LoginDate', 'InstallationDate', 'Commission',
   'CommissionPaid', 'BrokerName', 'BrokerNumber', 'CommissioningDate',
   'VendorPrice', 'VendorPaid', 'ConsumerNo', 'PinCode', 'State',
-  'NetMeterPayment', 'NetMeterPaid'
+  'NetMeterPayment', 'NetMeterPaid',
+  'AgreementDate', 'MaterialDispatchedDate', 'NetMeterDate', 'InspectionDate',
+  'MeterConnectedDate', 'SubDivision', 'DivisionName', 'CircleName',
+  'ApplicationNumber', 'ProposedCapacity', 'ProductSpecs', 'SpecsUpdatedBy', 'SpecsUpdatedAt'
 ]);
 
 function parseBrokerNumber(brokerStr) {
@@ -311,16 +314,71 @@ async function safeUpdate(tableName, matchField, val, newData) {
     item.Specification = item.Specification || item.ItemName || 'Standard Solar Equipment';
   }
   if (tableName === 'installments') {
-    const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(item.BrokerNumber);
+    let currentBrokerNumber = item.BrokerNumber;
+    if (!currentBrokerNumber) {
+      try {
+        const matchVal = (field === 'SlNo' || field === 'id' || field === 'BorrowerID') && !isNaN(val) ? Number(val) : val;
+        const { data: existingRows } = await supabase.from('installments').select('BrokerNumber').eq(field, matchVal).limit(1);
+        if (existingRows && existingRows[0]) {
+          currentBrokerNumber = existingRows[0].BrokerNumber || '';
+        } else {
+          const local = readLocalTable('installments');
+          const localMatch = local.find(r => String(r[field]) === String(matchVal));
+          if (localMatch) currentBrokerNumber = localMatch.BrokerNumber || '';
+        }
+      } catch (e) {
+        console.warn('[Postgres] Error fetching current BrokerNumber for merge in safeUpdate:', e.message);
+        const local = readLocalTable('installments');
+        const localMatch = local.find(r => String(r[field]) === String(val));
+        if (localMatch) currentBrokerNumber = localMatch.BrokerNumber || '';
+      }
+    }
+
+    const { basePhone, expensesJson, creatorId, workObj } = parseBrokerNumber(currentBrokerNumber || '');
+
+    // Synchronize work milestone stages and hierarchy fields into workObj
+    const workKeys = [
+      'AgreementDate', 'MaterialDispatchedDate', 'InstallationDate', 'NetMeterDate',
+      'InspectionDate', 'MeterConnectedDate', 'CommissioningDate', 'LoginDate',
+      'SubDivision', 'DivisionName', 'CircleName', 'ApplicationNumber', 'ProposedCapacity',
+      'ProductSpecs', 'SpecsUpdatedBy', 'SpecsUpdatedAt'
+    ];
+    for (const k of workKeys) {
+      if (item[k] !== undefined) {
+        if (item[k] === '' || item[k] === null) {
+          delete workObj[k];
+        } else {
+          workObj[k] = item[k];
+        }
+      }
+    }
+
+    // Move any fields outside VALID_INSTALLMENT_COLS into workObj
     for (const k of Object.keys(item)) {
       if (!VALID_INSTALLMENT_COLS.has(k)) {
         if (item[k] !== undefined) {
-          workObj[k] = item[k];
+          if (item[k] === '' || item[k] === null) {
+            delete workObj[k];
+          } else {
+            workObj[k] = item[k];
+          }
         }
         delete item[k];
       }
     }
-    item.BrokerNumber = formatBrokerNumber(basePhone, expensesJson, creatorId, workObj);
+
+    // Update net meter payment/paid flags in expenses if present
+    let updatedExpensesJson = expensesJson;
+    if (updatedExpensesJson && (item.NetMeterPayment !== undefined || item.NetMeterPaid !== undefined)) {
+      try {
+        const exp = JSON.parse(updatedExpensesJson);
+        if (item.NetMeterPayment !== undefined) exp.net_meter_payment = Number(item.NetMeterPayment) || 0;
+        if (item.NetMeterPaid !== undefined) exp.net_meter_paid = Boolean(item.NetMeterPaid);
+        updatedExpensesJson = JSON.stringify(exp);
+      } catch (e) {}
+    }
+
+    item.BrokerNumber = formatBrokerNumber(basePhone, updatedExpensesJson, creatorId, workObj);
   }
   const maxAttempts = Object.keys(item).length + 3;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {

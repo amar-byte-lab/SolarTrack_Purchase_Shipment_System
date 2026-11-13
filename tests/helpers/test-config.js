@@ -9,7 +9,7 @@ require('dotenv').config();
 const db = require('../../db');
 const http = require('http');
 
-let baseSlNo = 999000;
+let baseSlNo = 990000 + (process.pid % 1000) * 10;
 function getNextTestSlNo() {
   baseSlNo += 1;
   return baseSlNo;
