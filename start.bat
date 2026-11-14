@@ -1,7 +1,9 @@
 @echo off
-title SolarTrack Local Web Server
+title SolarTrack .NET 10 Hybrid Backend
 echo ======================================================
-echo Starting SolarTrack cost tracker database server...
+echo Starting SolarTrack .NET 10 Web API Backend...
+echo EF Core (Code-First) + Dapper
 echo ======================================================
-node server.js
+cd /d "%~dp0SolarTrack.Backend"
+dotnet run
 pause
