@@ -1,0 +1,566 @@
+<div class="ledger-page-container p-3">
+  <!-- Khatabook Style Net Balance Banner -->
+  <div class="kb-banner-card mb-3">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="kb-banner-title">Net Balance</div>
+        <div class="kb-banner-sub">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>{{ ledgerService.activeAccountsCount() }} Accounts</span>
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="d-flex align-items-center justify-content-end gap-2">
+          <span class="kb-eye-btn cursor-pointer" (click)="ledgerService.toggleMask()" title="Toggle balance mask">
+            <svg *ngIf="!ledgerService.isMasked()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg *ngIf="ledgerService.isMasked()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </span>
+          <span 
+            class="kb-net-amount"
+            [class.due]="ledgerService.netBalance() > 0.01"
+            [class.advance]="ledgerService.netBalance() < -0.01"
+            [class.settled]="Math.abs(ledgerService.netBalance()) <= 0.01">
+            <span *ngIf="ledgerService.isMasked()">••••••</span>
+            <span *ngIf="!ledgerService.isMasked()">{{ fmtNetTotal(ledgerService.netBalance()) }}</span>
+          </span>
+        </div>
+        <div 
+          class="kb-net-direction"
+          [style.color]="ledgerService.netBalance() > 0.01 ? '#ff5722' : (ledgerService.netBalance() < -0.01 ? '#16a34a' : '#64748b')">
+          {{ ledgerService.netDirection() }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="kb-search-container mb-3">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+      <input 
+        type="text" 
+        class="form-control border-start-0 ps-1" 
+        [ngModel]="ledgerService.searchQuery()"
+        (ngModelChange)="ledgerService.searchQuery.set($event)"
+        placeholder="Search customer by name, mobile…" 
+        autocomplete="off">
+      <div class="dropdown">
+        <button 
+          class="btn btn-outline-secondary dropdown-toggle bg-white rounded-start-0 border-start-0" 
+          type="button" 
+          (click)="isFilterMenuOpen = !isFilterMenuOpen">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          <span>{{ filterLabel }}</span>
+        </button>
+        <ul 
+          class="dropdown-menu dropdown-menu-end shadow-sm" 
+          [class.show]="isFilterMenuOpen"
+          style="font-size: 0.82rem; position: absolute; right: 0;">
+          <li><a class="dropdown-item cursor-pointer" [class.active]="ledgerService.filterStatus() === 'all'" (click)="setFilter('all')">All Accounts</a></li>
+          <li><a class="dropdown-item cursor-pointer" [class.active]="ledgerService.filterStatus() === 'due'" (click)="setFilter('due')">Due / You Get</a></li>
+          <li><a class="dropdown-item cursor-pointer" [class.active]="ledgerService.filterStatus() === 'advance'" (click)="setFilter('advance')">Advance / You Give</a></li>
+          <li><a class="dropdown-item cursor-pointer" [class.active]="ledgerService.filterStatus() === 'settled'" (click)="setFilter('settled')">Settled</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Khatabook Style Customer List Card -->
+  <div class="kb-list-card">
+    <div class="kb-account-list">
+      <!-- Loading State -->
+      <div *ngIf="ledgerService.isLoading()" class="text-center py-5 text-muted fs-8">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        Loading accounts...
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!ledgerService.isLoading() && ledgerService.filteredBorrowers().length === 0" class="text-center py-5 text-muted">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-2 opacity-50">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+        </svg>
+        <div class="fs-7">No customers or borrowers found</div>
+      </div>
+
+      <!-- Account Rows -->
+      <div 
+        *ngFor="let b of ledgerService.filteredBorrowers()" 
+        class="kb-account-item position-relative" 
+        [class.borrower-action-active]="activeActionsBorrowerId() === b.BorrowerID"
+        (click)="onBorrowerClick(b, $event)"
+        (dblclick)="onBorrowerDblClick(b, $event)"
+        (touchstart)="onBorrowerTouchStart(b, $event)"
+        (touchmove)="onBorrowerTouchMove($event)"
+        (touchend)="onBorrowerTouchEnd()"
+        (touchcancel)="onBorrowerTouchCancel()">
+        <div class="kb-avatar" [style.background-color]="b.avatarBg">
+          {{ getInitials(b.Name) }}
+        </div>
+        <div class="kb-info">
+          <div class="kb-name">{{ b.Name }}</div>
+          <div class="kb-sub">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" class="me-1 flex-shrink-0">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>{{ b.lastTxnText }}</span>
+          </div>
+        </div>
+        <div class="kb-bal d-flex align-items-center gap-2">
+          <!-- Balance info (visible when actions not active) -->
+          <div class="text-end" *ngIf="activeActionsBorrowerId() !== b.BorrowerID">
+            <div 
+              class="kb-amount"
+              [class.due]="(b.balance || 0) > 0.01"
+              [class.advance]="(b.balance || 0) < -0.01"
+              [class.settled]="Math.abs(b.balance || 0) <= 0.01">
+              {{ fmtNetTotal(b.balance) }}
+            </div>
+            <div 
+              class="kb-status-label"
+              [class.due]="(b.balance || 0) > 0.01"
+              [class.advance]="(b.balance || 0) < -0.01"
+              [class.settled]="Math.abs(b.balance || 0) <= 0.01">
+              {{ (b.balance || 0) > 0.01 ? 'Due' : ((b.balance || 0) < -0.01 ? 'Advance' : 'Settled') }}
+            </div>
+          </div>
+
+          <!-- Delete Option Toolbar (Revealed on Double Click / Long Hold) -->
+          <div 
+            *ngIf="activeActionsBorrowerId() === b.BorrowerID" 
+            class="kb-borrower-actions d-flex align-items-center gap-1.5"
+            (click)="$event.stopPropagation()">
+            <button 
+              type="button" 
+              class="btn btn-sm btn-danger py-1 px-2.5 fs-8 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm"
+              (click)="deleteBorrower(b, $event)"
+              title="Delete Customer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Delete</span>
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-white border py-1 px-2 text-secondary fs-8 shadow-sm"
+              (click)="closeBorrowerActions()"
+              title="Cancel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating "+ Add Customer" Button matching Screenshot 1 -->
+  <div class="kb-floating-actions">
+    <button class="btn kb-btn-float d-flex align-items-center gap-1.5 shadow" (click)="openAddBorrowerModal()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <line x1="19" y1="8" x2="19" y2="14"></line>
+        <line x1="22" y1="11" x2="16" y2="11"></line>
+      </svg>
+      <span>Add Customer</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ Customer Transaction Modal matching Screenshot 2 ════════════════════════════ -->
+<div 
+  *ngIf="isStatementModalOpen()" 
+  class="modal fade show d-block" 
+  style="background-color: rgba(15, 23, 42, 0.45); z-index: 1055;"
+  tabindex="-1" 
+  role="dialog">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 600px; width: 95%;">
+    <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 border-bottom bg-white d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="fw-bold fs-7 mb-0 text-dark">{{ ledgerService.selectedBorrower()?.Name }}</h5>
+          <span 
+            class="badge border px-2 py-0.5 fs-8"
+            [ngClass]="(ledgerService.selectedBorrower()?.balance || 0) > 0.01 ? 'bg-danger-subtle text-danger border-danger-subtle' : ((ledgerService.selectedBorrower()?.balance || 0) < -0.01 ? 'bg-success-subtle text-success border-success-subtle' : 'bg-light text-secondary border')">
+            {{ (ledgerService.selectedBorrower()?.balance || 0) >= 0 ? '-' : '+' }}{{ fmtMoney(ledgerService.selectedBorrower()?.balance) }} outstanding
+          </span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <!-- WhatsApp Icon Button -->
+          <button 
+            type="button" 
+            class="btn btn-sm btn-whatsapp p-1 rounded-circle d-flex align-items-center justify-content-center" 
+            (click)="shareWhatsapp()" 
+            title="Share Statement on WhatsApp">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e">
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.832 2.788.832 3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.586-5.767-5.765-5.767zm7.969 5.766c0 4.406-3.584 7.989-7.969 7.989-1.385 0-2.684-.361-3.818-.988l-4.213 1.103 1.127-4.103c-.722-1.189-1.144-2.586-1.144-4.079 0-4.406 3.584-7.989 7.969-7.989 4.406 0 7.969 3.583 7.969 7.989z"/>
+            </svg>
+          </button>
+          
+          <!-- Close Button -->
+          <button type="button" class="btn-close" (click)="closeStatement()"></button>
+        </div>
+      </div>
+
+      <!-- Modal Body: Chat / Transaction Timeline Feed -->
+      <div 
+        class="modal-body p-3 chat-bg" 
+        style="max-height: 420px; min-height: 240px; overflow-y: auto;"
+        (click)="closeTxnActions()">
+        <div *ngIf="ledgerService.selectedBorrowerTxns().length === 0" class="text-center py-5 text-muted fs-8">
+          No transactions recorded yet. Use the drawer below to record a transaction.
+        </div>
+
+        <div *ngIf="ledgerService.selectedBorrowerTxns().length > 0" class="text-center mb-2">
+          <small class="text-muted" style="font-size: 0.7rem;">
+            Tip: Double-click (or long-hold on mobile) any transaction to edit or delete
+          </small>
+        </div>
+
+        <ng-container *ngFor="let t of ledgerService.selectedBorrowerTxns(); let i = index">
+          <!-- Date Divider -->
+          <div *ngIf="shouldShowDateDivider(ledgerService.selectedBorrowerTxns(), i)" class="text-center my-2">
+            <span class="badge bg-light text-secondary border px-2 py-0.5 fs-9 fw-normal rounded-pill">
+              {{ ledgerService.formatDate(t.TxnDate) }}
+            </span>
+          </div>
+
+          <!-- YOU GAVE (Credit) -> Red Right Card -->
+          <div 
+            *ngIf="t.Type === 'Credit'" 
+            class="d-flex flex-column align-items-end mb-2 group-txn-row">
+            <!-- Action Toolbar (Icons ONLY: Edit, Delete, Cancel) -->
+            <div 
+              *ngIf="activeActionsTxnId() === t.TxnID" 
+              class="txn-actions-overlay d-flex align-items-center gap-1 mb-1" 
+              (click)="$event.stopPropagation()">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-white border shadow-sm text-primary p-1 rounded d-inline-flex align-items-center justify-content-center"
+                (click)="openEditModal(t, $event)"
+                title="Edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-white border shadow-sm text-danger p-1 rounded d-inline-flex align-items-center justify-content-center"
+                (click)="deleteTxn(t, $event)"
+                title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-white border shadow-sm text-secondary p-1 rounded d-inline-flex align-items-center justify-content-center"
+                (click)="closeTxnActions()"
+                title="Cancel">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Transaction Card Bubble -->
+            <div 
+              class="card p-2 border bg-white shadow-none chat-bubble-credit cursor-pointer"
+              [class.bubble-active]="activeActionsTxnId() === t.TxnID"
+              style="min-width: 140px; max-width: 75%;"
+              (dblclick)="toggleTxnActions(t.TxnID, $event)"
+              (touchstart)="onTouchStart(t.TxnID, $event)"
+              (touchmove)="onTouchMove($event)"
+              (touchend)="onTouchEnd()"
+              (touchcancel)="onTouchCancel()">
+              <div class="d-flex justify-content-between align-items-center mb-0.5">
+                <span class="text-danger fw-bold fs-9 text-uppercase" style="letter-spacing: 0.04em;">YOU GAVE</span>
+              </div>
+              <div class="text-danger fw-bold fs-6 my-0.5">- {{ fmtMoney(t.Amount) }}</div>
+              <div *ngIf="t.Remarks" class="text-secondary fs-9 mb-1">{{ t.Remarks }}</div>
+              <div class="text-end text-muted fs-9">{{ ledgerService.formatDate(t.TxnDate) }}</div>
+            </div>
+          </div>
+
+          <!-- YOU GOT (Debit) -> Green Left Card -->
+          <div 
+            *ngIf="t.Type === 'Debit'" 
+            class="d-flex flex-column align-items-start mb-2 group-txn-row">
+            <!-- Action Toolbar (Icons ONLY: Edit, Delete, Cancel) -->
+            <div 
+              *ngIf="activeActionsTxnId() === t.TxnID" 
+              class="txn-actions-overlay d-flex align-items-center gap-1 mb-1" 
+              (click)="$event.stopPropagation()">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-white border shadow-sm text-primary p-1 rounded d-inline-flex align-items-center justify-content-center"
+                (click)="openEditModal(t, $event)"
+                title="Edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-white border shadow-sm text-danger p-1 rounded d-inline-flex align-items-center justify-content-center"
+                (click)="deleteTxn(t, $event)"
+                title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-white border shadow-sm text-secondary p-1 rounded d-inline-flex align-items-center justify-content-center"
+                (click)="closeTxnActions()"
+                title="Cancel">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Transaction Card Bubble -->
+            <div 
+              class="card p-2 border bg-success-subtle shadow-none chat-bubble-debit cursor-pointer"
+              [class.bubble-active]="activeActionsTxnId() === t.TxnID"
+              style="min-width: 140px; max-width: 75%;"
+              (dblclick)="toggleTxnActions(t.TxnID, $event)"
+              (touchstart)="onTouchStart(t.TxnID, $event)"
+              (touchmove)="onTouchMove($event)"
+              (touchend)="onTouchEnd()"
+              (touchcancel)="onTouchCancel()">
+              <div class="d-flex justify-content-between align-items-center mb-0.5">
+                <span class="text-success fw-bold fs-9 text-uppercase" style="letter-spacing: 0.04em;">YOU GOT</span>
+              </div>
+              <div class="text-success fw-bold fs-6 my-0.5">+ {{ fmtMoney(t.Amount) }}</div>
+              <div *ngIf="t.Remarks" class="text-secondary fs-9 mb-1">{{ t.Remarks }}</div>
+              <div class="text-end text-muted fs-9">{{ ledgerService.formatDate(t.TxnDate) }}</div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Modal Footer: Transaction Input Form matching Screenshot 2 -->
+      <div class="modal-footer p-2.5 bg-white border-top">
+        <div class="w-100 d-flex gap-2 align-items-stretch">
+          <!-- Inputs on Left -->
+          <div class="flex-grow-1 d-flex flex-column gap-1.5">
+            <div class="d-flex gap-1.5">
+              <input 
+                type="date" 
+                class="form-control form-control-sm fs-8 shadow-none border" 
+                [(ngModel)]="txnDate" 
+                style="max-width: 140px;">
+              <input 
+                type="number" 
+                class="form-control form-control-sm fs-8 shadow-none border" 
+                [(ngModel)]="txnAmount" 
+                placeholder="Amount ₹ *" 
+                min="1">
+            </div>
+            <textarea 
+              class="form-control form-control-sm fs-8 shadow-none border" 
+              rows="2" 
+              [(ngModel)]="txnRemarks" 
+              placeholder="Optional comment / note..."></textarea>
+          </div>
+
+          <!-- Buttons on Right -->
+          <div class="d-flex gap-1.5 flex-shrink-0">
+            <!-- RECEIVED (Debit) -->
+            <button 
+              type="button" 
+              class="btn-txn-icon btn-received" 
+              (click)="saveTxn('Debit')"
+              title="Record Received (Debit)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 5v14M19 12l-7 7-7-7"></path>
+              </svg>
+              <span class="btn-icon-sublabel">RECEIVED</span>
+            </button>
+
+            <!-- GIVEN (Credit) -->
+            <button 
+              type="button" 
+              class="btn-txn-icon btn-given" 
+              (click)="saveTxn('Credit')"
+              title="Record Given (Credit)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 19V5M5 12l7-7 7 7"></path>
+              </svg>
+              <span class="btn-icon-sublabel">GIVEN</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Add Customer Modal ═══════════════════════════════════════════ -->
+<div 
+  *ngIf="isAddBorrowerModalOpen()" 
+  class="modal fade show d-block" 
+  style="background-color: rgba(15, 23, 42, 0.45); z-index: 1055;"
+  tabindex="-1" 
+  role="dialog">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 420px; width: 95%;">
+    <div class="modal-content border-0 shadow-lg rounded-3">
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light">
+        <h6 class="modal-title fw-bold fs-7 mb-0 text-dark">Add New Customer</h6>
+        <button type="button" class="btn-close" (click)="closeAddBorrowerModal()"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="mb-2.5">
+          <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Customer Name <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            class="form-control form-control-sm fs-8" 
+            [(ngModel)]="newBorrowerName" 
+            placeholder="e.g. Rakesh Bhai" 
+            autofocus>
+        </div>
+        <div class="mb-2.5">
+          <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Mobile Number</label>
+          <input 
+            type="tel" 
+            class="form-control form-control-sm fs-8" 
+            [(ngModel)]="newBorrowerMobile" 
+            placeholder="e.g. 9876543210">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Address / Location</label>
+          <input 
+            type="text" 
+            class="form-control form-control-sm fs-8" 
+            [(ngModel)]="newBorrowerAddress" 
+            placeholder="e.g. Balasore">
+        </div>
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" (click)="closeAddBorrowerModal()">Cancel</button>
+          <button type="button" class="btn btn-sm btn-primary px-3 fs-8 fw-semibold" (click)="saveNewBorrower()">Save Customer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Edit Transaction Modal matching Screenshot ═════════════════════ -->
+<div 
+  *ngIf="isEditTxnModalOpen()" 
+  class="modal fade show d-block" 
+  style="background-color: rgba(15, 23, 42, 0.45); z-index: 1060;" 
+  tabindex="-1" 
+  role="dialog">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 480px; width: 95%;">
+    <div class="modal-content border-0 shadow-lg rounded-3">
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 border-bottom bg-white d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d28d9" stroke-width="2.2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <h6 class="modal-title fw-bold fs-7 mb-0 text-dark">Edit Transaction</h6>
+        </div>
+        <button type="button" class="btn-close" (click)="closeEditModal()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-3">
+        <!-- Transaction Type Label & Segmented Buttons -->
+        <div class="mb-3">
+          <label class="form-label fs-8 text-secondary mb-1.5 fw-semibold">Transaction Type</label>
+          <div class="edit-type-segmented-group d-flex w-100">
+            <!-- Received (Credit) -->
+            <button 
+              type="button" 
+              class="btn-edit-segment segment-received flex-fill" 
+              [class.active]="editTxnType === 'Debit'"
+              (click)="editTxnType = 'Debit'">
+              <span class="me-1">↓</span>
+              <span>Received (Credit)</span>
+            </button>
+
+            <!-- You gave (Debit) -->
+            <button 
+              type="button" 
+              class="btn-edit-segment segment-given flex-fill" 
+              [class.active]="editTxnType === 'Credit'"
+              (click)="editTxnType = 'Credit'">
+              <span class="me-1">↑</span>
+              <span>You gave (Debit)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Date & Amount in 2-Columns Side by Side -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Date <span class="text-danger">*</span></label>
+            <input 
+              type="date" 
+              class="form-control form-control-sm fs-8 shadow-none" 
+              [(ngModel)]="editTxnDate">
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Amount (₹) <span class="text-danger">*</span></label>
+            <input 
+              type="number" 
+              class="form-control form-control-sm fs-8 shadow-none" 
+              [(ngModel)]="editTxnAmount" 
+              placeholder="Enter amount"
+              min="1">
+          </div>
+        </div>
+
+        <!-- Remarks / Note -->
+        <div class="mb-3">
+          <label class="form-label fs-8 text-secondary mb-1 fw-semibold">Remarks / Note</label>
+          <textarea 
+            class="form-control form-control-sm fs-8 shadow-none" 
+            rows="3" 
+            [(ngModel)]="editTxnRemarks" 
+            placeholder="Optional comment or note..."></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3.5 py-1.5 fs-8" (click)="closeEditModal()">Cancel</button>
+          <button type="button" class="btn btn-sm btn-edit-save px-3.5 py-1.5 fs-8 fw-semibold" (click)="saveEditTxn()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

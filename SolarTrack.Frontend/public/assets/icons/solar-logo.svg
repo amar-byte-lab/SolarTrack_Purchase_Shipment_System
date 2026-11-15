@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="85" viewBox="0 0 240 85">
+  <rect width="240" height="85" fill="white" rx="6"/>
+  <g transform="translate(10, 10)">
+    <circle cx="28" cy="24" r="14" fill="#FF9F43"/>
+    <path d="M 12,36 L 44,36 L 50,58 L 6,58 Z" fill="#2470A0"/>
+    <line x1="28" y1="36" x2="28" y2="58" stroke="white" stroke-width="2"/>
+    <line x1="12" y1="46" x2="44" y2="46" stroke="white" stroke-width="2"/>
+    <text x="58" y="26" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="14" fill="#0F2027" letter-spacing="0.5">SHRI TRUTIYADEV</text>
+    <text x="58" y="44" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="12" fill="#FF9F43" letter-spacing="0.5">SOLAR ENTERPRISES</text>
+  </g>
+</svg>

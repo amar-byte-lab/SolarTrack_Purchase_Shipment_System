@@ -1,0 +1,136 @@
+<div class="files-container">
+  <!-- Search, Filter & Upload Toolbar -->
+  <div class="files-filter-card p-3 mb-3">
+    <div class="row g-2 align-items-end">
+      <!-- Search Input -->
+      <div class="col-md-4 col-12">
+        <label class="form-label fs-8 text-secondary fw-semibold mb-1">File Name</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white border-end-0 text-muted ps-2.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input 
+            type="text" 
+            class="form-control border-start-0 ps-1" 
+            placeholder="Search by file name..."
+            [ngModel]="filesService.searchQuery()"
+            (ngModelChange)="filesService.searchQuery.set($event)">
+        </div>
+      </div>
+
+      <!-- From Date -->
+      <div class="col-md-2 col-6">
+        <label class="form-label fs-8 text-secondary fw-semibold mb-1">From Date</label>
+        <input 
+          type="date" 
+          class="form-control form-control-sm"
+          [ngModel]="filesService.fromDate()"
+          (ngModelChange)="filesService.fromDate.set($event)">
+      </div>
+
+      <!-- To Date -->
+      <div class="col-md-2 col-6">
+        <label class="form-label fs-8 text-secondary fw-semibold mb-1">To Date</label>
+        <input 
+          type="date" 
+          class="form-control form-control-sm"
+          [ngModel]="filesService.toDate()"
+          (ngModelChange)="filesService.toDate.set($event)">
+      </div>
+
+      <!-- Clear Action -->
+      <div class="col-md-1 col-6">
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary btn-sm w-100 py-1 fs-8" 
+          (click)="clearFilters()">
+          Clear
+        </button>
+      </div>
+
+      <!-- Upload New File Action -->
+      <div class="col-md-3 col-6 text-end">
+        <label class="btn btn-primary btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5" style="cursor: pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Upload File</span>
+          <input type="file" class="d-none" (change)="onFileSelected($event)">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved Files Table Card -->
+  <div class="files-table-card">
+    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-light">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold text-dark fs-7">Saved Documents &amp; Bills</span>
+        <span class="badge bg-primary-subtle text-primary border fs-8">{{ filesService.filteredFiles().length }} Files</span>
+      </div>
+      <button 
+        type="button" 
+        class="btn btn-xs btn-outline-secondary py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8"
+        (click)="filesService.loadFiles().subscribe()">
+        <span>↻ Refresh</span>
+      </button>
+    </div>
+
+    <div class="table-responsive" style="max-height: calc(100vh - 230px); overflow-y: auto;">
+      <table class="table table-hover table-files mb-0 align-middle">
+        <thead class="sticky-top">
+          <tr>
+            <th style="width: 45px; text-align: center;">#</th>
+            <th>File Name</th>
+            <th style="width: 130px;" class="text-center">Date</th>
+            <th style="width: 100px;" class="text-end">Size</th>
+            <th style="width: 140px;" class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (filesService.isLoading()) {
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                <span>Loading files...</span>
+              </td>
+            </tr>
+          } @else if (filesService.filteredFiles().length === 0) {
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                <div class="fs-7 fw-semibold mb-1">No files or documents found</div>
+                <div class="fs-8">Upload purchase bills, challans, or customer agreements above.</div>
+              </td>
+            </tr>
+          }
+          @for (f of filesService.filteredFiles(); track f.storedFileName || $index; let i = $index) {
+            <tr>
+              <td class="text-center text-muted fs-8">{{ i + 1 }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2.5">
+                  <div class="file-icon">📄</div>
+                  <div class="text-truncate" style="max-width: 380px;">
+                    <a [href]="getFileUrl(f)" target="_blank" class="fw-semibold text-dark text-decoration-none">
+                      {{ f.originalName || f.storedFileName }}
+                    </a>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center font-monospace fs-8 text-secondary">
+                {{ (f.fileDate || f.uploadedAt || '') | slice:0:10 }}
+              </td>
+              <td class="text-end font-monospace fs-8 text-secondary">
+                {{ formatSize(f.fileSize || f.size || 0) }}
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                  <a [href]="getFileUrl(f)" target="_blank" class="btn btn-outline-secondary btn-xs" title="View / Open">Open</a>
+                  <a [href]="getFileDownloadUrl(f)" class="btn btn-outline-primary btn-xs" title="Download">Download</a>
+                  <button type="button" class="btn btn-outline-danger btn-xs" (click)="onDeleteFile(f)" title="Delete">Delete</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

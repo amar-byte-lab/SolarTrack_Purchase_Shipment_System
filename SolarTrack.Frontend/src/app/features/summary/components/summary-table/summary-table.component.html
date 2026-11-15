@@ -1,0 +1,312 @@
+<!-- Table Top Action Bar -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-1 mb-2">
+  <div class="d-flex align-items-center gap-2">
+    <span class="text-secondary fs-8 fw-normal" id="sumModalRowCount">
+      {{ summaryService.filteredRows().length }} of {{ summaryService.totalCustomerCount() }} customers
+    </span>
+    
+    <!-- Exclude from Summary Button (shown when checkbox selected) -->
+    <button 
+      *ngIf="selectedSlNos().size > 0"
+      type="button" 
+      class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1.5 py-1 px-2.5 shadow-sm fs-8" 
+      (click)="excludeSelected()" 
+      title="Remove selected customers from summary view">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="15" y1="9" x2="9" y2="15"></line>
+        <line x1="9" y1="9" x2="15" y2="15"></line>
+      </svg>
+      <span>Exclude from Summary (<strong>{{ selectedSlNos().size }}</strong>)</span>
+    </button>
+
+    <!-- Excluded Dropdown Button (shown if any customer is excluded) -->
+    <div *ngIf="summaryService.excludedRows().length > 0" class="dropdown position-relative">
+      <button 
+        type="button" 
+        class="btn btn-sm btn-outline-danger dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-sm" 
+        (click)="isExcludedMenuOpen = !isExcludedMenuOpen"
+        title="Click to view and remove excluded customers">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+        </svg>
+        <span>Excluded (<strong>{{ summaryService.excludedRows().length }}</strong>)</span>
+      </button>
+      <div 
+        class="dropdown-menu p-2.5 shadow-lg border" 
+        [class.show]="isExcludedMenuOpen"
+        style="min-width: 320px; max-width: 420px; max-height: 380px; overflow-y: auto; font-size: 0.82rem; z-index: 1070; position: absolute; left: 0;">
+        <div class="d-flex justify-content-between align-items-center mb-2 pb-1.5 border-bottom px-1">
+          <span class="fw-bold text-dark fs-8">Excluded Customers ({{ summaryService.excludedRows().length }})</span>
+          <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-danger fs-8 fw-semibold" (click)="restoreAllExcluded()">
+            Restore All
+          </button>
+        </div>
+        <div class="d-flex flex-column gap-1.5">
+          <div *ngFor="let ex of summaryService.excludedRows()" class="d-flex justify-content-between align-items-center p-1.5 border rounded bg-light">
+            <div class="text-truncate me-2">
+              <strong class="d-block text-dark fs-8">{{ ex.name }}</strong>
+              <small class="text-muted fs-9">{{ ex.consumerNo || 'No Consumer No' }} • {{ ex.district }}</small>
+            </div>
+            <button class="btn btn-xs btn-outline-success fs-9" (click)="restoreRow(ex.slNo)">Restore</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Separate Select Columns Dropdown & Standalone Copy Button -->
+  <div class="d-flex align-items-center gap-2">
+    <!-- Select Columns Dropdown Button -->
+    <div class="dropdown position-relative" *ngIf="authService.isAdmin()">
+      <button 
+        class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" 
+        type="button" 
+        (click)="isColumnsMenuOpen = !isColumnsMenuOpen">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 6h16M4 12h16M4 18h7"></path>
+        </svg>
+        <span>Select Columns</span>
+      </button>
+      <div 
+        class="dropdown-menu dropdown-menu-end p-3 shadow-lg border" 
+        [class.show]="isColumnsMenuOpen"
+        style="min-width: 250px; max-height: 440px; overflow-y: auto; font-size: 0.82rem; position: absolute; right: 0; z-index: 1060;">
+        <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+          <span class="fw-bold text-dark fs-8">Columns to Include</span>
+          <div class="d-flex gap-1.5">
+            <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none fs-9" (click)="selectAllColumns()">All</button>
+            <span class="text-muted fs-9">|</span>
+            <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-muted fs-9" (click)="resetDefaultColumns()">Default</button>
+            <span class="text-muted fs-9">|</span>
+            <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-muted fs-9" (click)="deselectAllColumns()">None</button>
+          </div>
+        </div>
+        <div class="d-flex flex-column gap-1.5">
+          <div *ngFor="let c of summaryService.columns()" class="form-check mb-1">
+            <input 
+              class="form-check-input cursor-pointer" 
+              type="checkbox" 
+              [id]="'col_' + c.key"
+              [checked]="c.visible"
+              (change)="toggleColumn(c.key, $any($event.target).checked)">
+            <label class="form-check-label fs-8 cursor-pointer" [for]="'col_' + c.key">
+              {{ c.label }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Standalone Purple Copy Button matching Screenshot 1 -->
+    <button 
+      type="button" 
+      class="btn btn-sm btn-purple-copy d-inline-flex align-items-center gap-1.5 py-1 px-3 shadow-sm fs-8" 
+      (click)="copyFormattedSummary()" 
+      title="Copy formatted for Notepad / WhatsApp">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span>Copy</span>
+    </button>
+  </div>
+</div>
+
+<!-- Customer Workflow Financial & Delivery Table Card -->
+<div class="card border rounded-2 bg-white shadow-sm summary-table-card mw-summary-table-card">
+  <div class="table-responsive p-0 mw-summary-table-wrap">
+    <table class="table table-sm table-manage-work-summary" id="workSummaryTable">
+      <thead class="table-light">
+        <tr>
+          <th *ngIf="isColumnVisible('customer')" class="th-col-customer text-nowrap">
+            <div class="d-flex align-items-center gap-2">
+              <input 
+                type="checkbox" 
+                class="form-check-input mt-0 flex-shrink-0 cursor-pointer" 
+                [checked]="isAllSelected"
+                (change)="toggleSelectAll($any($event.target).checked)"
+                title="Select / Deselect all visible customers">
+              <span class="fw-bold fs-8">CUSTOMER: STATUS</span>
+            </div>
+          </th>
+          <th *ngIf="isColumnVisible('pvmodule')" class="th-col-pvmodule text-nowrap">PVMODULE MAKE</th>
+          <th *ngIf="isColumnVisible('inverter')" class="th-col-inverter text-nowrap">INVERTER MAKE</th>
+          <th *ngIf="isColumnVisible('payment')" class="th-col-payment text-nowrap text-center">PAYMENT</th>
+          <th *ngIf="isColumnVisible('install')" class="th-col-install text-end text-nowrap">INSTALL</th>
+          <th *ngIf="isColumnVisible('meter')" class="th-col-meter text-end text-nowrap">METER</th>
+          <th *ngIf="isColumnVisible('delivery')" class="th-col-delivery text-end text-nowrap">DELIVERY</th>
+          <th *ngIf="isColumnVisible('others')" class="th-col-others text-end text-nowrap">OTHERS</th>
+          <th *ngIf="isColumnVisible('comment')" class="th-col-comment text-nowrap">COMMENT</th>
+          <th *ngIf="isColumnVisible('material')" class="th-col-material text-end text-nowrap">MATERIAL</th>
+          <th *ngIf="isColumnVisible('setcost')" class="th-col-setcost text-end text-nowrap bg-light-subtle">SET COST</th>
+          <th *ngIf="isColumnVisible('profit')" class="th-col-profit text-end text-nowrap bg-light-subtle">PROFIT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Loading State -->
+        <tr *ngIf="summaryService.isLoading()">
+          <td [attr.colspan]="visibleColumnsCount" class="text-center py-4 text-muted fs-8">
+            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+            Loading summary data...
+          </td>
+        </tr>
+
+        <!-- Empty State -->
+        <tr *ngIf="!summaryService.isLoading() && summaryService.filteredRows().length === 0">
+          <td [attr.colspan]="visibleColumnsCount" class="text-center py-4 text-muted fs-8">
+            No customers match the selected filter criteria.
+          </td>
+        </tr>
+
+        <!-- Grouped Rows (Unpaid, Partial Paid, Fully Paid) -->
+        <ng-container *ngFor="let grp of summaryService.groupedRows()">
+          <!-- Group Header Row -->
+          <tr *ngIf="grp.list.length > 0" class="sum-group-header-row" [ngClass]="grp.groupClass">
+            <td [attr.colspan]="visibleColumnsCount" class="py-1 px-2.5">
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    class="form-check-input mt-0 group-select-chk flex-shrink-0 cursor-pointer" 
+                    [checked]="isGroupAllSelected(grp)"
+                    (change)="toggleGroupSelect(grp, $any($event.target).checked)"
+                    [title]="'Select/Deselect all ' + grp.name">
+                  <span class="fw-bold fs-8" [ngClass]="grp.colorClass">
+                    {{ grp.name }} ({{ grp.list.length }})
+                  </span>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Data Rows inside group -->
+          <tr *ngFor="let item of grp.list" class="sum-cust-row" [ngClass]="grp.rowClass">
+            <!-- Customer: Status -->
+            <td *ngIf="isColumnVisible('customer')" class="td-col-customer text-nowrap">
+              <div class="d-flex align-items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  class="form-check-input mt-0 sum-row-chk flex-shrink-0 cursor-pointer"
+                  [checked]="isRowSelected(item.slNo)"
+                  (click)="toggleRowSelection(item.slNo, $event)">
+                <span class="fw-bold text-dark fs-8" [title]="item.name">{{ item.name }}</span>
+                <span class="badge fs-9 px-1.5 py-0.5" [ngClass]="item.stageClass">{{ item.stageName }}</span>
+              </div>
+            </td>
+
+            <!-- PVModule Make -->
+            <td *ngIf="isColumnVisible('pvmodule')" class="td-col-pvmodule text-nowrap">
+              <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.pvModuleMake }}</span>
+            </td>
+
+            <!-- Inverter Make -->
+            <td *ngIf="isColumnVisible('inverter')" class="td-col-inverter text-nowrap">
+              <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.inverterMake }}</span>
+            </td>
+
+            <!-- Payment (Two Lines: Paid in green, Unpaid in red) -->
+            <td *ngIf="isColumnVisible('payment')" class="td-col-payment text-nowrap">
+              <div class="d-flex flex-column">
+                <span class="fw-semibold text-success fs-8">{{ fmtCurr(item.fin.paid) }}</span>
+                <span *ngIf="item.fin.unpaid > 0" class="text-danger fs-9">Unpaid: {{ fmtCurr(item.fin.unpaid) }}</span>
+              </div>
+            </td>
+
+            <!-- Install -->
+            <td *ngIf="isColumnVisible('install')" class="td-col-install text-end text-nowrap fs-8">
+              {{ fmtCurr(item.fin.install) }}
+            </td>
+
+            <!-- Meter -->
+            <td *ngIf="isColumnVisible('meter')" class="td-col-meter text-end text-nowrap fs-8">
+              {{ fmtCurr(item.fin.meter) }}
+            </td>
+
+            <!-- Delivery -->
+            <td *ngIf="isColumnVisible('delivery')" class="td-col-delivery text-end text-nowrap fs-8">
+              {{ fmtCurr(item.fin.delivery) }}
+            </td>
+
+            <!-- Others -->
+            <td *ngIf="isColumnVisible('others')" class="td-col-others text-end text-nowrap fs-8">
+              {{ fmtCurr(item.fin.others) }}
+            </td>
+
+            <!-- Comment -->
+            <td *ngIf="isColumnVisible('comment')" class="td-col-comment">
+              <input 
+                type="text" 
+                class="form-control form-control-sm sum-comment-input fs-8" 
+                [value]="item.fin.comment" 
+                (change)="onCommentChange(item.slNo, $event)"
+                placeholder="Add comment...">
+            </td>
+
+            <!-- Material -->
+            <td *ngIf="isColumnVisible('material')" class="td-col-material text-end text-nowrap fs-8">
+              {{ fmtCurr(item.fin.material) }}
+            </td>
+
+            <!-- Set Cost -->
+            <td *ngIf="isColumnVisible('setcost')" class="td-col-setcost text-end text-nowrap fw-semibold bg-light-subtle fs-8">
+              {{ fmtCurr(item.fin.setCost) }}
+            </td>
+
+            <!-- Profit -->
+            <td *ngIf="isColumnVisible('profit')" class="td-col-profit text-end text-nowrap fw-bold bg-light-subtle fs-8"
+                [class.text-success]="item.fin.profit >= 0" 
+                [class.text-danger]="item.fin.profit < 0">
+              {{ fmtCurr(item.fin.profit) }}
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+
+      <!-- Sticky Table Footer with Exact Totals -->
+      <tfoot *ngIf="!summaryService.isLoading() && summaryService.filteredRows().length > 0" id="workSummaryTableFoot">
+        <tr>
+          <td *ngIf="isColumnVisible('customer')" class="tfoot-col-customer fw-bold">
+            <div class="d-flex flex-column">
+              <span class="fs-8">Total Customers: {{ summaryService.totals().count }}</span>
+              <span class="text-muted fs-9 fw-normal">Turnover: {{ fmtCurr(summaryService.totals().turnover) }}</span>
+            </div>
+          </td>
+          <td *ngIf="isColumnVisible('pvmodule')" class="tfoot-col-pvmodule">-</td>
+          <td *ngIf="isColumnVisible('inverter')" class="tfoot-col-inverter">-</td>
+          <td *ngIf="isColumnVisible('payment')" class="tfoot-col-payment">
+            <div class="d-flex flex-column">
+              <span class="text-success fw-bold fs-8">{{ fmtCurr(summaryService.totals().paid) }}</span>
+              <span class="text-danger fs-9 fw-normal">Unpaid: {{ fmtCurr(summaryService.totals().unpaid) }}</span>
+            </div>
+          </td>
+          <td *ngIf="isColumnVisible('install')" class="tfoot-col-install text-end fw-bold text-nowrap fs-8">
+            {{ fmtCurr(summaryService.totals().install) }}
+          </td>
+          <td *ngIf="isColumnVisible('meter')" class="tfoot-col-meter text-end fw-bold text-nowrap fs-8">
+            {{ fmtCurr(summaryService.totals().meter) }}
+          </td>
+          <td *ngIf="isColumnVisible('delivery')" class="tfoot-col-delivery text-end fw-bold text-nowrap fs-8">
+            {{ fmtCurr(summaryService.totals().delivery) }}
+          </td>
+          <td *ngIf="isColumnVisible('others')" class="tfoot-col-others text-end fw-bold text-nowrap fs-8">
+            {{ fmtCurr(summaryService.totals().others) }}
+          </td>
+          <td *ngIf="isColumnVisible('comment')" class="tfoot-col-comment">-</td>
+          <td *ngIf="isColumnVisible('material')" class="tfoot-col-material text-end fw-bold text-nowrap fs-8">
+            {{ fmtCurr(summaryService.totals().material) }}
+          </td>
+          <td *ngIf="isColumnVisible('setcost')" class="tfoot-col-setcost text-end fw-bold text-nowrap bg-light-subtle fs-8">
+            {{ fmtCurr(summaryService.totals().setCost) }}
+          </td>
+          <td *ngIf="isColumnVisible('profit')" class="tfoot-col-profit text-end fw-bold text-nowrap bg-light-subtle fs-8"
+              [class.text-success]="summaryService.totals().profit >= 0" 
+              [class.text-danger]="summaryService.totals().profit < 0">
+            {{ fmtCurr(summaryService.totals().profit) }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>

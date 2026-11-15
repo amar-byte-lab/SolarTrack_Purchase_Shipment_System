@@ -1,0 +1,171 @@
+.mw-summary-filter-toolbar {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.mw-chips-scroll-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+
+  &::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+}
+
+/* District / Area Tags */
+.erp-tag {
+  font-size: 0.69rem !important;
+  padding: 1px 7px !important;
+  border-radius: 4px !important;
+  height: 23px !important;
+  line-height: 20px !important;
+  font-weight: 500;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+
+  &.active {
+    background: #475569;
+    color: #ffffff;
+    border-color: #475569;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.erp-tag-purple-total {
+  font-size: 0.69rem !important;
+  padding: 1px 8px !important;
+  border-radius: 4px !important;
+  height: 23px !important;
+  line-height: 20px !important;
+  font-weight: 600;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #6b21a8;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #f3e8ff;
+    border-color: #a855f7;
+    color: #581c87;
+  }
+
+  &.active {
+    background: #6b21a8 !important;
+    color: #ffffff !important;
+    border-color: #6b21a8 !important;
+    box-shadow: 0 1px 2px rgba(107, 33, 168, 0.25);
+  }
+}
+
+/* Stage Filter Tags */
+.stage-filter-tag {
+  font-size: 0.69rem !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  height: 23px !important;
+  line-height: 19px !important;
+  font-weight: 500;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+
+  &.active {
+    background: #1e293b;
+    color: #ffffff;
+    border-color: #1e293b;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  &.stage-tag-1.active { background: #0284c7 !important; border-color: #0284c7 !important; }
+  &.stage-tag-2.active { background: #7c3aed !important; border-color: #7c3aed !important; }
+  &.stage-tag-3.active { background: #0891b2 !important; border-color: #0891b2 !important; }
+  &.stage-tag-4.active { background: #d97706 !important; border-color: #d97706 !important; }
+  &.stage-tag-5.active { background: #9333ea !important; border-color: #9333ea !important; }
+  &.stage-tag-6.active { background: #475569 !important; border-color: #475569 !important; }
+  &.stage-tag-7.active { background: #4338ca !important; border-color: #4338ca !important; }
+  &.stage-tag-8.active { background: #16a34a !important; border-color: #16a34a !important; }
+}
+
+/* Payment Filter Tags */
+.pay-filter-tag {
+  font-size: 0.69rem !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  height: 23px !important;
+  line-height: 19px !important;
+  font-weight: 500;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+
+  &.active {
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  &.pay-tag-all.active {
+    background: #1e293b;
+    color: #ffffff;
+    border-color: #1e293b;
+  }
+
+  &.pay-tag-full.active {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+  }
+
+  &.pay-tag-partial.active {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+  }
+
+  &.pay-tag-unpaid.active {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+  }
+
+  &.pay-tag-netmeter.active {
+    background: #7c3aed;
+    color: #ffffff;
+    border-color: #7c3aed;
+  }
+}

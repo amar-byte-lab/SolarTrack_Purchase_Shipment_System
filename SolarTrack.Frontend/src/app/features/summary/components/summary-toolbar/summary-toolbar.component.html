@@ -1,0 +1,136 @@
+<div class="st-card erp-toolbar mb-2 py-2 px-3 border rounded-2 bg-light mw-summary-filter-toolbar">
+  <!-- Row 1: Search, Partner Multiselect Dropdown, Clear Filters -->
+  <div class="mw-toolbar-top-row d-flex justify-content-between align-items-center gap-2 flex-wrap mb-1.5">
+    <div class="mw-search-box flex-grow-1" style="max-width: 420px; min-width: 200px;">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input 
+          type="text" 
+          class="form-control border-start-0 ps-1 bg-white fs-8" 
+          [ngModel]="summaryService.searchText()"
+          (ngModelChange)="onSearchChange($event)"
+          placeholder="Search customer, mobile, address, brand..." 
+          style="font-size: 0.83rem;">
+      </div>
+    </div>
+
+    <div class="mw-toolbar-actions d-flex align-items-center gap-2 flex-wrap ms-auto">
+      <!-- Partner Multi-select Dropdown -->
+      <div class="dropdown position-relative" style="min-width: 140px; max-width: 200px;">
+        <button 
+          class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2 shadow-none" 
+          type="button" 
+          (click)="togglePartnerDropdown()">
+          {{ partnerDropdownLabel }}
+        </button>
+        <div 
+          class="dropdown-menu p-3 shadow-sm border" 
+          [class.show]="isPartnerMenuOpen"
+          style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size: 0.82rem; position: absolute; right: 0; z-index: 1050;">
+          <!-- (No Partner) filter -->
+          <div class="form-check mb-1">
+            <input 
+              class="form-check-input sum-partner-chk cursor-pointer" 
+              type="checkbox" 
+              id="chk_sum_nopartner"
+              [checked]="isPartnerSelected('(No Partner)')"
+              (change)="togglePartner('(No Partner)')">
+            <label class="form-check-label fs-8 cursor-pointer" for="chk_sum_nopartner">
+              (No Partner)
+            </label>
+          </div>
+          <div *ngIf="summaryService.partnerList().length === 0" class="text-muted p-1 fs-9">No partners available</div>
+          <div *ngFor="let partner of summaryService.partnerList()" class="form-check mb-1">
+            <input 
+              class="form-check-input sum-partner-chk cursor-pointer" 
+              type="checkbox" 
+              [id]="'partner_' + partner"
+              [checked]="isPartnerSelected(partner)"
+              (change)="togglePartner(partner)">
+            <label class="form-check-label fs-8 cursor-pointer text-truncate" [for]="'partner_' + partner">
+              {{ partner }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button 
+        type="button" 
+        class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-1.5 fs-8" 
+        (click)="clearFilters()">
+        Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- Row 2: Area / District Badges (Horizontal Scrollable Strip) -->
+  <div class="mw-chips-scroll-strip mw-district-strip mb-1.5 d-flex gap-1 overflow-auto py-1">
+    <ng-container *ngFor="let d of summaryService.districtStats()">
+      <button 
+        *ngIf="d.district === 'ALL'"
+        type="button"
+        class="erp-tag-purple-total"
+        [class.active]="d.active"
+        (click)="toggleDistrict('ALL')"
+        title="Show all districts">
+        Total: {{ d.count }}
+      </button>
+      <button 
+        *ngIf="d.district !== 'ALL'"
+        type="button"
+        class="erp-tag"
+        [class.active]="d.active"
+        (click)="toggleDistrict(d.district)"
+        [title]="'Filter by ' + d.district">
+        {{ d.district }} ({{ d.count }})
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Row 3: Workflow Stage Filters (All 8 Stages) (Horizontal Scrollable Strip) -->
+  <div class="mw-chips-scroll-strip mw-stage-strip mb-1.5 d-flex gap-1 overflow-auto py-1">
+    <ng-container *ngFor="let s of summaryService.stageStats()">
+      <button 
+        *ngIf="s.stage === 'ALL'"
+        type="button"
+        class="stage-filter-tag stage-tag-all"
+        [class.active]="s.active"
+        (click)="selectStage('ALL')"
+        title="Show all stages">
+        Total ({{ s.count }})
+      </button>
+      <button 
+        *ngIf="s.stage !== 'ALL'"
+        type="button"
+        class="stage-filter-tag"
+        [ngClass]="s.badgeClass"
+        [class.active]="s.active"
+        (click)="selectStage(s.stage)"
+        [title]="'Filter by Stage ' + s.num + ': ' + s.name">
+        {{ s.num }}. {{ s.name }} ({{ s.count }})
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Row 4: Customer Payment Filters (Horizontal Scrollable Strip) -->
+  <div class="mw-chips-scroll-strip mw-payment-strip d-flex gap-1 overflow-auto py-1">
+    <button 
+      *ngFor="let p of summaryService.paymentStats()"
+      type="button"
+      class="pay-filter-tag"
+      [class.pay-tag-all]="p.key === 'ALL'"
+      [class.pay-tag-full]="p.key === 'FullyPaid'"
+      [class.pay-tag-partial]="p.key === 'PartiallyPaid'"
+      [class.pay-tag-unpaid]="p.key === 'Unpaid'"
+      [class.pay-tag-netmeter]="p.key === 'NetMeterPaid'"
+      [class.active]="p.active"
+      (click)="togglePaymentFilter(p.key)">
+      {{ p.label }}
+    </button>
+  </div>
+</div>

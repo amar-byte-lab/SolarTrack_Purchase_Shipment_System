@@ -1,0 +1,116 @@
+<div class="reports-container">
+  <!-- Filter & Controls Card -->
+  <div class="report-filter-card p-3 mb-3">
+    <div class="row g-2 align-items-end">
+      <!-- Report Type -->
+      <div class="col-md-3 col-12">
+        <label class="form-label text-muted fs-8 fw-semibold mb-1">Report Type</label>
+        <select 
+          class="form-select form-select-sm" 
+          [ngModel]="reportService.reportType()"
+          (ngModelChange)="reportService.reportType.set($event)">
+          <option value="daily">Daily Purchase Report</option>
+          <option value="monthly">Monthly Purchase Report</option>
+          <option value="vendor">Vendor Report</option>
+          <option value="item">Item Purchase Report</option>
+          <option value="shipment">Shipment Report</option>
+          <option value="transport">Transportation Report</option>
+          <option value="inventory">Inventory Purchase Report</option>
+        </select>
+      </div>
+
+      <!-- From Date -->
+      <div class="col-md-2 col-6">
+        <label class="form-label text-muted fs-8 fw-semibold mb-1">From Date</label>
+        <input 
+          type="date" 
+          class="form-control form-control-sm" 
+          [ngModel]="reportService.fromDate()"
+          (ngModelChange)="reportService.fromDate.set($event)">
+      </div>
+
+      <!-- To Date -->
+      <div class="col-md-2 col-6">
+        <label class="form-label text-muted fs-8 fw-semibold mb-1">To Date</label>
+        <input 
+          type="date" 
+          class="form-control form-control-sm" 
+          [ngModel]="reportService.toDate()"
+          (ngModelChange)="reportService.toDate.set($event)">
+      </div>
+
+      <!-- Run Action -->
+      <div class="col-md-2 col-12">
+        <button 
+          class="btn btn-primary btn-sm w-100 fw-semibold" 
+          [disabled]="reportService.isLoading()"
+          (click)="onGenerateReport()">
+          @if (reportService.isLoading()) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            <span>Running...</span>
+          } @else {
+            <span>Generate Report</span>
+          }
+        </button>
+      </div>
+
+      <!-- Export Actions -->
+      <div class="col-md-3 col-12 d-flex gap-2 justify-content-md-end justify-content-start">
+        <button 
+          class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5" 
+          [disabled]="reportService.data().length === 0"
+          (click)="reportService.exportToCsv()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export Excel</span>
+        </button>
+        <button 
+          class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5" 
+          [disabled]="reportService.data().length === 0"
+          (click)="printReport()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span>Print</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Data Table -->
+  <div class="report-table-card">
+    <div class="table-responsive" style="max-height: calc(100vh - 220px); overflow-y: auto;">
+      <table class="table table-hover table-report mb-0">
+        <thead class="sticky-top">
+          <tr>
+            <th style="width: 45px; text-align: center;">#</th>
+            @for (col of reportService.columns(); track col.key) {
+              <th [class.text-end]="col.isNumeric">{{ col.label }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @if (reportService.data().length === 0) {
+            <tr>
+              <td [attr.colspan]="reportService.columns().length + 1" class="text-center py-5 text-muted">
+                <div class="fs-7 fw-semibold mb-1">No report records found</div>
+                <div class="fs-8">Click "Generate Report" above to fetch latest analytics.</div>
+              </td>
+            </tr>
+          }
+          @for (row of reportService.data(); track $index; let i = $index) {
+            <tr>
+              <td class="text-center text-muted fs-8">{{ i + 1 }}</td>
+              @for (col of reportService.columns(); track col.key) {
+                <td [class.text-end]="col.isNumeric" [class.font-monospace]="col.isNumeric">
+                  @if (col.isNumeric) {
+                    {{ row[col.key] | number:'1.2-2' }}
+                  } @else {
+                    {{ row[col.key] }}
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

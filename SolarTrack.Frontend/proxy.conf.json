@@ -1,0 +1,18 @@
+{
+  "/api": {
+    "target": "http://localhost:3000",
+    "secure": false
+  },
+  "/docs": {
+    "target": "http://localhost:3000",
+    "secure": false
+  },
+  "/bills": {
+    "target": "http://localhost:3000",
+    "secure": false
+  },
+  "/files": {
+    "target": "http://localhost:3000",
+    "secure": false
+  }
+}

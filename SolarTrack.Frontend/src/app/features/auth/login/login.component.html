@@ -1,0 +1,240 @@
+<div class="auth-container">
+  <div class="login-card">
+    <!-- Header / Brand -->
+    <div class="brand-logo">
+      <img src="assets/sampleFiles/CompanyLogo.jpeg" alt="Shri Trutiyadev Solar Enterprises Logo" class="brand-company-logo">
+    </div>
+
+    <!-- Alert Messages -->
+    @if (errorMessage()) {
+      <div class="alert alert-danger py-2 px-3 fs-8 mb-3 d-flex align-items-center" role="alert">
+        <svg class="bi flex-shrink-0 me-2" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M7.938 2.016a.13.13 0 0 1 .125 0l6.857 11.656c.028.05.028.11 0 .16-.028.05-.08.08-.137.08H1.217a.16.16 0 0 1-.137-.08.18.18 0 0 1 0-.16L7.938 2.016zm.062 4.484a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 1 0v-3a.5.5 0 0 0-.5-.5zm0 5a.5.5 0 1 0 0 1 .5.5 0 0 0 0-1z"/>
+        </svg>
+        <div>{{ errorMessage() }}</div>
+      </div>
+    }
+
+    @if (successMessage()) {
+      <div class="alert alert-success py-2 px-3 fs-8 mb-3 d-flex align-items-center" role="alert">
+        <svg class="bi flex-shrink-0 me-2" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+        </svg>
+        <div>{{ successMessage() }}</div>
+      </div>
+    }
+
+    <!-- VIEW 1: LOGIN FORM -->
+    @if (currentView() === 'login') {
+      <div>
+        <form (ngSubmit)="onLoginSubmit()" autocomplete="off">
+          <div class="mb-3 text-start">
+            <label for="txtUserid" class="form-label fs-8 fw-semibold text-secondary">Username or Email</label>
+            <input 
+              type="text" 
+              class="form-control form-control-lg fs-7" 
+              id="txtUserid" 
+              [(ngModel)]="loginUserid" 
+              name="loginUserid" 
+              placeholder="Enter Username or Email" 
+              required 
+              autofocus>
+          </div>
+
+          <div class="mb-3 text-start">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label for="txtPassword" class="form-label fs-8 fw-semibold text-secondary mb-0">Password</label>
+              <a href="javascript:void(0)" class="fs-8 text-decoration-none text-primary" (click)="switchView('forgot')">Forgot Password?</a>
+            </div>
+            <div class="position-relative">
+              <input 
+                [type]="showPassword() ? 'text' : 'password'" 
+                class="form-control form-control-lg fs-7 pe-5" 
+                id="txtPassword" 
+                [(ngModel)]="loginPassword" 
+                name="loginPassword" 
+                placeholder="Enter Password" 
+                required>
+              <button 
+                type="button" 
+                class="btn border-0 position-absolute end-0 top-50 translate-middle-y px-3 text-secondary toggle-password-btn" 
+                (click)="togglePassword()" 
+                tabindex="-1" 
+                [title]="showPassword() ? 'Hide Password' : 'Show Password'" 
+                style="background: transparent; z-index: 5;">
+                @if (showPassword()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-login fs-7 mb-3" [disabled]="isLoading()">
+            @if (isLoading()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <span>Signing in...</span>
+            } @else {
+              <span>Sign In</span>
+            }
+          </button>
+
+          <div class="text-center">
+            <span class="text-muted fs-8">Don't have an account? </span>
+            <a href="javascript:void(0)" class="fs-8 text-decoration-none fw-semibold text-primary" (click)="switchView('register')">Sign Up</a>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- VIEW 2: REGISTER FORM -->
+    @if (currentView() === 'register') {
+      <div>
+        <h5 class="fw-bold text-center text-dark mb-1">Create an Account</h5>
+        <p class="text-muted text-center fs-8 mb-4">Fill details to register a new user</p>
+
+        <form (ngSubmit)="onRegisterSubmit()" autocomplete="off">
+          <div class="mb-2 text-start">
+            <label for="txtRegUserid" class="form-label fs-8 fw-semibold text-secondary mb-1">User ID</label>
+            <input 
+              type="text" 
+              class="form-control form-control-sm fs-7" 
+              id="txtRegUserid" 
+              [(ngModel)]="regUserid" 
+              name="regUserid" 
+              placeholder="e.g. johndoe" 
+              required>
+            <small class="text-muted fs-8">Lowercase letters, numbers, hyphen or underscore</small>
+          </div>
+
+          <div class="mb-2 text-start">
+            <label for="txtRegName" class="form-label fs-8 fw-semibold text-secondary mb-1">Full Name</label>
+            <input 
+              type="text" 
+              class="form-control form-control-sm fs-7" 
+              id="txtRegName" 
+              [(ngModel)]="regUsername" 
+              name="regUsername" 
+              placeholder="e.g. John Doe" 
+              required>
+          </div>
+
+          <div class="mb-2 text-start">
+            <label for="txtRegEmail" class="form-label fs-8 fw-semibold text-secondary mb-1">Email Address</label>
+            <input 
+              type="email" 
+              class="form-control form-control-sm fs-7" 
+              id="txtRegEmail" 
+              [(ngModel)]="regEmail" 
+              name="regEmail" 
+              placeholder="e.g. john@example.com" 
+              required>
+          </div>
+
+          <div class="mb-2 text-start">
+            <label for="txtRegMobile" class="form-label fs-8 fw-semibold text-secondary mb-1">Mobile (Optional)</label>
+            <input 
+              type="tel" 
+              class="form-control form-control-sm fs-7" 
+              id="txtRegMobile" 
+              [(ngModel)]="regMobile" 
+              name="regMobile" 
+              placeholder="e.g. 9876543210">
+          </div>
+
+          <div class="mb-2 text-start">
+            <label for="txtRegPassword" class="form-label fs-8 fw-semibold text-secondary mb-1">Password</label>
+            <div class="position-relative">
+              <input 
+                [type]="showRegPassword() ? 'text' : 'password'" 
+                class="form-control form-control-sm fs-7 pe-5" 
+                id="txtRegPassword" 
+                [(ngModel)]="regPassword" 
+                name="regPassword" 
+                placeholder="Enter Password" 
+                required>
+              <button 
+                type="button" 
+                class="btn border-0 position-absolute end-0 top-50 translate-middle-y px-2.5 text-secondary toggle-password-btn" 
+                (click)="toggleRegPassword()" 
+                tabindex="-1" 
+                [title]="showRegPassword() ? 'Hide Password' : 'Show Password'" 
+                style="background: transparent; z-index: 5;">
+                @if (showRegPassword()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-3 text-start">
+            <label for="selectRegRole" class="form-label fs-8 fw-semibold text-secondary mb-1">Request Role</label>
+            <select 
+              class="form-select form-select-sm fs-7" 
+              id="selectRegRole" 
+              [(ngModel)]="regRole" 
+              name="regRole" 
+              required>
+              @for (r of availableRoles(); track r) {
+                <option [value]="r">{{ r }}</option>
+              }
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-login fs-7 mb-3" [disabled]="isLoading()">
+            @if (isLoading()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <span>Registering...</span>
+            } @else {
+              <span>Register Account</span>
+            }
+          </button>
+
+          <div class="text-center">
+            <a href="javascript:void(0)" class="fs-8 text-decoration-none fw-semibold text-primary" (click)="switchView('login')">Back to Sign In</a>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- VIEW 3: FORGOT PASSWORD FORM -->
+    @if (currentView() === 'forgot') {
+      <div>
+        <h5 class="fw-bold text-center text-dark mb-1">Forgot Password</h5>
+        <p class="text-muted text-center fs-8 mb-4">Enter your registered email address to receive reset instructions</p>
+
+        <form (ngSubmit)="onForgotSubmit()" autocomplete="off">
+          <div class="mb-4 text-start">
+            <label for="txtForgotEmail" class="form-label fs-8 fw-semibold text-secondary mb-1">Registered Email</label>
+            <input 
+              type="email" 
+              class="form-control form-control-lg fs-7" 
+              id="txtForgotEmail" 
+              [(ngModel)]="forgotEmail" 
+              name="forgotEmail" 
+              placeholder="Enter your email" 
+              required 
+              autofocus>
+          </div>
+
+          <button type="submit" class="btn btn-login fs-7 mb-3" [disabled]="isLoading()">
+            @if (isLoading()) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <span>Sending...</span>
+            } @else {
+              <span>Send Reset Link</span>
+            }
+          </button>
+
+          <div class="text-center">
+            <a href="javascript:void(0)" class="fs-8 text-decoration-none fw-semibold text-primary" (click)="switchView('login')">Back to Sign In</a>
+          </div>
+        </form>
+      </div>
+    }
+
+  </div>
+</div>

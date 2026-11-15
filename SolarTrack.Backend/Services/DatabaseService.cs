@@ -469,7 +469,12 @@ public class DatabaseService : IDatabaseService
         return list.Where(b =>
         {
             var creator = (b.TryGetValue("CreatedBy", out var c1) ? c1?.ToString() : (b.TryGetValue("createdby", out var c2) ? c2?.ToString() : null)) ?? "";
-            return creator.Trim().Equals(uid, StringComparison.OrdinalIgnoreCase);
+            var creatorLower = creator.Trim().ToLowerInvariant();
+            if (uid == "admin" || uid == "amar")
+            {
+                return creatorLower == "admin" || creatorLower == "amar";
+            }
+            return creatorLower.Equals(uid, StringComparison.OrdinalIgnoreCase);
         }).ToList();
     }
 
