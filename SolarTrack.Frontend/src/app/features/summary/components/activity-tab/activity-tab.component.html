@@ -1,8 +1,8 @@
-<!-- Activity Filter Toolbar (From Date / To Date & Search) -->
-<div class="st-card erp-toolbar mb-2.5 py-2.5 px-3 border rounded-2 bg-light">
-  <!-- Row 1: Search, Date Range Filter & Presets -->
-  <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
-    <div class="mw-search-box flex-grow-1" style="max-width: 380px; min-width: 200px;">
+<!-- Activity Filter Toolbar (Matching Summary Toolbar Design System) -->
+<div class="st-card erp-toolbar mb-2 py-2 px-3 border rounded-2 bg-light mw-summary-filter-toolbar">
+  <!-- Row 1: Search, Date Range Inputs & Clear Filters -->
+  <div class="mw-toolbar-top-row d-flex justify-content-between align-items-center gap-2 flex-wrap mb-1.5">
+    <div class="mw-search-box flex-grow-1" style="max-width: 420px; min-width: 200px;">
       <div class="input-group input-group-sm">
         <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -20,96 +20,69 @@
       </div>
     </div>
 
-    <!-- From Date & To Date Range Inputs -->
-    <div class="d-flex align-items-center gap-1.5 flex-wrap">
-      <div class="d-flex align-items-center gap-1 bg-white border rounded px-2 py-0.5">
-        <label for="actFromDate" class="fs-9 text-muted mb-0 fw-semibold text-nowrap">From:</label>
-        <input 
-          type="date" 
-          class="form-control form-control-sm border-0 p-0 fs-8 shadow-none" 
-          id="actFromDate" 
-          [ngModel]="fromDate()"
-          (ngModelChange)="onFromDateChange($event)"
-          style="width: 125px; height: 24px;">
-      </div>
-      <div class="d-flex align-items-center gap-1 bg-white border rounded px-2 py-0.5">
-        <label for="actToDate" class="fs-9 text-muted mb-0 fw-semibold text-nowrap">To:</label>
-        <input 
-          type="date" 
-          class="form-control form-control-sm border-0 p-0 fs-8 shadow-none" 
-          id="actToDate" 
-          [ngModel]="toDate()"
-          (ngModelChange)="onToDateChange($event)"
-          style="width: 125px; height: 24px;">
+    <!-- Right Controls: From/To Date Pickers & Clear Button -->
+    <div class="mw-toolbar-actions d-flex align-items-center gap-2 flex-wrap ms-auto">
+      <div class="d-flex align-items-center gap-1.5 flex-wrap">
+        <div class="d-flex align-items-center gap-1 bg-white border rounded-pill px-2.5 py-1 shadow-2xs">
+          <label for="actFromDate" class="fs-9 text-muted mb-0 fw-semibold text-nowrap">From:</label>
+          <input 
+            type="date" 
+            class="form-control form-control-sm border-0 p-0 fs-8 shadow-none bg-transparent" 
+            id="actFromDate" 
+            [ngModel]="fromDate()"
+            (ngModelChange)="onFromDateChange($event)"
+            style="width: 110px; height: 22px;">
+        </div>
+        <div class="d-flex align-items-center gap-1 bg-white border rounded-pill px-2.5 py-1 shadow-2xs">
+          <label for="actToDate" class="fs-9 text-muted mb-0 fw-semibold text-nowrap">To:</label>
+          <input 
+            type="date" 
+            class="form-control form-control-sm border-0 p-0 fs-8 shadow-none bg-transparent" 
+            id="actToDate" 
+            [ngModel]="toDate()"
+            (ngModelChange)="onToDateChange($event)"
+            style="width: 110px; height: 22px;">
+        </div>
       </div>
 
-      <!-- Quick Date Presets -->
-      <div class="btn-group btn-group-sm" role="group">
-        <button 
-          type="button" 
-          class="btn btn-sm btn-outline-secondary py-1 px-2 fs-8"
-          [class.active]="selectedPreset() === 'TODAY'"
-          (click)="setPreset('TODAY')">
-          Today
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-sm btn-outline-secondary py-1 px-2 fs-8"
-          [class.active]="selectedPreset() === 'YESTERDAY'"
-          (click)="setPreset('YESTERDAY')">
-          Yesterday
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-sm btn-outline-secondary py-1 px-2 fs-8"
-          [class.active]="selectedPreset() === '7DAYS'"
-          (click)="setPreset('7DAYS')">
-          Last 7D
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-sm btn-outline-secondary py-1 px-2 fs-8"
-          [class.active]="selectedPreset() === 'ALL'"
-          (click)="setPreset('ALL')">
-          All Dates
-        </button>
-      </div>
+      <button 
+        type="button" 
+        class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-1.5 fs-8" 
+        (click)="clearFilters()">
+        Clear
+      </button>
     </div>
   </div>
 
-  <!-- Row 2: Page Source Filter (Manage Work vs Customer vs All) -->
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-1.5" id="activityPageFilter">
-      <span class="fs-8 fw-semibold text-secondary me-1">Source:</span>
-      <button 
-        type="button" 
-        class="btn btn-xs btn-outline-secondary"
-        [class.active]="selectedSource() === 'ALL'"
-        (click)="setSource('ALL')">
-        All Pages
-      </button>
-      <button 
-        type="button" 
-        class="btn btn-xs btn-outline-primary"
-        [class.active]="selectedSource() === 'Manage Work'"
-        (click)="setSource('Manage Work')">
-        Manage Work
-      </button>
-      <button 
-        type="button" 
-        class="btn btn-xs btn-outline-success"
-        [class.active]="selectedSource() === 'Customer'"
-        (click)="setSource('Customer')">
-        Customer
-      </button>
-      <button 
-        type="button" 
-        class="btn btn-xs btn-outline-warning text-dark"
-        [class.active]="selectedSource() === 'Shipment'"
-        (click)="setSource('Shipment')">
-        Shipment
-      </button>
-    </div>
+  <!-- Row 2: Quick Date Presets (Horizontal Scrollable Strip) -->
+  <div class="mw-chips-scroll-strip mb-1.5 d-flex gap-1 overflow-auto py-1">
+    <button 
+      *ngFor="let p of presetStats()"
+      type="button"
+      class="erp-tag"
+      [class.erp-tag-purple-total]="p.key === 'ALL'"
+      [class.active]="p.active"
+      (click)="setPreset(p.key)"
+      [title]="'Filter by ' + p.label">
+      {{ p.label }}
+    </button>
+  </div>
+
+  <!-- Row 3: Page Source Filters (Horizontal Scrollable Strip) -->
+  <div class="mw-chips-scroll-strip d-flex gap-1 overflow-auto py-1">
+    <button 
+      *ngFor="let s of sourceStats()"
+      type="button"
+      class="stage-filter-tag"
+      [class.stage-tag-all]="s.key === 'ALL'"
+      [class.stage-tag-1]="s.key === 'Manage Work'"
+      [class.stage-tag-8]="s.key === 'Customer'"
+      [class.stage-tag-4]="s.key === 'Shipment'"
+      [class.active]="s.active"
+      (click)="setSource(s.key)"
+      [title]="'Filter by Source: ' + s.label">
+      {{ s.label }} ({{ s.count }})
+    </button>
   </div>
 </div>
 
@@ -225,18 +198,21 @@
         </div>
 
         <!-- Changes Block -->
-        <div class="activity-changes-box ps-1">
+        <div class="activity-changes-box ps-1" *ngIf="act.changes && act.changes.length > 0">
           <div class="text-muted fs-9 fw-semibold mb-1 text-uppercase" style="letter-spacing: 0.03em;">CHANGES:</div>
           <div *ngFor="let chg of act.changes" class="d-flex align-items-center flex-wrap gap-1.5 fs-8 py-0.5">
             <span class="fw-semibold text-secondary" style="min-width: 140px;">{{ chg.field }}:</span>
-            <span *ngIf="chg.oldVal != null && chg.oldVal !== ''" class="text-danger text-decoration-line-through bg-danger-subtle px-1.5 py-0.5 rounded">
+            <span *ngIf="chg.oldVal != null && chg.oldVal !== ''" class="text-danger text-decoration-line-through bg-danger-subtle px-1.5 py-0.5 rounded font-monospace fs-8">
               {{ chg.oldVal }}
             </span>
             <span *ngIf="chg.oldVal != null && chg.oldVal !== ''" class="text-muted fs-9">➔</span>
-            <span class="text-success fw-bold bg-success-subtle px-1.5 py-0.5 rounded">
-              {{ chg.newVal }}
+            <span class="text-success fw-bold bg-success-subtle px-1.5 py-0.5 rounded font-monospace fs-8">
+              {{ chg.newVal || '(empty)' }}
             </span>
           </div>
+        </div>
+        <div *ngIf="!act.changes || act.changes.length === 0" class="text-muted fs-9 fst-italic ps-1">
+          Record updated without visible field changes.
         </div>
       </div>
     </div>

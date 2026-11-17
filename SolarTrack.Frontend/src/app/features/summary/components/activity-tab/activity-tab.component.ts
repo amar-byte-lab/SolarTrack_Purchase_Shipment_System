@@ -100,6 +100,69 @@ export class ActivityTabComponent {
     this.selectedSource.set(source);
   }
 
+  clearFilters(): void {
+    this.searchQuery.set('');
+    this.setPreset('TODAY');
+    this.setSource('ALL');
+  }
+
+  presetStats = computed(() => {
+    return [
+      { key: 'TODAY', label: 'Today', active: this.selectedPreset() === 'TODAY' },
+      { key: 'YESTERDAY', label: 'Yesterday', active: this.selectedPreset() === 'YESTERDAY' },
+      { key: '7DAYS', label: 'Last 7 Days', active: this.selectedPreset() === '7DAYS' },
+      { key: 'ALL', label: 'All Dates', active: this.selectedPreset() === 'ALL' }
+    ];
+  });
+
+  sourceStats = computed(() => {
+    const logs = this.summaryService.activityItems();
+    const query = this.searchQuery().toLowerCase().trim();
+    const from = this.fromDate();
+    const to = this.toDate();
+    const preset = this.selectedPreset();
+
+    const dateLogs = logs.filter(act => {
+      const d = act.date || (act.timestamp ? act.timestamp.slice(0, 10) : '');
+      if (preset !== 'ALL') {
+        if (from && d && d < from) return false;
+        if (to && d && d > to) return false;
+      }
+      if (query) {
+        const matchCust = (act.customerName || '').toLowerCase().includes(query);
+        const matchUser = (act.user || '').toLowerCase().includes(query);
+        const matchPage = (act.page || '').toLowerCase().includes(query);
+        const matchAction = (act.action || '').toLowerCase().includes(query);
+        const matchChanges = (act.changes || []).some(c => 
+          (c.field || '').toLowerCase().includes(query) ||
+          String(c.oldVal || '').toLowerCase().includes(query) ||
+          String(c.newVal || '').toLowerCase().includes(query)
+        );
+        if (!matchCust && !matchUser && !matchPage && !matchAction && !matchChanges) return false;
+      }
+      return true;
+    });
+
+    const sources = [
+      { key: 'ALL', label: 'All Pages' },
+      { key: 'Manage Work', label: 'Manage Work' },
+      { key: 'Customer', label: 'Customer' },
+      { key: 'Shipment', label: 'Shipment' }
+    ];
+
+    return sources.map(s => {
+      const count = s.key === 'ALL'
+        ? dateLogs.length
+        : dateLogs.filter(act => (act.page || '').toLowerCase().includes(s.key.toLowerCase())).length;
+      return {
+        key: s.key,
+        label: s.label,
+        count,
+        active: this.selectedSource() === s.key
+      };
+    });
+  });
+
   async undoActivity(act: ActivityLogItem): Promise<void> {
     if (act.undone) {
       this.toastService.show('Transaction has already been undone.', 'warning');

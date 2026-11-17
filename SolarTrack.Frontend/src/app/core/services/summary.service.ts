@@ -463,7 +463,7 @@ export class SummaryService {
       recordId: l.recordId || l.slNo,
       customerName: l.customerName || (l.slNo && custMap.get(Number(l.slNo))?.Name) || 'Customer',
       consumerNo: l.consumerNo || (l.slNo && custMap.get(Number(l.slNo))?.ConsumerNo) || '',
-      changes: l.changes || (l.field ? [{ field: l.field, oldVal: l.oldValue, newVal: l.newValue }] : []),
+      changes: this.cleanActivityChanges(l.changes || (l.field ? [{ field: l.field, oldVal: l.oldValue, newVal: l.newValue }] : [])),
       undone: !!l.undone,
       undoneBy: l.undoneBy,
       undoneAt: l.undoneAt
@@ -1235,5 +1235,149 @@ export class SummaryService {
       if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
     } catch (e) {}
     return null;
+  }
+
+  private cleanActivityChanges(changes: any[]): ActivityChange[] {
+    const result: ActivityChange[] = [];
+
+    for (const chg of changes || []) {
+      const field = chg.field || '';
+      const oldV = chg.oldVal != null ? String(chg.oldVal).trim() : (chg.oldValue != null ? String(chg.oldValue).trim() : '');
+      const newV = chg.newVal != null ? String(chg.newVal).trim() : (chg.newValue != null ? String(chg.newValue).trim() : '');
+
+      // 1. If identical, not an actual modification
+      if (oldV === newV) continue;
+
+      // 2. Both empty/null
+      if (!oldV && !newV) continue;
+
+      // 3. Packed metadata or JSON (starts with '|' or '{')
+      if (oldV.startsWith('|') || newV.startsWith('|') || (oldV.startsWith('{') && oldV.endsWith('}')) || (newV.startsWith('{') && newV.endsWith('}'))) {
+        const extracted = this.extractPackedDiffs(field, oldV, newV);
+        result.push(...extracted);
+        continue;
+      }
+
+      // 4. Skip raw stringified system JSON dumps
+      if (oldV.includes('{"CommissioningDate"') || newV.includes('{"CommissioningDate"') || oldV.includes('|expenses:') || newV.includes('|expenses:')) {
+        continue;
+      }
+
+      // 5. Normal human-readable change
+      result.push({
+        field: this.formatActivityFieldName(field),
+        oldVal: this.truncateVal(oldV),
+        newVal: this.truncateVal(newV)
+      });
+    }
+
+    return result;
+  }
+
+  private extractPackedDiffs(fieldName: string, oldStr: string, newStr: string): ActivityChange[] {
+    const oldMap = this.parsePackedMap(oldStr);
+    const newMap = this.parsePackedMap(newStr);
+    const diffs: ActivityChange[] = [];
+
+    const allKeys = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
+    for (const k of allKeys) {
+      const oldV = oldMap[k] != null ? String(oldMap[k]).trim() : '';
+      const newV = newMap[k] != null ? String(newMap[k]).trim() : '';
+      if (oldV !== newV) {
+        diffs.push({
+          field: this.formatActivityFieldName(k),
+          oldVal: this.truncateVal(oldV),
+          newVal: this.truncateVal(newV)
+        });
+      }
+    }
+
+    return diffs;
+  }
+
+  private parsePackedMap(str: string): { [k: string]: any } {
+    const result: { [k: string]: any } = {};
+    if (!str) return result;
+
+    if (str.startsWith('{') && str.endsWith('}')) {
+      try {
+        const obj = JSON.parse(str);
+        this.flattenActivityObj('', obj, result);
+        return result;
+      } catch {}
+    }
+
+    const parts = str.split('|').map(p => p.trim()).filter(Boolean);
+    for (const part of parts) {
+      const colonIdx = part.indexOf(':');
+      if (colonIdx === -1) continue;
+      const prefix = part.substring(0, colonIdx).trim();
+      const valStr = part.substring(colonIdx + 1).trim();
+
+      if (valStr.startsWith('{') && valStr.endsWith('}')) {
+        try {
+          const obj = JSON.parse(valStr);
+          this.flattenActivityObj(prefix, obj, result);
+          continue;
+        } catch {}
+      }
+      result[prefix] = valStr;
+    }
+
+    return result;
+  }
+
+  private flattenActivityObj(prefix: string, obj: any, out: { [k: string]: any }): void {
+    if (!obj || typeof obj !== 'object') return;
+    const ignoredKeys = new Set([
+      'CreatedAt', 'CreatedBy', 'UpdatedAt', 'UpdatedBy', 'ModifiedBy', 
+      'LastModifiedBy', 'SavedBy', 'SpecsUpdatedAt', 'SpecsUpdatedBy', 'Status'
+    ]);
+
+    for (const [k, v] of Object.entries(obj)) {
+      if (ignoredKeys.has(k)) continue;
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        this.flattenActivityObj(k, v, out);
+      } else if (Array.isArray(v)) {
+        out[k] = JSON.stringify(v);
+      } else {
+        out[k] = v != null ? String(v).trim() : '';
+      }
+    }
+  }
+
+  private formatActivityFieldName(name: string): string {
+    if (!name) return '';
+    const map: { [k: string]: string } = {
+      MeterConnectedDate: 'Meter Connected Date',
+      NetMeterDate: 'Net Meter Date',
+      CommissioningDate: 'Commissioning Date',
+      InspectionDate: 'Inspection Date',
+      MaterialDispatchedDate: 'Material Dispatched Date',
+      AgreementDate: 'Agreement Date',
+      InstallationDate: 'Installation Date',
+      LoginDate: 'Login Date',
+      FirstInstallment: '1st Installment',
+      SecondInstallment: '2nd Installment',
+      ThirdInstallment: '3rd Installment',
+      CommittedPrice: 'Committed Price',
+      CommittedBrand: 'Committed Brand',
+      MobileNumber: 'Mobile Number',
+      ConsumerNo: 'Consumer No',
+      BrokerName: 'Broker Name',
+      BrokerNumber: 'Broker Number',
+      NetMeterPayment: 'Net Meter Payment',
+      NetMeterPaid: 'Net Meter Paid',
+      partner: 'Partner Expense',
+      Total: 'Total Work Cost'
+    };
+    if (map[name]) return map[name];
+    return name.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
+  private truncateVal(val: string): string {
+    if (!val) return '';
+    if (val.length > 80) return val.slice(0, 77) + '...';
+    return val;
   }
 }
