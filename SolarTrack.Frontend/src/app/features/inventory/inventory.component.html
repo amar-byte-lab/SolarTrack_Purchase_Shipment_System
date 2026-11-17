@@ -1,137 +1,7 @@
 <div class="inventory-container p-3 p-md-4">
   
   <!-- ══════════════════════════════════════════════════════════ -->
-  <!-- Top Bar: Search, Status, Summary, Category Strip, Actions  -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body p-3">
-      
-      <!-- Row 1: Search, Status Filters, Summary Button, Primary Action Buttons -->
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        
-        <!-- Search & Status Group -->
-        <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
-          <div class="search-box position-relative">
-            <app-icon name="search" class="search-icon text-muted"></app-icon>
-            <input 
-              type="text" 
-              class="form-control form-control-sm ps-4" 
-              placeholder="Search SKU, name, category..." 
-              [ngModel]="searchTerm()" 
-              (ngModelChange)="searchTerm.set($event)">
-          </div>
-
-          <!-- Status Filters -->
-          <div class="btn-group btn-group-sm" role="group">
-            <button 
-              type="button" 
-              class="btn" 
-              [ngClass]="selectedStatus() === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
-              (click)="setStatus('all')">
-              All
-            </button>
-            <button 
-              type="button" 
-              class="btn" 
-              [ngClass]="selectedStatus() === 'in-stock' ? 'btn-success text-white' : 'btn-outline-secondary'"
-              (click)="setStatus('in-stock')">
-              In Stock
-            </button>
-            <button 
-              type="button" 
-              class="btn" 
-              [ngClass]="selectedStatus() === 'low-stock' ? 'btn-warning' : 'btn-outline-secondary'"
-              (click)="setStatus('low-stock')">
-              Low Stock
-            </button>
-            <button 
-              type="button" 
-              class="btn" 
-              [ngClass]="selectedStatus() === 'out-of-stock' ? 'btn-danger text-white' : 'btn-outline-secondary'"
-              (click)="setStatus('out-of-stock')">
-              Out
-            </button>
-          </div>
-
-          <!-- Summary Modal Trigger Button -->
-          <button 
-            type="button" 
-            class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5"
-            (click)="showSummaryModal.set(true)" 
-            title="View Real-time Warehouse & EPC Metrics">
-            <app-icon name="trending-up"></app-icon>
-            <span>Summary</span>
-          </button>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="d-flex align-items-center flex-wrap gap-2">
-          @if (selectedCodes().size > 0) {
-            <span class="badge bg-secondary font-monospace">{{ selectedCodes().size }} selected</span>
-            <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteSelected()">
-              <app-icon name="trash"></app-icon>
-              <span>Delete</span>
-            </button>
-            <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none" (click)="clearSelection()">
-              Clear
-            </button>
-          }
-
-          <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" (click)="openAddItem()">
-            <app-icon name="plus"></app-icon>
-            <span>Add Item</span>
-          </button>
-
-          <button type="button" class="btn btn-sm btn-success text-white d-inline-flex align-items-center gap-1" (click)="showStockInModal.set(true)">
-            <app-icon name="upload"></app-icon>
-            <span>Stock In</span>
-          </button>
-
-          <button type="button" class="btn btn-sm btn-amber d-inline-flex align-items-center gap-1" (click)="showDispatchModal.set(true)">
-            <app-icon name="truck"></app-icon>
-            <span>Dispatch</span>
-          </button>
-        </div>
-
-      </div>
-
-      <!-- Row 2: Category Chips & Manage Category -->
-      <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top">
-        <div class="category-strip d-flex align-items-center gap-1.5 overflow-auto py-1">
-          <button 
-            type="button" 
-            class="btn btn-xs category-chip"
-            [ngClass]="selectedCategory() === 'all' ? 'active' : ''"
-            (click)="setCategory('all')">
-            ALL
-          </button>
-
-          @for (cat of invService.categories(); track cat) {
-            <button 
-              type="button" 
-              class="btn btn-xs category-chip"
-              [ngClass]="selectedCategory() === cat ? 'active' : ''"
-              (click)="setCategory(cat)">
-              {{ cat }}
-            </button>
-          }
-        </div>
-
-        <button 
-          type="button" 
-          class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 flex-shrink-0"
-          (click)="showCategoryModal.set(true)"
-          title="Create, rename or delete equipment categories">
-          <app-icon name="folder"></app-icon>
-          <span>Manage Category</span>
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!-- Tab Navigation                                            -->
+  <!-- Tab Navigation (Always at Top)                             -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="nav-tabs-wrapper mb-3 border-bottom d-flex align-items-center justify-content-between">
     <ul class="nav nav-tabs border-0 gap-1">
@@ -172,6 +42,136 @@
   <!-- TAB 1: Live Stock Ledger                                   -->
   <!-- ══════════════════════════════════════════════════════════ -->
   @if (activeTab() === 'ledger') {
+    
+    <!-- Top Bar: Search, Status, Summary, Category Strip, Actions (Only under Live Stock Ledger) -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body p-3">
+        
+        <!-- Row 1: Search, Status Filters, Summary Button, Primary Action Buttons -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          
+          <!-- Search & Status Group -->
+          <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+            <div class="search-box position-relative">
+              <app-icon name="search" class="search-icon text-muted"></app-icon>
+              <input 
+                type="text" 
+                class="form-control form-control-sm ps-4" 
+                placeholder="Search SKU, name, category..." 
+                [ngModel]="searchTerm()" 
+                (ngModelChange)="searchTerm.set($event)">
+            </div>
+
+            <!-- Status Filters -->
+            <div class="btn-group btn-group-sm" role="group">
+              <button 
+                type="button" 
+                class="btn" 
+                [ngClass]="selectedStatus() === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
+                (click)="setStatus('all')">
+                All
+              </button>
+              <button 
+                type="button" 
+                class="btn" 
+                [ngClass]="selectedStatus() === 'in-stock' ? 'btn-success text-white' : 'btn-outline-secondary'"
+                (click)="setStatus('in-stock')">
+                In Stock
+              </button>
+              <button 
+                type="button" 
+                class="btn" 
+                [ngClass]="selectedStatus() === 'low-stock' ? 'btn-warning' : 'btn-outline-secondary'"
+                (click)="setStatus('low-stock')">
+                Low Stock
+              </button>
+              <button 
+                type="button" 
+                class="btn" 
+                [ngClass]="selectedStatus() === 'out-of-stock' ? 'btn-danger text-white' : 'btn-outline-secondary'"
+                (click)="setStatus('out-of-stock')">
+                Out
+              </button>
+            </div>
+
+            <!-- Summary Modal Trigger Button -->
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5"
+              (click)="showSummaryModal.set(true)" 
+              title="View Real-time Warehouse & EPC Metrics">
+              <app-icon name="trending-up"></app-icon>
+              <span>Summary</span>
+            </button>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            @if (selectedCodes().size > 0) {
+              <span class="badge bg-secondary font-monospace">{{ selectedCodes().size }} selected</span>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteSelected()">
+                <app-icon name="trash"></app-icon>
+                <span>Delete</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none" (click)="clearSelection()">
+                Clear
+              </button>
+            }
+
+            <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" (click)="openAddItem()">
+              <app-icon name="plus"></app-icon>
+              <span>Add Item</span>
+            </button>
+
+            <button type="button" class="btn btn-sm btn-success text-white d-inline-flex align-items-center gap-1" (click)="showStockInModal.set(true)">
+              <app-icon name="upload"></app-icon>
+              <span>Stock In</span>
+            </button>
+
+            <button type="button" class="btn btn-sm btn-amber d-inline-flex align-items-center gap-1" (click)="showDispatchModal.set(true)">
+              <app-icon name="truck"></app-icon>
+              <span>Dispatch</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Row 2: Category Chips & Manage Category -->
+        <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top">
+          <div class="category-strip d-flex align-items-center gap-1.5 overflow-auto py-1">
+            <button 
+              type="button" 
+              class="btn btn-xs category-chip"
+              [ngClass]="selectedCategory() === 'all' ? 'active' : ''"
+              (click)="setCategory('all')">
+              ALL
+            </button>
+
+            @for (cat of invService.categories(); track cat) {
+              <button 
+                type="button" 
+                class="btn btn-xs category-chip"
+                [ngClass]="selectedCategory() === cat ? 'active' : ''"
+                (click)="setCategory(cat)">
+                {{ cat }}
+              </button>
+            }
+          </div>
+
+          <button 
+            type="button" 
+            class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 flex-shrink-0"
+            (click)="showCategoryModal.set(true)"
+            title="Create, rename or delete equipment categories">
+            <app-icon name="folder"></app-icon>
+            <span>Manage Category</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Live Stock Ledger Table -->
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 inventory-table">
