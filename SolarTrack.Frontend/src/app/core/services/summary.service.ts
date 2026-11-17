@@ -455,7 +455,7 @@ export class SummaryService {
       timestamp: l.timestamp,
       date: l.date || (l.timestamp ? l.timestamp.slice(0, 10) : ''),
       time: l.time || '',
-      page: l.page || 'Manage Work',
+      page: (l.page === 'Manage Work' || l.page === 'Customer') ? 'Summary' : (l.page || 'Summary'),
       table: l.table || 'installments',
       action: l.action || 'UPDATE',
       user: l.user || l.username || 'Admin',
@@ -498,7 +498,7 @@ export class SummaryService {
           timestamp: `${isoDate}T12:00:00Z`,
           date: isoDate,
           time: '05:30 pm',
-          page: 'Manage Work',
+          page: 'Summary',
           table: 'installments',
           action: 'UPDATE',
           stageField: st.field,
@@ -514,7 +514,7 @@ export class SummaryService {
         });
       });
 
-      // Specifications / Assigned Brands (Manage Work)
+      // Specifications / Assigned Brands
       if (r.SpecsUpdatedAt && (r.CommittedBrand || r.ProductSpecs)) {
         const specDate = this.parseToIsoDate(r.SpecsUpdatedAt);
         if (specDate) {
@@ -523,7 +523,7 @@ export class SummaryService {
             timestamp: r.SpecsUpdatedAt,
             date: specDate,
             time: '04:15 pm',
-            page: 'Manage Work',
+            page: 'Summary',
             table: 'installments',
             action: 'UPDATE',
             user: r.SpecsUpdatedBy || 'Admin',
@@ -539,7 +539,7 @@ export class SummaryService {
         }
       }
 
-      // Customer Profile Registration (Customer Page)
+      // Customer Profile Registration
       const regDate = this.parseToIsoDate(r.CreatedAt || r.LoginDate);
       if (regDate) {
         synthesized.push({
@@ -547,7 +547,7 @@ export class SummaryService {
           timestamp: `${regDate}T09:00:00Z`,
           date: regDate,
           time: '09:00 am',
-          page: 'Customer',
+          page: 'Summary',
           table: 'installments',
           action: 'INSERT',
           user: 'Admin',
@@ -576,7 +576,7 @@ export class SummaryService {
         timestamp: t.CreatedAt || `${isoDate}T12:00:00Z`,
         date: isoDate,
         time: '02:30 pm',
-        page: 'Customer',
+        page: 'Summary',
         table: 'installment_txns',
         action: 'INSERT',
         txnId: t.TxnID,
@@ -608,7 +608,7 @@ export class SummaryService {
         timestamp: c.CreatedAt || `${isoDate}T12:00:00Z`,
         date: isoDate,
         time: '03:00 pm',
-        page: 'Customer',
+        page: 'Summary',
         table: 'commission_txns',
         action: 'INSERT',
         user: c.CreatedBy || 'Admin',
@@ -633,7 +633,7 @@ export class SummaryService {
       if (!isoDate) return;
       const cust = custMap.get(Number(r.SlNo));
       const custName = cust ? cust.Name : `Customer #${r.SlNo}`;
-      const page = (r.Type === 'Work' || r.Type === 'Manage Work') ? 'Manage Work' : 'Customer';
+      const page = 'Summary';
       synthesized.push({
         id: `synth_rem_${r.RemarkID || r.SlNo + '_' + isoDate}`,
         timestamp: r.CreatedAt || `${isoDate}T12:00:00Z`,
@@ -664,7 +664,7 @@ export class SummaryService {
         timestamp: d.CreatedAt || `${isoDate}T12:00:00Z`,
         date: isoDate,
         time: '11:00 am',
-        page: 'Manage Work',
+        page: 'Summary',
         table: 'inventory_dispatches',
         action: 'INSERT',
         dispatchId: d.DispatchID,

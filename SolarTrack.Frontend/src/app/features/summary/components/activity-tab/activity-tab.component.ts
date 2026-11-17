@@ -44,7 +44,13 @@ export class ActivityTabComponent {
       // Source filter
       if (source !== 'ALL') {
         const itemPage = (act.page || '').toLowerCase();
-        if (!itemPage.includes(source.toLowerCase())) return false;
+        if (source === 'Summary') {
+          if (!itemPage.includes('summary') && !itemPage.includes('manage work') && !itemPage.includes('customer')) {
+            return false;
+          }
+        } else if (!itemPage.includes(source.toLowerCase())) {
+          return false;
+        }
       }
 
       // Search filter
@@ -145,15 +151,22 @@ export class ActivityTabComponent {
 
     const sources = [
       { key: 'ALL', label: 'All Pages' },
-      { key: 'Manage Work', label: 'Manage Work' },
-      { key: 'Customer', label: 'Customer' },
+      { key: 'Summary', label: 'Summary' },
       { key: 'Shipment', label: 'Shipment' }
     ];
 
     return sources.map(s => {
-      const count = s.key === 'ALL'
-        ? dateLogs.length
-        : dateLogs.filter(act => (act.page || '').toLowerCase().includes(s.key.toLowerCase())).length;
+      let count = 0;
+      if (s.key === 'ALL') {
+        count = dateLogs.length;
+      } else if (s.key === 'Summary') {
+        count = dateLogs.filter(act => {
+          const p = (act.page || '').toLowerCase();
+          return p.includes('summary') || p.includes('manage work') || p.includes('customer') || (p !== 'shipment');
+        }).length;
+      } else {
+        count = dateLogs.filter(act => (act.page || '').toLowerCase().includes(s.key.toLowerCase())).length;
+      }
       return {
         key: s.key,
         label: s.label,
