@@ -49,33 +49,295 @@
         </div>
       </div>
 
-      <!-- Placeholder when no product set is checked -->
-      @if (quotationService.selectedProductSets().length === 0 && quotationService.quotationItems().length === 0) {
-        <div class="card p-4 text-center my-3 bg-light border-0 no-print" style="border-radius: 6px;">
-          <span class="fs-5 fw-bold text-secondary">Select Product set to generate quotation</span>
-        </div>
-      }
-
       <!-- Offer Workspace -->
       @if (quotationService.selectedProductSets().length > 0 || quotationService.quotationItems().length > 0) {
-        <div>
-          <!-- Collapsible Seller & Buyer Address Section -->
+        <div class="d-flex flex-column">
+          <!-- Quotation Items Grid matching Screenshot 2 -->
+          <div class="table-responsive border rounded bg-white mb-3">
+            <table class="table table-hover table-quote mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th class="col-item text-uppercase fs-9 fw-bold text-secondary ps-2 ps-md-3" style="letter-spacing: 0.04em;">ITEM</th>
+                  <th class="col-qty text-center text-uppercase fs-9 fw-bold text-secondary px-1" style="letter-spacing: 0.04em;">QTY</th>
+                  <th class="col-value text-end text-uppercase fs-9 fw-bold text-secondary pe-2 pe-md-3" style="letter-spacing: 0.04em;">
+                    <div class="d-inline-flex align-items-center justify-content-end">
+                      <label 
+                        class="d-inline-flex align-items-center gap-1 cursor-pointer m-0 text-secondary user-select-none" 
+                        for="chkMergeTotalValue"
+                        title="Merge Total Value mode: Combines item rows into a single package price">
+                        <input 
+                          class="chk-mrg-square cursor-pointer" 
+                          type="checkbox" 
+                          id="chkMergeTotalValue"
+                          [checked]="quotationService.mergeTotalValue()"
+                          (change)="quotationService.mergeTotalValue.set(!quotationService.mergeTotalValue())">
+                        <span class="font-mono fw-bold text-nowrap" [class.text-primary]="quotationService.mergeTotalValue()">Merge Value</span>
+                      </label>
+                    </div>
+                  </th>
+                  <th class="col-action no-print text-center px-1"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (group of quotationService.groupedQuotationItems(); track group.productName; let gIdx = $index) {
+                  <!-- Product Set Group Header Row -->
+                  @if (!group.isCustom) {
+                    <tr class="quote-header-row table-secondary align-middle">
+                      <td colspan="3" class="py-2 ps-3 text-start fw-bold text-dark bg-secondary-subtle fs-8">
+                        📦 Product Set: {{ group.productName }}
+                      </td>
+                      <td class="col-action no-print text-center bg-secondary-subtle py-2">
+                        <button 
+                          type="button" 
+                          class="btn-row-del" 
+                          (click)="removeProductSet(group.productName)" 
+                          title="Remove entire product set">
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  }
+
+                  <!-- Group Line Items -->
+                  @for (item of group.items; track item.id; let iIdx = $index) {
+                    <tr class="quote-item-row">
+                      <td class="col-item ps-2 ps-md-3 align-middle">
+                        <textarea 
+                          rows="1" 
+                          class="form-control form-control-sm item-name-textarea fs-8"
+                          [rows]="getItemRows(item.itemName)"
+                          [(ngModel)]="item.itemName"
+                          (input)="adjustTextarea($event)"
+                          placeholder="Item description"
+                          autocomplete="off">
+                        </textarea>
+                      </td>
+                      <td class="col-qty text-center px-1 align-middle">
+                        <input 
+                          type="number" 
+                          min="1" 
+                          class="form-control form-control-sm text-center border-0 bg-transparent font-monospace fs-8 p-0 mx-auto"
+                          style="max-width: 44px;"
+                          [(ngModel)]="item.qty">
+                      </td>
+
+                      <!-- Value Column: Merged across entire table when MRG is active -->
+                      @if (quotationService.mergeTotalValue()) {
+                        @if (isFirstRow(gIdx, iIdx)) {
+                          <td 
+                            [attr.rowspan]="quotationService.quotationItems().length" 
+                            class="col-value align-middle text-end p-2 pe-2 pe-md-3" 
+                            id="mergedQuoteTotalCell"
+                            style="vertical-align: middle; background-color: #ffffff;">
+                            <input 
+                              type="number" 
+                              step="any" 
+                              min="0" 
+                              class="form-control form-control-sm text-end font-monospace fw-bold fs-7 shadow-none quote-val-input" 
+                              [ngModel]="quotationService.mergedTotalValue()"
+                              (ngModelChange)="quotationService.setMergedTotalValue($event)"
+                              placeholder="Total Value">
+                          </td>
+                        }
+                      } @else {
+                        <td class="col-value text-end pe-2 pe-md-3 align-middle">
+                          <input 
+                            type="number" 
+                            min="0" 
+                            class="form-control form-control-sm text-end border-0 bg-transparent font-monospace fw-semibold fs-8 p-0 quote-val-input"
+                            [ngModel]="item.price"
+                            (ngModelChange)="onItemPriceChange(item, $event)">
+                        </td>
+                      }
+
+                      <!-- Action Delete Button -->
+                      <td class="col-action no-print text-center px-1 align-middle">
+                        <button 
+                          type="button" 
+                          class="btn-row-del" 
+                          (click)="removeItemById(item.id)"
+                          title="Remove item">
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+              <tfoot>
+                <tr class="no-print">
+                  <td colspan="4" class="p-2 bg-light ps-3">
+                    <button 
+                      type="button" 
+                      class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1 fs-8"
+                      (click)="quotationService.addCustomItem()">
+                      ➕ Add Custom Item
+                    </button>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Totals, Adjustments & Bank Details Section -->
+          <div class="row g-3 align-items-stretch mb-3">
+            <!-- Left: Bank Account Details (Main Heading) with Terms & Conditions (Subheading) - Desktop Only (Hidden on Mobile) -->
+            <div class="col-md-6 col-12 d-none d-md-flex flex-column">
+              <!-- Desktop View: Always Open, Auto-height matching Grand Total section with Overflow Scroll -->
+              <div class="border rounded bg-white shadow-sm h-100 d-flex flex-column overflow-hidden">
+                <!-- Main Heading -->
+                <div class="p-3 pb-2.5 border-bottom flex-shrink-0 bg-light">
+                  <h6 class="fw-bold text-primary fs-7 mb-0">🏦 Bank Account Details</h6>
+                </div>
+
+                <!-- Scrollable Body auto-adjusting to right column height -->
+                <div class="p-3 flex-grow-1 overflow-y-auto" style="min-height: 0;">
+                  <!-- 1. Bank Account Details Information -->
+                  <div class="font-monospace fs-8 text-secondary mb-3">
+                    <div class="row g-1 text-start">
+                      <div class="col-4 text-muted fw-semibold">A/c Holder:</div>
+                      <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.holder }}</div>
+                      <div class="col-4 text-muted fw-semibold">Bank Name:</div>
+                      <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.name }}</div>
+                      <div class="col-4 text-muted fw-semibold">A/c No:</div>
+                      <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.accountNo }}</div>
+                      <div class="col-4 text-muted fw-semibold">IFS Code:</div>
+                      <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.ifsc }}</div>
+                    </div>
+                  </div>
+
+                  <!-- 2. Subheading: Terms & Conditions -->
+                  <div class="text-secondary fs-8 fw-bold mb-2 pt-2 pb-1.5 border-top d-flex align-items-center gap-1.5">
+                    <app-icon name="file" [size]="14" class="text-primary"></app-icon>
+                    <span>Terms &amp; Conditions</span>
+                  </div>
+                  <div class="fs-8 text-muted ps-1" style="white-space: pre-line; line-height: 1.45;">
+                    {{ quotationService.companyProfile().terms }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Totals & Adjustments -->
+            <div class="col-md-6 col-12 d-flex flex-column">
+              <div class="p-3 border rounded bg-white shadow-sm h-100">
+                <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center">
+                  <!-- Subtotal -->
+                  <div class="col-6 text-start text-muted">Offer Subtotal:</div>
+                  <div class="col-6 fw-bold">₹{{ quotationService.subtotal() | number:'1.2-2' }}</div>
+
+                  <!-- Active Adjustments -->
+                  @for (adj of quotationService.adjustments(); track adj.key) {
+                    @if (adj.active) {
+                      <div class="col-6 text-start text-muted d-flex align-items-center gap-1">
+                        <span>{{ adj.label }}:</span>
+                        <button type="button" class="btn btn-sm text-danger border-0 p-0 fs-9" (click)="quotationService.toggleAdjustment(adj.key)">✕</button>
+                      </div>
+                      <div class="col-6 d-flex align-items-center justify-content-end gap-1">
+                        <input 
+                          type="number" 
+                          min="0" 
+                          class="form-control form-control-sm text-end font-monospace p-1" 
+                          style="max-width: 90px; height: 26px;"
+                          [ngModel]="adj.value"
+                          (ngModelChange)="quotationService.updateAdjustmentValue(adj.key, $event)">
+                        <span>
+                          @if (adj.type === 'tax') {
+                            (₹{{ getAdjustmentAmount(adj) | number:'1.2-2' }})
+                          }
+                        </span>
+                      </div>
+                    }
+                  }
+
+                  <div class="col-12"><hr class="my-1"></div>
+
+                  <!-- Grand Total -->
+                  <div class="col-5 text-start text-primary fw-bold fs-6 align-self-center">Grand Total:</div>
+                  <div class="col-7 d-flex align-items-center justify-content-end gap-1">
+                    <span class="text-primary fw-bold fs-6">₹</span>
+                    <input 
+                      type="number" 
+                      step="any" 
+                      min="0" 
+                      class="form-control form-control-sm text-end font-monospace fw-bold text-primary fs-6 p-1 border-primary" 
+                      style="max-width: 140px; height: 32px; background-color: #f0f7ff;"
+                      [value]="quotationService.grandTotal()" 
+                      (change)="onGrandTotalChange($event)"
+                      (keydown.enter)="$any($event.target).blur()"
+                      title="Edit Grand Total (auto-adjusts subtotal, items & taxes)">
+                  </div>
+
+                  <!-- Add Adjustment Buttons -->
+                  <div class="col-12 mt-2 pt-2 border-top text-start">
+                    <span class="fs-8 fw-bold text-secondary d-block mb-1">Add adjustments/charges:</span>
+                    <div class="d-flex flex-wrap gap-1">
+                      @for (adj of quotationService.adjustments(); track adj.key) {
+                        @if (!adj.active) {
+                          <button 
+                            type="button" 
+                            class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8"
+                            (click)="quotationService.toggleAdjustment(adj.key)">
+                            + {{ adj.label }}
+                          </button>
+                        }
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Subsidy Selector -->
+                  <div class="col-12 mt-2 pt-2 border-top text-start">
+                    <label class="form-label fs-8 text-secondary mb-1">Apply Government Subsidy</label>
+                    <select 
+                      class="form-select form-select-sm fs-8" 
+                      [value]="quotationService.selectedSubsidy()?.kw || ''"
+                      (change)="onSubsidySelectChange($event)">
+                      <option value="">-- No Subsidy Applied --</option>
+                      @for (s of quotationService.companyProfile().subsidies; track s.kw) {
+                        <option [value]="s.kw">{{ s.kw }} kW PM Surya Ghar (₹{{ s.total | number:'1.0-0' }})</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Registered Seller & Client Details Section (Desktop & Mobile: Placed at the bottom, just above Actions Bar) -->
           <div class="card p-0 mb-3 bg-light border-0">
             <div 
               class="d-flex justify-content-between align-items-center p-3 cursor-pointer"
               (click)="isAddressesExpanded.set(!isAddressesExpanded())"
               style="cursor: pointer;">
               <h6 class="fw-bold text-primary mb-0 fs-7">Registered Seller &amp; Client Details</h6>
-              <span class="text-muted fs-8">{{ isAddressesExpanded() ? '▲ Hide' : '▼ Expand' }}</span>
+              <span class="text-muted fs-8">{{ isAddressesExpanded() ? '▲' : '▼' }}</span>
             </div>
 
             @if (isAddressesExpanded()) {
               <div class="p-3 pt-0">
+                <!-- Mobile Screen Only: From and To as Tabs (To selected by default) -->
+                <div class="d-flex d-md-none mb-3 bg-secondary-subtle p-1 rounded gap-1">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm flex-fill fw-bold fs-8" 
+                    [ngClass]="activeAddressTab() === 'to' ? 'bg-white text-primary shadow-sm border' : 'text-secondary border-0'"
+                    (click)="activeAddressTab.set('to')">
+                    To
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm flex-fill fw-bold fs-8" 
+                    [ngClass]="activeAddressTab() === 'from' ? 'bg-white text-primary shadow-sm border' : 'text-secondary border-0'"
+                    (click)="activeAddressTab.set('from')">
+                    From
+                  </button>
+                </div>
+
                 <div class="row g-3">
                   <!-- 1. Seller Details -->
-                  <div class="col-md-6 col-12">
+                  <div class="col-md-6 col-12" [class.d-none]="activeAddressTab() !== 'from'" [class.d-md-block]="true">
                     <div class="p-3 bg-white border rounded h-100 text-start">
-                      <h6 class="fw-bold text-primary mb-2 fs-7 border-bottom pb-2">From (Seller Details)</h6>
+                      <h6 class="fw-bold text-primary mb-2 fs-7 border-bottom pb-2 d-none d-md-block">From</h6>
                       <div class="mb-2">
                         <label class="form-label fs-8 text-secondary mb-1">Select Registered Office</label>
                         <select 
@@ -151,16 +413,20 @@
                   </div>
 
                   <!-- 2. Buyer Details -->
-                  <div class="col-md-6 col-12">
+                  <div class="col-md-6 col-12" [class.d-none]="activeAddressTab() !== 'to'" [class.d-md-block]="true">
                     <div class="p-3 bg-white border rounded h-100 text-start">
-                      <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2">To (Client Details)</h6>
+                      <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2 d-none d-md-block">To</h6>
                       <div class="row g-2 mb-2">
                         <div class="col-sm-6 col-12">
-                          <label class="form-label fs-8 text-secondary mb-1">Customer Name</label>
+                          <label class="form-label fs-8 text-secondary mb-1">
+                            Customer Name <span class="text-danger fw-bold">*</span>
+                          </label>
                           <input 
                             type="text" 
                             class="form-control form-control-sm fw-bold" 
                             placeholder="Enter customer name"
+                            autocomplete="off"
+                            required
                             [ngModel]="quotationService.customerName()"
                             (ngModelChange)="quotationService.customerName.set($event)">
                         </div>
@@ -170,16 +436,21 @@
                             type="text" 
                             class="form-control form-control-sm font-monospace fw-semibold" 
                             placeholder="Enter mobile number"
+                            autocomplete="off"
                             [ngModel]="quotationService.customerMobile()"
                             (ngModelChange)="quotationService.customerMobile.set($event)">
                         </div>
                       </div>
                       <div>
-                        <label class="form-label fs-8 text-secondary mb-1">Customer Address</label>
+                        <label class="form-label fs-8 text-secondary mb-1">
+                          Customer Address <span class="text-danger fw-bold">*</span>
+                        </label>
                         <textarea 
                           class="form-control form-control-sm fw-semibold" 
                           rows="4" 
                           placeholder="Enter complete customer address..."
+                          autocomplete="off"
+                          required
                           [ngModel]="quotationService.customerAddress()"
                           (ngModelChange)="quotationService.customerAddress.set($event)"></textarea>
                       </div>
@@ -190,257 +461,18 @@
             }
           </div>
 
-          <!-- Quotation Items Grid matching Screenshot 2 -->
-          <div class="table-responsive border rounded bg-white mb-3">
-            <table class="table table-hover table-quote mb-0 align-middle">
-              <thead>
-                <tr>
-                  <th class="text-uppercase fs-9 fw-bold text-secondary ps-3" style="letter-spacing: 0.04em;">ITEM NAME &amp; DESCRIPTION</th>
-                  <th class="text-center text-uppercase fs-9 fw-bold text-secondary" style="width: 80px; letter-spacing: 0.04em;">QTY</th>
-                  <th class="text-end text-uppercase fs-9 fw-bold text-secondary pe-3" style="width: 170px; letter-spacing: 0.04em;">
-                    VALUE
-                    <input 
-                      class="form-check-input chk-square ms-1.5 align-middle" 
-                      type="checkbox" 
-                      id="chkMergeTotalValue"
-                      [checked]="quotationService.mergeTotalValue()"
-                      (change)="quotationService.mergeTotalValue.set(!quotationService.mergeTotalValue())"
-                      title="Merge Total Value mode"
-                      style="cursor: pointer;">
-                    <label class="form-check-label fs-9 text-secondary fw-bold ms-1 cursor-pointer align-middle" for="chkMergeTotalValue">MRG.</label>
-                  </th>
-                  <th class="no-print text-center" style="width: 50px;"></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (group of quotationService.groupedQuotationItems(); track group.productName; let gIdx = $index) {
-                  <!-- Product Set Group Header Row -->
-                  @if (!group.isCustom) {
-                    <tr class="quote-header-row table-secondary align-middle">
-                      <td colspan="3" class="py-2 ps-3 text-start fw-bold text-dark bg-secondary-subtle fs-8">
-                        📦 Product Set: {{ group.productName }}
-                      </td>
-                      <td class="no-print text-center bg-secondary-subtle py-2">
-                        <button 
-                          type="button" 
-                          class="btn-row-del" 
-                          (click)="removeProductSet(group.productName)" 
-                          title="Remove entire product set">
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  }
-
-                  <!-- Group Line Items -->
-                  @for (item of group.items; track item.id; let iIdx = $index) {
-                    <tr class="quote-item-row">
-                      <td class="ps-3">
-                        <input 
-                          type="text" 
-                          class="form-control form-control-sm border-0 bg-transparent fw-medium fs-8 p-0"
-                          [(ngModel)]="item.itemName">
-                      </td>
-                      <td class="text-center">
-                        <input 
-                          type="number" 
-                          min="1" 
-                          class="form-control form-control-sm text-center border-0 bg-transparent font-monospace fs-8 p-0 mx-auto"
-                          style="max-width: 60px;"
-                          [(ngModel)]="item.qty">
-                      </td>
-
-                      <!-- Value Column: Merged across entire table when MRG is active -->
-                      @if (quotationService.mergeTotalValue()) {
-                        @if (isFirstRow(gIdx, iIdx)) {
-                          <td 
-                            [attr.rowspan]="quotationService.quotationItems().length" 
-                            class="align-middle text-start p-2" 
-                            id="mergedQuoteTotalCell"
-                            style="vertical-align: middle; background-color: #ffffff;">
-                            <input 
-                              type="number" 
-                              step="any" 
-                              min="0" 
-                              class="form-control form-control-sm text-start font-monospace fw-bold fs-7 shadow-none" 
-                              [ngModel]="quotationService.mergedTotalValue()"
-                              (ngModelChange)="quotationService.mergedTotalValue.set($event)"
-                              placeholder="Total Value">
-                          </td>
-                        }
-                      } @else {
-                        <td class="text-end pe-3">
-                          <input 
-                            type="number" 
-                            min="0" 
-                            class="form-control form-control-sm text-end border-0 bg-transparent font-monospace fw-semibold fs-8 p-0"
-                            [(ngModel)]="item.price">
-                        </td>
-                      }
-
-                      <!-- Action Delete Button -->
-                      <td class="no-print text-center">
-                        <button 
-                          type="button" 
-                          class="btn-row-del" 
-                          (click)="removeItemById(item.id)"
-                          title="Remove item">
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                }
-              </tbody>
-              <tfoot>
-                <tr class="no-print">
-                  <td colspan="4" class="p-2 bg-light ps-3">
-                    <button 
-                      type="button" 
-                      class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1 fs-8"
-                      (click)="quotationService.addCustomItem()">
-                      ➕ Add Custom Item
-                    </button>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          <!-- Totals, Adjustments & Bank Details Section -->
-          <div class="row g-3">
-            <!-- Left: Bank Details -->
-            <div class="col-md-6 col-12 order-2 order-md-1">
-              <div class="p-3 border rounded bg-white shadow-sm h-100">
-                <h6 class="fw-bold text-primary fs-7 mb-2 border-bottom pb-2">🏦 Company Bank &amp; Payment Details</h6>
-                <div class="font-monospace fs-8 text-secondary">
-                  <div class="row g-1">
-                    <div class="col-4 text-muted fw-semibold">A/c Holder:</div>
-                    <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.holder }}</div>
-                    <div class="col-4 text-muted fw-semibold">Bank Name:</div>
-                    <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.name }}</div>
-                    <div class="col-4 text-muted fw-semibold">A/c No:</div>
-                    <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.accountNo }}</div>
-                    <div class="col-4 text-muted fw-semibold">IFS Code:</div>
-                    <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.ifsc }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right: Totals & Adjustments -->
-            <div class="col-md-6 col-12 order-1 order-md-2">
-              <div class="p-3 border rounded bg-white shadow-sm">
-                <div class="row g-2 text-end font-monospace fs-7 fw-semibold align-items-center">
-                  <!-- Subtotal -->
-                  <div class="col-6 text-start text-muted">Offer Subtotal:</div>
-                  <div class="col-6 fw-bold">₹{{ quotationService.subtotal() | number:'1.2-2' }}</div>
-
-                  <!-- Active Adjustments -->
-                  @for (adj of quotationService.adjustments(); track adj.key) {
-                    @if (adj.active) {
-                      <div class="col-6 text-start text-muted d-flex align-items-center gap-1">
-                        <span>{{ adj.label }}:</span>
-                        <button type="button" class="btn btn-sm text-danger border-0 p-0 fs-9" (click)="quotationService.toggleAdjustment(adj.key)">✕</button>
-                      </div>
-                      <div class="col-6 d-flex align-items-center justify-content-end gap-1">
-                        <input 
-                          type="number" 
-                          min="0" 
-                          class="form-control form-control-sm text-end font-monospace p-1" 
-                          style="max-width: 90px; height: 26px;"
-                          [ngModel]="adj.value"
-                          (ngModelChange)="quotationService.updateAdjustmentValue(adj.key, $event)">
-                        <span>
-                          @if (adj.type === 'tax') {
-                            (₹{{ getAdjustmentAmount(adj) | number:'1.2-2' }})
-                          }
-                        </span>
-                      </div>
-                    }
-                  }
-
-                  <div class="col-12"><hr class="my-1"></div>
-
-                  <!-- Grand Total -->
-                  <div class="col-6 text-start text-primary fw-bold fs-6">Grand Total:</div>
-                  <div class="col-6 text-primary fw-bold fs-6">₹{{ quotationService.grandTotal() | number:'1.2-2' }}</div>
-
-                  <!-- Add Adjustment Buttons -->
-                  <div class="col-12 mt-2 pt-2 border-top text-start">
-                    <span class="fs-8 fw-bold text-secondary d-block mb-1">Add adjustments/charges:</span>
-                    <div class="d-flex flex-wrap gap-1">
-                      @for (adj of quotationService.adjustments(); track adj.key) {
-                        @if (!adj.active) {
-                          <button 
-                            type="button" 
-                            class="btn btn-xs btn-outline-secondary py-0 px-2 fs-8"
-                            (click)="quotationService.toggleAdjustment(adj.key)">
-                            + {{ adj.label }}
-                          </button>
-                        }
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Subsidy Selector -->
-                  <div class="col-12 mt-2 pt-2 border-top text-start">
-                    <label class="form-label fs-8 text-secondary mb-1">Apply Government Subsidy</label>
-                    <select 
-                      class="form-select form-select-sm fs-8" 
-                      (change)="onSubsidySelectChange($event)">
-                      <option value="">-- No Subsidy Applied --</option>
-                      @for (s of quotationService.companyProfile().subsidies; track s.kw) {
-                        <option [value]="s.kw">{{ s.kw }} kW PM Surya Ghar (Total: ₹{{ s.total | number:'1.0-0' }})</option>
-                      }
-                    </select>
-                  </div>
-
-                  <!-- Subsidy Breakdown Lines -->
-                  @if (quotationService.selectedSubsidy(); as sub) {
-                    <div class="col-6 text-start text-success">State Subsidy:</div>
-                    <div class="col-6 text-success">₹{{ sub.state | number:'1.2-2' }}</div>
-                    <div class="col-6 text-start text-success">Central Subsidy:</div>
-                    <div class="col-6 text-success">₹{{ sub.central | number:'1.2-2' }}</div>
-                    <div class="col-6 text-start text-success fw-bold">Total Subsidy:</div>
-                    <div class="col-6 text-success fw-bold">₹{{ sub.total | number:'1.2-2' }}</div>
-                    <div class="col-6 text-start text-success fw-bold border-top pt-1">Net Payable:</div>
-                    <div class="col-6 text-success fw-bold border-top pt-1">₹{{ quotationService.netPayable() | number:'1.2-2' }}</div>
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Terms & Conditions Collapsible -->
-          <div class="card p-3 mt-3 bg-light border-0">
-            <div 
-              class="d-flex justify-content-between align-items-center cursor-pointer"
-              (click)="isTermsExpanded.set(!isTermsExpanded())"
-              style="cursor: pointer;">
-              <h6 class="fw-bold text-secondary fs-8 mb-0">📄 Terms &amp; Conditions</h6>
-              <span class="text-muted fs-8">{{ isTermsExpanded() ? '▲ Hide' : '▼ Expand' }}</span>
-            </div>
-            @if (isTermsExpanded()) {
-              <div class="mt-2 pt-2 border-top fs-8 text-muted" style="white-space: pre-line;">
-                {{ quotationService.companyProfile().terms }}
-              </div>
-            }
-          </div>
-
           <!-- Bottom Actions Bar -->
-          <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span class="text-muted fs-8">* Price inclusive of all component items described in product packages.</span>
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-outline-secondary px-3 py-1.5 fw-semibold fs-7" (click)="goBack()">Back</button>
-              <button 
-                type="button" 
-                class="btn btn-danger px-4 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
-                (click)="printQuotation()">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                <span>Generate (PDF)</span>
-              </button>
-            </div>
+          <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary px-3 py-1.5 fw-semibold fs-7" (click)="goBack()">Back</button>
+            <button 
+              type="button" 
+              class="btn btn-danger px-4 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
+              [disabled]="!isFormValid()"
+              [title]="!isFormValid() ? 'Please fill mandatory Customer Name and Address' : 'Generate Quotation (PDF)'"
+              (click)="printQuotation()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <span>Generate (PDF)</span>
+            </button>
           </div>
         </div>
       }
@@ -489,7 +521,7 @@
         <tr>
           <!-- Client Details -->
           <td colspan="2" style="font-size: 8.5pt; vertical-align: top;">
-            <strong>To (Client Details):</strong><br>
+            <strong>To:</strong><br>
             <span class="fw-bold">{{ quotationService.customerName() || 'Valued Customer' }}</span>
             @if (quotationService.customerMobile()) {
               <span> | Mob: {{ quotationService.customerMobile() }}</span>
@@ -551,7 +583,7 @@
         </tr>
         @if (quotationService.selectedSubsidy(); as sub) {
           <tr>
-            <td colspan="3" style="text-align: right; color: #166534; font-weight: bold;">Govt. Subsidy (State + Central):</td>
+            <td colspan="3" style="text-align: right; color: #166534; font-weight: bold;">Govt. Subsidy:</td>
             <td style="text-align: right; color: #166534; font-weight: bold;">- ₹{{ sub.total | number:'1.2-2' }}</td>
           </tr>
           <tr>

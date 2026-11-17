@@ -18,6 +18,15 @@
       <li class="nav-item">
         <button 
           class="nav-link" 
+          [ngClass]="{ 'active': activeTab() === 'summary' }"
+          (click)="setTab('summary')">
+          <app-icon name="trending-up" class="me-1"></app-icon>
+          <span>Summary</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button 
+          class="nav-link" 
           [ngClass]="{ 'active': activeTab() === 'dispatches' }"
           (click)="setTab('dispatches')">
           <app-icon name="truck" class="me-1"></app-icon>
@@ -30,7 +39,7 @@
           class="nav-link" 
           [ngClass]="{ 'active': activeTab() === 'inwards' }"
           (click)="setTab('inwards')">
-          <app-icon name="upload" class="me-1"></app-icon>
+          <app-icon name="stock-in" class="me-1"></app-icon>
           <span>Inward Purchases</span>
           <span class="badge bg-light text-dark ms-1.5 border">{{ invService.groupedInwards().length }}</span>
         </button>
@@ -51,7 +60,7 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           
           <!-- Search & Status Group -->
-          <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+          <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1 w-100 w-md-auto">
             <div class="search-box position-relative">
               <app-icon name="search" class="search-icon text-muted"></app-icon>
               <input 
@@ -93,20 +102,10 @@
                 Out
               </button>
             </div>
-
-            <!-- Summary Modal Trigger Button -->
-            <button 
-              type="button" 
-              class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5"
-              (click)="showSummaryModal.set(true)" 
-              title="View Real-time Warehouse & EPC Metrics">
-              <app-icon name="trending-up"></app-icon>
-              <span>Summary</span>
-            </button>
           </div>
 
           <!-- Action Buttons -->
-          <div class="d-flex align-items-center flex-wrap gap-2">
+          <div class="d-flex align-items-center justify-content-end flex-wrap gap-2 ms-auto w-100 w-md-auto">
             @if (selectedCodes().size > 0) {
               <span class="badge bg-secondary font-monospace">{{ selectedCodes().size }} selected</span>
               <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteSelected()">
@@ -118,30 +117,25 @@
               </button>
             }
 
-            <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" (click)="openAddItem()">
-              <app-icon name="plus"></app-icon>
-              <span>Add Item</span>
+            <button type="button" class="btn btn-sm btn-success text-white d-inline-flex align-items-center gap-1" (click)="openStockIn()" title="Stock In">
+              <app-icon name="stock-in" [size]="16"></app-icon>
+              <span>In</span>
             </button>
 
-            <button type="button" class="btn btn-sm btn-success text-white d-inline-flex align-items-center gap-1" (click)="showStockInModal.set(true)">
-              <app-icon name="upload"></app-icon>
-              <span>Stock In</span>
-            </button>
-
-            <button type="button" class="btn btn-sm btn-amber d-inline-flex align-items-center gap-1" (click)="showDispatchModal.set(true)">
-              <app-icon name="truck"></app-icon>
-              <span>Dispatch</span>
+            <button type="button" class="btn btn-sm btn-amber d-inline-flex align-items-center gap-1" (click)="openStockOut()" title="Dispatch / Out">
+              <app-icon name="stock-out" [size]="16"></app-icon>
+              <span>Out</span>
             </button>
           </div>
 
         </div>
 
-        <!-- Row 2: Category Chips & Manage Category -->
-        <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top">
-          <div class="category-strip d-flex align-items-center gap-1.5 overflow-auto py-1">
+        <!-- Row 2: Category Chips & Create Category -->
+        <div class="pt-2 border-top">
+          <div class="category-strip d-flex align-items-center gap-1.5 py-1">
             <button 
               type="button" 
-              class="btn btn-xs category-chip"
+              class="btn btn-xs category-chip flex-shrink-0"
               [ngClass]="selectedCategory() === 'all' ? 'active' : ''"
               (click)="setCategory('all')">
               ALL
@@ -150,22 +144,41 @@
             @for (cat of invService.categories(); track cat) {
               <button 
                 type="button" 
-                class="btn btn-xs category-chip"
+                class="btn btn-xs category-chip flex-shrink-0"
                 [ngClass]="selectedCategory() === cat ? 'active' : ''"
                 (click)="setCategory(cat)">
                 {{ cat }}
               </button>
             }
-          </div>
 
-          <button 
-            type="button" 
-            class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 flex-shrink-0"
-            (click)="showCategoryModal.set(true)"
-            title="Create, rename or delete equipment categories">
-            <app-icon name="folder"></app-icon>
-            <span>Manage Category</span>
-          </button>
+            <!-- Inline Add New Category in the Tree/Strip -->
+            @if (!isAddingCategory()) {
+              <button 
+                type="button" 
+                class="btn btn-xs btn-outline-primary d-inline-flex align-items-center gap-1 flex-shrink-0"
+                style="border-radius: 9999px; padding: 0.2rem 0.65rem;"
+                (click)="startAddCategory()"
+                title="Create a new equipment category">
+                <app-icon name="plus" [size]="11"></app-icon>
+                <span>New Category</span>
+              </button>
+            } @else {
+              <div class="d-inline-flex align-items-center gap-1 flex-shrink-0">
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm py-0 px-2 fs-8" 
+                  style="width: 140px; height: 24px; border-radius: 9999px;"
+                  placeholder="Category name..."
+                  [ngModel]="newCategoryInput()"
+                  (ngModelChange)="newCategoryInput.set($event)"
+                  (keydown.enter)="saveNewCategory()"
+                  (keydown.escape)="cancelAddCategory()"
+                  autofocus>
+                <button type="button" class="btn btn-xs btn-success py-0 px-1.5 rounded-circle" (click)="saveNewCategory()" title="Save">✓</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 rounded-circle" (click)="cancelAddCategory()" title="Cancel">✕</button>
+              </div>
+            }
+          </div>
         </div>
 
       </div>
@@ -184,9 +197,9 @@
                   [checked]="selectedCodes().size > 0 && selectedCodes().size === filteredItems().length"
                   (change)="toggleSelectAll()">
               </th>
-              <th>Equipment / Item</th>
+              <th>Category</th>
               <th class="text-end" style="width: 120px;">In-Hand</th>
-              <th class="text-end" style="width: 160px;">Buying Rate</th>
+              <th class="text-end" style="width: 160px;">Rate</th>
               <th class="text-center" style="width: 90px;">Actions</th>
             </tr>
           </thead>
@@ -207,24 +220,83 @@
               </tr>
             } @else {
               @for (grp of categorizedItems(); track grp.category) {
-                <!-- Category Section Banner -->
-                <tr class="category-header-row" (click)="toggleCategoryCollapse(grp.category)">
-                  <td colspan="5" class="py-2 px-3 bg-light border-top border-bottom">
-                    <div class="d-flex align-items-center justify-content-between">
-                      <div class="d-flex align-items-center gap-2">
+                <!-- Category Section Banner (Inventory Tree Node) -->
+                <tr class="category-header-row tree-node-category" [ngClass]="{ 'is-collapsed': isCategoryCollapsed(grp.category) }" (click)="toggleCategoryCollapse(grp.category)">
+                  <!-- Col 1: Empty cell for checkbox alignment -->
+                  <td class="text-center bg-light"></td>
+
+                  <!-- Col 2-4: Category Node: Chevron, Folder Icon, Category Name -->
+                  <td colspan="3" class="py-2 px-3 bg-light border-top border-bottom category-cell-node">
+                    <div class="d-flex align-items-center gap-2" (click)="$event.stopPropagation()">
+                      <button 
+                        type="button" 
+                        class="btn btn-xs btn-link p-0 text-secondary" 
+                        (click)="toggleCategoryCollapse(grp.category)"
+                        title="Toggle Expand/Collapse">
                         <app-icon 
                           [name]="isCategoryCollapsed(grp.category) ? 'chevron-right' : 'chevron-down'" 
-                          class="category-chevron text-secondary">
+                          [size]="16"
+                          class="category-chevron">
                         </app-icon>
-                        <span class="fw-bold text-dark fs-7">{{ grp.category }}</span>
-                        <span class="badge bg-secondary-subtle text-secondary border font-monospace fs-8">
-                          {{ grp.items.length }} {{ grp.items.length === 1 ? 'item' : 'items' }}
+                      </button>
+
+                      <app-icon name="folder" class="text-warning opacity-90" [size]="16"></app-icon>
+
+                      @if (editingCategoryName() === grp.category) {
+                        <!-- Inline Rename Input -->
+                        <div class="d-inline-flex align-items-center gap-1">
+                          <input 
+                            type="text" 
+                            class="form-control form-control-sm py-0 px-2 fs-8" 
+                            style="width: 160px; height: 26px;"
+                            [ngModel]="editingCategoryInput()" 
+                            (ngModelChange)="editingCategoryInput.set($event)"
+                            (keydown.enter)="saveEditCategory(grp.category)"
+                            (keydown.escape)="cancelEditCategory()"
+                            autofocus>
+                          <button 
+                            type="button" 
+                            class="btn btn-xs btn-success py-0 px-1.5" 
+                            (click)="saveEditCategory(grp.category)" 
+                            title="Save">
+                            ✓
+                          </button>
+                          <button 
+                            type="button" 
+                            class="btn btn-xs btn-outline-secondary py-0 px-1.5" 
+                            (click)="cancelEditCategory()" 
+                            title="Cancel">
+                            ✕
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="fw-bold text-dark fs-7 cursor-pointer user-select-none" (click)="toggleCategoryCollapse(grp.category)">
+                          {{ grp.category }}
                         </span>
-                      </div>
-                      <div class="d-flex align-items-center gap-3 text-secondary fs-8">
-                        <span>Units: <strong class="text-dark font-monospace">{{ grp.totalUnits | number }}</strong></span>
-                        <span>Valuation: <strong class="text-primary font-monospace">₹{{ grp.totalValuation | number:'1.2-2' }}</strong></span>
-                      </div>
+                      }
+                    </div>
+                  </td>
+
+                  <!-- Col 5: Category Actions (Edit & Delete in ACTIONS Column) -->
+                  <td class="text-center bg-light py-2 px-2 border-top border-bottom" (click)="$event.stopPropagation()">
+                    <div class="d-inline-flex align-items-center gap-1">
+                      <button 
+                        type="button" 
+                        class="btn btn-action-icon text-secondary" 
+                        (click)="startEditCategory(grp.category)" 
+                        title="Edit Category Name">
+                        <app-icon name="edit" [size]="16"></app-icon>
+                      </button>
+
+                      @if (grp.category !== 'Others') {
+                        <button 
+                          type="button" 
+                          class="btn btn-action-icon text-danger" 
+                          (click)="deleteCategory(grp.category)" 
+                          title="Delete category">
+                          <app-icon name="trash" [size]="16"></app-icon>
+                        </button>
+                      }
                     </div>
                   </td>
                 </tr>
@@ -232,7 +304,7 @@
                 <!-- Category Items (Rendered if not collapsed) -->
                 @if (!isCategoryCollapsed(grp.category)) {
                   @for (item of grp.items; track item.ItemCode) {
-                    <tr [ngClass]="{ 'table-active': isItemSelected(item.ItemCode) }">
+                    <tr [ngClass]="{ 'table-active': isItemSelected(item.ItemCode) }" class="tree-item-row">
                       <!-- Selection Checkbox -->
                       <td class="text-center">
                         <input 
@@ -242,17 +314,43 @@
                           (change)="toggleSelectItem(item.ItemCode)">
                       </td>
 
-                      <!-- Name, Description, Location, SKU Code -->
-                      <td>
-                        <div class="fw-semibold text-dark">{{ item.ItemName }}</div>
-                        <div class="text-secondary fs-8">
-                          <span class="font-monospace text-muted me-2 fs-9">{{ item.ItemCode }}</span>
-                          @if (item.Description) {
-                            <span class="me-2">{{ item.Description }}</span>
-                          }
-                          @if (item.Location) {
-                            <span>Location: {{ item.Location }}</span>
-                          }
+                      <!-- Equipment / Item Name with Continuous Tree Branch -->
+                      <td class="tree-item-cell">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <div class="tree-item-details">
+                            <div class="d-inline-flex align-items-center gap-2 flex-wrap">
+                              <span class="fw-semibold text-dark">{{ item.ItemName }}</span>
+                              <!-- Stock In and Stock Out Buttons right beside item name -->
+                              <div class="tree-stock-actions d-inline-flex align-items-center gap-1">
+                                <button 
+                                  type="button" 
+                                  class="btn btn-xs btn-stock-in d-inline-flex align-items-center gap-1 px-1.5 py-0.5" 
+                                  (click)="openStockIn(item.ItemCode); $event.stopPropagation()" 
+                                  title="Stock In for {{ item.ItemName }}">
+                                  <app-icon name="stock-in" [size]="12"></app-icon>
+                                  <span>In</span>
+                                </button>
+                                <button 
+                                  type="button" 
+                                  class="btn btn-xs btn-stock-out d-inline-flex align-items-center gap-1 px-1.5 py-0.5" 
+                                  (click)="openStockOut(item.ItemCode); $event.stopPropagation()" 
+                                  title="Stock Out / Dispatch for {{ item.ItemName }}">
+                                  <app-icon name="stock-out" [size]="12"></app-icon>
+                                  <span>Out</span>
+                                </button>
+                              </div>
+                            </div>
+                            @if (item.Description || item.Location) {
+                              <div class="text-secondary fs-8 mt-0.5">
+                                @if (item.Description) {
+                                  <span class="me-2">{{ item.Description }}</span>
+                                }
+                                @if (item.Location) {
+                                  <span>Location: {{ item.Location }}</span>
+                                }
+                              </div>
+                            }
+                          </div>
                         </div>
                       </td>
 
@@ -270,7 +368,7 @@
                           <span class="fw-semibold text-dark">₹{{ item.BuyingPrice | number:'1.2-2' }}</span>
                           <button 
                             type="button" 
-                            class="btn btn-xs btn-outline-primary d-inline-flex align-items-center justify-content-center p-1 rounded-circle flex-shrink-0" 
+                            class="btn btn-xs d-inline-flex align-items-center justify-content-center flex-shrink-0" 
                             (click)="openPriceHistory(item)" 
                             title="View Purchase Rate History & Trend">
                             <app-icon name="trending-up" [size]="12"></app-icon>
@@ -286,25 +384,128 @@
                             class="btn btn-action-icon text-secondary" 
                             (click)="openEditItem(item)" 
                             title="Edit Item Details">
-                            <app-icon name="pencil"></app-icon>
+                            <app-icon name="edit" [size]="16"></app-icon>
                           </button>
                           <button 
                             type="button" 
                             class="btn btn-action-icon text-danger" 
                             (click)="deleteItem(item)" 
-                            title="Delete SKU">
-                            <app-icon name="trash"></app-icon>
+                            title="Delete Item">
+                            <app-icon name="trash" [size]="16"></app-icon>
                           </button>
                         </div>
                       </td>
 
                     </tr>
                   }
+
+                  <!-- Tree Add Item Row (at the bottom of category's items) -->
+                  <tr class="tree-add-item-row bg-white">
+                    <td class="text-center"></td>
+                    <td colspan="4" class="tree-add-item-cell py-1 px-3">
+                      <button 
+                        type="button" 
+                        class="btn btn-xs btn-link text-primary text-decoration-none d-inline-flex align-items-center gap-1.5 p-0 fw-semibold tree-add-btn" 
+                        (click)="openAddItem(grp.category)" 
+                        title="Add new item under {{ grp.category }}">
+                        <app-icon name="plus" [size]="12"></app-icon>
+                        <span>Add item</span>
+                      </button>
+                    </td>
+                  </tr>
                 }
               }
             }
           </tbody>
         </table>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB: Summary (Live Inventory & Logistics Dashboard)        -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'summary') {
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3 p-md-4">
+        
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-3 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <div class="p-2 rounded-3 bg-primary-subtle text-primary">
+              <app-icon name="boxes" [size]="20"></app-icon>
+            </div>
+            <div>
+              <h5 class="fw-bold text-dark m-0 fs-6">Inventory &amp; Logistics Summary</h5>
+              <div class="text-secondary fs-8">Real-time EPC Warehouse, Project Orders &amp; Site Dispatch Metrics</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" (click)="invService.loadAllData().subscribe()">
+            <app-icon name="refresh" [size]="13"></app-icon>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <!-- 3 Hero KPI Cards Grid -->
+        <div class="row g-3 mb-3">
+          <!-- KPI 1: Turnover -->
+          <div class="col-md-4 col-12">
+            <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fs-8 fw-semibold text-secondary">Total Project Turnover</span>
+                <span class="badge bg-primary-subtle text-primary fs-9">Orders</span>
+              </div>
+              <div class="fs-4 fw-bold font-monospace text-primary">₹{{ (invService.kpis().totalTurnover || 0) | number:'1.2-2' }}</div>
+              <div class="text-muted fs-9 mt-1">Total value of customer project bookings</div>
+            </div>
+          </div>
+
+          <!-- KPI 2: Dispatched Material Cost -->
+          <div class="col-md-4 col-12">
+            <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fs-8 fw-semibold text-secondary">Dispatched Material Cost</span>
+                <span class="badge bg-amber-subtle text-amber fs-9">Site Outward</span>
+              </div>
+              <div class="fs-4 fw-bold font-monospace text-dark">₹{{ (invService.kpis().totalDispatchedCost || 0) | number:'1.2-2' }}</div>
+              <div class="text-muted fs-9 mt-1">Equipment consumed across all project sites</div>
+            </div>
+          </div>
+
+          <!-- KPI 3: Transport & Logistics Cost -->
+          <div class="col-md-4 col-12">
+            <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fs-8 fw-semibold text-secondary">Transportation Cost</span>
+                <span class="badge bg-info-subtle text-info fs-9">Freight</span>
+              </div>
+              <div class="fs-4 fw-bold font-monospace text-dark">₹{{ (invService.kpis().totalTransportationCost || 0) | number:'1.2-2' }}</div>
+              <div class="text-muted fs-9 mt-1">Logistics, vehicle transport &amp; freight expenses</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Secondary Metric Tiles -->
+        <div class="row g-2.5 pt-2 border-top">
+          <div class="col-sm-4 col-12">
+            <div class="p-2.5 border rounded bg-white text-center shadow-xs">
+              <div class="text-secondary fs-8">Current Warehouse Valuation</div>
+              <div class="fw-bold text-dark font-monospace fs-6 mt-0.5">₹{{ (invService.kpis().warehouseValuation || 0) | number:'1.2-2' }}</div>
+            </div>
+          </div>
+          <div class="col-sm-4 col-12">
+            <div class="p-2.5 border rounded bg-white text-center shadow-xs">
+              <div class="text-secondary fs-8">Total In-Hand Physical Stock</div>
+              <div class="fw-bold text-success font-monospace fs-6 mt-0.5">{{ (invService.kpis().totalInHandStock || 0) | number }} Units</div>
+            </div>
+          </div>
+          <div class="col-sm-4 col-12">
+            <div class="p-2.5 border rounded bg-white text-center shadow-xs">
+              <div class="text-secondary fs-8">Total Catalog Equipment</div>
+              <div class="fw-bold text-primary font-monospace fs-6 mt-0.5">{{ invService.kpis().totalSkus || 0 }} Items</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   }
@@ -635,6 +836,7 @@
   <app-item-modal
     [isOpen]="showItemModal()"
     [editItem]="itemToEdit()"
+    [defaultCategory]="defaultCategoryForItem()"
     (close)="showItemModal.set(false)"
     (saved)="onItemSaved()">
   </app-item-modal>
@@ -648,14 +850,16 @@
   <!-- Stock In Modal -->
   <app-stock-in-modal
     [isOpen]="showStockInModal()"
-    (close)="showStockInModal.set(false)"
+    [initialItemCode]="selectedItemForStockIn()"
+    (close)="showStockInModal.set(false); selectedItemForStockIn.set(undefined)"
     (saved)="onStockInSaved()">
   </app-stock-in-modal>
 
   <!-- Site Dispatch Modal -->
   <app-site-dispatch-modal
     [isOpen]="showDispatchModal()"
-    (close)="showDispatchModal.set(false)"
+    [initialItemCode]="selectedItemForStockOut()"
+    (close)="showDispatchModal.set(false); selectedItemForStockOut.set(undefined)"
     (saved)="onDispatchSaved()">
   </app-site-dispatch-modal>
 

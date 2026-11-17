@@ -173,6 +173,18 @@ import { CommonModule } from '@angular/common';
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </ng-container>
+        <!-- stock-in -->
+        <ng-container *ngSwitchCase="'stock-in'">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="12 12 12 18"/>
+          <polyline points="9 15 12 18 15 15"/>
+        </ng-container>
+        <!-- stock-out -->
+        <ng-container *ngSwitchCase="'stock-out'">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="12 17 12 11"/>
+          <polyline points="9 14 12 11 15 14"/>
+        </ng-container>
         <!-- alert-triangle -->
         <ng-container *ngSwitchCase="'alert-triangle'">
           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>

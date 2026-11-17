@@ -74,12 +74,12 @@ export class QuotationService {
   // Adjustments & Subsidy
   adjustments = signal<AdjustmentLine[]>([
     { key: 'discount', label: 'Discount (₹)', type: 'subtraction', value: 0, active: false, sign: '-' },
-    { key: 'gst', label: 'GST (%)', type: 'tax', value: 0, active: false, sign: '+' },
-    { key: 'cgst', label: 'CGST (%)', type: 'tax', value: 0, active: false, sign: '+' },
-    { key: 'sgst', label: 'SGST (%)', type: 'tax', value: 0, active: false, sign: '+' },
-    { key: 'transport', label: 'Transportation (₹)', type: 'addition', value: 0, active: false, sign: '+' },
-    { key: 'labour', label: 'Labour Charges (₹)', type: 'addition', value: 0, active: false, sign: '+' },
-    { key: 'other', label: 'Other Charges (₹)', type: 'addition', value: 0, active: false, sign: '+' }
+    { key: 'gst', label: 'GST (%)', type: 'tax', value: 5, active: false, sign: '+' },
+    { key: 'cgst', label: 'CGST (%)', type: 'tax', value: 2.5, active: true, sign: '+' },
+    { key: 'sgst', label: 'SGST (%)', type: 'tax', value: 2.5, active: true, sign: '+' },
+    { key: 'transport', label: 'Transport (₹)', type: 'addition', value: 0, active: false, sign: '+' },
+    { key: 'labour', label: 'Labour (₹)', type: 'addition', value: 0, active: false, sign: '+' },
+    { key: 'other', label: 'Other (₹)', type: 'addition', value: 0, active: false, sign: '+' }
   ]);
 
   selectedSubsidy = signal<SubsidyOption | null>(null);
@@ -230,14 +230,18 @@ export class QuotationService {
       this.selectedProductSets.set([...current, productName]);
       // Add items belonging to this product set
       const itemsToAdd = this.allProductItems().filter(it => it.ProductName === productName);
-      const newQuoteItems: QuotationItem[] = itemsToAdd.map(it => ({
-        id: it.RowID || Math.random().toString(36).substring(2, 9),
-        productName: it.ProductName,
-        itemName: it.ItemName,
-        qty: 1,
-        price: Number(it.Price) || 0,
-        isCustom: false
-      }));
+      const newQuoteItems: QuotationItem[] = itemsToAdd.map(it => {
+        const p = Number(it.Price) || 0;
+        return {
+          id: it.RowID || Math.random().toString(36).substring(2, 9),
+          productName: it.ProductName,
+          itemName: it.ItemName,
+          qty: 1,
+          price: p,
+          basePrice: p,
+          isCustom: false
+        };
+      });
       const updated = [...this.quotationItems(), ...newQuoteItems];
       this.quotationItems.set(updated);
       const newSum = updated.reduce((sum, it) => sum + (it.price * it.qty), 0);
@@ -260,6 +264,7 @@ export class QuotationService {
       itemName: 'Custom Solar Equipment / Service',
       qty: 1,
       price: 0,
+      basePrice: 0,
       isCustom: true
     };
     const updated = [...this.quotationItems(), newItem];
@@ -289,8 +294,12 @@ export class QuotationService {
       if (a.key === key) {
         const nextActive = !a.active;
         let defaultVal = a.value;
-        if (nextActive && defaultVal === 0 && (a.key === 'gst' || a.key === 'cgst' || a.key === 'sgst')) {
-          defaultVal = this.companyProfile().defaultGst || 5;
+        if (nextActive && (defaultVal === 0 || a.key === 'gst' || a.key === 'cgst' || a.key === 'sgst')) {
+          if (a.key === 'gst') {
+            defaultVal = 5;
+          } else if (a.key === 'cgst' || a.key === 'sgst') {
+            defaultVal = 2.5;
+          }
         }
         return { ...a, active: nextActive, value: defaultVal };
       }
@@ -315,6 +324,94 @@ export class QuotationService {
     } else {
       const match = this.companyProfile().subsidies.find(s => s.kw === kw);
       this.selectedSubsidy.set(match || null);
+    }
+  }
+
+  updateItemPricesFromSubtotal(newSubtotal: number): void {
+    const items = this.quotationItems();
+    if (items.length === 0) return;
+
+    const baseSum = items.reduce((sum, it) => sum + ((it.basePrice !== undefined && it.basePrice > 0 ? it.basePrice : it.price) * (it.qty || 1)), 0);
+    const hasDecimals = (newSubtotal % 1 !== 0);
+    const roundFn = (val: number) => hasDecimals ? (Math.round(val * 100) / 100) : Math.round(val);
+
+    if (baseSum > 0) {
+      const ratio = newSubtotal / baseSum;
+      let distributedSum = 0;
+
+      const updated = items.map((it, idx) => {
+        const bPrice = (it.basePrice !== undefined && it.basePrice > 0) ? it.basePrice : it.price;
+        const qty = it.qty || 1;
+        if (idx === items.length - 1) {
+          const remaining = newSubtotal - distributedSum;
+          const finalPrice = Math.max(0, roundFn(remaining / qty));
+          return { ...it, price: finalPrice };
+        }
+        const scaledPrice = Math.max(0, roundFn(bPrice * ratio));
+        distributedSum += scaledPrice * qty;
+        return { ...it, price: scaledPrice };
+      });
+      this.quotationItems.set(updated);
+    } else {
+      let distributedSum = 0;
+      const updated = items.map((it, idx) => {
+        const qty = it.qty || 1;
+        if (idx === items.length - 1) {
+          const remaining = newSubtotal - distributedSum;
+          const finalPrice = Math.max(0, roundFn(remaining / qty));
+          return { ...it, price: finalPrice };
+        }
+        const perItem = Math.max(0, roundFn((newSubtotal / items.length) / qty));
+        distributedSum += perItem * qty;
+        return { ...it, price: perItem };
+      });
+      this.quotationItems.set(updated);
+    }
+  }
+
+  setMergedTotalValue(val: number): void {
+    const num = Math.max(0, Number(val) || 0);
+    this.mergedTotalValue.set(num);
+    this.updateItemPricesFromSubtotal(num);
+  }
+
+  setGrandTotal(newGrandTotal: number): void {
+    const g = Math.max(0, Number(newGrandTotal) || 0);
+
+    // 1. Calculate active tax rate percentage sum
+    let totalTaxRate = 0;
+    for (const adj of this.adjustments()) {
+      if (adj.active && adj.type === 'tax') {
+        totalTaxRate += (Number(adj.value) || 0);
+      }
+    }
+
+    // 2. Calculate additions
+    const additions = this.adjustments()
+      .filter(a => a.active && a.type === 'addition')
+      .reduce((sum, a) => sum + (Number(a.value) || 0), 0);
+
+    // 3. Calculate discount
+    const discountAdj = this.adjustments().find(a => a.key === 'discount');
+    const discount = (discountAdj && discountAdj.active) ? (Number(discountAdj.value) || 0) : 0;
+
+    // 4. Reverse calculate taxableAmount and targetSubtotal
+    const taxMultiplier = 1 + (totalTaxRate / 100);
+    const taxableAmount = Math.max(0, (g - additions) / taxMultiplier);
+    const targetSubtotal = Math.round((taxableAmount + discount) * 100) / 100;
+
+    // 5. Update merged total value
+    this.mergedTotalValue.set(targetSubtotal);
+
+    // 6. Update line item prices proportionally
+    this.updateItemPricesFromSubtotal(targetSubtotal);
+
+    // 7. Fine-tune if rounding caused a slight difference
+    const diff = g - this.grandTotal();
+    if (diff !== 0 && taxMultiplier > 0) {
+      const fineSubtotal = Math.round((targetSubtotal + (diff / taxMultiplier)) * 100) / 100;
+      this.mergedTotalValue.set(fineSubtotal);
+      this.updateItemPricesFromSubtotal(fineSubtotal);
     }
   }
 }

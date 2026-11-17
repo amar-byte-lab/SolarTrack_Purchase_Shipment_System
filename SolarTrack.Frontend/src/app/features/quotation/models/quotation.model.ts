@@ -16,6 +16,7 @@ export interface QuotationItem {
   itemName: string;
   qty: number;
   price: number;
+  basePrice?: number;
   isCustom?: boolean;
 }
 

@@ -19,7 +19,7 @@ import { SiteDispatchModalComponent } from './components/site-dispatch-modal/sit
 import { InventorySummaryModalComponent } from './components/inventory-summary-modal/inventory-summary-modal.component';
 import { PriceHistoryModalComponent } from './components/price-history-modal/price-history-modal.component';
 
-type ActiveTab = 'ledger' | 'dispatches' | 'inwards';
+type ActiveTab = 'ledger' | 'summary' | 'dispatches' | 'inwards';
 
 @Component({
   selector: 'app-inventory',
@@ -71,6 +71,10 @@ export class InventoryComponent implements OnInit {
 
   showPriceHistoryModal = signal(false);
   priceHistoryItem = signal<InventoryItemWithStock | null>(null);
+
+  // Selected item for specific Stock In or Stock Out
+  selectedItemForStockIn = signal<string | undefined>(undefined);
+  selectedItemForStockOut = signal<string | undefined>(undefined);
 
   // Filtered Items with Stock
   filteredItems = computed(() => {
@@ -228,8 +232,86 @@ export class InventoryComponent implements OnInit {
   }
 
   // --- Item CRUD Actions ---
-  openAddItem(): void {
+  defaultCategoryForItem = signal<string>('Panels');
+
+  // Inline Category Add State in Tree
+  isAddingCategory = signal(false);
+  newCategoryInput = signal('');
+
+  // Inline Category Rename State in Tree
+  editingCategoryName = signal<string | null>(null);
+  editingCategoryInput = signal('');
+
+  startAddCategory(): void {
+    this.isAddingCategory.set(true);
+    this.newCategoryInput.set('');
+  }
+
+  saveNewCategory(): void {
+    const name = this.newCategoryInput().trim();
+    if (!name) {
+      this.isAddingCategory.set(false);
+      return;
+    }
+    const success = this.invService.addCategory(name);
+    if (success) {
+      this.toastService.success(`Category "${name}" created successfully.`);
+      this.isAddingCategory.set(false);
+      this.newCategoryInput.set('');
+    } else {
+      this.toastService.warning(`Category "${name}" already exists or is invalid.`);
+    }
+  }
+
+  cancelAddCategory(): void {
+    this.isAddingCategory.set(false);
+    this.newCategoryInput.set('');
+  }
+
+  startEditCategory(cat: string): void {
+    this.editingCategoryName.set(cat);
+    this.editingCategoryInput.set(cat);
+  }
+
+  saveEditCategory(oldName: string): void {
+    const newName = this.editingCategoryInput().trim();
+    if (!newName || newName.toLowerCase() === oldName.toLowerCase()) {
+      this.editingCategoryName.set(null);
+      return;
+    }
+    const success = this.invService.renameCategory(oldName, newName);
+    if (success) {
+      this.toastService.success(`Category renamed to "${newName}".`);
+      this.editingCategoryName.set(null);
+    } else {
+      this.toastService.warning(`Cannot rename category. Name already exists.`);
+    }
+  }
+
+  cancelEditCategory(): void {
+    this.editingCategoryName.set(null);
+  }
+
+  async deleteCategory(cat: string): Promise<void> {
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete Category',
+      message: `Are you sure you want to delete category "${cat}"? Items under this category will be moved to "Others".`,
+      confirmText: 'Delete',
+      isDanger: true
+    });
+    if (!confirmed) return;
+
+    this.invService.deleteCategory(cat);
+    this.toastService.success(`Category "${cat}" deleted.`);
+  }
+
+  openAddItem(category?: string): void {
     this.itemToEdit.set(null);
+    if (category) {
+      this.defaultCategoryForItem.set(category);
+    } else {
+      this.defaultCategoryForItem.set('Panels');
+    }
     this.showItemModal.set(true);
   }
 
@@ -244,13 +326,25 @@ export class InventoryComponent implements OnInit {
     this.invService.loadAllData().subscribe();
   }
 
+  openStockIn(itemCode?: string): void {
+    this.selectedItemForStockIn.set(itemCode);
+    this.showStockInModal.set(true);
+  }
+
+  openStockOut(itemCode?: string): void {
+    this.selectedItemForStockOut.set(itemCode);
+    this.showDispatchModal.set(true);
+  }
+
   onStockInSaved(): void {
     this.showStockInModal.set(false);
+    this.selectedItemForStockIn.set(undefined);
     this.invService.loadAllData().subscribe();
   }
 
   onDispatchSaved(): void {
     this.showDispatchModal.set(false);
+    this.selectedItemForStockOut.set(undefined);
     this.invService.loadAllData().subscribe();
   }
 
