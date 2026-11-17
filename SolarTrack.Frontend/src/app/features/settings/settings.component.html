@@ -31,194 +31,198 @@
 
     <!-- TAB 1: Company Profile Settings -->
     @if (activeTab() === 'company') {
-      <div class="row g-3">
-        <!-- Col 1: Company Profile, Office Addresses & Subsidy -->
-        <div class="col-lg-6 col-12">
-          <!-- 1. Company Profile Section -->
-          <div class="settings-card mb-3">
-            <div class="section-title">Company Profile Section</div>
-            <div class="mb-2">
-              <label class="form-label fs-8 text-secondary mb-1">Company Name</label>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyName">
-            </div>
-            <div class="row g-2 mb-2">
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Company Email</label>
-                <input type="email" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyEmail">
+      <div class="row g-3 align-items-stretch">
+        <!-- Col 1: Section 1 (Company Profile, Office Addresses & Government Subsidy) -->
+        <div class="col-lg-6 col-12 d-flex flex-column">
+          <div class="settings-card h-100 d-flex flex-column mb-3 mb-lg-0">
+            <!-- 1. Company Profile Section -->
+            <div class="settings-subsection">
+              <div class="section-title">Company Profile Section</div>
+              <div class="mb-2">
+                <label class="form-label fs-8 text-secondary mb-1">Company Name</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyName">
               </div>
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyPhone">
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">GST Number</label>
-                <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().companyGst">
-              </div>
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Default GST %</label>
-                <input type="number" min="0" max="100" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().defaultGst">
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. Office Addresses (Open for edit) -->
-          <div class="settings-card mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
-              <div class="section-title m-0 border-0 p-0">Office Addresses</div>
-              <button type="button" class="btn btn-xs btn-outline-primary fw-semibold" (click)="onAddAddressRow()">
-                + Add Address
-              </button>
-            </div>
-            <div class="d-flex flex-column gap-2 address-list-box">
-              @if (settingsService.settings().addresses.length === 0) {
-                <div class="text-center text-muted fs-8 py-2 bg-light rounded border border-dashed">
-                  No addresses added. Click "+ Add Address" to add an office address.
+              <div class="row g-2 mb-2">
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">Company Email</label>
+                  <input type="email" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyEmail">
                 </div>
-              }
-              @for (addr of settingsService.settings().addresses; track $index; let i = $index) {
-                <div class="d-flex align-items-center gap-2">
-                  <input 
-                    type="text" 
-                    class="form-control form-control-sm" 
-                    [(ngModel)]="settingsService.settings().addresses[i]" 
-                    placeholder="Enter office address...">
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-outline-danger px-2 py-1" 
-                    title="Remove address" 
-                    (click)="onRemoveAddress(i)">
-                    ✕
-                  </button>
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyPhone">
                 </div>
-              }
+              </div>
+              <div class="row g-2">
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">GST Number</label>
+                  <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().companyGst">
+                </div>
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">Default GST %</label>
+                  <input type="number" min="0" max="100" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().defaultGst">
+                </div>
+              </div>
             </div>
-          </div>
 
-          <!-- 5. Government Subsidy (Open for edit) -->
-          <div class="settings-card mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
-              <div class="section-title m-0 border-0 p-0">Government Subsidy</div>
-              <button type="button" class="btn btn-xs btn-outline-primary fw-semibold" (click)="onAddSubsidyRow()">
-                + Add Subsidy Row
-              </button>
+            <!-- 2. Office Addresses (Open for edit) -->
+            <div class="settings-subsection">
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                <div class="section-title m-0 border-0 p-0">Office Addresses</div>
+                <button type="button" class="btn btn-xs btn-outline-primary fw-semibold" (click)="onAddAddressRow()">
+                  + Add Address
+                </button>
+              </div>
+              <div class="d-flex flex-column gap-2 address-list-box">
+                @if (settingsService.settings().addresses.length === 0) {
+                  <div class="text-center text-muted fs-8 py-2 bg-light rounded border border-dashed">
+                    No addresses added. Click "+ Add Address" to add an office address.
+                  </div>
+                }
+                @for (addr of settingsService.settings().addresses; track $index; let i = $index) {
+                  <div class="d-flex align-items-center gap-2">
+                    <input 
+                      type="text" 
+                      class="form-control form-control-sm" 
+                      [(ngModel)]="settingsService.settings().addresses[i]" 
+                      placeholder="Enter office address...">
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-outline-danger px-2 py-1" 
+                      title="Remove address" 
+                      (click)="onRemoveAddress(i)">
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
             </div>
 
-            <div class="table-responsive subsidy-list-box">
-              <table class="table table-sm table-bordered align-middle fs-8 mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 25%;">Capacity (kW)</th>
-                    <th style="width: 35%;">State Sub. (₹)</th>
-                    <th style="width: 35%;">Central Sub. (₹)</th>
-                    <th class="text-center" style="width: 40px;"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @if (settingsService.settings().subsidies.length === 0) {
+            <!-- 3. Government Subsidy (Open for edit) -->
+            <div class="settings-subsection mb-0">
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                <div class="section-title m-0 border-0 p-0">Government Subsidy</div>
+                <button type="button" class="btn btn-xs btn-outline-primary fw-semibold" (click)="onAddSubsidyRow()">
+                  + Add Subsidy Row
+                </button>
+              </div>
+
+              <div class="table-responsive subsidy-list-box">
+                <table class="table table-sm table-bordered align-middle fs-8 mb-0">
+                  <thead class="table-light">
                     <tr>
-                      <td colspan="4" class="text-center text-muted py-2">
-                        No subsidy slabs configured. Click "+ Add Subsidy Row" to add.
-                      </td>
+                      <th style="width: 25%;">Capacity (kW)</th>
+                      <th style="width: 35%;">State Sub. (₹)</th>
+                      <th style="width: 35%;">Central Sub. (₹)</th>
+                      <th class="text-center" style="width: 40px;"></th>
                     </tr>
-                  }
-                  @for (s of settingsService.settings().subsidies; track $index; let i = $index) {
-                    <tr>
-                      <td>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          class="form-control form-control-sm font-monospace text-center fw-semibold" 
-                          [(ngModel)]="s.kw" 
-                          placeholder="kW">
-                      </td>
-                      <td>
-                        <div class="input-group input-group-sm">
-                          <span class="input-group-text bg-light text-muted px-1.5 fs-9">₹</span>
+                  </thead>
+                  <tbody>
+                    @if (settingsService.settings().subsidies.length === 0) {
+                      <tr>
+                        <td colspan="4" class="text-center text-muted py-2">
+                          No subsidy slabs configured. Click "+ Add Subsidy Row" to add.
+                        </td>
+                      </tr>
+                    }
+                    @for (s of settingsService.settings().subsidies; track $index; let i = $index) {
+                      <tr>
+                        <td>
                           <input 
                             type="number" 
-                            min="0" 
-                            step="500" 
-                            class="form-control form-control-sm font-monospace" 
-                            [(ngModel)]="s.state" 
-                            placeholder="State">
-                        </div>
-                      </td>
-                      <td>
-                        <div class="input-group input-group-sm">
-                          <span class="input-group-text bg-light text-muted px-1.5 fs-9">₹</span>
-                          <input 
-                            type="number" 
-                            min="0" 
-                            step="500" 
-                            class="form-control form-control-sm font-monospace" 
-                            [(ngModel)]="s.central" 
-                            placeholder="Central">
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-link text-danger text-decoration-none p-0" 
-                          title="Remove row" 
-                          (click)="onRemoveSubsidy(i)">
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+                            min="1" 
+                            class="form-control form-control-sm font-monospace text-center fw-semibold" 
+                            [(ngModel)]="s.kw" 
+                            placeholder="kW">
+                        </td>
+                        <td>
+                          <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-muted px-1.5 fs-9">₹</span>
+                            <input 
+                              type="number" 
+                              min="0" 
+                              step="500" 
+                              class="form-control form-control-sm font-monospace" 
+                              [(ngModel)]="s.state" 
+                              placeholder="State">
+                          </div>
+                        </td>
+                        <td>
+                          <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-muted px-1.5 fs-9">₹</span>
+                            <input 
+                              type="number" 
+                              min="0" 
+                              step="500" 
+                              class="form-control form-control-sm font-monospace" 
+                              [(ngModel)]="s.central" 
+                              placeholder="Central">
+                          </div>
+                        </td>
+                        <td class="text-center">
+                          <button 
+                            type="button" 
+                            class="btn btn-sm btn-link text-danger text-decoration-none p-0" 
+                            title="Remove row" 
+                            (click)="onRemoveSubsidy(i)">
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Col 2: Bank Details, UPI Payment ID & Terms -->
-        <div class="col-lg-6 col-12">
-          <!-- 3. Company Bank Details section -->
-          <div class="settings-card mb-3">
-            <div class="section-title">Company Bank Details section</div>
-            <div class="row g-2 mb-2">
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">A/c Holder's Name</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankAcHolder">
+        <!-- Col 2: Section 2 (Company Bank Details, UPI Payment ID & Terms & Conditions) -->
+        <div class="col-lg-6 col-12 d-flex flex-column">
+          <div class="settings-card h-100 d-flex flex-column">
+            <!-- 1. Company Bank Details section -->
+            <div class="settings-subsection">
+              <div class="section-title">Company Bank Details section</div>
+              <div class="row g-2 mb-2">
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">A/c Holder's Name</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankAcHolder">
+                </div>
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">Bank Name</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankName">
+                </div>
               </div>
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Bank Name</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankName">
+              <div class="row g-2">
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">Account Number</label>
+                  <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().bankAcNo">
+                </div>
+                <div class="col-sm-6 col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">Branch &amp; IFSC Code</label>
+                  <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().bankBranchIfs">
+                </div>
               </div>
             </div>
-            <div class="row g-2">
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Account Number</label>
-                <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().bankAcNo">
-              </div>
-              <div class="col-sm-6 col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Branch &amp; IFSC Code</label>
-                <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().bankBranchIfs">
-              </div>
-            </div>
-          </div>
 
-          <!-- 4. UPI Payment ID -->
-          <div class="settings-card mb-3">
-            <div class="section-title">UPI Payment ID</div>
-            <div class="mb-2">
-              <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().upiId" placeholder="e.g. merchant@upi">
+            <!-- 2. UPI Payment ID -->
+            <div class="settings-subsection">
+              <div class="section-title">UPI Payment ID</div>
+              <div class="mb-2">
+                <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().upiId" placeholder="e.g. merchant@upi">
+              </div>
             </div>
-          </div>
 
-          <!-- 6. Terms & Conditions -->
-          <div class="settings-card mb-3">
-            <div class="section-title">Terms &amp; Conditions</div>
-            <div class="mb-1">
-              <textarea 
-                class="form-control form-control-sm fs-8" 
-                rows="6" 
-                [(ngModel)]="settingsService.settings().terms"
-                autocomplete="off"
-                placeholder="Enter standard business terms..."></textarea>
+            <!-- 3. Terms & Conditions (flex-grow to auto-adjust height with left card) -->
+            <div class="settings-subsection d-flex flex-column flex-grow-1 mb-0">
+              <div class="section-title">Terms &amp; Conditions</div>
+              <div class="d-flex flex-column flex-grow-1">
+                <textarea 
+                  class="form-control form-control-sm fs-8 flex-grow-1 terms-textarea" 
+                  rows="6" 
+                  [(ngModel)]="settingsService.settings().terms"
+                  autocomplete="off"
+                  placeholder="Enter standard business terms..."></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -326,14 +330,24 @@
                             </span>
                           </td>
                           <td class="text-center">
-                            <button class="btn btn-xs btn-outline-primary me-1" (click)="editUser(u)">
-                              Edit
-                            </button>
-                            @if (u.userid !== 'admin' && u.userid !== 'amar') {
-                              <button class="btn btn-xs btn-outline-danger" (click)="onDeleteUser(u.userid)">
-                                Delete
+                            <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                              <button 
+                                type="button" 
+                                class="btn btn-xs btn-outline-primary btn-action-icon" 
+                                (click)="editUser(u)" 
+                                title="Edit User">
+                                <app-icon name="edit" [size]="14"></app-icon>
                               </button>
-                            }
+                              @if (u.userid !== 'admin' && u.userid !== 'amar') {
+                                <button 
+                                  type="button" 
+                                  class="btn btn-xs btn-outline-danger btn-action-icon" 
+                                  (click)="onDeleteUser(u.userid)" 
+                                  title="Delete User">
+                                  <app-icon name="trash" [size]="14"></app-icon>
+                                </button>
+                              }
+                            </div>
                           </td>
                         </tr>
                       }

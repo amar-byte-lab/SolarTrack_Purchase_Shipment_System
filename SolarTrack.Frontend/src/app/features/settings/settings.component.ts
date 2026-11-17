@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { IconComponent } from '../../shared/components/icon/icon.component';
 import { SettingsService } from './services/settings.service';
 import { NavService } from '../../core/services/nav.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -11,7 +12,7 @@ import { ManagedUser } from './models/settings.model';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss']
 })

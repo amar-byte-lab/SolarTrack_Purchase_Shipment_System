@@ -55,6 +55,20 @@
   padding-bottom: 8px;
 }
 
+.settings-subsection {
+  margin-bottom: 22px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.terms-textarea {
+  min-height: 140px;
+  height: 100%;
+  resize: vertical;
+}
+
 /* List boxes */
 .address-list-box, .subsidy-list-box {
   max-height: 180px;
@@ -91,6 +105,27 @@
   padding: 2px 8px;
   font-size: 0.75rem;
   border-radius: 3px;
+}
+
+.btn-action-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s ease-in-out;
+
+  app-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+  }
 }
 
 .fs-7 { font-size: 0.875rem; }

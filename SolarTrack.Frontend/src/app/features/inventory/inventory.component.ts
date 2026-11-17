@@ -17,9 +17,10 @@ import { CategoryModalComponent } from './components/category-modal/category-mod
 import { StockInModalComponent } from './components/stock-in-modal/stock-in-modal.component';
 import { SiteDispatchModalComponent } from './components/site-dispatch-modal/site-dispatch-modal.component';
 import { InventorySummaryModalComponent } from './components/inventory-summary-modal/inventory-summary-modal.component';
+import { InventorySummaryComponent } from './components/inventory-summary/inventory-summary.component';
 import { PriceHistoryModalComponent } from './components/price-history-modal/price-history-modal.component';
 
-type ActiveTab = 'ledger' | 'summary' | 'dispatches' | 'inwards';
+type ActiveTab = 'ledger' | 'dispatches' | 'inwards' | 'summary';
 
 @Component({
   selector: 'app-inventory',
@@ -33,6 +34,7 @@ type ActiveTab = 'ledger' | 'summary' | 'dispatches' | 'inwards';
     StockInModalComponent,
     SiteDispatchModalComponent,
     InventorySummaryModalComponent,
+    InventorySummaryComponent,
     PriceHistoryModalComponent
   ],
   templateUrl: './inventory.component.html',
@@ -215,6 +217,30 @@ export class InventoryComponent implements OnInit {
 
   isItemSelected(code: string): boolean {
     return this.selectedCodes().has(code);
+  }
+
+  isCategoryAllSelected(grp: { category: string; items: InventoryItemWithStock[] }): boolean {
+    if (!grp.items || grp.items.length === 0) return false;
+    return grp.items.every(it => this.selectedCodes().has(it.ItemCode));
+  }
+
+  isCategoryPartiallySelected(grp: { category: string; items: InventoryItemWithStock[] }): boolean {
+    if (!grp.items || grp.items.length === 0) return false;
+    const selectedCount = grp.items.filter(it => this.selectedCodes().has(it.ItemCode)).length;
+    return selectedCount > 0 && selectedCount < grp.items.length;
+  }
+
+  toggleSelectCategory(grp: { category: string; items: InventoryItemWithStock[] }): void {
+    const allSelected = this.isCategoryAllSelected(grp);
+    this.selectedCodes.update(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        grp.items.forEach(it => next.delete(it.ItemCode));
+      } else {
+        grp.items.forEach(it => next.add(it.ItemCode));
+      }
+      return next;
+    });
   }
 
   toggleSelectAll(): void {

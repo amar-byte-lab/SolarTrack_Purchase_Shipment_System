@@ -18,66 +18,7 @@
 
       <!-- Body -->
       <div class="modal-body p-3">
-        <!-- 3 KPI Cards -->
-        <div class="inv-kpi-grid mb-3">
-          <!-- KPI 1: Turnover -->
-          <article class="inv-kpi-card kpi-sky">
-            <div class="inv-kpi-head">
-              <span class="inv-kpi-label" title="Turnover">Turnover</span>
-              <div class="inv-kpi-icon-wrap" aria-hidden="true">
-                <app-icon name="wallet"></app-icon>
-              </div>
-            </div>
-            <div class="inv-kpi-value text-sky-700">₹{{ (kpis?.totalTurnover || 0) | number:'1.2-2' }}</div>
-            <div class="inv-kpi-subtext">Total Project Orders</div>
-          </article>
-
-          <!-- KPI 2: Dispatched Material Cost -->
-          <article class="inv-kpi-card kpi-amber">
-            <div class="inv-kpi-head">
-              <span class="inv-kpi-label" title="Dispatched Material Cost">Dispatched Cost</span>
-              <div class="inv-kpi-icon-wrap" aria-hidden="true">
-                <app-icon name="truck"></app-icon>
-              </div>
-            </div>
-            <div class="inv-kpi-value text-amber-700">₹{{ (kpis?.totalDispatchedCost || 0) | number:'1.2-2' }}</div>
-            <div class="inv-kpi-subtext">Site Consumption</div>
-          </article>
-
-          <!-- KPI 3: Transportation Cost -->
-          <article class="inv-kpi-card kpi-indigo">
-            <div class="inv-kpi-head">
-              <span class="inv-kpi-label" title="Transportation Cost">Transport Cost</span>
-              <div class="inv-kpi-icon-wrap" aria-hidden="true">
-                <app-icon name="truck"></app-icon>
-              </div>
-            </div>
-            <div class="inv-kpi-value text-indigo-700">₹{{ (kpis?.totalTransportationCost || 0) | number:'1.2-2' }}</div>
-            <div class="inv-kpi-subtext">Site Logistics &amp; Freight</div>
-          </article>
-        </div>
-
-        <!-- 3 Lower Metric Blocks -->
-        <div class="row g-2 pt-2 border-top">
-          <div class="col-4">
-            <div class="p-2 border rounded bg-light text-center">
-              <div class="text-secondary small" style="font-size:0.72rem;">Warehouse Valuation</div>
-              <div class="fw-bold text-dark font-monospace" style="font-size:0.95rem;">₹{{ (kpis?.warehouseValuation || 0) | number:'1.2-2' }}</div>
-            </div>
-          </div>
-          <div class="col-4">
-            <div class="p-2 border rounded bg-light text-center">
-              <div class="text-secondary small" style="font-size:0.72rem;">In-Hand Stock</div>
-              <div class="fw-bold text-success font-monospace" style="font-size:0.95rem;">{{ (kpis?.totalInHandStock || 0) | number }} Units</div>
-            </div>
-          </div>
-          <div class="col-4">
-            <div class="p-2 border rounded bg-light text-center">
-              <div class="text-secondary small" style="font-size:0.72rem;">Equipment SKUs</div>
-              <div class="fw-bold text-primary font-monospace" style="font-size:0.95rem;">{{ kpis?.totalSkus || 0 }} Items</div>
-            </div>
-          </div>
-        </div>
+        <app-inventory-summary [kpis]="kpis" [showHeader]="false"></app-inventory-summary>
       </div>
 
       <!-- Footer -->

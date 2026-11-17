@@ -1,0 +1,50 @@
+:host {
+  display: block;
+}
+
+.inv-summary-card {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #e2e8f0;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  &.kpi-card-turnover {
+    border-top: 3px solid var(--st-primary, #ff4500);
+  }
+
+  &.kpi-card-dispatched {
+    border-top: 3px solid #f59e0b;
+  }
+
+  &.kpi-card-valuation {
+    border-top: 3px solid #10b981;
+  }
+
+  &.kpi-card-transport {
+    border-top: 3px solid #3b82f6;
+  }
+}
+
+.kpi-icon-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-amber {
+  color: #b45309 !important;
+}
+
+.bg-amber-subtle {
+  background-color: #fef3c7 !important;
+}
+
+.p-3\.5 {
+  padding: 1rem !important;
+}

@@ -26,8 +26,8 @@ export class SummaryTableComponent {
   // Exclude selection tracking
   selectedSlNos = signal<Set<number>>(new Set());
 
-  // Collapsed sections tracking - default collapsed for Unpaid, Partial Paid, and Fully Paid
-  collapsedGroups = signal<Set<string>>(new Set(['Unpaid', 'Partial Paid', 'Fully Paid']));
+  // Active open section - only ONE section can be open at a time (null means all collapsed)
+  activeOpenGroup = signal<string | null>(null);
 
   // Active / marked row tracking (persists even after workflow modal closes)
   markedRowSlNo = signal<number | null>(null);
@@ -45,19 +45,17 @@ export class SummaryTableComponent {
   selectedCustomerForWorkflow: InstallmentRow | null = null;
   workflowModalTab: 'process' | 'payment' = 'process';
 
-  // Collapse / Expand helpers
+  // Collapse / Expand helpers - Accordion behavior (only one section open at a time)
   toggleGroupCollapse(groupName: string): void {
-    const current = new Set(this.collapsedGroups());
-    if (current.has(groupName)) {
-      current.delete(groupName);
+    if (this.activeOpenGroup() === groupName) {
+      this.activeOpenGroup.set(null); // click currently open group to collapse it
     } else {
-      current.add(groupName);
+      this.activeOpenGroup.set(groupName); // open only this group, automatically closing others
     }
-    this.collapsedGroups.set(current);
   }
 
   isGroupCollapsed(groupName: string): boolean {
-    return this.collapsedGroups().has(groupName);
+    return this.activeOpenGroup() !== groupName;
   }
 
   markRow(slNo: number): void {

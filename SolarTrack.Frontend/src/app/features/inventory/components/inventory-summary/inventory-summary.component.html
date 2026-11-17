@@ -1,0 +1,107 @@
+<div class="inventory-summary-container">
+  <!-- Optional Header Section -->
+  @if (showHeader) {
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-3 border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <div class="p-2 rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center">
+          <app-icon name="trending-up" [size]="20"></app-icon>
+        </div>
+        <div>
+          <h5 class="fw-bold text-dark m-0 fs-6">Inventory &amp; Logistics Summary</h5>
+          <div class="text-secondary fs-8">Real-time EPC Warehouse, Project Orders &amp; Site Dispatch Financials</div>
+        </div>
+      </div>
+      <button 
+        type="button" 
+        class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8" 
+        (click)="refresh()"
+        title="Refresh financial metrics">
+        <app-icon name="refresh" [size]="13"></app-icon>
+        <span>Refresh</span>
+      </button>
+    </div>
+  }
+
+  <!-- 4 Key Metrics Grid (Turnover, Dispatched Cost, Warehouse Valuation, Transportation Cost) -->
+  <div class="row g-3">
+    <!-- 1. Total Project Turnover -->
+    <div class="col-xl-3 col-md-6 col-12">
+      <div class="inv-summary-card kpi-card-turnover h-100 p-3.5 border rounded-3 bg-white shadow-xs d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fs-8 fw-semibold text-secondary">Total Project Turnover</span>
+            <span class="kpi-icon-badge bg-primary-subtle text-primary">
+              <app-icon name="wallet" [size]="14"></app-icon>
+            </span>
+          </div>
+          <div class="fs-4 fw-bold font-monospace text-primary">
+            ₹{{ (resolvedKpis.totalTurnover || 0) | number:'1.2-2' }}
+          </div>
+        </div>
+        <div class="text-muted fs-9 mt-2 pt-2 border-top">
+          Total value of customer project bookings
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Dispatched Material Cost -->
+    <div class="col-xl-3 col-md-6 col-12">
+      <div class="inv-summary-card kpi-card-dispatched h-100 p-3.5 border rounded-3 bg-white shadow-xs d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fs-8 fw-semibold text-secondary">Dispatched Material Cost</span>
+            <span class="kpi-icon-badge bg-amber-subtle text-amber">
+              <app-icon name="truck" [size]="14"></app-icon>
+            </span>
+          </div>
+          <div class="fs-4 fw-bold font-monospace text-dark">
+            ₹{{ (resolvedKpis.totalDispatchedCost || 0) | number:'1.2-2' }}
+          </div>
+        </div>
+        <div class="text-muted fs-9 mt-2 pt-2 border-top">
+          Equipment consumed across all project sites
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Current Warehouse Valuation -->
+    <div class="col-xl-3 col-md-6 col-12">
+      <div class="inv-summary-card kpi-card-valuation h-100 p-3.5 border rounded-3 bg-white shadow-xs d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fs-8 fw-semibold text-secondary">Current Warehouse Valuation</span>
+            <span class="kpi-icon-badge bg-success-subtle text-success">
+              <app-icon name="boxes" [size]="14"></app-icon>
+            </span>
+          </div>
+          <div class="fs-4 fw-bold font-monospace text-success">
+            ₹{{ (resolvedKpis.warehouseValuation || 0) | number:'1.2-2' }}
+          </div>
+        </div>
+        <div class="text-muted fs-9 mt-2 pt-2 border-top">
+          Total value of physical in-hand inventory
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Transportation Cost -->
+    <div class="col-xl-3 col-md-6 col-12">
+      <div class="inv-summary-card kpi-card-transport h-100 p-3.5 border rounded-3 bg-white shadow-xs d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fs-8 fw-semibold text-secondary">Transportation Cost</span>
+            <span class="kpi-icon-badge bg-info-subtle text-info">
+              <app-icon name="truck" [size]="14"></app-icon>
+            </span>
+          </div>
+          <div class="fs-4 fw-bold font-monospace text-dark">
+            ₹{{ (resolvedKpis.totalTransportationCost || 0) | number:'1.2-2' }}
+          </div>
+        </div>
+        <div class="text-muted fs-9 mt-2 pt-2 border-top">
+          Logistics, vehicle transport &amp; freight expenses
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

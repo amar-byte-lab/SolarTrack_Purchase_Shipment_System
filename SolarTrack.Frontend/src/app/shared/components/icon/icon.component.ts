@@ -150,6 +150,14 @@ import { CommonModule } from '@angular/common';
           <line x1="8" y1="2" x2="8" y2="6"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
         </ng-container>
+        <!-- rotate-ccw / restore -->
+        <ng-container *ngSwitchCase="'rotate-ccw'">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </ng-container>
+        <!-- undo -->
+        <ng-container *ngSwitchCase="'undo'">
+          <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+        </ng-container>
         <!-- chevron-down -->
         <ng-container *ngSwitchCase="'chevron-down'">
           <polyline points="6 9 12 15 18 9"/>

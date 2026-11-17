@@ -51,7 +51,7 @@ export class ItemModalComponent implements OnChanges {
         this.buyingPrice = Number(this.editItem.BuyingPrice) || 0;
         this.location = this.editItem.Location || 'Main Godown';
       } else {
-        this.itemCode = 'SKU-' + Date.now().toString().slice(-6);
+        this.itemCode = '';
         this.itemName = '';
         this.category = this.defaultCategory || 'Panels';
         this.unit = 'Nos';
@@ -60,6 +60,53 @@ export class ItemModalComponent implements OnChanges {
         this.location = 'Main Godown';
       }
     }
+  }
+
+  private generateItemCode(category: string, name: string): string {
+    const catUpper = (category || '').trim().toUpperCase();
+    let catCode = 'GEN';
+    if (catUpper.includes('PANEL')) catCode = 'PV';
+    else if (catUpper.includes('INVERT')) catCode = 'INV';
+    else if (catUpper.includes('CABLE')) catCode = 'CAB';
+    else if (catUpper.includes('STRUCT')) catCode = 'STR';
+    else if (catUpper.includes('HARDWARE')) catCode = 'HDW';
+    else if (catUpper.includes('ELECT')) catCode = 'ELE';
+    else if (catUpper.includes('CONDUIT')) catCode = 'CND';
+    else if (catUpper.includes('EARTH')) catCode = 'EAR';
+    else {
+      const clean = catUpper.replace(/[^A-Z0-9]/g, '').slice(0, 3);
+      if (clean) catCode = clean;
+    }
+
+    const existingCodes = new Set(
+      this.inventoryService.rawItems().map(i => (i.ItemCode || '').toUpperCase().trim())
+    );
+
+    // Extract useful alphanumeric keyword / rating from name (e.g. 540W, 3kW, 4SQ, etc.)
+    const words = name.trim().split(/\s+/).filter(w => Boolean(w));
+    let tag = '';
+    for (const w of words) {
+      if (/\d/.test(w)) {
+        tag = w.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
+        break;
+      }
+    }
+    if (!tag && words.length > 0) {
+      tag = words[0].replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
+    }
+
+    const basePrefix = tag ? `SKU-${catCode}-${tag}` : `SKU-${catCode}`;
+
+    let candidate = basePrefix;
+    if (existingCodes.has(candidate.toUpperCase())) {
+      const randomSuffix = Math.floor(100 + Math.random() * 900);
+      candidate = `${basePrefix}-${randomSuffix}`;
+      while (existingCodes.has(candidate.toUpperCase())) {
+        candidate = `${basePrefix}-${Date.now().toString().slice(-4)}`;
+      }
+    }
+
+    return candidate;
   }
 
   onClose(): void {
@@ -73,15 +120,16 @@ export class ItemModalComponent implements OnChanges {
   }
 
   saveItem(): void {
-    const code = this.itemCode.trim();
     const name = this.itemName.trim();
-    if (!code) {
-      this.toastService.warning('Please enter an Item Code / SKU.');
-      return;
-    }
     if (!name) {
       this.toastService.warning('Please enter the Equipment Item Name.');
       return;
+    }
+
+    let code = this.itemCode?.trim();
+    if (!this.isEditMode || !code) {
+      code = this.generateItemCode(this.category, name);
+      this.itemCode = code;
     }
 
     const payload: InventoryItem = {
@@ -91,7 +139,7 @@ export class ItemModalComponent implements OnChanges {
       Unit: this.unit,
       MinThreshold: Number(this.minThreshold) || 0,
       BuyingPrice: Number(this.buyingPrice) || 0,
-      Location: this.location
+      Location: this.location || 'Main Godown'
     };
 
     if (this.isEditMode) {

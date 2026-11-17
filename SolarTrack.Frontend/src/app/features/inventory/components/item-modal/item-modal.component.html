@@ -17,9 +17,9 @@
 
       <!-- Modal Body -->
       <div class="modal-body p-3 bg-white">
-        <div class="row g-2">
+        <div class="row g-2.5">
           
-          <!-- Category -->
+          <!-- Category (1st Column) -->
           <div class="col-sm-6 col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Category *</label>
             <select class="form-select form-select-sm fs-8" [(ngModel)]="category">
@@ -27,18 +27,33 @@
             </select>
           </div>
 
-          <!-- SKU / Item Code -->
+          <!-- 2nd Column divided for Min Alert Qty & Unit -->
           <div class="col-sm-6 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Item Code / SKU *</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm font-monospace fs-8" 
-              [(ngModel)]="itemCode" 
-              [disabled]="isEditMode"
-              placeholder="e.g. SKU-PV-540W">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Min Alert Qty</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  step="1" 
+                  class="form-control form-control-sm text-center font-monospace fs-8" 
+                  [(ngModel)]="minThreshold">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary mb-1">Unit</label>
+                <select class="form-select form-select-sm fs-8" [(ngModel)]="unit">
+                  <option value="Nos">Nos</option>
+                  <option value="Meters">Meters</option>
+                  <option value="Sets">Sets</option>
+                  <option value="Pcs">Pcs</option>
+                  <option value="Bag">Bag</option>
+                  <option value="Kgs">Kgs</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <!-- Item Name -->
+          <!-- Equipment Item Name (Full Width) -->
           <div class="col-12">
             <label class="form-label small fw-semibold text-secondary mb-1">Equipment Item Name *</label>
             <input 
@@ -46,52 +61,6 @@
               class="form-control form-control-sm fs-8 fw-semibold text-dark" 
               [(ngModel)]="itemName" 
               placeholder="e.g. Solar PV Module 540W Mono PERC">
-          </div>
-
-          <!-- Unit of Measurement -->
-          <div class="col-sm-4 col-6">
-            <label class="form-label small fw-semibold text-secondary mb-1">Unit</label>
-            <select class="form-select form-select-sm fs-8" [(ngModel)]="unit">
-              <option value="Nos">Nos</option>
-              <option value="Meters">Meters</option>
-              <option value="Sets">Sets</option>
-              <option value="Pcs">Pcs</option>
-              <option value="Bag">Bag</option>
-              <option value="Kgs">Kgs</option>
-            </select>
-          </div>
-
-          <!-- Min Threshold Alert -->
-          <div class="col-sm-4 col-6">
-            <label class="form-label small fw-semibold text-secondary mb-1">Min Alert Qty</label>
-            <input 
-              type="number" 
-              min="0" 
-              step="1" 
-              class="form-control form-control-sm text-center font-monospace fs-8" 
-              [(ngModel)]="minThreshold">
-          </div>
-
-          <!-- Estimated Buying Price -->
-          <div class="col-sm-4 col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Cost / Unit (₹)</label>
-            <input 
-              type="number" 
-              min="0" 
-              step="any" 
-              class="form-control form-control-sm text-end font-monospace fs-8 fw-semibold text-dark" 
-              [(ngModel)]="buyingPrice"
-              placeholder="0.00">
-          </div>
-
-          <!-- Godown Location -->
-          <div class="col-12">
-            <label class="form-label small fw-semibold text-secondary mb-1">Godown Storage Location</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm fs-8" 
-              [(ngModel)]="location" 
-              placeholder="e.g. Main Godown, Rack A-2">
           </div>
 
         </div>
