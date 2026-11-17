@@ -24,8 +24,8 @@
 
   &:hover,
   &:focus {
-    border-color: var(--st-primary, #4338ca) !important;
-    box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.15) !important;
+    border-color: var(--st-primary) !important;
+    box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.18) !important;
   }
 }
 
@@ -72,8 +72,8 @@
   }
 
   &.active {
-    background: #eef2ff !important;
-    border-color: var(--st-primary, #4338ca) !important;
+    background: var(--st-primary-light) !important;
+    border-color: var(--st-primary) !important;
   }
 }
 

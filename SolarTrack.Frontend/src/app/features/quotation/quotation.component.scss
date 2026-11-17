@@ -47,9 +47,9 @@
   }
 
   input {
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    padding: 4px 8px;
+    border: 1px solid var(--st-border-strong);
+    border-radius: var(--st-radius-ui, 12px);
+    padding: 6px 10px;
     font-size: 0.84rem;
     width: 100%;
     box-sizing: border-box;
@@ -57,9 +57,9 @@
     transition: all 0.15s ease;
 
     &:focus {
-      border-color: #4338ca;
+      border-color: var(--st-primary);
       outline: 0;
-      box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.15);
+      box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.18);
     }
   }
 }

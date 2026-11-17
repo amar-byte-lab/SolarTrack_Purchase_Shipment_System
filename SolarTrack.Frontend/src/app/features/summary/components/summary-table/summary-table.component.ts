@@ -26,6 +26,12 @@ export class SummaryTableComponent {
   // Exclude selection tracking
   selectedSlNos = signal<Set<number>>(new Set());
 
+  // Collapsed sections tracking - default collapsed for Unpaid, Partial Paid, and Fully Paid
+  collapsedGroups = signal<Set<string>>(new Set(['Unpaid', 'Partial Paid', 'Fully Paid']));
+
+  // Active / marked row tracking (persists even after workflow modal closes)
+  markedRowSlNo = signal<number | null>(null);
+
   // UI Dropdown states
   isExcludedMenuOpen = false;
   isColumnsMenuOpen = false;
@@ -38,6 +44,25 @@ export class SummaryTableComponent {
   isWorkflowModalOpen = false;
   selectedCustomerForWorkflow: InstallmentRow | null = null;
   workflowModalTab: 'process' | 'payment' = 'process';
+
+  // Collapse / Expand helpers
+  toggleGroupCollapse(groupName: string): void {
+    const current = new Set(this.collapsedGroups());
+    if (current.has(groupName)) {
+      current.delete(groupName);
+    } else {
+      current.add(groupName);
+    }
+    this.collapsedGroups.set(current);
+  }
+
+  isGroupCollapsed(groupName: string): boolean {
+    return this.collapsedGroups().has(groupName);
+  }
+
+  markRow(slNo: number): void {
+    this.markedRowSlNo.set(slNo);
+  }
 
   get isAllSelected(): boolean {
     const rows = this.summaryService.filteredRows();
@@ -115,6 +140,7 @@ export class SummaryTableComponent {
   }
 
   openEditCustomer(row: InstallmentRow): void {
+    this.markedRowSlNo.set(row.SlNo);
     this.selectedCustomerForEdit = row;
     this.isEditModalOpen = true;
   }
@@ -129,6 +155,7 @@ export class SummaryTableComponent {
   }
 
   openWorkflowModal(row: InstallmentRow, tab: 'process' | 'payment' = 'process'): void {
+    this.markedRowSlNo.set(row.SlNo);
     this.selectedCustomerForWorkflow = row;
     this.workflowModalTab = tab;
     this.isWorkflowModalOpen = true;
@@ -137,6 +164,7 @@ export class SummaryTableComponent {
   closeWorkflowModal(): void {
     this.isWorkflowModalOpen = false;
     this.selectedCustomerForWorkflow = null;
+    // Note: markedRowSlNo is intentionally NOT cleared, so the row remains marked after popup closes
   }
 
   deactivateCustomer(row: InstallmentRow): void {

@@ -163,147 +163,174 @@
 
         <!-- Grouped Rows (Unpaid, Partial Paid, Fully Paid) -->
         <ng-container *ngFor="let grp of summaryService.groupedRows()">
-          <!-- Group Header Row -->
-          <tr *ngIf="grp.list.length > 0" class="sum-group-header-row" [ngClass]="grp.groupClass">
-            <td [attr.colspan]="visibleColumnsCount" class="py-1 px-2.5">
+          <!-- Group Header Row (Collapsible / Expandable) -->
+          <tr 
+            *ngIf="grp.list.length > 0" 
+            class="sum-group-header-row" 
+            [ngClass]="grp.groupClass"
+            (click)="toggleGroupCollapse(grp.name)"
+            [title]="isGroupCollapsed(grp.name) ? 'Click to expand ' + grp.name : 'Click to collapse ' + grp.name">
+            <td [attr.colspan]="visibleColumnsCount" class="py-1.5 px-3">
               <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
+                  <!-- Expand/Collapse Chevron Icon Button (Down arrow to expand, Up arrow to collapse) -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs p-0 border-0 bg-transparent group-toggle-btn d-inline-flex align-items-center justify-content-center"
+                    (click)="$event.stopPropagation(); toggleGroupCollapse(grp.name)"
+                    [title]="isGroupCollapsed(grp.name) ? 'Expand ' + grp.name : 'Collapse ' + grp.name">
+                    <app-icon [name]="isGroupCollapsed(grp.name) ? 'chevron-down' : 'chevron-up'" [size]="16" [strokeWidth]="2.5"></app-icon>
+                  </button>
+
+                  <!-- Group Select Checkbox -->
                   <input 
                     type="checkbox" 
                     class="form-check-input mt-0 group-select-chk flex-shrink-0 cursor-pointer" 
                     [checked]="isGroupAllSelected(grp)"
+                    (click)="$event.stopPropagation()"
                     (change)="toggleGroupSelect(grp, $any($event.target).checked)"
                     [title]="'Select/Deselect all ' + grp.name">
-                  <span class="fw-bold fs-8" [ngClass]="grp.colorClass">
+
+                  <!-- Group Title & Count -->
+                  <span class="fw-bold fs-8 group-name-label" [ngClass]="grp.colorClass">
                     {{ grp.name }} ({{ grp.list.length }})
                   </span>
+                </div>
+
+                <!-- Right Side Arrow Indicator (Down arrow to expand, Up arrow to collapse) -->
+                <div class="d-flex align-items-center pe-1">
+                  <app-icon [name]="isGroupCollapsed(grp.name) ? 'chevron-down' : 'chevron-up'" [size]="15" [strokeWidth]="2"></app-icon>
                 </div>
               </div>
             </td>
           </tr>
 
-          <!-- Data Rows inside group -->
-          <tr 
-            *ngFor="let item of grp.list" 
-            class="sum-cust-row" 
-            [ngClass]="grp.rowClass"
-            [class.row-workflow-active]="isWorkflowModalOpen && selectedCustomerForWorkflow?.SlNo === item.slNo">
-            <!-- Customer: Status -->
-            <td *ngIf="isColumnVisible('customer')" class="td-col-customer text-nowrap">
-              <div class="d-flex align-items-center gap-2">
+          <!-- Data Rows inside group (Rendered only when section is expanded) -->
+          <ng-container *ngIf="!isGroupCollapsed(grp.name)">
+            <tr 
+              *ngFor="let item of grp.list" 
+              class="sum-cust-row cursor-pointer" 
+              [ngClass]="grp.rowClass"
+              [class.row-workflow-active]="markedRowSlNo() === item.slNo"
+              (click)="markRow(item.slNo)">
+              <!-- Customer: Status -->
+              <td *ngIf="isColumnVisible('customer')" class="td-col-customer text-nowrap">
+                <div class="d-flex align-items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    class="form-check-input mt-0 sum-row-chk flex-shrink-0 cursor-pointer"
+                    [checked]="isRowSelected(item.slNo)"
+                    (click)="toggleRowSelection(item.slNo, $event)">
+                  <span class="fw-bold text-dark fs-8" [title]="item.name">{{ item.name }}</span>
+                  <span class="badge fs-9 px-1.5 py-0.5" [ngClass]="item.stageClass">{{ item.stageName }}</span>
+                  <!-- Workflow Icon right next to Status Badge -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-secondary p-0.5 border-0 text-primary d-inline-flex align-items-center justify-content-center mw-workflow-btn"
+                    (click)="$event.stopPropagation(); openWorkflowModal(item.row, 'process')"
+                    title="Open Workflow Process & Payment Details">
+                    <app-icon name="workflow" [size]="13"></app-icon>
+                  </button>
+                </div>
+              </td>
+
+              <!-- PVModule Make -->
+              <td *ngIf="isColumnVisible('pvmodule')" class="td-col-pvmodule text-nowrap">
+                <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.pvModuleMake }}</span>
+              </td>
+
+              <!-- Inverter Make -->
+              <td *ngIf="isColumnVisible('inverter')" class="td-col-inverter text-nowrap">
+                <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.inverterMake }}</span>
+              </td>
+
+              <!-- Payment (Two Lines: Paid in green, Unpaid in red - Aligned to Center) -->
+              <td *ngIf="isColumnVisible('payment')" class="td-col-payment text-nowrap text-center">
+                <div class="d-flex flex-column align-items-center justify-content-center">
+                  <span class="fw-semibold text-success fs-8">{{ fmtCurr(item.fin.paid) }}</span>
+                  <span *ngIf="item.fin.unpaid > 0" class="text-danger fs-9">Unpaid: {{ fmtCurr(item.fin.unpaid) }}</span>
+                </div>
+              </td>
+
+              <!-- Install -->
+              <td *ngIf="isColumnVisible('install')" class="td-col-install text-end text-nowrap fs-8">
+                {{ fmtCurr(item.fin.install) }}
+              </td>
+
+              <!-- Meter -->
+              <td *ngIf="isColumnVisible('meter')" class="td-col-meter text-end text-nowrap fs-8">
+                {{ fmtCurr(item.fin.meter) }}
+              </td>
+
+              <!-- Delivery -->
+              <td *ngIf="isColumnVisible('delivery')" class="td-col-delivery text-end text-nowrap fs-8">
+                {{ fmtCurr(item.fin.delivery) }}
+              </td>
+
+              <!-- Others -->
+              <td *ngIf="isColumnVisible('others')" class="td-col-others text-end text-nowrap fs-8">
+                {{ fmtCurr(item.fin.others) }}
+              </td>
+
+              <!-- Comment -->
+              <td *ngIf="isColumnVisible('comment')" class="td-col-comment">
                 <input 
-                  type="checkbox" 
-                  class="form-check-input mt-0 sum-row-chk flex-shrink-0 cursor-pointer"
-                  [checked]="isRowSelected(item.slNo)"
-                  (click)="toggleRowSelection(item.slNo, $event)">
-                <span class="fw-bold text-dark fs-8" [title]="item.name">{{ item.name }}</span>
-                <span class="badge fs-9 px-1.5 py-0.5" [ngClass]="item.stageClass">{{ item.stageName }}</span>
-                <!-- Workflow Icon right next to Status Badge -->
-                <button 
-                  type="button" 
-                  class="btn btn-xs btn-outline-secondary p-0.5 border-0 text-primary d-inline-flex align-items-center justify-content-center mw-workflow-btn"
-                  (click)="openWorkflowModal(item.row, 'process')"
-                  title="Open Workflow Process & Payment Details">
-                  <app-icon name="workflow" [size]="13"></app-icon>
-                </button>
-              </div>
-            </td>
+                  type="text" 
+                  class="form-control form-control-sm sum-comment-input fs-8" 
+                  [value]="item.fin.comment" 
+                  (click)="$event.stopPropagation()"
+                  (change)="onCommentChange(item.slNo, $event)"
+                  placeholder="Add comment...">
+              </td>
 
-            <!-- PVModule Make -->
-            <td *ngIf="isColumnVisible('pvmodule')" class="td-col-pvmodule text-nowrap">
-              <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.pvModuleMake }}</span>
-            </td>
+              <!-- Material -->
+              <td *ngIf="isColumnVisible('material')" class="td-col-material text-end text-nowrap fs-8">
+                {{ fmtCurr(item.fin.material) }}
+              </td>
 
-            <!-- Inverter Make -->
-            <td *ngIf="isColumnVisible('inverter')" class="td-col-inverter text-nowrap">
-              <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.inverterMake }}</span>
-            </td>
+              <!-- Set Cost -->
+              <td *ngIf="isColumnVisible('setcost')" class="td-col-setcost text-end text-nowrap fw-semibold fs-8">
+                {{ fmtCurr(item.fin.setCost) }}
+              </td>
 
-            <!-- Payment (Two Lines: Paid in green, Unpaid in red) -->
-            <td *ngIf="isColumnVisible('payment')" class="td-col-payment text-nowrap">
-              <div class="d-flex flex-column">
-                <span class="fw-semibold text-success fs-8">{{ fmtCurr(item.fin.paid) }}</span>
-                <span *ngIf="item.fin.unpaid > 0" class="text-danger fs-9">Unpaid: {{ fmtCurr(item.fin.unpaid) }}</span>
-              </div>
-            </td>
+              <!-- Profit -->
+              <td *ngIf="isColumnVisible('profit')" class="td-col-profit text-end text-nowrap fw-bold fs-8"
+                  [class.text-success]="item.fin.profit >= 0" 
+                  [class.text-danger]="item.fin.profit < 0">
+                {{ fmtCurr(item.fin.profit) }}
+              </td>
 
-            <!-- Install -->
-            <td *ngIf="isColumnVisible('install')" class="td-col-install text-end text-nowrap fs-8">
-              {{ fmtCurr(item.fin.install) }}
-            </td>
-
-            <!-- Meter -->
-            <td *ngIf="isColumnVisible('meter')" class="td-col-meter text-end text-nowrap fs-8">
-              {{ fmtCurr(item.fin.meter) }}
-            </td>
-
-            <!-- Delivery -->
-            <td *ngIf="isColumnVisible('delivery')" class="td-col-delivery text-end text-nowrap fs-8">
-              {{ fmtCurr(item.fin.delivery) }}
-            </td>
-
-            <!-- Others -->
-            <td *ngIf="isColumnVisible('others')" class="td-col-others text-end text-nowrap fs-8">
-              {{ fmtCurr(item.fin.others) }}
-            </td>
-
-            <!-- Comment -->
-            <td *ngIf="isColumnVisible('comment')" class="td-col-comment">
-              <input 
-                type="text" 
-                class="form-control form-control-sm sum-comment-input fs-8" 
-                [value]="item.fin.comment" 
-                (change)="onCommentChange(item.slNo, $event)"
-                placeholder="Add comment...">
-            </td>
-
-            <!-- Material -->
-            <td *ngIf="isColumnVisible('material')" class="td-col-material text-end text-nowrap fs-8">
-              {{ fmtCurr(item.fin.material) }}
-            </td>
-
-            <!-- Set Cost -->
-            <td *ngIf="isColumnVisible('setcost')" class="td-col-setcost text-end text-nowrap fw-semibold bg-light-subtle fs-8">
-              {{ fmtCurr(item.fin.setCost) }}
-            </td>
-
-            <!-- Profit -->
-            <td *ngIf="isColumnVisible('profit')" class="td-col-profit text-end text-nowrap fw-bold bg-light-subtle fs-8"
-                [class.text-success]="item.fin.profit >= 0" 
-                [class.text-danger]="item.fin.profit < 0">
-              {{ fmtCurr(item.fin.profit) }}
-            </td>
-
-            <!-- Actions (Edit, Deactivate, Remove) -->
-            <td class="td-col-actions text-center text-nowrap">
-              <div class="d-inline-flex align-items-center gap-1">
-                <!-- 1. Customer Edit -->
-                <button 
-                  type="button" 
-                  class="btn btn-xs btn-outline-primary p-1 lh-1" 
-                  (click)="openEditCustomer(item.row)" 
-                  title="Edit Customer Record">
-                  <app-icon name="edit" [size]="12"></app-icon>
-                </button>
-                <!-- 2. Customer Deactivate -->
-                <button 
-                  type="button" 
-                  class="btn btn-xs btn-outline-warning p-1 lh-1 text-dark" 
-                  (click)="deactivateCustomer(item.row)" 
-                  title="Deactivate Customer">
-                  <app-icon name="user-x" [size]="12"></app-icon>
-                </button>
-                <!-- 3. Customer Remove -->
-                <button 
-                  type="button" 
-                  class="btn btn-xs btn-outline-danger p-1 lh-1" 
-                  (click)="removeCustomer(item.row)" 
-                  title="Remove Customer Record">
-                  <app-icon name="trash" [size]="12"></app-icon>
-                </button>
-              </div>
-            </td>
-          </tr>
+              <!-- Actions (Edit, Deactivate, Remove) -->
+              <td class="td-col-actions text-center text-nowrap">
+                <div class="d-inline-flex align-items-center gap-1">
+                  <!-- 1. Customer Edit -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-primary p-1 lh-1" 
+                    (click)="$event.stopPropagation(); openEditCustomer(item.row)" 
+                    title="Edit Customer Record">
+                    <app-icon name="edit" [size]="12"></app-icon>
+                  </button>
+                  <!-- 2. Customer Deactivate -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-warning p-1 lh-1 text-dark" 
+                    (click)="$event.stopPropagation(); deactivateCustomer(item.row)" 
+                    title="Deactivate Customer">
+                    <app-icon name="user-x" [size]="12"></app-icon>
+                  </button>
+                  <!-- 3. Customer Remove -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-danger p-1 lh-1" 
+                    (click)="$event.stopPropagation(); removeCustomer(item.row)" 
+                    title="Remove Customer Record">
+                    <app-icon name="trash" [size]="12"></app-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
         </ng-container>
       </tbody>
 
@@ -318,8 +345,8 @@
           </td>
           <td *ngIf="isColumnVisible('pvmodule')" class="tfoot-col-pvmodule">-</td>
           <td *ngIf="isColumnVisible('inverter')" class="tfoot-col-inverter">-</td>
-          <td *ngIf="isColumnVisible('payment')" class="tfoot-col-payment">
-            <div class="d-flex flex-column">
+          <td *ngIf="isColumnVisible('payment')" class="tfoot-col-payment text-center">
+            <div class="d-flex flex-column align-items-center justify-content-center">
               <span class="text-success fw-bold fs-8">{{ fmtCurr(summaryService.totals().paid) }}</span>
               <span class="text-danger fs-9 fw-normal">Unpaid: {{ fmtCurr(summaryService.totals().unpaid) }}</span>
             </div>

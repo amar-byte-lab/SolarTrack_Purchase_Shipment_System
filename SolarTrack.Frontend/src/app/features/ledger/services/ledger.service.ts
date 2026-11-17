@@ -5,7 +5,7 @@ import { Borrower, BorrowerTxn } from '../models/ledger.model';
 import { AuthService } from '../../../core/services/auth.service';
 
 export const AVATAR_COLORS = [
-  '#06b6d4', '#10b981', '#6366f1', '#14b8a6', '#f59e0b',
+  '#ff4500', '#10b981', '#0ea5e9', '#14b8a6', '#f59e0b',
   '#8b5cf6', '#3b82f6', '#f43f5e', '#ec4899', '#84cc16'
 ];
 

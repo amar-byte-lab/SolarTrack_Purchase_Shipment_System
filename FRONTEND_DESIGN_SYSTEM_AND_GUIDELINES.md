@@ -1,68 +1,82 @@
 # ☀️ SolarTrack ERP — Frontend Design System & Development Guidelines
-
-> **Project Target**: Modern Enterprise Solar Management ERP  
-> **Tech Stack**: Angular (Latest Standalone Components + Signals) | .NET 10 Web API | Microsoft SQL Server (SolarDb)  
-> **Document Purpose**: Single source of truth for architectural standards, UI consistency, design tokens, reusable components, and audit checklist.
+> **Design System Origin**: Extracted from [Squared Media](https://www.squared-media.nl/)  
+> **Master Theme File**: [src/theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/theme.scss) & root [theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/theme.scss)  
+> **Tech Stack**: Angular 21 (Standalone Components + Signals + SCSS) | .NET 10 Web API | Microsoft SQL Server (SolarDb)  
+> **Document Purpose**: Single source of truth for architectural standards, UI consistency, design tokens, reusable components, and audit checklist. **All project additions and modifications must strictly comply with this design system.**
 
 ---
 
-## 1. Architectural Architecture & Folder Conventions
+## 1. Architectural Guidelines & Enforced Theme Rules
 
-Every module and component in `SolarTrack.Frontend` follows strict modularization with separate `.scss`, `.ts`, and `.html` files.
-
-```
-SolarTrack.Frontend/src/app/
-├── core/
-│   ├── guards/          # Route guards (auth.guard.ts, admin.guard.ts)
-│   ├── models/          # Global entity models (user.model.ts, summary.model.ts)
-│   └── services/        # Core business services (auth.service.ts, summary.service.ts, nav.service.ts)
-├── layout/
-│   ├── components/      # Shell pieces (sidebar/, topbar/)
-│   └── layout.component # Shell layout wrapping <router-outlet>
-├── shared/
-│   ├── components/      # Reusable UI widgets (icon/, status-badge/, empty-state/, toast/, confirm-dialog/)
-│   ├── services/        # Global UI services (toast.service.ts, confirm-dialog.service.ts)
-│   └── pipes/           # Shared pipes (currency, date format)
-└── features/            # Business feature domains (each with models/, services/, components/)
-    ├── auth/            # login/, reset-password/
-    ├── summary/         # summary-toolbar/, summary-table/, activity-tab/
-    ├── quotation/       # quotation builder, adjustments, subsidy, print/
-    ├── ledger/          # customer accounts, khatabook banner, txns drawer/
-    ├── reports/         # daily, monthly, vendor, item reports, export/
-    ├── settings/        # company profile, addresses, bank, subsidy, user RBAC/
-    └── files/           # document uploads, preview, download, delete/
-```
+1. **Strict Design Token Adoption**: Every component in `SolarTrack.Frontend` and prototype views in `dist/` **must** consume CSS custom properties defined in `theme.scss` (`var(--st-primary)`, `var(--st-surface)`, `var(--st-border)`, etc.).
+2. **Zero Hardcoded Brand Hex Codes**: No hardcoding of `#4338ca`, `#3730a3`, `#6d28d9`, or arbitrary color codes. If a theme color is needed, reference `var(--st-primary)`, `var(--st-surface-raised)`, `var(--st-border)`, etc.
+3. **Squared Media Typography Triad**:
+   - **Headings & Display**: Space Grotesk (`var(--st-font-display)`), bold tracking tight (`-0.04em`), tight line-height (`1.15`).
+   - **Body & Controls**: Figtree (`var(--st-font-family)`), geometric humanist sans for exceptional interface readability.
+   - **Kickers, Badges & Numbers**: JetBrains Mono (`var(--st-font-mono)`), monospace kicker tracking (`0.14em`), uppercase.
+4. **Squared Media Geometric Radii Hierarchy**:
+   - `var(--st-radius-sm)`: 6px
+   - `var(--st-radius-md)`: 8px
+   - `var(--st-radius-ui)`: 12px (Form inputs, interactive buttons, select dropdowns)
+   - `var(--st-radius-card)`: 20px (Card containers, summary boxes, modals)
+   - `var(--st-radius-block)`: 28px (Hero panels, major calculation cards)
+   - `var(--st-radius-pill)`: 999px (Pills, badges, search bar)
+5. **Squared Media Interactive Button Physics**:
+   - Buttons use spring physics easing `cubic-bezier(0.34, 1.8, 0.64, 1)`.
+   - Hover state produces a lift `transform: translateY(-2px) scale(1.015)` and Flame Bloom shadow `var(--st-shadow-flame)`.
+   - Active press produces a slight tactile compression `transform: scale(0.96)`.
 
 ---
 
 ## 2. Global Design Tokens & Unified UI Palette
 
-All components **must** adhere strictly to the following CSS variables defined in [src/styles.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/styles.scss):
+All components **must** adhere strictly to the CSS variables defined in [src/theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/theme.scss):
 
-### 🎨 Color Palette
-| Token | Hex Value | Usage |
+### 🎨 Color Palette & Thematic Anchors
+
+| Token | CSS Variable Value | Role & Usage |
 |---|---|---|
-| `--st-primary` | `#4338ca` (Indigo 700) | Brand primary color, primary buttons, active links, brand logo line 1 |
-| `--st-primary-hover`| `#3730a3` (Indigo 800) | Button hover states, active menu background shadows |
-| `--st-primary-light`| `#eef2ff` (Indigo 50) | Active menu link background, badge backgrounds, tag chips |
-| `--st-bg` | `#f8fafc` (Slate 50) | ERP application background, workspace background |
-| `--st-surface` | `#ffffff` | Card surfaces, modals, table rows, inputs |
-| `--st-border` | `#e2e8f0` (Slate 200) | Table borders, card borders, dividers |
-| `--st-border-strong`| `#cbd5e1` (Slate 300) | Input borders, dropdown borders |
-| `--st-text-main` | `#0f172a` (Slate 900) | Headings, bold data text, primary labels |
-| `--st-text-secondary`|`#475569` (Slate 600) | Table headers, secondary labels, description text |
-| `--st-text-muted` | `#64748b` (Slate 500) | Timestamps, helper notes, inactive icons |
-| `--st-success` | `#10b981` (Emerald 500) | Approved status, credit (You Got), DB connected indicator |
-| `--st-danger` | `#ef4444` (Red 500) | Debit (You Gave), rejected status, delete buttons |
-| `--st-warning` | `#f59e0b` (Amber 500) | Pending status, in-progress badges |
+| **Signature Flame** | `--st-primary: #ff4500` | Squared Media primary accent, primary action buttons, active tab indicators, brand logo line 1 |
+| **Flame Hover** | `--st-primary-hover: #e03d00` | Button hover state, interactive highlights |
+| **Flame Light** | `--st-primary-light: #fff2ed` | Active sidebar link background, badge backgrounds, tag chips |
+| **Flame Subtle** | `--st-primary-subtle: #ffe5dc` | Soft focus wells, subtle highlight container |
+| **Flame Glow** | `--st-primary-glow: 0 0 35px rgba(255, 69, 0, 0.35)` | Bloom drop shadow for CTA buttons and highlighted badges |
+| **Warm Linen Base** | `--st-bg: #f5f3f0` | Soft warm sand canvas background for the entire application |
+| **Surface Crisp** | `--st-surface: #ffffff` | Clean card surfaces, dialogs, table rows, form inputs |
+| **Surface Raised** | `--st-surface-raised: #eeece7` | Table header bars, inactive button wells, elevated panels |
+| **Surface Soft** | `--st-surface-soft: #e7e4de` | Muted wells, sub-section containers |
+| **Border Subtle** | `--st-border: rgba(20, 20, 18, 0.12)` | Table row borders, card dividers, container separators |
+| **Border Strong** | `--st-border-strong: rgba(20, 20, 18, 0.22)` | Form input borders, active dropdown boundaries |
+| **Text Main** | `--st-text-main: #141412` | Deep charcoal ink for headings, primary data values, bold titles |
+| **Text Secondary**| `--st-text-secondary: #545f46` | Muted olive gray for descriptions, subheadings, table headers |
+| **Text Muted** | `--st-text-muted: #8c8983` | Timestamps, helper notes, inactive icons |
+| **Success** | `--st-success: #10b981` | Approved status, credit (You Got), DB connected indicator |
+| **Danger** | `--st-danger: #ef4444` | Debit (You Gave), rejected status, delete buttons |
+| **Warning** | `--st-warning: #f59e0b` | Pending status, in-progress badges |
+| **Info** | `--st-info: #0284c7` | Informational callouts and notices |
 
-### 🔤 Typography & Font Sizing
-- **Font Family**: `'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
-- **Monospace Family**: `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` (for Quote numbers, IDs, IFSC, Phone numbers, Currency values)
+### 🌿 Editorial Sage Theme Palette (`.sq-sage`)
+Used for high-impact showcase cards, KPI banners, and featured summary blocks:
+- `--st-sage-base: #b8c0a5` (Muted organic sage)
+- `--st-sage-surface: #b0b99c`
+- `--st-sage-raised: #a7b192`
+- `--st-sage-soft: #96a27f`
+- `--st-sage-fg: #182113` (Deep forest olive ink)
+- `--st-sage-fg-dim: #545f46`
+- `--st-sage-line: rgba(24, 33, 19, 0.16)`
+
+### 🔤 Typography & Font Hierarchy
+- **Display Headings**: `'Space Grotesk', system-ui, -apple-system, sans-serif` (`var(--st-font-display)`)
+- **Body & UI**: `'Figtree', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` (`var(--st-font-family)`)
+- **Monospace Family**: `'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` (`var(--st-font-mono)`)
 - **Helper Classes**:
-  - `.fs-7`: `0.875rem` (14px) — standard body, modal titles, card titles
-  - `.fs-8`: `0.8125rem` (13px) — table contents, form labels, badges, secondary notes
-  - `.fs-9`: `0.75rem` (12px) — timestamps, micro-tags, column subheaders
+  - `.font-display`: Space Grotesk headline styling with tight tracking.
+  - `.font-sans`: Figtree clean interface body text.
+  - `.font-mono`: JetBrains Mono for Quote numbers, IDs, IFSC, Phone numbers, Currency values.
+  - `.kicker`: JetBrains Mono uppercase tracking `.16em` in Flame color.
+  - `.fs-7`: `0.875rem` (14px) — standard body, modal titles, card titles.
+  - `.fs-8`: `0.8125rem` (13px) — table contents, form labels, badges, secondary notes.
+  - `.fs-9`: `0.75rem` (12px) — timestamps, micro-tags, column subheaders.
 
 ---
 
@@ -76,10 +90,9 @@ Standard stroke SVG icon system with configurable `size` and `strokeWidth`.
 <app-icon name="summary" [size]="18"></app-icon>
 <app-icon name="plus" [size]="14"></app-icon>
 ```
-*Supported names*: `summary`, `briefcase`, `customer`, `boxes`, `truck`, `file`, `offer`, `agreement`, `calculator`, `circuit`, `wallet`, `gear`, `search`, `plus`, `trash`, `download`, `print`, `logout`.
 
 ### 2. `app-status-badge`
-Unified status pill that automatically styles itself based on status text:
+Unified status pill with Squared Media pill radius (`999px`) and JetBrains Mono typography:
 ```html
 <app-status-badge [status]="user.status"></app-status-badge>
 <app-status-badge status="Approved"></app-status-badge>
@@ -134,32 +147,33 @@ async onDelete(item: any): Promise<void> {
 
 ## 4. Page-by-Page Audit of Migrated Modules
 
-Every page migrated to date has been thoroughly audited against the legacy system for conditions, features, and UI integrity:
+Every page in the project has been updated and audited against the Squared Media Design System:
 
-| Module | Route | Audited Conditions & Features | Verification Status |
+| Module | Route | Audited Conditions & Features | Design System Verification |
 |---|---|---|---|
-| **Auth** | `/login`, `/reset-password` | • Form Validation for User ID, Email, and Password.<br>• Password show/hide toggle eye icon.<br>• Dynamic roles fetching from `/api/roles`.<br>• View switcher (Login ↔ Register ↔ Forgot Password).<br>• Token extraction from query parameter (`?token=...`) with expiry & match checks.<br>• Session persistence in `localStorage` (`st_user` & `solar_auth_user`). | ✅ 100% Pass<br>Tested against live backend |
-| **Shell & Nav** | Layout Shell | • Dynamic role filtering (Admin sees all; Employee sees Quotation/Doc/Calc/SLD; Partner sees relevant items).<br>• Active route indicator with left blue line (`#4338ca`).<br>• Mobile slide-in drawer with backdrop and close `✕` button.<br>• Database live connection status badge in footer (`SQL Server`).<br>• Topbar with user profile `👤 Username (Role)` and subtle logout button. | ✅ 100% Pass<br>Responsive tested |
-| **Summary** | `/summary` | • Dual Tabs: `Summary` (KPIs, stage-wise table) & `Activity` (activity logs).<br>• Search filter across Customer, Mobile, Address, Brand.<br>• Multiselect Partner Filter dropdown.<br>• Horizontal scrollable District badges with dynamic count.<br>• Signal-based calculations for Total kW, Installed kW, Balance kW, and Collections. | ✅ 100% Pass<br>Zero warnings |
-| **Quotation** | `/quotation` | • Product set selection checkbox strip with real-time grid generation.<br>• Auto-generated Quote Number: `TR{yy}/{dd}{mm}{hh}{mi}`.<br>• Collapsible Seller & Client Address details.<br>• Items grid with `Mrg.` (Merge Total Value) mode, custom item addition, and delete.<br>• Reactive adjustments: Discount, GST/CGST/SGST taxes, Transport, Labour, Other.<br>• Govt Subsidy selection (3 kW PM Surya Ghar: ₹60,000 State + ₹78,000 Central = ₹138,000) & Net Payable deduction.<br>• Compact A4 print-only template matching official quotation format. | ✅ 100% Pass<br>Live calculation verified |
-| **Ledger** | `/ledger` | • Khatabook-style Net Balance Banner with accounts count and eye balance masking.<br>• Filter by All, You Get (Due), You Give (Advance), Settled.<br>• Customer card list with avatar initials.<br>• Drawer/Modal for transaction statement.<br>• You Got (Credit) & You Gave (Debit) entry with live balance update.<br>• Replaced native `confirm()` with `ConfirmDialogService` and `ToastService`. | ✅ 100% Pass<br>Clean API binding |
-| **Reports** | `/reports` | • Multi-report type selector (Daily, Monthly, Vendor, Item, Shipment, Transportation, Inventory).<br>• From Date and To Date filtering.<br>• Dynamic table header and row rendering based on report type.<br>• One-click Excel / CSV export functionality and Print layout. | ✅ 100% Pass<br>Tested with mock & live rows |
-| **Settings** | `/settings` | • Company Profile (Name, Email, Phone, GST, Default GST %).<br>• Multiple Office Addresses manager (Add & Delete).<br>• Bank Details & UPI ID preview.<br>• Government Subsidy Configuration table (kW, State, Central).<br>• Admin User & Role RBAC Management (Add/Edit User modal, Role selection, Approve/Reject status).<br>• Save to backend database using `ToastService` feedback. | ✅ 100% Pass<br>RBAC verified |
-| **Files** | `/files` | • File list with original name, upload date, and formatted file size (KB/MB).<br>• Search filter by name and date range.<br>• Multipart file upload with auto-refresh.<br>• In-browser open preview, download with original filename, and delete with `ConfirmDialogService`. | ✅ 100% Pass<br>Tested against `/api/files` |
-| **Documents & Agreements** | `/document`, `/agreement` | • Clean modular standalone architecture.<br>• Reusable `CustomerDirectoryComponent` with search, 10 district filter chips, and standardized 2-line list item format (`Name (District)`, `Consumer No: ...`, and `>` chevron icon on far right with active purple left border indicator).<br>• Reusable `CustomerImportModalComponent` for PM Surya Ghar / DISCOM Excel spreadsheet imports (`.xlsx`, `.xls`, `.csv`), side-by-side comparison cards for conflict detection, field difference highlighting, selectable record merging, and report downloads (`.txt`).<br>• Reusable `ProductSpecsModalComponent` with 5 tabs (`Milestones`, `Inverter`, `PV Module` with auto-serial generator, `DCDB & ACDB`, `Cables & Earthing`) auto-syncing to DB.<br>• 5 Independent Standalone Form Components: `AgreementFormComponent`, `Form1ApplicationComponent`, `Form3InspectionComponent`, `Form4CompletionComponent`, and `Form6CommissionComponent`.<br>• Pixel-perfect A4 official DISCOM Document Preview modal with print stylesheet.<br>• Demand Note & Work Note removed from this module per enterprise requirements. | ✅ 100% Pass<br>Browser verified |
+| **Auth** | `/login`, `/reset-password` | Form Validation, Password toggle, Role switcher, Token extraction, Session persistence in `localStorage`. | ✅ 100% Pass<br>Squared Media warm canvas, block radius (28px), Flame CTA button with spring hover physics. |
+| **Shell & Nav** | Layout Shell | Dynamic role filtering, active route indicator with Flame accent line (`#ff4500`), mobile slide-in drawer, live DB status badge, topbar with profile. | ✅ 100% Pass<br>Space Grotesk branding, pill status tag, warm surface. |
+| **Summary** | `/summary` | KPIs, stage-wise table & Activity tab. Search filter, partner dropdown, district badges, signals. | ✅ 100% Pass<br>Table headings in JetBrains Mono, Flame action buttons, 20px card radius. |
+| **Quotation** | `/quotation` | Product set selection, Auto quote number `TR{yy}/{dd}{mm}{hh}{mi}`, Items grid with Mrg. mode, adjustments, subsidy calculation. | ✅ 100% Pass<br>Input focus rings in Flame, monospace monetary values. |
+| **Ledger** | `/ledger` | Khatabook-style Net Balance Banner, Due (Flame), Advance (Emerald), Settled, avatar initials, statement drawer. | ✅ 100% Pass<br>Squared Media card radius, spring button transitions, tabular monetary layout. |
+| **Reports** | `/reports` | Multi-report selector, From/To Date filter, dynamic header/row rendering, Excel/CSV export and Print layout. | ✅ 100% Pass<br>Space Grotesk section titles, clean table surface. |
+| **Settings** | `/settings` | Company Profile, Office Addresses manager, Bank Details, Subsidy config table, Admin RBAC. | ✅ 100% Pass<br>Squared Media active tabs with Flame line indicator, 20px card radius. |
+| **Files** | `/files` | File list, search filter, multipart upload, preview modal, download, and delete dialog. | ✅ 100% Pass<br>Flame file icon containers, unified table style. |
+| **Documents & Agreements** | `/document`, `/agreement` | CustomerDirectoryComponent, CustomerImportModal, ProductSpecsModal, 5 DISCOM form components, A4 preview modal. | ✅ 100% Pass<br>Flame active selection border, Figtree typography. |
+| **Calculator & Inventory** | `/sizing-calc`, `/inventory` | System type selector, sizing result cards, appliance load manager, inventory categories and summary modal. | ✅ 100% Pass<br>Flame gradient inverter cards, pill status tags. |
 
 ---
 
-## 5. Mandatory Checklist for All Future Pages
+## 5. Mandatory Checklist for All Future Additions & Modifications
 
-When implementing upcoming pages (**`customer.html`**, **`manage-work.html`**, **`inventory.html`**, **`shipment.html`**, **`sizing-calc.html`**, **`sld.html`**), developers **must strictly comply** with this checklist:
+When adding any new feature, modifying existing pages, or creating components, developers **must strictly comply** with this checklist:
 
 1. **File Separation**: Every component must have separate `.ts`, `.html`, and `.scss` files. No inline templates or inline styles.
-2. **Design Tokens**: Use standard CSS variables (`var(--st-primary)`, `var(--st-surface)`, `var(--st-border)`). Do not hardcode arbitrary hex colors.
-3. **Buttons**: Use standard `.btn .btn-primary`, `.btn-outline-secondary`, `.btn-sm`, `.btn-xs`. Do not invent custom button classes without extending `.btn`.
-4. **Icons**: Use `<app-icon name="...">` or standard SVGs with `stroke-width="1.75"`.
-5. **Status Badges**: Use `<app-status-badge [status]="...">` for all status and pill indicators.
-6. **Confirmations & Alerts**: Never use native JavaScript `alert()` or `confirm()`. Always inject `ToastService` and `ConfirmDialogService`.
-7. **Empty States**: If a table or list can be empty, include `<app-empty-state>` with an appropriate icon and CTA button.
-8. **Signal Reactivity**: Use Angular Signals (`signal()`, `computed()`) for reactive state and calculations.
-9. **Build Verification**: Run `npm run build` after completion to ensure 0 errors and 0 warnings.
+2. **Design Tokens Only**: Use standard CSS variables (`var(--st-primary)`, `var(--st-surface)`, `var(--st-border)`, `var(--st-radius-card)`). Never hardcode arbitrary hex colors.
+3. **Typography Compliance**: Headings use Space Grotesk (`var(--st-font-display)`), body uses Figtree (`var(--st-font-family)`), and codes/dates/currency use JetBrains Mono (`var(--st-font-mono)`).
+4. **Interactive Controls & Buttons**: Use standard `.btn .btn-primary`, `.btn-outline-primary`, `.btn-sm`, `.btn-xs`. All buttons must inherit the spring physics hover and active states.
+5. **Border Radii Hierarchy**: Inputs/buttons: `12px` (`var(--st-radius-ui)`), Cards: `20px` (`var(--st-radius-card)`), Badges/Pills: `999px` (`var(--st-radius-pill)`).
+6. **Icons**: Use `<app-icon name="...">` or standard SVGs with `stroke-width="1.75"`.
+7. **Status Badges**: Use `<app-status-badge [status]="...">` for all status and pill indicators.
+8. **Confirmations & Alerts**: Never use native JavaScript `alert()` or `confirm()`. Always inject `ToastService` and `ConfirmDialogService`.
+9. **Build Verification**: Run `npm run build` inside `SolarTrack.Frontend` after completion to ensure 0 errors and clean compilation.

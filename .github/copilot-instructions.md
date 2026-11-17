@@ -1,0 +1,33 @@
+# Design System Enforcement: Squared Media Theme
+
+Whenever adding new features, modifying UI, or writing CSS/SCSS in this project, you MUST strictly follow the design system defined in `theme.scss` and `FRONTEND_DESIGN_SYSTEM_AND_GUIDELINES.md`.
+
+## Golden Rules
+1. **Colors**:
+   - Primary Accent: Flame Orange `var(--st-primary)` (`#ff4500`)
+   - Primary Hover: `var(--st-primary-hover)` (`#e03d00`)
+   - Canvas Background: `var(--st-bg)` (`#f5f3f0`)
+   - Card Surfaces: `var(--st-surface)` (`#ffffff`)
+   - Elevated/Raised: `var(--st-surface-raised)` (`#eeece7`)
+   - Borders: `var(--st-border)` (`rgba(20, 20, 18, 0.12)`)
+   - Strong Borders: `var(--st-border-strong)` (`rgba(20, 20, 18, 0.22)`)
+   - Text Main: `var(--st-text-main)` (`#141412`)
+   - Text Secondary: `var(--st-text-secondary)` (`#545f46`)
+   - Text Muted: `var(--st-text-muted)` (`#8c8983`)
+   - **NEVER** hardcode old indigo `#4338ca` or random hex codes. Always use `var(--st-*)`.
+
+2. **Typography**:
+   - Display & Headings: Space Grotesk (`var(--st-font-display)`), tight tracking `-0.04em`.
+   - Body & Controls: Figtree (`var(--st-font-family)`).
+   - Monospace & Numbers/Badges: JetBrains Mono (`var(--st-font-mono)`).
+
+3. **Border Radii**:
+   - Buttons, Inputs, Dropdowns: `12px` (`var(--st-radius-ui)` / `var(--st-button-radius)`)
+   - Cards, Modals, Panels: `20px` (`var(--st-radius-card)` / `var(--st-card-radius)`)
+   - Major Hero/Pricing Blocks: `28px` (`var(--st-radius-block)`)
+   - Badges, Tags, Pills, Search Bars: `999px` (`var(--st-radius-pill)`)
+
+4. **Button Physics**:
+   - All `.btn` elements must use the spring transition `transition: all 0.22s var(--st-ease-spring)`.
+   - Hover state must lift with `transform: translateY(-2px) scale(1.015)` and flame bloom `var(--st-shadow-flame)`.
+   - Active press must compress with `transform: scale(0.96)`.

@@ -10,45 +10,48 @@
 .settings-tab-btn {
   display: inline-flex;
   align-items: center;
-  padding: 8px 18px;
-  font-size: 0.84rem;
+  padding: 10px 20px;
+  font-size: 0.86rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--st-text-secondary);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--st-radius-md) var(--st-radius-md) 0 0;
   cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s var(--st-ease-spring);
 
   &:hover {
-    color: #4338ca;
-    background-color: #f8fafc;
+    color: var(--st-primary);
+    background-color: var(--st-primary-light);
   }
 
   &.active {
-    color: #4338ca;
-    border-bottom: 2px solid #4338ca;
-    background-color: #ffffff;
+    color: var(--st-primary);
+    border-bottom: 3px solid var(--st-primary);
+    background-color: var(--st-surface);
     font-weight: 700;
+    font-family: var(--st-font-display);
   }
 }
 
 /* Cards */
 .settings-card {
-  background: #ffffff;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 20px;
+  background: var(--st-surface);
+  border-radius: var(--st-radius-card);
+  border: 1px solid var(--st-border);
+  box-shadow: var(--st-shadow);
+  padding: 24px;
 }
 
 .section-title {
-  font-size: 0.92rem;
+  font-family: var(--st-font-display);
+  font-size: 0.96rem;
   font-weight: 700;
-  color: #1e1b4b;
+  letter-spacing: var(--st-tracking-tight);
+  color: var(--st-text-main);
   margin-bottom: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--st-border);
   padding-bottom: 8px;
 }
 

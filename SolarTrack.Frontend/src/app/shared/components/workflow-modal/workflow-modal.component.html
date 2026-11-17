@@ -14,21 +14,23 @@
           <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
         </div>
 
-        <!-- Row 2: Tabs (Process / Payment) -->
+        <!-- Row 2: Tabs (Process / Payment) matching ERP Tabs -->
         <div class="d-flex align-items-center gap-2 mt-2">
           <button 
             type="button" 
-            class="mw-card-tab-btn" 
+            class="mw-card-tab-btn d-inline-flex align-items-center gap-1.5" 
             [class.active-process]="activeTab === 'process'" 
             (click)="setTab('process')">
-            Process
+            <app-icon name="workflow" [size]="14"></app-icon>
+            <span>Process</span>
           </button>
           <button 
             type="button" 
-            class="mw-card-tab-btn" 
+            class="mw-card-tab-btn d-inline-flex align-items-center gap-1.5" 
             [class.active-payment]="activeTab === 'payment'" 
             (click)="setTab('payment')">
-            Payment
+            <app-icon name="credit-card" [size]="14"></app-icon>
+            <span>Payment</span>
           </button>
         </div>
       </div>

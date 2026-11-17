@@ -1,19 +1,30 @@
 .summary-table-card {
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  border-radius: var(--st-radius-card, 20px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(24, 33, 19, 0.06);
   position: relative;
+  overflow: hidden;
 }
 
 .btn-purple-copy {
-  background-color: #6b21a8 !important;
+  background-color: var(--st-primary) !important;
   color: #ffffff !important;
-  border-color: #6b21a8 !important;
-  font-weight: 500;
+  border: none !important;
+  border-radius: var(--st-radius-pill, 999px) !important;
+  font-weight: 600;
+  padding: 6px 18px !important;
+  font-size: 0.82rem;
+  box-shadow: 0 2px 8px rgba(255, 69, 0, 0.25);
+  transition: all 0.22s var(--st-ease-spring);
 
   &:hover {
-    background-color: #581c87 !important;
-    border-color: #581c87 !important;
+    background-color: var(--st-primary-hover) !important;
     color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: var(--st-shadow-flame);
   }
 }
 
@@ -38,9 +49,10 @@
 
   th, td {
     white-space: nowrap !important;
-    padding: 6px 10px !important;
+    padding: 9px 12px !important;
     vertical-align: middle !important;
     font-size: 0.80rem !important;
+    border-bottom: 1px solid rgba(24, 33, 19, 0.06) !important;
   }
 
   /* Sticky Header */
@@ -48,9 +60,14 @@
     position: sticky !important;
     top: 0 !important;
     z-index: 10 !important;
-    background-color: #f8fafc !important;
-    border-bottom: 2px solid #cbd5e1 !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    background-color: #e8efe2 !important;
+    color: #182113 !important;
+    font-family: var(--st-font-mono);
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid rgba(24, 33, 19, 0.12) !important;
+    box-shadow: 0 1px 2px rgba(24, 33, 19, 0.04);
   }
 
   /* Sticky Footer */
@@ -58,89 +75,138 @@
     position: sticky !important;
     bottom: 0 !important;
     z-index: 10 !important;
-    background-color: #f8fafc !important;
-    border-top: 2px solid #94a3b8 !important;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
+    background-color: #e8efe2 !important;
+    color: #182113 !important;
+    font-family: var(--st-font-mono);
+    font-weight: 700;
+    border-top: 1px solid rgba(24, 33, 19, 0.14) !important;
+    box-shadow: 0 -1px 2px rgba(24, 33, 19, 0.04);
   }
 }
 
-/* Group Headers */
+/* Group Headers - Collapsible & Distinct Colors */
 .sum-group-header-row {
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+  transition: background-color 0.15s ease;
+
+  .group-toggle-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    color: inherit;
+    transition: transform 0.2s ease, background-color 0.15s ease;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.08);
+      transform: scale(1.15);
+    }
+  }
 
   &.group-unpaid td {
     background-color: #fee2e2 !important;
     color: #991b1b !important;
     border-left: 5px solid #dc2626 !important;
+    border-top: 1px solid #fca5a5 !important;
+    border-bottom: 1px solid #fca5a5 !important;
+    font-weight: 700;
+  }
+
+  &.group-unpaid:hover td {
+    background-color: #fecaca !important;
   }
 
   &.group-partial td {
     background-color: #fef3c7 !important;
     color: #92400e !important;
     border-left: 5px solid #d97706 !important;
+    border-top: 1px solid #fcd34d !important;
+    border-bottom: 1px solid #fcd34d !important;
+    font-weight: 700;
+  }
+
+  &.group-partial:hover td {
+    background-color: #fde68a !important;
   }
 
   &.group-fully td {
-    background-color: #dcfce7 !important;
-    color: #166534 !important;
-    border-left: 5px solid #16a34a !important;
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    border-left: 5px solid #059669 !important;
+    border-top: 1px solid #6ee7b7 !important;
+    border-bottom: 1px solid #6ee7b7 !important;
+    font-weight: 700;
+  }
+
+  &.group-fully:hover td {
+    background-color: #a7f3d0 !important;
   }
 }
 
-/* Row Styling by Payment Category */
+/* Row Styling by Payment Category - Separate Matching Background Colors */
+/* 1. Unpaid Rows: Soft Light Red / Rose Background */
 .sum-row-unpaid td {
-  background-color: #fff1f2 !important;
+  background-color: #fff5f5 !important;
+  border-bottom: 1px solid #fed7d7 !important;
 
   &:first-child {
-    border-left: 4px solid #f87171 !important;
+    border-left: 4px solid #ef4444 !important;
   }
 }
 .sum-row-unpaid:hover td {
-  background-color: #fecdd3 !important;
+  background-color: #fee2e2 !important;
 }
 
+/* 2. Partial Paid Rows: Soft Light Amber / Yellow Background */
 .sum-row-partial td {
-  background-color: #fffbeb !important;
+  background-color: #fffdf2 !important;
+  border-bottom: 1px solid #feebc8 !important;
 
   &:first-child {
-    border-left: 4px solid #fbbf24 !important;
+    border-left: 4px solid #f59e0b !important;
   }
 }
 .sum-row-partial:hover td {
-  background-color: #fde68a !important;
+  background-color: #fef3c7 !important;
 }
 
+/* 3. Fully Paid Rows: Soft Light Emerald / Green Background */
 .sum-row-fully td {
   background-color: #f0fdf4 !important;
+  border-bottom: 1px solid #c6f6d5 !important;
 
   &:first-child {
-    border-left: 4px solid #4ade80 !important;
+    border-left: 4px solid #10b981 !important;
   }
 }
 .sum-row-fully:hover td {
-  background-color: #bbf7d0 !important;
+  background-color: #dcfce7 !important;
 }
 
-/* Highlight row when Workflow Modal is open */
+/* Highlight row when Process / Workflow popup opened or marked */
 tr.row-workflow-active td {
-  background-color: #ede9fe !important;
-  border-top: 2px solid #8b5cf6 !important;
-  border-bottom: 2px solid #8b5cf6 !important;
+  background-color: #ffeed8 !important; /* Standout warm peach highlight */
+  border-top: 2px solid var(--st-primary, #ff4500) !important;
+  border-bottom: 2px solid var(--st-primary, #ff4500) !important;
+  box-shadow: inset 0 1px 0 var(--st-primary, #ff4500), inset 0 -1px 0 var(--st-primary, #ff4500);
 
   &:first-child {
-    border-left: 5px solid #7c3aed !important;
+    border-left: 6px solid var(--st-primary, #ff4500) !important;
   }
   &:last-child {
-    border-right: 2px solid #8b5cf6 !important;
+    border-right: 2px solid var(--st-primary, #ff4500) !important;
   }
+}
+
+tr.row-workflow-active:hover td {
+  background-color: #ffe4c4 !important;
 }
 
 tr.row-workflow-active .mw-workflow-btn {
-  background-color: #7c3aed !important;
+  background-color: var(--st-primary, #ff4500) !important;
   color: #ffffff !important;
   border-radius: 4px;
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.45);
 }
 
 .sum-comment-input {
@@ -166,9 +232,9 @@ tr.row-workflow-active .mw-workflow-btn {
   }
 
   &.stage-badge-netmeter {
-    background-color: #e0e7ff !important;
-    color: #4338ca !important;
-    border: 1px solid #c7d2fe !important;
+    background-color: var(--st-primary-light) !important;
+    color: var(--st-primary) !important;
+    border: 1px solid var(--st-primary-border) !important;
   }
 
   &.stage-badge-installation {
@@ -208,6 +274,12 @@ tr.row-workflow-active .mw-workflow-btn {
   }
 }
 
+/* Payment Column Alignment */
+.th-col-payment, .td-col-payment, .tfoot-col-payment {
+  text-align: center !important;
+  min-width: 140px !important;
+}
+
 /* Actions Column */
 .th-col-actions, .td-col-actions, .tfoot-col-actions {
   width: 95px !important;
@@ -232,16 +304,41 @@ tr.row-workflow-active .mw-workflow-btn {
 
 .mw-workflow-btn {
   background: transparent;
-  color: #4338ca;
+  color: var(--st-primary);
   opacity: 0.85;
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s var(--st-ease-spring);
   cursor: pointer;
 
   &:hover {
     opacity: 1;
     transform: scale(1.15);
-    color: #3730a3;
+    color: var(--st-primary-hover);
   }
 }
+
+@media (max-width: 768px) {
+  .summary-table-card {
+    border-radius: 12px !important;
+  }
+
+  .mw-summary-table-wrap {
+    height: auto !important;
+    max-height: calc(100vh - 160px) !important;
+    min-height: 280px !important;
+  }
+
+  .sum-group-header-row td {
+    padding: 7px 8px !important;
+    font-size: 0.78rem !important;
+  }
+
+  #workSummaryTable {
+    th, td {
+      padding: 7px 8px !important;
+      font-size: 0.76rem !important;
+    }
+  }
+}
+
 
 

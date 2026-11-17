@@ -1,5 +1,8 @@
 .customer-directory-card {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--st-font-family);
+  border-radius: var(--st-radius-card);
+  border: 1px solid var(--st-border);
+  box-shadow: var(--st-shadow);
 }
 
 .district-chips-strip {
@@ -11,7 +14,7 @@
   }
   &::-webkit-scrollbar-thumb {
     background: #cbd5e1;
-    border-radius: 3px;
+    border-radius: var(--st-radius-pill);
   }
 }
 
@@ -19,14 +22,14 @@
   max-height: 520px;
   min-height: 240px;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--st-surface);
 }
 
 .customer-list-item {
-  padding: 0.45rem 0.65rem;
-  border-bottom: 1px solid var(--st-border, #f1f5f9);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--st-border);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.18s var(--st-ease-spring);
   border-left: 3.5px solid transparent;
 
   &:last-child {
@@ -34,20 +37,20 @@
   }
 
   &:hover {
-    background-color: var(--st-bg, #f8fafc);
+    background-color: var(--st-surface-raised);
   }
 
   &.active {
-    background-color: rgba(109, 40, 217, 0.08);
-    border-left-color: var(--st-primary, #6d28d9);
+    background-color: var(--st-primary-light);
+    border-left-color: var(--st-primary);
 
     .customer-name-row .fw-semibold {
-      color: #1e1b4b;
+      color: var(--st-text-main);
       font-weight: 700 !important;
     }
 
     .chevron-icon {
-      color: var(--st-primary, #6d28d9) !important;
+      color: var(--st-primary) !important;
     }
   }
 
@@ -56,18 +59,19 @@
     line-height: 1.25;
 
     .customer-district-text {
-      color: #64748b !important;
+      color: var(--st-text-secondary) !important;
       font-weight: 500;
     }
   }
 
   .customer-no-text {
+    font-family: var(--st-font-mono);
     font-size: 0.74rem;
-    color: #64748b !important;
+    color: var(--st-text-muted) !important;
     margin-top: 1px;
   }
 
   .chevron-icon {
-    color: #94a3b8;
+    color: var(--st-text-disabled);
   }
 }

@@ -11,7 +11,7 @@
         
         <!-- Search & Status Group -->
         <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
-          <div class="search-box position-relative" style="min-width: 240px; max-width: 340px;">
+          <div class="search-box position-relative">
             <app-icon name="search" class="search-icon text-muted"></app-icon>
             <input 
               type="text" 
@@ -65,7 +65,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center flex-wrap gap-2">
           @if (selectedCodes().size > 0) {
             <span class="badge bg-secondary font-monospace">{{ selectedCodes().size }} selected</span>
             <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteSelected()">
@@ -166,10 +166,6 @@
         </button>
       </li>
     </ul>
-
-    <div class="text-muted small d-none d-md-block pe-2" style="font-size: 0.8rem;">
-      EPC Inventory Management System
-    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════ -->
@@ -188,28 +184,23 @@
                   [checked]="selectedCodes().size > 0 && selectedCodes().size === filteredItems().length"
                   (change)="toggleSelectAll()">
               </th>
-              <th style="width: 120px;">SKU Code</th>
               <th>Equipment / Item</th>
-              <th>Category</th>
-              <th class="text-end" style="width: 110px;">In-Hand</th>
-              <th class="text-end" style="width: 90px;">Min Qty</th>
-              <th class="text-center" style="width: 110px;">Status</th>
-              <th class="text-end" style="width: 110px;">Buying Rate</th>
-              <th class="text-end" style="width: 130px;">Valuation</th>
-              <th class="text-center" style="width: 110px;">Actions</th>
+              <th class="text-end" style="width: 120px;">In-Hand</th>
+              <th class="text-end" style="width: 160px;">Buying Rate</th>
+              <th class="text-center" style="width: 90px;">Actions</th>
             </tr>
           </thead>
           <tbody>
             @if (invService.isLoading()) {
               <tr>
-                <td colspan="10" class="text-center py-4 text-muted">
+                <td colspan="5" class="text-center py-4 text-muted">
                   <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                   Loading warehouse stock...
                 </td>
               </tr>
             } @else if (categorizedItems().length === 0) {
               <tr>
-                <td colspan="10" class="text-center py-5 text-muted">
+                <td colspan="5" class="text-center py-5 text-muted">
                   <app-icon name="boxes" class="fs-2 mb-2 text-secondary"></app-icon>
                   <div>No equipment records found matching the current filters.</div>
                 </td>
@@ -218,7 +209,7 @@
               @for (grp of categorizedItems(); track grp.category) {
                 <!-- Category Section Banner -->
                 <tr class="category-header-row" (click)="toggleCategoryCollapse(grp.category)">
-                  <td colspan="10" class="py-2 px-3 bg-light border-top border-bottom">
+                  <td colspan="5" class="py-2 px-3 bg-light border-top border-bottom">
                     <div class="d-flex align-items-center justify-content-between">
                       <div class="d-flex align-items-center gap-2">
                         <app-icon 
@@ -251,15 +242,11 @@
                           (change)="toggleSelectItem(item.ItemCode)">
                       </td>
 
-                      <!-- SKU Code -->
-                      <td>
-                        <span class="sku-badge font-monospace">{{ item.ItemCode }}</span>
-                      </td>
-
-                      <!-- Name, Description, Location -->
+                      <!-- Name, Description, Location, SKU Code -->
                       <td>
                         <div class="fw-semibold text-dark">{{ item.ItemName }}</div>
                         <div class="text-secondary fs-8">
+                          <span class="font-monospace text-muted me-2 fs-9">{{ item.ItemCode }}</span>
                           @if (item.Description) {
                             <span class="me-2">{{ item.Description }}</span>
                           }
@@ -267,11 +254,6 @@
                             <span>Location: {{ item.Location }}</span>
                           }
                         </div>
-                      </td>
-
-                      <!-- Category -->
-                      <td>
-                        <span class="badge bg-light text-dark border">{{ item.Category }}</span>
                       </td>
 
                       <!-- In-Hand Qty -->
@@ -282,42 +264,23 @@
                         <span class="text-muted ms-1 fs-9">{{ item.Unit || 'Nos' }}</span>
                       </td>
 
-                      <!-- Min Stock Threshold -->
-                      <td class="text-end font-monospace text-secondary fs-8">
-                        {{ item.MinThreshold }}
-                      </td>
-
-                      <!-- Status Badge -->
-                      <td class="text-center">
-                        @if (item.status === 'in-stock') {
-                          <span class="badge bg-success-subtle text-success border border-success-subtle">In Stock</span>
-                        } @else if (item.status === 'low-stock') {
-                          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Low Stock</span>
-                        } @else {
-                          <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Out of Stock</span>
-                        }
-                      </td>
-
-                      <!-- Buying Rate -->
+                      <!-- Buying Rate with Rate History Button right beside it -->
                       <td class="text-end font-monospace fs-8">
-                        ₹{{ item.BuyingPrice | number:'1.2-2' }}
-                      </td>
-
-                      <!-- Valuation -->
-                      <td class="text-end font-monospace fw-bold text-dark fs-8">
-                        ₹{{ item.totalStockValuation | number:'1.2-2' }}
-                      </td>
-
-                      <!-- Actions -->
-                      <td class="text-center">
-                        <div class="d-inline-flex align-items-center gap-1">
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
+                          <span class="fw-semibold text-dark">₹{{ item.BuyingPrice | number:'1.2-2' }}</span>
                           <button 
                             type="button" 
-                            class="btn btn-action-icon text-primary" 
+                            class="btn btn-xs btn-outline-primary d-inline-flex align-items-center justify-content-center p-1 rounded-circle flex-shrink-0" 
                             (click)="openPriceHistory(item)" 
-                            title="View Purchase Price History & Rate Trend">
-                            <app-icon name="trending-up"></app-icon>
+                            title="View Purchase Rate History & Trend">
+                            <app-icon name="trending-up" [size]="12"></app-icon>
                           </button>
+                        </div>
+                      </td>
+
+                      <!-- Actions (Edit & Delete) -->
+                      <td class="text-center">
+                        <div class="d-inline-flex align-items-center gap-1">
                           <button 
                             type="button" 
                             class="btn btn-action-icon text-secondary" 

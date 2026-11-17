@@ -7,8 +7,8 @@
 .cat-icon-badge {
   width: 28px;
   height: 28px;
-  background-color: #e0e7ff;
-  border-radius: 6px;
+  background-color: var(--st-primary-light);
+  border-radius: var(--st-radius-md, 8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,7 +18,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #4338ca;
+  background-color: var(--st-primary);
   display: inline-block;
 }
 

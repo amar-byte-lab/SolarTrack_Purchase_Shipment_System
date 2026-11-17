@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProcessCardComponent } from './process-card/process-card.component';
 import { PaymentCardComponent } from './payment-card/payment-card.component';
+import { IconComponent } from '../icon/icon.component';
 import { InstallmentRow } from '../../../core/models/summary.model';
 
 @Component({
   selector: 'app-workflow-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProcessCardComponent, PaymentCardComponent],
+  imports: [CommonModule, FormsModule, ProcessCardComponent, PaymentCardComponent, IconComponent],
   templateUrl: './workflow-modal.component.html',
   styleUrls: ['./workflow-modal.component.scss']
 })

@@ -11,7 +11,7 @@ import { ActivityTabComponent } from './components/activity-tab/activity-tab.com
   standalone: true,
   imports: [
     CommonModule, 
-    SummaryToolbarComponent, 
+    SummaryToolbarComponent,
     SummaryTableComponent, 
     ActivityTabComponent
   ],
@@ -26,6 +26,7 @@ export class SummaryComponent implements OnInit {
 
   ngOnInit(): void {
     this.navService.setPageTitle('Summary');
+    this.summaryService.clearAllFilters();
     this.summaryService.loadAllData().subscribe({
       next: () => {},
       error: (err) => console.error('Error loading summary data:', err)

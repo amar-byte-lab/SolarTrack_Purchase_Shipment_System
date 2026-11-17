@@ -20,7 +20,7 @@ export const WORKFLOW_STAGES: WorkflowStageItem[] = [
   { key: 'InstallationDate', label: '4. INSTALL', num: 4, color: '#d97706' },
   { key: 'NetMeterDate', label: '5. NETMETER', num: 5, color: '#7c3aed' },
   { key: 'InspectionDate', label: '6. INSPECTION', num: 6, color: '#475569' },
-  { key: 'MeterConnectedDate', label: '7. CONNECTION', num: 7, color: '#4f46e5' },
+  { key: 'MeterConnectedDate', label: '7. CONNECTION', num: 7, color: '#ff4500' },
   { key: 'CommissioningDate', label: '8. SUBSIDY', num: 8, color: '#16a34a' }
 ];
 

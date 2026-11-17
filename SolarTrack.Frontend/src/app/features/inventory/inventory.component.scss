@@ -4,6 +4,10 @@
 }
 
 .search-box {
+  min-width: 240px;
+  max-width: 340px;
+  flex: 1 1 auto;
+
   .search-icon {
     position: absolute;
     top: 50%;
@@ -170,4 +174,44 @@
 }
 .fs-9 {
   font-size: 0.7rem;
+}
+
+@media (max-width: 768px) {
+  .inventory-container {
+    padding: 6px !important;
+  }
+
+  .card-body {
+    padding: 10px !important;
+  }
+
+  .search-box {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .btn-group {
+    width: 100%;
+    display: flex;
+    .btn {
+      flex: 1;
+      font-size: 0.74rem;
+      padding: 5px 6px;
+    }
+  }
+
+  .nav-tabs-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    .nav-tabs {
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+  }
+
+  .category-strip {
+    -webkit-overflow-scrolling: touch;
+  }
 }

@@ -43,9 +43,9 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
-  background: #eef2ff;
-  color: #4338ca;
+  border-radius: var(--st-radius-md, 8px);
+  background: var(--st-primary-light);
+  color: var(--st-primary);
   flex-shrink: 0;
 }
 

@@ -24,7 +24,7 @@
 }
 
 .bg-header-inverter {
-  background: linear-gradient(135deg, #4338ca, #6366f1);
+  background: linear-gradient(135deg, var(--st-primary, #ff4500), #ff6b35);
 }
 
 .bg-header-battery {

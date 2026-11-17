@@ -1,0 +1,198 @@
+/* =========================================================================
+   Squared Media Design System — Master Theme Tokens (theme.scss)
+   Extracted from: https://www.squared-media.nl/
+   Background swatch: #b4c5a2 (Organic Sage Canvas)
+   Project: SolarTrack ERP Enterprise System
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root,
+[data-theme="light"],
+.sq-mint {
+  /* -----------------------------------------------------------------------
+     1. Brand & Primary Accent Tokens (Squared Media Signature Flame)
+     ----------------------------------------------------------------------- */
+  --st-primary: #ff4500;                 /* International Flame Orange */
+  --st-primary-hover: #e03d00;           /* Deepened Flame hover */
+  --st-primary-active: #cc3700;          /* Pressed Flame */
+  --st-primary-dark: #b33000;            /* Dark Flame shadow/border */
+  --st-primary-light: #fff2ed;           /* Tinted Flame background (subtle badge / chip) */
+  --st-primary-subtle: #ffe5dc;          /* Soft Flame active state */
+  --st-primary-border: rgba(255, 69, 0, 0.28);
+  --st-primary-glow: 0 0 35px rgba(255, 69, 0, 0.35);
+  --st-primary-glow-sm: 0 0 16px rgba(255, 69, 0, 0.45);
+
+  /* Brand Anchors */
+  --st-brand-ink: #0d0d0c;               /* Ultra-deep obsidian black */
+  --st-brand-mint: #eeece7;              /* Warm parchment cream */
+  --st-white: #ffffff;
+  --st-black: #000000;
+
+  /* -----------------------------------------------------------------------
+     2. Organic Sage Background (#b4c5a2) & Surface System
+     ----------------------------------------------------------------------- */
+  --st-bg: #b4c5a2;                      /* Organic Sage Canvas (Swatch #b4c5a2) */
+  --st-surface: #ffffff;                 /* Pure crisp card surface */
+  --st-surface-raised: #a7b994;          /* Elevated sage container / header band */
+  --st-surface-soft: #c1d0b1;            /* Secondary container / well */
+  --st-surface-hover: #f3f5ee;           /* Row hover */
+  --st-border: rgba(24, 33, 19, 0.14);   /* Organic ink separator line */
+  --st-border-strong: rgba(24, 33, 19, 0.28); /* Input & card outline */
+
+  /* Neutral Typography (Deep Forest Charcoal Ink) */
+  --st-text-main: #182113;               /* Deep forest olive ink - Headings & Primary */
+  --st-text-secondary: #3b4731;          /* Muted forest olive text - Descriptions / Labels */
+  --st-text-muted: #5e6b54;              /* Helper notes & timestamps */
+  --st-text-disabled: #8a9682;           /* Inactive elements */
+
+  /* -----------------------------------------------------------------------
+     3. Sage Thematic Palette (.sq-sage / High-Impact Editorial)
+     ----------------------------------------------------------------------- */
+  --st-sage-base: #b4c5a2;               /* Organic sage canvas */
+  --st-sage-surface: #a7b994;            /* Sage container surface */
+  --st-sage-raised: #9bb087;             /* Sage elevated panel */
+  --st-sage-soft: #8fa57a;               /* Sage soft well */
+  --st-sage-fg: #182113;                 /* Deep forest olive ink */
+  --st-sage-fg-dim: #3b4731;             /* Medium olive gray */
+  --st-sage-line: rgba(24, 33, 19, 0.16);
+  --st-sage-line-strong: rgba(24, 33, 19, 0.34);
+
+  /* -----------------------------------------------------------------------
+     4. Dark Ink Thematic Palette (.sq-ink / [data-theme="dark"])
+     ----------------------------------------------------------------------- */
+  --st-dark-bg: #0c0c0b;
+  --st-dark-surface: #161614;
+  --st-dark-raised: #201f1d;
+  --st-dark-soft: #34332f;
+  --st-dark-fg: #eeece7;
+  --st-dark-fg-dim: #9a9791;
+  --st-dark-line: rgba(238, 236, 231, 0.16);
+
+  /* -----------------------------------------------------------------------
+     5. Glassmorphism & Liquid Glass Tokens
+     ----------------------------------------------------------------------- */
+  --st-glass-blur: blur(20px) saturate(180%);
+  --st-glass-surface: rgba(255, 255, 255, 0.82);
+  --st-glass-border: rgba(255, 255, 255, 0.6);
+  --st-glass-glow: rgba(255, 255, 255, 0.15);
+  --st-glass-hover: rgba(24, 33, 19, 0.06);
+
+  /* -----------------------------------------------------------------------
+     6. Semantic Status & Feedback Colors
+     ----------------------------------------------------------------------- */
+  --st-success: #10b981;                 /* Emerald 500 */
+  --st-success-dark: #059669;
+  --st-success-light: #ecfdf5;
+  --st-danger: #ef4444;                  /* Rose / Red 500 */
+  --st-danger-dark: #dc2626;
+  --st-danger-light: #fef2f2;
+  --st-warning: #f59e0b;                 /* Amber 500 */
+  --st-warning-dark: #d97706;
+  --st-warning-light: #fffbeb;
+  --st-info: #0284c7;                    /* Sky 600 */
+  --st-info-dark: #0369a1;
+  --st-info-light: #f0f9ff;
+
+  /* -----------------------------------------------------------------------
+     7. Typography Tokens
+     ----------------------------------------------------------------------- */
+  --st-font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --st-font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --st-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Letter Spacing */
+  --st-tracking-tight: -0.04em;
+  --st-tracking-tighter: -0.06em;
+  --st-tracking-wide: 0.08em;
+  --st-tracking-kicker: 0.16em;
+
+  /* -----------------------------------------------------------------------
+     8. Border Radius Hierarchy (Squared Media Architectural System)
+     ----------------------------------------------------------------------- */
+  --st-radius-sm: 6px;
+  --st-radius-md: 8px;
+  --st-radius-ui: 12px;                  /* Standard controls, inputs, buttons */
+  --st-radius-lg: 16px;                  /* Floating panels, dropdowns */
+  --st-radius-card: 20px;                /* Standard cards */
+  --st-radius-block: 28px;               /* Major blocks, hero cards, modals */
+  --st-radius-pill: 999px;               /* Badges, pill tabs, search bars */
+
+  /* Aliases for legacy component compatibility */
+  --st-card-radius: var(--st-radius-card);
+  --st-button-radius: var(--st-radius-ui);
+
+  /* -----------------------------------------------------------------------
+     9. Elevation & Box Shadows
+     ----------------------------------------------------------------------- */
+  --st-shadow-xs: 0 1px 2px rgba(24, 33, 19, 0.04);
+  --st-shadow-sm: 0 2px 4px rgba(24, 33, 19, 0.05), 0 1px 2px rgba(24, 33, 19, 0.03);
+  --st-shadow: 0 4px 16px rgba(24, 33, 19, 0.07), 0 1px 3px rgba(24, 33, 19, 0.04);
+  --st-shadow-md: 0 10px 30px rgba(24, 33, 19, 0.09), 0 4px 10px rgba(24, 33, 19, 0.04);
+  --st-shadow-lg: 0 20px 48px rgba(24, 33, 19, 0.14);
+  --st-shadow-nav: 0 18px 50px rgba(24, 33, 19, 0.16);
+  --st-shadow-flame: 0 0 40px rgba(255, 69, 0, 0.35);
+  --st-shadow-flame-sm: 0 0 18px rgba(255, 69, 0, 0.45);
+  --st-shadow-inset: inset 0 20px 40px -20px rgba(24, 33, 19, 0.2);
+
+  /* -----------------------------------------------------------------------
+     10. Physics & Spring Transitions
+     ----------------------------------------------------------------------- */
+  --st-ease-spring: cubic-bezier(0.34, 1.8, 0.64, 1);
+  --st-ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --st-transition-fast: all 0.15s ease-in-out;
+  --st-transition-spring: all 0.25s var(--st-ease-spring);
+
+  /* Layout Constants */
+  --st-sidebar-width: 250px;
+  --st-topbar-height: 60px;
+}
+
+@mixin display-heading {
+  font-family: var(--st-font-display);
+  letter-spacing: var(--st-tracking-tight);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+@mixin mono-kicker {
+  font-family: var(--st-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: var(--st-tracking-kicker);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+@mixin card-surface {
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-card);
+  box-shadow: var(--st-shadow);
+  transition: var(--st-transition-fast);
+}
+
+@mixin sage-surface {
+  background: var(--st-sage-base);
+  color: var(--st-sage-fg);
+  border: 1px solid var(--st-sage-line);
+  border-radius: var(--st-radius-card);
+}
+
+@mixin spring-button {
+  font-family: var(--st-font-family);
+  font-weight: 600;
+  border-radius: var(--st-button-radius);
+  transition: var(--st-transition-spring);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+}

@@ -792,6 +792,14 @@ export class SummaryService {
     this.columns.set(DEFAULT_SUMMARY_COLUMNS);
   }
 
+  clearAllFilters(): void {
+    this.searchText.set('');
+    this.selectedPartners.set([]);
+    this.selectedDistricts.set([]);
+    this.selectedStage.set('ALL');
+    this.selectedPaymentFilters.set([]);
+  }
+
   // Row exclusion management
   excludeRows(slNos: number[]): void {
     this.excludedSlNos.update(set => {
