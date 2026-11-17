@@ -58,7 +58,6 @@ public class SolarTrackDbContext : DbContext
         {
             b.ToTable("installments");
             b.HasKey(e => e.SlNo);
-            b.Property(e => e.ProductSpecs).HasColumnType("jsonb");
         });
 
         modelBuilder.Entity<InstallmentTxn>(b =>

@@ -1,5 +1,5 @@
 using System.Data;
-using Npgsql;
+using Microsoft.Data.SqlClient;
 
 namespace SolarTrack.Backend.Data;
 
@@ -23,11 +23,10 @@ public class DapperConnectionFactory : IDapperConnectionFactory
 
     public string ConnectionString => _connectionString;
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(_connectionString) 
-                                && !_connectionString.Contains("YOUR_SUPABASE_DB_PASSWORD", StringComparison.OrdinalIgnoreCase);
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(_connectionString);
 
     public IDbConnection CreateConnection()
     {
-        return new NpgsqlConnection(_connectionString);
+        return new SqlConnection(_connectionString);
     }
 }
