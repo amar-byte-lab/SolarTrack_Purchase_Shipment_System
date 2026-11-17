@@ -76,6 +76,7 @@
       class="stage-filter-tag"
       [class.stage-tag-all]="s.key === 'ALL'"
       [class.stage-tag-1]="s.key === 'Summary'"
+      [class.stage-tag-8]="s.key === 'Ledger'"
       [class.stage-tag-4]="s.key === 'Shipment'"
       [class.active]="s.active"
       (click)="setSource(s.key)"
@@ -106,7 +107,7 @@
       <line x1="12" y1="16" x2="12.01" y2="16"></line>
     </svg>
     <div class="fw-semibold fs-7 text-dark mb-1">No database transactions found for selected range</div>
-    <div class="fs-8 text-muted">Any updates, payments, stages, or changes on Summary and Shipment pages will appear here.</div>
+    <div class="fs-8 text-muted">Any updates, payments, stages, or changes on Summary, Ledger, and Shipment pages will appear here.</div>
   </div>
 
   <div class="activity-timeline" *ngIf="filteredLogs().length > 0">
@@ -125,7 +126,12 @@
               Shipment
             </span>
             <span 
-              *ngIf="act.page !== 'Shipment'" 
+              *ngIf="act.page === 'Ledger'" 
+              class="badge bg-success-subtle text-success border border-success-subtle fs-9 px-2 py-0.5">
+              Ledger
+            </span>
+            <span 
+              *ngIf="act.page !== 'Shipment' && act.page !== 'Ledger'" 
               class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-2 py-0.5">
               Summary
             </span>

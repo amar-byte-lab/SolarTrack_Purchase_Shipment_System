@@ -251,32 +251,38 @@
       <div class="row g-3">
         @if (!authService.isAdmin()) {
           <div class="col-12">
-            <div class="settings-card text-center py-5">
+            <div class="rbac-card text-center py-5">
               <div class="fs-1 mb-2">🔒</div>
-              <h5 class="fw-bold text-dark">Administrator Access Required</h5>
+              <h5 class="fw-bold text-dark fs-6">Administrator Access Required</h5>
               <p class="text-secondary fs-8 mb-0">You need administrator privileges to view and manage user accounts.</p>
             </div>
           </div>
         } @else {
           <!-- Main Users Table Card -->
           <div class="col-12">
-            <div class="settings-card mb-3">
-              <!-- Header & Toolbar -->
-              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-2 border-bottom">
-                <div class="section-title m-0 border-0 p-0">User &amp; Role Access Control (RBAC)</div>
+            <div class="rbac-card mb-3">
+              <!-- Header & Toolbar (Aligned with Files, Reports & Inventory) -->
+              <div class="rbac-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <app-icon name="customer" [size]="16" class="text-primary"></app-icon>
+                  <span class="fw-bold text-dark fs-7">User &amp; Role Access Control (RBAC)</span>
+                  <span class="badge bg-primary-subtle text-primary border fs-8">{{ filteredUsers().length }} Users</span>
+                </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                   <!-- Search input -->
-                  <div class="input-group input-group-sm" style="width: 200px;">
-                    <span class="input-group-text bg-white border-end-0 text-muted">🔍</span>
+                  <div class="input-group input-group-sm" style="width: 210px;">
+                    <span class="input-group-text bg-white border-end-0 text-muted ps-2.5">
+                      <app-icon name="search" [size]="13"></app-icon>
+                    </span>
                     <input 
                       type="text" 
-                      class="form-control border-start-0 ps-0" 
+                      class="form-control border-start-0 ps-1 fs-8" 
                       [(ngModel)]="userSearch" 
                       placeholder="Search users...">
                   </div>
 
                   <!-- Role filter dropdown -->
-                  <select class="form-select form-select-sm" style="width: 130px;" [(ngModel)]="selectedRoleFilter">
+                  <select class="form-select form-select-sm fs-8" style="width: 125px;" [(ngModel)]="selectedRoleFilter">
                     <option value="ALL">All Roles</option>
                     @for (r of settingsService.roles(); track r) {
                       <option [value]="r">{{ r }}</option>
@@ -284,61 +290,69 @@
                   </select>
 
                   <!-- Add User Button -->
-                  <button class="btn btn-sm btn-primary fw-semibold" (click)="openUserModal()">
-                    + Add New User
+                  <button class="btn btn-sm btn-primary fw-semibold d-inline-flex align-items-center gap-1.5 fs-8" (click)="openUserModal()">
+                    <app-icon name="plus" [size]="13"></app-icon>
+                    <span>Add New User</span>
                   </button>
                 </div>
               </div>
 
               <!-- Users Table -->
               <div class="table-responsive">
-                <table class="table table-hover table-sm align-middle fs-8 mb-0">
-                  <thead class="table-light">
+                <table class="table table-hover table-rbac align-middle mb-0">
+                  <thead>
                     <tr>
-                      <th style="width: 120px;">User ID</th>
+                      <th style="width: 130px;">User ID</th>
                       <th>Full Name</th>
                       <th>Email</th>
                       <th>Mobile</th>
                       <th>Role</th>
                       <th>Status</th>
-                      <th class="text-center" style="width: 130px;">Actions</th>
+                      <th class="text-center" style="width: 110px;">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     @if (filteredUsers().length === 0) {
                       <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">
+                        <td colspan="7" class="text-center py-4 text-muted fs-8">
                           No users found matching your search or role filter.
                         </td>
                       </tr>
                     } @else {
                       @for (u of filteredUsers(); track u.userid) {
                         <tr>
-                          <td class="font-monospace fw-semibold">{{ u.userid }}</td>
-                          <td class="fw-semibold text-dark">{{ u.username }}</td>
-                          <td>{{ u.email }}</td>
-                          <td>{{ u.mobile || '-' }}</td>
+                          <td class="font-monospace fw-semibold text-dark fs-8">{{ u.userid }}</td>
+                          <td class="fw-semibold text-dark fs-8">{{ u.username }}</td>
+                          <td class="text-secondary fs-8">{{ u.email }}</td>
+                          <td class="text-secondary fs-8 font-monospace">{{ u.mobile || '-' }}</td>
                           <td>
-                            <span class="badge bg-secondary-subtle text-secondary border">
+                            <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fs-9 fw-semibold text-uppercase">
                               {{ u.role }}
                             </span>
                           </td>
                           <td>
-                            <span class="badge" 
-                              [class.bg-success]="!u.status || u.status === 'Approved'" 
-                              [class.bg-warning]="u.status === 'Pending'" 
-                              [class.bg-danger]="u.status === 'Rejected'">
+                            <span class="badge rounded-pill px-2.5 py-1 fs-9 fw-semibold" 
+                              [class.bg-success-subtle]="!u.status || u.status === 'Approved'" 
+                              [class.text-success]="!u.status || u.status === 'Approved'"
+                              [class.border]="true"
+                              [class.border-success-subtle]="!u.status || u.status === 'Approved'"
+                              [class.bg-warning-subtle]="u.status === 'Pending'" 
+                              [class.text-warning]="u.status === 'Pending'"
+                              [class.border-warning-subtle]="u.status === 'Pending'"
+                              [class.bg-danger-subtle]="u.status === 'Rejected'"
+                              [class.text-danger]="u.status === 'Rejected'"
+                              [class.border-danger-subtle]="u.status === 'Rejected'">
                               {{ u.status || 'Approved' }}
                             </span>
                           </td>
                           <td class="text-center">
-                            <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                            <div class="d-inline-flex align-items-center justify-content-center gap-1.5">
                               <button 
                                 type="button" 
                                 class="btn btn-xs btn-outline-primary btn-action-icon" 
                                 (click)="editUser(u)" 
                                 title="Edit User">
-                                <app-icon name="edit" [size]="14"></app-icon>
+                                <app-icon name="edit" [size]="13"></app-icon>
                               </button>
                               @if (u.userid !== 'admin' && u.userid !== 'amar') {
                                 <button 
@@ -346,7 +360,7 @@
                                   class="btn btn-xs btn-outline-danger btn-action-icon" 
                                   (click)="onDeleteUser(u.userid)" 
                                   title="Delete User">
-                                  <app-icon name="trash" [size]="14"></app-icon>
+                                  <app-icon name="trash" [size]="13"></app-icon>
                                 </button>
                               }
                             </div>
@@ -362,8 +376,14 @@
 
           <!-- Roles Configuration Card -->
           <div class="col-12">
-            <div class="settings-card">
-              <div class="section-title">Role Management</div>
+            <div class="rbac-card p-3">
+              <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                  <app-icon name="gear" [size]="15" class="text-primary"></app-icon>
+                  <span class="fw-bold text-dark fs-7">Role Management</span>
+                  <span class="badge bg-secondary-subtle text-secondary border fs-8">{{ settingsService.roles().length }} Roles</span>
+                </div>
+              </div>
 
               <!-- Roles Badges List -->
               <div class="d-flex flex-wrap gap-2 mb-3">
@@ -384,14 +404,15 @@
                 <div class="col-8">
                   <input 
                     type="text" 
-                    class="form-control form-control-sm" 
+                    class="form-control form-control-sm fs-8" 
                     [(ngModel)]="newRoleName" 
                     placeholder="Enter new role..." 
                     (keyup.enter)="onAddRole()">
                 </div>
                 <div class="col-4">
-                  <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-semibold" (click)="onAddRole()">
-                    + Add Role
+                  <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 fs-8" (click)="onAddRole()">
+                    <app-icon name="plus" [size]="12"></app-icon>
+                    <span>Add Role</span>
                   </button>
                 </div>
               </div>
@@ -408,52 +429,55 @@
   <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
       <div class="modal-content border-0 shadow-lg">
-        <div class="modal-header py-2.5 px-3 bg-light">
-          <h6 class="modal-title fw-bold fs-7 mb-0">{{ isEditMode() ? 'Edit User' : 'Add New User' }}</h6>
+        <div class="modal-header py-2.5 px-3 bg-light border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <app-icon name="customer" [size]="15" class="text-primary"></app-icon>
+            <h6 class="modal-title fw-bold fs-7 mb-0 text-dark">{{ isEditMode() ? 'Edit User' : 'Add New User' }}</h6>
+          </div>
           <button type="button" class="btn-close" (click)="isUserModalOpen.set(false)"></button>
         </div>
         <div class="modal-body p-3">
-          <div class="mb-2">
-            <label class="form-label fs-8 text-secondary mb-1">User ID *</label>
-            <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="modalUser.userid" [disabled]="isEditMode()" placeholder="e.g. johndoe">
+          <div class="mb-2.5">
+            <label class="form-label fs-8 text-secondary fw-semibold mb-1">User ID *</label>
+            <input type="text" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="modalUser.userid" [disabled]="isEditMode()" placeholder="e.g. johndoe">
           </div>
-          <div class="mb-2">
-            <label class="form-label fs-8 text-secondary mb-1">Full Name *</label>
-            <input type="text" class="form-control form-control-sm" [(ngModel)]="modalUser.username" placeholder="e.g. John Doe">
+          <div class="mb-2.5">
+            <label class="form-label fs-8 text-secondary fw-semibold mb-1">Full Name *</label>
+            <input type="text" class="form-control form-control-sm fs-8" [(ngModel)]="modalUser.username" placeholder="e.g. John Doe">
           </div>
-          <div class="mb-2">
-            <label class="form-label fs-8 text-secondary mb-1">Email *</label>
-            <input type="email" class="form-control form-control-sm" [(ngModel)]="modalUser.email" placeholder="e.g. john@example.com">
+          <div class="mb-2.5">
+            <label class="form-label fs-8 text-secondary fw-semibold mb-1">Email *</label>
+            <input type="email" class="form-control form-control-sm fs-8" [(ngModel)]="modalUser.email" placeholder="e.g. john@example.com">
           </div>
-          <div class="mb-2">
-            <label class="form-label fs-8 text-secondary mb-1">Mobile</label>
-            <input type="text" class="form-control form-control-sm" [(ngModel)]="modalUser.mobile" placeholder="e.g. 9876543210">
+          <div class="mb-2.5">
+            <label class="form-label fs-8 text-secondary fw-semibold mb-1">Mobile</label>
+            <input type="text" class="form-control form-control-sm fs-8" [(ngModel)]="modalUser.mobile" placeholder="e.g. 9876543210">
           </div>
-          <div class="mb-2">
-            <label class="form-label fs-8 text-secondary mb-1">Password *</label>
-            <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="modalUser.password" placeholder="Enter password">
+          <div class="mb-2.5">
+            <label class="form-label fs-8 text-secondary fw-semibold mb-1">Password *</label>
+            <input type="text" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="modalUser.password" placeholder="Enter password">
           </div>
           <div class="row g-2 mb-3">
             <div class="col-6">
-              <label class="form-label fs-8 text-secondary mb-1">Role</label>
-              <select class="form-select form-select-sm" [(ngModel)]="modalUser.role">
+              <label class="form-label fs-8 text-secondary fw-semibold mb-1">Role</label>
+              <select class="form-select form-select-sm fs-8" [(ngModel)]="modalUser.role">
                 @for (r of settingsService.roles(); track r) {
                   <option [value]="r">{{ r }}</option>
                 }
               </select>
             </div>
             <div class="col-6">
-              <label class="form-label fs-8 text-secondary mb-1">Status</label>
-              <select class="form-select form-select-sm" [(ngModel)]="modalUser.status">
+              <label class="form-label fs-8 text-secondary fw-semibold mb-1">Status</label>
+              <select class="form-select form-select-sm fs-8" [(ngModel)]="modalUser.status">
                 <option value="Approved">Approved</option>
                 <option value="Pending">Pending</option>
                 <option value="Rejected">Rejected</option>
               </select>
             </div>
           </div>
-          <div class="d-flex justify-content-end gap-2 pt-2 border-top">
-            <button type="button" class="btn btn-sm btn-outline-secondary px-3" (click)="isUserModalOpen.set(false)">Cancel</button>
-            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" (click)="onSaveUserModal()">Save User</button>
+          <div class="d-flex justify-content-end gap-2 pt-2.5 border-top">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" (click)="isUserModalOpen.set(false)">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold fs-8" (click)="onSaveUserModal()">Save User</button>
           </div>
         </div>
       </div>

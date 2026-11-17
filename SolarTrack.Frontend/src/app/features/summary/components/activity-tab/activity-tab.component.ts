@@ -152,6 +152,7 @@ export class ActivityTabComponent {
     const sources = [
       { key: 'ALL', label: 'All Pages' },
       { key: 'Summary', label: 'Summary' },
+      { key: 'Ledger', label: 'Ledger' },
       { key: 'Shipment', label: 'Shipment' }
     ];
 
@@ -162,7 +163,7 @@ export class ActivityTabComponent {
       } else if (s.key === 'Summary') {
         count = dateLogs.filter(act => {
           const p = (act.page || '').toLowerCase();
-          return p.includes('summary') || p.includes('manage work') || p.includes('customer') || (p !== 'shipment');
+          return p.includes('summary') || p.includes('manage work') || p.includes('customer');
         }).length;
       } else {
         count = dateLogs.filter(act => (act.page || '').toLowerCase().includes(s.key.toLowerCase())).length;

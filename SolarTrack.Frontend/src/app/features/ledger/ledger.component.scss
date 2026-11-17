@@ -133,6 +133,46 @@
 
 .kb-borrower-actions {
   animation: fadeInRight 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .btn {
+    width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: all 0.15s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .btn-delete {
+    color: #ef4444;
+    border-color: #fca5a5 !important;
+
+    &:hover {
+      background-color: #ef4444 !important;
+      color: #ffffff !important;
+      border-color: #dc2626 !important;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+    }
+  }
+
+  .btn-cancel {
+    color: #64748b;
+    border-color: #e2e8f0 !important;
+
+    &:hover {
+      background-color: #f1f5f9 !important;
+      color: #1e293b !important;
+    }
+  }
 }
 
 @keyframes fadeInRight {

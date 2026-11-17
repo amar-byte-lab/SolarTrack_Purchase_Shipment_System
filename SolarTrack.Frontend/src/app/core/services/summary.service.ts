@@ -51,6 +51,8 @@ export class SummaryService {
   private rawDispatchesSignal = signal<InventoryDispatchRow[]>([]);
   private rawShipmentsSignal = signal<ShipmentRow[]>([]);
   private rawShipmentRemarksSignal = signal<ShipmentRemarkRow[]>([]);
+  private rawBorrowersSignal = signal<any[]>([]);
+  private rawBorrowerTxnsSignal = signal<any[]>([]);
   private rawActivityLogsSignal = signal<any[]>([]);
 
   // Excluded & Selected SlNos
@@ -439,6 +441,8 @@ export class SummaryService {
     const dispatches = this.rawDispatchesSignal();
     const shipments = this.rawShipmentsSignal();
     const shipmentRemarks = this.rawShipmentRemarksSignal();
+    const borrowers = this.rawBorrowersSignal();
+    const borrowerTxns = this.rawBorrowerTxnsSignal();
 
     const custMap = new Map<number, InstallmentRow>();
     installments.forEach(r => custMap.set(Number(r.SlNo), r));
@@ -455,7 +459,11 @@ export class SummaryService {
       timestamp: l.timestamp,
       date: l.date || (l.timestamp ? l.timestamp.slice(0, 10) : ''),
       time: l.time || '',
-      page: (l.page === 'Manage Work' || l.page === 'Customer') ? 'Summary' : (l.page || 'Summary'),
+      page: (l.page === 'Ledger' || l.table === 'borrowers' || l.table === 'borrower_txns')
+        ? 'Ledger'
+        : (l.page === 'Manage Work' || l.page === 'Customer')
+        ? 'Summary'
+        : (l.page || 'Summary'),
       table: l.table || 'installments',
       action: l.action || 'UPDATE',
       user: l.user || l.username || 'Admin',
@@ -707,6 +715,65 @@ export class SummaryService {
       }
     });
 
+    // Ledger: Borrowers & Ledger Transactions
+    const borrowerMap = new Map<number, any>();
+    borrowers.forEach(b => {
+      const bId = Number(b.BorrowerID);
+      borrowerMap.set(bId, b);
+      const isoDate = this.parseToIsoDate(b.CreatedAt);
+      if (isoDate) {
+        synthesized.push({
+          id: `synth_bor_${bId}`,
+          timestamp: b.CreatedAt || `${isoDate}T09:00:00Z`,
+          date: isoDate,
+          time: '09:00 am',
+          page: 'Ledger',
+          table: 'borrowers',
+          action: 'INSERT',
+          recordId: bId,
+          customerName: b.Name || `Ledger #${bId}`,
+          consumerNo: b.Mobile || '',
+          changes: [
+            { field: 'Ledger Account Created', oldVal: null, newVal: `${b.Name} (Mobile: ${b.Mobile || '-'}, Address: ${b.Address || '-'})` }
+          ],
+          undone: false
+        });
+      }
+    });
+
+    borrowerTxns.forEach(bt => {
+      const isoDate = this.parseToIsoDate(bt.TxnDate || bt.CreatedAt);
+      if (!isoDate) return;
+      const bId = Number(bt.BorrowerID);
+      const b = borrowerMap.get(bId);
+      const bName = b ? b.Name : `Ledger #${bId}`;
+      const isCredit = bt.Type === 'Credit';
+      synthesized.push({
+        id: `synth_btxn_${bt.TxnID || bId + '_' + isoDate + '_' + bt.Amount}`,
+        timestamp: bt.CreatedAt || `${isoDate}T12:00:00Z`,
+        date: isoDate,
+        time: '02:00 pm',
+        page: 'Ledger',
+        table: 'borrower_txns',
+        action: 'INSERT',
+        txnId: bt.TxnID,
+        amount: Number(bt.Amount) || 0,
+        user: bt.CreatedBy || 'Admin',
+        userRole: 'Staff',
+        recordId: bId,
+        customerName: bName,
+        consumerNo: b?.Mobile || '',
+        changes: [
+          {
+            field: isCredit ? 'Ledger Debit (You Gave)' : 'Ledger Credit (You Received)',
+            oldVal: null,
+            newVal: `₹${(Number(bt.Amount) || 0).toLocaleString('en-IN')}${bt.Remarks ? ' (' + bt.Remarks + ')' : ''}`
+          }
+        ],
+        undone: false
+      });
+    });
+
     // Combine logged and synthesized
     const combined = [...logged, ...synthesized];
 
@@ -733,6 +800,9 @@ export class SummaryService {
 
   loadAllData(): Observable<any> {
     this.isLoading.set(true);
+    const currentUser = this.authService.currentUser();
+    const userId = currentUser ? (currentUser.userid || currentUser.username || 'admin') : 'admin';
+
     return forkJoin({
       installments: this.http.get<any>('/api/get?table=installments').pipe(map(r => r?.data || r?.value || r || []), catchError(() => of([]))),
       txns: this.http.get<any>('/api/get?table=installment_txns').pipe(map(r => r?.data || r?.value || r || []), catchError(() => of([]))),
@@ -741,6 +811,8 @@ export class SummaryService {
       dispatches: this.http.get<any>('/api/get?table=inventory_dispatches').pipe(map(r => r?.data || r?.value || r || []), catchError(() => of([]))),
       shipments: this.http.get<any>('/api/get?table=shipments').pipe(map(r => r?.data || r?.value || r || []), catchError(() => of([]))),
       shipmentRemarks: this.http.get<any>('/api/get?table=shipment_remarks').pipe(map(r => r?.data || r?.value || r || []), catchError(() => of([]))),
+      borrowers: this.http.get<any>(`/api/borrower-list?userId=${encodeURIComponent(userId)}`).pipe(map(r => r?.value || r?.data || r || []), catchError(() => of([]))),
+      borrowerTxns: this.http.get<any>(`/api/borrower-txns?userId=${encodeURIComponent(userId)}`).pipe(map(r => r?.value || r?.data || r || []), catchError(() => of([]))),
       logs: this.http.get<any>('/api/activity-logs').pipe(map(r => r?.value || r?.data || r || []), catchError(() => of([])))
     }).pipe(
       map(res => {
@@ -770,6 +842,8 @@ export class SummaryService {
         this.rawDispatchesSignal.set(res.dispatches);
         this.rawShipmentsSignal.set(res.shipments);
         this.rawShipmentRemarksSignal.set(res.shipmentRemarks);
+        this.rawBorrowersSignal.set(res.borrowers);
+        this.rawBorrowerTxnsSignal.set(res.borrowerTxns);
         this.rawActivityLogsSignal.set(res.logs);
         this.isLoading.set(false);
         return res;
