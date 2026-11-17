@@ -1,0 +1,179 @@
+<div class="payment-card-container d-flex flex-column gap-2" *ngIf="customer">
+
+  <!-- Payment Card Main Box (Matching Screenshot 1 Exactly) -->
+  <div class="payment-main-box p-3 border rounded-3 bg-white">
+    
+    <!-- 1. Header: Payment label left, Toggle right -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <span class="payment-header-lbl fw-bold text-dark fs-8">Payment:</span>
+      <label class="mw-switch" title="Toggle Payment">
+        <input type="checkbox" [checked]="hasPayment" (change)="handlePaymentToggle($event)">
+        <span class="mw-slider"></span>
+      </label>
+    </div>
+
+    <!-- 2. Controls Rows (Cost, Paid, Pending) -->
+    <div class="d-flex flex-column gap-2.5">
+      
+      <!-- Row 1: Cost -->
+      <div class="d-flex align-items-center gap-2 pay-row">
+        <span class="pay-label">Cost:</span>
+        <div class="input-group input-group-sm flex-grow-1 pay-input-group">
+          <span class="input-group-text bg-white px-2 text-muted fw-semibold fs-8">₹</span>
+          <input 
+            type="number" 
+            class="form-control form-control-sm font-monospace fs-8 fw-bold text-dark bg-white" 
+            [(ngModel)]="costInput" 
+            [disabled]="!isCostEditing" 
+            (keydown.enter)="saveCost()" 
+            (keydown.escape)="cancelEditCost()"
+            placeholder="0">
+        </div>
+        
+        <div class="pay-btn-cell">
+          <button 
+            *ngIf="!isCostEditing" 
+            type="button" 
+            class="btn btn-sm btn-purple-icon-outline p-0" 
+            (click)="startEditCost()" 
+            title="Edit Cost">
+            <app-icon name="edit" [size]="14"></app-icon>
+          </button>
+          <button 
+            *ngIf="isCostEditing" 
+            type="button" 
+            class="btn btn-sm btn-success text-white p-0" 
+            (click)="saveCost()" 
+            title="Save Cost">
+            <app-icon name="check" [size]="14"></app-icon>
+          </button>
+          <button 
+            *ngIf="isCostEditing" 
+            type="button" 
+            class="btn btn-sm btn-outline-secondary p-0 ms-1" 
+            (click)="cancelEditCost()" 
+            title="Cancel">
+            <app-icon name="close" [size]="14"></app-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 2: Paid -->
+      <div class="d-flex align-items-center gap-2 pay-row">
+        <span class="pay-label">Paid:</span>
+        <div class="input-group input-group-sm flex-grow-1 pay-input-group">
+          <span class="input-group-text bg-white px-2 text-muted fw-semibold fs-8">₹</span>
+          <input 
+            type="number" 
+            class="form-control form-control-sm font-monospace fs-8 fw-bold text-success bg-white" 
+            [(ngModel)]="paidInput" 
+            [disabled]="!isPaidEditing" 
+            (keydown.enter)="savePaid()" 
+            (keydown.escape)="cancelEditPaid()"
+            placeholder="0">
+        </div>
+
+        <!-- Datepicker Box: Perfectly Sized, Aligned, & Formatted -->
+        <div 
+          *ngIf="!isPaidEditing" 
+          class="pay-date-box d-flex align-items-center justify-content-center"
+          [title]="'Paid Date: ' + (formatDisplayDate(paidDateInput) || 'None')">
+          <span class="font-monospace fw-bold fs-8 text-dark">{{ formatDisplayDate(paidDateInput) || '—' }}</span>
+        </div>
+        <input 
+          *ngIf="isPaidEditing"
+          type="date" 
+          class="form-control form-control-sm fs-8 font-monospace text-center bg-white pay-date-box" 
+          [(ngModel)]="paidDateInput"
+          title="Select Paid Date">
+
+        <div class="pay-btn-cell">
+          <button 
+            *ngIf="!isPaidEditing" 
+            type="button" 
+            class="btn btn-sm btn-purple-icon-outline p-0" 
+            (click)="startEditPaid()" 
+            title="Edit Paid Amount & Date">
+            <app-icon name="edit" [size]="14"></app-icon>
+          </button>
+          <button 
+            *ngIf="isPaidEditing" 
+            type="button" 
+            class="btn btn-sm btn-success text-white p-0" 
+            (click)="savePaid()" 
+            title="Save Paid Amount & Date">
+            <app-icon name="check" [size]="14"></app-icon>
+          </button>
+          <button 
+            *ngIf="isPaidEditing" 
+            type="button" 
+            class="btn btn-sm btn-outline-secondary p-0 ms-1" 
+            (click)="cancelEditPaid()" 
+            title="Cancel">
+            <app-icon name="close" [size]="14"></app-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 3: Pending -->
+      <div class="d-flex align-items-center gap-2 pay-row">
+        <span class="pay-label">Pending:</span>
+        <div class="input-group input-group-sm flex-grow-1 pay-input-group">
+          <span class="input-group-text bg-white px-2 text-muted fw-semibold fs-8">₹</span>
+          <input 
+            type="number" 
+            class="form-control form-control-sm font-monospace fs-8 fw-bold text-danger bg-white" 
+            [(ngModel)]="pendingPayAmount" 
+            [disabled]="!isPendingEditing" 
+            (keydown.enter)="savePendingPayment()" 
+            (keydown.escape)="cancelEditPending()"
+            placeholder="0">
+        </div>
+
+        <!-- Datepicker Box: Perfectly Sized, Aligned, & Formatted -->
+        <div 
+          *ngIf="!isPendingEditing" 
+          class="pay-date-box d-flex align-items-center justify-content-center"
+          [title]="'Payment Date: ' + (formatDisplayDate(pendingPayDate) || 'None')">
+          <span class="font-monospace fw-bold fs-8 text-dark">{{ formatDisplayDate(pendingPayDate) || '—' }}</span>
+        </div>
+        <input 
+          *ngIf="isPendingEditing"
+          type="date" 
+          class="form-control form-control-sm fs-8 font-monospace text-center bg-white pay-date-box" 
+          [(ngModel)]="pendingPayDate"
+          title="Select Payment Date">
+
+        <div class="pay-btn-cell">
+          <button 
+            *ngIf="!isPendingEditing" 
+            type="button" 
+            class="btn btn-sm btn-purple-icon-outline p-0" 
+            (click)="startEditPending()" 
+            title="Add Payment & Date">
+            <app-icon name="edit" [size]="14"></app-icon>
+          </button>
+          <button 
+            *ngIf="isPendingEditing" 
+            type="button" 
+            class="btn btn-sm btn-success text-white p-0" 
+            (click)="savePendingPayment()" 
+            title="Save Payment & Date">
+            <app-icon name="check" [size]="14"></app-icon>
+          </button>
+          <button 
+            *ngIf="isPendingEditing" 
+            type="button" 
+            class="btn btn-sm btn-outline-secondary p-0 ms-1" 
+            (click)="cancelEditPending()" 
+            title="Cancel">
+            <app-icon name="close" [size]="14"></app-icon>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

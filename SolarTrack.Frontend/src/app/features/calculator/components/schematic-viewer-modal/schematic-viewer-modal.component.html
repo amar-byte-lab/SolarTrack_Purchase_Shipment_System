@@ -1,0 +1,222 @@
+<div class="modal-backdrop" (click)="close.emit()">
+  <div class="modal-dialog modal-dialog-centered modal-xl" (click)="$event.stopPropagation()">
+    <div class="modal-content border-0 shadow">
+      
+      <!-- Header -->
+      <div class="modal-header py-2.5 px-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="modal-title fw-bold text-dark m-0 d-flex align-items-center gap-2">
+            <app-icon name="trending-up" class="text-primary"></app-icon>
+            Single Line Diagram (SLD) &amp; Schematic Circuit
+          </h6>
+          <div class="text-secondary fs-8 mt-0.5">
+            Dynamic electrical power flow schematic for <span class="fw-bold text-primary">{{ currentSystem() | uppercase }}</span> system
+          </div>
+        </div>
+
+        <!-- System Switcher & Zoom Controls -->
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group btn-group-sm" role="group">
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="currentSystem() === 'on-grid' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="setSystem('on-grid')">
+              On-Grid
+            </button>
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="currentSystem() === 'off-grid' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="setSystem('off-grid')">
+              Off-Grid
+            </button>
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="currentSystem() === 'hybrid' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="setSystem('hybrid')">
+              Hybrid
+            </button>
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="currentSystem() === 'without-solar' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="setSystem('without-solar')">
+              UPS Only
+            </button>
+          </div>
+
+          <div class="btn-group btn-group-sm ms-2" role="group">
+            <button type="button" class="btn btn-outline-secondary" (click)="zoomOut()" title="Zoom Out">-</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="resetZoom()" title="Reset Zoom">100%</button>
+            <button type="button" class="btn btn-outline-secondary" (click)="zoomIn()" title="Zoom In">+</button>
+          </div>
+
+          <button type="button" class="btn-close ms-2" (click)="close.emit()"></button>
+        </div>
+      </div>
+
+      <!-- Schematic Canvas Body -->
+      <div class="modal-body p-3 bg-slate-900 text-white schematic-scroll-body" style="min-height: 480px; max-height: 75vh; overflow: auto;">
+        
+        <div class="svg-zoom-wrapper text-center" [style.transform]="'scale(' + zoomLevel() + ')'" style="transform-origin: center center; transition: transform 0.15s ease;">
+          <svg viewBox="0 0 950 420" class="sld-svg" style="width: 100%; max-width: 950px; height: auto;">
+            <defs>
+              <linearGradient id="pvGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#1e3a8a"/>
+                <stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+              <linearGradient id="invGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#334155"/>
+              </linearGradient>
+              <linearGradient id="batGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#78350f"/>
+                <stop offset="100%" stop-color="#d97706"/>
+              </linearGradient>
+              <linearGradient id="gridGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#14532d"/>
+                <stop offset="100%" stop-color="#16a34a"/>
+              </linearGradient>
+
+              <!-- Arrow marker -->
+              <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+              </marker>
+              <marker id="arrowRed" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+              </marker>
+              <marker id="arrowGreen" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e"/>
+              </marker>
+            </defs>
+
+            <!-- Background Grid Lines -->
+            <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1e293b" stroke-width="0.75"/>
+            </pattern>
+            <rect width="950" height="420" fill="url(#grid)"/>
+
+            <!-- 1. SOLAR PV ARRAY BLOCK (Only if not without-solar) -->
+            @if (currentSystem() !== 'without-solar') {
+              <g transform="translate(40, 80)">
+                <rect width="160" height="130" rx="8" fill="url(#pvGrad)" stroke="#38bdf8" stroke-width="2"/>
+                <!-- Solar Cell Pattern -->
+                <line x1="20" y1="45" x2="140" y2="45" stroke="#7dd3fc" stroke-width="1.5"/>
+                <line x1="20" y1="75" x2="140" y2="75" stroke="#7dd3fc" stroke-width="1.5"/>
+                <line x1="60" y1="20" x2="60" y2="100" stroke="#7dd3fc" stroke-width="1.5"/>
+                <line x1="100" y1="20" x2="100" y2="100" stroke="#7dd3fc" stroke-width="1.5"/>
+                <text x="80" y="120" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">SOLAR PV ARRAY</text>
+                <text x="80" y="145" text-anchor="middle" fill="#93c5fd" font-size="10" font-family="monospace">{{ calc.result().solar?.recommendedKwp || 3.0 }} kWp DC</text>
+              </g>
+
+              <!-- DC Wire PV -> DC SPD/DB -->
+              <path d="M 200 145 L 260 145" fill="none" stroke="#ef4444" stroke-width="3" marker-end="url(#arrowRed)"/>
+              <text x="230" y="135" fill="#ef4444" font-size="9" font-family="monospace">DC + / -</text>
+            }
+
+            <!-- 2. DC SPD / PROTECTION ISOLATOR (If solar) -->
+            @if (currentSystem() !== 'without-solar') {
+              <g transform="translate(260, 110)">
+                <rect width="80" height="70" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>
+                <text x="40" y="32" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="700">DC SPD</text>
+                <text x="40" y="50" text-anchor="middle" fill="#94a3b8" font-size="8">600V Fuse</text>
+              </g>
+
+              <!-- DC Wire DC SPD -> Inverter -->
+              <path d="M 340 145 L 390 145" fill="none" stroke="#ef4444" stroke-width="3" marker-end="url(#arrowRed)"/>
+            }
+
+            <!-- 3. INVERTER / PCU CENTRAL BLOCK -->
+            <g transform="translate(390, 70)">
+              <rect width="180" height="150" rx="10" fill="url(#invGrad)" stroke="#38bdf8" stroke-width="2.5"/>
+              <text x="90" y="35" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="800">
+                @if (currentSystem() === 'on-grid') { GRID-TIE INVERTER }
+                @else if (currentSystem() === 'hybrid') { HYBRID INVERTER }
+                @else if (currentSystem() === 'without-solar') { HOME UPS INVERTER }
+                @else { SOLAR PCU }
+              </text>
+              <text x="90" y="55" text-anchor="middle" fill="#cbd5e1" font-size="11" font-family="monospace">
+                {{ calc.result().inverter.kVA }} kVA • {{ calc.result().inverter.phase }}
+              </text>
+              
+              <!-- Internal Converter Icon Graphic -->
+              <rect x="35" y="75" width="110" height="50" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+              <text x="60" y="105" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700">DC</text>
+              <text x="90" y="105" text-anchor="middle" fill="#38bdf8" font-size="14">➔</text>
+              <text x="120" y="105" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700">AC</text>
+            </g>
+
+            <!-- 4. BATTERY BANK (Only for Off-Grid, Hybrid, Without-Solar) -->
+            @if (currentSystem() !== 'on-grid') {
+              <!-- Bi-directional DC Wire Inverter <-> Battery -->
+              <path d="M 480 220 L 480 270" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4"/>
+              <text x="495" y="250" fill="#f59e0b" font-size="9" font-family="monospace">DC Bus</text>
+
+              <g transform="translate(410, 270)">
+                <rect width="140" height="100" rx="8" fill="url(#batGrad)" stroke="#f59e0b" stroke-width="2"/>
+                <text x="70" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">BATTERY BANK</text>
+                <text x="70" y="55" text-anchor="middle" fill="#fef08a" font-size="10" font-family="monospace">
+                  {{ calc.result().battery?.systemVoltage }}V DC • {{ calc.result().battery?.systemBankAh }} Ah
+                </text>
+                <text x="70" y="75" text-anchor="middle" fill="#ffffff" font-size="9">
+                  {{ calc.result().battery?.batteryType | uppercase }} ({{ calc.result().battery?.totalInstalledKwh }} kWh)
+                </text>
+              </g>
+            }
+
+            <!-- Wire Inverter -> AC DB -->
+            <path d="M 570 145 L 630 145" fill="none" stroke="#22c55e" stroke-width="3" marker-end="url(#arrowGreen)"/>
+            <text x="590" y="135" fill="#22c55e" font-size="9" font-family="monospace">230V AC</text>
+
+            <!-- 5. AC DISTRIBUTION BOARD (AC DB) -->
+            <g transform="translate(630, 110)">
+              <rect width="80" height="70" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>
+              <text x="40" y="32" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="700">AC DB</text>
+              <text x="40" y="50" text-anchor="middle" fill="#94a3b8" font-size="8">MCB &amp; SPD</text>
+            </g>
+
+            <!-- Wire AC DB -> Home Loads -->
+            <path d="M 710 125 L 770 100" fill="none" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+
+            <!-- 6. CRITICAL HOME LOADS BLOCK -->
+            <g transform="translate(770, 50)">
+              <rect width="140" height="85" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+              <text x="70" y="30" text-anchor="middle" fill="#c084fc" font-size="11" font-weight="700">CONNECTED LOADS</text>
+              <text x="70" y="50" text-anchor="middle" fill="#ffffff" font-size="11" font-family="monospace">
+                {{ calc.result().connectedLoadW }} Watts
+              </text>
+              <text x="70" y="68" text-anchor="middle" fill="#94a3b8" font-size="9">Lights, Fans, Refrigerator</text>
+            </g>
+
+            <!-- 7. BI-DIRECTIONAL NET METER & UTILITY GRID (Only for On-Grid & Hybrid) -->
+            @if (currentSystem() === 'on-grid' || currentSystem() === 'hybrid') {
+              <!-- Wire AC DB -> Net Meter -->
+              <path d="M 710 160 L 770 190" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4,4"/>
+              
+              <g transform="translate(770, 160)">
+                <rect width="140" height="100" rx="8" fill="url(#gridGrad)" stroke="#22c55e" stroke-width="2"/>
+                <text x="70" y="28" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">DISCOM UTILITY GRID</text>
+                <text x="70" y="48" text-anchor="middle" fill="#bbf7d0" font-size="9" font-family="monospace">Bi-Directional Net Meter</text>
+                <text x="70" y="68" text-anchor="middle" fill="#ffffff" font-size="10" font-family="monospace">Import / Export</text>
+                <text x="70" y="85" text-anchor="middle" fill="#cbd5e1" font-size="8">Sanctioned: {{ calc.result().sanctionedLoadKw }} kW</text>
+              </g>
+            }
+
+          </svg>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-between align-items-center">
+        <div class="text-secondary fs-8">
+          Showing <span class="fw-semibold text-dark">{{ currentSystem() | uppercase }}</span> electrical architecture schematic
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary px-3" (click)="close.emit()">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>

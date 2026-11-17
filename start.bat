@@ -1,8 +1,8 @@
 @echo off
-title SolarTrack .NET 10 Hybrid Backend
+title SolarTrack .NET 10 SQL Server Backend
 echo ======================================================
 echo Starting SolarTrack .NET 10 Web API Backend...
-echo EF Core (Code-First) + Dapper
+echo EF Core + Dapper (Microsoft SQL Server: LGPMPDB)
 echo ======================================================
 cd /d "%~dp0SolarTrack.Backend"
 dotnet run

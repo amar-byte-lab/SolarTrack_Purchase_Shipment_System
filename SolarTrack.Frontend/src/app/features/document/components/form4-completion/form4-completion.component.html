@@ -1,0 +1,105 @@
+<div class="form4-completion-container">
+  
+  <!-- Header Toolbar: Consumer Name Pill & Actions -->
+  <div class="doc-tab-toolbar mb-3">
+    <div class="doc-consumer-pill">
+      <div class="doc-consumer-avatar">
+        <app-icon name="customer" [size]="14"></app-icon>
+      </div>
+      <div class="doc-consumer-meta">
+        <span class="doc-consumer-label">Consumer Name</span>
+        <span class="doc-consumer-name">{{ customer?.Name || 'No Customer Selected' }}</span>
+      </div>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary doc-edit-specs-btn" 
+        (click)="editSpecsClicked.emit()" 
+        title="Edit Technical Specifications &amp; RTS Record">
+        <app-icon name="edit" [size]="12"></app-icon>
+        <span>Edit Specs</span>
+      </button>
+    </div>
+
+    <div class="doc-actions-group">
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary btn-sm" 
+        (click)="resetClicked.emit()" 
+        title="Reset fields">
+        <app-icon name="refresh" [size]="12"></app-icon>
+        <span>Reset</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary btn-sm" 
+        (click)="previewClicked.emit()" 
+        title="Preview Form 4 document">
+        <app-icon name="eye" [size]="12"></app-icon>
+        <span>Preview</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary btn-sm fw-semibold" 
+        (click)="previewClicked.emit()" 
+        title="Print Form 4">
+        <app-icon name="print" [size]="13"></app-icon>
+        <span>Print Form 4</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Joint Inspection Report Card -->
+  <div class="f4-section-card mb-3">
+    <div class="f4-section-header">
+      <div class="f4-section-title">
+        <app-icon name="file" [size]="14" class="text-primary"></app-icon>
+        <span>Joint Inspection Report — Technical Details</span>
+      </div>
+      <span class="badge bg-light text-secondary border">Form-4 DISCOM</span>
+    </div>
+    <div class="p-2 row g-2">
+      <div class="col-md-6">
+        <label class="f4-label">Executive Engineer / SDO Office</label>
+        <input type="text" class="form-control f4-input" [value]="(customer?.DivisionName || 'ELECTRICAL DIVISION') + ', ' + (customer?.CircleName || 'DISCOM')">
+      </div>
+      <div class="col-md-6">
+        <label class="f4-label">PMSGY Reg No / Ref No</label>
+        <input type="text" class="form-control f4-input font-monospace" [value]="customer?.ApplicationNumber || customer?.ConsumerNo">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">PV Module Model</label>
+        <input type="text" class="form-control f4-input" [(ngModel)]="specs.moduleTypeModel">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">Inverter Serial No.</label>
+        <input type="text" class="form-control f4-input font-monospace" [(ngModel)]="specs.inverterSerialNo">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">DCDB / ACDB Make</label>
+        <input type="text" class="form-control f4-input" [(ngModel)]="specs.dcdbMake">
+      </div>
+    </div>
+  </div>
+
+  <!-- Module Serials Summary Card -->
+  <div class="f4-section-card">
+    <div class="f4-section-header">
+      <div class="f4-section-title">
+        <app-icon name="boxes" [size]="14" class="text-primary"></app-icon>
+        <span>PV Module Serial Numbers ({{ specs.moduleSerials?.length || 0 }} Modules)</span>
+      </div>
+      <button type="button" class="btn btn-xs btn-outline-primary" (click)="editSpecsClicked.emit()">Edit Serials</button>
+    </div>
+    <div class="p-2">
+      <div class="row g-1.5 font-monospace fs-8" style="max-height: 140px; overflow-y: auto;">
+        <div *ngFor="let s of specs.moduleSerials" class="col-md-4 col-6">
+          <div class="p-1 border rounded bg-light text-truncate">
+            <span class="text-muted me-1">#{{ s.index }}:</span>
+            <strong>{{ s.serialNo }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

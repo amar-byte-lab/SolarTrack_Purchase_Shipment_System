@@ -1,0 +1,99 @@
+<div class="agreement-form-container">
+  
+  <!-- Header Toolbar: Consumer Name Pill & Actions -->
+  <div class="doc-tab-toolbar mb-3">
+    <div class="doc-consumer-pill">
+      <div class="doc-consumer-avatar">
+        <app-icon name="customer" [size]="14"></app-icon>
+      </div>
+      <div class="doc-consumer-meta">
+        <span class="doc-consumer-label">Consumer Name</span>
+        <span class="doc-consumer-name">{{ customer?.Name || 'No Customer Selected' }}</span>
+      </div>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary doc-edit-specs-btn" 
+        (click)="editSpecsClicked.emit()" 
+        title="Edit Technical Specifications &amp; RTS Record">
+        <app-icon name="edit" [size]="12"></app-icon>
+        <span>Edit Specs</span>
+      </button>
+    </div>
+
+    <div class="doc-actions-group">
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary btn-sm" 
+        (click)="resetClicked.emit()" 
+        title="Reset fields">
+        <app-icon name="refresh" [size]="12"></app-icon>
+        <span>Reset</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary btn-sm" 
+        (click)="previewClicked.emit()" 
+        title="Preview official DISCOM document">
+        <app-icon name="eye" [size]="12"></app-icon>
+        <span>Preview</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary btn-sm fw-semibold" 
+        (click)="previewClicked.emit()" 
+        title="Print official document">
+        <app-icon name="print" [size]="13"></app-icon>
+        <span>Print / Download</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Full Address Section Card -->
+  <div class="f4-section-card mb-3">
+    <div class="f4-section-header">
+      <div class="f4-section-title">
+        <app-icon name="agreement" [size]="14" class="text-primary"></app-icon>
+        <span>Full Consumer Address &amp; Location</span>
+      </div>
+      <span class="badge bg-light text-secondary border">Legal Stamp Format</span>
+    </div>
+    <div class="p-2">
+      <label class="f4-label mb-1">Full Address <span class="text-danger">*</span></label>
+      <textarea 
+        class="form-control f4-textarea font-monospace text-uppercase" 
+        rows="3" 
+        [(ngModel)]="specs.address" 
+        placeholder="e.g. AT/PO KESINGA, DISTRICT: KALAHANDI, STATE: ODISHA, PIN: 766012"></textarea>
+    </div>
+  </div>
+
+  <!-- Vendor & Agreement Terms Card -->
+  <div class="f4-section-card">
+    <div class="f4-section-header">
+      <div class="f4-section-title">
+        <app-icon name="file" [size]="14" class="text-primary"></app-icon>
+        <span>Vendor &amp; Agreement Terms Summary</span>
+      </div>
+      <span class="badge bg-light text-secondary border">Odisha DISCOM Format</span>
+    </div>
+    <div class="p-2 row g-2">
+      <div class="col-md-6">
+        <label class="f4-label">Vendor Name</label>
+        <input type="text" class="form-control f4-input bg-light" value="SHRI TRUTIYADEV SOLAR ENTERPRISES" readonly>
+      </div>
+      <div class="col-md-6">
+        <label class="f4-label">Agreement Date</label>
+        <input type="date" class="form-control f4-input" [value]="customer?.AgreementDate || specs.dateOfInstallation">
+      </div>
+      <div class="col-md-6">
+        <label class="f4-label">Solar PV Capacity (kW)</label>
+        <input type="text" class="form-control f4-input" [(ngModel)]="specs.inverterCapacity">
+      </div>
+      <div class="col-md-6">
+        <label class="f4-label">Connection Type</label>
+        <input type="text" class="form-control f4-input" [(ngModel)]="specs.connectionType">
+      </div>
+    </div>
+  </div>
+
+</div>

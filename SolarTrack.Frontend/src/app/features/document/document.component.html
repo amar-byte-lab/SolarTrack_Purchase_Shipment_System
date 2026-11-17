@@ -1,0 +1,317 @@
+<div class="document-page container-fluid px-2 px-md-3 py-2">
+  
+  <div class="row g-3">
+    
+    <!-- Left Column: Reusable Customer Directory Component -->
+    <div class="col-lg-5 col-xl-4">
+      <app-customer-directory
+        [customers]="filteredCustomers()"
+        [selectedCustomer]="selectedCustomer()"
+        [districtStats]="districtStats()"
+        [selectedDistrict]="selectedDistrict()"
+        [searchQuery]="searchQuery()"
+        (customerSelected)="onSelectCustomer($event)"
+        (districtSelected)="onDistrictFilter($event)"
+        (searchChange)="onSearchChange($event)"
+        (openImportModal)="openImportModal()">
+      </app-customer-directory>
+    </div>
+
+    <!-- Right Column: Document Tabs & Individual Form Components -->
+    <div class="col-lg-7 col-xl-8">
+      <div class="st-card h-100 p-3 bg-white border rounded shadow-xs">
+        
+        <!-- Document Navigation Tabs -->
+        <ul class="nav custom-doc-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <button 
+              type="button" 
+              class="nav-link" 
+              [class.active]="activeDocType() === 'agreement'" 
+              (click)="setDocType('agreement')">
+              <span>Agreement</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button 
+              type="button" 
+              class="nav-link" 
+              [class.active]="activeDocType() === 'form1'" 
+              (click)="setDocType('form1')">
+              <span>Form 1 (Application)</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button 
+              type="button" 
+              class="nav-link" 
+              [class.active]="activeDocType() === 'form3'" 
+              (click)="setDocType('form3')">
+              <span>Form 3 (Inspection)</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button 
+              type="button" 
+              class="nav-link" 
+              [class.active]="activeDocType() === 'form4'" 
+              (click)="setDocType('form4')">
+              <span>Form 4 (Completion)</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button 
+              type="button" 
+              class="nav-link" 
+              [class.active]="activeDocType() === 'form6'" 
+              (click)="setDocType('form6')">
+              <span>Form 6 (Commission)</span>
+            </button>
+          </li>
+        </ul>
+
+        <!-- Separate Standalone Component: Agreement -->
+        <app-agreement-form
+          *ngIf="activeDocType() === 'agreement'"
+          [customer]="selectedCustomer()"
+          [specs]="currentSpecs()"
+          (editSpecsClicked)="openSpecsModal()"
+          (previewClicked)="openPreviewModal('agreement')"
+          (resetClicked)="resetCurrentDocument()">
+        </app-agreement-form>
+
+        <!-- Separate Standalone Component: Form 1 Application -->
+        <app-form1-application
+          *ngIf="activeDocType() === 'form1'"
+          [customer]="selectedCustomer()"
+          [specs]="currentSpecs()"
+          (editSpecsClicked)="openSpecsModal()"
+          (previewClicked)="openPreviewModal('form1')"
+          (resetClicked)="resetCurrentDocument()">
+        </app-form1-application>
+
+        <!-- Separate Standalone Component: Form 3 Inspection -->
+        <app-form3-inspection
+          *ngIf="activeDocType() === 'form3'"
+          [customer]="selectedCustomer()"
+          [specs]="currentSpecs()"
+          (editSpecsClicked)="openSpecsModal()"
+          (previewClicked)="openPreviewModal('form3')"
+          (resetClicked)="resetCurrentDocument()">
+        </app-form3-inspection>
+
+        <!-- Separate Standalone Component: Form 4 Joint Completion -->
+        <app-form4-completion
+          *ngIf="activeDocType() === 'form4'"
+          [customer]="selectedCustomer()"
+          [specs]="currentSpecs()"
+          (editSpecsClicked)="openSpecsModal()"
+          (previewClicked)="openPreviewModal('form4')"
+          (resetClicked)="resetCurrentDocument()">
+        </app-form4-completion>
+
+        <!-- Separate Standalone Component: Form 6 Commissioning -->
+        <app-form6-commission
+          *ngIf="activeDocType() === 'form6'"
+          [customer]="selectedCustomer()"
+          [specs]="currentSpecs()"
+          (editSpecsClicked)="openSpecsModal()"
+          (previewClicked)="openPreviewModal('form6')"
+          (resetClicked)="resetCurrentDocument()">
+        </app-form6-commission>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- REUSABLE MODAL COMPONENT: EDIT PRODUCT SPECIFICATIONS & RTS RECORD   -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <app-product-specs-modal
+    [isOpen]="isSpecsModalOpen()"
+    [customer]="selectedCustomer()"
+    [specs]="currentSpecs()"
+    (close)="closeSpecsModal()"
+    (save)="onSaveSpecs($event)">
+  </app-product-specs-modal>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: PRINT / PREVIEW A4 OFFICIAL DISCOM DOCUMENT                   -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="isPreviewModalOpen()" class="modal-backdrop fade show"></div>
+  <div *ngIf="isPreviewModalOpen()" class="modal d-block" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        
+        <!-- Header -->
+        <div class="modal-header py-2 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <h6 class="modal-title fw-bold text-dark mb-0 fs-7">
+              Document Preview — 
+              <span *ngIf="previewDocType() === 'agreement'">Vendor &amp; Consumer Legal Agreement</span>
+              <span *ngIf="previewDocType() === 'form1'">Application Form (Form-1)</span>
+              <span *ngIf="previewDocType() === 'form3'">Work Completion &amp; Inspection Report (Form-3)</span>
+              <span *ngIf="previewDocType() === 'form4'">Work Completion Report (Form-4)</span>
+              <span *ngIf="previewDocType() === 'form6'">Commissioning Certificate (Form-6)</span>
+            </h6>
+            <span class="badge bg-white text-secondary border fs-9">A4 Format</span>
+          </div>
+          <button type="button" class="btn-close" (click)="closePreviewModal()"></button>
+        </div>
+
+        <!-- Modal Body (Printable Sheet) -->
+        <div class="modal-body p-4 bg-secondary bg-opacity-10 printable-area">
+          <div class="a4-sheet bg-white p-4 shadow-sm mx-auto border" style="max-width: 800px; min-height: 1000px; color: #000; font-family: serif; font-size: 13px; line-height: 1.5;">
+            
+            <!-- HEADER -->
+            <div class="text-center mb-3">
+              <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.05em;">
+                <span *ngIf="previewDocType() === 'agreement'">AGREEMENT BETWEEN CONSUMER AND VENDOR</span>
+                <span *ngIf="previewDocType() === 'form1'">APPLICATION FORM FOR NET-METERING (FORM-1)</span>
+                <span *ngIf="previewDocType() === 'form3'">WORK COMPLETION AND INSPECTION REPORT (FORM-3)</span>
+                <span *ngIf="previewDocType() === 'form4'">WORK COMPLETION REPORT (FORM-4)</span>
+                <span *ngIf="previewDocType() === 'form6'">COMMISSIONING CERTIFICATE FOR RTS (FORM-6)</span>
+              </h5>
+              <div class="small text-muted">
+                Under PM - Surya Ghar Muft Bijli Yojana &bull; Grid Connected Solar Rooftop PV System
+              </div>
+              <hr class="my-2 border-dark">
+            </div>
+
+            <!-- APPLICANT / TO ADDRESS -->
+            <div class="mb-3">
+              <div><strong>To,</strong></div>
+              <div>The Executive Engineer / Designated Authority (Elec.),</div>
+              <div>{{ selectedCustomer()?.DivisionName || 'Electrical Division' }}, {{ selectedCustomer()?.District || 'Odisha' }}</div>
+              <div class="mt-2"><strong>Sub:</strong> Formal Submission of Official RTS Documentation for Commissioning.</div>
+              <div><strong>PMSGY Reg. No:</strong> {{ selectedCustomer()?.ApplicationNumber || selectedCustomer()?.ConsumerNo }}</div>
+            </div>
+
+            <!-- SUMMARY DETAILS TABLE -->
+            <table class="table table-bordered border-dark table-sm mb-3" style="font-size: 12px; border-color: #000;">
+              <tbody>
+                <tr class="table-light fw-bold">
+                  <td colspan="3">A. Applicant &amp; Site Details</td>
+                </tr>
+                <tr>
+                  <td style="width: 35px;" class="text-center">1</td>
+                  <td style="width: 45%;">Name of Applicant / Consumer</td>
+                  <td class="fw-bold">{{ selectedCustomer()?.Name }}</td>
+                </tr>
+                <tr>
+                  <td class="text-center">2</td>
+                  <td>Consumer Number</td>
+                  <td class="font-monospace fw-bold">{{ selectedCustomer()?.ConsumerNo }}</td>
+                </tr>
+                <tr>
+                  <td class="text-center">3</td>
+                  <td>Premises Address</td>
+                  <td>{{ currentSpecs().address }}</td>
+                </tr>
+                <tr>
+                  <td class="text-center">4</td>
+                  <td>Sanctioned Load &amp; Solar Plant Capacity</td>
+                  <td>{{ currentSpecs().inverterCapacity || '3' }} kWp ({{ currentSpecs().connectionType || '1ph LT' }})</td>
+                </tr>
+
+                <tr class="table-light fw-bold">
+                  <td colspan="3">B. Technical Specifications</td>
+                </tr>
+                <tr>
+                  <td class="text-center">5</td>
+                  <td>PV Module Make &amp; Total Modules</td>
+                  <td>{{ currentSpecs().moduleMake }} ({{ currentSpecs().moduleCount }} Nos. &bull; {{ currentSpecs().moduleTotalCapacity }})</td>
+                </tr>
+                <tr>
+                  <td class="text-center">6</td>
+                  <td>Inverter Make &amp; Serial Number</td>
+                  <td>{{ currentSpecs().inverterMake }} - S/N: {{ currentSpecs().inverterSerialNo }}</td>
+                </tr>
+                <tr>
+                  <td class="text-center">7</td>
+                  <td>DCDB &amp; ACDB Protection Boxes</td>
+                  <td>DCDB: {{ currentSpecs().dcdbMake }} | ACDB: {{ currentSpecs().acdbMake }}</td>
+                </tr>
+                <tr>
+                  <td class="text-center">8</td>
+                  <td>Earth Resistance Test Result</td>
+                  <td>{{ currentSpecs().earthResistance }} Ohms (Safe Grounding)</td>
+                </tr>
+                <tr>
+                  <td class="text-center">9</td>
+                  <td>Executing Vendor</td>
+                  <td class="fw-bold">SHRI TRUTIYADEV SOLAR ENTERPRISES</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- MODULE SERIALS IF PRESENT -->
+            <div *ngIf="currentSpecs().moduleSerials && (currentSpecs().moduleSerials?.length || 0) > 0" class="mb-3">
+              <div class="fw-bold small mb-1">C. Installed PV Module Serial Numbers:</div>
+              <div class="p-2 border border-dark rounded font-monospace small" style="background: #fbfbfb;">
+                <span *ngFor="let s of currentSpecs().moduleSerials; let last = last">
+                  {{ s.serialNo }} ({{ s.capacity }}W){{ last ? '' : ', ' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- DECLARATION & SIGNATURE BLOCKS -->
+            <div class="mt-4 pt-2">
+              <div class="small mb-4 text-justify">
+                We hereby verify that the above Solar Rooftop PV system has been installed in full accordance with DISCOM standards, CEA regulations, and MNRE guidelines.
+              </div>
+
+              <div class="d-flex justify-content-between text-center mt-5 pt-4">
+                <div style="width: 200px;">
+                  <div class="border-top border-dark pt-1">
+                    <strong>Signature of Consumer</strong>
+                    <div class="small text-muted">{{ selectedCustomer()?.Name }}</div>
+                  </div>
+                </div>
+
+                <div style="width: 240px;">
+                  <div class="border-top border-dark pt-1">
+                    <strong>For SHRI TRUTIYADEV SOLAR ENTERPRISES</strong>
+                    <div class="small text-muted">Authorized Signatory / Vendor Stamp</div>
+                  </div>
+                </div>
+
+                <div style="width: 200px;">
+                  <div class="border-top border-dark pt-1">
+                    <strong>Inspecting Officer</strong>
+                    <div class="small text-muted">DISCOM Official</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3" (click)="closePreviewModal()">Close</button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" (click)="printDocument()">
+              <app-icon name="print" [size]="14" class="me-1"></app-icon>
+              Print Document
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- REUSABLE MODAL COMPONENT: EXCEL CUSTOMER IMPORT & VERIFICATION      -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <app-customer-import-modal
+    [isOpen]="isImportModalOpen()"
+    [existingCustomers]="summaryService.rawInstallments()"
+    (close)="closeImportModal()"
+    (importCompleted)="onImportCompleted()">
+  </app-customer-import-modal>
+
+</div>

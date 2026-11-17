@@ -1,0 +1,239 @@
+<div *ngIf="isOpen" class="modal-backdrop fade show" (click)="onClose()"></div>
+
+<div *ngIf="isOpen" class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="onBackdropClick($event)">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow rounded-3 overflow-hidden" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <div class="stockin-badge">
+            <app-icon name="boxes" [size]="16" class="text-success"></app-icon>
+          </div>
+          <div>
+            <h6 class="modal-title fw-bold text-dark m-0 fs-7">Stock In Consignment (Inward Delivery)</h6>
+            <div class="text-secondary fs-9">Receive equipment items into warehouse godown</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-3 bg-slate-50">
+        
+        <!-- Header Fields Card -->
+        <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
+          <div class="row g-2">
+            <div class="col-md-3 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Inward Date *</label>
+              <input type="date" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="date">
+            </div>
+
+            <div class="col-md-3 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Supplier / Vendor *</label>
+              <input type="text" class="form-control form-control-sm fs-8 fw-semibold" [(ngModel)]="supplier" placeholder="e.g. Tata Solar, Growatt">
+            </div>
+
+            <div class="col-md-3 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Godown Storage Location</label>
+              <input type="text" class="form-control form-control-sm fs-8" [(ngModel)]="location" placeholder="Bay A / Rack 1">
+            </div>
+
+            <div class="col-md-3 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Consignment Transport Cost (₹)</label>
+              <input 
+                type="number" 
+                min="0" 
+                step="any" 
+                class="form-control form-control-sm text-end font-monospace fs-8" 
+                [(ngModel)]="transportCost" 
+                (ngModelChange)="recalculateCosts()"
+                placeholder="0.00">
+            </div>
+
+            <!-- Upload Invoice / Document -->
+            <div class="col-12 mt-2">
+              <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+                <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                  <app-icon name="file" [size]="15" class="text-secondary"></app-icon>
+                  <span class="small fw-semibold text-secondary text-truncate">
+                    {{ docName ? docName : 'Upload Supplier Invoice / Delivery Challan' }}
+                  </span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+                  <label class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 mb-0 cursor-pointer d-inline-flex align-items-center gap-1">
+                    <app-icon name="upload" [size]="12"></app-icon>
+                    <span>{{ docName ? 'Change File' : 'Upload File' }}</span>
+                    <input type="file" (change)="onFileSelected($event)" class="d-none">
+                  </label>
+                  <button *ngIf="docName" type="button" class="btn btn-xs btn-outline-danger p-1 border-0" (click)="removeFile()" title="Remove file">
+                    <app-icon name="close" [size]="12"></app-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Items Received Section -->
+        <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-bold text-dark fs-8 text-uppercase" style="letter-spacing: 0.03em;">
+              Items Received ({{ itemsList.length }})
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8" (click)="addItemRow()">
+              <app-icon name="plus" [size]="13"></app-icon>
+              <span>Add Item</span>
+            </button>
+          </div>
+
+          <!-- Items Table -->
+          <div class="table-responsive border rounded bg-white">
+            <table class="table table-sm align-middle table-bordered mb-0" style="font-size: 0.8rem;">
+              <thead class="table-light">
+                <tr>
+                  <th style="min-width: 170px;">EQUIPMENT ITEM</th>
+                  <th style="width: 80px;" class="text-center">QTY</th>
+                  <th style="width: 95px;" class="text-end">UNIT COST</th>
+                  <th style="width: 105px;" class="text-end">Total (Excl)</th>
+                  <th style="width: 70px;" class="text-center">GST %</th>
+                  <th style="width: 95px;" class="text-end">COST+GST</th>
+                  <th style="width: 110px;" class="text-end">Total (Incl)</th>
+                  <th style="width: 100px;" class="text-end">DELIVERY</th>
+                  <th style="width: 110px;" class="text-end">COST/UNIT</th>
+                  <th style="width: 32px;" class="text-center p-0"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of itemsList; let idx = index">
+                  <!-- Item Select -->
+                  <td>
+                    <select class="form-select form-select-sm fs-8 py-0.5" [(ngModel)]="row.itemCode" (change)="onItemChanged(row)">
+                      <option value="" disabled>-- Select Item --</option>
+                      <option *ngFor="let itm of availableItems" [value]="itm.ItemCode">
+                        {{ itm.ItemName }} ({{ itm.Category }})
+                      </option>
+                    </select>
+                  </td>
+
+                  <!-- Qty -->
+                  <td>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      step="any" 
+                      class="form-control form-control-sm text-center font-monospace fs-8 py-0.5" 
+                      [(ngModel)]="row.qty" 
+                      (ngModelChange)="recalculateCosts()">
+                  </td>
+
+                  <!-- Unit Cost -->
+                  <td>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="any" 
+                      class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" 
+                      [(ngModel)]="row.unitPrice" 
+                      (ngModelChange)="recalculateCosts()">
+                  </td>
+
+                  <!-- Total Excl GST -->
+                  <td class="text-end font-monospace fw-semibold text-secondary fs-8">
+                    ₹{{ row.totalExclGst | number:'1.2-2' }}
+                  </td>
+
+                  <!-- GST % -->
+                  <td>
+                    <select class="form-select form-select-sm text-center fs-8 py-0.5" [(ngModel)]="row.gstRate" (ngModelChange)="recalculateCosts()">
+                      <option [value]="0">0%</option>
+                      <option [value]="5">5%</option>
+                      <option [value]="12">12%</option>
+                      <option [value]="18">18%</option>
+                      <option [value]="28">28%</option>
+                    </select>
+                  </td>
+
+                  <!-- Cost + GST -->
+                  <td class="text-end font-monospace text-secondary fs-8">
+                    ₹{{ row.costWithGst | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Total Incl GST -->
+                  <td class="text-end font-monospace fw-bold text-dark fs-8">
+                    ₹{{ row.totalWithGst | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Delivery Share -->
+                  <td class="text-end font-monospace text-muted fs-8">
+                    ₹{{ row.deliveryShare | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Cost Per Unit -->
+                  <td class="text-end font-monospace fw-bold text-success fs-8">
+                    ₹{{ row.costPerUnit | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Delete Row -->
+                  <td class="text-center p-0">
+                    <button type="button" class="btn btn-xs btn-outline-danger p-0.5 border-0" (click)="removeItemRow(idx)" title="Remove item row">
+                      <app-icon name="trash" [size]="12"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+
+                <tr *ngIf="itemsList.length === 0">
+                  <td colspan="10" class="text-center py-3 text-muted fs-8">
+                    No items added yet. Click <strong>+ Add Item</strong> above.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Valuation Summary Bar -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded mt-2 border">
+            <div class="d-flex align-items-baseline gap-1.5">
+              <span class="text-secondary small fw-medium">Total GST:</span>
+              <span class="text-dark fw-semibold fs-7 font-monospace">₹{{ totalGst | number:'1.2-2' }}</span>
+            </div>
+            <div class="d-flex align-items-baseline gap-2">
+              <span class="text-secondary small fw-medium">Total Inward Material Cost:</span>
+              <span class="text-dark fw-bold fs-6 font-monospace text-success">₹{{ totalMaterialCost | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Keep-style Note -->
+        <div class="inv-keep-note border rounded-2 p-2 bg-white">
+          <div class="d-flex align-items-center gap-1.5 mb-1 text-secondary fs-9 fw-semibold">
+            <app-icon name="edit" [size]="12"></app-icon>
+            <span>Notes / Inward Remarks</span>
+          </div>
+          <textarea 
+            class="form-control border-0 p-1 fs-8 shadow-none" 
+            rows="2" 
+            [(ngModel)]="remarks" 
+            placeholder="Write a note (vendor invoice number, delivery instructions...)"
+            style="resize: none;">
+          </textarea>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer py-2 px-3 border-top bg-light d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-sm btn-secondary px-3 fs-8" (click)="onClose()">Cancel</button>
+        <button 
+          type="button" 
+          class="btn btn-sm btn-success px-4 fw-semibold fs-8" 
+          (click)="submitStockIn()" 
+          [disabled]="isSubmitting">
+          Confirm Stock In
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

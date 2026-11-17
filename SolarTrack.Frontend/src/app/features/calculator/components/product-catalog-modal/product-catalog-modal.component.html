@@ -1,0 +1,151 @@
+<div class="modal fade show d-block" id="solarProductFlipkartModal" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1055;">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      
+      <!-- Modal Header -->
+      <div class="modal-header bg-light border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2 min-w-0">
+          <span class="fs-5 flex-shrink-0">🛒</span>
+          <div class="min-w-0">
+            <h5 class="modal-title fw-bold text-dark fs-6 mb-0 text-truncate">
+              Multi-Brand Product Recommendations (Flipkart-Style)
+            </h5>
+            <div class="text-muted fs-8 text-truncate">
+              Verified Tier-1 manufacturers matching calculated system specifications
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" (click)="close.emit()" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-3 p-md-3.5">
+        
+        <!-- Spec Context Banner -->
+        <div class="p-2.5 rounded-2 mb-3 bg-primary-subtle border border-primary-subtle d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary text-white fs-9">Active Sizing</span>
+            <span class="fs-8 fw-semibold text-dark">
+              @if (activeTab() === 'inverters') {
+                Required: <strong>{{ calc.result().inverter.kVA }} kVA / {{ calc.result().inverter.kW }} kW</strong> ({{ calc.result().inverter.phase }})
+              } @else if (activeTab() === 'batteries') {
+                Required: <strong>{{ calc.result().battery?.systemVoltage }}V {{ calc.result().battery?.systemBankAh }}Ah Bank</strong> (~{{ calc.result().battery?.totalInstalledKwh }} kWh)
+              } @else {
+                Required: <strong>{{ calc.result().solar?.actualArrayKwp || 3.3 }} kWp Solar PV Array</strong> (~{{ calc.result().solar?.panelCount || 6 }} Panels)
+              }
+            </span>
+          </div>
+          <span class="fs-9 text-muted">Tier-1 Indian Manufacturers</span>
+        </div>
+
+        <!-- Filter Controls: Brand Pills & Search -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <!-- Category Tabs -->
+          <div class="btn-group btn-group-sm shadow-2xs" role="group">
+            <button 
+              type="button" 
+              class="btn fw-semibold fs-8" 
+              [ngClass]="activeTab() === 'inverters' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="setTab('inverters')">
+              ⚡ Inverters
+            </button>
+            @if (calc.systemType() !== 'on-grid') {
+              <button 
+                type="button" 
+                class="btn fw-semibold fs-8" 
+                [ngClass]="activeTab() === 'batteries' ? 'btn-success' : 'btn-outline-secondary'"
+                (click)="setTab('batteries')">
+                🔋 Batteries
+              </button>
+            }
+            @if (calc.systemType() !== 'without-solar') {
+              <button 
+                type="button" 
+                class="btn fw-semibold fs-8" 
+                [ngClass]="activeTab() === 'panels' ? 'btn-warning text-dark' : 'btn-outline-secondary'"
+                (click)="setTab('panels')">
+                ☀️ Solar Panels
+              </button>
+            }
+          </div>
+
+          <!-- Brand Pills -->
+          <div class="d-flex align-items-center gap-1 flex-wrap">
+            @for (b of brands; track b.id) {
+              <button 
+                type="button" 
+                class="btn btn-xs rounded-pill px-2.5 py-0.5 fs-9 fw-semibold border"
+                [ngClass]="selectedBrand() === b.id ? 'btn-dark text-white' : 'btn-light text-secondary'"
+                (click)="selectedBrand.set(b.id)">
+                {{ b.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-3">
+          <input 
+            type="text" 
+            class="form-control form-control-sm fs-8" 
+            placeholder="Search products by brand, model, wattage, kVA..." 
+            [(ngModel)]="searchQuery">
+        </div>
+
+        <!-- Product Cards Grid -->
+        <div class="row g-2.5">
+          @for (prod of filteredProducts(); track prod.id) {
+            <div class="col-lg-4 col-md-6 col-12">
+              <div class="p-3 bg-white rounded-3 border h-100 d-flex flex-column justify-content-between shadow-2xs">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge fs-9 py-0.5 px-2 rounded-pill" [ngClass]="getBrandBadgeClass(prod.brand)">
+                      {{ prod.brand }}
+                    </span>
+                    <span class="fs-9 text-muted">{{ prod.category }}</span>
+                  </div>
+
+                  <h6 class="fw-bold text-dark fs-7 mb-1">{{ prod.title }}</h6>
+                  <div class="fs-8 text-secondary mb-2">{{ prod.subtitle }}</div>
+
+                  <ul class="list-unstyled fs-9 text-secondary mb-3 d-flex flex-column gap-1">
+                    @for (spec of prod.specs; track spec) {
+                      <li>• {{ spec }}</li>
+                    }
+                  </ul>
+                </div>
+
+                <div class="border-top pt-2 d-flex align-items-center justify-content-between">
+                  <div>
+                    <div class="fs-9 text-muted">Estimated Price</div>
+                    <div class="fw-bold text-dark fs-7">₹{{ prod.price.toLocaleString('en-IN') }}</div>
+                  </div>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-primary fs-8 fw-semibold py-1 px-2.5 rounded-2"
+                    (click)="selectProduct(prod)">
+                    Select
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+          @if (filteredProducts().length === 0) {
+            <div class="col-12 text-center py-5 text-muted fs-8">
+              No matching products found for the selected brand and filter criteria.
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-end">
+        <button type="button" class="btn btn-sm btn-secondary fs-8" (click)="close.emit()">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

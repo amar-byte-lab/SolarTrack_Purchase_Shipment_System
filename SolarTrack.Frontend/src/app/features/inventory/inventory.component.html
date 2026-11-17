@@ -1,0 +1,716 @@
+<div class="inventory-container p-3 p-md-4">
+  
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Top Bar: Search, Status, Summary, Category Strip, Actions  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-3">
+      
+      <!-- Row 1: Search, Status Filters, Summary Button, Primary Action Buttons -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        
+        <!-- Search & Status Group -->
+        <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+          <div class="search-box position-relative" style="min-width: 240px; max-width: 340px;">
+            <app-icon name="search" class="search-icon text-muted"></app-icon>
+            <input 
+              type="text" 
+              class="form-control form-control-sm ps-4" 
+              placeholder="Search SKU, name, category..." 
+              [ngModel]="searchTerm()" 
+              (ngModelChange)="searchTerm.set($event)">
+          </div>
+
+          <!-- Status Filters -->
+          <div class="btn-group btn-group-sm" role="group">
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="selectedStatus() === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="setStatus('all')">
+              All
+            </button>
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="selectedStatus() === 'in-stock' ? 'btn-success text-white' : 'btn-outline-secondary'"
+              (click)="setStatus('in-stock')">
+              In Stock
+            </button>
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="selectedStatus() === 'low-stock' ? 'btn-warning' : 'btn-outline-secondary'"
+              (click)="setStatus('low-stock')">
+              Low Stock
+            </button>
+            <button 
+              type="button" 
+              class="btn" 
+              [ngClass]="selectedStatus() === 'out-of-stock' ? 'btn-danger text-white' : 'btn-outline-secondary'"
+              (click)="setStatus('out-of-stock')">
+              Out
+            </button>
+          </div>
+
+          <!-- Summary Modal Trigger Button -->
+          <button 
+            type="button" 
+            class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5"
+            (click)="showSummaryModal.set(true)" 
+            title="View Real-time Warehouse & EPC Metrics">
+            <app-icon name="trending-up"></app-icon>
+            <span>Summary</span>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex align-items-center gap-2">
+          @if (selectedCodes().size > 0) {
+            <span class="badge bg-secondary font-monospace">{{ selectedCodes().size }} selected</span>
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteSelected()">
+              <app-icon name="trash"></app-icon>
+              <span>Delete</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none" (click)="clearSelection()">
+              Clear
+            </button>
+          }
+
+          <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" (click)="openAddItem()">
+            <app-icon name="plus"></app-icon>
+            <span>Add Item</span>
+          </button>
+
+          <button type="button" class="btn btn-sm btn-success text-white d-inline-flex align-items-center gap-1" (click)="showStockInModal.set(true)">
+            <app-icon name="upload"></app-icon>
+            <span>Stock In</span>
+          </button>
+
+          <button type="button" class="btn btn-sm btn-amber d-inline-flex align-items-center gap-1" (click)="showDispatchModal.set(true)">
+            <app-icon name="truck"></app-icon>
+            <span>Dispatch</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Row 2: Category Chips & Manage Category -->
+      <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top">
+        <div class="category-strip d-flex align-items-center gap-1.5 overflow-auto py-1">
+          <button 
+            type="button" 
+            class="btn btn-xs category-chip"
+            [ngClass]="selectedCategory() === 'all' ? 'active' : ''"
+            (click)="setCategory('all')">
+            ALL
+          </button>
+
+          @for (cat of invService.categories(); track cat) {
+            <button 
+              type="button" 
+              class="btn btn-xs category-chip"
+              [ngClass]="selectedCategory() === cat ? 'active' : ''"
+              (click)="setCategory(cat)">
+              {{ cat }}
+            </button>
+          }
+        </div>
+
+        <button 
+          type="button" 
+          class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 flex-shrink-0"
+          (click)="showCategoryModal.set(true)"
+          title="Create, rename or delete equipment categories">
+          <app-icon name="folder"></app-icon>
+          <span>Manage Category</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Tab Navigation                                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="nav-tabs-wrapper mb-3 border-bottom d-flex align-items-center justify-content-between">
+    <ul class="nav nav-tabs border-0 gap-1">
+      <li class="nav-item">
+        <button 
+          class="nav-link" 
+          [ngClass]="{ 'active': activeTab() === 'ledger' }"
+          (click)="setTab('ledger')">
+          <app-icon name="boxes" class="me-1"></app-icon>
+          <span>Live Stock Ledger</span>
+          <span class="badge bg-light text-dark ms-1.5 border">{{ invService.rawItems().length }}</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button 
+          class="nav-link" 
+          [ngClass]="{ 'active': activeTab() === 'dispatches' }"
+          (click)="setTab('dispatches')">
+          <app-icon name="truck" class="me-1"></app-icon>
+          <span>Site Dispatches</span>
+          <span class="badge bg-light text-dark ms-1.5 border">{{ invService.groupedDispatches().length }}</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button 
+          class="nav-link" 
+          [ngClass]="{ 'active': activeTab() === 'inwards' }"
+          (click)="setTab('inwards')">
+          <app-icon name="upload" class="me-1"></app-icon>
+          <span>Inward Purchases</span>
+          <span class="badge bg-light text-dark ms-1.5 border">{{ invService.groupedInwards().length }}</span>
+        </button>
+      </li>
+    </ul>
+
+    <div class="text-muted small d-none d-md-block pe-2" style="font-size: 0.8rem;">
+      EPC Inventory Management System
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: Live Stock Ledger                                   -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'ledger') {
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 inventory-table">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 36px;" class="text-center">
+                <input 
+                  type="checkbox" 
+                  class="form-check-input"
+                  [checked]="selectedCodes().size > 0 && selectedCodes().size === filteredItems().length"
+                  (change)="toggleSelectAll()">
+              </th>
+              <th style="width: 120px;">SKU Code</th>
+              <th>Equipment / Item</th>
+              <th>Category</th>
+              <th class="text-end" style="width: 110px;">In-Hand</th>
+              <th class="text-end" style="width: 90px;">Min Qty</th>
+              <th class="text-center" style="width: 110px;">Status</th>
+              <th class="text-end" style="width: 110px;">Buying Rate</th>
+              <th class="text-end" style="width: 130px;">Valuation</th>
+              <th class="text-center" style="width: 110px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (invService.isLoading()) {
+              <tr>
+                <td colspan="10" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                  Loading warehouse stock...
+                </td>
+              </tr>
+            } @else if (categorizedItems().length === 0) {
+              <tr>
+                <td colspan="10" class="text-center py-5 text-muted">
+                  <app-icon name="boxes" class="fs-2 mb-2 text-secondary"></app-icon>
+                  <div>No equipment records found matching the current filters.</div>
+                </td>
+              </tr>
+            } @else {
+              @for (grp of categorizedItems(); track grp.category) {
+                <!-- Category Section Banner -->
+                <tr class="category-header-row" (click)="toggleCategoryCollapse(grp.category)">
+                  <td colspan="10" class="py-2 px-3 bg-light border-top border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        <app-icon 
+                          [name]="isCategoryCollapsed(grp.category) ? 'chevron-right' : 'chevron-down'" 
+                          class="category-chevron text-secondary">
+                        </app-icon>
+                        <span class="fw-bold text-dark fs-7">{{ grp.category }}</span>
+                        <span class="badge bg-secondary-subtle text-secondary border font-monospace fs-8">
+                          {{ grp.items.length }} {{ grp.items.length === 1 ? 'item' : 'items' }}
+                        </span>
+                      </div>
+                      <div class="d-flex align-items-center gap-3 text-secondary fs-8">
+                        <span>Units: <strong class="text-dark font-monospace">{{ grp.totalUnits | number }}</strong></span>
+                        <span>Valuation: <strong class="text-primary font-monospace">₹{{ grp.totalValuation | number:'1.2-2' }}</strong></span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Category Items (Rendered if not collapsed) -->
+                @if (!isCategoryCollapsed(grp.category)) {
+                  @for (item of grp.items; track item.ItemCode) {
+                    <tr [ngClass]="{ 'table-active': isItemSelected(item.ItemCode) }">
+                      <!-- Selection Checkbox -->
+                      <td class="text-center">
+                        <input 
+                          type="checkbox" 
+                          class="form-check-input"
+                          [checked]="isItemSelected(item.ItemCode)"
+                          (change)="toggleSelectItem(item.ItemCode)">
+                      </td>
+
+                      <!-- SKU Code -->
+                      <td>
+                        <span class="sku-badge font-monospace">{{ item.ItemCode }}</span>
+                      </td>
+
+                      <!-- Name, Description, Location -->
+                      <td>
+                        <div class="fw-semibold text-dark">{{ item.ItemName }}</div>
+                        <div class="text-secondary fs-8">
+                          @if (item.Description) {
+                            <span class="me-2">{{ item.Description }}</span>
+                          }
+                          @if (item.Location) {
+                            <span>Location: {{ item.Location }}</span>
+                          }
+                        </div>
+                      </td>
+
+                      <!-- Category -->
+                      <td>
+                        <span class="badge bg-light text-dark border">{{ item.Category }}</span>
+                      </td>
+
+                      <!-- In-Hand Qty -->
+                      <td class="text-end">
+                        <span class="fw-bold font-monospace" [ngClass]="item.inHandQty <= item.MinThreshold ? (item.inHandQty <= 0 ? 'text-danger' : 'text-warning') : 'text-success'">
+                          {{ item.inHandQty | number }}
+                        </span>
+                        <span class="text-muted ms-1 fs-9">{{ item.Unit || 'Nos' }}</span>
+                      </td>
+
+                      <!-- Min Stock Threshold -->
+                      <td class="text-end font-monospace text-secondary fs-8">
+                        {{ item.MinThreshold }}
+                      </td>
+
+                      <!-- Status Badge -->
+                      <td class="text-center">
+                        @if (item.status === 'in-stock') {
+                          <span class="badge bg-success-subtle text-success border border-success-subtle">In Stock</span>
+                        } @else if (item.status === 'low-stock') {
+                          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Low Stock</span>
+                        } @else {
+                          <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Out of Stock</span>
+                        }
+                      </td>
+
+                      <!-- Buying Rate -->
+                      <td class="text-end font-monospace fs-8">
+                        ₹{{ item.BuyingPrice | number:'1.2-2' }}
+                      </td>
+
+                      <!-- Valuation -->
+                      <td class="text-end font-monospace fw-bold text-dark fs-8">
+                        ₹{{ item.totalStockValuation | number:'1.2-2' }}
+                      </td>
+
+                      <!-- Actions -->
+                      <td class="text-center">
+                        <div class="d-inline-flex align-items-center gap-1">
+                          <button 
+                            type="button" 
+                            class="btn btn-action-icon text-primary" 
+                            (click)="openPriceHistory(item)" 
+                            title="View Purchase Price History & Rate Trend">
+                            <app-icon name="trending-up"></app-icon>
+                          </button>
+                          <button 
+                            type="button" 
+                            class="btn btn-action-icon text-secondary" 
+                            (click)="openEditItem(item)" 
+                            title="Edit Item Details">
+                            <app-icon name="pencil"></app-icon>
+                          </button>
+                          <button 
+                            type="button" 
+                            class="btn btn-action-icon text-danger" 
+                            (click)="deleteItem(item)" 
+                            title="Delete SKU">
+                            <app-icon name="trash"></app-icon>
+                          </button>
+                        </div>
+                      </td>
+
+                    </tr>
+                  }
+                }
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: Site Dispatches                                     -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'dispatches') {
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px;"></th>
+              <th style="width: 105px;">Date</th>
+              <th>Site / Project</th>
+              <th>Vehicle</th>
+              <th class="text-end" style="width: 100px;">Distance</th>
+              <th class="text-end" style="width: 120px;">Transport Cost</th>
+              <th class="text-end" style="width: 130px;">Material Cost</th>
+              <th class="text-center" style="width: 90px;">Documents</th>
+              <th class="text-center" style="width: 80px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredDispatches().length === 0) {
+              <tr>
+                <td colspan="9" class="text-center py-5 text-muted">
+                  <app-icon name="truck" class="fs-2 mb-2 text-secondary"></app-icon>
+                  <div>No site dispatch consignments recorded.</div>
+                </td>
+              </tr>
+            } @else {
+              @for (c of filteredDispatches(); track c.key) {
+                <tr>
+                  <!-- Expand Chevron -->
+                  <td class="text-center">
+                    <button 
+                      type="button" 
+                      class="btn btn-xs btn-link p-0 text-secondary"
+                      (click)="toggleConsignment(c.key)">
+                      <app-icon [name]="isConsignmentExpanded(c.key) ? 'chevron-up' : 'chevron-down'"></app-icon>
+                    </button>
+                  </td>
+
+                  <!-- Date -->
+                  <td class="font-monospace fs-8">{{ formatDate(c.date) }}</td>
+
+                  <!-- Site Name & Remarks -->
+                  <td>
+                    <div class="fw-semibold text-dark">{{ c.siteName }}</div>
+                    @if (c.remarks) {
+                      <div class="text-secondary fs-8">{{ c.remarks }}</div>
+                    }
+                  </td>
+
+                  <!-- Vehicle -->
+                  <td class="fs-8">
+                    @if (c.vehicle) {
+                      <div><strong>Vehicle:</strong> {{ c.vehicle }}</div>
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </td>
+
+                  <!-- Distance -->
+                  <td class="text-end font-monospace fs-8">
+                    {{ c.distanceKm ? (c.distanceKm + ' km') : '-' }}
+                  </td>
+
+                  <!-- Transport Cost -->
+                  <td class="text-end font-monospace text-indigo-700 fs-8">
+                    ₹{{ c.transportCost | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Material Cost -->
+                  <td class="text-end font-monospace fw-bold text-dark fs-8">
+                    ₹{{ c.totalMaterialCost | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Documents link -->
+                  <td class="text-center">
+                    @if (c.documents && c.documents.length > 0) {
+                      <span class="badge bg-light text-primary border" [title]="c.documents[0].name">
+                        <app-icon name="file-text" class="me-1"></app-icon>Doc
+                      </span>
+                    } @else {
+                      <span class="text-muted fs-8">-</span>
+                    }
+                  </td>
+
+                  <!-- Action -->
+                  <td class="text-center">
+                    <button 
+                      type="button" 
+                      class="btn btn-action-icon text-danger" 
+                      (click)="deleteDispatchConsignment(c)"
+                      title="Delete Dispatch Consignment">
+                      <app-icon name="trash"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Expanded Consignment Details -->
+                @if (isConsignmentExpanded(c.key)) {
+                  <tr class="bg-light">
+                    <td colspan="9" class="p-3">
+                      <div class="border rounded p-3 bg-white">
+                        
+                        <!-- Dispatched Items Sub-table -->
+                        <h6 class="fw-bold fs-8 text-secondary text-uppercase mb-2">Dispatched Equipment ({{ c.items.length }} items)</h6>
+                        <div class="table-responsive mb-3">
+                          <table class="table table-sm table-bordered mb-0 fs-8">
+                            <thead class="table-light">
+                              <tr>
+                                <th>SKU Code</th>
+                                <th>Equipment Name</th>
+                                <th class="text-end">Dispatched Qty</th>
+                                <th class="text-end">Unit Rate (₹)</th>
+                                <th class="text-end">Material Cost (₹)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (it of c.items; track it.id) {
+                                <tr>
+                                  <td class="font-monospace">{{ it.itemCode }}</td>
+                                  <td>{{ it.itemName }}</td>
+                                  <td class="text-end font-monospace fw-bold text-amber-700">{{ it.qty }}</td>
+                                  <td class="text-end font-monospace">₹{{ it.unitBuyingPrice | number:'1.2-2' }}</td>
+                                  <td class="text-end font-monospace fw-bold">₹{{ it.dispatchedCost | number:'1.2-2' }}</td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <!-- Customer Allocations (if any) -->
+                        @if (c.customerAllocations && c.customerAllocations.length > 0) {
+                          <h6 class="fw-bold fs-8 text-secondary text-uppercase mb-2">Project / Customer Allocations</h6>
+                          <div class="d-flex flex-wrap gap-2 mb-3">
+                            @for (alloc of c.customerAllocations; track alloc.customerName) {
+                              <div class="p-2 border rounded bg-light" style="font-size: 0.8rem;">
+                                <div class="fw-bold text-dark">{{ alloc.customerName }}</div>
+                                <div class="text-secondary fs-8">
+                                  <span>Total Cost: <strong class="text-primary font-monospace">₹{{ alloc.total | number:'1.2-2' }}</strong></span>
+                                  @if (alloc.remark) {
+                                    <span class="ms-2">({{ alloc.remark }})</span>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: Inward Purchases                                    -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'inwards') {
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 40px;"></th>
+              <th style="width: 105px;">Date</th>
+              <th>Supplier / Source</th>
+              <th>Location</th>
+              <th class="text-center" style="width: 80px;">Items</th>
+              <th class="text-end" style="width: 120px;">Pre-Tax Cost</th>
+              <th class="text-end" style="width: 110px;">GST</th>
+              <th class="text-end" style="width: 110px;">Transport</th>
+              <th class="text-end" style="width: 130px;">Grand Total</th>
+              <th class="text-center" style="width: 90px;">Document</th>
+              <th class="text-center" style="width: 80px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredInwards().length === 0) {
+              <tr>
+                <td colspan="11" class="text-center py-5 text-muted">
+                  <app-icon name="upload" class="fs-2 mb-2 text-secondary"></app-icon>
+                  <div>No inward purchase consignments recorded.</div>
+                </td>
+              </tr>
+            } @else {
+              @for (c of filteredInwards(); track c.key) {
+                <tr>
+                  <!-- Expand Chevron -->
+                  <td class="text-center">
+                    <button 
+                      type="button" 
+                      class="btn btn-xs btn-link p-0 text-secondary"
+                      (click)="toggleConsignment(c.key)">
+                      <app-icon [name]="isConsignmentExpanded(c.key) ? 'chevron-up' : 'chevron-down'"></app-icon>
+                    </button>
+                  </td>
+
+                  <!-- Date -->
+                  <td class="font-monospace fs-8">{{ formatDate(c.date) }}</td>
+
+                  <!-- Supplier -->
+                  <td>
+                    <div class="fw-semibold text-dark">{{ c.supplier }}</div>
+                    @if (c.remarks) {
+                      <div class="text-secondary fs-8">{{ c.remarks }}</div>
+                    }
+                  </td>
+
+                  <!-- Location -->
+                  <td>
+                    <span class="badge bg-light text-dark border font-monospace">{{ c.location || 'Main Godown' }}</span>
+                  </td>
+
+                  <!-- Items Count -->
+                  <td class="text-center font-monospace fs-8">
+                    {{ c.items.length }}
+                  </td>
+
+                  <!-- Pre-Tax Cost -->
+                  <td class="text-end font-monospace fs-8">
+                    ₹{{ c.totalMaterialCost | number:'1.2-2' }}
+                  </td>
+
+                  <!-- GST Amount -->
+                  <td class="text-end font-monospace text-secondary fs-8">
+                    ₹{{ c.totalGst | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Transport Cost -->
+                  <td class="text-end font-monospace text-secondary fs-8">
+                    ₹{{ c.transportCost | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Grand Total -->
+                  <td class="text-end font-monospace fw-bold text-primary fs-8">
+                    ₹{{ c.grandTotal | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Document Link -->
+                  <td class="text-center">
+                    @if (c.documents && c.documents.length > 0) {
+                      <span class="badge bg-light text-primary border" [title]="c.documents[0].name">
+                        <app-icon name="file-text" class="me-1"></app-icon>Doc
+                      </span>
+                    } @else {
+                      <span class="text-muted fs-8">-</span>
+                    }
+                  </td>
+
+                  <!-- Action -->
+                  <td class="text-center">
+                    <button 
+                      type="button" 
+                      class="btn btn-action-icon text-danger" 
+                      (click)="deleteInwardConsignment(c)"
+                      title="Delete Inward Consignment">
+                      <app-icon name="trash"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Expanded Consignment Details -->
+                @if (isConsignmentExpanded(c.key)) {
+                  <tr class="bg-light">
+                    <td colspan="11" class="p-3">
+                      <div class="border rounded p-3 bg-white">
+                        
+                        <!-- Received Equipment Table -->
+                        <h6 class="fw-bold fs-8 text-secondary text-uppercase mb-2">Received Equipment ({{ c.items.length }} items)</h6>
+                        <div class="table-responsive mb-3">
+                          <table class="table table-sm table-bordered mb-0 fs-8">
+                            <thead class="table-light">
+                              <tr>
+                                <th>SKU Code</th>
+                                <th>Equipment Name</th>
+                                <th class="text-end">Received Qty</th>
+                                <th class="text-end">Unit Price (₹)</th>
+                                <th class="text-end">Pre-tax Total (₹)</th>
+                                <th class="text-end">GST %</th>
+                                <th class="text-end">Landed Unit Cost (₹)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (it of c.items; track it.id || it.itemCode) {
+                                <tr>
+                                  <td class="font-monospace">{{ it.itemCode }}</td>
+                                  <td>{{ it.itemName }}</td>
+                                  <td class="text-end font-monospace fw-bold text-success">{{ it.qty }}</td>
+                                  <td class="text-end font-monospace">₹{{ it.unitPrice | number:'1.2-2' }}</td>
+                                  <td class="text-end font-monospace">₹{{ it.totalCost | number:'1.2-2' }}</td>
+                                  <td class="text-end font-monospace">{{ it.gstRate || 0 }}%</td>
+                                  <td class="text-end font-monospace fw-bold text-dark">₹{{ it.costPerUnit | number:'1.2-2' }}</td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Modals Integration                                         -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+
+  <!-- Item Modal (Add / Edit) -->
+  <app-item-modal
+    [isOpen]="showItemModal()"
+    [editItem]="itemToEdit()"
+    (close)="showItemModal.set(false)"
+    (saved)="onItemSaved()">
+  </app-item-modal>
+
+  <!-- Category Modal -->
+  <app-category-modal
+    [isOpen]="showCategoryModal()"
+    (close)="showCategoryModal.set(false)">
+  </app-category-modal>
+
+  <!-- Stock In Modal -->
+  <app-stock-in-modal
+    [isOpen]="showStockInModal()"
+    (close)="showStockInModal.set(false)"
+    (saved)="onStockInSaved()">
+  </app-stock-in-modal>
+
+  <!-- Site Dispatch Modal -->
+  <app-site-dispatch-modal
+    [isOpen]="showDispatchModal()"
+    (close)="showDispatchModal.set(false)"
+    (saved)="onDispatchSaved()">
+  </app-site-dispatch-modal>
+
+  <!-- Inventory Summary Modal -->
+  @if (showSummaryModal()) {
+    <app-inventory-summary-modal
+      [kpis]="invService.kpis()"
+      (close)="showSummaryModal.set(false)">
+    </app-inventory-summary-modal>
+  }
+
+  <!-- Price History Modal -->
+  @if (showPriceHistoryModal()) {
+    <app-price-history-modal
+      [item]="priceHistoryItem()"
+      [inwards]="invService.rawInwards()"
+      (close)="showPriceHistoryModal.set(false)">
+    </app-price-history-modal>
+  }
+
+</div>

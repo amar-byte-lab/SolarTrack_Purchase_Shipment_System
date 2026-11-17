@@ -1,0 +1,311 @@
+<div *ngIf="isOpen" class="modal-backdrop fade show"></div>
+
+<div *ngIf="isOpen" class="modal d-block" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: 95vw;">
+    <div class="modal-content border shadow rounded-2">
+      
+      <!-- Header -->
+      <div class="modal-header py-2.5 px-3 border-bottom bg-white d-flex align-items-center justify-content-between">
+        <h5 class="modal-title fw-bold fs-6 text-dark mb-0">Import Preview &amp; Verification</h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-3">
+
+        <!-- 1. Drop Zone (Shown when no file is loaded or parsing) -->
+        <div *ngIf="!parsedFileLoaded()" class="p-4 bg-light border rounded text-center my-3">
+          <div 
+            class="import-drop-zone p-4 bg-white border border-dashed rounded text-center cursor-pointer shadow-xs"
+            (drop)="onDropFile($event)"
+            (dragover)="onDragOver($event)"
+            (click)="excelInput.click()">
+            <app-icon name="file" [size]="36" class="text-primary mb-2"></app-icon>
+            <h6 class="fw-bold text-primary mb-1">Select or Drop Excel Application File</h6>
+            <p class="text-muted fs-8 mb-2">Upload PM Surya Ghar / DISCOM application export (.xlsx, .xls, .csv)</p>
+            <div class="d-flex align-items-center justify-content-center gap-2 mt-2">
+              <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold">Browse Excel File</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3 fw-semibold" (click)="$event.stopPropagation(); loadSampleFile()">
+                <app-icon name="download" [size]="14" class="me-1"></app-icon>
+                Load Sample Application Data
+              </button>
+            </div>
+            <input 
+              #excelInput 
+              type="file" 
+              accept=".xlsx,.xls,.csv" 
+              class="d-none" 
+              (change)="onFileChange($event)">
+          </div>
+
+          <div *ngIf="isLoading()" class="mt-3 text-primary fw-semibold fs-8 d-flex align-items-center justify-content-center gap-2">
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            <span>Parsing Excel worksheet and analyzing customer differences...</span>
+          </div>
+        </div>
+
+        <!-- 2. Parsed Content -->
+        <div *ngIf="parsedFileLoaded()">
+          
+          <!-- Summary Header Strip matching user screenshot -->
+          <div class="mb-3 d-flex justify-content-between align-items-start flex-wrap gap-2 border-bottom pb-2">
+            <div>
+              <div class="text-secondary fs-8 mb-1.5">Compare client details and analyze data differences before saving.</div>
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2 py-1 fs-8">
+                  New Customers: {{ summary.newCount }}
+                </span>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 fs-8">
+                  Data Differences: {{ summary.conflictCount }}
+                </span>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-1 fs-8">
+                  Identical (Skipped): {{ summary.identicalCount }}
+                </span>
+                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle px-2 py-1 fs-8">
+                  Missing in Excel: {{ summary.missingCount }}
+                </span>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-secondary px-3 py-1 fs-8 fw-semibold"
+                (click)="downloadTxtReport()">
+                Download Report (.txt)
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 1: Conflicting Records (Only shown if conflictCount > 0) -->
+          <div *ngIf="summary.conflictCount > 0" class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold text-dark fs-7 mb-0">Conflicting Records (Grid vs Excel comparison)</h6>
+              <div class="d-flex gap-1.5">
+                <button type="button" class="btn btn-outline-primary py-0.5 px-2 fs-8" (click)="bulkSelectConflictChoice('EXCEL')">
+                  Choose Excel Data for All
+                </button>
+                <button type="button" class="btn btn-outline-secondary py-0.5 px-2 fs-8" (click)="bulkSelectConflictChoice('GRID')">
+                  Keep Previously Saved Grid Data for All
+                </button>
+              </div>
+            </div>
+
+            <!-- Comparison Cards -->
+            <div class="d-flex flex-column gap-2.5">
+              <div *ngFor="let item of conflictingCustomers; let i = index" class="card border shadow-xs p-2.5 bg-white rounded-1">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                  <span class="fw-bold text-dark fs-7">{{ item.Name }} <small class="text-muted font-monospace">(Sl. #{{ item.SlNo }})</small></span>
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-8">Difference Detected</span>
+                </div>
+
+                <div class="row g-2">
+                  <!-- Option A: Current Excel Data -->
+                  <div class="col-md-6">
+                    <div 
+                      class="border rounded-1 p-2.5 h-100 cursor-pointer"
+                      [ngClass]="item.SelectedChoice === 'EXCEL' ? 'border-primary bg-primary-subtle bg-opacity-10 shadow-xs' : 'bg-light'"
+                      (click)="setConflictChoice(item, 'EXCEL')"
+                      style="font-size: 0.82rem;">
+                      <div class="form-check mb-1">
+                        <input 
+                          class="form-check-input" 
+                          type="radio" 
+                          [name]="'conflictChoice_' + i" 
+                          [id]="'choiceExcel_' + i" 
+                          value="EXCEL"
+                          [checked]="item.SelectedChoice === 'EXCEL'"
+                          (change)="setConflictChoice(item, 'EXCEL')">
+                        <label class="form-check-label fw-bold text-primary" [for]="'choiceExcel_' + i">
+                          Save Current Excel Data (Overwrite)
+                        </label>
+                      </div>
+                      <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2 fs-8">
+                        <div><strong>Consumer No:</strong> <span [class.diff-highlight]="item.Diffs.ConsumerNo">{{ item.ExcelData.ConsumerNo || '—' }}</span></div>
+                        <div><strong>Application No:</strong> <span [class.diff-highlight]="item.Diffs.ApplicationNumber">{{ item.ExcelData.ApplicationNumber || '—' }}</span></div>
+                        <div><strong>Proposed Capacity:</strong> <span [class.diff-highlight]="item.Diffs.ProposedCapacity">{{ item.ExcelData.ProposedCapacity || '—' }}</span></div>
+                        <div><strong>Sub Division:</strong> <span [class.diff-highlight]="item.Diffs.SubDivision">{{ item.ExcelData.SubDivision || '—' }}</span></div>
+                        <div><strong>Division:</strong> <span [class.diff-highlight]="item.Diffs.DivisionName">{{ item.ExcelData.DivisionName || '—' }}</span></div>
+                        <div><strong>Circle:</strong> <span [class.diff-highlight]="item.Diffs.CircleName">{{ item.ExcelData.CircleName || '—' }}</span></div>
+                        <div><strong>Mobile Number:</strong> <span [class.diff-highlight]="item.Diffs.MobileNumber">{{ item.ExcelData.MobileNumber || '—' }}</span></div>
+                        <div><strong>Submitted On (Login Date):</strong> <span [class.diff-highlight]="item.Diffs.LoginDate">{{ fmtDateExcel(item.ExcelData.LoginDate) }}</span></div>
+                        <div><strong>District:</strong> <span [class.diff-highlight]="item.Diffs.District">{{ item.ExcelData.District || '—' }}</span></div>
+                        <div><strong>Partner Name:</strong> <span [class.diff-highlight]="item.Diffs.BrokerName">{{ item.ExcelData.BrokerName || '—' }}</span></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Option B: Previous Grid Data -->
+                  <div class="col-md-6">
+                    <div 
+                      class="border rounded-1 p-2.5 h-100 cursor-pointer"
+                      [ngClass]="item.SelectedChoice === 'GRID' ? 'border-secondary bg-secondary-subtle bg-opacity-10 shadow-xs' : 'bg-light'"
+                      (click)="setConflictChoice(item, 'GRID')"
+                      style="font-size: 0.82rem;">
+                      <div class="form-check mb-1">
+                        <input 
+                          class="form-check-input" 
+                          type="radio" 
+                          [name]="'conflictChoice_' + i" 
+                          [id]="'choiceGrid_' + i" 
+                          value="GRID"
+                          [checked]="item.SelectedChoice === 'GRID'"
+                          (change)="setConflictChoice(item, 'GRID')">
+                        <label class="form-check-label fw-bold text-secondary" [for]="'choiceGrid_' + i">
+                          💾 Keep Previously Saved Data (Grid Data)
+                        </label>
+                      </div>
+                      <div class="ps-3 d-flex flex-column gap-1 text-secondary mt-2 fs-8">
+                        <div><strong>Consumer No:</strong> {{ item.GridData.ConsumerNo || '—' }}</div>
+                        <div><strong>Application No:</strong> {{ item.GridData.ApplicationNumber || '—' }}</div>
+                        <div><strong>Proposed Capacity:</strong> {{ item.GridData.ProposedCapacity || '—' }}</div>
+                        <div><strong>Sub Division:</strong> {{ item.GridData.SubDivision || '—' }}</div>
+                        <div><strong>Division:</strong> {{ item.GridData.DivisionName || '—' }}</div>
+                        <div><strong>Circle:</strong> {{ item.GridData.CircleName || '—' }}</div>
+                        <div><strong>Mobile Number:</strong> {{ item.GridData.MobileNumber || '—' }}</div>
+                        <div><strong>Login Date:</strong> {{ fmtDateExcel(item.GridData.LoginDate) }}</div>
+                        <div><strong>District:</strong> {{ item.GridData.District || '—' }}</div>
+                        <div><strong>Partner Name:</strong> {{ item.GridData.BrokerName || '—' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: New Customers to Add (Only shown if newCount > 0) -->
+          <div *ngIf="summary.newCount > 0" class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold text-dark fs-7 mb-0">New Customers to Add ({{ summary.newCount }})</h6>
+            </div>
+            <div class="table-responsive bg-white rounded-1 border" style="max-height: 280px; overflow-y: auto;">
+              <table class="table table-sm table-hover align-middle mb-0 fs-8">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th class="text-center" style="width: 40px;">
+                      <input type="checkbox" [checked]="selectAllNew" (change)="toggleSelectAllNew($event)">
+                    </th>
+                    <th class="text-center" style="width: 45px;">SL.</th>
+                    <th>Consumer Name</th>
+                    <th>Consumer No</th>
+                    <th>Appl. Number</th>
+                    <th>Capacity</th>
+                    <th>Sub Div / Div</th>
+                    <th>Mobile</th>
+                    <th>Submitted On</th>
+                    <th>District</th>
+                    <th>Partner</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let c of newCustomers; let i = index">
+                    <td class="text-center">
+                      <input 
+                        *ngIf="!c.IsDuplicate" 
+                        type="checkbox" 
+                        [(ngModel)]="c.selected">
+                    </td>
+                    <td class="text-center font-monospace">{{ i + 1 }}</td>
+                    <td class="fw-semibold">{{ c.Name }}</td>
+                    <td class="font-monospace">{{ c.ConsumerNo || '—' }}</td>
+                    <td class="font-monospace text-nowrap">{{ c.ApplicationNumber || '—' }}</td>
+                    <td>{{ c.ProposedCapacity || '—' }}</td>
+                    <td class="text-truncate" style="max-width: 140px;">
+                      {{ formatDiscom(c.SubDivision, c.DivisionName, c.CircleName) }}
+                    </td>
+                    <td>{{ c.MobileNumber || '—' }}</td>
+                    <td class="font-monospace">
+                      <span>{{ fmtDateExcel(c.LoginDate) }}</span>
+                      <span *ngIf="getDelayInfo(c.LoginDate) as d" class="badge erp-delay-badge ms-1" [ngClass]="'delay-' + d.colorType">({{ d.text }})</span>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-xs py-0 px-1 fs-8" [(ngModel)]="c.District" style="min-width: 100px;">
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-xs py-0 px-1 fs-8" [(ngModel)]="c.BrokerName" style="min-width: 110px;">
+                    </td>
+                    <td>
+                      <span class="badge" [ngClass]="c.IsDuplicate ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success-emphasis border border-success-subtle'">{{ c.Status }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 3: Grid Records Missing in Excel File (Exact matching screenshot) -->
+          <div *ngIf="summary.missingCount > 0" class="mb-3">
+            <div class="mb-2">
+              <span class="fw-semibold text-dark fs-7">Grid Records Missing in Excel File</span>
+            </div>
+            <div class="table-responsive bg-white rounded-1 border" style="max-height: 420px; overflow-y: auto;">
+              <table class="table table-sm align-middle mb-0 fs-8 border-0">
+                <thead class="table-light sticky-top">
+                  <tr class="text-secondary" style="font-size: 0.75rem;">
+                    <th class="text-center" style="width: 45px;">SL.</th>
+                    <th>CONSUMER NAME</th>
+                    <th>CONSUMER NO</th>
+                    <th>APPL. NUMBER</th>
+                    <th>CAPACITY</th>
+                    <th>SUB DIV / DIV</th>
+                    <th>MOBILE NUMBER</th>
+                    <th>LOGIN DATE</th>
+                    <th>DISTRICT</th>
+                    <th>PARTNER NAME</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of missingCustomers; let i = index" class="missing-row">
+                    <td class="text-center font-monospace">{{ i + 1 }}</td>
+                    <td class="fw-semibold">{{ m.Name }}</td>
+                    <td class="font-monospace">{{ m.ConsumerNo || '—' }}</td>
+                    <td class="font-monospace text-nowrap">{{ m.ApplicationNumber || '—' }}</td>
+                    <td>{{ m.ProposedCapacity || '—' }}</td>
+                    <td class="text-truncate" style="max-width: 180px;" [title]="formatDiscom(m.SubDivision, m.DivisionName, m.CircleName)">
+                      {{ formatDiscom(m.SubDivision, m.DivisionName, m.CircleName) }}
+                    </td>
+                    <td class="font-monospace">{{ m.MobileNumber || '—' }}</td>
+                    <td class="text-nowrap">
+                      <span class="font-monospace">{{ fmtDateExcel(m.LoginDate) }}</span>
+                      <span *ngIf="getDelayInfo(m.LoginDate) as d" class="badge erp-delay-badge ms-1" [ngClass]="'delay-' + d.colorType">({{ d.text }})</span>
+                    </td>
+                    <td>{{ m.District || '—' }}</td>
+                    <td>{{ m.BrokerName || '—' }}</td>
+                    <td>
+                      <span class="badge missing-badge">Missing in Excel</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Footer matching screenshot -->
+      <div class="modal-footer bg-light border-top py-2.5 px-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted fs-8 fst-normal">
+          * Selected customer records will be saved directly to the database. Identical existing records are auto-skipped.
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" (click)="closeModal()">Cancel</button>
+          <button 
+            *ngIf="parsedFileLoaded()" 
+            type="button" 
+            class="btn btn-sm btn-primary px-4 fs-8 fw-semibold" 
+            [disabled]="isSaving() || (summary.newCount === 0 && summary.conflictCount === 0)" 
+            (click)="saveToDatabase()">
+            <span *ngIf="isSaving()" class="spinner-border spinner-border-sm me-1"></span>
+            Save to Database
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

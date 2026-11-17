@@ -68,6 +68,10 @@ export class SummaryService {
   // Loading State
   readonly isLoading = signal<boolean>(false);
 
+  // Raw installments computed getter
+  readonly rawInstallments = computed(() => this.rawInstallmentsSignal());
+  readonly rawTxns = computed(() => this.rawTxnsSignal());
+
   // Payments Map
   readonly paymentsMap = computed(() => {
     const txns = this.rawTxnsSignal();
@@ -740,7 +744,26 @@ export class SummaryService {
       logs: this.http.get<any>('/api/activity-logs').pipe(map(r => r?.value || r?.data || r || []), catchError(() => of([])))
     }).pipe(
       map(res => {
-        this.rawInstallmentsSignal.set(res.installments);
+        const hydrated = (res.installments || []).map((r: InstallmentRow) => {
+          if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
+            try {
+              const workIdx = r.BrokerNumber.indexOf('|work:');
+              const workObj = JSON.parse(r.BrokerNumber.slice(workIdx + 6));
+              return {
+                ...r,
+                SubDivision: r.SubDivision || workObj.SubDivision || '',
+                DivisionName: r.DivisionName || workObj.DivisionName || '',
+                CircleName: r.CircleName || workObj.CircleName || '',
+                ApplicationNumber: r.ApplicationNumber || workObj.ApplicationNumber || '',
+                ProposedCapacity: r.ProposedCapacity || workObj.ProposedCapacity || ''
+              };
+            } catch (e) {
+              return r;
+            }
+          }
+          return r;
+        });
+        this.rawInstallmentsSignal.set(hydrated);
         this.rawTxnsSignal.set(res.txns);
         this.rawCommTxnsSignal.set(res.commTxns);
         this.rawRemarksSignal.set(res.remarks);
@@ -820,14 +843,162 @@ export class SummaryService {
     newBroker += '|expenses:' + JSON.stringify(expenses);
     if (workObj) newBroker += '|work:' + JSON.stringify(workObj);
 
-    return this.http.post('/api/update', {
-      table: 'installments',
-      where: { SlNo: slNo },
-      data: {
-        Comment: comment,
-        BrokerNumber: newBroker
-      }
+    return this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${slNo}`, {
+      Comment: comment,
+      BrokerNumber: newBroker
     });
+  }
+
+  // Customer Record Operations
+  deactivateCustomer(slNo: number): Observable<any> {
+    return this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${slNo}`, {
+      Status: 'Deactive'
+    });
+  }
+
+  deleteCustomer(slNo: number): Observable<any> {
+    return this.http.post(`/api/delete?table=installments&matchField=SlNo&matchValue=${slNo}`, {});
+  }
+
+  updateCustomer(slNo: number, data: Partial<InstallmentRow>): Observable<any> {
+    return this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${slNo}`, data);
+  }
+
+  // Get Customer Transactions
+  getTxnsForCustomer(slNo: number): InstallmentTxnRow[] {
+    return this.rawTxnsSignal()
+      .filter(t => Number(t.SlNo) === Number(slNo) && (t.TxnType === 'Customer' || !t.TxnType || t.TxnType === ''))
+      .sort((a, b) => new Date(a.TxnDate).getTime() - new Date(b.TxnDate).getTime());
+  }
+
+  // Workflow Stage Progress Operation
+  saveStageProgress(slNo: number, patch: Partial<InstallmentRow>): Observable<any> {
+    const existing = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo));
+    if (!existing) return of(null);
+
+    let brokerNumber = existing.BrokerNumber || '';
+    if (brokerNumber) {
+      let workObj: any = {};
+      const workIdx = brokerNumber.indexOf('|work:');
+      if (workIdx !== -1) {
+        try {
+          workObj = JSON.parse(brokerNumber.slice(workIdx + 6)) || {};
+        } catch {}
+      }
+      Object.assign(workObj, patch);
+      const rest = workIdx !== -1 ? brokerNumber.slice(0, workIdx) : brokerNumber;
+      brokerNumber = `${rest}|work:${JSON.stringify(workObj)}`;
+    }
+
+    const payload: Partial<InstallmentRow> = {
+      ...patch,
+      BrokerNumber: brokerNumber
+    };
+
+    return this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${slNo}`, payload);
+  }
+
+  // NetMeter inline update
+  saveNetMeter(slNo: number, payment: number, date: string, isPaid: boolean): Observable<any> {
+    return this.saveStageProgress(slNo, {
+      NetMeterPayment: payment,
+      NetMeterPaid: isPaid,
+      NetMeterDate: date
+    });
+  }
+
+  // Customer Cost update
+  saveCustomerCost(slNo: number, cost: number): Observable<any> {
+    return this.updateCustomer(slNo, {
+      CommittedPrice: cost
+    });
+  }
+
+  // Add Quick Payment Transaction
+  addCustomerPaymentTxn(slNo: number, amount: number, date: string, remark: string = 'Customer Payment (Manage Work)'): Observable<any> {
+    const txnId = 'CTXN_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const txnPayload: InstallmentTxnRow = {
+      TxnID: txnId,
+      SlNo: Number(slNo),
+      TxnDate: date,
+      Amount: amount,
+      TxnType: 'Customer',
+      Remark: remark
+    };
+
+    return this.http.post('/api/insert?table=installment_txns', txnPayload).pipe(
+      map(() => {
+        // Sync total on installment row
+        const existingTxns = this.getTxnsForCustomer(slNo);
+        const currentSum = existingTxns.reduce((s, t) => s + (Number(t.Amount) || 0), 0) + amount;
+        const cust = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo));
+        const currentPrice = Number(cust?.CommittedPrice) || 0;
+        const patch: Partial<InstallmentRow> = { Total: currentSum };
+        if (currentSum > currentPrice) {
+          patch.CommittedPrice = currentSum;
+        }
+        return this.updateCustomer(slNo, patch).subscribe();
+      })
+    );
+  }
+
+  // Update Customer Paid Total Directly
+  updateCustomerPaidTotal(slNo: number, newPaid: number, payDate: string): Observable<any> {
+    const txns = this.getTxnsForCustomer(slNo);
+    const currentTotal = txns.reduce((s, t) => s + (Number(t.Amount) || 0), 0);
+
+    let op$: Observable<any>;
+    if (newPaid === 0) {
+      op$ = this.http.post(`/api/delete?table=installment_txns&matchField=SlNo&matchValue=${slNo}`, {});
+    } else if (txns.length === 0) {
+      const txnId = 'CTXN_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      op$ = this.http.post('/api/insert?table=installment_txns', {
+        TxnID: txnId,
+        SlNo: Number(slNo),
+        TxnDate: payDate,
+        Amount: newPaid,
+        TxnType: 'Customer',
+        Remark: 'Direct Paid Update (Manage Work)'
+      });
+    } else if (txns.length === 1) {
+      op$ = this.http.post(`/api/update?table=installment_txns&matchField=TxnID&matchValue=${txns[0].TxnID}`, {
+        Amount: newPaid,
+        TxnDate: payDate
+      });
+    } else {
+      const delta = newPaid - currentTotal;
+      if (delta !== 0) {
+        const txnId = 'CTXN_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+        op$ = this.http.post('/api/insert?table=installment_txns', {
+          TxnID: txnId,
+          SlNo: Number(slNo),
+          TxnDate: payDate,
+          Amount: delta,
+          TxnType: 'Customer',
+          Remark: 'Payment Adjustment (Manage Work)'
+        });
+      } else {
+        const latestTxn = txns[txns.length - 1];
+        op$ = this.http.post(`/api/update?table=installment_txns&matchField=TxnID&matchValue=${latestTxn.TxnID}`, {
+          TxnDate: payDate
+        });
+      }
+    }
+
+    return op$.pipe(
+      map(() => {
+        return this.updateCustomer(slNo, { Total: newPaid }).subscribe();
+      })
+    );
+  }
+
+  // Clear All Customer Payments
+  clearCustomerPayments(slNo: number): Observable<any> {
+    return this.http.post(`/api/delete?table=installment_txns&matchField=SlNo&matchValue=${slNo}`, {}).pipe(
+      map(() => {
+        return this.updateCustomer(slNo, { Total: 0 }).subscribe();
+      })
+    );
   }
 
   // Undo transaction handler

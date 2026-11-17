@@ -1,0 +1,318 @@
+<div id="resultsContainer" class="mt-0 mb-3">
+  
+  <!-- VALIDATION ALERTS ROW -->
+  <div class="row g-2.5 mb-2.5">
+    @if (calc.result().validation.exceedsSinglePhase) {
+      <div class="col-12">
+        <div class="alert alert-danger border-2 border-danger-subtle rounded-3 p-3 mb-1 shadow-2xs">
+          <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-start gap-2.5">
+              <span class="fs-4">⛔</span>
+              <div>
+                <div class="fw-bold text-danger fs-7">Single-Phase Statutory Limit Exceeded</div>
+                <div class="fs-8 text-dark mt-0.5">
+                  Calculated capacity (<strong>{{ calc.result().validation.requiredKw }} kW</strong>) exceeds the permissible Single-Phase (230V) limit of <strong>5.0 kW</strong>. Under DISCOM net-metering regulations across India, single-phase rooftop solar export is capped at 5.0 kW.
+                </div>
+                <div class="fs-8 text-secondary mt-1">
+                  DISCOM connection requires upgrade to Three-Phase (415V), or system capacity can be capped to 5.0 kWp.
+                </div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-primary fw-bold text-nowrap shadow-2xs py-1.5 px-3 fs-8" 
+                (click)="calc.switchToThreePhase()">
+                Switch to 3-Phase (415V)
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-danger fw-semibold text-nowrap py-1.5 px-3 fs-8" 
+                (click)="calc.capToSinglePhaseLimit()">
+                Cap System to 5.0 kWp
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    } @else if (calc.result().validation.exceedsSanctionedLoad) {
+      <div class="col-12">
+        <div class="alert alert-warning border-2 border-warning-subtle rounded-3 p-3 mb-1 shadow-2xs">
+          <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-start gap-2.5">
+              <span class="fs-4">⚠️</span>
+              <div>
+                <div class="fw-bold text-dark fs-7">Sanctioned Meter Load Enhancement Advised</div>
+                <div class="fs-8 text-dark mt-0.5">
+                  Required inverter capacity (<strong>{{ calc.result().validation.requiredKw }} kW</strong>) exceeds current sanctioned load (<strong>{{ calc.result().validation.sanctionedLoadKw }} kW</strong>).
+                </div>
+                <div class="fs-8 text-secondary mt-1">
+                  DISCOM net-metering regulations require rooftop solar capacity to not exceed 100% of sanctioned load.
+                </div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-warning fw-bold fs-8 shadow-2xs text-dark" 
+                (click)="calc.enhanceSanctionedLoad(calc.result().validation.requiredKw)">
+                Enhance Load to {{ Math.ceil(calc.result().validation.requiredKw) }} kW ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- HERO CARDS GRID -->
+  <div class="row g-2.5 g-md-3 align-items-stretch">
+    
+    <!-- CARD 1: SOLAR SPECIFICATION (Shown for On-Grid, Hybrid, Off-Grid; NOT Without Solar) -->
+    @if (calc.result().solar) {
+      <div [class]="cardColumnClass()">
+        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
+          <div class="result-card-header bg-header-solar d-flex justify-content-between align-items-center">
+            <span>☀️ SOLAR SPECIFICATION</span>
+            <button 
+              type="button" 
+              class="btn btn-xs bg-white text-dark fw-bold shadow-2xs d-inline-flex align-items-center gap-1 py-0.5 px-2 rounded-pill border border-warning-subtle" 
+              (click)="openProductCatalog.emit('panels')" 
+              title="Browse all matching solar panels">
+              <span>Browse Panels</span>
+            </button>
+          </div>
+          <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
+            <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
+              <div class="big-stat-badge text-warning">{{ calc.result().solar?.actualArrayKwp }} kWp</div>
+              <div class="sub-stat-text">Recommended Capacity</div>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
+              <div class="fw-bold text-dark fs-7 mb-1.5">
+                {{ calc.result().solar?.panelCount }} Panels × {{ calc.result().solar?.panelWatts }}Wp ({{ calc.result().solar?.actualArrayKwp }} kWp Array)
+              </div>
+              <div class="fs-8 text-muted mb-2.5">Half-Cut Mono PERC Solar PV Modules</div>
+              <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
+                <li>• <strong>Panel Type:</strong> Mono PERC Half-Cut High Efficiency</li>
+                <li>• <strong>Daily Output:</strong> ~{{ calc.result().solar?.estDailyGenKwh }} Units (kWh) / day</li>
+                <li>• <strong>Monthly Gen:</strong> ~{{ calc.result().solar?.estMonthlyGenUnits }} Units / month</li>
+                <li>• <strong>Roof Area:</strong> ~{{ calc.result().solar?.roofAreaSqFt }} sq.ft required</li>
+              </ul>
+            </div>
+
+            <div class="d-flex flex-wrap gap-1 mt-auto">
+              <span class="spec-pill">Output: ~{{ calc.result().solar?.estDailyGenKwh }} Units/day</span>
+              <span class="spec-pill">Monthly: ~{{ calc.result().solar?.estMonthlyGenUnits }} Units</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- CARD 2: INVERTER SPECIFICATION (Always Applicable) -->
+    <div [class]="cardColumnClass()">
+      <div class="result-hero-card h-100 mb-0 d-flex flex-column">
+        <div class="result-card-header bg-header-inverter d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-1.5">
+            <span>⚡ INVERTER SPECIFICATION</span>
+            @if (calc.result().inverter.cappedSinglePhase) {
+              <span class="badge bg-danger text-white fs-9 py-0.5 px-1.5">1-Phase Capped (5 kW)</span>
+            }
+          </div>
+          <button 
+            type="button" 
+            class="btn btn-xs bg-white text-primary fw-bold shadow-2xs d-inline-flex align-items-center gap-1 py-0.5 px-2 rounded-pill border border-primary-subtle" 
+            (click)="openProductCatalog.emit('inverters')" 
+            title="Browse all matching inverters">
+            <span>Browse Inverters</span>
+          </button>
+        </div>
+
+        <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
+          <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
+            <div class="big-stat-badge text-primary">{{ calc.result().inverter.kVA }} kVA</div>
+            <div class="sub-stat-text">{{ calc.result().inverter.kW }} kW Rating</div>
+          </div>
+
+          <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
+            <div class="fw-bold text-dark fs-7 mb-1.5">
+              {{ calc.result().inverter.kVA }} kVA / {{ calc.result().inverter.kW }} kW {{ calc.result().inverterCategory }}
+            </div>
+            <div class="fs-8 text-muted mb-2">
+              @if (calc.result().inverter.batteryVoltage > 0) {
+                <span>{{ calc.result().inverter.brand }} • {{ calc.result().inverter.batteryVoltage }}V DC System</span>
+              } @else {
+                <span>Grid-Tied On-Grid Inverter</span>
+              }
+            </div>
+
+            @if (calc.result().inverter.cappedSinglePhase) {
+              <div class="p-2 rounded-2 bg-danger-subtle border border-danger-subtle text-danger fs-8 fw-semibold mb-2">
+                ⛔ Capped at 5.0 kW 1-Phase max. To support full {{ calc.result().validation.requiredKw }} kW capacity, upgrade grid connection to Three-Phase (415V).
+              </div>
+            }
+
+            <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary ps-1">
+              <li>• <strong>System Voltage:</strong> {{ calc.result().inverter.batteryVoltage > 0 ? (calc.result().inverter.batteryVoltage + 'V DC System') : 'Grid-Tied (Direct AC)' }}</li>
+              <li>• <strong>Max Running Load:</strong> Up to {{ calc.result().inverter.continuousOutput || (calc.result().inverter.kW * 1000) }} Watts</li>
+              <li>• <strong>Grid Output:</strong> {{ calc.result().inverter.phase || '1-Phase (230V)' }} AC (50 Hz)</li>
+              <li>• <strong>Inverter Model:</strong> {{ calc.result().inverter.brand }} {{ calc.result().inverter.model }}</li>
+            </ul>
+          </div>
+
+          <div class="d-flex flex-wrap gap-1 mt-auto">
+            <span class="spec-pill">{{ calc.result().inverter.phase || '1-Phase 230V' }}</span>
+            @if (calc.result().inverter.batteryVoltage > 0) {
+              <span class="spec-pill">{{ calc.result().inverter.batteryVoltage }}V DC</span>
+            } @else {
+              <span class="spec-pill">On-Grid</span>
+            }
+            <span class="spec-pill">Max {{ calc.result().inverter.continuousOutput || (calc.result().inverter.kW * 1000) }}W</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 3: BATTERY SPECIFICATION (Only for Without Solar, Hybrid, Off-Grid. NEVER On-Grid) -->
+    @if (calc.result().battery) {
+      <div [class]="cardColumnClass()">
+        <div class="result-hero-card h-100 mb-0 d-flex flex-column">
+          <div class="result-card-header bg-header-battery d-flex justify-content-between align-items-center">
+            <span>🔋 BATTERY SPECIFICATION</span>
+            <button 
+              type="button" 
+              class="btn btn-xs bg-white text-success fw-bold shadow-2xs d-inline-flex align-items-center gap-1 py-0.5 px-2 rounded-pill border border-success-subtle" 
+              (click)="openProductCatalog.emit('batteries')" 
+              title="Browse all matching batteries">
+              <span>Browse Batteries</span>
+            </button>
+          </div>
+
+          <div class="p-3 p-md-3.5 d-flex flex-column flex-grow-1">
+            <div class="d-flex align-items-baseline gap-2 mb-2 flex-wrap">
+              @if (calc.selectedBatteryType() === 'lithium') {
+                <div class="big-stat-badge text-success">
+                  {{ calc.result().batteryLithium?.systemVoltage }}V {{ calc.result().batteryLithium?.systemBankAh }}Ah
+                </div>
+                <div class="sub-stat-text">{{ calc.result().batteryLithium?.totalInstalledKwh }} kWh Lithium LFP Bank</div>
+              } @else if (calc.selectedBatteryType() === 'tubular') {
+                <div class="big-stat-badge text-success">
+                  {{ calc.result().batteryTubular?.totalUnits }} × 12V {{ calc.result().batteryTubular?.singleBatteryAh }}Ah
+                </div>
+                <div class="sub-stat-text">{{ calc.result().batteryTubular?.systemVoltage }}V {{ calc.result().batteryTubular?.systemBankAh }}Ah Tall Tubular Bank ({{ calc.result().batteryTubular?.totalInstalledKwh }} kWh)</div>
+              } @else {
+                <div class="big-stat-badge text-success">
+                  {{ calc.result().batteryFlatPlate?.totalUnits }} × 12V {{ calc.result().batteryFlatPlate?.singleBatteryAh }}Ah
+                </div>
+                <div class="sub-stat-text">{{ calc.result().batteryFlatPlate?.systemVoltage }}V {{ calc.result().batteryFlatPlate?.systemBankAh }}Ah Flat Plate Bank ({{ calc.result().batteryFlatPlate?.totalInstalledKwh }} kWh)</div>
+              }
+            </div>
+
+            <!-- Battery Type Selection Dropdown inside Hero Card -->
+            <div class="mb-2">
+              <select 
+                class="form-select form-select-sm fw-semibold fs-8" 
+                id="selCardBatteryType" 
+                [ngModel]="calc.selectedBatteryType()"
+                (ngModelChange)="calc.setBatteryType($event)"
+                style="height: 32px;">
+                <option value="lithium">🔋 1. Lithium Battery (LFP) — Recommended</option>
+                <option value="tubular">🔋 2. Tall Tubular Lead-Acid — Standard Choice</option>
+                <option value="flat-plate">🔋 3. Flat Plate Lead-Acid — Basic Budget</option>
+              </select>
+            </div>
+
+            <!-- Detailed Specification Box -->
+            @if (calc.selectedBatteryType() === 'lithium') {
+              <div class="p-3 rounded-3 mb-2.5 border flex-grow-1" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                  <div class="fw-bold text-dark fs-7">
+                    {{ calc.result().batteryLithium?.totalUnits }} × {{ calc.result().batteryLithium?.singleBatteryVolt }}V {{ calc.result().batteryLithium?.singleBatteryAh }}Ah Pack
+                  </div>
+                </div>
+                <div class="fs-8 text-muted mb-2.5">High Efficiency LiFePO4 (LFP) with built-in Smart BMS</div>
+
+                <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-dark ps-1">
+                  <li>• 10–12+ Yrs Lifespan (~3000–5000 Cycles)</li>
+                  <li>• 100% Zero Maintenance • Wall-Mount / Compact</li>
+                  <li>• 2–3 Hours Fast Charging</li>
+                  <li>• 90% Usable DoD (High Conversion Efficiency)</li>
+                </ul>
+
+                <div class="p-2.5 rounded-2 bg-white border border-success-subtle mt-1">
+                  <div class="fs-9 fw-bold text-success mb-1.5">Manufacturer Discharge Rating:</div>
+                  <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
+                    <li>• <strong>Rating:</strong> 0.5C Continuous / 1.0C Surge</li>
+                    <li>• <strong>Backup Duration:</strong> <strong>~{{ calc.result().batteryLithium?.actualBackupHours }} Hours</strong> at {{ calc.result().backupLoadW || calc.result().connectedLoadW }}W backup load</li>
+                  </ul>
+                </div>
+              </div>
+            } @else if (calc.selectedBatteryType() === 'tubular') {
+              <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                  <div class="fw-bold text-dark fs-7">
+                    {{ calc.result().batteryTubular?.totalUnits }} × 12V {{ calc.result().batteryTubular?.singleBatteryAh }}Ah Batteries
+                  </div>
+                </div>
+                <div class="fs-8 text-muted mb-2.5">
+                  Connected in {{ calc.result().batteryTubular?.systemVoltage }}V Bank ({{ calc.result().batteryTubular?.series }} Series × {{ calc.result().batteryTubular?.parallel }} Parallel)
+                </div>
+
+                <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
+                  <li>• 4–5 Yrs Lifespan (~1200–1500 Cycles)</li>
+                  <li>• Lower Upfront Purchase Cost</li>
+                  <li>• Heavy Deep-Cycle Proven Technology</li>
+                  <li>• Periodic Distilled Water Top-Up Required</li>
+                  <li>• 75% Usable DoD ({{ calc.result().batteryTubular?.usableKwh }} kWh Usable)</li>
+                </ul>
+
+                <div class="p-2.5 rounded-2 bg-white border mt-1">
+                  <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer Rating & Backup:</div>
+                  <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
+                    <li>• <strong>Battery Rating:</strong> C10 Solar Tubular ({{ calc.result().batteryTubular?.singleBatteryAh }}Ah @ 12V)</li>
+                    <li>• <strong>Backup Duration:</strong> <strong>~{{ calc.result().batteryTubular?.actualBackupHours }} Hours</strong> at {{ calc.result().backupLoadW || calc.result().connectedLoadW }}W backup load</li>
+                  </ul>
+                </div>
+              </div>
+            } @else {
+              <div class="p-3 bg-light rounded-3 mb-2.5 border flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                  <div class="fw-bold text-dark fs-7">
+                    {{ calc.result().batteryFlatPlate?.totalUnits }} × 12V {{ calc.result().batteryFlatPlate?.singleBatteryAh }}Ah Batteries
+                  </div>
+                </div>
+                <div class="fs-8 text-muted mb-2.5">
+                  Connected in {{ calc.result().batteryFlatPlate?.systemVoltage }}V Bank ({{ calc.result().batteryFlatPlate?.series }} Series × {{ calc.result().batteryFlatPlate?.parallel }} Parallel)
+                </div>
+
+                <ul class="list-unstyled fs-8 mb-2.5 d-flex flex-column gap-1 text-secondary ps-1">
+                  <li>• 2–3 Yrs Lifespan</li>
+                  <li>• Lowest Initial Purchase Cost</li>
+                  <li>• Best for Short / Rare Power Cuts</li>
+                  <li>• Frequent Distilled Water Top-Up Required</li>
+                  <li>• 65% Usable DoD ({{ calc.result().batteryFlatPlate?.usableKwh }} kWh Usable)</li>
+                </ul>
+
+                <div class="p-2.5 rounded-2 bg-white border mt-1">
+                  <div class="fs-9 fw-bold text-dark mb-1.5">Manufacturer Rating & Backup:</div>
+                  <ul class="list-unstyled fs-9 mb-0 d-flex flex-column gap-1 text-dark ps-1">
+                    <li>• <strong>Battery Rating:</strong> C20 Flat Plate ({{ calc.result().batteryFlatPlate?.singleBatteryAh }}Ah @ 12V)</li>
+                    <li>• <strong>Backup Duration:</strong> <strong>~{{ calc.result().batteryFlatPlate?.actualBackupHours }} Hours</strong> at {{ calc.result().backupLoadW || calc.result().connectedLoadW }}W backup load</li>
+                  </ul>
+                </div>
+              </div>
+            }
+
+            <div class="d-flex flex-wrap gap-1 mt-auto">
+              <span class="spec-pill">System: {{ calc.result().battery?.systemVoltage }}V DC</span>
+              <span class="spec-pill">Bank: {{ calc.result().battery?.systemBankAh }}Ah ({{ calc.result().battery?.totalInstalledKwh }} kWh)</span>
+              <span class="spec-pill">Backup: ~{{ calc.result().battery?.actualBackupHours }} Hrs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

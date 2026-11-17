@@ -1,0 +1,53 @@
+.step-card {
+  border: 1px solid var(--st-border, #e2e8f0);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease;
+  padding: 20px 22px;
+  margin-bottom: 0;
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
+}
+
+.shadow-2xs {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.app-load-clickable-item,
+.app-backup-clickable-item {
+  transition: transform 0.1s ease, color 0.15s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  &:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+  }
+}
+
+.appliance-config-table,
+.backup-config-table {
+  font-size: 0.8rem;
+
+  th {
+    white-space: nowrap;
+    padding: 6px 8px;
+    background-color: #f8fafc;
+  }
+
+  td {
+    padding: 6px 8px;
+    vertical-align: middle;
+  }
+}
+
+.fs-7 { font-size: 0.82rem !important; }
+.fs-8 { font-size: 0.78rem !important; }
+.fs-9 { font-size: 0.72rem !important; }

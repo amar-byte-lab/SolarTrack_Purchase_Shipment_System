@@ -1,0 +1,177 @@
+<div class="step-card h-100 p-3.5 p-md-4 mb-0" id="secSystemType">
+  <div>
+    <!-- Header with SLD Link -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-1">
+      <div>
+        <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
+      </div>
+      <button 
+        type="button" 
+        class="btn btn-sm btn-outline-primary fw-bold px-3 py-1 fs-8 rounded-pill d-flex align-items-center gap-1.5 shadow-2xs text-decoration-none" 
+        (click)="openSchematic.emit()"
+        title="Open Full Page Single Line Diagram & Circuit Schematic">
+        <span>⚡ Detailed SLD Diagram</span>
+      </button>
+    </div>
+
+    <!-- Custom Rich Dropdown Trigger & Menu -->
+    <div class="dropdown mb-3 w-100" id="systemTypeDropdownContainer" style="position: relative;">
+      <button 
+        class="btn btn-white border w-100 p-2.5 d-flex align-items-center justify-content-between text-start rounded-3 shadow-2xs custom-dropdown-trigger" 
+        type="button" 
+        id="btnSystemTypeDropdown" 
+        (click)="toggleDropdown()"
+        style="max-width: 100%; overflow: hidden;">
+        <div class="d-flex align-items-center gap-2.5 overflow-hidden flex-grow-1 min-w-0" id="selectedSystemTypeDisplay">
+          <div class="overflow-hidden min-w-0 flex-grow-1">
+            <div class="fw-bold text-dark fs-7 text-truncate" id="selSystemTitle">{{ currentSystemMeta().title }}</div>
+            <div class="text-muted fs-8 text-truncate" id="selSystemDesc">{{ currentSystemMeta().desc }}</div>
+          </div>
+        </div>
+        <span class="text-secondary fs-8 ms-2 flex-shrink-0">▼</span>
+      </button>
+
+      <!-- Dropdown Menu with rich item containers -->
+      <ul 
+        class="dropdown-menu w-100 p-2 shadow border rounded-3 system-dropdown-menu" 
+        [class.show]="isDropdownOpen()"
+        aria-labelledby="btnSystemTypeDropdown">
+        
+        <!-- Item 1: Off-Grid -->
+        <li class="mb-1.5 w-100">
+          <div 
+            class="system-dropdown-item p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100 cursor-pointer"
+            [class.active]="calc.systemType() === 'off-grid'"
+            (click)="selectSystem('off-grid')">
+            <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+              <div class="min-w-0 flex-grow-1">
+                <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
+                  <span>Off-Grid</span>
+                  <span class="text-secondary fs-8 fw-normal ms-1">(PCU)</span>
+                </div>
+                <div class="text-muted fs-8 text-truncate">Battery backup for off-grid solar</div>
+              </div>
+            </div>
+            @if (calc.systemType() === 'off-grid') {
+              <span class="check-icon text-primary fw-bold fs-6 flex-shrink-0">✓</span>
+            }
+          </div>
+        </li>
+
+        <!-- Item 2: On-Grid -->
+        <li class="mb-1.5 w-100">
+          <div 
+            class="system-dropdown-item p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100 cursor-pointer"
+            [class.active]="calc.systemType() === 'on-grid'"
+            (click)="selectSystem('on-grid')">
+            <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+              <div class="min-w-0 flex-grow-1">
+                <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
+                  <span>On-Grid</span>
+                  <span class="text-secondary fs-8 fw-normal ms-1">(GTI)</span>
+                </div>
+                <div class="text-muted fs-8 text-truncate">Direct grid tie solar (no battery)</div>
+              </div>
+            </div>
+            @if (calc.systemType() === 'on-grid') {
+              <span class="check-icon text-primary fw-bold fs-6 flex-shrink-0">✓</span>
+            }
+          </div>
+        </li>
+
+        <!-- Item 3: Hybrid -->
+        <li class="mb-1.5 w-100">
+          <div 
+            class="system-dropdown-item p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100 cursor-pointer"
+            [class.active]="calc.systemType() === 'hybrid'"
+            (click)="selectSystem('hybrid')">
+            <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+              <div class="min-w-0 flex-grow-1">
+                <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
+                  <span>Hybrid</span>
+                  <span class="text-secondary fs-8 fw-normal ms-1">(Bi-Directional)</span>
+                </div>
+                <div class="text-muted fs-8 text-truncate">Solar + Grid + Battery backup</div>
+              </div>
+            </div>
+            @if (calc.systemType() === 'hybrid') {
+              <span class="check-icon text-primary fw-bold fs-6 flex-shrink-0">✓</span>
+            }
+          </div>
+        </li>
+
+        <!-- Item 4: Without Solar -->
+        <li class="w-100">
+          <div 
+            class="system-dropdown-item p-2.5 rounded-2 border d-flex align-items-center justify-content-between gap-2 w-100 cursor-pointer"
+            [class.active]="calc.systemType() === 'without-solar'"
+            (click)="selectSystem('without-solar')">
+            <div class="d-flex align-items-center gap-2.5 flex-grow-1 min-w-0">
+              <div class="min-w-0 flex-grow-1">
+                <div class="fw-bold text-dark fs-7 d-flex align-items-center gap-1.5">
+                  <span>Without Solar</span>
+                  <span class="text-secondary fs-8 fw-normal ms-1">(Home UPS)</span>
+                </div>
+                <div class="text-muted fs-8 text-truncate">Battery backup Home UPS Inverter</div>
+              </div>
+            </div>
+            @if (calc.systemType() === 'without-solar') {
+              <span class="check-icon text-primary fw-bold fs-6 flex-shrink-0">✓</span>
+            }
+          </div>
+        </li>
+
+      </ul>
+    </div>
+
+    <!-- Grid Supply Phase & Sanctioned Load (Side-by-Side) -->
+    <div class="row g-2.5 mb-0" id="secGridPhaseAndLoad">
+      <!-- 1. Grid Supply Phase -->
+      <div class="col-6">
+        <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSupplyPhase">
+          Grid Supply Phase
+        </label>
+        <div class="input-group shadow-2xs">
+          <select 
+            class="form-select fw-semibold fs-8" 
+            id="selSupplyPhase" 
+            [ngModel]="calc.connectionPhase()"
+            (ngModelChange)="onPhaseChange($event)"
+            style="height: 38px;">
+            <option value="1-Phase">1-Phase (230V) — Max 5 kW</option>
+            <option value="3-Phase">3-Phase (415V) — Multi-kW</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 2. Customer Sanctioned Load -->
+      <div class="col-6">
+        <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSanctionedLoad">
+          Sanctioned Load
+        </label>
+        <div class="input-group shadow-2xs">
+          <select 
+            class="form-select fw-semibold fs-8" 
+            id="selSanctionedLoad" 
+            [ngModel]="calc.sanctionedLoadKw()"
+            (ngModelChange)="onSanctionedLoadChange($event)"
+            style="height: 38px;">
+            <option [value]="1">1 kW (₹20/mo)</option>
+            <option [value]="2">2 kW (₹40/mo)</option>
+            <option [value]="3">3 kW (₹60/mo)</option>
+            <option [value]="4">4 kW (₹80/mo)</option>
+            <option [value]="5">5 kW (₹100/mo) — 1-Phase Max</option>
+            <option [value]="6">6 kW (₹120/mo) — 3-Phase</option>
+            <option [value]="7">7 kW (₹140/mo) — 3-Phase</option>
+            <option [value]="8">8 kW (₹160/mo) — 3-Phase</option>
+            <option [value]="10">10 kW (₹200/mo) — 3-Phase</option>
+            <option [value]="12">12 kW (₹240/mo) — 3-Phase</option>
+            <option [value]="15">15 kW (₹300/mo) — 3-Phase</option>
+            <option [value]="20">20 kW (₹400/mo) — 3-Phase</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

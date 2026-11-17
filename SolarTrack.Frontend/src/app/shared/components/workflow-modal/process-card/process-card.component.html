@@ -1,0 +1,79 @@
+<div class="process-card-container d-flex flex-column gap-2" *ngIf="customer">
+  
+  <!-- 1. Numbered Multi-Step Progress Bar (Pratiti Step re Number) -->
+  <div class="mw-stepper-box p-2.5 rounded-3 bg-white border shadow-xs mb-1">
+    <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+      <span class="fs-8 fw-bold text-dark text-uppercase letter-spacing-sm">Milestone Progress</span>
+      <span class="fs-8 fw-bold text-primary font-monospace">{{ completedStagesCount }}/8 Completed ({{ trackPct }}%)</span>
+    </div>
+
+    <!-- Stepper Bar with Step Numbers 1 to 8 -->
+    <div class="position-relative mw-stepper-track-wrap px-2 py-1">
+      <!-- Background Connecting Line -->
+      <div class="mw-stepper-line-bg">
+        <div class="mw-stepper-line-fill" [style.width.%]="trackPct"></div>
+      </div>
+
+      <!-- 8 Steps -->
+      <div class="d-flex justify-content-between position-relative z-1">
+        <div 
+          *ngFor="let st of stages; let i = index" 
+          class="mw-stepper-item d-flex flex-column align-items-center text-center"
+          [class.completed]="isStageCompleted(st.key)"
+          [class.delayed]="isStageDelayedRed(st.key)"
+          [title]="st.label + (isStageCompleted(st.key) ? ' - ' + formatDisplayDate(getStageDate(st.key)) : ' - Pending')">
+          
+          <!-- Circle with Step Number (1, 2, 3, 4, 5, 6, 7, 8) -->
+          <div class="mw-stepper-circle font-monospace">
+            {{ st.num }}
+          </div>
+
+          <!-- Step Label -->
+          <div class="mw-stepper-name" [style.color]="isStageCompleted(st.key) ? st.color : '#64748b'">
+            {{ getShortLabel(st.label) }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. The 8 Stages Rows (Properly sized, aligned & formatted Datepicker) -->
+  <div class="d-flex flex-column gap-1.5 mw-stages-list">
+    <div 
+      *ngFor="let st of stages" 
+      class="mw-stage-row d-flex align-items-center justify-content-between px-3 py-2">
+      
+      <!-- Stage Label (Left side: colored bold title) -->
+      <span class="mw-stage-label fw-bold fs-8" [style.color]="st.color">
+        {{ st.label }}
+      </span>
+
+      <!-- Controls (Right side: Switch + Datepicker perfectly aligned) -->
+      <div class="d-flex align-items-center gap-2.5 mw-stage-ctrls">
+        <!-- Switch Slider -->
+        <label 
+          class="mw-switch" 
+          [class.switch-delay-red]="isStageDelayedRed(st.key)" 
+          [title]="'Toggle ' + st.label">
+          <input 
+            type="checkbox" 
+            [checked]="isStageCompleted(st.key)" 
+            (change)="onStageToggle(st, $event)">
+          <span class="mw-slider"></span>
+        </label>
+
+        <!-- Date Input (Visible when stage completed, formatted, sized, & aligned) -->
+        <div class="mw-stage-date-wrap" [class.d-none]="!isStageCompleted(st.key)">
+          <input 
+            type="date" 
+            class="form-control form-control-sm mw-stage-date-input fs-8 font-monospace" 
+            [value]="getStageDate(st.key)" 
+            (change)="onDateChange(st, $event)"
+            title="Milestone Date">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

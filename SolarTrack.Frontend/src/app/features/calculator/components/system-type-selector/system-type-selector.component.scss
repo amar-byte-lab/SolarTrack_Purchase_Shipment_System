@@ -1,0 +1,97 @@
+.step-card {
+  border: 1px solid var(--st-border, #e2e8f0);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease;
+  padding: 20px 22px;
+  margin-bottom: 0;
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
+}
+
+.custom-dropdown-trigger {
+  background: #ffffff;
+  border: 1px solid var(--st-border, #e2e8f0) !important;
+  transition: border-color 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  min-height: 48px;
+
+  &:hover,
+  &:focus {
+    border-color: var(--st-primary, #4338ca) !important;
+    box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.15) !important;
+  }
+}
+
+.system-dropdown-menu {
+  border: 1px solid var(--st-border, #e2e8f0);
+  background: #ffffff;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 6px !important;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  z-index: 1050;
+  left: 0 !important;
+  right: 0 !important;
+  margin-top: 4px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  display: none;
+
+  &.show {
+    display: block;
+  }
+}
+
+.system-dropdown-item {
+  background: #f8fafc;
+  border: 1px solid var(--st-border, #e2e8f0) !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  user-select: none;
+  width: 100% !important;
+  padding: 8px 12px !important;
+  margin-bottom: 4px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    background: #ffffff;
+    border-color: #cbd5e1 !important;
+  }
+
+  &.active {
+    background: #eef2ff !important;
+    border-color: var(--st-primary, #4338ca) !important;
+  }
+}
+
+#secGridPhaseAndLoad {
+  margin-top: 14px !important;
+
+  .form-label {
+    font-size: 0.78rem !important;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 6px !important;
+  }
+}
+
+.shadow-2xs {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.fs-7 { font-size: 0.82rem !important; }
+.fs-8 { font-size: 0.78rem !important; }
+.fs-9 { font-size: 0.72rem !important; }

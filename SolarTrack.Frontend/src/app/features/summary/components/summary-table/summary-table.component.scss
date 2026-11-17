@@ -122,6 +122,27 @@
   background-color: #bbf7d0 !important;
 }
 
+/* Highlight row when Workflow Modal is open */
+tr.row-workflow-active td {
+  background-color: #ede9fe !important;
+  border-top: 2px solid #8b5cf6 !important;
+  border-bottom: 2px solid #8b5cf6 !important;
+
+  &:first-child {
+    border-left: 5px solid #7c3aed !important;
+  }
+  &:last-child {
+    border-right: 2px solid #8b5cf6 !important;
+  }
+}
+
+tr.row-workflow-active .mw-workflow-btn {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+}
+
 .sum-comment-input {
   min-width: 130px;
   width: 100%;
@@ -186,3 +207,41 @@
     border: 1px solid #ddd6fe !important;
   }
 }
+
+/* Actions Column */
+.th-col-actions, .td-col-actions, .tfoot-col-actions {
+  width: 95px !important;
+  min-width: 95px !important;
+  text-align: center !important;
+}
+
+.td-col-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0 !important;
+  border-radius: 4px;
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    transform: scale(1.08);
+  }
+}
+
+.mw-workflow-btn {
+  background: transparent;
+  color: #4338ca;
+  opacity: 0.85;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
+    transform: scale(1.15);
+    color: #3730a3;
+  }
+}
+
+

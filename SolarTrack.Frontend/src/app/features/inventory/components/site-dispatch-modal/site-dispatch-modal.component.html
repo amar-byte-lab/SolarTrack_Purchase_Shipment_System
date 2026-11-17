@@ -1,0 +1,349 @@
+<div *ngIf="isOpen" class="modal-backdrop fade show" (click)="onClose()"></div>
+
+<div *ngIf="isOpen" class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="onBackdropClick($event)">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow rounded-3 overflow-hidden" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <div class="dispatch-badge">
+            <app-icon name="truck" [size]="16" class="text-warning"></app-icon>
+          </div>
+          <div>
+            <h6 class="modal-title fw-bold text-dark m-0 fs-7">Dispatch Equipment to Site</h6>
+            <div class="text-secondary fs-9">Issue warehouse stock for site installation & customer consumption</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-3 bg-slate-50">
+        
+        <!-- Header Fields Card -->
+        <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
+          <div class="row g-2">
+            <div class="col-sm-6 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Site / Project Name *</label>
+              <input 
+                type="text" 
+                class="form-control form-control-sm fs-8 fw-semibold text-dark" 
+                [(ngModel)]="siteName" 
+                placeholder="e.g. Bijayananda Saw - Balasore Site">
+            </div>
+
+            <div class="col-sm-6 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Dispatch Date *</label>
+              <input type="date" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="date">
+            </div>
+
+            <!-- Upload Challan Document -->
+            <div class="col-12 mt-2">
+              <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+                <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                  <app-icon name="file" [size]="15" class="text-secondary"></app-icon>
+                  <span class="small fw-semibold text-secondary text-truncate">
+                    {{ docName ? docName : 'Upload Delivery Challan / Gate Pass Document' }}
+                  </span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+                  <label class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 mb-0 cursor-pointer d-inline-flex align-items-center gap-1">
+                    <app-icon name="upload" [size]="12"></app-icon>
+                    <span>{{ docName ? 'Change File' : 'Upload File' }}</span>
+                    <input type="file" (change)="onFileSelected($event)" class="d-none">
+                  </label>
+                  <button *ngIf="docName" type="button" class="btn btn-xs btn-outline-danger p-1 border-0" (click)="removeFile()" title="Remove file">
+                    <app-icon name="close" [size]="12"></app-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Is our Own Project Checkbox -->
+            <div class="col-12 mt-1">
+              <div class="p-2 border rounded bg-light-subtle d-flex align-items-center">
+                <div class="form-check m-0 d-flex align-items-center gap-2">
+                  <input 
+                    class="form-check-input mt-0 cursor-pointer" 
+                    type="checkbox" 
+                    id="chkOwnProject" 
+                    [(ngModel)]="isOurProject">
+                  <label class="form-check-label fw-bold text-dark fs-8 cursor-pointer" for="chkOwnProject">
+                    Is our Own Project (Include Logistics & Customer-wise Cost Breakdown)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Logistics & Customer Allocation Section (When isOurProject is checked) -->
+        <div *ngIf="isOurProject" class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
+          
+          <div class="fw-bold text-dark fs-8 text-uppercase mb-2" style="letter-spacing: 0.03em;">
+            Logistics & Transport Breakdown
+          </div>
+
+          <!-- Transport Info -->
+          <div class="row g-2 mb-2.5">
+            <div class="col-md-3 col-sm-6 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Vehicle / Transporter</label>
+              <input type="text" class="form-control form-control-sm fs-8" [(ngModel)]="vehicle" placeholder="Vehicle No. / Driver Phone">
+            </div>
+
+            <div class="col-md-3 col-sm-6 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Transport Cost (₹)</label>
+              <input 
+                type="number" 
+                min="0" 
+                step="any" 
+                class="form-control form-control-sm text-end font-monospace fs-8" 
+                [(ngModel)]="transportCost" 
+                (ngModelChange)="recalcCostPerKm()"
+                placeholder="0.00">
+            </div>
+
+            <div class="col-md-3 col-sm-6 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
+              <input 
+                type="number" 
+                min="0" 
+                step="any" 
+                class="form-control form-control-sm text-end font-monospace fs-8" 
+                [(ngModel)]="distanceKm" 
+                (ngModelChange)="recalcCostPerKm()"
+                placeholder="0">
+            </div>
+
+            <div class="col-md-3 col-sm-6 col-6">
+              <label class="form-label small fw-semibold text-secondary mb-1">Cost / Km (₹/km)</label>
+              <div class="form-control form-control-sm text-end font-monospace bg-light fs-8 text-secondary">
+                {{ costPerKm ? ('₹' + costPerKm) : '—' }}
+              </div>
+            </div>
+
+            <div class="col-sm-4 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Extra Expenses (₹)</label>
+              <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8" [(ngModel)]="extraDeliveryCost" placeholder="0.00">
+            </div>
+
+            <div class="col-sm-8 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Expense Note / Breakdown</label>
+              <input type="text" class="form-control form-control-sm fs-8" [(ngModel)]="extraDeliveryComment" placeholder="e.g. Toll gate, loading/unloading helper...">
+            </div>
+          </div>
+
+          <!-- Customer-wise Cost Allocation -->
+          <div class="d-flex justify-content-between align-items-center mb-1.5 pt-2 border-top">
+            <span class="fw-bold text-dark fs-8">Customer-wise Cost Allocation</span>
+            <button type="button" class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 d-inline-flex align-items-center gap-1" (click)="addCustomerAllocation()">
+              <app-icon name="plus" [size]="12"></app-icon>
+              <span>Add Customer</span>
+            </button>
+          </div>
+
+          <div class="table-responsive border rounded bg-white mb-1">
+            <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.78rem;">
+              <thead class="table-light">
+                <tr>
+                  <th style="min-width: 170px;">Customer Name</th>
+                  <th style="width: 95px;" class="text-end">Set Cost (₹)</th>
+                  <th style="width: 95px;" class="text-end">Install Cost (₹)</th>
+                  <th style="width: 95px;" class="text-end">Delivery (₹)</th>
+                  <th style="width: 90px;" class="text-end">Other (₹)</th>
+                  <th>Remark</th>
+                  <th style="width: 100px;" class="text-end">Total (₹)</th>
+                  <th style="width: 30px;" class="text-center p-0"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ca of customerAllocations; let cIdx = index">
+                  <td>
+                    <select class="form-select form-select-sm fs-8 py-0.5" [(ngModel)]="ca.customerName" (change)="onCustomerSelected(ca)">
+                      <option value="" disabled>-- Select Customer --</option>
+                      <option *ngFor="let cust of customersList" [value]="cust.Name">
+                        {{ cust.Name }} ({{ cust.District || 'No District' }})
+                      </option>
+                    </select>
+                  </td>
+                  <td>
+                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" [(ngModel)]="ca.setCost" (ngModelChange)="recalcCustomerTotal(ca)">
+                  </td>
+                  <td>
+                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" [(ngModel)]="ca.installCost" (ngModelChange)="recalcCustomerTotal(ca)">
+                  </td>
+                  <td>
+                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" [(ngModel)]="ca.deliveryCost" (ngModelChange)="recalcCustomerTotal(ca)">
+                  </td>
+                  <td>
+                    <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" [(ngModel)]="ca.otherCost" (ngModelChange)="recalcCustomerTotal(ca)">
+                  </td>
+                  <td>
+                    <input type="text" class="form-control form-control-sm fs-8 py-0.5" [(ngModel)]="ca.remark" placeholder="Note">
+                  </td>
+                  <td class="text-end font-monospace fw-bold text-dark fs-8">
+                    ₹{{ ca.total | number:'1.2-2' }}
+                  </td>
+                  <td class="text-center p-0">
+                    <button type="button" class="btn btn-xs btn-outline-danger p-0.5 border-0" (click)="removeCustomerAllocation(cIdx)">
+                      <app-icon name="trash" [size]="12"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+
+                <tr *ngIf="customerAllocations.length === 0">
+                  <td colspan="8" class="text-center py-2 text-muted fs-8">
+                    No customer allocation added. Click <strong>+ Add Customer</strong> to allocate logistics costs to project accounts.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- Equipment Items to Dispatch Section -->
+        <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-bold text-dark fs-8 text-uppercase" style="letter-spacing: 0.03em;">
+              Equipment Items to Dispatch ({{ itemsList.length }})
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-warning text-dark py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8" (click)="addItemRow()">
+              <app-icon name="plus" [size]="13"></app-icon>
+              <span>Add Item</span>
+            </button>
+          </div>
+
+          <!-- Items Table -->
+          <div class="table-responsive border rounded bg-white">
+            <table class="table table-sm align-middle table-bordered mb-0" style="font-size: 0.8rem;">
+              <thead class="table-light">
+                <tr>
+                  <th style="min-width: 200px;">EQUIPMENT ITEM</th>
+                  <th style="width: 100px;" class="text-center">IN STOCK</th>
+                  <th style="width: 100px;" class="text-center">DISPATCH QTY</th>
+                  <th style="width: 120px;" class="text-end">COST / UNIT</th>
+                  <th style="width: 130px;" class="text-end">TOTAL VALUE (₹)</th>
+                  <th style="width: 32px;" class="text-center p-0"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of itemsList; let idx = index">
+                  <!-- Item Select -->
+                  <td>
+                    <select class="form-select form-select-sm fs-8 py-0.5" [(ngModel)]="row.itemCode" (change)="onItemChanged(row)">
+                      <option value="" disabled>-- Select Item --</option>
+                      <option *ngFor="let itm of availableItemsWithStock" [value]="itm.ItemCode">
+                        {{ itm.ItemName }} (Stock: {{ itm.inHandQty }} {{ itm.Unit }})
+                      </option>
+                    </select>
+                  </td>
+
+                  <!-- In Stock -->
+                  <td class="text-center">
+                    <span 
+                      class="badge fs-9 font-monospace" 
+                      [ngClass]="(row.availableStock || 0) <= 0 ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'">
+                      {{ row.availableStock || 0 }} {{ row.unit || 'Nos' }}
+                    </span>
+                  </td>
+
+                  <!-- Dispatch Qty -->
+                  <td>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      step="any" 
+                      class="form-control form-control-sm text-center font-monospace fs-8 py-0.5" 
+                      [class.border-danger]="row.qty > (row.availableStock || 0)"
+                      [(ngModel)]="row.qty" 
+                      (ngModelChange)="recalculateCosts()">
+                  </td>
+
+                  <!-- Cost / Unit -->
+                  <td>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="any" 
+                      class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" 
+                      [(ngModel)]="row.unitBuyingPrice" 
+                      (ngModelChange)="recalculateCosts()">
+                  </td>
+
+                  <!-- Total Value -->
+                  <td class="text-end font-monospace fw-bold text-dark fs-8">
+                    ₹{{ row.dispatchedCost | number:'1.2-2' }}
+                  </td>
+
+                  <!-- Delete Row -->
+                  <td class="text-center p-0">
+                    <button type="button" class="btn btn-xs btn-outline-danger p-0.5 border-0" (click)="removeItemRow(idx)" title="Remove item">
+                      <app-icon name="trash" [size]="12"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+
+                <tr *ngIf="itemsList.length === 0">
+                  <td colspan="6" class="text-center py-3 text-muted fs-8">
+                    No items selected for dispatch. Click <strong>+ Add Item</strong> above.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Stock Warning Alert -->
+          <div *ngIf="hasStockOverdraft" class="alert alert-danger py-1.5 px-2.5 small mt-2 mb-0 d-flex align-items-center gap-2 fs-8">
+            <app-icon name="alert-triangle" [size]="14"></app-icon>
+            <span>One or more items have dispatch quantity exceeding warehouse in-hand stock!</span>
+          </div>
+
+          <!-- Valuation Summary Bar -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded mt-2 border">
+            <div class="d-flex align-items-baseline gap-2">
+              <span class="text-secondary small fw-medium">Total Units:</span>
+              <span class="text-dark fw-bold fs-7 font-monospace">{{ totalUnits }}</span>
+              <span class="text-muted small ms-2">Transport: ₹{{ (transportCost || 0) | number:'1.2-2' }}</span>
+            </div>
+            <div class="d-flex align-items-baseline gap-2">
+              <span class="text-secondary small fw-medium">Total Material Cost:</span>
+              <span class="text-dark fw-bold fs-6 font-monospace text-warning">₹{{ totalMaterialCost | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Keep-style Note -->
+        <div class="inv-keep-note border rounded-2 p-2 bg-white">
+          <div class="d-flex align-items-center gap-1.5 mb-1 text-secondary fs-9 fw-semibold">
+            <app-icon name="edit" [size]="12"></app-icon>
+            <span>Notes / Dispatch Instructions</span>
+          </div>
+          <textarea 
+            class="form-control border-0 p-1 fs-8 shadow-none" 
+            rows="2" 
+            [(ngModel)]="remarks" 
+            placeholder="Write dispatch instructions, site contact details..."
+            style="resize: none;">
+          </textarea>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer py-2 px-3 border-top bg-light d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-sm btn-secondary px-3 fs-8" (click)="onClose()">Cancel</button>
+        <button 
+          type="button" 
+          class="btn btn-sm btn-warning px-4 fw-semibold text-dark fs-8" 
+          (click)="submitDispatch()" 
+          [disabled]="isSubmitting">
+          Confirm Dispatch
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

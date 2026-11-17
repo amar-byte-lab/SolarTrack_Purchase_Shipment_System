@@ -8,7 +8,6 @@ namespace SolarTrack.Backend.Services;
 public class DatabaseService : IDatabaseService
 {
     private readonly IDapperConnectionFactory _connFactory;
-    private readonly ISupabaseClientService _supabase;
     private readonly SolarTrackDbContext _dbContext;
     private readonly ILogger<DatabaseService> _logger;
     private readonly string _dataDir;
@@ -41,13 +40,11 @@ public class DatabaseService : IDatabaseService
 
     public DatabaseService(
         IDapperConnectionFactory connFactory,
-        ISupabaseClientService supabase,
         SolarTrackDbContext dbContext,
         IConfiguration config,
         ILogger<DatabaseService> logger)
     {
         _connFactory = connFactory;
-        _supabase = supabase;
         _dbContext = dbContext;
         _logger = logger;
 
@@ -81,20 +78,11 @@ public class DatabaseService : IDatabaseService
                 using var conn = _connFactory.CreateConnection();
                 conn.Open();
                 var result = await conn.ExecuteScalarAsync<int>("SELECT 1;");
-                return new { isMigrated = true, connected = true, type = "postgresql", engine = "dapper-efcore" };
+                return new { isMigrated = true, connected = true, type = "sqlserver", engine = "dapper-efcore" };
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("PostgreSQL connection check failed: {Message}.", ex.Message);
-            }
-        }
-
-        if (_supabase.IsConfigured)
-        {
-            var ok = await _supabase.TestConnectionAsync();
-            if (ok)
-            {
-                return new { isMigrated = true, connected = true, type = "postgresql", driver = "PostgreSQL (Supabase)", engine = "hybrid-dotnet" };
+                _logger.LogWarning("SQL Server connection check failed: {Message}.", ex.Message);
             }
         }
 
@@ -110,12 +98,9 @@ public class DatabaseService : IDatabaseService
             try
             {
                 using var conn = _connFactory.CreateConnection();
-                var sql = $"SELECT * FROM \"{tableName}\"";
                 var pk = GetPk(tableName);
-                if (!string.IsNullOrEmpty(pk))
-                {
-                    sql += $" ORDER BY \"{pk}\" ASC";
-                }
+                var orderClause = !string.IsNullOrEmpty(pk) ? $" ORDER BY [{pk}] ASC" : "";
+                var sql = $"SELECT * FROM [dbo].[{tableName}]{orderClause}";
 
                 var rows = await conn.QueryAsync(sql);
                 var list = new List<Dictionary<string, object?>>();
@@ -129,20 +114,7 @@ public class DatabaseService : IDatabaseService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Dapper GetTableAsync failed for '{Table}': {Message}.", tableName, ex.Message);
-            }
-        }
-
-        if (_supabase.IsConfigured)
-        {
-            try
-            {
-                var rows = await _supabase.GetTableAsync(tableName);
-                return rows;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Supabase GetTableAsync error for {Table}: {Msg}", tableName, ex.Message);
+                _logger.LogWarning("SQL Server GetTableAsync failed for '{Table}': {Message}.", tableName, ex.Message);
             }
         }
 
@@ -174,29 +146,60 @@ public class DatabaseService : IDatabaseService
                 conn.Open();
                 using var tran = conn.BeginTransaction();
 
+                var isIdentity = string.Equals(tableName, "borrowers", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(tableName, "borrower_txns", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(tableName, "notifications", StringComparison.OrdinalIgnoreCase);
+
                 foreach (var originalRow in rowList)
                 {
                     var cleanRow = SanitizeRow(tableName, originalRow);
                     if (cleanRow.Count == 0) continue;
 
-                    var cols = cleanRow.Keys.Select(k => $"\"{k}\"").ToList();
+                    var hasExplicitPk = !string.IsNullOrEmpty(pk) && cleanRow.ContainsKey(pk) && cleanRow[pk] != null;
+
+                    var cols = cleanRow.Keys.Select(k => $"[{k}]").ToList();
                     var paramNames = cleanRow.Keys.Select((k, idx) => $"@p{idx}").ToList();
-                    var updateCols = cleanRow.Keys
-                        .Where(k => !string.Equals(k, pk, StringComparison.OrdinalIgnoreCase))
-                        .Select(k => $"\"{k}\" = EXCLUDED.\"{k}\"")
-                        .ToList();
 
                     var dynParams = new DynamicParameters();
                     int i = 0;
+                    int pkParamIdx = -1;
                     foreach (var kvp in cleanRow)
                     {
+                        if (!string.IsNullOrEmpty(pk) && string.Equals(kvp.Key, pk, StringComparison.OrdinalIgnoreCase))
+                        {
+                            pkParamIdx = i;
+                        }
                         dynParams.Add($"p{i}", UnwrapJsonElement(kvp.Value));
                         i++;
                     }
 
-                    string sql = updateCols.Count > 0 && !string.IsNullOrEmpty(pk)
-                        ? $"INSERT INTO \"{tableName}\" ({string.Join(", ", cols)}) VALUES ({string.Join(", ", paramNames)}) ON CONFLICT (\"{pk}\") DO UPDATE SET {string.Join(", ", updateCols)};"
-                        : $"INSERT INTO \"{tableName}\" ({string.Join(", ", cols)}) VALUES ({string.Join(", ", paramNames)}) ON CONFLICT DO NOTHING;";
+                    var updateCols = cleanRow.Keys
+                        .Select((k, idx) => new { Key = k, Idx = idx })
+                        .Where(x => !string.Equals(x.Key, pk, StringComparison.OrdinalIgnoreCase))
+                        .Select(x => $"[{x.Key}] = @p{x.Idx}")
+                        .ToList();
+
+                    string sql;
+                    if (hasExplicitPk && updateCols.Count > 0)
+                    {
+                        var identityOn = isIdentity ? $"SET IDENTITY_INSERT [dbo].[{tableName}] ON;\n" : "";
+                        var identityOff = isIdentity ? $"\nSET IDENTITY_INSERT [dbo].[{tableName}] OFF;" : "";
+                        sql = $@"{identityOn}IF EXISTS (SELECT 1 FROM [dbo].[{tableName}] WHERE [{pk}] = @p{pkParamIdx})
+    UPDATE [dbo].[{tableName}] SET {string.Join(", ", updateCols)} WHERE [{pk}] = @p{pkParamIdx};
+ELSE
+    INSERT INTO [dbo].[{tableName}] ({string.Join(", ", cols)}) VALUES ({string.Join(", ", paramNames)});{identityOff}";
+                    }
+                    else if (hasExplicitPk)
+                    {
+                        var identityOn = isIdentity ? $"SET IDENTITY_INSERT [dbo].[{tableName}] ON;\n" : "";
+                        var identityOff = isIdentity ? $"\nSET IDENTITY_INSERT [dbo].[{tableName}] OFF;" : "";
+                        sql = $@"{identityOn}IF NOT EXISTS (SELECT 1 FROM [dbo].[{tableName}] WHERE [{pk}] = @p{pkParamIdx})
+    INSERT INTO [dbo].[{tableName}] ({string.Join(", ", cols)}) VALUES ({string.Join(", ", paramNames)});{identityOff}";
+                    }
+                    else
+                    {
+                        sql = $"INSERT INTO [dbo].[{tableName}] ({string.Join(", ", cols)}) VALUES ({string.Join(", ", paramNames)});";
+                    }
 
                     await conn.ExecuteAsync(sql, dynParams, tran);
                 }
@@ -206,21 +209,7 @@ public class DatabaseService : IDatabaseService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Dapper InsertRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
-            }
-        }
-
-        if (_supabase.IsConfigured)
-        {
-            try
-            {
-                var sanitized = rowList.Select(r => SanitizeRow(tableName, r)).ToList();
-                await _supabase.UpsertRowsAsync(tableName, sanitized);
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Supabase InsertRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                _logger.LogWarning("SQL Server InsertRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
             }
         }
 
@@ -269,32 +258,19 @@ public class DatabaseService : IDatabaseService
                 int idx = 0;
                 foreach (var kvp in cleanRow)
                 {
-                    setClauses.Add($"\"{kvp.Key}\" = @p{idx}");
+                    setClauses.Add($"[{kvp.Key}] = @p{idx}");
                     dynParams.Add($"p{idx}", UnwrapJsonElement(kvp.Value));
                     idx++;
                 }
 
                 dynParams.Add("matchVal", matchVal);
-                var sql = $"UPDATE \"{tableName}\" SET {string.Join(", ", setClauses)} WHERE \"{matchField}\" = @matchVal";
+                var sql = $"UPDATE [dbo].[{tableName}] SET {string.Join(", ", setClauses)} WHERE [{matchField}] = @matchVal";
                 await conn.ExecuteAsync(sql, dynParams);
                 return;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Dapper UpdateRowAsync failed for '{Table}': {Message}.", tableName, ex.Message);
-            }
-        }
-
-        if (_supabase.IsConfigured)
-        {
-            try
-            {
-                await _supabase.UpdateRowAsync(tableName, matchField, matchValue, cleanRow);
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Supabase UpdateRowAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                _logger.LogWarning("SQL Server UpdateRowAsync failed for '{Table}': {Message}.", tableName, ex.Message);
             }
         }
 
@@ -321,26 +297,13 @@ public class DatabaseService : IDatabaseService
             try
             {
                 using var conn = _connFactory.CreateConnection();
-                var sql = $"DELETE FROM \"{tableName}\" WHERE \"{matchField}\" = @matchVal";
+                var sql = $"DELETE FROM [dbo].[{tableName}] WHERE [{matchField}] = @matchVal";
                 await conn.ExecuteAsync(sql, new { matchVal });
                 return;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Dapper DeleteRowAsync failed for '{Table}': {Message}.", tableName, ex.Message);
-            }
-        }
-
-        if (_supabase.IsConfigured)
-        {
-            try
-            {
-                await _supabase.DeleteRowAsync(tableName, matchField, matchValue);
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Supabase DeleteRowAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                _logger.LogWarning("SQL Server DeleteRowAsync failed for '{Table}': {Message}.", tableName, ex.Message);
             }
         }
 
@@ -364,26 +327,13 @@ public class DatabaseService : IDatabaseService
             try
             {
                 using var conn = _connFactory.CreateConnection();
-                var sql = $"DELETE FROM \"{tableName}\" WHERE \"{matchField}\" = ANY(@values)";
+                var sql = $"DELETE FROM [dbo].[{tableName}] WHERE [{matchField}] IN @values";
                 await conn.ExecuteAsync(sql, new { values });
                 return;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Dapper DeleteRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
-            }
-        }
-
-        if (_supabase.IsConfigured)
-        {
-            try
-            {
-                await _supabase.DeleteRowsAsync(tableName, matchField, values!);
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Supabase DeleteRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                _logger.LogWarning("SQL Server DeleteRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
             }
         }
 
@@ -409,15 +359,23 @@ public class DatabaseService : IDatabaseService
                 conn.Open();
                 using var tran = conn.BeginTransaction();
 
-                await conn.ExecuteAsync($"DELETE FROM \"{tableName}\"", transaction: tran);
+                await conn.ExecuteAsync($"DELETE FROM [dbo].[{tableName}]", transaction: tran);
 
-                var pk = GetPk(tableName);
+                var isIdentity = string.Equals(tableName, "borrowers", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(tableName, "borrower_txns", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(tableName, "notifications", StringComparison.OrdinalIgnoreCase);
+
+                if (isIdentity)
+                {
+                    await conn.ExecuteAsync($"SET IDENTITY_INSERT [dbo].[{tableName}] ON", transaction: tran);
+                }
+
                 foreach (var row in rowList)
                 {
                     var cleanRow = SanitizeRow(tableName, row);
                     if (cleanRow.Count == 0) continue;
 
-                    var cols = cleanRow.Keys.Select(k => $"\"{k}\"").ToList();
+                    var cols = cleanRow.Keys.Select(k => $"[{k}]").ToList();
                     var paramNames = cleanRow.Keys.Select((k, idx) => $"@p{idx}").ToList();
 
                     var dynParams = new DynamicParameters();
@@ -428,8 +386,13 @@ public class DatabaseService : IDatabaseService
                         i++;
                     }
 
-                    var sql = $"INSERT INTO \"{tableName}\" ({string.Join(", ", cols)}) VALUES ({string.Join(", ", paramNames)});";
+                    var sql = $"INSERT INTO [dbo].[{tableName}] ({string.Join(", ", cols)}) VALUES ({string.Join(", ", paramNames)});";
                     await conn.ExecuteAsync(sql, dynParams, tran);
+                }
+
+                if (isIdentity)
+                {
+                    await conn.ExecuteAsync($"SET IDENTITY_INSERT [dbo].[{tableName}] OFF", transaction: tran);
                 }
 
                 tran.Commit();
@@ -437,21 +400,7 @@ public class DatabaseService : IDatabaseService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Dapper ReplaceTableAsync failed for '{Table}': {Message}.", tableName, ex.Message);
-            }
-        }
-
-        if (_supabase.IsConfigured)
-        {
-            try
-            {
-                var sanitizedRows = rowList.Select(r => SanitizeRow(tableName, r)).ToList();
-                await _supabase.ReplaceTableAsync(tableName, sanitizedRows);
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Supabase ReplaceTableAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                _logger.LogWarning("SQL Server ReplaceTableAsync failed for '{Table}': {Message}.", tableName, ex.Message);
             }
         }
 
@@ -531,16 +480,21 @@ public class DatabaseService : IDatabaseService
             ["CreatedBy"] = createdBy?.Trim()
         };
 
-        if (_supabase.IsConfigured)
+        if (_connFactory.IsConfigured)
         {
             try
             {
-                await _supabase.UpsertRowAsync("borrowers", item);
-                return new { success = true, item };
+                using var conn = _connFactory.CreateConnection();
+                var sql = @"INSERT INTO [dbo].[borrowers] ([Name], [Mobile], [Address], [Status], [CreatedAt], [CreatedBy])
+                            OUTPUT INSERTED.BorrowerID
+                            VALUES (@Name, @Mobile, @Address, @Status, @CreatedAt, @CreatedBy);";
+                var newId = await conn.ExecuteScalarAsync<long>(sql, item);
+                item["BorrowerID"] = newId;
+                return new { success = true, BorrowerID = newId, item };
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Supabase AddBorrowerAsync failed: {Msg}", ex.Message);
+                _logger.LogWarning("SQL Server AddBorrowerAsync failed: {Msg}", ex.Message);
             }
         }
 
@@ -553,11 +507,11 @@ public class DatabaseService : IDatabaseService
                 if (lid > maxId) maxId = lid;
             }
         }
-        var newId = maxId + 1;
-        item["BorrowerID"] = newId;
+        var generatedId = maxId + 1;
+        item["BorrowerID"] = generatedId;
         localRows.Add(item);
         WriteLocalTable("borrowers", localRows);
-        return new { success = true, BorrowerID = newId, item };
+        return new { success = true, BorrowerID = generatedId, item };
     }
 
     public async Task UpdateBorrowerAsync(Dictionary<string, object?> body)
@@ -598,16 +552,21 @@ public class DatabaseService : IDatabaseService
             ["CreatedAt"] = DateTime.UtcNow.ToString("o")
         };
 
-        if (_supabase.IsConfigured)
+        if (_connFactory.IsConfigured)
         {
             try
             {
-                await _supabase.UpsertRowAsync("borrower_txns", item);
-                return new { success = true, item };
+                using var conn = _connFactory.CreateConnection();
+                var sql = @"INSERT INTO [dbo].[borrower_txns] ([BorrowerID], [TxnDate], [Amount], [Type], [Remarks], [CreatedAt])
+                            OUTPUT INSERTED.TxnID
+                            VALUES (@BorrowerID, @TxnDate, @Amount, @Type, @Remarks, @CreatedAt);";
+                var newId = await conn.ExecuteScalarAsync<long>(sql, item);
+                item["TxnID"] = newId;
+                return new { success = true, TxnID = newId, item };
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Supabase AddBorrowerTxnAsync failed: {Msg}", ex.Message);
+                _logger.LogWarning("SQL Server AddBorrowerTxnAsync failed: {Msg}", ex.Message);
             }
         }
 
@@ -620,11 +579,11 @@ public class DatabaseService : IDatabaseService
                 if (lid > maxId) maxId = lid;
             }
         }
-        var newId = maxId + 1;
-        item["TxnID"] = newId;
+        var generatedId = maxId + 1;
+        item["TxnID"] = generatedId;
         localRows.Add(item);
         WriteLocalTable("borrower_txns", localRows);
-        return new { success = true, TxnID = newId, item };
+        return new { success = true, TxnID = generatedId, item };
     }
 
     public async Task<object> UpdateBorrowerTxnAsync(Dictionary<string, object?> body)

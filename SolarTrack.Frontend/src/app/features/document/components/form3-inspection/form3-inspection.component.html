@@ -1,0 +1,88 @@
+<div class="form3-inspection-container">
+  
+  <!-- Header Toolbar: Consumer Name Pill & Actions -->
+  <div class="doc-tab-toolbar mb-3">
+    <div class="doc-consumer-pill">
+      <div class="doc-consumer-avatar">
+        <app-icon name="customer" [size]="14"></app-icon>
+      </div>
+      <div class="doc-consumer-meta">
+        <span class="doc-consumer-label">Consumer Name</span>
+        <span class="doc-consumer-name">{{ customer?.Name || 'No Customer Selected' }}</span>
+      </div>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary doc-edit-specs-btn" 
+        (click)="editSpecsClicked.emit()" 
+        title="Edit Technical Specifications &amp; RTS Record">
+        <app-icon name="edit" [size]="12"></app-icon>
+        <span>Edit Specs</span>
+      </button>
+    </div>
+
+    <div class="doc-actions-group">
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary btn-sm" 
+        (click)="resetClicked.emit()" 
+        title="Reset fields">
+        <app-icon name="refresh" [size]="12"></app-icon>
+        <span>Reset</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary btn-sm" 
+        (click)="previewClicked.emit()" 
+        title="Preview Form 3 document">
+        <app-icon name="eye" [size]="12"></app-icon>
+        <span>Preview</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary btn-sm fw-semibold" 
+        (click)="previewClicked.emit()" 
+        title="Print Form 3">
+        <app-icon name="print" [size]="13"></app-icon>
+        <span>Print Form 3</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Work Completion & Inspection Report Card -->
+  <div class="f4-section-card mb-3">
+    <div class="f4-section-header">
+      <div class="f4-section-title">
+        <app-icon name="file" [size]="14" class="text-primary"></app-icon>
+        <span>Work Completion &amp; System Parameters</span>
+      </div>
+      <span class="badge bg-light text-secondary border">Form-3 Inspection</span>
+    </div>
+    <div class="p-2 row g-2">
+      <div class="col-md-4">
+        <label class="f4-label">Solar Plant Capacity</label>
+        <input type="text" class="form-control f4-input" [(ngModel)]="specs.moduleTotalCapacity">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">Inverter Make &amp; Rating</label>
+        <input type="text" class="form-control f4-input" [value]="(specs.inverterMake || '') + ' ' + (specs.inverterCapacity || '3') + ' kW'">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">PV Module Make</label>
+        <input type="text" class="form-control f4-input" [(ngModel)]="specs.moduleMake">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">Total Modules</label>
+        <input type="text" class="form-control f4-input" [(ngModel)]="specs.moduleCount">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">Earth Resistance (Ohms)</label>
+        <input type="number" class="form-control f4-input" [(ngModel)]="specs.earthResistance">
+      </div>
+      <div class="col-md-4">
+        <label class="f4-label">Inspection Date</label>
+        <input type="date" class="form-control f4-input" [value]="customer?.InspectionDate || specs.dateOfInstallation">
+      </div>
+    </div>
+  </div>
+
+</div>

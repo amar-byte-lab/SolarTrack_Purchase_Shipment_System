@@ -1,0 +1,363 @@
+<div *ngIf="isOpen" class="modal-backdrop fade show"></div>
+
+<div *ngIf="isOpen" class="modal d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content border shadow-sm rounded-2">
+      
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light d-flex align-items-center justify-content-between">
+        <h5 class="modal-title fw-bold fs-6 text-dark mb-0 d-flex align-items-center gap-2">
+          <app-icon name="customer" [size]="16" class="text-primary"></app-icon>
+          <span>{{ modalTitle }}</span>
+        </h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="onClose()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-3">
+        <form (ngSubmit)="saveCustomer()">
+          <div class="row g-3">
+            
+            <!-- Left Column: General & Contact Info -->
+            <div class="col-md-6 col-12 border-end-md modal-left-column">
+              <div class="row g-2">
+                
+                <!-- Row 1: Customer Name & Consumer No. -->
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Customer Name <span class="text-danger">*</span></label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="name" 
+                    name="custName" 
+                    placeholder="Full name" 
+                    required>
+                </div>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Consumer No.</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8 font-monospace" 
+                    [(ngModel)]="consumerNo" 
+                    name="custConsumerNo" 
+                    placeholder="Consumer No">
+                </div>
+
+                <!-- Row 2: Application Number & Proposed Capacity -->
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Application Number</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8 font-monospace" 
+                    [(ngModel)]="applicationNo" 
+                    name="custApplicationNo" 
+                    placeholder="Application Number">
+                </div>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Proposed Capacity</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="proposedCapacity" 
+                    name="custProposedCapacity" 
+                    placeholder="e.g. 3.00 kWp">
+                </div>
+
+                <!-- Row 3: Circle Name & Division Name -->
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Circle Name</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="circle" 
+                    name="custCircle" 
+                    placeholder="Circle Name">
+                </div>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Division Name</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="division" 
+                    name="custDivision" 
+                    placeholder="Division Name">
+                </div>
+
+                <!-- Row 4: Sub Division & District -->
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Sub Division</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="subDivision" 
+                    name="custSubDivision" 
+                    placeholder="Sub Division">
+                </div>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">District</label>
+                  <select 
+                    class="form-select form-select-sm fs-8" 
+                    [(ngModel)]="district" 
+                    name="custDistrict">
+                    <option value="">-- Select District --</option>
+                    <option *ngFor="let d of districts" [value]="d">{{ d }}</option>
+                  </select>
+                </div>
+
+                <!-- Row 5: Mobile Number & Login Date -->
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8 font-monospace" 
+                    [(ngModel)]="mobile" 
+                    name="custMobile" 
+                    placeholder="Mobile number">
+                </div>
+                <div class="col-6 mb-1.5">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label fs-8 text-secondary mb-0">Login Date</label>
+                    <span 
+                      *ngIf="delayInfo" 
+                      class="badge erp-delay-badge font-monospace" 
+                      [ngClass]="'delay-' + delayInfo.colorType"
+                      [title]="delayInfo.totalDays + ' days delay from Login Date'">
+                      ({{ delayInfo.text }})
+                    </span>
+                  </div>
+                  <input 
+                    type="date" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="loginDate" 
+                    name="custLoginDate">
+                </div>
+
+                <!-- Row 6: Address -->
+                <div class="col-12 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Address</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="address" 
+                    name="custAddress" 
+                    placeholder="Site / Customer Address">
+                </div>
+
+                <!-- Row 7: Brand & Partner Name -->
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Brand</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    [(ngModel)]="brand" 
+                    name="custBrand" 
+                    placeholder="Committed Brand">
+                </div>
+                <div class="col-6 mb-1.5">
+                  <label class="form-label fs-8 text-secondary mb-1">Partner / Broker</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm fs-8" 
+                    list="partnerOptionsList"
+                    [(ngModel)]="brokerName" 
+                    name="custBrokerName" 
+                    [disabled]="isPartnerRole"
+                    placeholder="Partner Name">
+                  <datalist id="partnerOptionsList">
+                    <option *ngFor="let p of partnerOptions" [value]="p"></option>
+                  </datalist>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Pricing & Expense Info -->
+            <div class="col-md-6 col-12 admin-only-column">
+              <div class="card border rounded-2 p-3 bg-light h-100 d-flex flex-column justify-content-between shadow-xs">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between pb-2 mb-2.5 border-bottom">
+                    <span class="fw-bold text-dark fs-7">Pricing &amp; Expenses</span>
+                    <span class="badge bg-white text-secondary border fs-9 fw-semibold">Financial Analysis</span>
+                  </div>
+
+                  <div class="row g-2">
+                    <!-- Row 1: Commercial Terms -->
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Customer Price (₹)">Customer Price (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="customerPrice" 
+                        name="custPrice" 
+                        placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Partner Price (₹)">Partner Price (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="partnerPrice" 
+                        name="custPartnerPrice" 
+                        placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Commission (₹)">Commission (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="commission" 
+                        name="custCommission" 
+                        placeholder="0.00">
+                    </div>
+
+                    <!-- Row 2: Direct Costs -->
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Material Cost (₹)">Material (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="materialCost" 
+                        name="custMaterialCost" 
+                        placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Transport Cost (₹)">Transport (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="transportCost" 
+                        name="custTransportCost" 
+                        placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Other Expenses (₹)">Other (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="otherCost" 
+                        name="custOtherCost" 
+                        placeholder="0.00">
+                    </div>
+
+                    <!-- Row 3: Installation & Taxes -->
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Installation Cost (₹)">Installation (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="installationCost" 
+                        name="custInstallationCost" 
+                        placeholder="0.00">
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="GST Percentage">GST (%)</label>
+                      <div class="input-group input-group-sm">
+                        <input 
+                          type="number" 
+                          step="any" 
+                          min="0" 
+                          class="form-control fs-8 bg-white" 
+                          [(ngModel)]="gstPercentage" 
+                          name="custGstPct" 
+                          placeholder="GST %">
+                        <span class="input-group-text bg-light text-dark fw-semibold fs-8 px-1" style="font-size: 0.72rem; min-width: 48px; text-align: center;">
+                          ₹{{ gstAmount | number:'1.2-2' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col-4 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block fw-bold text-dark" title="Total Expense (₹)">Total Expense (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        class="form-control form-control-sm fs-8 bg-white fw-bold text-dark" 
+                        [value]="totalExpense | number:'1.2-2'" 
+                        placeholder="0.00" 
+                        readonly>
+                    </div>
+
+                    <!-- Row 4: Net Meter Payment -->
+                    <div class="col-6 mb-1.5">
+                      <label class="form-label fs-8 text-secondary mb-1 text-truncate d-block" title="Net Meter Payment (₹)">Net Meter Payment (₹)</label>
+                      <input 
+                        type="number" 
+                        step="any" 
+                        min="0" 
+                        class="form-control form-control-sm fs-8 bg-white" 
+                        [(ngModel)]="netMeterPayment" 
+                        name="custNetMeterPayment" 
+                        placeholder="0.00">
+                    </div>
+                    <div class="col-6 mb-1.5 d-flex align-items-center pt-3">
+                      <div class="form-check">
+                        <input 
+                          class="form-check-input" 
+                          type="checkbox" 
+                          id="cNetMeterPaid" 
+                          [(ngModel)]="netMeterPaid" 
+                          name="custNetMeterPaid">
+                        <label class="form-check-label fs-8 text-dark fw-semibold cursor-pointer" for="cNetMeterPaid">Net Meter Paid</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 5: Net Estimated Profit Summary Banner -->
+                <div class="mt-2.5 pt-2 border-top">
+                  <div class="p-2 rounded-2 bg-white border d-flex justify-content-between align-items-center shadow-xs">
+                    <div>
+                      <span class="form-label fs-8 text-secondary mb-0 fw-bold d-block">Estimated Profit (₹)</span>
+                      <span class="text-muted" style="font-size: 0.70rem;">Partner − Commission − Expenses</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                      <span 
+                        class="fs-6 fw-bold text-end"
+                        [ngClass]="estimatedProfit >= 0 ? 'text-success' : 'text-danger'">
+                        ₹{{ estimatedProfit | number:'1.2-2' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light border-top py-2 px-3 d-flex justify-content-end gap-2">
+        <button 
+          type="button" 
+          class="btn btn-sm btn-outline-secondary px-3 fs-8" 
+          [disabled]="isSaving"
+          (click)="onClose()">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-sm btn-primary px-4 fs-8 fw-semibold d-inline-flex align-items-center gap-1.5" 
+          [disabled]="isSaving"
+          (click)="saveCustomer()">
+          <span *ngIf="isSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>{{ slNo ? 'Update Customer' : 'Save Customer' }}</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

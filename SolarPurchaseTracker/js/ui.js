@@ -8,15 +8,11 @@ const UI = (() => {
   const NAV_ITEMS = [
     // { href: 'quotation.html',       icon: 'grid',       label: 'Dashboard' },
     { href: 'summary.html',         icon: 'summary',    label: 'Summary' },
-    { href: 'manage-work.html',     icon: 'briefcase',  label: 'ManageWork' },
-    { href: 'customer.html',        icon: 'customer',   label: 'Customer' },
     { href: 'inventory.html',       icon: 'boxes',      label: 'Inventory' },
     { href: 'shipment.html',        icon: 'truck',      label: 'Shipment' },
     { href: 'files.html',           icon: 'file',       label: 'Files' },
     { href: 'quotation.html',       icon: 'offer',      label: 'Quotation' },
     { href: 'document.html',        icon: 'agreement',  label: 'Document' },
-    { href: 'sizing-calc.html',     icon: 'calculator', label: 'Calculator' },
-    { href: 'sld.html',             icon: 'circuit',    label: 'SLD Diagram' },
     { href: 'ledger.html',          icon: 'wallet',     label: 'Ledger' },
     { href: 'settings.html',        icon: 'gear',       label: 'Settings' },
   ];
@@ -96,13 +92,13 @@ const UI = (() => {
       ? NAV_ITEMS.filter(item => {
           if (isPowerUser) return true;
           if (isEmployee) {
-            return ['quotation.html', 'document.html', 'sizing-calc.html', 'sld.html'].includes(item.href);
+            return ['quotation.html', 'document.html'].includes(item.href);
           }
           if (item.href === 'manage-work.html' || item.href === 'files.html' || item.href === 'inventory.html') return false;
           if (roleLower === 'partner' || roleLower === 'associates') {
-            return ['summary.html', 'quotation.html', 'customer.html', 'work-note.html', 'document.html', 'agreement.html', 'ledger.html', 'sizing-calc.html', 'sld.html'].includes(item.href);
+            return ['summary.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html'].includes(item.href);
           }
-          return ['summary.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html', 'work-note.html', 'sizing-calc.html', 'sld.html'].includes(item.href);
+          return ['summary.html', 'quotation.html', 'document.html', 'agreement.html', 'ledger.html'].includes(item.href);
         })
       : NAV_ITEMS;
 
@@ -169,7 +165,7 @@ const UI = (() => {
       let modeText = 'Live Folder';
       if (DB.getMode() === 'cache') modeText = 'Offline Cache';
       else if (DB.getMode() === 'upload') modeText = 'Upload Mode';
-      else if (DB.getMode() === 'postgres') modeText = 'PostgreSQL Database';
+      else if (DB.getMode() === 'sqlserver' || DB.getMode() === 'postgres') modeText = 'SQL Server Database';
       
       badge.innerHTML = `● Database connected <span class="mode-tag">${modeText}</span>`;
       badge.classList.add('ok');

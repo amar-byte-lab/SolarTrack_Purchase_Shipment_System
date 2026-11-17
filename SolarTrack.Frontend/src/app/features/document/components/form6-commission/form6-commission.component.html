@@ -1,0 +1,80 @@
+<div class="form6-commission-container">
+  
+  <!-- Header Toolbar: Consumer Name Pill & Actions -->
+  <div class="doc-tab-toolbar mb-3">
+    <div class="doc-consumer-pill">
+      <div class="doc-consumer-avatar">
+        <app-icon name="customer" [size]="14"></app-icon>
+      </div>
+      <div class="doc-consumer-meta">
+        <span class="doc-consumer-label">Consumer Name</span>
+        <span class="doc-consumer-name">{{ customer?.Name || 'No Customer Selected' }}</span>
+      </div>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary doc-edit-specs-btn" 
+        (click)="editSpecsClicked.emit()" 
+        title="Edit Technical Specifications &amp; RTS Record">
+        <app-icon name="edit" [size]="12"></app-icon>
+        <span>Edit Specs</span>
+      </button>
+    </div>
+
+    <div class="doc-actions-group">
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary btn-sm" 
+        (click)="resetClicked.emit()" 
+        title="Reset fields">
+        <app-icon name="refresh" [size]="12"></app-icon>
+        <span>Reset</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-outline-primary btn-sm" 
+        (click)="previewClicked.emit()" 
+        title="Preview Form 6 document">
+        <app-icon name="eye" [size]="12"></app-icon>
+        <span>Preview</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary btn-sm fw-semibold" 
+        (click)="previewClicked.emit()" 
+        title="Print Form 6">
+        <app-icon name="print" [size]="13"></app-icon>
+        <span>Print Form 6</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Commissioning & Meter Verification Card -->
+  <div class="f4-section-card mb-3">
+    <div class="f4-section-header">
+      <div class="f4-section-title">
+        <app-icon name="agreement" [size]="14" class="text-primary"></app-icon>
+        <span>Commissioning &amp; Meter Verification</span>
+      </div>
+      <span class="badge bg-light text-secondary border">Form-6 Certificate</span>
+    </div>
+    <div class="p-2 row g-2">
+      <div class="col-md-6">
+        <label class="f4-label">Commissioning Date</label>
+        <input type="date" class="form-control f4-input" [value]="customer?.CommissioningDate || specs.dateOfInstallation">
+      </div>
+      <div class="col-md-6">
+        <label class="f4-label">Net Meter Paid Status</label>
+        <input type="text" class="form-control f4-input fw-semibold" [value]="customer?.NetMeterPaid ? 'YES' : 'PENDING'">
+      </div>
+      <div class="col-md-6">
+        <label class="f4-label">Solar Generation Meter Serial No.</label>
+        <input type="text" class="form-control f4-input font-monospace" placeholder="e.g. SGM883921">
+      </div>
+      <div class="col-md-6">
+        <label class="f4-label">Bi-Directional Net Meter Serial No.</label>
+        <input type="text" class="form-control f4-input font-monospace" placeholder="e.g. NM992102">
+      </div>
+    </div>
+  </div>
+
+</div>

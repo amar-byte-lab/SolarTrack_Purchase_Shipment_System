@@ -1,0 +1,55 @@
+<div *ngIf="isOpen" class="modal-backdrop fade show" (click)="onClose()"></div>
+
+<div *ngIf="isOpen" class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="onBackdropClick($event)">
+  <div class="modal-dialog modal-dialog-centered mw-dialog">
+    <div class="modal-content mw-card-box bg-white overflow-hidden" (click)="$event.stopPropagation()">
+      
+      <!-- Card Top: Customer Header + Tab Bar -->
+      <div class="px-3 pt-3 pb-2 bg-white">
+        <!-- Row 1: ONLY Customer Name and Close Button (No serial number, No edit pencil) -->
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="mw-cust-name fw-bold text-dark text-uppercase">
+            {{ customer?.Name || 'CUSTOMER WORKFLOW' }}
+          </div>
+          <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
+        </div>
+
+        <!-- Row 2: Tabs (Process / Payment) -->
+        <div class="d-flex align-items-center gap-2 mt-2">
+          <button 
+            type="button" 
+            class="mw-card-tab-btn" 
+            [class.active-process]="activeTab === 'process'" 
+            (click)="setTab('process')">
+            Process
+          </button>
+          <button 
+            type="button" 
+            class="mw-card-tab-btn" 
+            [class.active-payment]="activeTab === 'payment'" 
+            (click)="setTab('payment')">
+            Payment
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body: Process or Payment Card -->
+      <div class="modal-body p-3 pt-1 bg-white">
+        <!-- TAB 1: Process Component -->
+        <app-process-card 
+          *ngIf="activeTab === 'process'" 
+          [customer]="customer" 
+          (updated)="onDataUpdated()">
+        </app-process-card>
+
+        <!-- TAB 2: Payment Component -->
+        <app-payment-card 
+          *ngIf="activeTab === 'payment'" 
+          [customer]="customer" 
+          (updated)="onDataUpdated()">
+        </app-payment-card>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -4,12 +4,16 @@ import { FormsModule } from '@angular/forms';
 import { SummaryService } from '../../../../core/services/summary.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { SummaryTableRow, SummaryGroup } from '../../../../core/models/summary.model';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
+import { CustomerModalComponent } from '../../../../shared/components/customer-modal/customer-modal.component';
+import { WorkflowModalComponent } from '../../../../shared/components/workflow-modal/workflow-modal.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { InstallmentRow, SummaryTableRow, SummaryGroup } from '../../../../core/models/summary.model';
 
 @Component({
   selector: 'app-summary-table',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomerModalComponent, WorkflowModalComponent, IconComponent],
   templateUrl: './summary-table.component.html',
   styleUrls: ['./summary-table.component.scss']
 })
@@ -17,6 +21,7 @@ export class SummaryTableComponent {
   summaryService = inject(SummaryService);
   toastService = inject(ToastService);
   authService = inject(AuthService);
+  confirmDialogService = inject(ConfirmDialogService);
 
   // Exclude selection tracking
   selectedSlNos = signal<Set<number>>(new Set());
@@ -24,6 +29,15 @@ export class SummaryTableComponent {
   // UI Dropdown states
   isExcludedMenuOpen = false;
   isColumnsMenuOpen = false;
+
+  // Customer Edit Modal State
+  isEditModalOpen = false;
+  selectedCustomerForEdit: InstallmentRow | null = null;
+
+  // Customer Workflow & Payment Modal State
+  isWorkflowModalOpen = false;
+  selectedCustomerForWorkflow: InstallmentRow | null = null;
+  workflowModalTab: 'process' | 'payment' = 'process';
 
   get isAllSelected(): boolean {
     const rows = this.summaryService.filteredRows();
@@ -97,7 +111,76 @@ export class SummaryTableComponent {
   }
 
   get visibleColumnsCount(): number {
-    return this.summaryService.columns().filter(c => c.visible).length;
+    return this.summaryService.columns().filter(c => c.visible).length + 1; // +1 for Actions column
+  }
+
+  openEditCustomer(row: InstallmentRow): void {
+    this.selectedCustomerForEdit = row;
+    this.isEditModalOpen = true;
+  }
+
+  closeEditModal(): void {
+    this.isEditModalOpen = false;
+    this.selectedCustomerForEdit = null;
+  }
+
+  onCustomerSaved(savedRow: InstallmentRow): void {
+    this.closeEditModal();
+  }
+
+  openWorkflowModal(row: InstallmentRow, tab: 'process' | 'payment' = 'process'): void {
+    this.selectedCustomerForWorkflow = row;
+    this.workflowModalTab = tab;
+    this.isWorkflowModalOpen = true;
+  }
+
+  closeWorkflowModal(): void {
+    this.isWorkflowModalOpen = false;
+    this.selectedCustomerForWorkflow = null;
+  }
+
+  deactivateCustomer(row: InstallmentRow): void {
+    const desc = row.Name ? `${row.Name}${row.District ? ' (' + row.District + ')' : ''}` : `Sl No. ${row.SlNo}`;
+    this.confirmDialogService.confirm({
+      title: 'Confirm Deactivation',
+      message: `Are you sure you want to deactivate customer ${desc}?`,
+      confirmText: 'Deactivate',
+      isDanger: true
+    }).then(confirmed => {
+      if (confirmed) {
+        this.summaryService.deactivateCustomer(row.SlNo).subscribe({
+          next: () => {
+            this.toastService.success('Customer deactivated successfully.');
+            this.summaryService.loadAllData().subscribe();
+          },
+          error: (err) => {
+            this.toastService.error('Error deactivating customer: ' + (err.message || 'Server error'));
+          }
+        });
+      }
+    });
+  }
+
+  removeCustomer(row: InstallmentRow): void {
+    const desc = row.Name ? `${row.Name}${row.District ? ' (' + row.District + ')' : ''}` : `Sl No. ${row.SlNo}`;
+    this.confirmDialogService.confirm({
+      title: 'Confirm Customer Removal',
+      message: `Are you sure you want to permanently delete customer ${desc}? This action cannot be undone.`,
+      confirmText: 'Delete Permanently',
+      isDanger: true
+    }).then(confirmed => {
+      if (confirmed) {
+        this.summaryService.deleteCustomer(row.SlNo).subscribe({
+          next: () => {
+            this.toastService.success('Customer deleted successfully.');
+            this.summaryService.loadAllData().subscribe();
+          },
+          error: (err) => {
+            this.toastService.error('Error deleting customer: ' + (err.message || 'Server error'));
+          }
+        });
+      }
+    });
   }
 
   toggleColumn(key: string, checked: boolean): void {

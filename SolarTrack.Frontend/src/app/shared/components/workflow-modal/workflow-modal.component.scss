@@ -1,0 +1,72 @@
+.modal {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1055;
+}
+
+.mw-dialog {
+  max-width: 490px;
+  width: 95%;
+  margin: 1.75rem auto;
+}
+
+.mw-card-box {
+  border-radius: 12px;
+  border: 1.5px solid #818cf8;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+}
+
+.mw-cust-name {
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.mw-card-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 5px 20px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+
+  &:hover {
+    background-color: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+  }
+
+  &.active-process {
+    background-color: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+  }
+
+  &.active-payment {
+    background-color: #059669;
+    border-color: #059669;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);
+  }
+}
+
+.fs-8 {
+  font-size: 0.8125rem;
+}
+
+.fs-9 {
+  font-size: 0.75rem;
+}

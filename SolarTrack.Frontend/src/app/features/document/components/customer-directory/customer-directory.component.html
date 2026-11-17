@@ -1,0 +1,97 @@
+<div class="customer-directory-card h-100 p-3 bg-white border rounded shadow-xs">
+  
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="fw-bold text-dark fs-7">Select Customer</span>
+      <button 
+        type="button" 
+        class="btn btn-xs btn-outline-success py-0 px-1.5 fw-semibold d-inline-flex align-items-center gap-1"
+        (click)="onAddCustomer()"
+        title="Add New Customer Record">
+        <app-icon name="plus" [size]="11"></app-icon>
+        <span>Add</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-xs btn-outline-primary py-0 px-1.5 fw-semibold d-inline-flex align-items-center gap-1"
+        (click)="openImportModal.emit()"
+        title="Import Customers from Excel">
+        <app-icon name="download" [size]="11"></app-icon>
+        <span>Import</span>
+      </button>
+    </div>
+    <span class="badge bg-light text-secondary border fs-8 px-2 py-1 font-monospace">
+      {{ customers.length }} Customers
+    </span>
+  </div>
+
+  <!-- Search Input Box & District Badges -->
+  <div class="mb-2">
+    <div class="input-group input-group-sm mb-2">
+      <span class="input-group-text bg-white border-end-0 text-muted">
+        <app-icon name="search" [size]="13"></app-icon>
+      </span>
+      <input 
+        type="text" 
+        class="form-control border-start-0 ps-1" 
+        placeholder="Search customer, district, consumer no..." 
+        [value]="searchQuery" 
+        (input)="onSearchInput($event)">
+    </div>
+
+    <!-- District Stats Badges (Horizontal scroll strip) -->
+    <div class="district-chips-strip p-1 bg-light rounded border mb-2 d-flex align-items-center gap-1 overflow-auto">
+      <button 
+        *ngFor="let d of districtStats" 
+        type="button" 
+        class="btn btn-xs rounded-pill px-2 py-0.5 text-nowrap fs-9"
+        [class.btn-primary]="selectedDistrict === d.name"
+        [class.btn-outline-secondary]="selectedDistrict !== d.name"
+        (click)="onSelectDistrict(d.name)">
+        <ng-container *ngIf="d.name === 'All'">Total: {{ d.count }}</ng-container>
+        <ng-container *ngIf="d.name !== 'All'">{{ d.name }} ({{ d.count }})</ng-container>
+      </button>
+    </div>
+  </div>
+
+  <!-- Scrollable Customer List -->
+  <div class="customer-scroll-list rounded border">
+    <div *ngIf="customers.length === 0" class="text-center text-muted py-4 fs-8">
+      No customers found matching criteria.
+    </div>
+
+    <div 
+      *ngFor="let cust of customers" 
+      class="customer-list-item d-flex justify-content-between align-items-center"
+      [class.active]="selectedCustomer?.SlNo === cust.SlNo"
+      (click)="onSelectCustomer(cust)">
+      <div class="d-flex flex-column text-truncate pe-2">
+        <div class="customer-name-row text-dark text-truncate">
+          <span class="fw-semibold">{{ cust.Name || 'Unnamed' }}</span>
+          <span class="customer-district-text text-muted ms-1 fs-8">({{ cust.District || 'No District' }})</span>
+        </div>
+        <small class="customer-no-text text-muted fs-8 font-monospace">Consumer No: {{ cust.ConsumerNo || '—' }}</small>
+      </div>
+      <div class="d-flex align-items-center gap-1 flex-shrink-0 ms-2">
+        <button 
+          type="button" 
+          class="btn btn-xs btn-outline-primary py-0 px-1 border-0" 
+          (click)="$event.stopPropagation(); onEditCustomer(cust)" 
+          title="Edit Customer Record">
+          <app-icon name="edit" [size]="12"></app-icon>
+        </button>
+        <span class="chevron-icon text-muted d-flex align-items-center">
+          <app-icon name="chevron-right" [size]="14"></app-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Record Modal -->
+  <app-customer-modal
+    [isOpen]="isModalOpen"
+    [customer]="customerForEdit"
+    (close)="isModalOpen = false"
+    (saved)="onCustomerSaved($event)">
+  </app-customer-modal>
+</div>

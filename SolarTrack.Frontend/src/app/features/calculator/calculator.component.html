@@ -1,0 +1,157 @@
+<div class="sizing-page-body">
+  
+  <!-- MAIN INPUTS ROW: SYSTEM TYPE & APPLIANCES / LOAD IN SAME ROW -->
+  <div class="row g-3 align-items-stretch mb-3">
+    <!-- STEP 1: SYSTEM TYPE SELECTION -->
+    <div class="col-lg-6" id="colStep1Wrapper">
+      <app-system-type-selector
+        (openSchematic)="showSchematicModal.set(true)">
+      </app-system-type-selector>
+    </div>
+
+    <!-- STEP 2: APPLIANCES, CONNECTED LOAD & SIZING BASIS -->
+    <div class="col-lg-6" id="colStep2Wrapper">
+      <app-appliance-load-manager>
+      </app-appliance-load-manager>
+    </div>
+  </div>
+
+  <!-- RESULTS CONTAINER: 3 HERO SPECIFICATION CARDS & VALIDATION ALERTS -->
+  <app-sizing-results-card
+    (openProductCatalog)="openCatalog($event)">
+  </app-sizing-results-card>
+
+  <!-- REFERENCE COMPANY & PRODUCT RECOMMENDATIONS CONTAINER -->
+  <div class="mt-2.5 mb-2" id="secProductRecommendationsContainer">
+    <div class="step-card p-3.5 p-md-4 mb-2 shadow-2xs border" id="cardMultiBrandMarketplace">
+      
+      <!-- Header -->
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2.5 border-bottom mb-3">
+        <h5 class="fw-bold text-dark fs-6 mb-0 d-flex align-items-center gap-2">
+          <span>🛒</span>
+          <span>Market Product Recommendations</span>
+        </h5>
+        <span class="fs-9 text-muted">Tier-1 Multi-Brand Matches</span>
+      </div>
+
+      <!-- 3 Dynamic Top Match Cards Grid -->
+      <div class="row g-2.5">
+        
+        <!-- 1. Top Inverter Match -->
+        <div [class]="recommendationColClass()">
+          <div class="p-3 bg-white rounded-3 border h-100 d-flex flex-column justify-content-between shadow-2xs">
+            <div>
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="badge bg-primary text-white fs-9 py-0.5 px-2 rounded-pill">
+                  {{ calc.result().inverter.brand || 'Tier 1 Standard' }}
+                </span>
+                <span class="fs-9 text-muted">{{ calc.result().inverterCategory }}</span>
+              </div>
+              <h6 class="fw-bold text-dark fs-7 mb-1">{{ calc.result().inverter.model }}</h6>
+              <div class="fs-8 text-secondary mb-2">
+                Rating: <strong>{{ calc.result().inverter.kVA }} kVA / {{ calc.result().inverter.kW }} kW</strong>
+              </div>
+              <ul class="list-unstyled fs-9 text-secondary mb-3 d-flex flex-column gap-1">
+                <li>• Grid Output: {{ calc.result().inverter.phase }}</li>
+                @if (calc.result().inverter.batteryVoltage > 0) {
+                  <li>• System Bus: {{ calc.result().inverter.batteryVoltage }}V DC</li>
+                }
+                <li>• Max Continuous: {{ calc.result().inverter.continuousOutput }}W</li>
+              </ul>
+            </div>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-primary fw-bold shadow-2xs w-100 py-1.5 mt-auto" 
+              (click)="openCatalog('inverters')">
+              Browse All Inverters
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Top Battery Match (If not on-grid) -->
+        @if (calc.systemType() !== 'on-grid' && calc.result().battery) {
+          <div [class]="recommendationColClass()">
+            <div class="p-3 bg-white rounded-3 border h-100 d-flex flex-column justify-content-between shadow-2xs">
+              <div>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="badge bg-success text-white fs-9 py-0.5 px-2 rounded-pill">
+                    {{ calc.result().battery?.selectedBrand || 'Tier 1 Battery' }}
+                  </span>
+                  <span class="fs-9 text-muted">{{ calc.result().battery?.batteryType }}</span>
+                </div>
+                <h6 class="fw-bold text-dark fs-7 mb-1">{{ calc.result().battery?.selectedModel }}</h6>
+                <div class="fs-8 text-secondary mb-2">
+                  Bank: <strong>{{ calc.result().battery?.systemVoltage }}V {{ calc.result().battery?.systemBankAh }}Ah</strong> ({{ calc.result().battery?.totalInstalledKwh }} kWh)
+                </div>
+                <ul class="list-unstyled fs-9 text-secondary mb-3 d-flex flex-column gap-1">
+                  <li>• Technology: {{ calc.result().battery?.capacityRating }}</li>
+                  <li>• Usable Energy: {{ calc.result().battery?.usableKwh }} kWh ({{ calc.result().battery?.dodPct }}% DoD)</li>
+                  <li>• Est. Autonomy: ~{{ calc.result().battery?.actualBackupHours }} Hours</li>
+                </ul>
+              </div>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-success fw-bold shadow-2xs w-100 py-1.5 mt-auto" 
+                (click)="openCatalog('batteries')">
+                Browse All Batteries
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- 3. Top Solar Panel Match (If solar applicable) -->
+        @if (calc.systemType() !== 'without-solar' && calc.result().solar) {
+          <div [class]="recommendationColClass()">
+            <div class="p-3 bg-white rounded-3 border h-100 d-flex flex-column justify-content-between shadow-2xs">
+              <div>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="badge bg-warning text-dark fs-9 py-0.5 px-2 rounded-pill">
+                    Waaree / Adani Solar
+                  </span>
+                  <span class="fs-9 text-muted">Mono PERC Half-Cut</span>
+                </div>
+                <h6 class="fw-bold text-dark fs-7 mb-1">
+                  {{ calc.result().solar?.panelCount }} × {{ calc.result().solar?.panelWatts }}Wp ({{ calc.result().solar?.actualArrayKwp }} kWp)
+                </h6>
+                <div class="fs-8 text-secondary mb-2">
+                  Array: <strong>{{ calc.result().solar?.actualArrayKwp }} kWp Solar Capacity</strong>
+                </div>
+                <ul class="list-unstyled fs-9 text-secondary mb-3 d-flex flex-column gap-1">
+                  <li>• Daily Yield: ~{{ calc.result().solar?.estDailyGenKwh }} Units (kWh)/day</li>
+                  <li>• Monthly Yield: ~{{ calc.result().solar?.estMonthlyGenUnits }} Units/month</li>
+                  <li>• Required Area: ~{{ calc.result().solar?.roofAreaSqFt }} sq.ft</li>
+                </ul>
+              </div>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-warning text-dark fw-bold shadow-2xs w-100 py-1.5 mt-auto" 
+                (click)="openCatalog('panels')">
+                Browse All Solar Panels
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+  </div>
+
+  <!-- COST RECOVERY & INVESTMENT CALCULATOR (ODISHA OERC TARIFF) -->
+  <app-cost-recovery-card>
+  </app-cost-recovery-card>
+
+  <!-- MODALS -->
+  @if (showSchematicModal()) {
+    <app-schematic-viewer-modal
+      (close)="showSchematicModal.set(false)">
+    </app-schematic-viewer-modal>
+  }
+
+  @if (showCatalogModal()) {
+    <app-product-catalog-modal
+      [initialCategory]="catalogInitialTab()"
+      (close)="showCatalogModal.set(false)">
+    </app-product-catalog-modal>
+  }
+
+</div>

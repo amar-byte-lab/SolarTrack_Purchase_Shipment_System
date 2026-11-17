@@ -1,0 +1,73 @@
+.customer-directory-card {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.district-chips-strip {
+  scrollbar-width: thin;
+  white-space: nowrap;
+
+  &::-webkit-scrollbar {
+    height: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+}
+
+.customer-scroll-list {
+  max-height: 520px;
+  min-height: 240px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.customer-list-item {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--st-border, #f1f5f9);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border-left: 3.5px solid transparent;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: var(--st-bg, #f8fafc);
+  }
+
+  &.active {
+    background-color: rgba(109, 40, 217, 0.08);
+    border-left-color: var(--st-primary, #6d28d9);
+
+    .customer-name-row .fw-semibold {
+      color: #1e1b4b;
+      font-weight: 700 !important;
+    }
+
+    .chevron-icon {
+      color: var(--st-primary, #6d28d9) !important;
+    }
+  }
+
+  .customer-name-row {
+    font-size: 0.81rem;
+    line-height: 1.25;
+
+    .customer-district-text {
+      color: #64748b !important;
+      font-weight: 500;
+    }
+  }
+
+  .customer-no-text {
+    font-size: 0.74rem;
+    color: #64748b !important;
+    margin-top: 1px;
+  }
+
+  .chevron-icon {
+    color: #94a3b8;
+  }
+}

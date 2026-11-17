@@ -24,23 +24,18 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-// Hybrid Architecture: Supabase Client (Exact Existing Configuration) + Dapper + EF Core
+// Architecture: Microsoft SQL Server + Dapper + EF Core
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? Environment.GetEnvironmentVariable("DATABASE_URL")
                        ?? string.Empty;
 
-builder.Services.AddSingleton<ISupabaseClientService, SupabaseClientService>();
 builder.Services.AddSingleton<IDapperConnectionFactory, DapperConnectionFactory>();
 
 builder.Services.AddDbContext<SolarTrackDbContext>(options =>
 {
-    if (!string.IsNullOrWhiteSpace(connectionString) && !connectionString.Contains("YOUR_SUPABASE_DB_PASSWORD", StringComparison.OrdinalIgnoreCase))
+    if (!string.IsNullOrWhiteSpace(connectionString))
     {
-        options.UseNpgsql(connectionString);
-    }
-    else
-    {
-        options.UseNpgsql("Host=localhost;Database=solartrack;Username=postgres;Password=dummy");
+        options.UseSqlServer(connectionString);
     }
 });
 
@@ -113,8 +108,8 @@ if (frontendDir != null && Directory.Exists(frontendDir))
 }
 
 Console.WriteLine("======================================================");
-Console.WriteLine($" SolarTrack .NET 10 Hybrid Backend (EF Core + Dapper)");
-Console.WriteLine($" Connected to Existing Supabase Database");
+Console.WriteLine($" SolarTrack .NET 10 Backend (SQL Server + Dapper + EF Core)");
+Console.WriteLine($" Connected to Microsoft SQL Server: LGPMPDB");
 Console.WriteLine($" Server listening on port {portStr}");
 Console.WriteLine($" Static frontend files served from: {frontendDir}");
 Console.WriteLine("======================================================");

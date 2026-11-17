@@ -8,6 +8,9 @@ import { LedgerComponent } from './features/ledger/ledger.component';
 import { ReportsComponent } from './features/reports/reports.component';
 import { SettingsComponent } from './features/settings/settings.component';
 import { FilesComponent } from './features/files/files.component';
+import { DocumentComponent } from './features/document/document.component';
+import { InventoryComponent } from './features/inventory/inventory.component';
+import { CalculatorComponent } from './features/calculator/calculator.component';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -24,6 +27,11 @@ export const routes: Routes = [
       { path: 'reports', component: ReportsComponent },
       { path: 'settings', component: SettingsComponent },
       { path: 'files', component: FilesComponent },
+      { path: 'inventory', component: InventoryComponent },
+      { path: 'sizing-calc', component: CalculatorComponent },
+      { path: 'calculator', component: CalculatorComponent },
+      { path: 'document', component: DocumentComponent },
+      { path: 'agreement', component: DocumentComponent },
       { path: '', redirectTo: 'summary', pathMatch: 'full' }
     ]
   },

@@ -1,0 +1,201 @@
+@if (calc.systemType() !== 'without-solar') {
+  <div class="mt-2" id="secCostRecoveryContainer">
+    <div class="step-card p-3.5 p-md-4 mb-2">
+      
+      <!-- Section Header with Checkbox and Annual Return Badge -->
+      <div class="d-flex align-items-center justify-content-between flex-nowrap gap-2 w-100" id="headerCostRecovery">
+        <div class="form-check d-flex align-items-center gap-2 mb-0">
+          <input 
+            class="form-check-input mt-0 cursor-pointer" 
+            type="checkbox" 
+            id="chkEnableCostRecovery" 
+            [checked]="calc.enableCostRecovery()"
+            (change)="calc.toggleCostRecovery(!calc.enableCostRecovery())"
+            style="width: 18px; height: 18px; cursor: pointer;">
+          <label class="form-check-label fw-bold text-dark fs-6 mb-0 cursor-pointer user-select-none" for="chkEnableCostRecovery">
+            Investment & Payback Analysis
+          </label>
+        </div>
+        @if (calc.enableCostRecovery()) {
+          <span class="badge bg-success-subtle text-success fw-bold text-nowrap flex-shrink-0" id="badgeRecoveryAnnualRoi" style="font-size: clamp(0.7rem, 2.5vw, 0.8rem); padding: 4px 8px;">
+            ~{{ calc.costRecoveryResult().annualRoiPercent }}% Annual Return
+          </span>
+        }
+      </div>
+
+      <!-- Collapsible Body (Opens when Checkbox is Checked) -->
+      @if (calc.enableCostRecovery()) {
+        <div id="wrapCostRecoveryBody" class="pt-3 mt-2.5 border-top">
+          <!-- Inputs: DISCOM, Total Investment, Financing -->
+          <div class="row g-2.5 mb-3 align-items-start">
+            
+            <!-- 1. DISCOM / State Tariff Selection -->
+            <div class="col-md-4 col-12" id="wrapDiscomSelect">
+              <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selDiscomTariff">
+                Electricity DISCOM / Tariff Region
+              </label>
+              <div class="input-group shadow-2xs">
+                <select 
+                  class="form-select fw-semibold fs-8" 
+                  id="selDiscomTariff" 
+                  [ngModel]="calc.discomId()"
+                  (ngModelChange)="calc.setDiscom($event)"
+                  style="height: 38px;">
+                  <option value="odisha_oerc">Odisha OERC (Standard)</option>
+                  <option value="national_standard">National Average Residential Tariff</option>
+                  <option value="commercial_standard">Commercial / Non-Domestic (LT)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 2. Total Estimated Investment (₹) -->
+            <div class="col-md-4 col-6" id="wrapRecoverySpend">
+              <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtRecoverySpend">
+                Estimated Investment (₹)
+              </label>
+              <div class="input-group shadow-2xs">
+                <input 
+                  type="number" 
+                  min="0" 
+                  step="5000" 
+                  class="form-control fw-semibold fs-8" 
+                  id="txtRecoverySpend" 
+                  [ngModel]="calc.recoverySpend()"
+                  (ngModelChange)="calc.setRecoverySpend($event)"
+                  style="height: 38px;">
+              </div>
+            </div>
+
+            <!-- 3. Payment / Financing -->
+            <div class="col-md-4 col-6" id="wrapRecoveryFinance">
+              <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="selRecoveryFinanceType">
+                Payment / Financing
+              </label>
+              <div class="input-group shadow-2xs">
+                <select 
+                  class="form-select fw-semibold fs-8" 
+                  id="selRecoveryFinanceType" 
+                  [ngModel]="calc.financingType()"
+                  (ngModelChange)="calc.setFinancingType($event)"
+                  style="height: 38px;">
+                  <option value="0">Cash (0% Int)</option>
+                  <option value="7">Solar Loan (7% p.a.)</option>
+                  <option value="9.5">Standard Loan (9.5% p.a.)</option>
+                  <option value="custom">Custom Int...</option>
+                </select>
+              </div>
+              
+              @if (calc.financingType() === 'custom') {
+                <div id="wrapperCustomInterest" class="input-group mt-1.5 shadow-2xs">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="30" 
+                    step="0.25" 
+                    class="form-control fw-bold fs-8" 
+                    id="txtRecoveryInterest" 
+                    [ngModel]="calc.customInterest()"
+                    (ngModelChange)="calc.setCustomInterest($event)"
+                    placeholder="Interest %" 
+                    style="height: 32px;">
+                  <span class="input-group-text bg-white text-muted fs-8">% p.a.</span>
+                </div>
+              }
+            </div>
+
+          </div>
+
+          <!-- ESTIMATED SAVINGS & ROI RESULTS CONTAINER -->
+          <div id="cardRecoveryResults">
+            <!-- ALL 3 KEY STATS (Payback Hero + Monthly Saved + Annual Savings) -->
+            <div class="row g-2.5 g-md-3 mb-3 align-items-stretch">
+              <div class="col-lg-6 col-12 d-flex flex-column mb-2 mb-lg-0">
+                <div class="p-2.5 p-md-3 rounded-3 border text-center h-100 d-flex flex-column justify-content-center" style="background: #f8fafc; border-color: #e2e8f0 !important;">
+                  @if (calc.costRecoveryResult().isRecoverable) {
+                    <div class="text-uppercase fs-9 fw-bold text-muted mb-0.5" style="letter-spacing: 0.5px;">Full Investment Payback In</div>
+                    <div class="fs-2 fw-extrabold text-success my-0.5">{{ calc.costRecoveryResult().recoveryPeriodText }}</div>
+                    <div class="fs-8 text-muted">
+                      After ~{{ (calc.costRecoveryResult().totalMonths / 12).toFixed(1) }} years, enjoy <strong>100% free electricity</strong> for 20+ more years.
+                    </div>
+                  } @else {
+                    <div class="text-danger fw-bold fs-7 mb-0.5">⚠️ Recovery Notice</div>
+                    <div class="fs-8 text-danger">{{ calc.costRecoveryResult().recoveryError }}</div>
+                  }
+                </div>
+              </div>
+
+              <div class="col-lg-3 col-6 d-flex flex-column">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border text-center h-100 d-flex flex-column justify-content-center">
+                  <span class="fs-8 text-muted fw-semibold d-block mb-1">Monthly Bill Saved</span>
+                  <span class="fs-3 fw-bold text-dark">₹{{ Math.round(calc.costRecoveryResult().monthlySavings).toLocaleString('en-IN') }}</span>
+                  <span class="fs-9 text-muted d-block mt-0.5">₹0 Electricity Bill</span>
+                </div>
+              </div>
+
+              <div class="col-lg-3 col-6 d-flex flex-column">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border text-center h-100 d-flex flex-column justify-content-center">
+                  <span class="fs-8 text-muted fw-semibold d-block mb-1">Annual Savings</span>
+                  <span class="fs-3 fw-bold text-primary">₹{{ Math.round(calc.costRecoveryResult().annualSavings).toLocaleString('en-IN') }}</span>
+                  <span class="fs-9 text-muted d-block mt-0.5">Saved Every Year</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Collapsible Detailed Bill Breakdown -->
+            <div class="accordion border rounded-3 mt-1" id="accOdishaTariff">
+              <div class="accordion-item border-0">
+                <h2 class="accordion-header">
+                  <button 
+                    class="accordion-button py-2 px-3 fs-8 fw-semibold text-secondary" 
+                    [class.collapsed]="!showBreakdown()"
+                    (click)="showBreakdown.set(!showBreakdown())"
+                    type="button">
+                    View Odisha Tariff (OERC) Slab Breakdown
+                  </button>
+                </h2>
+                @if (showBreakdown()) {
+                  <div class="accordion-collapse show">
+                    <div class="accordion-body p-2 p-md-3 pt-1 border-top bg-light">
+                      <table class="table table-sm table-borderless mb-0 odisha-breakdown-table" style="font-size: 0.72rem;">
+                        <tbody>
+                          @for (s of calc.costRecoveryResult().slabs; track s.name) {
+                            <tr>
+                              <td class="text-secondary py-0.5 text-nowrap">{{ s.name }} ({{ s.units }}U @ ₹{{ s.rate.toFixed(2) }})</td>
+                              <td class="text-end fw-semibold text-dark py-0.5 text-nowrap">₹{{ s.amount.toFixed(2) }}</td>
+                            </tr>
+                          }
+                          <tr class="border-top">
+                            <td class="text-dark fw-bold py-0.5 text-nowrap">Base Energy Charge:</td>
+                            <td class="text-end fw-bold text-dark py-0.5 text-nowrap">₹{{ calc.costRecoveryResult().baseEnergyCharge.toFixed(2) }}</td>
+                          </tr>
+                          <tr>
+                            <td class="text-muted py-0.5 text-nowrap">Fixed Charge ({{ calc.costRecoveryResult().sanctionedLoadKw }}kW @ ₹20/kW):</td>
+                            <td class="text-end text-muted py-0.5 text-nowrap">₹{{ calc.costRecoveryResult().fixedCharge.toFixed(2) }}</td>
+                          </tr>
+                          <tr>
+                            <td class="text-muted py-0.5 text-nowrap">Meter Rent:</td>
+                            <td class="text-end text-muted py-0.5 text-nowrap">₹{{ calc.costRecoveryResult().meterRent.toFixed(2) }}</td>
+                          </tr>
+                          <tr>
+                            <td class="text-muted py-0.5 text-nowrap">Electricity Duty (4%):</td>
+                            <td class="text-end text-muted py-0.5 text-nowrap">₹{{ calc.costRecoveryResult().electricityDuty.toFixed(2) }}</td>
+                          </tr>
+                          <tr class="border-top fw-bold bg-white">
+                            <td class="text-dark py-1 px-1 text-nowrap">Total Monthly Bill Saved:</td>
+                            <td class="text-end text-success py-1 px-1 text-nowrap">₹{{ calc.costRecoveryResult().totalMonthlyBill.toFixed(2) }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+}

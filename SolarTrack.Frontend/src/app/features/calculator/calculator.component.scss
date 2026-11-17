@@ -1,0 +1,33 @@
+.sizing-page-body {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px 24px 100px 24px;
+}
+
+@media (max-width: 768px) {
+  .sizing-page-body {
+    padding: 16px 14px 100px 14px;
+  }
+}
+
+.step-card {
+  border: 1px solid var(--st-border, #e2e8f0);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease;
+  padding: 20px 22px;
+  margin-bottom: 0;
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
+}
+
+.shadow-2xs {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.fs-7 { font-size: 0.82rem !important; }
+.fs-8 { font-size: 0.78rem !important; }
+.fs-9 { font-size: 0.72rem !important; }

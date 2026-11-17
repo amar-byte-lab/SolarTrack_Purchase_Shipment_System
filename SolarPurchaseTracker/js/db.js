@@ -48,7 +48,7 @@ const DB = (() => {
         inventory_dispatches: ['DispatchID', 'Date', 'ChallanNo', 'SiteName', 'ItemCode', 'Quantity', 'UnitBuyingPrice', 'DispatchedCost', 'TransportCost', 'Vehicle', 'Remarks', 'DocumentName', 'DocumentData', 'CreatedAt'],
     };
 
-    let mode = 'postgres';
+    let mode = 'sqlserver';
     let cache = {};
 
     function idbOpen() {
@@ -100,7 +100,7 @@ const DB = (() => {
     }
 
     async function tryRestoreFolder() {
-        mode = 'postgres';
+        mode = 'sqlserver';
         // Always fetch fresh data from server so newly added and updated data is immediately visible
         return await fetchFreshDatabase();
     }
@@ -540,7 +540,7 @@ const DB = (() => {
 
         recordActivity('INSERT', key, row);
 
-        if (mode === 'postgres') {
+        if (mode === 'sqlserver') {
             const res = await fetch(`/api/insert?table=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -570,7 +570,7 @@ const DB = (() => {
         cache[key] = cache[key].map(r => matchFn(r) ? (key === 'installments' ? normalizeInstallmentRow({ ...r, ...newData }) : { ...r, ...newData }) : r);
         syncSessionCache();
 
-        if (mode === 'postgres' && targetPkValue !== null && targetPkValue !== undefined && targetPkValue !== '') {
+        if (mode === 'sqlserver' && targetPkValue !== null && targetPkValue !== undefined && targetPkValue !== '') {
             const res = await fetch(`/api/update?table=${key}&matchField=${pkName}&matchValue=${encodeURIComponent(targetPkValue)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -593,7 +593,7 @@ const DB = (() => {
         cache[key] = cache[key].filter(r => !matchFn(r));
         syncSessionCache();
 
-        if (mode === 'postgres' && matchingRows.length > 0) {
+        if (mode === 'sqlserver' && matchingRows.length > 0) {
             for (const row of matchingRows) {
                 const pkValue = row[pkName] !== undefined && row[pkName] !== null ? row[pkName] : row[pkName ? pkName.toLowerCase() : ''];
                 if (pkValue !== null && pkValue !== undefined && pkValue !== '') {
@@ -614,7 +614,7 @@ const DB = (() => {
         cache[key] = rows;
         syncSessionCache();
 
-        if (mode === 'postgres') {
+        if (mode === 'sqlserver') {
             await fetch(`/api/replace?table=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -702,7 +702,7 @@ const DB = (() => {
         cache[key].push(...rows);
         syncSessionCache();
 
-        if (mode === 'postgres') {
+        if (mode === 'sqlserver') {
             try {
                 const res = await fetch(`/api/insert-batch?table=${key}`, {
                     method: 'POST',
@@ -733,7 +733,7 @@ const DB = (() => {
         cache[key] = (cache[key] || []).filter(r => !matchFn(r));
         syncSessionCache();
 
-        if (mode === 'postgres') {
+        if (mode === 'sqlserver') {
             const pkValues = matchingRows.map(row => {
                 return row[pkName] !== undefined && row[pkName] !== null ? row[pkName] : row[pkName ? pkName.toLowerCase() : ''];
             }).filter(v => v !== null && v !== undefined && v !== '');

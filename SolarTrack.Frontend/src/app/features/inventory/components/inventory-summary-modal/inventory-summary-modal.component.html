@@ -1,0 +1,90 @@
+<div class="modal-backdrop" (click)="close.emit()">
+  <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-content border-0 shadow">
+      
+      <!-- Header -->
+      <div class="modal-header py-2.5 px-3 border-bottom bg-light d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <app-icon name="boxes" class="text-primary"></app-icon>
+          <div>
+            <h6 class="modal-title fw-bold text-dark m-0">Inventory &amp; Logistics Summary</h6>
+            <div class="text-secondary small mt-0.5" style="font-size:0.75rem;">
+              Real-time EPC Warehouse, Project Orders &amp; Site Dispatch Metrics
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" (click)="close.emit()" aria-label="Close"></button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body p-3">
+        <!-- 3 KPI Cards -->
+        <div class="inv-kpi-grid mb-3">
+          <!-- KPI 1: Turnover -->
+          <article class="inv-kpi-card kpi-sky">
+            <div class="inv-kpi-head">
+              <span class="inv-kpi-label" title="Turnover">Turnover</span>
+              <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                <app-icon name="wallet"></app-icon>
+              </div>
+            </div>
+            <div class="inv-kpi-value text-sky-700">₹{{ (kpis?.totalTurnover || 0) | number:'1.2-2' }}</div>
+            <div class="inv-kpi-subtext">Total Project Orders</div>
+          </article>
+
+          <!-- KPI 2: Dispatched Material Cost -->
+          <article class="inv-kpi-card kpi-amber">
+            <div class="inv-kpi-head">
+              <span class="inv-kpi-label" title="Dispatched Material Cost">Dispatched Cost</span>
+              <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                <app-icon name="truck"></app-icon>
+              </div>
+            </div>
+            <div class="inv-kpi-value text-amber-700">₹{{ (kpis?.totalDispatchedCost || 0) | number:'1.2-2' }}</div>
+            <div class="inv-kpi-subtext">Site Consumption</div>
+          </article>
+
+          <!-- KPI 3: Transportation Cost -->
+          <article class="inv-kpi-card kpi-indigo">
+            <div class="inv-kpi-head">
+              <span class="inv-kpi-label" title="Transportation Cost">Transport Cost</span>
+              <div class="inv-kpi-icon-wrap" aria-hidden="true">
+                <app-icon name="truck"></app-icon>
+              </div>
+            </div>
+            <div class="inv-kpi-value text-indigo-700">₹{{ (kpis?.totalTransportationCost || 0) | number:'1.2-2' }}</div>
+            <div class="inv-kpi-subtext">Site Logistics &amp; Freight</div>
+          </article>
+        </div>
+
+        <!-- 3 Lower Metric Blocks -->
+        <div class="row g-2 pt-2 border-top">
+          <div class="col-4">
+            <div class="p-2 border rounded bg-light text-center">
+              <div class="text-secondary small" style="font-size:0.72rem;">Warehouse Valuation</div>
+              <div class="fw-bold text-dark font-monospace" style="font-size:0.95rem;">₹{{ (kpis?.warehouseValuation || 0) | number:'1.2-2' }}</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 border rounded bg-light text-center">
+              <div class="text-secondary small" style="font-size:0.72rem;">In-Hand Stock</div>
+              <div class="fw-bold text-success font-monospace" style="font-size:0.95rem;">{{ (kpis?.totalInHandStock || 0) | number }} Units</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 border rounded bg-light text-center">
+              <div class="text-secondary small" style="font-size:0.72rem;">Equipment SKUs</div>
+              <div class="fw-bold text-primary font-monospace" style="font-size:0.95rem;">{{ kpis?.totalSkus || 0 }} Items</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer py-2 px-3 border-top bg-light">
+        <button type="button" class="btn btn-sm btn-secondary px-3" (click)="close.emit()">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>

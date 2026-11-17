@@ -142,6 +142,7 @@
           <th *ngIf="isColumnVisible('material')" class="th-col-material text-end text-nowrap">MATERIAL</th>
           <th *ngIf="isColumnVisible('setcost')" class="th-col-setcost text-end text-nowrap bg-light-subtle">SET COST</th>
           <th *ngIf="isColumnVisible('profit')" class="th-col-profit text-end text-nowrap bg-light-subtle">PROFIT</th>
+          <th class="th-col-actions text-center text-nowrap">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
@@ -182,7 +183,11 @@
           </tr>
 
           <!-- Data Rows inside group -->
-          <tr *ngFor="let item of grp.list" class="sum-cust-row" [ngClass]="grp.rowClass">
+          <tr 
+            *ngFor="let item of grp.list" 
+            class="sum-cust-row" 
+            [ngClass]="grp.rowClass"
+            [class.row-workflow-active]="isWorkflowModalOpen && selectedCustomerForWorkflow?.SlNo === item.slNo">
             <!-- Customer: Status -->
             <td *ngIf="isColumnVisible('customer')" class="td-col-customer text-nowrap">
               <div class="d-flex align-items-center gap-2">
@@ -193,6 +198,14 @@
                   (click)="toggleRowSelection(item.slNo, $event)">
                 <span class="fw-bold text-dark fs-8" [title]="item.name">{{ item.name }}</span>
                 <span class="badge fs-9 px-1.5 py-0.5" [ngClass]="item.stageClass">{{ item.stageName }}</span>
+                <!-- Workflow Icon right next to Status Badge -->
+                <button 
+                  type="button" 
+                  class="btn btn-xs btn-outline-secondary p-0.5 border-0 text-primary d-inline-flex align-items-center justify-content-center mw-workflow-btn"
+                  (click)="openWorkflowModal(item.row, 'process')"
+                  title="Open Workflow Process & Payment Details">
+                  <app-icon name="workflow" [size]="13"></app-icon>
+                </button>
               </div>
             </td>
 
@@ -260,6 +273,36 @@
                 [class.text-danger]="item.fin.profit < 0">
               {{ fmtCurr(item.fin.profit) }}
             </td>
+
+            <!-- Actions (Edit, Deactivate, Remove) -->
+            <td class="td-col-actions text-center text-nowrap">
+              <div class="d-inline-flex align-items-center gap-1">
+                <!-- 1. Customer Edit -->
+                <button 
+                  type="button" 
+                  class="btn btn-xs btn-outline-primary p-1 lh-1" 
+                  (click)="openEditCustomer(item.row)" 
+                  title="Edit Customer Record">
+                  <app-icon name="edit" [size]="12"></app-icon>
+                </button>
+                <!-- 2. Customer Deactivate -->
+                <button 
+                  type="button" 
+                  class="btn btn-xs btn-outline-warning p-1 lh-1 text-dark" 
+                  (click)="deactivateCustomer(item.row)" 
+                  title="Deactivate Customer">
+                  <app-icon name="user-x" [size]="12"></app-icon>
+                </button>
+                <!-- 3. Customer Remove -->
+                <button 
+                  type="button" 
+                  class="btn btn-xs btn-outline-danger p-1 lh-1" 
+                  (click)="removeCustomer(item.row)" 
+                  title="Remove Customer Record">
+                  <app-icon name="trash" [size]="12"></app-icon>
+                </button>
+              </div>
+            </td>
           </tr>
         </ng-container>
       </tbody>
@@ -305,8 +348,26 @@
               [class.text-danger]="summaryService.totals().profit < 0">
             {{ fmtCurr(summaryService.totals().profit) }}
           </td>
+          <td class="tfoot-col-actions text-center fs-8">-</td>
         </tr>
       </tfoot>
     </table>
   </div>
 </div>
+
+<!-- Edit Customer Record Modal -->
+<app-customer-modal
+  [isOpen]="isEditModalOpen"
+  [customer]="selectedCustomerForEdit"
+  (close)="closeEditModal()"
+  (saved)="onCustomerSaved($event)">
+</app-customer-modal>
+
+<!-- Customer Workflow & Payment Modal -->
+<app-workflow-modal
+  [isOpen]="isWorkflowModalOpen"
+  [customer]="selectedCustomerForWorkflow"
+  [initialTab]="workflowModalTab"
+  (close)="closeWorkflowModal()"
+  (updated)="summaryService.loadAllData().subscribe()">
+</app-workflow-modal>
