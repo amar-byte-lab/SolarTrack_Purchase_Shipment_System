@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from './services/settings.service';
@@ -22,13 +22,15 @@ export class SettingsComponent implements OnInit {
   toastService = inject(ToastService);
   confirmService = inject(ConfirmDialogService);
 
-  // Address inputs
-  newAddressText = '';
+  // Active Tab: 'company' | 'users'
+  activeTab = signal<'company' | 'users'>('company');
 
-  // Subsidy inputs
-  newSubsidyKw = 3;
-  newSubsidyState = 60000;
-  newSubsidyCentral = 78000;
+  // User Filter & Search
+  userSearch = signal<string>('');
+  selectedRoleFilter = signal<string>('ALL');
+
+  // New Role input
+  newRoleName = '';
 
   // User Modal
   isUserModalOpen = signal<boolean>(false);
@@ -43,6 +45,21 @@ export class SettingsComponent implements OnInit {
     status: 'Approved'
   };
 
+  // Filtered Users computed signal
+  filteredUsers = computed(() => {
+    const term = this.userSearch().toLowerCase().trim();
+    const roleFilter = this.selectedRoleFilter();
+    return this.settingsService.users().filter(u => {
+      const matchesSearch = !term ||
+        u.userid?.toLowerCase().includes(term) ||
+        u.username?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term) ||
+        (u.mobile && u.mobile.toLowerCase().includes(term));
+      const matchesRole = roleFilter === 'ALL' || (u.role && u.role.toLowerCase() === roleFilter.toLowerCase());
+      return matchesSearch && matchesRole;
+    });
+  });
+
   ngOnInit(): void {
     this.navService.setPageTitle('Settings & Configuration');
     this.settingsService.loadAll().subscribe({
@@ -51,16 +68,17 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  onAddAddress(): void {
-    const text = this.newAddressText.trim();
-    if (!text) return;
+  setTab(tab: 'company' | 'users'): void {
+    this.activeTab.set(tab);
+  }
+
+  // Office Addresses - open for edit
+  onAddAddressRow(): void {
     const current = this.settingsService.settings();
     this.settingsService.settings.set({
       ...current,
-      addresses: [...current.addresses, text]
+      addresses: [...current.addresses, '']
     });
-    this.toastService.success('Address added to profile list.');
-    this.newAddressText = '';
   }
 
   onRemoveAddress(index: number): void {
@@ -73,17 +91,14 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  onAddSubsidy(): void {
-    if (this.newSubsidyKw <= 0) return;
+  // Government Subsidy - open for edit
+  onAddSubsidyRow(): void {
     const current = this.settingsService.settings();
+    const maxKw = current.subsidies.length > 0 ? Math.max(...current.subsidies.map(s => Number(s.kw) || 0)) + 1 : 1;
     this.settingsService.settings.set({
       ...current,
-      subsidies: [
-        ...current.subsidies.filter(s => s.kw !== this.newSubsidyKw),
-        { kw: this.newSubsidyKw, state: this.newSubsidyState, central: this.newSubsidyCentral }
-      ]
+      subsidies: [...current.subsidies, { kw: maxKw, state: 0, central: 0 }]
     });
-    this.toastService.success(`Subsidy for ${this.newSubsidyKw} kW updated.`);
   }
 
   onRemoveSubsidy(index: number): void {
@@ -96,6 +111,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  // User RBAC Actions
   openUserModal(): void {
     this.isEditMode.set(false);
     this.modalUser = {
@@ -145,7 +161,61 @@ export class SettingsComponent implements OnInit {
     }
   }
 
+  // Role Management Actions
+  getUserCountForRole(role: string): number {
+    return this.settingsService.users().filter(u => u.role?.toLowerCase() === role?.toLowerCase()).length;
+  }
+
+  onAddRole(): void {
+    const name = this.newRoleName.trim();
+    if (!name) return;
+    if (this.settingsService.roles().some(r => r.toLowerCase() === name.toLowerCase())) {
+      this.toastService.warning(`Role "${name}" already exists.`);
+      return;
+    }
+    this.settingsService.addRole(name);
+    this.toastService.success(`Role "${name}" added.`);
+    this.newRoleName = '';
+  }
+
+  async onRemoveRole(role: string): Promise<void> {
+    const reserved = ['admin', 'superadmin', 'user'];
+    if (reserved.includes(role.toLowerCase())) {
+      this.toastService.warning(`Role "${role}" is a system role and cannot be deleted.`);
+      return;
+    }
+    const count = this.getUserCountForRole(role);
+    if (count > 0) {
+      this.toastService.warning(`Cannot delete role "${role}" because ${count} user(s) are assigned to it.`);
+      return;
+    }
+    const confirmed = await this.confirmService.confirm({
+      title: 'Delete Custom Role',
+      message: `Are you sure you want to remove role "${role}"?`,
+      confirmText: 'Delete Role',
+      isDanger: true
+    });
+    if (confirmed) {
+      this.settingsService.deleteRole(role);
+      this.toastService.success(`Role "${role}" removed.`);
+    }
+  }
+
+  // Company Profile Settings Final Submit
   onSaveAllSettings(): void {
+    const current = this.settingsService.settings();
+    const cleanedAddresses = current.addresses
+      .map(a => a?.trim())
+      .filter(a => !!a);
+    const cleanedSubsidies = current.subsidies
+      .filter(s => s && Number(s.kw) > 0);
+
+    this.settingsService.settings.set({
+      ...current,
+      addresses: cleanedAddresses,
+      subsidies: cleanedSubsidies
+    });
+
     this.settingsService.saveSettings().subscribe({
       next: () => this.toastService.success('Company profile & settings saved successfully!'),
       error: () => this.toastService.error('Failed to save settings to database.')

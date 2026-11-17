@@ -1,7 +1,7 @@
 # ☀️ SolarTrack ERP — Frontend Design System & Development Guidelines
 
 > **Project Target**: Modern Enterprise Solar Management ERP  
-> **Tech Stack**: Angular (Latest Standalone Components + Signals) | .NET 10 Web API | Microsoft SQL Server (LGPMPDB)  
+> **Tech Stack**: Angular (Latest Standalone Components + Signals) | .NET 10 Web API | Microsoft SQL Server (SolarDb)  
 > **Document Purpose**: Single source of truth for architectural standards, UI consistency, design tokens, reusable components, and audit checklist.
 
 ---

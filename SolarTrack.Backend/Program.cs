@@ -109,7 +109,7 @@ if (frontendDir != null && Directory.Exists(frontendDir))
 
 Console.WriteLine("======================================================");
 Console.WriteLine($" SolarTrack .NET 10 Backend (SQL Server + Dapper + EF Core)");
-Console.WriteLine($" Connected to Microsoft SQL Server: LGPMPDB");
+Console.WriteLine($" Connected to Microsoft SQL Server: SolarDb");
 Console.WriteLine($" Server listening on port {portStr}");
 Console.WriteLine($" Static frontend files served from: {frontendDir}");
 Console.WriteLine("======================================================");

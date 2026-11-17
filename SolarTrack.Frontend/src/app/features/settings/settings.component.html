@@ -5,174 +5,166 @@
       <div class="fs-8 text-muted mt-2">Loading System Settings...</div>
     </div>
   } @else {
-    <div class="row g-3">
-      <!-- Col 1: Company Profile, Subsidy & Terms -->
-      <div class="col-lg-6 col-12">
-        <!-- 1. Company Profile -->
-        <div class="settings-card mb-3">
-          <div class="section-title">Company Profile Settings</div>
-          <div class="mb-2">
-            <label class="form-label fs-8 text-secondary mb-1">Company Name</label>
-            <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyName">
-          </div>
-          <div class="row g-2 mb-2">
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">Company Email</label>
-              <input type="email" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyEmail">
-            </div>
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyPhone">
-            </div>
-          </div>
-          <div class="row g-2">
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">GST Number</label>
-              <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().companyGst">
-            </div>
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">Default GST %</label>
-              <input type="number" min="0" max="100" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().defaultGst">
-            </div>
-          </div>
-        </div>
+    <!-- Tabs Navigation -->
+    <div class="settings-nav-wrapper mb-3 border-bottom">
+      <ul class="nav nav-tabs border-0 gap-2" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button 
+            type="button" 
+            class="nav-link settings-tab-btn" 
+            [class.active]="activeTab() === 'company'" 
+            (click)="setTab('company')">
+            Company Profile Settings
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button 
+            type="button" 
+            class="nav-link settings-tab-btn" 
+            [class.active]="activeTab() === 'users'" 
+            (click)="setTab('users')">
+            User &amp; Role
+          </button>
+        </li>
+      </ul>
+    </div>
 
-        <!-- 2. Terms & Conditions -->
-        <div class="settings-card mb-3">
-          <div class="section-title">Terms &amp; Conditions</div>
-          <textarea 
-            class="form-control form-control-sm fs-8" 
-            rows="4" 
-            [(ngModel)]="settingsService.settings().terms"
-            placeholder="Enter standard business terms..."></textarea>
-        </div>
-
-        <!-- 3. Government Subsidy Settings -->
-        <div class="settings-card mb-3">
-          <div class="section-title">Government Subsidy Configurations</div>
-          <div class="row g-2 align-items-end mb-2">
-            <div class="col-4">
-              <label class="form-label fs-9 text-secondary mb-1">Capacity (kW)</label>
-              <input type="number" min="1" class="form-control form-control-sm" [(ngModel)]="newSubsidyKw" placeholder="e.g. 3">
+    <!-- TAB 1: Company Profile Settings -->
+    @if (activeTab() === 'company') {
+      <div class="row g-3">
+        <!-- Col 1: Company Profile, Office Addresses & Subsidy -->
+        <div class="col-lg-6 col-12">
+          <!-- 1. Company Profile Section -->
+          <div class="settings-card mb-3">
+            <div class="section-title">Company Profile Section</div>
+            <div class="mb-2">
+              <label class="form-label fs-8 text-secondary mb-1">Company Name</label>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyName">
             </div>
-            <div class="col-4">
-              <label class="form-label fs-9 text-secondary mb-1">State Sub. (₹)</label>
-              <input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="newSubsidyState" placeholder="e.g. 60000">
-            </div>
-            <div class="col-4">
-              <label class="form-label fs-9 text-secondary mb-1">Central Sub. (₹)</label>
-              <input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="newSubsidyCentral" placeholder="e.g. 78000">
-            </div>
-            <div class="col-12 mt-2">
-              <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-semibold" (click)="onAddSubsidy()">+ Add Subsidy Configuration</button>
-            </div>
-          </div>
-
-          <div class="d-flex flex-column gap-1.5 mt-2" style="max-height: 180px; overflow-y: auto;">
-            @for (s of settingsService.settings().subsidies; track s.kw; let i = $index) {
-              <div class="subsidy-item">
-                <span class="fw-bold text-dark">{{ s.kw }} kW</span>
-                <span>State: ₹{{ s.state | number:'1.0-0' }} | Central: ₹{{ s.central | number:'1.0-0' }}</span>
-                <button type="button" class="btn btn-sm text-danger border-0 p-0" (click)="onRemoveSubsidy(i)">✕</button>
+            <div class="row g-2 mb-2">
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Company Email</label>
+                <input type="email" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyEmail">
               </div>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Col 2: Addresses, Bank, UPI & User Management -->
-      <div class="col-lg-6 col-12">
-        <!-- 4. Multiple Office Addresses -->
-        <div class="settings-card mb-3">
-          <div class="section-title">Manage Office Addresses</div>
-          <div class="input-group input-group-sm mb-2">
-            <input type="text" class="form-control" [(ngModel)]="newAddressText" placeholder="Enter complete office address...">
-            <button class="btn btn-primary px-3" (click)="onAddAddress()">Add</button>
-          </div>
-          <div class="d-flex flex-column gap-1.5" style="max-height: 160px; overflow-y: auto;">
-            @for (addr of settingsService.settings().addresses; track addr; let i = $index) {
-              <div class="address-item">
-                <span class="text-truncate me-2">{{ addr }}</span>
-                <button type="button" class="btn btn-sm text-danger border-0 p-0" (click)="onRemoveAddress(i)">✕</button>
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().companyPhone">
               </div>
-            }
-          </div>
-        </div>
-
-        <!-- 5. Bank Details -->
-        <div class="settings-card mb-3">
-          <div class="section-title">Company Bank Details</div>
-          <div class="row g-2 mb-2">
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">A/c Holder's Name</label>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankAcHolder">
             </div>
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">Bank Name</label>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankName">
+            <div class="row g-2">
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">GST Number</label>
+                <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().companyGst">
+              </div>
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Default GST %</label>
+                <input type="number" min="0" max="100" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().defaultGst">
+              </div>
             </div>
           </div>
-          <div class="row g-2">
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">Account Number</label>
-              <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().bankAcNo">
+
+          <!-- 2. Office Addresses (Open for edit) -->
+          <div class="settings-card mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+              <div class="section-title m-0 border-0 p-0">Office Addresses</div>
+              <button type="button" class="btn btn-xs btn-outline-primary fw-semibold" (click)="onAddAddressRow()">
+                + Add Address
+              </button>
             </div>
-            <div class="col-sm-6 col-12">
-              <label class="form-label fs-8 text-secondary mb-1">Branch &amp; IFSC Code</label>
-              <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().bankBranchIfs">
+            <div class="d-flex flex-column gap-2 address-list-box">
+              @if (settingsService.settings().addresses.length === 0) {
+                <div class="text-center text-muted fs-8 py-2 bg-light rounded border border-dashed">
+                  No addresses added. Click "+ Add Address" to add an office address.
+                </div>
+              }
+              @for (addr of settingsService.settings().addresses; track $index; let i = $index) {
+                <div class="d-flex align-items-center gap-2">
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    [(ngModel)]="settingsService.settings().addresses[i]" 
+                    placeholder="Enter office address...">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-danger px-2 py-1" 
+                    title="Remove address" 
+                    (click)="onRemoveAddress(i)">
+                    ✕
+                  </button>
+                </div>
+              }
             </div>
           </div>
-        </div>
 
-        <!-- 6. UPI Settings -->
-        <div class="settings-card mb-3">
-          <div class="section-title">UPI Payment ID</div>
-          <div class="mb-2">
-            <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().upiId" placeholder="e.g. merchant@upi">
-          </div>
-        </div>
-      </div>
-
-      <!-- User & Role Management Section (Admin Only) -->
-      @if (authService.isAdmin()) {
-        <div class="col-12">
-          <div class="settings-card">
-            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-              <div class="section-title m-0 border-0 p-0">User &amp; Role Access Control (RBAC)</div>
-              <button class="btn btn-sm btn-primary" (click)="openUserModal()">+ Add New User</button>
+          <!-- 5. Government Subsidy (Open for edit) -->
+          <div class="settings-card mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+              <div class="section-title m-0 border-0 p-0">Government Subsidy</div>
+              <button type="button" class="btn btn-xs btn-outline-primary fw-semibold" (click)="onAddSubsidyRow()">
+                + Add Subsidy Row
+              </button>
             </div>
 
-            <div class="table-responsive">
-              <table class="table table-hover table-sm align-middle fs-8 mb-0">
+            <div class="table-responsive subsidy-list-box">
+              <table class="table table-sm table-bordered align-middle fs-8 mb-0">
                 <thead class="table-light">
                   <tr>
-                    <th>User ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Mobile</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th class="text-center" style="width: 140px;">Actions</th>
+                    <th style="width: 25%;">Capacity (kW)</th>
+                    <th style="width: 35%;">State Sub. (₹)</th>
+                    <th style="width: 35%;">Central Sub. (₹)</th>
+                    <th class="text-center" style="width: 40px;"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (u of settingsService.users(); track u.userid) {
+                  @if (settingsService.settings().subsidies.length === 0) {
                     <tr>
-                      <td class="font-monospace fw-semibold">{{ u.userid }}</td>
-                      <td>{{ u.username }}</td>
-                      <td>{{ u.email }}</td>
-                      <td>{{ u.mobile || '-' }}</td>
-                      <td><span class="badge bg-secondary-subtle text-secondary border">{{ u.role }}</span></td>
+                      <td colspan="4" class="text-center text-muted py-2">
+                        No subsidy slabs configured. Click "+ Add Subsidy Row" to add.
+                      </td>
+                    </tr>
+                  }
+                  @for (s of settingsService.settings().subsidies; track $index; let i = $index) {
+                    <tr>
                       <td>
-                        <span class="badge" [class.bg-success]="u.status === 'Approved'" [class.bg-warning]="u.status === 'Pending'" [class.bg-danger]="u.status === 'Rejected'">
-                          {{ u.status || 'Approved' }}
-                        </span>
+                        <input 
+                          type="number" 
+                          min="1" 
+                          class="form-control form-control-sm font-monospace text-center fw-semibold" 
+                          [(ngModel)]="s.kw" 
+                          placeholder="kW">
+                      </td>
+                      <td>
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text bg-light text-muted px-1.5 fs-9">₹</span>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            step="500" 
+                            class="form-control form-control-sm font-monospace" 
+                            [(ngModel)]="s.state" 
+                            placeholder="State">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text bg-light text-muted px-1.5 fs-9">₹</span>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            step="500" 
+                            class="form-control form-control-sm font-monospace" 
+                            [(ngModel)]="s.central" 
+                            placeholder="Central">
+                        </div>
                       </td>
                       <td class="text-center">
-                        <button class="btn btn-xs btn-outline-primary me-1" (click)="editUser(u)">Edit</button>
-                        @if (u.userid !== 'admin' && u.userid !== 'amar') {
-                          <button class="btn btn-xs btn-outline-danger" (click)="onDeleteUser(u.userid)">Delete</button>
-                        }
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-link text-danger text-decoration-none p-0" 
+                          title="Remove row" 
+                          (click)="onRemoveSubsidy(i)">
+                          ✕
+                        </button>
                       </td>
                     </tr>
                   }
@@ -181,23 +173,216 @@
             </div>
           </div>
         </div>
-      }
 
-      <!-- Bottom Save Action -->
-      <div class="col-12 text-center mt-3 pt-2">
-        <button 
-          class="btn btn-primary px-5 py-2 fw-semibold" 
-          [disabled]="settingsService.isSaving()"
-          (click)="onSaveAllSettings()">
-          @if (settingsService.isSaving()) {
-            <span class="spinner-border spinner-border-sm me-2"></span>
-            <span>Saving Settings...</span>
-          } @else {
-            <span>💾 Save Profile &amp; Settings</span>
-          }
-        </button>
+        <!-- Col 2: Bank Details, UPI Payment ID & Terms -->
+        <div class="col-lg-6 col-12">
+          <!-- 3. Company Bank Details section -->
+          <div class="settings-card mb-3">
+            <div class="section-title">Company Bank Details section</div>
+            <div class="row g-2 mb-2">
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">A/c Holder's Name</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankAcHolder">
+              </div>
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Bank Name</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankName">
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Account Number</label>
+                <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().bankAcNo">
+              </div>
+              <div class="col-sm-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Branch &amp; IFSC Code</label>
+                <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().bankBranchIfs">
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. UPI Payment ID -->
+          <div class="settings-card mb-3">
+            <div class="section-title">UPI Payment ID</div>
+            <div class="mb-2">
+              <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().upiId" placeholder="e.g. merchant@upi">
+            </div>
+          </div>
+
+          <!-- 6. Terms & Conditions -->
+          <div class="settings-card mb-3">
+            <div class="section-title">Terms &amp; Conditions</div>
+            <div class="mb-1">
+              <textarea 
+                class="form-control form-control-sm fs-8" 
+                rows="6" 
+                [(ngModel)]="settingsService.settings().terms"
+                placeholder="Enter standard business terms..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Save Action -->
+        <div class="col-12 text-center mt-2 mb-4 pt-2">
+          <button 
+            class="btn btn-primary px-5 py-2 fw-semibold" 
+            [disabled]="settingsService.isSaving()"
+            (click)="onSaveAllSettings()">
+            @if (settingsService.isSaving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              <span>Saving Settings...</span>
+            } @else {
+              <span>💾 Save Profile &amp; Settings</span>
+            }
+          </button>
+        </div>
       </div>
-    </div>
+    }
+
+    <!-- TAB 2: User and Role -->
+    @if (activeTab() === 'users') {
+      <div class="row g-3">
+        @if (!authService.isAdmin()) {
+          <div class="col-12">
+            <div class="settings-card text-center py-5">
+              <div class="fs-1 mb-2">🔒</div>
+              <h5 class="fw-bold text-dark">Administrator Access Required</h5>
+              <p class="text-secondary fs-8 mb-0">You need administrator privileges to view and manage user accounts.</p>
+            </div>
+          </div>
+        } @else {
+          <!-- Main Users Table Card -->
+          <div class="col-12">
+            <div class="settings-card mb-3">
+              <!-- Header & Toolbar -->
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-2 border-bottom">
+                <div class="section-title m-0 border-0 p-0">User &amp; Role Access Control (RBAC)</div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <!-- Search input -->
+                  <div class="input-group input-group-sm" style="width: 200px;">
+                    <span class="input-group-text bg-white border-end-0 text-muted">🔍</span>
+                    <input 
+                      type="text" 
+                      class="form-control border-start-0 ps-0" 
+                      [(ngModel)]="userSearch" 
+                      placeholder="Search users...">
+                  </div>
+
+                  <!-- Role filter dropdown -->
+                  <select class="form-select form-select-sm" style="width: 130px;" [(ngModel)]="selectedRoleFilter">
+                    <option value="ALL">All Roles</option>
+                    @for (r of settingsService.roles(); track r) {
+                      <option [value]="r">{{ r }}</option>
+                    }
+                  </select>
+
+                  <!-- Add User Button -->
+                  <button class="btn btn-sm btn-primary fw-semibold" (click)="openUserModal()">
+                    + Add New User
+                  </button>
+                </div>
+              </div>
+
+              <!-- Users Table -->
+              <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle fs-8 mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 120px;">User ID</th>
+                      <th>Full Name</th>
+                      <th>Email</th>
+                      <th>Mobile</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th class="text-center" style="width: 130px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @if (filteredUsers().length === 0) {
+                      <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                          No users found matching your search or role filter.
+                        </td>
+                      </tr>
+                    } @else {
+                      @for (u of filteredUsers(); track u.userid) {
+                        <tr>
+                          <td class="font-monospace fw-semibold">{{ u.userid }}</td>
+                          <td class="fw-semibold text-dark">{{ u.username }}</td>
+                          <td>{{ u.email }}</td>
+                          <td>{{ u.mobile || '-' }}</td>
+                          <td>
+                            <span class="badge bg-secondary-subtle text-secondary border">
+                              {{ u.role }}
+                            </span>
+                          </td>
+                          <td>
+                            <span class="badge" 
+                              [class.bg-success]="!u.status || u.status === 'Approved'" 
+                              [class.bg-warning]="u.status === 'Pending'" 
+                              [class.bg-danger]="u.status === 'Rejected'">
+                              {{ u.status || 'Approved' }}
+                            </span>
+                          </td>
+                          <td class="text-center">
+                            <button class="btn btn-xs btn-outline-primary me-1" (click)="editUser(u)">
+                              Edit
+                            </button>
+                            @if (u.userid !== 'admin' && u.userid !== 'amar') {
+                              <button class="btn btn-xs btn-outline-danger" (click)="onDeleteUser(u.userid)">
+                                Delete
+                              </button>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Roles Configuration Card -->
+          <div class="col-12">
+            <div class="settings-card">
+              <div class="section-title">Role Management</div>
+
+              <!-- Roles Badges List -->
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                @for (role of settingsService.roles(); track role) {
+                  <div class="role-badge-chip">
+                    <span>{{ role }}</span>
+                    @if (role.toLowerCase() !== 'admin' && role.toLowerCase() !== 'superadmin' && role.toLowerCase() !== 'user') {
+                      <button type="button" class="btn btn-link text-danger text-decoration-none p-0 ms-1" title="Delete role" (click)="onRemoveRole(role)">
+                        ✕
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Add New Role Form -->
+              <div class="row g-2 align-items-center" style="max-width: 420px;">
+                <div class="col-8">
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    [(ngModel)]="newRoleName" 
+                    placeholder="Enter new role..." 
+                    (keyup.enter)="onAddRole()">
+                </div>
+                <div class="col-4">
+                  <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-semibold" (click)="onAddRole()">
+                    + Add Role
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
   }
 </div>
 
@@ -249,7 +434,10 @@
               </select>
             </div>
           </div>
-          <button type="button" class="btn btn-primary btn-sm w-100 fw-semibold" (click)="onSaveUserModal()">Save User</button>
+          <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" (click)="isUserModalOpen.set(false)">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" (click)="onSaveUserModal()">Save User</button>
+          </div>
         </div>
       </div>
     </div>
