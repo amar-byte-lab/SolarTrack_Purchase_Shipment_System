@@ -11,6 +11,8 @@ export interface ParsedCustomerItem {
   BrokerName: string;
   LoginDate: string;
   Address?: string;
+  PinCode?: string;
+  Pin?: string;
   Status: string;
   IsDuplicate?: boolean;
   selected?: boolean;

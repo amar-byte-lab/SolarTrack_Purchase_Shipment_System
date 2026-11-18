@@ -470,7 +470,7 @@ export class DocumentComponent implements OnInit {
     const newBrokerNum = this.formatBrokerNumberWithWorkMeta(currentBrokerNumber, workMetaUpdates);
 
     const updatePayload = {
-      Address: c.Address || '',
+      Address: (c.Address || '').toUpperCase(),
       PinCode: c.PinCode || c.Pin || '',
       District: c.District || '',
       BrokerName: c.BrokerName || '',

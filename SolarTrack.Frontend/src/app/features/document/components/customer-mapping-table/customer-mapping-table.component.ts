@@ -20,6 +20,7 @@ export class CustomerMappingTableComponent {
   @Input() maxHeight: string = '500px';
   @Input() showCheckbox: boolean = true;
   @Input() showActions: boolean = false;
+  @Input() alwaysEditable: boolean = false;
   @Input() hideConsumerAndApplNo: boolean = false;
   @Input() showStatus: boolean = false;
   @Input() emptyMessage: string = 'No customer records to display.';
@@ -68,9 +69,21 @@ export class CustomerMappingTableComponent {
   }
 
   saveEdit(c: any): void {
+    if (c.Address) {
+      c.Address = c.Address.toUpperCase();
+    }
     this.editingSlNo = null;
     this.editBackup = null;
     this.saveRow.emit(c);
+  }
+
+  onAddressInput(c: any, val: string, event?: any): void {
+    const upper = (val || '').toUpperCase();
+    c.Address = upper;
+    if (event && event.target && event.target.value !== upper) {
+      event.target.value = upper;
+    }
+    this.onFieldChanged(c, 'Address');
   }
 
   private restoreBackup(target: any, backup: any): void {

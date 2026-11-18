@@ -56,14 +56,15 @@
         <!-- Address -->
         <td style="min-width: 260px; max-width: 360px;">
           <input 
-            *ngIf="editingSlNo === c.SlNo"
+            *ngIf="alwaysEditable || editingSlNo === c.SlNo"
             type="text" 
-            class="form-control form-control-xs py-0 px-1.5 fs-8 w-100" 
-            [(ngModel)]="c.Address" 
-            (ngModelChange)="onFieldChanged(c, 'Address')" 
+            class="form-control form-control-xs py-0 px-1.5 fs-8 w-100 text-uppercase" 
+            style="text-transform: uppercase;"
+            [ngModel]="c.Address" 
+            (input)="onAddressInput(c, $any($event.target).value, $event)" 
             placeholder="Enter Address">
           <span 
-            *ngIf="editingSlNo !== c.SlNo" 
+            *ngIf="!alwaysEditable && editingSlNo !== c.SlNo" 
             class="text-truncate d-inline-block" 
             style="max-width: 340px;" 
             [title]="c.Address || ''">
@@ -74,7 +75,7 @@
         <!-- Pin -->
         <td style="width: 80px;" class="text-nowrap">
           <input 
-            *ngIf="editingSlNo === c.SlNo"
+            *ngIf="alwaysEditable || editingSlNo === c.SlNo"
             type="text" 
             class="form-control form-control-xs py-0 px-1.5 fs-8 font-monospace" 
             [(ngModel)]="c.PinCode" 
@@ -82,7 +83,7 @@
             placeholder="PIN" 
             style="width: 72px;">
           <span 
-            *ngIf="editingSlNo !== c.SlNo" 
+            *ngIf="!alwaysEditable && editingSlNo !== c.SlNo" 
             class="font-monospace text-nowrap">
             {{ c.PinCode || c.Pin || '—' }}
           </span>
@@ -91,7 +92,7 @@
         <!-- District Dropdown -->
         <td style="width: 115px;" class="text-nowrap">
           <select 
-            *ngIf="editingSlNo === c.SlNo"
+            *ngIf="alwaysEditable || editingSlNo === c.SlNo"
             class="form-select form-select-xs py-0 px-1 fs-8" 
             [(ngModel)]="c.District"
             (ngModelChange)="onFieldChanged(c, 'District')" 
@@ -101,7 +102,7 @@
             <option *ngFor="let dist of districts" [value]="dist">{{ dist }}</option>
           </select>
           <span 
-            *ngIf="editingSlNo !== c.SlNo" 
+            *ngIf="!alwaysEditable && editingSlNo !== c.SlNo" 
             class="fs-8 text-nowrap">
             {{ c.District || '—' }}
           </span>
@@ -110,7 +111,7 @@
         <!-- Partner Dropdown -->
         <td>
           <select 
-            *ngIf="editingSlNo === c.SlNo"
+            *ngIf="alwaysEditable || editingSlNo === c.SlNo"
             class="form-select form-select-xs py-0 px-1 fs-8" 
             [(ngModel)]="c.BrokerName"
             (ngModelChange)="onFieldChanged(c, 'BrokerName')" 
@@ -119,7 +120,7 @@
             <option *ngFor="let part of getPartnerList(c)" [value]="part">{{ part }}</option>
           </select>
           <span 
-            *ngIf="editingSlNo !== c.SlNo" 
+            *ngIf="!alwaysEditable && editingSlNo !== c.SlNo" 
             class="fs-8 text-nowrap">
             {{ c.BrokerName || '—' }}
           </span>
@@ -128,7 +129,7 @@
         <!-- Status Dropdown -->
         <td *ngIf="showStatus">
           <select 
-            *ngIf="editingSlNo === c.SlNo"
+            *ngIf="alwaysEditable || editingSlNo === c.SlNo"
             class="form-select form-select-xs py-0 px-1 fs-8 fw-semibold" 
             [ngClass]="getStatusClass(c.Status)"
             [(ngModel)]="c.Status"
@@ -137,7 +138,7 @@
             <option *ngFor="let st of getStatusList(c)" [value]="st">{{ st }}</option>
           </select>
           <span 
-            *ngIf="editingSlNo !== c.SlNo" 
+            *ngIf="!alwaysEditable && editingSlNo !== c.SlNo" 
             class="badge py-1 px-1.5 fs-9 fw-semibold" 
             [ngClass]="getStatusClass(c.Status)">
             {{ c.Status || 'Active' }}

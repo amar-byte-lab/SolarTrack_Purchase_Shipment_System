@@ -346,6 +346,11 @@ export class CustomerImportModalComponent {
         return lk.includes('proposedcapacity') || lk.includes('plantcapacity') || lk.includes('solarcapacity') || lk === 'capacity' || lk.startsWith('capacity(') || lk.startsWith('capacitykw') || lk === 'requestedload' || lk === 'sanctionedload' || lk === 'proposedload' || (lk.includes('capacity') && !lk.includes('battery'));
       });
 
+      const pinKey = keys.find(k => {
+        const lk = k.toLowerCase().replace(/[\s\-_.]/g, '').trim();
+        return lk === 'pin' || lk === 'pincode' || lk === 'postalcode' || lk === 'zip' || lk === 'zipcode';
+      });
+
       if (!nameKey) {
         this.toastService.error('Invalid format! Could not find "Consumer Name" or "Name" column.');
         this.isLoading.set(false);
@@ -379,6 +384,7 @@ export class CustomerImportModalComponent {
         const rawCircle = circleKey ? String(row[circleKey] || '').trim() : '';
         const rawApplicationNo = applicationNoKey ? String(row[applicationNoKey] || '').trim() : '';
         const rawProposedCapacity = proposedCapacityKey ? String(row[proposedCapacityKey] || '').trim() : '';
+        const rawPin = pinKey ? String(row[pinKey] || '').trim() : '';
 
         const cleanNameVal = this.cleanName(rawName);
         excelNamesSet.add(cleanNameVal);
@@ -467,7 +473,9 @@ export class CustomerImportModalComponent {
             MobileNumber: rawMobile,
             District: rawDistrict,
             BrokerName: rawBroker,
-            Address: rawAddress,
+            Address: rawAddress ? rawAddress.toUpperCase() : '',
+            PinCode: rawPin,
+            Pin: rawPin,
             LoginDate: rawLoginDate || new Date().toISOString().slice(0, 10),
             Status: 'Duplicate (In Excel)',
             IsDuplicate: true,
@@ -486,7 +494,9 @@ export class CustomerImportModalComponent {
             MobileNumber: rawMobile,
             District: rawDistrict,
             BrokerName: rawBroker,
-            Address: rawAddress,
+            Address: rawAddress ? rawAddress.toUpperCase() : '',
+            PinCode: rawPin,
+            Pin: rawPin,
             LoginDate: rawLoginDate || new Date().toISOString().slice(0, 10),
             Status: 'New Name',
             IsDuplicate: false,
@@ -629,7 +639,8 @@ export class CustomerImportModalComponent {
         MobileNumber: c.MobileNumber || '',
         Status: 'Active',
         District: c.District || '',
-        Address: c.Address || '',
+        Address: (c.Address || '').toUpperCase(),
+        PinCode: c.PinCode || c.Pin || '',
         CommittedBrand: '',
         FirstInstallment: 0,
         SecondInstallment: 0,
@@ -672,7 +683,7 @@ export class CustomerImportModalComponent {
         MobileNumber: c.ExcelData.MobileNumber,
         District: c.ExcelData.District,
         BrokerName: c.ExcelData.BrokerName,
-        Address: c.ExcelData.Address,
+        Address: (c.ExcelData.Address || '').toUpperCase(),
         LoginDate: c.ExcelData.LoginDate,
         BrokerNumber: newBrokerNum
       };
