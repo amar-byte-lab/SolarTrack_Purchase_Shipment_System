@@ -106,6 +106,9 @@ import { CommonModule } from '@angular/common';
         <ng-container *ngSwitchCase="'close'">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </ng-container>
+        <ng-container *ngSwitchCase="'x'">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </ng-container>
         <!-- check -->
         <ng-container *ngSwitchCase="'check'">
           <polyline points="20 6 9 17 4 12"/>

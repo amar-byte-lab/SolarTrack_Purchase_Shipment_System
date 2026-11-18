@@ -54,18 +54,45 @@
         </td>
 
         <!-- Address -->
-        <td class="text-truncate" style="max-width: 180px;" [title]="c.Address || ''">
-          {{ c.Address || '—' }}
+        <td style="max-width: 220px;">
+          <input 
+            *ngIf="editingSlNo === c.SlNo"
+            type="text" 
+            class="form-control form-control-xs py-0 px-1.5 fs-8" 
+            [(ngModel)]="c.Address" 
+            (ngModelChange)="onFieldChanged(c, 'Address')" 
+            placeholder="Enter Address" 
+            style="min-width: 140px;">
+          <span 
+            *ngIf="editingSlNo !== c.SlNo" 
+            class="text-truncate d-inline-block" 
+            style="max-width: 180px;" 
+            [title]="c.Address || ''">
+            {{ c.Address || '—' }}
+          </span>
         </td>
 
         <!-- Pin -->
-        <td class="font-monospace text-nowrap">
-          {{ c.PinCode || c.Pin || '—' }}
+        <td>
+          <input 
+            *ngIf="editingSlNo === c.SlNo"
+            type="text" 
+            class="form-control form-control-xs py-0 px-1.5 fs-8 font-monospace" 
+            [(ngModel)]="c.PinCode" 
+            (ngModelChange)="c.Pin = $event; onFieldChanged(c, 'PinCode')" 
+            placeholder="PIN" 
+            style="width: 85px;">
+          <span 
+            *ngIf="editingSlNo !== c.SlNo" 
+            class="font-monospace text-nowrap">
+            {{ c.PinCode || c.Pin || '—' }}
+          </span>
         </td>
 
         <!-- District Dropdown -->
         <td>
           <select 
+            *ngIf="editingSlNo === c.SlNo"
             class="form-select form-select-xs py-0 px-1 fs-8" 
             [(ngModel)]="c.District"
             (ngModelChange)="onFieldChanged(c, 'District')" 
@@ -74,11 +101,17 @@
             <option *ngIf="c.District && !districts.includes(c.District)" [value]="c.District">{{ c.District }}</option>
             <option *ngFor="let dist of districts" [value]="dist">{{ dist }}</option>
           </select>
+          <span 
+            *ngIf="editingSlNo !== c.SlNo" 
+            class="fs-8 text-nowrap">
+            {{ c.District || '—' }}
+          </span>
         </td>
 
         <!-- Partner Dropdown -->
         <td>
           <select 
+            *ngIf="editingSlNo === c.SlNo"
             class="form-select form-select-xs py-0 px-1 fs-8" 
             [(ngModel)]="c.BrokerName"
             (ngModelChange)="onFieldChanged(c, 'BrokerName')" 
@@ -86,11 +119,17 @@
             <option value="">Select Partner</option>
             <option *ngFor="let part of getPartnerList(c)" [value]="part">{{ part }}</option>
           </select>
+          <span 
+            *ngIf="editingSlNo !== c.SlNo" 
+            class="fs-8 text-nowrap">
+            {{ c.BrokerName || '—' }}
+          </span>
         </td>
 
         <!-- Status Dropdown -->
         <td *ngIf="showStatus">
           <select 
+            *ngIf="editingSlNo === c.SlNo"
             class="form-select form-select-xs py-0 px-1 fs-8 fw-semibold" 
             [ngClass]="getStatusClass(c.Status)"
             [(ngModel)]="c.Status"
@@ -98,17 +137,44 @@
             style="min-width: 105px;">
             <option *ngFor="let st of getStatusList(c)" [value]="st">{{ st }}</option>
           </select>
+          <span 
+            *ngIf="editingSlNo !== c.SlNo" 
+            class="badge py-1 px-1.5 fs-9 fw-semibold" 
+            [ngClass]="getStatusClass(c.Status)">
+            {{ c.Status || 'Active' }}
+          </span>
         </td>
 
-        <!-- Action Column (Consistent with Summary Table) -->
+        <!-- Action Column (Consistent with Summary Table & Inline Row Save/Cancel) -->
         <td class="text-center text-nowrap" *ngIf="showActions">
-          <div class="d-inline-flex align-items-center gap-1">
-            <!-- 1. Customer Edit -->
+          <!-- State 1: Row is in Edit Mode -->
+          <div *ngIf="editingSlNo === c.SlNo" class="d-inline-flex align-items-center gap-1">
+            <!-- Save Button -->
+            <button 
+              type="button" 
+              class="btn btn-xs btn-success p-1 lh-1 text-white" 
+              (click)="$event.stopPropagation(); saveEdit(c)" 
+              title="Save Changes">
+              <app-icon name="check" [size]="13"></app-icon>
+            </button>
+            <!-- Cancel Button -->
+            <button 
+              type="button" 
+              class="btn btn-xs btn-outline-secondary p-1 lh-1" 
+              (click)="$event.stopPropagation(); cancelEdit(c)" 
+              title="Cancel">
+              <app-icon name="close" [size]="13"></app-icon>
+            </button>
+          </div>
+
+          <!-- State 2: Normal View Mode -->
+          <div *ngIf="editingSlNo !== c.SlNo" class="d-inline-flex align-items-center gap-1">
+            <!-- 1. Customer Inline Edit -->
             <button 
               type="button" 
               class="btn btn-xs btn-outline-primary p-1 lh-1" 
-              (click)="$event.stopPropagation(); editClicked.emit(c)" 
-              title="Edit Customer Record">
+              (click)="$event.stopPropagation(); startEdit(c)" 
+              title="Edit Customer">
               <app-icon name="edit" [size]="12"></app-icon>
             </button>
             <!-- 2. Customer Deactivate -->

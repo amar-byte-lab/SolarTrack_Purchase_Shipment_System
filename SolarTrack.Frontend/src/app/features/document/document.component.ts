@@ -212,7 +212,8 @@ export class DocumentComponent implements OnInit {
       });
     }
 
-    return items;
+    // Always sort descending by SlNo so most recently inserted customers appear first
+    return [...items].sort((a, b) => (Number(b.SlNo) || 0) - (Number(a.SlNo) || 0));
   });
 
   dirtyCount = computed(() => {
@@ -321,6 +322,8 @@ export class DocumentComponent implements OnInit {
 
   initMappingCustomers(list: InstallmentRow[]): void {
     const items = list.map(r => this.hydrateCustomer(r));
+    // Sort descending by SlNo so most recently inserted customers appear first
+    items.sort((a, b) => (Number(b.SlNo) || 0) - (Number(a.SlNo) || 0));
     this.mappingCustomers.set(items);
   }
 
@@ -453,7 +456,42 @@ export class DocumentComponent implements OnInit {
     });
   }
 
-  // --- Action Column Methods: Edit, Deactive/Activate, Delete ---
+  // --- Action Column Methods: Inline Row Save, Edit Modal, Deactive/Activate, Delete ---
+  onSaveCustomerRow(c: any): void {
+    const existingRow = this.summaryService.rawInstallments().find(r => Number(r.SlNo) === Number(c.SlNo));
+    const currentBrokerNumber = existingRow?.BrokerNumber || '';
+    const workMetaUpdates = {
+      SubDivision: c.SubDivision || '',
+      DivisionName: c.DivisionName || '',
+      CircleName: c.CircleName || '',
+      ApplicationNumber: c.ApplicationNumber || '',
+      ProposedCapacity: c.ProposedCapacity || ''
+    };
+    const newBrokerNum = this.formatBrokerNumberWithWorkMeta(currentBrokerNumber, workMetaUpdates);
+
+    const updatePayload = {
+      Address: c.Address || '',
+      PinCode: c.PinCode || c.Pin || '',
+      District: c.District || '',
+      BrokerName: c.BrokerName || '',
+      BrokerNumber: newBrokerNum
+    };
+
+    this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${c.SlNo}`, updatePayload).subscribe({
+      next: () => {
+        c._isDirty = false;
+        this.toastService.success(`Customer "${c.Name || 'Record'}" saved successfully.`);
+        this.summaryService.loadAllData().subscribe(() => {
+          this.initMappingCustomers(this.summaryService.rawInstallments());
+        });
+      },
+      error: (err) => {
+        this.toastService.error('Error saving customer: ' + (err.message || 'Server error'));
+        console.error(err);
+      }
+    });
+  }
+
   onEditCustomerFromMapping(c: any): void {
     const existing = this.summaryService.rawInstallments().find(r => Number(r.SlNo) === Number(c.SlNo));
     this.customerForModal = existing || c;

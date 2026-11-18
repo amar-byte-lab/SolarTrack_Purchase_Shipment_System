@@ -31,9 +31,55 @@ export class CustomerMappingTableComponent {
   @Output() editClicked = new EventEmitter<any>();
   @Output() deactiveClicked = new EventEmitter<any>();
   @Output() deleteClicked = new EventEmitter<any>();
+  @Output() saveRow = new EventEmitter<any>();
+  @Output() cancelRow = new EventEmitter<any>();
 
   readonly districts = ODISHA_DISTRICTS;
   readonly defaultStatuses: string[] = ['Active', 'Deactive', 'Pending', 'New Name', 'Duplicate (In Excel)'];
+
+  // Inline Row Editing State
+  editingSlNo: any = null;
+  private editBackup: any = null;
+
+  startEdit(c: any): void {
+    if (this.editingSlNo && this.editingSlNo !== c.SlNo) {
+      const prev = this.customers.find(x => x.SlNo === this.editingSlNo);
+      if (prev && this.editBackup) {
+        this.restoreBackup(prev, this.editBackup);
+      }
+    }
+    this.editingSlNo = c.SlNo;
+    this.editBackup = {
+      Address: c.Address,
+      PinCode: c.PinCode || c.Pin,
+      Pin: c.PinCode || c.Pin,
+      District: c.District,
+      BrokerName: c.BrokerName
+    };
+  }
+
+  cancelEdit(c: any): void {
+    if (this.editBackup) {
+      this.restoreBackup(c, this.editBackup);
+    }
+    this.editingSlNo = null;
+    this.editBackup = null;
+    this.cancelRow.emit(c);
+  }
+
+  saveEdit(c: any): void {
+    this.editingSlNo = null;
+    this.editBackup = null;
+    this.saveRow.emit(c);
+  }
+
+  private restoreBackup(target: any, backup: any): void {
+    target.Address = backup.Address;
+    target.PinCode = backup.PinCode;
+    target.Pin = backup.Pin;
+    target.District = backup.District;
+    target.BrokerName = backup.BrokerName;
+  }
 
   getColspan(): number {
     const base = (this.hideConsumerAndApplNo ? 7 : 9) + (this.showStatus ? 1 : 0);
