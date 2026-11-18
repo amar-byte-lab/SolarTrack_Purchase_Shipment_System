@@ -1,7 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import * as XLSX from 'xlsx';
 import { FilesService } from './services/files.service';
 import { NavService } from '../../core/services/nav.service';
 import { ToastService } from '../../shared/services/toast.service';
@@ -22,9 +24,18 @@ export class FilesComponent implements OnInit {
   toastService = inject(ToastService);
   confirmService = inject(ConfirmDialogService);
   private sanitizer = inject(DomSanitizer);
+  private http = inject(HttpClient);
 
   // Preview Modal State
   previewFile: FileItem | null = null;
+  excelSheets: { name: string; rows: any[][] }[] = [];
+  activeSheetIndex: number = 0;
+  isLoadingExcel: boolean = false;
+  excelError: string | null = null;
+  excelSearchQuery: string = '';
+
+  isLoadingDocx: boolean = false;
+  docxContent: string = '';
 
   // Rename Modal State
   renameFileItem: FileItem | null = null;
@@ -69,10 +80,137 @@ export class FilesComponent implements OnInit {
   // --- Preview Logic ---
   openPreview(file: FileItem): void {
     this.previewFile = file;
+    this.excelSheets = [];
+    this.activeSheetIndex = 0;
+    this.excelError = null;
+    this.excelSearchQuery = '';
+    this.docxContent = '';
+
+    if (this.isExcel(file)) {
+      this.loadExcelPreview(file);
+    } else if (this.isDocx(file)) {
+      this.loadDocxPreview(file);
+    }
   }
 
   closePreview(): void {
     this.previewFile = null;
+    this.excelSheets = [];
+    this.docxContent = '';
+  }
+
+  selectSheet(index: number): void {
+    this.activeSheetIndex = index;
+    this.excelSearchQuery = '';
+  }
+
+  loadExcelPreview(file: FileItem): void {
+    this.isLoadingExcel = true;
+    this.excelError = null;
+    const url = this.getFileUrl(file);
+
+    this.http.get(url, { responseType: 'arraybuffer' }).subscribe({
+      next: (buffer: ArrayBuffer) => {
+        try {
+          const wb = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+          this.excelSheets = wb.SheetNames.map(sheetName => {
+            const ws = wb.Sheets[sheetName];
+            const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[][];
+            return { name: sheetName, rows };
+          });
+          this.activeSheetIndex = 0;
+          this.isLoadingExcel = false;
+        } catch (e: any) {
+          this.isLoadingExcel = false;
+          this.excelError = 'Could not parse spreadsheet data: ' + (e?.message || 'Invalid format');
+        }
+      },
+      error: () => {
+        this.isLoadingExcel = false;
+        this.excelError = 'Failed to load spreadsheet file from server.';
+      }
+    });
+  }
+
+  loadDocxPreview(file: FileItem): void {
+    this.isLoadingDocx = true;
+    this.docxContent = '';
+    const url = this.getFileUrl(file);
+
+    this.http.get(url, { responseType: 'arraybuffer' }).subscribe({
+      next: (buffer: ArrayBuffer) => {
+        try {
+          const cfb = XLSX.CFB.read(new Uint8Array(buffer), { type: 'array' });
+          const entry = XLSX.CFB.find(cfb, 'word/document.xml') || XLSX.CFB.find(cfb, '/word/document.xml');
+          if (entry && entry.content) {
+            const decoder = new TextDecoder('utf-8');
+            const xml = typeof entry.content === 'string' ? entry.content : decoder.decode(entry.content);
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xml, 'text/xml');
+            const pElements = xmlDoc.getElementsByTagName('w:p');
+            const paragraphs: string[] = [];
+            for (let i = 0; i < pElements.length; i++) {
+              const text = pElements[i].textContent || '';
+              if (text.trim()) paragraphs.push(text.trim());
+            }
+            this.docxContent = paragraphs.join('\n\n') || 'Empty document.';
+          } else {
+            this.docxContent = 'Document content could not be extracted.';
+          }
+          this.isLoadingDocx = false;
+        } catch (e: any) {
+          this.isLoadingDocx = false;
+          this.docxContent = 'Could not preview document: ' + (e?.message || 'Error parsing docx');
+        }
+      },
+      error: () => {
+        this.isLoadingDocx = false;
+        this.docxContent = 'Failed to load document from server.';
+      }
+    });
+  }
+
+  get currentSheet(): { name: string; rows: any[][] } | null {
+    return this.excelSheets[this.activeSheetIndex] || null;
+  }
+
+  get hasHeader(): boolean {
+    const rows = this.currentSheet?.rows;
+    if (!rows || rows.length === 0) return false;
+    return rows.length > 1 && rows[0].some(cell => typeof cell === 'string' && cell.trim().length > 0);
+  }
+
+  get headerRow(): any[] {
+    const rows = this.currentSheet?.rows;
+    if (!rows || rows.length === 0) return [];
+    if (this.hasHeader) return rows[0];
+
+    const maxCols = Math.max(...rows.map(r => (r ? r.length : 0)), 1);
+    return Array.from({ length: maxCols }, (_, i) => this.getColLetter(i));
+  }
+
+  get filteredSheetRows(): any[][] {
+    const rows = this.currentSheet?.rows;
+    if (!rows || rows.length === 0) return [];
+    const dataRows = this.hasHeader ? rows.slice(1) : rows;
+    const q = this.excelSearchQuery.toLowerCase().trim();
+    if (!q) return dataRows;
+
+    return dataRows.filter(row => 
+      row.some(cell => String(cell || '').toLowerCase().includes(q))
+    );
+  }
+
+  getColLetter(colIdx: number): string {
+    let temp = '';
+    let letter = '';
+    let n = colIdx;
+    while (n >= 0) {
+      temp = String.fromCharCode((n % 26) + 65);
+      letter = temp + letter;
+      n = Math.floor(n / 26) - 1;
+    }
+    return letter;
   }
 
   getSafePreviewUrl(file: FileItem): SafeResourceUrl {
@@ -85,9 +223,14 @@ export class FilesComponent implements OnInit {
     return idx !== -1 ? name.slice(idx).toLowerCase() : '';
   }
 
+  isExcel(file: FileItem): boolean {
+    const ext = (file.ext || this.getFileExt(file)).toLowerCase();
+    return ['.xlsx', '.xls', '.csv', '.tsv', '.ods'].includes(ext);
+  }
+
   isImage(file: FileItem): boolean {
     const ext = (file.ext || this.getFileExt(file)).toLowerCase();
-    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'].includes(ext);
+    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif'].includes(ext);
   }
 
   isPdf(file: FileItem): boolean {
@@ -95,9 +238,18 @@ export class FilesComponent implements OnInit {
     return ext === '.pdf';
   }
 
-  isPreviewable(file: FileItem): boolean {
+  isText(file: FileItem): boolean {
     const ext = (file.ext || this.getFileExt(file)).toLowerCase();
-    return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.txt', '.json', '.csv', '.log'].includes(ext);
+    return ['.txt', '.log', '.json', '.xml', '.html', '.htm', '.css', '.js', '.ts', '.md', '.sql', '.yaml', '.yml'].includes(ext);
+  }
+
+  isDocx(file: FileItem): boolean {
+    const ext = (file.ext || this.getFileExt(file)).toLowerCase();
+    return ext === '.docx' || ext === '.doc';
+  }
+
+  isPreviewable(file: FileItem): boolean {
+    return this.isExcel(file) || this.isImage(file) || this.isPdf(file) || this.isText(file) || this.isDocx(file);
   }
 
   // --- Rename Logic ---

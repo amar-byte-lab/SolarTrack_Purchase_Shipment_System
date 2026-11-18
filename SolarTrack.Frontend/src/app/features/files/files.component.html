@@ -188,23 +188,113 @@
           </div>
         </div>
         <div class="modal-body p-2 d-flex flex-column align-items-center justify-content-center bg-light-subtle overflow-auto">
-          <!-- Image Preview -->
-          <div *ngIf="isImage(previewFile)" class="text-center p-2">
-            <img [src]="getFileUrl(previewFile)" class="img-fluid rounded border shadow-sm mx-auto" style="max-height: 80vh; object-fit: contain;" [alt]="getDisplayName(previewFile)">
+          <!-- 1. Excel Spreadsheet Preview (.xlsx, .xls, .csv, .tsv, .ods) -->
+          <div *ngIf="isExcel(previewFile)" class="w-100 h-100 d-flex flex-column bg-white rounded border overflow-hidden">
+            <!-- Loading -->
+            <div *ngIf="isLoadingExcel" class="text-center py-5 my-auto">
+              <div class="spinner-border text-success mb-2" role="status"></div>
+              <div class="fs-8 fw-semibold text-secondary">Loading spreadsheet data...</div>
+            </div>
+
+            <!-- Error -->
+            <div *ngIf="!isLoadingExcel && excelError" class="alert alert-warning m-4">
+              {{ excelError }}
+            </div>
+
+            <!-- Loaded Sheet Data -->
+            <ng-container *ngIf="!isLoadingExcel && !excelError">
+              <!-- Sheet Selector & Search Toolbar -->
+              <div class="excel-toolbar px-3 py-2 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <!-- Sheet Tabs -->
+                <div class="d-flex align-items-center gap-1.5 overflow-auto">
+                  <span class="fs-8 fw-bold text-secondary me-1">SHEETS:</span>
+                  <button 
+                    *ngFor="let s of excelSheets; let sIdx = index"
+                    type="button" 
+                    class="btn btn-xs fw-semibold py-1 px-2.5 rounded-1"
+                    [ngClass]="activeSheetIndex === sIdx ? 'btn-success text-white shadow-sm' : 'btn-outline-secondary bg-white'"
+                    (click)="selectSheet(sIdx)">
+                    <span>📊 {{ s.name }}</span>
+                    <span class="badge bg-light text-dark ms-1 py-0 px-1 fs-9">{{ s.rows.length }}</span>
+                  </button>
+                </div>
+
+                <!-- Search inside sheet & Info -->
+                <div class="d-flex align-items-center gap-2">
+                  <div class="input-group input-group-sm" style="width: 220px;">
+                    <span class="input-group-text bg-white border-end-0 py-0.5 px-2 text-muted">🔍</span>
+                    <input 
+                      type="text" 
+                      class="form-control form-control-sm border-start-0 py-0.5 fs-8" 
+                      placeholder="Search in sheet..."
+                      [(ngModel)]="excelSearchQuery">
+                  </div>
+                  <span class="badge bg-secondary-subtle text-secondary border fs-8">
+                    {{ filteredSheetRows.length }} rows
+                  </span>
+                </div>
+              </div>
+
+              <!-- Spreadsheet Grid Table -->
+              <div class="table-responsive flex-grow-1" style="max-height: 75vh; overflow: auto;">
+                <table class="table table-bordered table-sm table-hover mb-0 fs-8 align-middle text-nowrap">
+                  <thead class="table-light sticky-top" style="z-index: 5;">
+                    <tr>
+                      <th class="text-center bg-light text-muted font-monospace" style="width: 45px;">#</th>
+                      <th *ngFor="let col of headerRow; let colIdx = index" class="px-2 py-1.5 fw-bold bg-light text-dark">
+                        {{ col !== '' && col !== null && col !== undefined ? col : getColLetter(colIdx) }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of filteredSheetRows; let rIdx = index">
+                      <td class="text-center text-muted font-monospace fs-9 bg-light-subtle py-1" style="width: 45px;">
+                        {{ rIdx + 1 }}
+                      </td>
+                      <td *ngFor="let col of headerRow; let cIdx = index" class="px-2 py-1">
+                        {{ row[cIdx] !== null && row[cIdx] !== undefined ? row[cIdx] : '' }}
+                      </td>
+                    </tr>
+                    <tr *ngIf="filteredSheetRows.length === 0">
+                      <td [attr.colspan]="headerRow.length + 1" class="text-center py-4 text-muted">
+                        No matching data rows found in this sheet.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </ng-container>
           </div>
-          <!-- PDF / Text / Code Preview -->
-          <div *ngIf="isPdf(previewFile) || (isPreviewable(previewFile) && !isImage(previewFile))" class="w-100 h-100">
+
+          <!-- 2. Word (.docx) Preview -->
+          <div *ngIf="isDocx(previewFile)" class="w-100 h-100 bg-white p-4 rounded border overflow-auto" style="min-height: 78vh;">
+            <div *ngIf="isLoadingDocx" class="text-center py-5 my-auto">
+              <div class="spinner-border text-primary mb-2"></div>
+              <div class="fs-8 text-secondary">Loading document preview...</div>
+            </div>
+            <div *ngIf="!isLoadingDocx" style="white-space: pre-wrap; font-size: 0.95rem; max-width: 850px; margin: 0 auto; line-height: 1.6;" class="text-dark">
+              {{ docxContent }}
+            </div>
+          </div>
+
+          <!-- 3. Image Preview -->
+          <div *ngIf="isImage(previewFile)" class="w-100 h-100 d-flex align-items-center justify-content-center p-2 overflow-auto">
+            <img [src]="getFileUrl(previewFile)" class="img-fluid rounded border shadow-sm mx-auto" style="max-height: 80vh; object-fit: contain; background: #fff;" [alt]="getDisplayName(previewFile)">
+          </div>
+
+          <!-- 4. PDF Preview -->
+          <div *ngIf="isPdf(previewFile)" class="w-100 h-100">
             <iframe [src]="getSafePreviewUrl(previewFile)" class="w-100 h-100 rounded border-0" style="min-height: 78vh;"></iframe>
           </div>
-          <!-- Fallback when browser cannot inline preview (e.g. zip, xlsx) -->
-          <div *ngIf="!isPreviewable(previewFile)" class="text-center py-5">
-            <div class="mb-3 fs-1">📦</div>
-            <h6 class="fw-bold text-dark mb-1">{{ getDisplayName(previewFile) }}</h6>
-            <p class="text-muted fs-8 mb-3">This file type cannot be previewed directly inside the browser.</p>
-            <a [href]="getFileDownloadUrl(previewFile)" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 px-3">
-              <app-icon name="download" [size]="14"></app-icon>
-              <span>Download File to View</span>
-            </a>
+
+          <!-- 5. Text / Code Preview -->
+          <div *ngIf="isText(previewFile)" class="w-100 h-100">
+            <iframe [src]="getSafePreviewUrl(previewFile)" class="w-100 h-100 rounded border bg-white p-2" style="min-height: 78vh;"></iframe>
+          </div>
+
+          <!-- 6. Other / Direct iframe preview -->
+          <div *ngIf="!isExcel(previewFile) && !isDocx(previewFile) && !isImage(previewFile) && !isPdf(previewFile) && !isText(previewFile)" class="w-100 h-100">
+            <iframe [src]="getSafePreviewUrl(previewFile)" class="w-100 h-100 rounded border-0" style="min-height: 78vh;"></iframe>
           </div>
         </div>
         <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-end">

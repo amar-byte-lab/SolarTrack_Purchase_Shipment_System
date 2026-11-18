@@ -22,7 +22,10 @@ public class FilesController : ControllerBase
         if (doc == null)
             return NotFound("Document not found");
 
-        var inlineExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".txt" };
+        var inlineExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { 
+            ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".txt",
+            ".xlsx", ".xls", ".csv", ".tsv", ".docx", ".doc", ".json", ".xml", ".log", ".html" 
+        };
         var ext = Path.GetExtension(doc.Value.fullPath);
         if (inlineExts.Contains(ext))
         {
@@ -73,7 +76,10 @@ public class FilesController : ControllerBase
         if (doc == null)
             return NotFound("File document not found");
 
-        var inlineExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".txt" };
+        var inlineExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { 
+            ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".txt",
+            ".xlsx", ".xls", ".csv", ".tsv", ".docx", ".doc", ".json", ".xml", ".log", ".html" 
+        };
         var ext = Path.GetExtension(doc.Value.fullPath);
         var isDownload = download == "1";
         var downloadName = !string.IsNullOrEmpty(name) ? name : doc.Value.downloadName;
