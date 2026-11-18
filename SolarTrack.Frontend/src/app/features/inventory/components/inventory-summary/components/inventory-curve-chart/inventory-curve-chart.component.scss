@@ -1,0 +1,116 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.curve-chart-card {
+  border: 1px solid var(--st-border, rgba(20, 20, 18, 0.12));
+  background: var(--st-surface, #ffffff);
+  border-radius: var(--st-radius-card, 16px);
+  min-height: 420px;
+}
+
+.curve-chart-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.legend-toggles {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.legend-pill {
+  border: 1px solid var(--st-border, #e2e8f0);
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0.65;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  &.active {
+    opacity: 1;
+    background: var(--series-bg, #f1f5f9);
+    border-color: var(--series-color, #ff4500);
+    color: #1e293b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    .legend-val {
+      color: var(--series-color, #ff4500);
+    }
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    opacity: 1;
+  }
+}
+
+.chart-canvas-wrapper {
+  min-height: 260px;
+  width: 100%;
+}
+
+.curve-svg {
+  height: 100%;
+  max-height: 330px;
+  overflow: visible;
+  cursor: crosshair;
+}
+
+.curve-line {
+  transition: stroke 0.25s ease;
+}
+
+.curve-area {
+  pointer-events: none;
+}
+
+.curve-dot {
+  cursor: pointer;
+}
+
+.chart-tooltip {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-color: rgba(20, 20, 18, 0.12) !important;
+  min-width: 250px;
+  z-index: 20;
+  pointer-events: none;
+  animation: tooltipFadeIn 0.15s ease-out;
+
+  .tooltip-indicator-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}

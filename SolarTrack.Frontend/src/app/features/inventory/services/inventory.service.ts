@@ -10,7 +10,10 @@ import {
   InventoryDispatchRow,
   GroupedDispatchConsignment,
   InventoryKpiSummary,
-  CustomerAllocationEntry
+  CustomerAllocationEntry,
+  MonthlyFinancialPoint,
+  ExpenseBreakdownItem,
+  ExpensesSummary
 } from '../models/inventory.model';
 import { InstallmentRow } from '../../../core/models/summary.model';
 
@@ -37,6 +40,8 @@ export class InventoryService {
   readonly rawInwards = signal<InventoryInwardRow[]>([]);
   readonly rawDispatches = signal<InventoryDispatchRow[]>([]);
   readonly rawInstallments = signal<InstallmentRow[]>([]);
+  readonly rawShipments = signal<any[]>([]);
+  readonly rawMaterials = signal<any[]>([]);
   readonly categories = signal<string[]>(this.loadCategoriesFromStorage());
 
   // Loading indicator
@@ -222,6 +227,17 @@ export class InventoryService {
       const grp = mapGroup.get(key)!;
       grp.dispatchIds.push(row.DispatchID);
 
+      if (grp.customerAllocations.length === 0 && row.CustomerAllocations) {
+        try {
+          const parsed = typeof row.CustomerAllocations === 'string'
+            ? JSON.parse(row.CustomerAllocations)
+            : row.CustomerAllocations;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            grp.customerAllocations = parsed;
+          }
+        } catch {}
+      }
+
       const itm = itemMap.get((row.ItemCode || '').toLowerCase());
       const itemName = itm?.ItemName || row.ItemCode;
       const unit = itm?.Unit || 'Nos';
@@ -271,14 +287,44 @@ export class InventoryService {
     const dispatches = this.groupedDispatches();
     const inwards = this.groupedInwards();
     const installments = this.rawInstallments();
+    const shipments = this.rawShipments();
+    const materials = this.rawMaterials();
 
-    const warehouseValuation = items.reduce((s, i) => s + i.totalStockValuation, 0);
+    let warehouseValuation = items.reduce((s, i) => s + i.totalStockValuation, 0);
     const totalInHandStock = items.reduce((s, i) => s + Math.max(0, i.inHandQty), 0);
     const totalSkus = items.length;
 
-    const totalDispatchedCost = dispatches.reduce((s, d) => s + d.totalMaterialCost, 0);
-    const totalTransportationCost = dispatches.reduce((s, d) => s + d.transportCost, 0) +
-                               inwards.reduce((s, i) => s + i.transportCost, 0);
+    // Dispatched equipment cost from dispatches table
+    const dispatchesMaterial = dispatches.reduce((s, d) => s + (Number(d.totalMaterialCost) || 0), 0);
+
+    // Dispatched material cost from customer installments (backup/primary when dispatches table is empty)
+    let installmentMaterialCost = 0;
+    let installmentTransportCost = 0;
+    installments.forEach(inst => {
+      const broker = inst.BrokerNumber || '';
+      if (broker.includes('|expenses:')) {
+        try {
+          const exp = JSON.parse(broker.split('|expenses:')[1].split('|')[0]) || {};
+          if (exp.material) installmentMaterialCost += Number(exp.material) || 0;
+          if (exp.transport || exp.delivery) installmentTransportCost += Number(exp.transport || exp.delivery) || 0;
+        } catch {}
+      }
+    });
+
+    const totalDispatchedCost = dispatchesMaterial > 0 ? dispatchesMaterial : installmentMaterialCost;
+
+    // Warehouse Valuation fallback: Total materials purchased minus total dispatched material cost
+    if (warehouseValuation === 0 && materials.length > 0) {
+      const totalPurchased = materials.reduce((s, m) => s + (Number(m.TotalPurchaseValue) || 0), 0);
+      warehouseValuation = Math.max(0, totalPurchased - totalDispatchedCost);
+    }
+
+    // Total transportation: dispatches transport + inwards transport + shipments transport + installments transport
+    const dispatchesTransport = dispatches.reduce((s, d) => s + (Number(d.transportCost) || 0), 0);
+    const inwardsTransport = inwards.reduce((s, i) => s + (Number(i.transportCost) || 0), 0);
+    const shipmentsTransport = shipments.reduce((s, sh) => s + (Number(sh.TransportationCost) || 0), 0);
+
+    const totalTransportationCost = dispatchesTransport + inwardsTransport + shipmentsTransport + installmentTransportCost;
 
     const totalTurnover = installments.reduce((s, c) => s + (Number(c.CommittedPrice) || 0), 0);
 
@@ -289,6 +335,243 @@ export class InventoryService {
       warehouseValuation,
       totalInHandStock,
       totalSkus
+    };
+  });
+
+  // Computed: Month-wise Financials for Curve Charts
+  readonly monthlyFinancials = computed<MonthlyFinancialPoint[]>(() => {
+    const installments = this.rawInstallments();
+    const dispatches = this.groupedDispatches();
+    const inwards = this.groupedInwards();
+    const shipments = this.rawShipments();
+    const materials = this.rawMaterials();
+
+    const monthMap = new Map<string, {
+      turnover: number;
+      dispatched: number;
+      inwardPurchase: number;
+      transport: number;
+    }>();
+
+    const getMonthKey = (dStr?: string | null): string | null => {
+      if (!dStr || typeof dStr !== 'string') return null;
+      const m = dStr.match(/^(\d{4})-(\d{2})/);
+      return m ? `${m[1]}-${m[2]}` : null;
+    };
+
+    const ensureMonth = (k: string) => {
+      if (!monthMap.has(k)) {
+        monthMap.set(k, { turnover: 0, dispatched: 0, inwardPurchase: 0, transport: 0 });
+      }
+      return monthMap.get(k)!;
+    };
+
+    // 1. Installments (Turnover & Expenses)
+    installments.forEach(inst => {
+      const dateKey = getMonthKey(inst.LoginDate) || getMonthKey(inst.AgreementDate);
+      if (dateKey) {
+        const mObj = ensureMonth(dateKey);
+        mObj.turnover += Number(inst.CommittedPrice) || 0;
+
+        const broker = inst.BrokerNumber || '';
+        if (broker.includes('|expenses:')) {
+          try {
+            const exp = JSON.parse(broker.split('|expenses:')[1].split('|')[0]) || {};
+            const dispKey = getMonthKey(inst.MaterialDispatchedDate) || dateKey;
+            const dispObj = ensureMonth(dispKey);
+            if (exp.material) dispObj.dispatched += Number(exp.material) || 0;
+            if (exp.transport || exp.delivery) mObj.transport += Number(exp.transport || exp.delivery) || 0;
+          } catch {}
+        }
+      }
+    });
+
+    // 2. Dispatches (Material and Transport Outflows)
+    dispatches.forEach(disp => {
+      const dateKey = getMonthKey(disp.date);
+      if (dateKey) {
+        const mObj = ensureMonth(dateKey);
+        mObj.dispatched += Number(disp.totalMaterialCost) || 0;
+        mObj.transport += Number(disp.transportCost) || 0;
+      }
+    });
+
+    // 3. Inwards (Material Purchases & Freight)
+    inwards.forEach(inw => {
+      const dateKey = getMonthKey(inw.date);
+      if (dateKey) {
+        const mObj = ensureMonth(dateKey);
+        mObj.inwardPurchase += Number(inw.totalMaterialCost) || 0;
+        mObj.transport += Number(inw.transportCost) || 0;
+      }
+    });
+
+    // 4. Shipments & Materials (Purchase Logistics and Stock Inward)
+    const shipmentDateMap = new Map<string, string>();
+    shipments.forEach(sh => {
+      const dateKey = getMonthKey(sh.PurchaseDate);
+      if (dateKey) {
+        const mObj = ensureMonth(dateKey);
+        mObj.transport += Number(sh.TransportationCost) || 0;
+        if (sh.ShipmentNo) {
+          shipmentDateMap.set(sh.ShipmentNo, dateKey);
+        }
+      }
+    });
+
+    materials.forEach(mat => {
+      const shKey = mat.ShipmentNo ? shipmentDateMap.get(mat.ShipmentNo) : null;
+      if (shKey) {
+        const mObj = ensureMonth(shKey);
+        mObj.inwardPurchase += Number(mat.TotalPurchaseValue) || 0;
+      }
+    });
+
+    // Target relevant active calendar months (e.g. 2026-01 to 2026-11)
+    let sortedKeys = Array.from(monthMap.keys())
+      .filter(k => k >= '2026-01' && k <= '2026-12')
+      .sort();
+
+    if (sortedKeys.length === 0) {
+      for (let m = 1; m <= 11; m++) {
+        const k = `2026-${String(m).padStart(2, '0')}`;
+        ensureMonth(k);
+        sortedKeys.push(k);
+      }
+    }
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    let runningValuation = 0;
+    const result: MonthlyFinancialPoint[] = [];
+
+    sortedKeys.forEach(k => {
+      const [y, mStr] = k.split('-');
+      const mIdx = parseInt(mStr, 10) - 1;
+      const monthLabel = `${monthNames[mIdx] || mStr} '${y.slice(2)}`;
+      const mObj = monthMap.get(k)!;
+
+      // Cumulative inventory valuation curve
+      runningValuation = Math.max(0, runningValuation + mObj.inwardPurchase - mObj.dispatched);
+
+      result.push({
+        monthKey: k,
+        monthLabel,
+        totalTurnover: Math.round(mObj.turnover * 100) / 100,
+        dispatchedCost: Math.round(mObj.dispatched * 100) / 100,
+        warehouseValuation: Math.round(runningValuation * 100) / 100,
+        transportationCost: Math.round(mObj.transport * 100) / 100
+      });
+    });
+
+    return result;
+  });
+
+  // Computed: Expenses Breakdown for Pie/Donut Chart
+  readonly expensesBreakdown = computed<ExpensesSummary>(() => {
+    const installments = this.rawInstallments();
+    const dispatches = this.groupedDispatches();
+    const inwards = this.groupedInwards();
+    const shipments = this.rawShipments();
+
+    let materialCost = 0;
+    let installationCost = 0;
+    let transportationCost = 0;
+    let otherCost = 0;
+
+    // 1. From Installments
+    installments.forEach(inst => {
+      const broker = inst.BrokerNumber || '';
+      if (broker.includes('|expenses:')) {
+        try {
+          const exp = JSON.parse(broker.split('|expenses:')[1].split('|')[0]) || {};
+          if (exp.material) materialCost += Number(exp.material) || 0;
+          if (exp.install) installationCost += Number(exp.install) || 0;
+          if (exp.transport || exp.delivery) transportationCost += Number(exp.transport || exp.delivery) || 0;
+          if (exp.other) otherCost += Number(exp.other) || 0;
+        } catch {}
+      }
+    });
+
+    // 2. From Dispatches
+    const dispatchMaterial = dispatches.reduce((s, d) => s + (Number(d.totalMaterialCost) || 0), 0);
+    if (dispatchMaterial > 0) {
+      materialCost = dispatchMaterial;
+    }
+    const dispatchTransport = dispatches.reduce((s, d) => s + (Number(d.transportCost) || 0), 0);
+    transportationCost += dispatchTransport;
+
+    dispatches.forEach(d => {
+      (d.customerAllocations || []).forEach(ca => {
+        if (ca.installCost) installationCost += Number(ca.installCost) || 0;
+        if (ca.otherCost) otherCost += Number(ca.otherCost) || 0;
+      });
+    });
+
+    // 3. From Inwards
+    const inwardTransport = inwards.reduce((s, i) => s + (Number(i.transportCost) || 0), 0);
+    transportationCost += inwardTransport;
+
+    // 4. From Shipments
+    const shipmentTransport = shipments.reduce((s, sh) => s + (Number(sh.TransportationCost) || 0), 0);
+    transportationCost += shipmentTransport;
+
+    const totalExpenses = materialCost + transportationCost + installationCost + otherCost;
+
+    const calcPct = (amt: number): number => {
+      if (totalExpenses <= 0) return 0;
+      return Math.round((amt / totalExpenses) * 1000) / 10;
+    };
+
+    const items: ExpenseBreakdownItem[] = [
+      {
+        id: 'material',
+        label: 'Material Cost',
+        amount: materialCost,
+        percentage: calcPct(materialCost),
+        color: '#6366f1',
+        accentBg: 'rgba(99, 102, 241, 0.12)',
+        icon: 'boxes',
+        description: 'Solar PV modules, string inverters & balance of system (BOS)'
+      },
+      {
+        id: 'transportation',
+        label: 'Transportation Cost',
+        amount: transportationCost,
+        percentage: calcPct(transportationCost),
+        color: '#0284c7',
+        accentBg: 'rgba(2, 132, 199, 0.12)',
+        icon: 'truck',
+        description: 'Inter-warehouse freight, site dispatch transport & logistics'
+      },
+      {
+        id: 'installation',
+        label: 'Installation Cost',
+        amount: installationCost,
+        percentage: calcPct(installationCost),
+        color: '#f59e0b',
+        accentBg: 'rgba(245, 158, 11, 0.12)',
+        icon: 'zap',
+        description: 'Civil foundation, structural mounting & electrical labor charges'
+      },
+      {
+        id: 'other',
+        label: 'Other Cost',
+        amount: otherCost,
+        percentage: calcPct(otherCost),
+        color: '#10b981',
+        accentBg: 'rgba(16, 185, 129, 0.12)',
+        icon: 'wallet',
+        description: 'Net meter DISCOM processing, testing and site miscellaneous'
+      }
+    ];
+
+    return {
+      materialCost,
+      transportationCost,
+      installationCost,
+      otherCost,
+      totalExpenses,
+      items
     };
   });
 
@@ -311,9 +594,17 @@ export class InventoryService {
       installments: this.http.get<any>('/api/get?table=installments').pipe(
         map(r => (Array.isArray(r) ? r : (r?.data || r?.value || [])) as InstallmentRow[]),
         catchError(() => of([] as InstallmentRow[]))
+      ),
+      shipments: this.http.get<any>('/api/get?table=shipments').pipe(
+        map(r => (Array.isArray(r) ? r : (r?.data || r?.value || []))),
+        catchError(() => of([]))
+      ),
+      materials: this.http.get<any>('/api/get?table=materials').pipe(
+        map(r => (Array.isArray(r) ? r : (r?.data || r?.value || []))),
+        catchError(() => of([]))
       )
     }).pipe(
-      tap(({ items, inwards, dispatches, installments }) => {
+      tap(({ items, inwards, dispatches, installments, shipments, materials }) => {
         let finalItems = items;
         // If no equipment items registered, provide standard catalog
         if (!finalItems || finalItems.length === 0) {
@@ -323,6 +614,8 @@ export class InventoryService {
         this.rawInwards.set(inwards || []);
         this.rawDispatches.set(dispatches || []);
         this.rawInstallments.set(installments || []);
+        this.rawShipments.set(shipments || []);
+        this.rawMaterials.set(materials || []);
         this.isLoading.set(false);
       }),
       catchError(err => {
@@ -434,9 +727,9 @@ export class InventoryService {
         TotalCost: item.totalCost,
         Location: header.location,
         Remarks: header.remarks,
-        DocumentName: primaryDocName,
-        DocumentData: primaryDocData,
-        Documents: docsJson,
+        DocumentName: idx === 0 ? primaryDocName : null,
+        DocumentData: idx === 0 ? primaryDocData : null,
+        Documents: idx === 0 ? docsJson : null,
         CreatedAt: new Date().toISOString()
       };
     });
@@ -507,10 +800,10 @@ export class InventoryService {
         TransportCost: header.transportCost,
         Vehicle: header.vehicle,
         Remarks: header.remarks,
-        CustomerAllocations: allocJson,
-        DocumentName: primaryDocName,
-        DocumentData: primaryDocData,
-        Documents: docsJson,
+        CustomerAllocations: idx === 0 ? allocJson : null,
+        DocumentName: idx === 0 ? primaryDocName : null,
+        DocumentData: idx === 0 ? primaryDocData : null,
+        Documents: idx === 0 ? docsJson : null,
         CreatedAt: new Date().toISOString()
       };
     });

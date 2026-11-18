@@ -104,4 +104,25 @@
       </div>
     </div>
   </div>
+
+  <!-- Visual Analytics Section: Month-wise Trajectory Curve & Total Expenses Breakdown -->
+  @if (showCharts) {
+    <div class="row g-3 mt-1">
+      <!-- 1. Month-wise Curve Chart -->
+      <div class="col-xl-8 col-12">
+        <app-inventory-curve-chart
+          [monthlyData]="monthlyData"
+          [isLoading]="invService.isLoading()">
+        </app-inventory-curve-chart>
+      </div>
+
+      <!-- 2. Total Expenses Breakdown Pie Chart -->
+      <div class="col-xl-4 col-12">
+        <app-inventory-expenses-pie
+          [expensesSummary]="expensesSummary"
+          [isLoading]="invService.isLoading()">
+        </app-inventory-expenses-pie>
+      </div>
+    </div>
+  }
 </div>

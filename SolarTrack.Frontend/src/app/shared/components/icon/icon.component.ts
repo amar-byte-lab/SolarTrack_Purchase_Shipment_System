@@ -215,6 +215,10 @@ import { CommonModule } from '@angular/common';
         <ng-container *ngSwitchCase="'power'">
           <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
         </ng-container>
+        <!-- pie-chart -->
+        <ng-container *ngSwitchCase="'pie-chart'">
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+        </ng-container>
       </ng-container>
     </svg>
   `

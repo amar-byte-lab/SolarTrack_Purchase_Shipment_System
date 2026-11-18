@@ -12,6 +12,17 @@ if (int.TryParse(portStr, out var port))
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
 
+// Configure Request Limits (up to 100 MB for file uploads & batch imports)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 104_857_600;
+});
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 104_857_600;
+    options.ValueLengthLimit = 104_857_600;
+});
+
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

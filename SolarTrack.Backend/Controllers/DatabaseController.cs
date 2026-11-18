@@ -4,6 +4,7 @@ using SolarTrack.Backend.Services;
 namespace SolarTrack.Backend.Controllers;
 
 [ApiController]
+[DisableRequestSizeLimit]
 public class DatabaseController : ControllerBase
 {
     private readonly IDatabaseService _db;

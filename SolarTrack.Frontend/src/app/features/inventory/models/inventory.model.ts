@@ -155,3 +155,32 @@ export interface InventoryKpiSummary {
   totalInHandStock: number;
   totalSkus: number;
 }
+
+export interface MonthlyFinancialPoint {
+  monthKey: string;
+  monthLabel: string;
+  totalTurnover: number;
+  dispatchedCost: number;
+  warehouseValuation: number;
+  transportationCost: number;
+}
+
+export interface ExpenseBreakdownItem {
+  id: 'transportation' | 'installation' | 'material' | 'other';
+  label: string;
+  amount: number;
+  percentage: number;
+  color: string;
+  accentBg: string;
+  icon: string;
+  description: string;
+}
+
+export interface ExpensesSummary {
+  materialCost: number;
+  transportationCost: number;
+  installationCost: number;
+  otherCost: number;
+  totalExpenses: number;
+  items: ExpenseBreakdownItem[];
+}

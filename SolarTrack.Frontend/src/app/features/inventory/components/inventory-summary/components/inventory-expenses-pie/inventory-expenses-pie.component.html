@@ -1,0 +1,139 @@
+<div class="pie-chart-card border rounded-3 bg-white p-3 p-md-4 shadow-xs h-100 d-flex flex-column justify-content-between">
+  
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="pie-chart-icon bg-info-subtle text-info d-inline-flex align-items-center justify-content-center rounded-2">
+          <app-icon name="pie-chart" [size]="16"></app-icon>
+        </div>
+        <h6 class="fw-bold text-dark m-0 fs-7">Total Expenses Breakdown</h6>
+      </div>
+      <div class="text-secondary fs-9 mt-0.5">
+        Transportation, Installation, Material &amp; Other Costs
+      </div>
+    </div>
+
+    <span class="badge bg-light text-dark border font-monospace fs-9 py-1 px-2 rounded-pill">
+      Total: ₹{{ (summary.totalExpenses || 0) | number:'1.2-2' }}
+    </span>
+  </div>
+
+  <!-- SVG Donut Chart Section -->
+  <div class="donut-container position-relative d-flex align-items-center justify-content-center my-2">
+    @if (isLoading) {
+      <div class="pie-loading-overlay d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
+        <span class="fs-8 text-secondary">Loading expenses...</span>
+      </div>
+    }
+
+    <svg 
+      class="donut-svg" 
+      viewBox="0 0 320 320" 
+      width="240" 
+      height="240"
+      (mouseleave)="onSliceLeave()">
+      <defs>
+        <!-- Subtle shadow filter for slices -->
+        <filter id="pieSliceShadow" x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+        </filter>
+      </defs>
+
+      <!-- Fallback circle if total is 0 -->
+      @if (slices().length === 0) {
+        <circle 
+          cx="160" 
+          cy="160" 
+          r="100" 
+          fill="none" 
+          stroke="#e2e8f0" 
+          stroke-width="40"/>
+      }
+
+      <!-- Slices -->
+      @for (slice of slices(); track slice.item.id) {
+        <path
+          [attr.d]="slice.pathData"
+          [attr.fill]="slice.item.color"
+          stroke="#ffffff"
+          stroke-width="2.5"
+          stroke-linejoin="round"
+          filter="url(#pieSliceShadow)"
+          class="pie-slice transition-transform"
+          [class.active-slice]="activeHoverId() === slice.item.id"
+          (mouseenter)="onSliceHover(slice.item.id)"/>
+      }
+    </svg>
+
+    <!-- Dynamic Donut Center Display -->
+    <div class="donut-center text-center pointer-events-none px-2">
+      @if (hoveredItem()) {
+        <!-- Hovered Slice State -->
+        <div class="fs-9 text-uppercase tracking-wider fw-bold text-muted mb-0.5">
+          {{ hoveredItem()!.label }}
+        </div>
+        <div class="fs-5 fw-bold font-monospace text-dark line-height-1">
+          ₹{{ hoveredItem()!.amount | number:'1.0-0' }}
+        </div>
+        <div class="badge mt-1 rounded-pill fs-9 py-0.5 px-2" [style.background-color]="hoveredItem()!.accentBg" [style.color]="hoveredItem()!.color">
+          {{ hoveredItem()!.percentage }}% of Expenses
+        </div>
+      } @else {
+        <!-- Default Overall Total State -->
+        <div class="fs-9 text-uppercase tracking-wider fw-bold text-secondary mb-0.5">
+          TOTAL EXPENSES
+        </div>
+        <div class="fs-5 fw-bold font-monospace text-dark line-height-1">
+          ₹{{ summary.totalExpenses | number:'1.0-0' }}
+        </div>
+        <div class="text-muted fs-9 mt-1">
+          4 Operating Pillars
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Detailed Category Breakdown Cards -->
+  <div class="expense-breakdown-list d-flex flex-column gap-2 mt-2 pt-2 border-top">
+    @for (item of summary.items; track item.id) {
+      <div 
+        class="expense-row p-2 rounded-2 border transition-all cursor-pointer"
+        [class.active-row]="activeHoverId() === item.id"
+        [style.--row-accent]="item.color"
+        (mouseenter)="onSliceHover(item.id)"
+        (mouseleave)="onSliceLeave()">
+        
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <div class="d-flex align-items-center gap-1.5">
+            <span class="category-dot" [style.background-color]="item.color"></span>
+            <span class="fs-8 fw-semibold text-dark">{{ item.label }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="font-monospace fs-8 fw-bold text-dark">
+              ₹{{ item.amount | number:'1.2-2' }}
+            </span>
+            <span 
+              class="badge rounded-pill fs-9 font-monospace py-0.5 px-1.5"
+              [style.background-color]="item.accentBg"
+              [style.color]="item.color">
+              {{ item.percentage }}%
+            </span>
+          </div>
+        </div>
+
+        <!-- Mini Visual Progress Bar -->
+        <div class="progress progress-mini rounded-pill" style="height: 4px; background: rgba(0,0,0,0.06);">
+          <div 
+            class="progress-bar rounded-pill" 
+            role="progressbar" 
+            [style.width.%]="item.percentage" 
+            [style.background-color]="item.color">
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>

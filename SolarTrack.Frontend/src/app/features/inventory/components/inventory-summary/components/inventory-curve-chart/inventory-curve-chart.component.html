@@ -1,0 +1,264 @@
+<div class="curve-chart-card border rounded-3 bg-white p-3 p-md-4 shadow-xs position-relative h-100 d-flex flex-column justify-content-between">
+  
+  <!-- Header & Legend Bar -->
+  <div>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="curve-chart-icon bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center rounded-2">
+            <app-icon name="trending-up" [size]="16"></app-icon>
+          </div>
+          <h6 class="fw-bold text-dark m-0 fs-7">Monthly Financial &amp; Inventory Trajectory</h6>
+        </div>
+        <div class="text-secondary fs-9 mt-0.5">
+          Comparative month-wise curve of Turnover, Material Dispatches, Stock Valuation &amp; Logistics
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-1.5 fs-9 text-muted font-monospace">
+        <span class="badge bg-light text-secondary border py-1 px-2 rounded-pill">
+          {{ monthlyData.length }} Months Analyzed (FY 2026)
+        </span>
+      </div>
+    </div>
+
+    <!-- Interactive Series Legend Toggles -->
+    <div class="legend-toggles d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom">
+      @for (s of seriesList(); track s.key) {
+        <button
+          type="button"
+          class="btn btn-sm legend-pill d-inline-flex align-items-center gap-2 py-1 px-2.5 rounded-pill fs-8 transition-all"
+          [class.active]="s.visible"
+          [style.--series-color]="s.color"
+          [style.--series-bg]="s.accentBg"
+          (click)="toggleSeries(s.key)"
+          [title]="'Click to toggle ' + s.label">
+          <span class="legend-dot" [style.background-color]="s.color"></span>
+          <span class="legend-label fw-medium">{{ s.label }}</span>
+          <span class="legend-val font-monospace fs-9 fw-bold">
+            {{ formatCurrencyAbbr(getSeriesTotal(s.key)) }}
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- SVG Chart Canvas Area -->
+  <div class="chart-canvas-wrapper position-relative flex-grow-1" (mouseleave)="onMouseLeave()">
+    @if (isLoading) {
+      <div class="chart-loading-overlay d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
+        <span class="fs-8 text-secondary">Computing month-wise trajectory...</span>
+      </div>
+    }
+
+    <svg
+      class="curve-svg w-100"
+      [attr.viewBox]="'0 0 ' + viewBoxWidth + ' ' + viewBoxHeight"
+      preserveAspectRatio="xMidYMid meet"
+      (mousemove)="onMouseMove($event)">
+      
+      <!-- Gradient Definitions -->
+      <defs>
+        <!-- Turnover Gradient -->
+        <linearGradient id="gradTurnover" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff4500" stop-opacity="0.30"/>
+          <stop offset="100%" stop-color="#ff4500" stop-opacity="0.01"/>
+        </linearGradient>
+
+        <!-- Dispatched Cost Gradient -->
+        <linearGradient id="gradDispatched" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.01"/>
+        </linearGradient>
+
+        <!-- Warehouse Valuation Gradient -->
+        <linearGradient id="gradValuation" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#10b981" stop-opacity="0.01"/>
+        </linearGradient>
+
+        <!-- Transportation Gradient -->
+        <linearGradient id="gradTransport" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#0284c7" stop-opacity="0.01"/>
+        </linearGradient>
+
+        <!-- Subtle Glow Filter -->
+        <filter id="curveGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.2"/>
+        </filter>
+      </defs>
+
+      <!-- Horizontal Grid Lines & Y-Axis Labels -->
+      @for (tick of yTicks(); track tick.val) {
+        <g class="grid-row">
+          <line
+            [attr.x1]="padLeft"
+            [attr.y1]="tick.y"
+            [attr.x2]="viewBoxWidth - padRight"
+            [attr.y2]="tick.y"
+            class="grid-line"
+            stroke="rgba(20, 20, 18, 0.07)"
+            stroke-dasharray="3 3"/>
+          <text
+            [attr.x]="padLeft - 10"
+            [attr.y]="tick.y + 4"
+            class="y-axis-label font-monospace"
+            text-anchor="end"
+            fill="#8c8983"
+            font-size="11">
+            {{ tick.label }}
+          </text>
+        </g>
+      }
+
+      <!-- Chart Baseline -->
+      <line
+        [attr.x1]="padLeft"
+        [attr.y1]="baselineY"
+        [attr.x2]="viewBoxWidth - padRight"
+        [attr.y2]="baselineY"
+        stroke="rgba(20, 20, 18, 0.15)"
+        stroke-width="1.2"/>
+
+      <!-- X-Axis Month Labels & Ticks -->
+      @for (pt of pointCoords(); track pt.monthKey; let idx = $index) {
+        <g class="x-axis-point">
+          <line
+            [attr.x1]="pt.x"
+            [attr.y1]="baselineY"
+            [attr.x2]="pt.x"
+            [attr.y2]="baselineY + 4"
+            stroke="rgba(20, 20, 18, 0.2)"/>
+          <text
+            [attr.x]="pt.x"
+            [attr.y]="baselineY + 18"
+            class="x-axis-label"
+            text-anchor="middle"
+            [attr.fill]="activeHoverIndex() === idx ? '#141412' : '#71717a'"
+            [attr.font-weight]="activeHoverIndex() === idx ? 'bold' : 'normal'"
+            font-size="11">
+            {{ pt.monthLabel }}
+          </text>
+        </g>
+      }
+
+      <!-- Series Area Fills (Underneath Curves) -->
+      @for (s of seriesList(); track s.key) {
+        @if (s.visible) {
+          <path
+            [attr.d]="getAreaPath(s.key)"
+            [attr.fill]="'url(#' + s.gradientId + ')'"
+            class="curve-area transition-opacity"/>
+        }
+      }
+
+      <!-- Series Smooth Bézier Curves -->
+      @for (s of seriesList(); track s.key) {
+        @if (s.visible) {
+          <path
+            [attr.d]="getSplinePath(s.key)"
+            fill="none"
+            [attr.stroke]="s.color"
+            stroke-width="2.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            filter="url(#curveGlow)"
+            class="curve-line"/>
+        }
+      }
+
+      <!-- Series Points / Node Dots -->
+      @for (s of seriesList(); track s.key) {
+        @if (s.visible) {
+          @for (pt of pointCoords(); track pt.monthKey; let idx = $index) {
+            <g class="curve-dot-group">
+              <circle
+                [attr.cx]="pt.points[s.key].x"
+                [attr.cy]="pt.points[s.key].y"
+                [attr.r]="activeHoverIndex() === idx ? 5.5 : 3.5"
+                [attr.fill]="s.color"
+                stroke="#ffffff"
+                [attr.stroke-width]="activeHoverIndex() === idx ? 2.5 : 1.5"
+                class="curve-dot transition-all"/>
+            </g>
+          }
+        }
+      }
+
+      <!-- Interactive Crosshair & Vertical Guide Line on Hover -->
+      @if (activeHoverIndex() !== null && pointCoords()[activeHoverIndex()!]) {
+        <!-- Vertical Guideline -->
+        <line
+          [attr.x1]="pointCoords()[activeHoverIndex()!].x"
+          [attr.y1]="padTop"
+          [attr.x2]="pointCoords()[activeHoverIndex()!].x"
+          [attr.y2]="baselineY"
+          stroke="#475569"
+          stroke-width="1.2"
+          stroke-dasharray="4 3"
+          class="hover-guide-line"/>
+
+        <!-- Active Month Glow Rings for Each Series -->
+        @for (s of seriesList(); track s.key) {
+          @if (s.visible) {
+            <circle
+              [attr.cx]="pointCoords()[activeHoverIndex()!].points[s.key].x"
+              [attr.cy]="pointCoords()[activeHoverIndex()!].points[s.key].y"
+              r="8"
+              [attr.fill]="s.color"
+              fill-opacity="0.2"
+              class="active-halo"/>
+          }
+        }
+      }
+    </svg>
+
+    <!-- Floating Interactive Tooltip -->
+    @if (activeHoverIndex() !== null && pointCoords()[activeHoverIndex()!]) {
+      @let activePt = pointCoords()[activeHoverIndex()!];
+      <div 
+        class="chart-tooltip p-2.5 rounded-3 shadow-lg border"
+        [style.left.px]="activePt.x > (viewBoxWidth - 240) ? activePt.x - 230 : activePt.x + 15"
+        [style.top.px]="30">
+        <div class="tooltip-header d-flex align-items-center justify-content-between pb-1.5 mb-1.5 border-bottom">
+          <span class="fw-bold fs-8 text-dark">{{ activePt.monthLabel }} Financials</span>
+          <span class="badge bg-secondary-subtle text-secondary fs-9 font-monospace">{{ activePt.monthKey }}</span>
+        </div>
+        <div class="tooltip-body d-flex flex-column gap-1.5">
+          @for (s of seriesList(); track s.key) {
+            @if (s.visible) {
+              <div class="tooltip-row d-flex align-items-center justify-content-between gap-3 fs-8">
+                <div class="d-flex align-items-center gap-1.5">
+                  <span class="tooltip-indicator-dot" [style.background-color]="s.color"></span>
+                  <span class="text-secondary fs-9">{{ s.label }}:</span>
+                </div>
+                <span class="fw-bold font-monospace fs-8" [style.color]="s.color">
+                  ₹{{ (activePt.points[s.key].value || 0) | number:'1.2-2' }}
+                </span>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Footer Quick Metrics Strip -->
+  <div class="chart-footer-strip pt-2 mt-2 border-top d-flex flex-wrap align-items-center justify-content-between gap-2 text-muted fs-9">
+    <div class="d-flex align-items-center gap-3">
+      <span>
+        <strong class="text-dark">Dynamic Bézier Spline:</strong> Smooth curve projection
+      </span>
+      <span class="d-none d-sm-inline">•</span>
+      <span class="d-none d-sm-inline">
+        Hover on any month for line breakdown
+      </span>
+    </div>
+    <div class="text-secondary font-monospace">
+      Click series chips to isolate individual curves
+    </div>
+  </div>
+
+</div>
