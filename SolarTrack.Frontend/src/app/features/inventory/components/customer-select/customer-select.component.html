@@ -49,7 +49,7 @@
             class="form-control form-control-sm border-start-0 ps-0 fs-8 shadow-none" 
             [ngModel]="searchQuery()" 
             (ngModelChange)="searchQuery.set($event)"
-            placeholder="Search customer by name, district, consumer no..." 
+            placeholder="Search customer..." 
             autofocus>
           @if (searchQuery()) {
             <button 
@@ -70,24 +70,9 @@
             [class.selected]="cust.Name === selectedName"
             (click)="selectCustomer(cust, $event)">
             
-            <div class="d-flex flex-column text-truncate min-w-0">
-              <div class="d-flex align-items-center gap-1.5 text-truncate">
-                <span class="fw-semibold text-dark fs-8 text-truncate">{{ cust.Name }}</span>
-                <span class="text-secondary fs-9">({{ cust.District || 'No District' }})</span>
-              </div>
-              @if (cust.ConsumerNo || cust.ProposedCapacity) {
-                <div class="text-muted fs-9 font-monospace">
-                  @if (cust.ConsumerNo) {
-                    <span>No: {{ cust.ConsumerNo }}</span>
-                  }
-                  @if (cust.ConsumerNo && cust.ProposedCapacity) {
-                    <span class="mx-1">•</span>
-                  }
-                  @if (cust.ProposedCapacity) {
-                    <span>{{ cust.ProposedCapacity }} kW</span>
-                  }
-                </div>
-              }
+            <div class="d-flex align-items-center gap-1.5 text-truncate min-w-0">
+              <span class="fw-medium text-dark fs-8 text-truncate">{{ cust.Name }}</span>
+              <span class="text-secondary fs-8">({{ cust.District || 'No District' }})</span>
             </div>
 
             @if (cust.Name === selectedName) {

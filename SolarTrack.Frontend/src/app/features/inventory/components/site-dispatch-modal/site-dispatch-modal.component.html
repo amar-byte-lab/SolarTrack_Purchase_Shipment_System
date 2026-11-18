@@ -388,10 +388,23 @@
                       </app-customer-select>
                     </td>
                     <td>
-                      <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" [(ngModel)]="ca.setCost" (ngModelChange)="recalcCustomerTotal(ca)">
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="any" 
+                        class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" 
+                        [(ngModel)]="ca.setCost" 
+                        (ngModelChange)="onCustomerSetCostChange(ca)">
                     </td>
                     <td>
-                      <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" [(ngModel)]="ca.deliveryCost" (ngModelChange)="recalcCustomerTotal(ca)">
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="any" 
+                        class="form-control form-control-sm text-end font-monospace fs-8 py-0.5 bg-light" 
+                        [(ngModel)]="ca.deliveryCost" 
+                        (ngModelChange)="recalcCustomerTotal(ca)"
+                        title="Proportionately distributed based on Set Cost from Delivery Charge">
                     </td>
                     <td class="text-end font-monospace fw-bold text-dark fs-8">
                       ₹{{ ca.total | number:'1.2-2' }}

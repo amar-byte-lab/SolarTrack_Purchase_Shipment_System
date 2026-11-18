@@ -204,6 +204,7 @@ export class SiteDispatchModalComponent implements OnChanges {
     const rate = Number(this.chargePerKm) || 0;
     if (dist > 0 && rate > 0) {
       this.deliveryCharge = Math.round(dist * rate * 100) / 100;
+      this.distributeDeliveryChargeToCustomers();
     }
   }
 
@@ -213,6 +214,7 @@ export class SiteDispatchModalComponent implements OnChanges {
     if (dist > 0 && charge > 0) {
       this.chargePerKm = Math.round((charge / dist) * 100) / 100;
     }
+    this.distributeDeliveryChargeToCustomers();
   }
 
   addCustomerAllocation(): void {
@@ -227,10 +229,12 @@ export class SiteDispatchModalComponent implements OnChanges {
       remark: '',
       total: 0
     });
+    this.distributeDeliveryChargeToCustomers();
   }
 
   removeCustomerAllocation(index: number): void {
     this.customerAllocations.splice(index, 1);
+    this.distributeDeliveryChargeToCustomers();
   }
 
   onCustomerSelected(ca: CustomerAllocationEntry, cust?: InstallmentRow): void {
@@ -239,6 +243,37 @@ export class SiteDispatchModalComponent implements OnChanges {
       ca.slNo = found.SlNo;
       ca.customerName = found.Name || '';
     }
+  }
+
+  onCustomerSetCostChange(ca: CustomerAllocationEntry): void {
+    this.distributeDeliveryChargeToCustomers();
+  }
+
+  distributeDeliveryChargeToCustomers(): void {
+    const totalDelivery = Math.max(0, Number(this.deliveryCharge) || 0);
+    const count = this.customerAllocations.length;
+    if (count === 0) return;
+
+    const totalSetCost = this.customerAllocations.reduce((sum, ca) => sum + (Math.max(0, Number(ca.setCost)) || 0), 0);
+
+    let allocatedSum = 0;
+    this.customerAllocations.forEach((ca, idx) => {
+      let share = 0;
+      if (idx === count - 1) {
+        // Last customer gets exact remainder to prevent 1-paisa rounding gap
+        share = Math.max(0, Math.round((totalDelivery - allocatedSum) * 100) / 100);
+      } else {
+        if (totalSetCost > 0) {
+          const ratio = (Math.max(0, Number(ca.setCost)) || 0) / totalSetCost;
+          share = Math.round(totalDelivery * ratio * 100) / 100;
+        } else {
+          share = Math.round((totalDelivery / count) * 100) / 100;
+        }
+        allocatedSum += share;
+      }
+      ca.deliveryCost = share;
+      ca.total = Math.round(((Number(ca.setCost) || 0) + share) * 100) / 100;
+    });
   }
 
   recalcCustomerTotal(ca: CustomerAllocationEntry): void {
