@@ -10,7 +10,7 @@
           <div class="dispatch-badge text-warning-emphasis">
               <app-icon name="stock-out" [size]="16"></app-icon>
           </div>
-          <h6 class="modal-title fw-bold text-dark m-0 fs-7">Dispatch Equipment to Site</h6>
+          <h6 class="modal-title fw-bold text-dark m-0 fs-7">{{ editConsignment ? 'Update Site Dispatch' : 'Dispatch Equipment to Site' }}</h6>
         </div>
         <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
       </div>
@@ -468,7 +468,7 @@
           class="btn btn-sm btn-warning px-4 fw-semibold text-dark fs-8" 
           (click)="submitDispatch()" 
           [disabled]="isSubmitting">
-          Confirm Dispatch
+          {{ isSubmitting ? (editConsignment ? 'Updating...' : 'Recording...') : (editConsignment ? 'Update Dispatch' : 'Confirm Dispatch') }}
         </button>
       </div>
 

@@ -10,7 +10,7 @@
           <div class="stock-header-icon bg-primary-subtle text-primary p-1 rounded">
             <app-icon name="stock-in" [size]="16"></app-icon>
           </div>
-          <h6 class="modal-title fw-bold text-dark m-0 fs-7">Stock In Purchase Consignment</h6>
+          <h6 class="modal-title fw-bold text-dark m-0 fs-7">{{ editConsignment ? 'Update Inward Purchase Consignment' : 'Stock In Purchase Consignment' }}</h6>
         </div>
         <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
       </div>
@@ -371,7 +371,7 @@
           (click)="submitStockIn()" 
           [disabled]="isSubmitting">
           <app-icon *ngIf="!isSubmitting" name="check" [size]="13"></app-icon>
-          <span>{{ isSubmitting ? 'Recording...' : 'Confirm Stock In' }}</span>
+          <span>{{ isSubmitting ? (editConsignment ? 'Updating...' : 'Recording...') : (editConsignment ? 'Update Consignment' : 'Confirm Stock In') }}</span>
         </button>
       </div>
 

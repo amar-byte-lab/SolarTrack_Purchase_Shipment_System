@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError, switchMap } from 'rxjs/operators';
 import {
   InventoryItem,
   InventoryItemWithStock,
@@ -112,8 +112,10 @@ export class InventoryService {
       const key = `${dateStr}_${supplierStr}_${locStr}`;
 
       if (!mapGroup.has(key)) {
+        const inwardIdDisplay = (row.InvoiceNo || row.InwardID || '').toString();
         mapGroup.set(key, {
           key,
+          id: inwardIdDisplay,
           date: dateStr,
           supplier: supplierStr,
           location: locStr,
@@ -206,13 +208,16 @@ export class InventoryService {
           } catch {}
         }
 
+        const dispatchIdDisplay = challanStr || (row.DispatchID ? String(row.DispatchID) : '');
         mapGroup.set(key, {
           key,
-          challanNo: challanStr || (row.DispatchID ? String(row.DispatchID) : ''),
+          id: dispatchIdDisplay,
+          challanNo: dispatchIdDisplay,
           date: dateStr,
           siteName: siteStr,
           vehicle: row.Vehicle || '',
           transportCost: Number(row.TransportCost) || 0,
+          distanceKm: Number(row.DistanceKm) || 0,
           isOurProject: true,
           remarks: row.Remarks || '',
           items: [],
@@ -226,6 +231,10 @@ export class InventoryService {
 
       const grp = mapGroup.get(key)!;
       grp.dispatchIds.push(row.DispatchID);
+
+      if (!grp.distanceKm && row.DistanceKm) {
+        grp.distanceKm = Number(row.DistanceKm) || 0;
+      }
 
       if (grp.customerAllocations.length === 0 && row.CustomerAllocations) {
         try {
@@ -759,6 +768,33 @@ export class InventoryService {
     );
   }
 
+  updateStockInConsignment(
+    oldInwardIds: string[],
+    header: {
+      date: string;
+      supplier: string;
+      location: string;
+      transportCost: number;
+      remarks: string;
+      docName?: string;
+      docData?: string;
+      documents?: Array<{ name: string; data?: string }>;
+    },
+    itemsList: Array<{
+      itemCode: string;
+      qty: number;
+      unitPrice: number;
+      gstRate: number;
+      costPerUnit: number;
+      totalCost: number;
+      deliveryShare?: number;
+    }>
+  ): Observable<any> {
+    return this.deleteInwardConsignment(oldInwardIds).pipe(
+      switchMap(() => this.saveStockInConsignment(header, itemsList))
+    );
+  }
+
   // --- Site Dispatches ---
   saveSiteDispatchConsignment(
     header: {
@@ -775,10 +811,11 @@ export class InventoryService {
       docName?: string;
       docData?: string;
       documents?: Array<{ name: string; data?: string }>;
+      challanNo?: string;
     },
     itemsList: Array<{ itemCode: string; qty: number; unitBuyingPrice: number; dispatchedCost: number }>
   ): Observable<any> {
-    const challanNo = 'DSP_' + Date.now().toString().slice(-6);
+    const challanNo = header.challanNo || ('DSP_' + Date.now().toString().slice(-6));
     const allocJson = JSON.stringify(header.customerAllocations || []);
     const docsJson = header.documents && header.documents.length > 0
       ? JSON.stringify(header.documents)
@@ -798,6 +835,7 @@ export class InventoryService {
         UnitBuyingPrice: item.unitBuyingPrice,
         DispatchedCost: item.dispatchedCost,
         TransportCost: header.transportCost,
+        DistanceKm: header.distanceKm !== undefined && header.distanceKm !== null ? Number(header.distanceKm) : null,
         Vehicle: header.vehicle,
         Remarks: header.remarks,
         CustomerAllocations: idx === 0 ? allocJson : null,
@@ -824,6 +862,31 @@ export class InventoryService {
         const set = new Set(dispatchIds);
         this.rawDispatches.update(list => list.filter(r => !set.has(r.DispatchID)));
       })
+    );
+  }
+
+  updateSiteDispatchConsignment(
+    oldDispatchIds: string[],
+    header: {
+      siteName: string;
+      date: string;
+      vehicle: string;
+      transportCost: number;
+      distanceKm?: number;
+      extraDeliveryCost?: number;
+      extraDeliveryComment?: string;
+      remarks: string;
+      isOurProject: boolean;
+      customerAllocations: CustomerAllocationEntry[];
+      docName?: string;
+      docData?: string;
+      documents?: Array<{ name: string; data?: string }>;
+      challanNo?: string;
+    },
+    itemsList: Array<{ itemCode: string; qty: number; unitBuyingPrice: number; dispatchedCost: number }>
+  ): Observable<any> {
+    return this.deleteDispatchConsignment(oldDispatchIds).pipe(
+      switchMap(() => this.saveSiteDispatchConsignment(header, itemsList))
     );
   }
 

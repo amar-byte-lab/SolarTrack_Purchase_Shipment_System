@@ -281,6 +281,7 @@ public class InventoryDispatch
     public decimal UnitBuyingPrice { get; set; }
     public decimal DispatchedCost { get; set; }
     public decimal TransportCost { get; set; }
+    public decimal? DistanceKm { get; set; }
     public string? Vehicle { get; set; }
     public string? Remarks { get; set; }
     public string? CustomerAllocations { get; set; }

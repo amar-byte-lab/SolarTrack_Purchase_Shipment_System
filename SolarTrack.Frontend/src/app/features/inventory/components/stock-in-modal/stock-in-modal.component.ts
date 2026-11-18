@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../services/inventory.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
-import { InventoryItemWithStock } from '../../models/inventory.model';
+import { InventoryItemWithStock, GroupedInwardConsignment } from '../../models/inventory.model';
 import { ItemTreeSelectComponent } from '../item-tree-select/item-tree-select.component';
 
 export interface StockInUploadedDoc {
@@ -56,6 +56,7 @@ export class StockInModalComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() initialItemCodes: string[] = [];
   @Input() initialItemCode?: string;
+  @Input() editConsignment?: GroupedInwardConsignment | null = null;
 
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
@@ -94,8 +95,64 @@ export class StockInModalComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {
-      this.resetForm();
+      if (this.editConsignment) {
+        this.loadEditConsignment(this.editConsignment);
+      } else {
+        this.resetForm();
+      }
     }
+  }
+
+  loadEditConsignment(c: GroupedInwardConsignment): void {
+    this.date = c.date || new Date().toISOString().slice(0, 10);
+    this.supplier = c.supplier || '';
+    this.location = c.location || 'Main Godown';
+    this.transportCost = c.transportCost || 0;
+    this.remarks = c.remarks || '';
+    this.isSubmitting = false;
+
+    if (c.documents && c.documents.length > 0) {
+      this.uploadedDocs.set(
+        c.documents.map(d => ({
+          id: 'doc_' + Math.random().toString(36).substring(2, 7),
+          name: d.name,
+          originalName: d.name,
+          data: d.data || '',
+          sizeFormatted: d.data ? this.formatFileSize(Math.round((d.data.length * 3) / 4)) : 'File',
+          isEditingName: false,
+          tempName: d.name
+        }))
+      );
+    } else {
+      this.uploadedDocs.set([]);
+    }
+
+    if (c.items && c.items.length > 0) {
+      this.itemsList = c.items.map(it => {
+        const q = Number(it.qty) || 0;
+        const up = Number(it.unitPrice) || 0;
+        const gst = Number(it.gstRate ?? 18);
+        const totExcl = Number(it.totalCost) || (q * up);
+        const lineGst = Math.round(totExcl * (gst / 100) * 100) / 100;
+        const totWithGst = Math.round((totExcl + lineGst) * 100) / 100;
+        return {
+          itemCode: it.itemCode,
+          qty: q,
+          unitPrice: up,
+          gstRate: gst,
+          totalExclGst: totExcl,
+          costWithGst: q > 0 ? Math.round((totWithGst / q) * 100) / 100 : Math.round(up * (1 + gst / 100) * 100) / 100,
+          totalWithGst: totWithGst,
+          deliveryShare: 0,
+          deliveryPercent: 0,
+          isDeliveryManual: false,
+          costPerUnit: Number(it.costPerUnit) || up
+        };
+      });
+    } else {
+      this.itemsList = [];
+    }
+    this.recalculateDeliveryShares();
   }
 
   resetForm(): void {
@@ -447,9 +504,16 @@ export class StockInModalComponent implements OnChanges {
       deliveryShare: Number(r.deliveryShare) || 0
     }));
 
-    this.inventoryService.saveStockInConsignment(header, itemsPayload).subscribe({
+    const obs = (this.editConsignment && this.editConsignment.inwardIds?.length > 0)
+      ? this.inventoryService.updateStockInConsignment(this.editConsignment.inwardIds, header, itemsPayload)
+      : this.inventoryService.saveStockInConsignment(header, itemsPayload);
+
+    obs.subscribe({
       next: () => {
-        this.toastService.success(`Stock In consignment from "${header.supplier}" recorded successfully.`);
+        const msg = this.editConsignment
+          ? `Inward purchase consignment updated successfully.`
+          : `Stock In consignment from "${header.supplier}" recorded successfully.`;
+        this.toastService.success(msg);
         this.saved.emit();
         this.onClose();
       },

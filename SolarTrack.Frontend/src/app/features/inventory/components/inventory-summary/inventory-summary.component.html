@@ -1,27 +1,4 @@
 <div class="inventory-summary-container">
-  <!-- Optional Header Section -->
-  @if (showHeader) {
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-3 mb-3 border-bottom">
-      <div class="d-flex align-items-center gap-2">
-        <div class="p-2 rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center">
-          <app-icon name="trending-up" [size]="20"></app-icon>
-        </div>
-        <div>
-          <h5 class="fw-bold text-dark m-0 fs-6">Inventory &amp; Logistics Summary</h5>
-          <div class="text-secondary fs-8">Real-time EPC Warehouse, Project Orders &amp; Site Dispatch Financials</div>
-        </div>
-      </div>
-      <button 
-        type="button" 
-        class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 fs-8" 
-        (click)="refresh()"
-        title="Refresh financial metrics">
-        <app-icon name="refresh" [size]="13"></app-icon>
-        <span>Refresh</span>
-      </button>
-    </div>
-  }
-
   <!-- 4 Key Metrics Grid (Turnover, Dispatched Cost, Warehouse Valuation, Transportation Cost) -->
   <div class="row g-3">
     <!-- 1. Total Project Turnover -->

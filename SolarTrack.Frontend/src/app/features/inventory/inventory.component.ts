@@ -74,6 +74,10 @@ export class InventoryComponent implements OnInit {
   showPriceHistoryModal = signal(false);
   priceHistoryItem = signal<InventoryItemWithStock | null>(null);
 
+  // Edit consignment state
+  consignmentToEditInward = signal<GroupedInwardConsignment | null>(null);
+  consignmentToEditDispatch = signal<GroupedDispatchConsignment | null>(null);
+
   // Selected items for specific Stock In or Stock Out
   selectedItemForStockIn = signal<string | undefined>(undefined);
   selectedItemForStockOut = signal<string | undefined>(undefined);
@@ -358,6 +362,7 @@ export class InventoryComponent implements OnInit {
   }
 
   openStockIn(itemCode?: string): void {
+    this.consignmentToEditInward.set(null);
     if (itemCode) {
       this.selectedItemCodesForStockIn.set([itemCode]);
       this.selectedItemForStockIn.set(itemCode);
@@ -373,6 +378,7 @@ export class InventoryComponent implements OnInit {
   }
 
   openStockOut(itemCode?: string): void {
+    this.consignmentToEditDispatch.set(null);
     if (itemCode) {
       this.selectedItemCodesForStockOut.set([itemCode]);
       this.selectedItemForStockOut.set(itemCode);
@@ -387,8 +393,33 @@ export class InventoryComponent implements OnInit {
     this.showDispatchModal.set(true);
   }
 
+  editInwardConsignment(c: GroupedInwardConsignment): void {
+    this.consignmentToEditInward.set(c);
+    this.showStockInModal.set(true);
+  }
+
+  editDispatchConsignment(c: GroupedDispatchConsignment): void {
+    this.consignmentToEditDispatch.set(c);
+    this.showDispatchModal.set(true);
+  }
+
+  onStockInClosed(): void {
+    this.showStockInModal.set(false);
+    this.consignmentToEditInward.set(null);
+    this.selectedItemForStockIn.set(undefined);
+    this.selectedItemCodesForStockIn.set([]);
+  }
+
+  onDispatchClosed(): void {
+    this.showDispatchModal.set(false);
+    this.consignmentToEditDispatch.set(null);
+    this.selectedItemForStockOut.set(undefined);
+    this.selectedItemCodesForStockOut.set([]);
+  }
+
   onStockInSaved(): void {
     this.showStockInModal.set(false);
+    this.consignmentToEditInward.set(null);
     this.selectedItemForStockIn.set(undefined);
     this.selectedItemCodesForStockIn.set([]);
     this.selectedCodes.set(new Set());
@@ -399,6 +430,7 @@ export class InventoryComponent implements OnInit {
 
   onDispatchSaved(): void {
     this.showDispatchModal.set(false);
+    this.consignmentToEditDispatch.set(null);
     this.selectedItemForStockOut.set(undefined);
     this.selectedItemCodesForStockOut.set([]);
     this.selectedCodes.set(new Set());

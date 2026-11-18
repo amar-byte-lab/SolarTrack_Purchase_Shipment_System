@@ -54,6 +54,7 @@ export interface InventoryInwardRow {
 
 export interface GroupedInwardConsignment {
   key: string;
+  id?: string;
   date: string;
   supplier: string;
   location: string;
@@ -110,6 +111,7 @@ export interface InventoryDispatchRow {
   UnitBuyingPrice: number;
   DispatchedCost: number;
   TransportCost?: number;
+  DistanceKm?: number;
   Vehicle?: string;
   Remarks?: string;
   CustomerAllocations?: string | CustomerAllocationEntry[];
@@ -120,6 +122,7 @@ export interface InventoryDispatchRow {
 
 export interface GroupedDispatchConsignment {
   key: string;
+  id?: string;
   challanNo?: string;
   date: string;
   siteName: string;

@@ -1,23 +1,6 @@
 <div class="pie-chart-card border rounded-3 bg-white p-3 p-md-4 shadow-xs h-100 d-flex flex-column justify-content-between">
   
-  <!-- Header -->
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-    <div>
-      <div class="d-flex align-items-center gap-2">
-        <div class="pie-chart-icon bg-info-subtle text-info d-inline-flex align-items-center justify-content-center rounded-2">
-          <app-icon name="pie-chart" [size]="16"></app-icon>
-        </div>
-        <h6 class="fw-bold text-dark m-0 fs-7">Total Expenses Breakdown</h6>
-      </div>
-      <div class="text-secondary fs-9 mt-0.5">
-        Transportation, Installation, Material &amp; Other Costs
-      </div>
-    </div>
 
-    <span class="badge bg-light text-dark border font-monospace fs-9 py-1 px-2 rounded-pill">
-      Total: ₹{{ (summary.totalExpenses || 0) | number:'1.2-2' }}
-    </span>
-  </div>
 
   <!-- SVG Donut Chart Section -->
   <div class="donut-container position-relative d-flex align-items-center justify-content-center my-2">

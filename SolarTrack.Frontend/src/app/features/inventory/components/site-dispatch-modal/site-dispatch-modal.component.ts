@@ -9,7 +9,8 @@ import { CustomerSelectComponent } from '../customer-select/customer-select.comp
 import {
   InventoryItemWithStock,
   DispatchItemEntry,
-  CustomerAllocationEntry
+  CustomerAllocationEntry,
+  GroupedDispatchConsignment
 } from '../../models/inventory.model';
 import { InstallmentRow } from '../../../../core/models/summary.model';
 
@@ -38,6 +39,7 @@ export class SiteDispatchModalComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() initialItemCodes: string[] = [];
   @Input() initialItemCode?: string;
+  @Input() editConsignment?: GroupedDispatchConsignment | null = null;
 
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
@@ -92,8 +94,65 @@ export class SiteDispatchModalComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {
-      this.resetForm();
+      if (this.editConsignment) {
+        this.loadEditConsignment(this.editConsignment);
+      } else {
+        this.resetForm();
+      }
     }
+  }
+
+  loadEditConsignment(c: GroupedDispatchConsignment): void {
+    this.siteName = c.siteName || '';
+    this.date = c.date || new Date().toISOString().slice(0, 10);
+    this.driver = c.vehicle || '';
+    this.chargePerKm = null;
+    this.distanceKm = c.distanceKm || null;
+    this.deliveryCharge = c.transportCost || 0;
+    this.activeTab = 'items';
+    this.remarks = c.remarks || '';
+    this.customerRemarks = '';
+    this.isSubmitting = false;
+
+    if (c.documents && c.documents.length > 0) {
+      this.uploadedDocs.set(
+        c.documents.map(d => ({
+          id: 'doc_' + Math.random().toString(36).substring(2, 7),
+          name: d.name,
+          originalName: d.name,
+          data: d.data || '',
+          sizeFormatted: d.data ? this.formatFileSize(Math.round((d.data.length * 3) / 4)) : 'File',
+          isEditingName: false,
+          tempName: d.name
+        }))
+      );
+    } else {
+      this.uploadedDocs.set([]);
+    }
+
+    if (c.customerAllocations && c.customerAllocations.length > 0) {
+      this.customerAllocations = c.customerAllocations.map(ca => ({ ...ca }));
+    } else {
+      this.customerAllocations = [];
+    }
+
+    if (c.items && c.items.length > 0) {
+      this.itemsList = c.items.map(it => {
+        const itm = this.availableItemsWithStock.find(i => (i.ItemCode || '').toLowerCase() === it.itemCode.toLowerCase());
+        return {
+          itemCode: it.itemCode,
+          itemName: it.itemName || itm?.ItemName || it.itemCode,
+          qty: Number(it.qty) || 0,
+          unitBuyingPrice: Number(it.unitBuyingPrice) || 0,
+          dispatchedCost: Number(it.dispatchedCost) || 0,
+          unit: it.unit || itm?.Unit || 'Nos',
+          availableStock: itm?.inHandQty || 0
+        };
+      });
+    } else {
+      this.itemsList = [];
+    }
+    this.recalculateCosts();
   }
 
   resetForm(): void {
@@ -414,7 +473,8 @@ export class SiteDispatchModalComponent implements OnChanges {
       customerAllocations: this.customerAllocations,
       docName: docsPayload[0]?.name || undefined,
       docData: docsPayload[0]?.data || undefined,
-      documents: docsPayload
+      documents: docsPayload,
+      challanNo: this.editConsignment?.challanNo || undefined
     };
 
     const itemsPayload = this.itemsList.map(r => ({
@@ -424,9 +484,16 @@ export class SiteDispatchModalComponent implements OnChanges {
       dispatchedCost: Number(r.dispatchedCost) || 0
     }));
 
-    this.inventoryService.saveSiteDispatchConsignment(header, itemsPayload).subscribe({
+    const obs = (this.editConsignment && this.editConsignment.dispatchIds?.length > 0)
+      ? this.inventoryService.updateSiteDispatchConsignment(this.editConsignment.dispatchIds, header, itemsPayload)
+      : this.inventoryService.saveSiteDispatchConsignment(header, itemsPayload);
+
+    obs.subscribe({
       next: () => {
-        this.toastService.success(`Site dispatch to "${header.siteName}" recorded successfully.`);
+        const msg = this.editConsignment
+          ? `Site dispatch to "${header.siteName}" updated successfully.`
+          : `Site dispatch to "${header.siteName}" recorded successfully.`;
+        this.toastService.success(msg);
         this.saved.emit();
         this.onClose();
       },
