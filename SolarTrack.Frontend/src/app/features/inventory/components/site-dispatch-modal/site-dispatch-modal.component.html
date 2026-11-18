@@ -214,8 +214,7 @@
                 type="button" 
                 class="btn btn-sm btn-outline-secondary py-1 px-2.5 d-inline-flex align-items-center gap-1.5 fs-8"
                 (click)="toggleCustomerAllocation()">
-                <app-icon [name]="showCustomerAllocation ? 'chevron-up' : 'plus'" [size]="13"></app-icon>
-                <span>{{ showCustomerAllocation ? 'Hide Customer Allocation' : 'Add / Show Customer-wise Cost Allocation' }}</span>
+                <span>{{ showCustomerAllocation ? 'Hide Customer Allocation' : 'Customer' }}</span>
                 @if (customerAllocations.length > 0) {
                   <span class="badge bg-primary text-white rounded-pill ms-1">{{ customerAllocations.length }}</span>
                 }
