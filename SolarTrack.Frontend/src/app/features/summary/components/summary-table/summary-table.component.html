@@ -308,32 +308,16 @@
                 {{ fmtCurr(item.fin.profit) }}
               </td>
 
-              <!-- Actions (Edit, Deactivate, Remove) -->
+              <!-- Actions (Edit) -->
               <td class="td-col-actions text-center text-nowrap">
                 <div class="d-inline-flex align-items-center gap-1">
-                  <!-- 1. Customer Edit -->
+                  <!-- Customer Edit -->
                   <button 
                     type="button" 
                     class="btn btn-xs btn-outline-primary p-1 lh-1" 
                     (click)="$event.stopPropagation(); openEditCustomer(item.row)" 
                     title="Edit Customer Record">
                     <app-icon name="edit" [size]="12"></app-icon>
-                  </button>
-                  <!-- 2. Customer Deactivate -->
-                  <button 
-                    type="button" 
-                    class="btn btn-xs btn-outline-warning p-1 lh-1 text-dark" 
-                    (click)="$event.stopPropagation(); deactivateCustomer(item.row)" 
-                    title="Deactivate Customer">
-                    <app-icon name="user-x" [size]="12"></app-icon>
-                  </button>
-                  <!-- 3. Customer Remove -->
-                  <button 
-                    type="button" 
-                    class="btn btn-xs btn-outline-danger p-1 lh-1" 
-                    (click)="$event.stopPropagation(); removeCustomer(item.row)" 
-                    title="Remove Customer Record">
-                    <app-icon name="trash" [size]="12"></app-icon>
                   </button>
                 </div>
               </td>
