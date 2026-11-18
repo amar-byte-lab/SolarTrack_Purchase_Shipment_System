@@ -203,6 +203,7 @@ export class InventoryService {
 
         mapGroup.set(key, {
           key,
+          challanNo: challanStr || (row.DispatchID ? String(row.DispatchID) : ''),
           date: dateStr,
           siteName: siteStr,
           vehicle: row.Vehicle || '',
@@ -435,7 +436,8 @@ export class InventoryService {
         Remarks: header.remarks,
         DocumentName: primaryDocName,
         DocumentData: primaryDocData,
-        Documents: docsJson
+        Documents: docsJson,
+        CreatedAt: new Date().toISOString()
       };
     });
 
@@ -508,7 +510,8 @@ export class InventoryService {
         CustomerAllocations: allocJson,
         DocumentName: primaryDocName,
         DocumentData: primaryDocData,
-        Documents: docsJson
+        Documents: docsJson,
+        CreatedAt: new Date().toISOString()
       };
     });
 

@@ -120,6 +120,7 @@ export interface InventoryDispatchRow {
 
 export interface GroupedDispatchConsignment {
   key: string;
+  challanNo?: string;
   date: string;
   siteName: string;
   vehicle: string;

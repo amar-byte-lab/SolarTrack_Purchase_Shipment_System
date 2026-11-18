@@ -283,7 +283,9 @@ public class InventoryDispatch
     public decimal TransportCost { get; set; }
     public string? Vehicle { get; set; }
     public string? Remarks { get; set; }
+    public string? CustomerAllocations { get; set; }
     public string? DocumentName { get; set; }
     public string? DocumentData { get; set; }
+    public string? Documents { get; set; }
     public string? CreatedAt { get; set; }
 }

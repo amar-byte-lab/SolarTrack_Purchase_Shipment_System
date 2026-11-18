@@ -324,25 +324,6 @@
                           <div class="tree-item-details">
                             <div class="d-inline-flex align-items-center gap-2 flex-wrap">
                               <span class="fw-semibold text-dark">{{ item.ItemName }}</span>
-                              <!-- Stock In and Stock Out Buttons right beside item name -->
-                              <div class="tree-stock-actions d-inline-flex align-items-center gap-1">
-                                <button 
-                                  type="button" 
-                                  class="btn btn-xs btn-stock-in d-inline-flex align-items-center gap-1 px-1.5 py-0.5" 
-                                  (click)="openStockIn(item.ItemCode); $event.stopPropagation()" 
-                                  title="Stock In for {{ item.ItemName }}">
-                                  <app-icon name="stock-in" [size]="12"></app-icon>
-                                  <span>In</span>
-                                </button>
-                                <button 
-                                  type="button" 
-                                  class="btn btn-xs btn-stock-out d-inline-flex align-items-center gap-1 px-1.5 py-0.5" 
-                                  (click)="openStockOut(item.ItemCode); $event.stopPropagation()" 
-                                  title="Stock Out / Dispatch for {{ item.ItemName }}">
-                                  <app-icon name="stock-out" [size]="12"></app-icon>
-                                  <span>Out</span>
-                                </button>
-                              </div>
                             </div>
                             @if (item.Description || item.Location) {
                               <div class="text-secondary fs-8 mt-0.5">
@@ -472,9 +453,14 @@
 
                   <!-- Site Name & Remarks -->
                   <td>
-                    <div class="fw-semibold text-dark">{{ c.siteName }}</div>
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                      <span class="fw-semibold text-dark">{{ c.siteName }}</span>
+                      @if (c.challanNo) {
+                        <span class="badge bg-secondary-subtle text-secondary border font-monospace fs-9">{{ c.challanNo }}</span>
+                      }
+                    </div>
                     @if (c.remarks) {
-                      <div class="text-secondary fs-8">{{ c.remarks }}</div>
+                      <div class="text-secondary fs-8 mt-0.5">{{ c.remarks }}</div>
                     }
                   </td>
 

@@ -198,22 +198,7 @@ export class SiteDispatchModalComponent implements OnChanges {
     });
   }
 
-  // Bidirectional calculation between Distance, Charge/km and Delivery Charge
-  onDistanceOrRateChange(): void {
-    const dist = Number(this.distanceKm) || 0;
-    const rate = Number(this.chargePerKm) || 0;
-    if (dist > 0 && rate > 0) {
-      this.deliveryCharge = Math.round(dist * rate * 100) / 100;
-      this.distributeDeliveryChargeToCustomers();
-    }
-  }
-
   onDeliveryChargeChange(): void {
-    const charge = Number(this.deliveryCharge) || 0;
-    const dist = Number(this.distanceKm) || 0;
-    if (dist > 0 && charge > 0) {
-      this.chargePerKm = Math.round((charge / dist) * 100) / 100;
-    }
     this.distributeDeliveryChargeToCustomers();
   }
 
