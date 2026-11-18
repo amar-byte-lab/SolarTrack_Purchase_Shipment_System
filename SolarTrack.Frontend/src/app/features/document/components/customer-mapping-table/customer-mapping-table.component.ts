@@ -20,6 +20,8 @@ export class CustomerMappingTableComponent {
   @Input() maxHeight: string = '500px';
   @Input() showCheckbox: boolean = true;
   @Input() showActions: boolean = false;
+  @Input() hideConsumerAndApplNo: boolean = false;
+  @Input() showStatus: boolean = false;
   @Input() emptyMessage: string = 'No customer records to display.';
   @Input() partnerOptions: string[] = [];
 
@@ -34,7 +36,8 @@ export class CustomerMappingTableComponent {
   readonly defaultStatuses: string[] = ['Active', 'Deactive', 'Pending', 'New Name', 'Duplicate (In Excel)'];
 
   getColspan(): number {
-    return 10 + (this.showCheckbox ? 1 : 0) + (this.showActions ? 1 : 0);
+    const base = (this.hideConsumerAndApplNo ? 7 : 9) + (this.showStatus ? 1 : 0);
+    return base + (this.showCheckbox ? 1 : 0) + (this.showActions ? 1 : 0);
   }
 
   toggleSelectAll(event: Event): void {

@@ -293,35 +293,64 @@
         </div>
 
         <!-- Row 2: Area / District Badges (Horizontal Scrollable Strip from Summary page) -->
-        <div class="mw-chips-scroll-strip mw-district-strip d-flex gap-1 overflow-auto py-1">
-          <button 
-            type="button"
-            class="erp-tag-purple-total"
-            [class.active]="isMappingDistrictSelected('ALL')"
-            (click)="toggleMappingDistrict('ALL')"
-            title="Show all districts">
-            Total: {{ mappingCustomers().length }}
-          </button>
-          <button 
-            *ngFor="let d of mappingDistrictStats()"
-            type="button"
-            class="erp-tag"
-            [class.active]="d.active"
-            (click)="toggleMappingDistrict(d.name)"
-            [title]="'Filter by ' + d.name">
-            {{ d.name }} ({{ d.count }})
-          </button>
+        <div class="d-flex align-items-center gap-1.5 flex-wrap mb-1">
+          <span class="fs-9 text-muted fw-bold text-uppercase" style="min-width: 55px;">District:</span>
+          <div class="mw-chips-scroll-strip mw-district-strip d-flex gap-1 overflow-auto py-1 flex-grow-1">
+            <button 
+              type="button"
+              class="erp-tag-purple-total"
+              [class.active]="isMappingDistrictSelected('ALL')"
+              (click)="toggleMappingDistrict('ALL')"
+              title="Show all districts">
+              All ({{ mappingCustomers().length }})
+            </button>
+            <button 
+              *ngFor="let d of mappingDistrictStats()"
+              type="button"
+              class="erp-tag"
+              [class.active]="d.active"
+              (click)="toggleMappingDistrict(d.name)"
+              [title]="'Filter by ' + d.name">
+              {{ d.name }} ({{ d.count }})
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 3: Status Badges / Filter (Exact matching District filter) -->
+        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+          <span class="fs-9 text-muted fw-bold text-uppercase" style="min-width: 55px;">Status:</span>
+          <div class="mw-chips-scroll-strip mw-status-strip d-flex gap-1 overflow-auto py-1 flex-grow-1">
+            <button 
+              type="button"
+              class="erp-tag-purple-total"
+              [class.active]="isMappingStatusSelected('ALL')"
+              (click)="toggleMappingStatus('ALL')"
+              title="Show all statuses">
+              All ({{ mappingCustomers().length }})
+            </button>
+            <button 
+              *ngFor="let s of mappingStatusStats()"
+              type="button"
+              class="erp-tag"
+              [class.active]="s.active"
+              (click)="toggleMappingStatus(s.name)"
+              [title]="'Filter by ' + s.name">
+              {{ s.name }} ({{ s.count }})
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Reusable Customer Mapping Table Component:
            - First column (checkbox) REMOVED via [showCheckbox]="false"
+           - Consumer No & Appl. Number HIDDEN via [hideConsumerAndApplNo]="true"
            - Action column ADDED via [showActions]="true" (Edit, Deactive, Delete)
            - District, Partner, Status are DROPDOWNS -->
       <app-customer-mapping-table
         [customers]="filteredMappingCustomers()"
         [showCheckbox]="false"
         [showActions]="true"
+        [hideConsumerAndApplNo]="true"
         (customerChange)="onMappingCustomerChange($event)"
         (editClicked)="onEditCustomerFromMapping($event)"
         (deactiveClicked)="onToggleStatusCustomer($event)"

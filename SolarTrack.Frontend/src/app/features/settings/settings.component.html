@@ -27,7 +27,7 @@
             [class.active]="activeTab() === 'users'" 
             (click)="setTab('users')">
             <app-icon name="customer" [size]="14"></app-icon>
-            <span>User &amp; Role (RBAC)</span>
+            <span>User &amp; Role</span>
           </button>
         </li>
       </ul>
@@ -267,7 +267,7 @@
               <div class="rbac-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div class="d-flex align-items-center gap-2">
                   <app-icon name="customer" [size]="16" class="text-primary"></app-icon>
-                  <span class="fw-bold text-dark fs-7">User &amp; Role Access Control (RBAC)</span>
+                  <span class="fw-bold text-dark fs-7">User &amp; Role Access Control</span>
                   <span class="badge bg-primary-subtle text-primary border fs-8">{{ filteredUsers().length }} Users</span>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">

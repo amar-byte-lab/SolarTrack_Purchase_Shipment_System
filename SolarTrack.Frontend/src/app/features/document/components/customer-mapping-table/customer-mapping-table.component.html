@@ -11,15 +11,14 @@
         </th>
         <th class="text-center" style="width: 45px;">SL.</th>
         <th>Consumer Name</th>
-        <th>Consumer No</th>
-        <th>Appl. Number</th>
-        <th>Capacity</th>
+        <th *ngIf="!hideConsumerAndApplNo">Consumer No</th>
+        <th *ngIf="!hideConsumerAndApplNo">Appl. Number</th>
         <th>Sub Div / Div</th>
-        <th>Mobile</th>
-        <th>Submitted On</th>
+        <th>Address</th>
+        <th>Pin</th>
         <th>District</th>
         <th>Partner</th>
-        <th>Status</th>
+        <th *ngIf="showStatus">Status</th>
         <th *ngIf="showActions" class="text-center" style="width: 105px;">Action</th>
       </tr>
     </thead>
@@ -44,26 +43,24 @@
         </td>
 
         <!-- Consumer No -->
-        <td class="font-monospace">{{ c.ConsumerNo || '—' }}</td>
+        <td *ngIf="!hideConsumerAndApplNo" class="font-monospace">{{ c.ConsumerNo || '—' }}</td>
 
         <!-- Appl. Number -->
-        <td class="font-monospace text-nowrap">{{ c.ApplicationNumber || '—' }}</td>
-
-        <!-- Capacity -->
-        <td>{{ c.ProposedCapacity || '—' }}</td>
+        <td *ngIf="!hideConsumerAndApplNo" class="font-monospace text-nowrap">{{ c.ApplicationNumber || '—' }}</td>
 
         <!-- Sub Div / Div -->
         <td class="text-truncate" style="max-width: 150px;" [title]="formatDiscom(c.SubDivision, c.DivisionName, c.CircleName)">
           {{ formatDiscom(c.SubDivision, c.DivisionName, c.CircleName) }}
         </td>
 
-        <!-- Mobile -->
-        <td class="font-monospace text-nowrap">{{ c.MobileNumber || '—' }}</td>
+        <!-- Address -->
+        <td class="text-truncate" style="max-width: 180px;" [title]="c.Address || ''">
+          {{ c.Address || '—' }}
+        </td>
 
-        <!-- Submitted On -->
+        <!-- Pin -->
         <td class="font-monospace text-nowrap">
-          <span>{{ fmtDateExcel(c.LoginDate) }}</span>
-          <span *ngIf="getDelayInfo(c.LoginDate) as d" class="badge erp-delay-badge ms-1" [ngClass]="'delay-' + d.colorType">({{ d.text }})</span>
+          {{ c.PinCode || c.Pin || '—' }}
         </td>
 
         <!-- District Dropdown -->
@@ -92,7 +89,7 @@
         </td>
 
         <!-- Status Dropdown -->
-        <td>
+        <td *ngIf="showStatus">
           <select 
             class="form-select form-select-xs py-0 px-1 fs-8 fw-semibold" 
             [ngClass]="getStatusClass(c.Status)"

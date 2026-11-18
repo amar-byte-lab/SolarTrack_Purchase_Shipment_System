@@ -76,6 +76,7 @@ export class DocumentComponent implements OnInit {
   mappingSearchQuery = signal<string>('');
   mappingSelectedPartners = signal<string[]>([]);
   mappingSelectedDistricts = signal<string[]>([]);
+  mappingSelectedStatuses = signal<string[]>([]);
   isMappingPartnerMenuOpen = false;
   isSavingMapping = signal<boolean>(false);
 
@@ -138,11 +139,35 @@ export class DocumentComponent implements OnInit {
       });
   });
 
+  mappingStatusStats = computed<{ name: string; count: number; active: boolean }[]>(() => {
+    const list = this.mappingCustomers();
+    const map = new Map<string, number>();
+
+    list.forEach(c => {
+      const st = (c.Status && c.Status.trim()) ? c.Status.trim() : 'Active';
+      map.set(st, (map.get(st) || 0) + 1);
+    });
+
+    const sel = this.mappingSelectedStatuses();
+    return Array.from(map.entries())
+      .map(([name, count]) => ({
+        name,
+        count,
+        active: sel.includes(name)
+      }))
+      .sort((a, b) => {
+        if (a.name.toLowerCase() === 'active') return -1;
+        if (b.name.toLowerCase() === 'active') return 1;
+        return a.name.localeCompare(b.name);
+      });
+  });
+
   filteredMappingCustomers = computed(() => {
     let items = this.mappingCustomers();
     const query = this.mappingSearchQuery().trim().toLowerCase();
     const partners = this.mappingSelectedPartners();
     const districts = this.mappingSelectedDistricts();
+    const statuses = this.mappingSelectedStatuses();
 
     if (query) {
       items = items.filter(c => 
@@ -150,6 +175,8 @@ export class DocumentComponent implements OnInit {
         (c.ConsumerNo && c.ConsumerNo.toLowerCase().includes(query)) ||
         (c.ApplicationNumber && c.ApplicationNumber.toLowerCase().includes(query)) ||
         (c.MobileNumber && c.MobileNumber.toLowerCase().includes(query)) ||
+        (c.Address && c.Address.toLowerCase().includes(query)) ||
+        (c.PinCode && c.PinCode.toLowerCase().includes(query)) ||
         (c.District && c.District.toLowerCase().includes(query)) ||
         (c.BrokerName && c.BrokerName.toLowerCase().includes(query)) ||
         (c.SubDivision && c.SubDivision.toLowerCase().includes(query)) ||
@@ -175,6 +202,13 @@ export class DocumentComponent implements OnInit {
           return true;
         }
         return dist ? districts.includes(dist) : false;
+      });
+    }
+
+    if (statuses.length > 0) {
+      items = items.filter(c => {
+        const st = (c.Status && c.Status.trim()) ? c.Status.trim() : 'Active';
+        return statuses.includes(st);
       });
     }
 
@@ -272,6 +306,9 @@ export class DocumentComponent implements OnInit {
       DivisionName: r.DivisionName || workObj.DivisionName || '',
       CircleName: r.CircleName || workObj.CircleName || '',
       MobileNumber: r.MobileNumber || '',
+      Address: r.Address || '',
+      PinCode: r.PinCode || '',
+      Pin: r.PinCode || '',
       District: r.District || '',
       BrokerName: r.BrokerName || '',
       LoginDate: r.LoginDate || '',
@@ -340,10 +377,31 @@ export class DocumentComponent implements OnInit {
     }
   }
 
+  isMappingStatusSelected(statusVal: string): boolean {
+    if (statusVal === 'ALL') {
+      return this.mappingSelectedStatuses().length === 0;
+    }
+    return this.mappingSelectedStatuses().includes(statusVal);
+  }
+
+  toggleMappingStatus(statusVal: string): void {
+    if (statusVal === 'ALL') {
+      this.mappingSelectedStatuses.set([]);
+      return;
+    }
+    const current = this.mappingSelectedStatuses();
+    if (current.includes(statusVal)) {
+      this.mappingSelectedStatuses.set(current.filter(s => s !== statusVal));
+    } else {
+      this.mappingSelectedStatuses.set([...current, statusVal]);
+    }
+  }
+
   clearMappingFilters(): void {
     this.mappingSearchQuery.set('');
     this.mappingSelectedPartners.set([]);
     this.mappingSelectedDistricts.set([]);
+    this.mappingSelectedStatuses.set([]);
   }
 
   onMappingCustomerChange(event: { item: any; field: string }): void {
