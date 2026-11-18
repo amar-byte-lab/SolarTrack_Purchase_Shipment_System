@@ -107,33 +107,44 @@ public class FilesController : ControllerBase
         [FromQuery] string? fileDate,
         [FromQuery] string? billDate)
     {
-        byte[] bytes;
-        var effOriginalName = originalName ?? "file";
+        var effDate = !string.IsNullOrWhiteSpace(fileDate) ? fileDate : (!string.IsNullOrWhiteSpace(billDate) ? billDate : DateTime.UtcNow.ToString("yyyy-MM-dd"));
+        var savedFiles = new List<BillFileInfo>();
 
         if (Request.HasFormContentType && Request.Form.Files.Count > 0)
         {
-            var formFile = Request.Form.Files[0];
-            using var ms = new MemoryStream();
-            await formFile.CopyToAsync(ms);
-            bytes = ms.ToArray();
-            effOriginalName = formFile.FileName;
+            foreach (var formFile in Request.Form.Files)
+            {
+                if (formFile.Length > 0)
+                {
+                    using var ms = new MemoryStream();
+                    await formFile.CopyToAsync(ms);
+                    var bytes = ms.ToArray();
+                    var effName = Request.Form.Files.Count == 1 && !string.IsNullOrWhiteSpace(fileName) ? fileName : "";
+                    var saved = await _fileService.SaveBillFileAsync(effName, formFile.FileName, effDate, bytes);
+                    savedFiles.Add(saved);
+                }
+            }
         }
         else
         {
             using var ms = new MemoryStream();
             await Request.Body.CopyToAsync(ms);
-            bytes = ms.ToArray();
+            var bytes = ms.ToArray();
+            if (bytes.Length > 0)
+            {
+                var effOriginalName = originalName ?? "file";
+                var saved = await _fileService.SaveBillFileAsync(fileName ?? "", effOriginalName, effDate, bytes);
+                savedFiles.Add(saved);
+            }
         }
 
-        if (bytes.Length == 0)
+        if (savedFiles.Count == 0)
         {
-            return BadRequest(new { error = "File content is empty" });
+            return BadRequest(new { error = "File content is empty or no valid files received" });
         }
 
-        var effDate = !string.IsNullOrWhiteSpace(fileDate) ? fileDate : (!string.IsNullOrWhiteSpace(billDate) ? billDate : DateTime.UtcNow.ToString("yyyy-MM-dd"));
-        var newFile = await _fileService.SaveBillFileAsync(fileName ?? "", effOriginalName, effDate, bytes);
-
-        return Ok(new { success = true, file = newFile, bill = newFile });
+        var first = savedFiles[0];
+        return Ok(new { success = true, file = first, bill = first, files = savedFiles, count = savedFiles.Count });
     }
 
     public class DeleteFilePayload
@@ -141,6 +152,14 @@ public class FilesController : ControllerBase
         public string? Id { get; set; }
         public string? FileId { get; set; }
         public string? StoredFileName { get; set; }
+    }
+
+    public class RenameFilePayload
+    {
+        public string? Id { get; set; }
+        public string? FileId { get; set; }
+        public string? StoredFileName { get; set; }
+        public string? NewFileName { get; set; }
     }
 
     [HttpPost("api/bills/delete")]
@@ -152,5 +171,22 @@ public class FilesController : ControllerBase
 
         var removed = _fileService.DeleteBillFile(fileId, stored);
         return Ok(new { success = true, removed });
+    }
+
+    [HttpPost("api/bills/rename")]
+    [HttpPost("api/files/rename")]
+    public IActionResult RenameBill([FromBody] RenameFilePayload? payload)
+    {
+        var fileId = payload?.Id ?? payload?.FileId ?? "";
+        var stored = payload?.StoredFileName ?? "";
+        var newName = payload?.NewFileName ?? "";
+
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            return BadRequest(new { error = "New file name cannot be empty." });
+        }
+
+        var renamed = _fileService.RenameBillFile(fileId, stored, newName);
+        return Ok(new { success = renamed });
     }
 }

@@ -52,3 +52,18 @@
 .fs-7 { font-size: 0.875rem; }
 .fs-8 { font-size: 0.8125rem; }
 .fs-9 { font-size: 0.75rem; }
+
+.btn-xs {
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.hover-primary {
+  cursor: pointer;
+  &:hover {
+    color: var(--st-primary, #0d6efd) !important;
+    text-decoration: underline !important;
+  }
+}

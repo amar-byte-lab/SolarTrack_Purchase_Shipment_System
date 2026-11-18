@@ -22,6 +22,7 @@ public interface IFileStorageService
     List<BillFileInfo> GetBillsList();
     Task<BillFileInfo> SaveBillFileAsync(string rawFileName, string originalName, string fileDate, byte[] fileBytes);
     bool DeleteBillFile(string fileId, string storedFileName);
+    bool RenameBillFile(string fileId, string storedFileName, string newFileName);
 
     Task<string> SaveShipmentDocAsync(string shipmentNo, string fileName, byte[] fileBytes);
     (string fullPath, string contentType, string downloadName)? GetShipmentDoc(string shipmentNo, string fileName);

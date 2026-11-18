@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, of, map, catchError } from 'rxjs';
 import { FileItem } from '../models/file-item.model';
 
 @Injectable({
@@ -48,19 +48,41 @@ export class FilesService {
     );
   }
 
-  uploadFile(file: File, fileDate?: string): Observable<any> {
+  uploadFiles(files: File[], fileDate?: string): Observable<number> {
+    if (!files || files.length === 0) return of(0);
     this.isUploading.set(true);
+
     const formData = new FormData();
-    formData.append('file', file);
+    files.forEach(f => formData.append('files', f, f.name));
 
     const d = fileDate || new Date().toISOString().slice(0, 10);
-    const url = `/api/files/upload?originalName=${encodeURIComponent(file.name)}&fileDate=${d}`;
+    const url = `/api/files/upload?fileDate=${d}`;
 
-    return this.http.post(url, formData).pipe(
+    return this.http.post<{ success: boolean; files?: any[]; count?: number }>(url, formData).pipe(
       tap(() => {
         this.isUploading.set(false);
         this.loadFiles().subscribe();
+      }),
+      map(res => res.files?.length || res.count || files.length),
+      catchError(err => {
+        this.isUploading.set(false);
+        throw err;
       })
+    );
+  }
+
+  uploadFile(file: File, fileDate?: string): Observable<any> {
+    return this.uploadFiles([file], fileDate);
+  }
+
+  renameFile(file: FileItem, newFileName: string): Observable<any> {
+    const payload = {
+      fileId: file.id || file.fileId || '',
+      storedFileName: file.storedFileName || '',
+      newFileName: newFileName.trim()
+    };
+    return this.http.post('/api/files/rename', payload).pipe(
+      tap(() => this.loadFiles().subscribe())
     );
   }
 

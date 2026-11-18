@@ -197,6 +197,32 @@ public class FileStorageService : IFileStorageService
         }
     }
 
+    public bool RenameBillFile(string fileId, string storedFileName, string newFileName)
+    {
+        if (string.IsNullOrWhiteSpace(newFileName)) return false;
+
+        lock (_lock)
+        {
+            var list = GetBillsList();
+            var target = list.FirstOrDefault(f =>
+                (!string.IsNullOrEmpty(fileId) && string.Equals(f.id, fileId, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(storedFileName) && string.Equals(f.storedFileName, storedFileName, StringComparison.OrdinalIgnoreCase)));
+
+            if (target != null)
+            {
+                var cleanName = newFileName.Trim();
+                if (!string.IsNullOrEmpty(target.ext) && !cleanName.EndsWith(target.ext, StringComparison.OrdinalIgnoreCase))
+                {
+                    cleanName += target.ext.ToLowerInvariant();
+                }
+                target.fileName = cleanName;
+                SaveBillsListInternal(list);
+                return true;
+            }
+            return false;
+        }
+    }
+
     public async Task<string> SaveShipmentDocAsync(string shipmentNo, string fileName, byte[] fileBytes)
     {
         var shipDir = Path.Combine(_uploadsDir, shipmentNo);

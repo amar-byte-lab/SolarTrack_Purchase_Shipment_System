@@ -50,10 +50,11 @@
 
       <!-- Upload New File Action -->
       <div class="col-md-3 col-6 text-end">
-        <label class="btn btn-primary btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5" style="cursor: pointer;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span>Upload File</span>
-          <input type="file" class="d-none" (change)="onFileSelected($event)">
+        <label class="btn btn-primary btn-sm w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5" style="cursor: pointer;" [class.disabled]="filesService.isUploading()">
+          <span *ngIf="filesService.isUploading()" class="spinner-border spinner-border-sm me-1" role="status"></span>
+          <svg *ngIf="!filesService.isUploading()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>{{ filesService.isUploading() ? 'Uploading...' : 'Upload Files' }}</span>
+          <input type="file" class="d-none" multiple (change)="onFileSelected($event)" [disabled]="filesService.isUploading()">
         </label>
       </div>
     </div>
@@ -106,10 +107,10 @@
               <td class="text-center text-muted fs-8">{{ i + 1 }}</td>
               <td>
                 <div class="d-flex align-items-center gap-2.5">
-                  <div class="file-icon">📄</div>
+                  <div class="file-icon" (click)="openPreview(f)" style="cursor: pointer;" title="Click to preview">📄</div>
                   <div class="text-truncate" style="max-width: 380px;">
-                    <a [href]="getFileUrl(f)" target="_blank" class="fw-semibold text-dark text-decoration-none">
-                      {{ f.originalName || f.storedFileName }}
+                    <a href="javascript:void(0)" (click)="openPreview(f)" class="fw-semibold text-dark text-decoration-none hover-primary" [title]="'Preview ' + getDisplayName(f)">
+                      {{ getDisplayName(f) }}
                     </a>
                   </div>
                 </div>
@@ -120,17 +121,133 @@
               <td class="text-end font-monospace fs-8 text-secondary">
                 {{ formatSize(f.fileSize || f.size || 0) }}
               </td>
-              <td class="text-center">
-                <div class="btn-group btn-group-sm">
-                  <a [href]="getFileUrl(f)" target="_blank" class="btn btn-outline-secondary btn-xs" title="View / Open">Open</a>
-                  <a [href]="getFileDownloadUrl(f)" class="btn btn-outline-primary btn-xs" title="Download">Download</a>
-                  <button type="button" class="btn btn-outline-danger btn-xs" (click)="onDeleteFile(f)" title="Delete">Delete</button>
+              <td class="text-center text-nowrap" style="width: 140px;">
+                <div class="d-inline-flex align-items-center gap-1">
+                  <!-- 1. View / Preview (Eye Icon) -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-info p-1 lh-1" 
+                    (click)="openPreview(f)" 
+                    title="Preview File">
+                    <app-icon name="eye" [size]="12"></app-icon>
+                  </button>
+                  <!-- 2. Rename (Edit Icon) -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-primary p-1 lh-1" 
+                    (click)="openRename(f)" 
+                    title="Rename File">
+                    <app-icon name="edit" [size]="12"></app-icon>
+                  </button>
+                  <!-- 3. Download (Download Icon) -->
+                  <a 
+                    [href]="getFileDownloadUrl(f)" 
+                    class="btn btn-xs btn-outline-success p-1 lh-1 text-success" 
+                    title="Download File">
+                    <app-icon name="download" [size]="12"></app-icon>
+                  </a>
+                  <!-- 4. Delete (Trash Icon) -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-danger p-1 lh-1" 
+                    (click)="onDeleteFile(f)" 
+                    title="Delete File">
+                    <app-icon name="trash" [size]="12"></app-icon>
+                  </button>
                 </div>
               </td>
             </tr>
           }
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- File Preview Modal (Without Download View) -->
+  <div *ngIf="previewFile" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.65); z-index: 1060;">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 92vw; height: 92vh;">
+      <div class="modal-content shadow-lg border-0 h-100">
+        <div class="modal-header py-2.5 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2 text-truncate me-3">
+            <span class="fs-6">📄</span>
+            <h6 class="modal-title fw-bold text-dark fs-7 text-truncate mb-0">
+              {{ getDisplayName(previewFile) }}
+            </h6>
+            <span class="badge bg-secondary-subtle text-secondary border fs-9">
+              {{ formatSize(previewFile.fileSize || previewFile.size || 0) }}
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <a [href]="getFileDownloadUrl(previewFile)" class="btn btn-sm btn-outline-success py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8" title="Download">
+              <app-icon name="download" [size]="13"></app-icon>
+              <span>Download</span>
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 lh-1" (click)="closePreview()" title="Close">
+              <app-icon name="close" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+        <div class="modal-body p-2 d-flex flex-column align-items-center justify-content-center bg-light-subtle overflow-auto">
+          <!-- Image Preview -->
+          <div *ngIf="isImage(previewFile)" class="text-center p-2">
+            <img [src]="getFileUrl(previewFile)" class="img-fluid rounded border shadow-sm mx-auto" style="max-height: 80vh; object-fit: contain;" [alt]="getDisplayName(previewFile)">
+          </div>
+          <!-- PDF / Text / Code Preview -->
+          <div *ngIf="isPdf(previewFile) || (isPreviewable(previewFile) && !isImage(previewFile))" class="w-100 h-100">
+            <iframe [src]="getSafePreviewUrl(previewFile)" class="w-100 h-100 rounded border-0" style="min-height: 78vh;"></iframe>
+          </div>
+          <!-- Fallback when browser cannot inline preview (e.g. zip, xlsx) -->
+          <div *ngIf="!isPreviewable(previewFile)" class="text-center py-5">
+            <div class="mb-3 fs-1">📦</div>
+            <h6 class="fw-bold text-dark mb-1">{{ getDisplayName(previewFile) }}</h6>
+            <p class="text-muted fs-8 mb-3">This file type cannot be previewed directly inside the browser.</p>
+            <a [href]="getFileDownloadUrl(previewFile)" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 px-3">
+              <app-icon name="download" [size]="14"></app-icon>
+              <span>Download File to View</span>
+            </a>
+          </div>
+        </div>
+        <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-end">
+          <button type="button" class="btn btn-secondary btn-sm fs-8 px-3" (click)="closePreview()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename File Modal -->
+  <div *ngIf="renameFileItem" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header py-2.5 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-1.5">
+            <app-icon name="edit" [size]="15" customClass="text-primary"></app-icon>
+            <h6 class="modal-title fw-bold text-dark fs-7 mb-0">Rename File</h6>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0.5 px-1.5 lh-1" (click)="closeRename()" title="Close">
+            <app-icon name="close" [size]="13"></app-icon>
+          </button>
+        </div>
+        <div class="modal-body p-3">
+          <label class="form-label fs-8 text-secondary fw-semibold mb-1">New File Name</label>
+          <div class="input-group input-group-sm">
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="newFileNameInput" 
+              (keydown.enter)="saveRename()"
+              placeholder="Enter new file name..."
+              autofocus>
+          </div>
+          <div class="form-text fs-9 text-muted mt-1">File extension is kept automatically if omitted.</div>
+        </div>
+        <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm fs-8" (click)="closeRename()">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm fs-8 d-inline-flex align-items-center gap-1 px-3" (click)="saveRename()" [disabled]="!newFileNameInput.trim() || isRenaming">
+            <span *ngIf="isRenaming" class="spinner-border spinner-border-sm me-1"></span>
+            <span>Save</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
