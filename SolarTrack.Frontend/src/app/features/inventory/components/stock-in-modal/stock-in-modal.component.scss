@@ -94,6 +94,11 @@
   overflow: visible !important;
 }
 
+tbody tr:has(.tree-select-container.is-open) {
+  position: relative;
+  z-index: 1060;
+}
+
 .inv-keep-note {
   border-color: var(--st-border, #e2e8f0) !important;
   background-color: #fff;

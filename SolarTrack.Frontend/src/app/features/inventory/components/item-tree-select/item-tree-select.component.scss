@@ -1,6 +1,10 @@
 .tree-select-container {
   width: 100%;
   position: relative;
+
+  &.is-open {
+    z-index: 1060;
+  }
 }
 
 .tree-select-trigger {
@@ -28,45 +32,19 @@
   }
 }
 
-.stock-pill {
-  font-family: var(--st-font-mono, monospace);
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-
-  &.stock-ok {
-    background-color: rgba(16, 185, 129, 0.12);
-    color: #059669;
-    border: 1px solid rgba(16, 185, 129, 0.25);
-  }
-
-  &.stock-low {
-    background-color: rgba(245, 158, 11, 0.12);
-    color: #d97706;
-    border: 1px solid rgba(245, 158, 11, 0.25);
-  }
-
-  &.stock-out {
-    background-color: rgba(239, 68, 68, 0.12);
-    color: #dc2626;
-    border: 1px solid rgba(239, 68, 68, 0.25);
-  }
-}
-
 .tree-dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 1060;
-  min-width: 380px;
-  max-width: 460px;
+  z-index: 1070;
+  min-width: 320px;
+  max-width: 440px;
   width: 100%;
+  background: #ffffff;
+  border-radius: var(--st-radius-md, 8px);
+  border: 1px solid var(--st-border, #d1d5db);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--st-border, #e5e7eb);
-  animation: fadeInDown 0.15s ease-out;
+  animation: fadeInDown 0.12s ease-out;
 }
 
 @keyframes fadeInDown {
@@ -81,7 +59,7 @@
 }
 
 .tree-scroll-area {
-  max-height: 290px;
+  max-height: 280px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -106,8 +84,6 @@
 
   .expand-btn {
     line-height: 1;
-    display: inline-flex;
-    align-items: center;
   }
 }
 
@@ -138,13 +114,18 @@
 
     .item-name {
       color: var(--st-primary, #ff4500) !important;
-      font-weight: 700;
+      font-weight: 600;
     }
   }
 
   .tree-branch-symbol {
     font-family: monospace;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     line-height: 1;
+  }
+
+  .stock-plain-text {
+    font-size: 0.78rem;
+    color: #64748b;
   }
 }

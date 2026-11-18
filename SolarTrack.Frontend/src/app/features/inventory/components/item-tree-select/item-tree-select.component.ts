@@ -35,7 +35,14 @@ export class ItemTreeSelectComponent {
   @Input() set items(val: InventoryItemWithStock[]) {
     this.itemsSignal.set(val || []);
   }
-  @Input() selectedCode: string = '';
+
+  @Input() set selectedCode(val: string) {
+    this.selectedCodeSignal.set(val || '');
+  }
+  get selectedCode(): string {
+    return this.selectedCodeSignal();
+  }
+
   @Input() placeholder: string = '-- Select Item --';
   @Input() disabled: boolean = false;
 
@@ -43,24 +50,26 @@ export class ItemTreeSelectComponent {
   @Output() itemSelected = new EventEmitter<InventoryItemWithStock>();
 
   readonly itemsSignal = signal<InventoryItemWithStock[]>([]);
+  readonly selectedCodeSignal = signal<string>('');
   readonly isOpen = signal<boolean>(false);
   readonly searchQuery = signal<string>('');
-  readonly expandedCategories = signal<Set<string>>(new Set<string>());
+  // Set of collapsed categories (by default all are expanded for consistent discovery)
+  readonly collapsedCategories = signal<Set<string>>(new Set<string>());
 
-  // Computed selected item
+  // Computed selected item (fully reactive)
   readonly selectedItem = computed(() => {
-    const code = this.selectedCode;
+    const code = this.selectedCodeSignal();
     if (!code) return null;
     return this.itemsSignal().find(
       i => (i.ItemCode || '').toLowerCase() === code.toLowerCase()
     ) || null;
   });
 
-  // Computed: Category Tree with Search Filtering and Total Stock per category
+  // Computed: Category Tree with Search Filtering
   readonly treeNodes = computed<CategoryTreeNode[]>(() => {
     const allItems = this.itemsSignal();
     const query = this.searchQuery().trim().toLowerCase();
-    const expandedSet = this.expandedCategories();
+    const collapsedSet = this.collapsedCategories();
 
     // Group items by category
     const categoryMap = new Map<string, InventoryItemWithStock[]>();
@@ -89,16 +98,15 @@ export class ItemTreeSelectComponent {
         if (!catMatches) {
           matchedItems = catItems.filter(item => {
             const name = (item.ItemName || '').toLowerCase();
-            const code = (item.ItemCode || '').toLowerCase();
             const desc = (item.Description || '').toLowerCase();
-            return name.includes(query) || code.includes(query) || desc.includes(query);
+            return name.includes(query) || desc.includes(query);
           });
         }
       }
 
       if (matchedItems.length > 0) {
-        // If there's an active search query, auto-expand categories with matches
-        const isExpanded = query ? true : expandedSet.has(category);
+        // By default expanded; if user collapsed this category, keep it collapsed unless searching
+        const isExpanded = query ? true : !collapsedSet.has(category);
 
         nodes.push({
           category,
@@ -147,27 +155,6 @@ export class ItemTreeSelectComponent {
   openDropdown(): void {
     this.isOpen.set(true);
     this.searchQuery.set('');
-
-    // If an item is already selected, make sure its category is expanded
-    const selected = this.selectedItem();
-    if (selected) {
-      const cat = (selected.Category || 'Others').trim();
-      this.expandedCategories.update(set => {
-        const next = new Set(set);
-        next.add(cat);
-        return next;
-      });
-    } else {
-      // Expand the first 2 categories by default for immediate convenience
-      const categories = this.treeNodes().map(n => n.category);
-      if (categories.length > 0) {
-        this.expandedCategories.update(set => {
-          const next = new Set(set);
-          categories.slice(0, 3).forEach(c => next.add(c));
-          return next;
-        });
-      }
-    }
   }
 
   closeDropdown(): void {
@@ -176,29 +163,20 @@ export class ItemTreeSelectComponent {
 
   toggleCategory(category: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.expandedCategories.update(set => {
+    this.collapsedCategories.update(set => {
       const next = new Set(set);
       if (next.has(category)) {
-        next.delete(category);
+        next.delete(category); // Expand
       } else {
-        next.add(category);
+        next.add(category); // Collapse
       }
       return next;
     });
   }
 
-  expandAll(): void {
-    const all = new Set(this.treeNodes().map(n => n.category));
-    this.expandedCategories.set(all);
-  }
-
-  collapseAll(): void {
-    this.expandedCategories.set(new Set());
-  }
-
   selectItem(item: InventoryItemWithStock, event: MouseEvent): void {
     event.stopPropagation();
-    this.selectedCode = item.ItemCode;
+    this.selectedCodeSignal.set(item.ItemCode);
     this.selectedCodeChange.emit(item.ItemCode);
     this.itemSelected.emit(item);
     this.closeDropdown();
