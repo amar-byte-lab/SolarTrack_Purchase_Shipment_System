@@ -38,11 +38,66 @@
   font-size: 0.75rem;
 }
 
+// Upload & Document Cards (Same as Stock In)
+.upload-section {
+  background-color: #fafaf9;
+}
+
+.upload-dropzone {
+  border-style: dashed !important;
+  border-color: var(--st-border, #cbd5e1) !important;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--st-primary, #ff4500) !important;
+    background-color: #fff9f6 !important;
+  }
+}
+
+.file-item-card {
+  transition: all 0.15s ease;
+  border-color: var(--st-border, #e2e8f0) !important;
+
+  &:hover {
+    border-color: var(--st-primary, #ff4500) !important;
+  }
+
+  .file-icon-badge {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .file-display-name {
+    cursor: default;
+    user-select: text;
+    word-break: break-all;
+  }
+
+  .rename-btn {
+    opacity: 0.6;
+    transition: opacity 0.12s ease;
+
+    &:hover {
+      opacity: 1;
+      color: var(--st-primary, #ff4500) !important;
+    }
+  }
+
+  .rename-input {
+    width: 100%;
+    min-width: 260px;
+    font-weight: 600;
+  }
+}
+
 .table-responsive.overflow-visible {
   overflow: visible !important;
 }
 
-tbody tr:has(.tree-select-container.is-open) {
-  position: relative;
-  z-index: 1060;
+::ng-deep tr:has(.is-open), tbody tr:has(.tree-select-container.is-open) {
+  position: relative !important;
+  z-index: 1080 !important;
 }

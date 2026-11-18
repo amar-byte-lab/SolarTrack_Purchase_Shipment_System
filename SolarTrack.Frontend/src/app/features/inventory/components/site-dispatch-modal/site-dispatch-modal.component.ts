@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../services/inventory.service';
@@ -12,6 +12,16 @@ import {
 } from '../../models/inventory.model';
 import { InstallmentRow } from '../../../../core/models/summary.model';
 
+export interface DispatchUploadedDoc {
+  id: string;
+  name: string;
+  originalName: string;
+  data: string;
+  sizeFormatted: string;
+  isEditingName?: boolean;
+  tempName?: string;
+}
+
 @Component({
   selector: 'app-site-dispatch-modal',
   standalone: true,
@@ -22,6 +32,7 @@ import { InstallmentRow } from '../../../../core/models/summary.model';
 export class SiteDispatchModalComponent implements OnChanges {
   private inventoryService = inject(InventoryService);
   private toastService = inject(ToastService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Input() isOpen = false;
   @Input() initialItemCodes: string[] = [];
@@ -33,19 +44,19 @@ export class SiteDispatchModalComponent implements OnChanges {
   siteName = '';
   date = '';
   
-  // Logistics & Transport Details: Only Driver, Charge/km, Distance, Delivery Charge, Description
+  // Logistics & Transport Details: Driver, Delivery Charge (Col-1) & Charge/km, Distance (Col-2)
   driver = '';
   chargePerKm: number | null = null;
   distanceKm: number | null = null;
   deliveryCharge = 0;
-  transportDescription = '';
 
   // Customer-wise Cost Allocation: hidden by default, toggled via button
   showCustomerAllocation = false;
 
   remarks = '';
-  docName: string | null = null;
-  docData: string | null = null;
+
+  // Multiple Uploaded Documents with Rename & Delete (Reactive Signal, same as Stock In)
+  readonly uploadedDocs = signal<DispatchUploadedDoc[]>([]);
 
   itemsList: DispatchItemEntry[] = [];
   customerAllocations: CustomerAllocationEntry[] = [];
@@ -80,11 +91,9 @@ export class SiteDispatchModalComponent implements OnChanges {
     this.chargePerKm = null;
     this.distanceKm = null;
     this.deliveryCharge = 0;
-    this.transportDescription = '';
     this.showCustomerAllocation = false;
     this.remarks = '';
-    this.docName = null;
-    this.docData = null;
+    this.uploadedDocs.set([]);
     this.isSubmitting = false;
 
     this.itemsList = [];
@@ -233,22 +242,110 @@ export class SiteDispatchModalComponent implements OnChanges {
     ca.total = Math.round((sc + ic + dc + oc) * 100) / 100;
   }
 
-  onFileSelected(event: Event): void {
+  // --- Multiple File Upload Handling (Same as Stock In: Reactive, Rename & Delete) ---
+  onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const f = input.files[0];
-      this.docName = f.name;
+    if (!input.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    let remaining = files.length;
+    const newDocs: DispatchUploadedDoc[] = [];
+
+    files.forEach(f => {
       const reader = new FileReader();
       reader.onload = () => {
-        this.docData = reader.result as string;
+        newDocs.push({
+          id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          name: f.name,
+          originalName: f.name,
+          data: reader.result as string,
+          sizeFormatted: this.formatFileSize(f.size),
+          isEditingName: false,
+          tempName: f.name
+        });
+        remaining--;
+        if (remaining === 0) {
+          this.uploadedDocs.update(docs => [...docs, ...newDocs]);
+          this.cdr.markForCheck();
+        }
+      };
+      reader.onerror = () => {
+        remaining--;
+        if (remaining === 0) {
+          this.uploadedDocs.update(docs => [...docs, ...newDocs]);
+          this.cdr.markForCheck();
+        }
       };
       reader.readAsDataURL(f);
+    });
+
+    input.value = '';
+  }
+
+  startRenameDoc(doc: DispatchUploadedDoc, event?: Event): void {
+    if (event) event.stopPropagation();
+    doc.tempName = doc.name;
+    doc.isEditingName = true;
+    this.cdr.markForCheck();
+  }
+
+  saveRenameDoc(doc: DispatchUploadedDoc, event?: Event): void {
+    if (event) event.stopPropagation();
+    const newName = (doc.tempName || '').trim();
+    if (newName) {
+      doc.name = newName;
+      doc.isEditingName = false;
+      this.uploadedDocs.update(docs => [...docs]);
+      this.toastService.info(`File renamed to "${newName}"`);
+    } else {
+      this.toastService.warning('File name cannot be empty.');
+    }
+    this.cdr.markForCheck();
+  }
+
+  cancelRenameDoc(doc: DispatchUploadedDoc, event?: Event): void {
+    if (event) event.stopPropagation();
+    doc.tempName = doc.name;
+    doc.isEditingName = false;
+    this.cdr.markForCheck();
+  }
+
+  removeDoc(index: number, event?: Event): void {
+    if (event) event.stopPropagation();
+    const docs = this.uploadedDocs();
+    const removed = docs[index];
+    this.uploadedDocs.update(list => list.filter((_, i) => i !== index));
+    if (removed) {
+      this.toastService.info(`Document "${removed.name}" removed.`);
+    }
+    this.cdr.markForCheck();
+  }
+
+  previewDoc(doc: DispatchUploadedDoc, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!doc.data) return;
+
+    const win = window.open();
+    if (win) {
+      if (doc.data.startsWith('data:image/') || doc.data.startsWith('data:application/pdf')) {
+        win.document.write(
+          `<html><head><title>${doc.name}</title></head><body style="margin:0;background:#1e1e1e;display:flex;align-items:center;justify-content:center;"><iframe src="${doc.data}" style="border:none;width:100%;height:100vh;"></iframe></body></html>`
+        );
+      } else {
+        const link = document.createElement('a');
+        link.href = doc.data;
+        link.download = doc.name;
+        link.click();
+      }
     }
   }
 
-  removeFile(): void {
-    this.docName = null;
-    this.docData = null;
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
   submitDispatch(): void {
@@ -269,10 +366,10 @@ export class SiteDispatchModalComponent implements OnChanges {
 
     this.isSubmitting = true;
 
-    const fullRemarks = [
-      this.transportDescription ? `Transport: ${this.transportDescription.trim()}` : '',
-      this.remarks ? this.remarks.trim() : ''
-    ].filter(Boolean).join('\n');
+    const docsPayload = this.uploadedDocs().map(d => ({
+      name: d.name,
+      data: d.data
+    }));
 
     const header = {
       siteName: this.siteName.trim(),
@@ -282,11 +379,12 @@ export class SiteDispatchModalComponent implements OnChanges {
       distanceKm: Number(this.distanceKm) || 0,
       extraDeliveryCost: 0,
       extraDeliveryComment: '',
-      remarks: fullRemarks,
+      remarks: this.remarks.trim(),
       isOurProject: true,
       customerAllocations: this.customerAllocations,
-      docName: this.docName || undefined,
-      docData: this.docData || undefined
+      docName: docsPayload[0]?.name || undefined,
+      docData: docsPayload[0]?.data || undefined,
+      documents: docsPayload
     };
 
     const itemsPayload = this.itemsList.map(r => ({

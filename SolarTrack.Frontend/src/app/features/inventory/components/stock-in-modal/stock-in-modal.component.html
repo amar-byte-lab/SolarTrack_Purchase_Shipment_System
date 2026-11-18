@@ -58,7 +58,7 @@
                   <!-- Upload Button -->
                   <label class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 mb-0 cursor-pointer d-inline-flex align-items-center gap-1 shadow-xs">
                     <app-icon name="upload" [size]="13"></app-icon>
-                    <span>{{ uploadedDocs().length > 0 ? '+ Add More Files' : 'Upload Multiple Files' }}</span>
+                    <span>{{ uploadedDocs().length > 0 ? 'Add More Files' : 'Upload Multiple Files' }}</span>
                     <input type="file" multiple (change)="onFilesSelected($event)" class="d-none">
                   </label>
                 </div>

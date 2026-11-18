@@ -7,13 +7,7 @@
       <!-- Modal Header -->
       <div class="modal-header py-2.5 px-3 border-bottom bg-light d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
-          <div class="dispatch-badge">
-            <app-icon name="truck" [size]="16" class="text-warning"></app-icon>
-          </div>
-          <div>
             <h6 class="modal-title fw-bold text-dark m-0 fs-7">Dispatch Equipment to Site</h6>
-            <div class="text-secondary fs-9">Issue warehouse stock for site installation & customer consumption</div>
-          </div>
         </div>
         <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
       </div>
@@ -21,10 +15,17 @@
       <!-- Modal Body -->
       <div class="modal-body p-3 bg-slate-50">
         
-        <!-- Header Fields Card -->
+        <!-- Dispatch Header & Transport Details Card -->
         <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
-          <div class="row g-2">
-            <div class="col-sm-6 col-12">
+          <div class="row g-2.5">
+
+            <!-- Row 1: Dispatch Date, Site Name, Delivery Charge (3 equal columns) -->
+            <div class="col-md-4 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Dispatch Date *</label>
+              <input type="date" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="date">
+            </div>
+
+            <div class="col-md-4 col-12">
               <label class="form-label small fw-semibold text-secondary mb-1">Site Name *</label>
               <input 
                 type="text" 
@@ -33,81 +34,7 @@
                 placeholder="e.g. Balasore Site">
             </div>
 
-            <div class="col-sm-6 col-12">
-              <label class="form-label small fw-semibold text-secondary mb-1">Dispatch Date *</label>
-              <input type="date" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="date">
-            </div>
-
-            <!-- Upload Challan Document -->
-            <div class="col-12 mt-2">
-              <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
-                <div class="d-flex align-items-center gap-2 text-truncate me-2">
-                  <app-icon name="file" [size]="15" class="text-secondary"></app-icon>
-                  <span class="small fw-semibold text-secondary text-truncate">
-                    {{ docName ? docName : 'Upload Delivery Challan / Gate Pass Document' }}
-                  </span>
-                </div>
-                <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
-                  <label class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 mb-0 cursor-pointer d-inline-flex align-items-center gap-1">
-                    <app-icon name="upload" [size]="12"></app-icon>
-                    <span>{{ docName ? 'Change File' : 'Upload File' }}</span>
-                    <input type="file" (change)="onFileSelected($event)" class="d-none">
-                  </label>
-                  <button *ngIf="docName" type="button" class="btn btn-xs btn-outline-danger p-1 border-0" (click)="removeFile()" title="Remove file">
-                    <app-icon name="close" [size]="12"></app-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Logistics & Transport Details Card: Driver, Charge/km, Distance, Delivery Charge, Description -->
-        <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
-          <div class="fw-bold text-dark fs-8 text-uppercase mb-2" style="letter-spacing: 0.03em;">
-            Logistics & Transport
-          </div>
-
-          <div class="row g-2 align-items-end">
-            <!-- Driver -->
-            <div class="col-md-3 col-sm-6 col-12">
-              <label class="form-label small fw-semibold text-secondary mb-1">Driver</label>
-              <input 
-                type="text" 
-                class="form-control form-control-sm fs-8" 
-                [(ngModel)]="driver" 
-                placeholder="Driver Name / Phone / Vehicle">
-            </div>
-
-            <!-- Charge / km -->
-            <div class="col-md-2 col-sm-6 col-6">
-              <label class="form-label small fw-semibold text-secondary mb-1">Charge/km (₹)</label>
-              <input 
-                type="number" 
-                min="0" 
-                step="any" 
-                class="form-control form-control-sm text-end font-monospace fs-8" 
-                [(ngModel)]="chargePerKm" 
-                (ngModelChange)="onDistanceOrRateChange()"
-                placeholder="0.00">
-            </div>
-
-            <!-- Distance -->
-            <div class="col-md-2 col-sm-6 col-6">
-              <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
-              <input 
-                type="number" 
-                min="0" 
-                step="any" 
-                class="form-control form-control-sm text-end font-monospace fs-8" 
-                [(ngModel)]="distanceKm" 
-                (ngModelChange)="onDistanceOrRateChange()"
-                placeholder="0">
-            </div>
-
-            <!-- Delivery Charge -->
-            <div class="col-md-2 col-sm-6 col-12">
+            <div class="col-md-4 col-12">
               <label class="form-label small fw-semibold text-secondary mb-1">Delivery Charge (₹)</label>
               <input 
                 type="number" 
@@ -119,36 +46,191 @@
                 placeholder="0.00">
             </div>
 
-            <!-- Description -->
-            <div class="col-md-3 col-sm-12 col-12">
-              <label class="form-label small fw-semibold text-secondary mb-1">Description</label>
+            <!-- Row 2: Driver, Charge, Distance (3 equal columns, column-wise aligned) -->
+            <div class="col-md-4 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Driver</label>
               <input 
                 type="text" 
                 class="form-control form-control-sm fs-8" 
-                [(ngModel)]="transportDescription" 
-                placeholder="Route / transport note...">
+                [(ngModel)]="driver" 
+                placeholder="Driver Name / Phone / Vehicle">
             </div>
+
+            <div class="col-md-4 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Charge/km (₹)</label>
+              <input 
+                type="number" 
+                min="0" 
+                step="any" 
+                class="form-control form-control-sm text-end font-monospace fs-8" 
+                [(ngModel)]="chargePerKm" 
+                (ngModelChange)="onDistanceOrRateChange()"
+                placeholder="0.00">
+            </div>
+
+            <div class="col-md-4 col-12">
+              <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
+              <input 
+                type="number" 
+                min="0" 
+                step="any" 
+                class="form-control form-control-sm text-end font-monospace fs-8" 
+                [(ngModel)]="distanceKm" 
+                (ngModelChange)="onDistanceOrRateChange()"
+                placeholder="0">
+            </div>
+
+            <!-- Upload Documents (Multiple Files with Rename & Delete, same as Stock In) -->
+            <div class="col-12 mt-2">
+              <div class="upload-section border rounded p-2.5 bg-light bg-opacity-50">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="small fw-bold text-dark">
+                      Documents
+                    </span>
+                  </div>
+
+                  <!-- Upload Button -->
+                  <label class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 mb-0 cursor-pointer d-inline-flex align-items-center gap-1 shadow-xs">
+                    <app-icon name="upload" [size]="13"></app-icon>
+                    <span>{{ uploadedDocs().length > 0 ? 'Add More Files' : 'Upload Multiple Files' }}</span>
+                    <input type="file" multiple (change)="onFilesSelected($event)" class="d-none">
+                  </label>
+                </div>
+
+                <!-- Empty state when no files uploaded -->
+                @if (uploadedDocs().length === 0) {
+                  <label class="d-block text-center p-3 border border-dashed rounded bg-white cursor-pointer upload-dropzone mb-0">
+                    <app-icon name="upload" [size]="20" class="text-secondary opacity-60 mb-1"></app-icon>
+                    <div class="small fw-semibold text-secondary">Upload</div>
+                    <input type="file" multiple (change)="onFilesSelected($event)" class="d-none">
+                  </label>
+                }
+
+                <!-- Uploaded Files List with Inline Full Name Rename, Preview & Delete -->
+                @if (uploadedDocs().length > 0) {
+                  <div class="uploaded-files-grid d-flex flex-column gap-1.5">
+                    @for (doc of uploadedDocs(); track doc.id; let docIdx = $index) {
+                      <div class="file-item-card d-flex align-items-center justify-content-between p-2 bg-white border rounded shadow-xs flex-wrap gap-2">
+                        
+                        <!-- File Icon & Name (or Inline Rename Input) -->
+                        <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                          <span class="file-icon-badge flex-shrink-0 text-primary bg-primary-subtle p-1 rounded">
+                            <app-icon name="file" [size]="14"></app-icon>
+                          </span>
+
+                          <!-- Inline Rename Mode: Full width input showing entire name -->
+                          @if (doc.isEditingName) {
+                            <div class="d-flex align-items-center gap-1 flex-grow-1 min-w-0 w-100">
+                              <input 
+                                type="text" 
+                                class="form-control form-control-sm py-1 px-2 fs-8 rename-input flex-grow-1" 
+                                [(ngModel)]="doc.tempName"
+                                (keydown.enter)="saveRenameDoc(doc, $event)"
+                                (keydown.escape)="cancelRenameDoc(doc, $event)"
+                                placeholder="Enter file name"
+                                autofocus>
+                              <button 
+                                type="button" 
+                                class="btn btn-xs btn-success py-1 px-2 flex-shrink-0" 
+                                (click)="saveRenameDoc(doc, $event)" 
+                                title="Save name">
+                                <app-icon name="check" [size]="12"></app-icon>
+                              </button>
+                              <button 
+                                type="button" 
+                                class="btn btn-xs btn-outline-secondary py-1 px-2 flex-shrink-0" 
+                                (click)="cancelRenameDoc(doc, $event)" 
+                                title="Cancel rename">
+                                <app-icon name="close" [size]="12"></app-icon>
+                              </button>
+                            </div>
+                          } @else {
+                            <!-- Normal Display Mode: Full name shown without truncation -->
+                            <div class="d-flex align-items-center gap-1.5 min-w-0 flex-grow-1">
+                              <span 
+                                class="fw-semibold text-dark fs-8 text-break file-display-name" 
+                                [title]="doc.name"
+                                (dblclick)="startRenameDoc(doc, $event)">
+                                {{ doc.name }}
+                              </span>
+                              <button 
+                                type="button" 
+                                class="btn btn-xs btn-link p-0 text-muted hover-primary rename-btn flex-shrink-0" 
+                                (click)="startRenameDoc(doc, $event)" 
+                                title="Rename this file">
+                                <app-icon name="edit" [size]="12"></app-icon>
+                              </button>
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Right Actions: Size, Preview, Delete -->
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                          <span class="badge bg-light text-muted border font-monospace fs-9">
+                            {{ doc.sizeFormatted }}
+                          </span>
+
+                          <!-- Preview / Open -->
+                          <button 
+                            type="button" 
+                            class="btn btn-xs btn-outline-secondary p-1 border-0" 
+                            (click)="previewDoc(doc, $event)" 
+                            title="Preview / Open file">
+                            <app-icon name="eye" [size]="13"></app-icon>
+                          </button>
+
+                          <!-- Delete File Button -->
+                          <button 
+                            type="button" 
+                            class="btn btn-xs btn-outline-danger p-1 border-0" 
+                            (click)="removeDoc(docIdx, $event)" 
+                            title="Delete file">
+                            <app-icon name="trash" [size]="13"></app-icon>
+                          </button>
+                        </div>
+
+                      </div>
+                    }
+                  </div>
+                }
+
+              </div>
+            </div>
+
           </div>
         </div>
 
-        <!-- Customer-wise Cost Allocation: Button triggered -->
-        <div class="mb-2.5">
-          <div class="d-flex align-items-center justify-content-between">
-            <button 
-              type="button" 
-              class="btn btn-sm btn-outline-secondary py-1 px-2.5 d-inline-flex align-items-center gap-1.5 fs-8"
-              (click)="toggleCustomerAllocation()">
-              <app-icon [name]="showCustomerAllocation ? 'chevron-up' : 'plus'" [size]="13"></app-icon>
-              <span>{{ showCustomerAllocation ? 'Hide Customer Allocation' : '+ Add / Show Customer-wise Cost Allocation' }}</span>
-              @if (customerAllocations.length > 0) {
-                <span class="badge bg-primary text-white rounded-pill ms-1">{{ customerAllocations.length }}</span>
-              }
-            </button>
+        <!-- Equipment Items to Dispatch Section -->
+        <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <div class="fw-bold text-dark fs-8 text-uppercase" style="letter-spacing: 0.03em;">
+              Items to Dispatch ({{ itemsList.length }})
+            </div>
+
+            <!-- Right Actions: Customer Allocation Toggle Button + Add Item Button -->
+            <div class="d-flex align-items-center gap-2">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-secondary py-1 px-2.5 d-inline-flex align-items-center gap-1.5 fs-8"
+                (click)="toggleCustomerAllocation()">
+                <app-icon [name]="showCustomerAllocation ? 'chevron-up' : 'plus'" [size]="13"></app-icon>
+                <span>{{ showCustomerAllocation ? 'Hide Customer Allocation' : 'Add / Show Customer-wise Cost Allocation' }}</span>
+                @if (customerAllocations.length > 0) {
+                  <span class="badge bg-primary text-white rounded-pill ms-1">{{ customerAllocations.length }}</span>
+                }
+              </button>
+
+              <button type="button" class="btn btn-sm btn-outline-warning text-dark py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8" (click)="addItemRow()">
+                <app-icon name="plus" [size]="13"></app-icon>
+                <span>Add Item</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Customer Allocation Table (Shown only when button is clicked) -->
+          <!-- Customer Allocation Table (Shown right here when button is clicked) -->
           @if (showCustomerAllocation) {
-            <div class="card border rounded-2 p-3 bg-white mt-2 shadow-xs">
+            <div class="border rounded-2 p-2.5 bg-light bg-opacity-50 mb-2.5 shadow-xs">
               <div class="d-flex justify-content-between align-items-center mb-1.5">
                 <span class="fw-bold text-dark fs-8">Customer-wise Cost Allocation</span>
                 <button type="button" class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 d-inline-flex align-items-center gap-1" (click)="addCustomerAllocation()">
@@ -216,27 +298,13 @@
               </div>
             </div>
           }
-        </div>
-
-        <!-- Equipment Items to Dispatch Section -->
-        <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="fw-bold text-dark fs-8 text-uppercase" style="letter-spacing: 0.03em;">
-              Equipment Items to Dispatch ({{ itemsList.length }})
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-warning text-dark py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8" (click)="addItemRow()">
-              <app-icon name="plus" [size]="13"></app-icon>
-              <span>Add Item</span>
-            </button>
-          </div>
 
           <!-- Items Table -->
-          <div class="table-responsive border rounded bg-white">
+          <div class="table-responsive border rounded bg-white overflow-visible">
             <table class="table table-sm align-middle table-bordered mb-0" style="font-size: 0.8rem;">
               <thead class="table-light">
                 <tr>
-                  <th style="min-width: 200px;">EQUIPMENT ITEM</th>
-                  <th style="width: 100px;" class="text-center">IN STOCK</th>
+                  <th style="min-width: 200px;">ITEM</th>
                   <th style="width: 100px;" class="text-center">QTY</th>
                   <th style="width: 120px;" class="text-end">COST / UNIT</th>
                   <th style="width: 130px;" class="text-end">TOTAL (₹)</th>
@@ -253,11 +321,6 @@
                       (itemSelected)="onTreeItemSelected(row, $event)"
                       placeholder="-- Select Item --">
                     </app-item-tree-select>
-                  </td>
-
-                  <!-- In Stock -->
-                  <td class="text-center font-monospace fs-8 text-secondary">
-                    {{ row.availableStock || 0 }} {{ row.unit || 'Nos' }}
                   </td>
 
                   <!-- Dispatch Qty (Can exceed available stock) -->
@@ -307,11 +370,6 @@
           <!-- Valuation Summary Bar -->
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded mt-2 border">
             <div class="d-flex align-items-baseline gap-2">
-              <span class="text-secondary small fw-medium">Total Units:</span>
-              <span class="text-dark fw-bold fs-7 font-monospace">{{ totalUnits }}</span>
-              <span class="text-muted small ms-2">Delivery Charge: ₹{{ (deliveryCharge || 0) | number:'1.2-2' }}</span>
-            </div>
-            <div class="d-flex align-items-baseline gap-2">
               <span class="text-secondary small fw-medium">Total Material Cost:</span>
               <span class="text-dark fw-bold fs-6 font-monospace text-warning">₹{{ totalMaterialCost | number:'1.2-2' }}</span>
             </div>
@@ -321,7 +379,6 @@
         <!-- Google Keep-style Note -->
         <div class="inv-keep-note border rounded-2 p-2 bg-white">
           <div class="d-flex align-items-center gap-1.5 mb-1 text-secondary fs-9 fw-semibold">
-            <app-icon name="edit" [size]="12"></app-icon>
             <span>Notes / Dispatch Instructions</span>
           </div>
           <textarea 

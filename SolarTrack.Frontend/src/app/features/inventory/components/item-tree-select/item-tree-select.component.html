@@ -9,12 +9,9 @@
     [disabled]="disabled"
     (click)="toggleDropdown($event)">
 
-    <!-- Selected Item Preview -->
+    <!-- Selected Item Preview (Category badge removed as requested) -->
     <div class="trigger-content text-truncate d-flex align-items-center gap-1.5 flex-grow-1 min-w-0">
       @if (selectedItem(); as itm) {
-        <span class="badge bg-light text-secondary border fs-9 px-1.5 py-0.5 rounded flex-shrink-0">
-          {{ itm.Category || 'Item' }}
-        </span>
         <span class="fw-semibold text-dark text-truncate fs-8" [title]="itm.ItemName">
           {{ itm.ItemName }}
         </span>

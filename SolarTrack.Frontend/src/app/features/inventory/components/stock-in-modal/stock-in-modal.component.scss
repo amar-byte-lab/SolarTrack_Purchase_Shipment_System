@@ -96,9 +96,9 @@
   overflow: visible !important;
 }
 
-tbody tr:has(.tree-select-container.is-open) {
-  position: relative;
-  z-index: 1060;
+::ng-deep tr:has(.is-open), tbody tr:has(.tree-select-container.is-open) {
+  position: relative !important;
+  z-index: 1080 !important;
 }
 
 .inv-keep-note {

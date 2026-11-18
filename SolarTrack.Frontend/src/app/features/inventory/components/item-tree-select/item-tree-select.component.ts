@@ -27,7 +27,12 @@ export interface CategoryTreeNode {
   standalone: true,
   imports: [CommonModule, FormsModule, IconComponent],
   templateUrl: './item-tree-select.component.html',
-  styleUrls: ['./item-tree-select.component.scss']
+  styleUrls: ['./item-tree-select.component.scss'],
+  host: {
+    '[class.is-open]': 'isOpen()',
+    '[style.position]': '"relative"',
+    '[style.z-index]': 'isOpen() ? "1080" : "auto"'
+  }
 })
 export class ItemTreeSelectComponent {
   private elementRef = inject(ElementRef);

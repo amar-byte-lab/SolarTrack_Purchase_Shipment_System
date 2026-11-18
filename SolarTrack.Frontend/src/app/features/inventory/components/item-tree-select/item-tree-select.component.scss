@@ -3,7 +3,7 @@
   position: relative;
 
   &.is-open {
-    z-index: 1060;
+    z-index: 1080;
   }
 }
 
@@ -36,7 +36,7 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 1070;
+  z-index: 1090;
   min-width: 360px;
   max-width: 500px;
   width: 100%;

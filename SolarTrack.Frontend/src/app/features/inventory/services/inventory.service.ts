@@ -479,11 +479,17 @@ export class InventoryService {
       customerAllocations: CustomerAllocationEntry[];
       docName?: string;
       docData?: string;
+      documents?: Array<{ name: string; data?: string }>;
     },
     itemsList: Array<{ itemCode: string; qty: number; unitBuyingPrice: number; dispatchedCost: number }>
   ): Observable<any> {
     const challanNo = 'DSP_' + Date.now().toString().slice(-6);
     const allocJson = JSON.stringify(header.customerAllocations || []);
+    const docsJson = header.documents && header.documents.length > 0
+      ? JSON.stringify(header.documents)
+      : null;
+    const primaryDocName = header.documents?.[0]?.name || header.docName || null;
+    const primaryDocData = header.documents?.[0]?.data || header.docData || null;
 
     const rowsToInsert: any[] = itemsList.map((item, idx) => {
       const dispatchId = 'DSP_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substring(2, 6);
@@ -500,8 +506,9 @@ export class InventoryService {
         Vehicle: header.vehicle,
         Remarks: header.remarks,
         CustomerAllocations: allocJson,
-        DocumentName: header.docName || null,
-        DocumentData: header.docData || null
+        DocumentName: primaryDocName,
+        DocumentData: primaryDocData,
+        Documents: docsJson
       };
     });
 
