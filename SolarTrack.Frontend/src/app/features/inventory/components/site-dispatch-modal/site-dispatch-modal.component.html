@@ -343,34 +343,16 @@
           <!-- Customer Tab: Total Material Cost, Per customer avg, Customer allocation table, Customer notes -->
           <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
             
-            <!-- 1 & 2: Cost Summary Metrics (Total Material Cost & Per customer average material cost) -->
-            <div class="row g-2 mb-3">
-              <div class="col-md-6">
-                <div class="border rounded-2 p-2.5 bg-light d-flex align-items-center justify-content-between">
-                  <div>
-                    <div class="text-muted fs-9 text-uppercase fw-semibold" style="letter-spacing: 0.03em;">Total Material Cost</div>
-                    <div class="fs-6 fw-bold text-dark font-monospace mt-0.5">
-                      ₹{{ totalMaterialCost | number:'1.2-2' }}
-                    </div>
-                  </div>
-                  <div class="badge bg-warning bg-opacity-25 text-dark p-2 rounded-2">
-                    <app-icon name="box" [size]="18"></app-icon>
-                  </div>
-                </div>
+            <!-- 1 & 2: Cost Summary Metrics (Clean, simple, no badges, no filler cards) -->
+            <div class="d-flex align-items-center gap-4 py-2 rounded mb-2.5 fs-8">
+              <div class="d-flex align-items-baseline gap-1.5">
+                <span class="text-secondary fw-semibold">Total Material Cost:</span>
+                <span class="text-dark fw-bold font-monospace">₹{{ totalMaterialCost | number:'1.2-2' }}</span>
               </div>
 
-              <div class="col-md-6">
-                <div class="border rounded-2 p-2.5 bg-light d-flex align-items-center justify-content-between">
-                  <div>
-                    <div class="text-muted fs-9 text-uppercase fw-semibold" style="letter-spacing: 0.03em;">Per Customer Average Material Cost</div>
-                    <div class="fs-6 fw-bold text-primary font-monospace mt-0.5">
-                      ₹{{ perCustomerAvgMaterialCost | number:'1.2-2' }}
-                    </div>
-                  </div>
-                  <div class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-2">
-                    <app-icon name="user" [size]="18"></app-icon>
-                  </div>
-                </div>
+              <div class="d-flex align-items-baseline gap-1.5">
+                <span class="text-secondary fw-semibold">Per Customer Average Material Cost:</span>
+                <span class="text-dark fw-bold font-monospace">₹{{ perCustomerAvgMaterialCost | number:'1.2-2' }}</span>
               </div>
             </div>
 
@@ -390,12 +372,11 @@
                 <thead class="table-light">
                   <tr>
                     <th style="min-width: 170px;">Customer Name</th>
-                    <th style="width: 95px;" class="text-end">Set Cost (₹)</th>
-                    <th style="width: 95px;" class="text-end">Install Cost (₹)</th>
-                    <th style="width: 95px;" class="text-end">Delivery (₹)</th>
-                    <th style="width: 90px;" class="text-end">Other (₹)</th>
-                    <th>Remark</th>
-                    <th style="width: 100px;" class="text-end">Total (₹)</th>
+                    <th style="width: 100px;" class="text-end">Set Cost (₹)</th>
+                    <th style="width: 100px;" class="text-end">Install Cost (₹)</th>
+                    <th style="width: 100px;" class="text-end">Delivery (₹)</th>
+                    <th style="width: 95px;" class="text-end">Other (₹)</th>
+                    <th style="width: 110px;" class="text-end">Total (₹)</th>
                     <th style="width: 30px;" class="text-center p-0"></th>
                   </tr>
                 </thead>
@@ -421,9 +402,6 @@
                     <td>
                       <input type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" [(ngModel)]="ca.otherCost" (ngModelChange)="recalcCustomerTotal(ca)">
                     </td>
-                    <td>
-                      <input type="text" class="form-control form-control-sm fs-8 py-0.5" [(ngModel)]="ca.remark" placeholder="Note">
-                    </td>
                     <td class="text-end font-monospace fw-bold text-dark fs-8">
                       ₹{{ ca.total | number:'1.2-2' }}
                     </td>
@@ -435,7 +413,7 @@
                   </tr>
 
                   <tr *ngIf="customerAllocations.length === 0">
-                    <td colspan="8" class="text-center py-3 text-muted fs-8">
+                    <td colspan="7" class="text-center py-3 text-muted fs-8">
                       No customer allocation added. Click <strong>+ Add Customer</strong> to allocate logistics/costs to project accounts.
                     </td>
                   </tr>
@@ -445,13 +423,13 @@
 
             <!-- Customer Total Summary Bar -->
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded border">
-              <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary small">Total Customers:</span>
-                <span class="badge bg-white text-dark border px-2 py-1 font-monospace fw-bold">{{ customerAllocations.length }}</span>
+              <div class="d-flex align-items-baseline gap-1.5 fs-8">
+                <span class="text-secondary fw-semibold">Total Customers:</span>
+                <span class="text-dark fw-bold font-monospace">{{ customerAllocations.length }}</span>
               </div>
-              <div class="d-flex align-items-baseline gap-2 ms-auto">
-                <span class="text-secondary small fw-medium">Total Allocated:</span>
-                <span class="text-dark fw-bold fs-6 font-monospace text-primary">₹{{ totalCustomerAllocatedCost | number:'1.2-2' }}</span>
+              <div class="d-flex align-items-baseline gap-1.5 ms-auto fs-8">
+                <span class="text-secondary fw-semibold">Total Allocated:</span>
+                <span class="text-dark fw-bold font-monospace">₹{{ totalCustomerAllocatedCost | number:'1.2-2' }}</span>
               </div>
             </div>
 
@@ -460,7 +438,6 @@
           <!-- 4: Customer Notes (Google Keep-style Note) -->
           <div class="inv-keep-note border rounded-2 p-2 bg-white">
             <div class="d-flex align-items-center gap-1.5 mb-1 text-secondary fs-9 fw-semibold">
-              <app-icon name="file-text" [size]="12"></app-icon>
               <span>Customer Notes</span>
             </div>
             <textarea 
