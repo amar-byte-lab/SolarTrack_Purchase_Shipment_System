@@ -41,7 +41,7 @@
                 step="any" 
                 class="form-control form-control-sm text-end font-monospace fs-8" 
                 [(ngModel)]="transportCost" 
-                (ngModelChange)="recalculateCosts()"
+                (ngModelChange)="onConsignmentTransportCostChanged()"
                 placeholder="0.00">
             </div>
 
@@ -50,12 +50,8 @@
               <div class="upload-section border rounded p-2.5 bg-light bg-opacity-50">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
                   <div class="d-flex align-items-center gap-2">
-                    <app-icon name="file" [size]="15" class="text-primary"></app-icon>
                     <span class="small fw-bold text-dark">
-                      Consignment Documents & Invoices
-                    </span>
-                    <span class="badge bg-secondary-subtle text-secondary fs-9 rounded-pill">
-                      {{ uploadedDocs().length }} {{ uploadedDocs().length === 1 ? 'file' : 'files' }}
+                      Invoices
                     </span>
                   </div>
 
@@ -71,8 +67,7 @@
                 @if (uploadedDocs().length === 0) {
                   <label class="d-block text-center p-3 border border-dashed rounded bg-white cursor-pointer upload-dropzone mb-0">
                     <app-icon name="upload" [size]="20" class="text-secondary opacity-60 mb-1"></app-icon>
-                    <div class="small fw-semibold text-secondary">Click or drop vendor invoice, challan, or receipt files here</div>
-                    <div class="text-muted fs-9">Supports multiple files (PDF, PNG, JPG, Excel) • You can rename or delete anytime</div>
+                    <div class="small fw-semibold text-secondary">Click</div>
                     <input type="file" multiple (change)="onFilesSelected($event)" class="d-none">
                   </label>
                 }
@@ -81,20 +76,20 @@
                 @if (uploadedDocs().length > 0) {
                   <div class="uploaded-files-grid d-flex flex-column gap-1.5">
                     @for (doc of uploadedDocs(); track doc.id; let docIdx = $index) {
-                      <div class="file-item-card d-flex align-items-center justify-content-between p-2 bg-white border rounded shadow-xs">
+                      <div class="file-item-card d-flex align-items-center justify-content-between p-2 bg-white border rounded shadow-xs flex-wrap gap-2">
                         
                         <!-- File Icon & Name (or Inline Rename Input) -->
-                        <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1 me-2">
+                        <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
                           <span class="file-icon-badge flex-shrink-0 text-primary bg-primary-subtle p-1 rounded">
                             <app-icon name="file" [size]="14"></app-icon>
                           </span>
 
-                          <!-- Inline Rename Mode -->
+                          <!-- Inline Rename Mode: Full width input showing entire name -->
                           @if (doc.isEditingName) {
-                            <div class="d-flex align-items-center gap-1 flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center gap-1 flex-grow-1 min-w-0 w-100">
                               <input 
                                 type="text" 
-                                class="form-control form-control-sm py-0.5 px-2 fs-8 rename-input" 
+                                class="form-control form-control-sm py-1 px-2 fs-8 rename-input flex-grow-1" 
                                 [(ngModel)]="doc.tempName"
                                 (keydown.enter)="saveRenameDoc(doc, $event)"
                                 (keydown.escape)="cancelRenameDoc(doc, $event)"
@@ -102,31 +97,31 @@
                                 autofocus>
                               <button 
                                 type="button" 
-                                class="btn btn-xs btn-success py-0.5 px-1.5" 
+                                class="btn btn-xs btn-success py-1 px-2 flex-shrink-0" 
                                 (click)="saveRenameDoc(doc, $event)" 
                                 title="Save name">
                                 <app-icon name="check" [size]="12"></app-icon>
                               </button>
                               <button 
                                 type="button" 
-                                class="btn btn-xs btn-outline-secondary py-0.5 px-1.5" 
+                                class="btn btn-xs btn-outline-secondary py-1 px-2 flex-shrink-0" 
                                 (click)="cancelRenameDoc(doc, $event)" 
                                 title="Cancel rename">
                                 <app-icon name="close" [size]="12"></app-icon>
                               </button>
                             </div>
                           } @else {
-                            <!-- Normal Display Mode with rename button -->
+                            <!-- Normal Display Mode: Full name shown without truncation -->
                             <div class="d-flex align-items-center gap-1.5 min-w-0 flex-grow-1">
                               <span 
-                                class="fw-semibold text-dark fs-8 text-truncate file-display-name" 
+                                class="fw-semibold text-dark fs-8 text-break file-display-name" 
                                 [title]="doc.name"
                                 (dblclick)="startRenameDoc(doc, $event)">
                                 {{ doc.name }}
                               </span>
                               <button 
                                 type="button" 
-                                class="btn btn-xs btn-link p-0 text-muted hover-primary rename-btn" 
+                                class="btn btn-xs btn-link p-0 text-muted hover-primary rename-btn flex-shrink-0" 
                                 (click)="startRenameDoc(doc, $event)" 
                                 title="Rename this file">
                                 <app-icon name="edit" [size]="12"></app-icon>
@@ -136,7 +131,7 @@
                         </div>
 
                         <!-- Right Actions: Size, Preview, Delete -->
-                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
                           <span class="badge bg-light text-muted border font-monospace fs-9">
                             {{ doc.sizeFormatted }}
                           </span>
@@ -178,9 +173,6 @@
               <span class="fw-bold text-dark fs-8 text-uppercase" style="letter-spacing: 0.03em;">
                 Items Received ({{ itemsList.length }})
               </span>
-              <span class="badge bg-light text-muted border fs-9">
-                Delivery Cost shares distributed by Total+GST
-              </span>
             </div>
             <button type="button" class="btn btn-sm btn-outline-success py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8" (click)="addItemRow()">
               <app-icon name="plus" [size]="13"></app-icon>
@@ -193,22 +185,22 @@
             <table class="table table-sm align-middle table-bordered mb-0" style="font-size: 0.8rem;">
               <thead class="table-light">
                 <tr>
-                  <th style="min-width: 250px;">EQUIPMENT ITEM (SEARCHABLE TREE)</th>
-                  <th style="width: 75px;" class="text-center">QTY</th>
-                  <th style="width: 95px;" class="text-end">UNIT COST</th>
-                  <th style="width: 100px;" class="text-end">TOTAL</th>
+                  <th style="min-width: 230px;">ITEM</th>
+                  <th style="width: 70px;" class="text-center">QTY</th>
+                  <th style="width: 90px;" class="text-end">UNIT COST</th>
+                  <th style="width: 105px;" class="text-end">TOTAL</th>
                   <th style="width: 75px;" class="text-center">GST %</th>
-                  <th style="width: 105px;" class="text-end">TOTAL+GST</th>
-                  <th style="width: 115px;" class="text-end">DELIVERY</th>
-                  <th style="width: 110px;" class="text-end">COST/UNIT</th>
-                  <th style="width: 34px;" class="text-center p-0"></th>
+                  <th style="width: 110px;" class="text-end">TOTAL+GST</th>
+                  <th style="width: 125px;" class="text-end">DELIVERY</th>
+                  <th style="width: 100px;" class="text-end">COST/UNIT</th>
+                  <th style="width: 32px;" class="text-center p-0"></th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let row of itemsList; let idx = index">
                   
                   <!-- Item Select: Searchable Tree Dropdown with Available Stock -->
-                  <td class="p-1 position-relative" style="min-width: 250px;">
+                  <td class="p-1 position-relative" style="min-width: 230px;">
                     <app-item-tree-select 
                       [items]="availableItemsWithStock"
                       [(selectedCode)]="row.itemCode"
@@ -225,7 +217,7 @@
                       step="any" 
                       class="form-control form-control-sm text-center font-monospace fs-8 py-0.5" 
                       [(ngModel)]="row.qty" 
-                      (ngModelChange)="recalculateCosts()">
+                      (ngModelChange)="onPriceOrQtyChanged(row)">
                   </td>
 
                   <!-- Unit Cost -->
@@ -236,17 +228,25 @@
                       step="any" 
                       class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" 
                       [(ngModel)]="row.unitPrice" 
-                      (ngModelChange)="recalculateCosts()">
+                      (ngModelChange)="onPriceOrQtyChanged(row)">
                   </td>
 
-                  <!-- Total Excl GST -->
-                  <td class="text-end font-monospace fw-semibold text-secondary fs-8 p-1">
-                    ₹{{ row.totalExclGst | number:'1.2-2' }}
+                  <!-- Total Excl GST (Bidirectional Editable) -->
+                  <td class="p-1">
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="any" 
+                      class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" 
+                      [(ngModel)]="row.totalExclGst" 
+                      (ngModelChange)="onTotalExclGstChanged(row)"
+                      placeholder="0.00"
+                      title="Pre-tax Total. Editing this automatically calculates Unit Cost and Total+GST">
                   </td>
 
                   <!-- GST % -->
                   <td class="p-1">
-                    <select class="form-select form-select-sm text-center fs-8 py-0.5" [(ngModel)]="row.gstRate" (ngModelChange)="recalculateCosts()">
+                    <select class="form-select form-select-sm text-left fs-8 py-0.5" [(ngModel)]="row.gstRate" (ngModelChange)="onPriceOrQtyChanged(row)">
                       <option [value]="0">0%</option>
                       <option [value]="5">5%</option>
                       <option [value]="12">12%</option>
@@ -255,14 +255,43 @@
                     </select>
                   </td>
 
-                  <!-- Total + GST (Key metric for delivery distribution) -->
-                  <td class="text-end font-monospace fw-bold text-dark fs-8 p-1">
-                    ₹{{ row.totalWithGst | number:'1.2-2' }}
+                  <!-- Total + GST (Bidirectional Editable) -->
+                  <td class="p-1">
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="any" 
+                      class="form-control form-control-sm text-end font-monospace fw-bold fs-8 py-0.5 text-dark" 
+                      [(ngModel)]="row.totalWithGst" 
+                      (ngModelChange)="onTotalWithGstChanged(row)"
+                      placeholder="0.00"
+                      title="Total with GST. Editing this automatically calculates Unit Cost and Pre-tax Total">
                   </td>
 
-                  <!-- Delivery Share: Proportionate to Total+GST -->
-                  <td class="text-end font-monospace fs-8 p-1">
-                    <div class="fw-semibold text-primary">₹{{ row.deliveryShare | number:'1.2-2' }}</div>
+                  <!-- Delivery Share: Proportionate to Total+GST, Editable with Auto-Adjustment for Rest -->
+                  <td class="p-1">
+                    <div class="d-flex align-items-center gap-1">
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="any" 
+                        class="form-control form-control-sm text-end font-monospace fs-8 py-0.5" 
+                        [class.border-primary]="row.isDeliveryManual"
+                        [class.bg-primary-subtle]="row.isDeliveryManual"
+                        [(ngModel)]="row.deliveryShare" 
+                        (ngModelChange)="onDeliveryShareInput(row)"
+                        placeholder="0.00"
+                        title="Delivery Share. Overriding this fixes this item's share and distributes remaining delivery cost across other items">
+                      @if (row.isDeliveryManual) {
+                        <button 
+                          type="button" 
+                          class="btn btn-xs btn-link p-0 text-muted hover-primary flex-shrink-0" 
+                          (click)="resetRowDeliveryToAuto(row)" 
+                          title="Reset to auto proportionate delivery share">
+                          <app-icon name="rotate-ccw" [size]="12"></app-icon>
+                        </button>
+                      }
+                    </div>
                   </td>
 
                   <!-- Cost Per Unit (Delivered unit cost) -->
@@ -303,14 +332,14 @@
                 <span class="text-dark fw-bold fs-7 font-monospace">₹{{ totalWithGstAll | number:'1.2-2' }}</span>
               </div>
               <div class="d-flex align-items-baseline gap-1.5">
-                <span class="text-secondary small fw-medium">Delivery Cost:</span>
+                <span class="text-secondary small fw-medium">Delivery:</span>
                 <span class="text-primary fw-semibold fs-8 font-monospace">₹{{ transportCost | number:'1.2-2' }}</span>
               </div>
             </div>
 
             <!-- Grand Inward Total -->
             <div class="d-flex align-items-baseline gap-2">
-              <span class="text-secondary small fw-bold">Grand Inward Total:</span>
+              <span class="text-secondary small fw-bold">Grand Total:</span>
               <span class="text-success fw-bold fs-6 font-monospace">₹{{ grandInwardTotal | number:'1.2-2' }}</span>
             </div>
           </div>

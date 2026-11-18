@@ -71,6 +71,7 @@
   .file-display-name {
     cursor: default;
     user-select: text;
+    word-break: break-all;
   }
 
   .rename-btn {
@@ -84,7 +85,8 @@
   }
 
   .rename-input {
-    max-width: 320px;
+    width: 100%;
+    min-width: 260px;
     font-weight: 600;
   }
 }

@@ -37,6 +37,7 @@ export interface InwardRowForm {
   totalWithGst: number;
   deliveryShare: number;
   deliveryPercent: number;
+  isDeliveryManual?: boolean;
   costPerUnit: number;
 }
 
@@ -76,15 +77,15 @@ export class StockInModalComponent implements OnChanges {
   }
 
   get totalMaterialCost(): number {
-    return this.itemsList.reduce((s, r) => s + (r.totalExclGst || 0), 0);
+    return this.itemsList.reduce((s, r) => s + (Number(r.totalExclGst) || 0), 0);
   }
 
   get totalGst(): number {
-    return this.itemsList.reduce((s, r) => s + ((r.totalWithGst || 0) - (r.totalExclGst || 0)), 0);
+    return this.itemsList.reduce((s, r) => s + ((Number(r.totalWithGst) || 0) - (Number(r.totalExclGst) || 0)), 0);
   }
 
   get totalWithGstAll(): number {
-    return this.itemsList.reduce((s, r) => s + (r.totalWithGst || 0), 0);
+    return this.itemsList.reduce((s, r) => s + (Number(r.totalWithGst) || 0), 0);
   }
 
   get grandInwardTotal(): number {
@@ -130,6 +131,7 @@ export class StockInModalComponent implements OnChanges {
             totalWithGst: Math.round(bp * 1.18 * 100) / 100,
             deliveryShare: 0,
             deliveryPercent: 0,
+            isDeliveryManual: false,
             costPerUnit: Math.round(bp * 1.18 * 100) / 100
           });
         }
@@ -139,7 +141,7 @@ export class StockInModalComponent implements OnChanges {
     if (this.itemsList.length === 0 && this.availableItemsWithStock.length > 0) {
       this.addItemRow();
     }
-    this.recalculateCosts();
+    this.recalculateDeliveryShares();
   }
 
   onClose(): void {
@@ -165,67 +167,132 @@ export class StockInModalComponent implements OnChanges {
       totalWithGst: Math.round(bp * 1.18 * 100) / 100,
       deliveryShare: 0,
       deliveryPercent: 0,
+      isDeliveryManual: false,
       costPerUnit: Math.round(bp * 1.18 * 100) / 100
     });
-    this.recalculateCosts();
+    this.recalculateDeliveryShares();
   }
 
   removeItemRow(index: number): void {
     this.itemsList.splice(index, 1);
-    this.recalculateCosts();
+    this.recalculateDeliveryShares();
   }
 
   onItemSelected(row: InwardRowForm, item: InventoryItemWithStock): void {
     row.itemCode = item.ItemCode;
     row.unitPrice = Number(item.BuyingPrice) || 0;
-    this.recalculateCosts();
+    this.onPriceOrQtyChanged(row);
   }
 
-  // Delivery Cost is distributed proportionately to each item's Total+GST value
-  recalculateCosts(): void {
+  // --- Bidirectional Automatic Calculations ---
+
+  // 1. User changes Qty or Unit Price or GST %
+  onPriceOrQtyChanged(row: InwardRowForm): void {
+    const q = Math.max(0, Number(row.qty) || 0);
+    const up = Math.max(0, Number(row.unitPrice) || 0);
+    const gst = Number(row.gstRate) || 0;
+
+    row.totalExclGst = Math.round(q * up * 100) / 100;
+    const lineGst = Math.round(row.totalExclGst * (gst / 100) * 100) / 100;
+    row.totalWithGst = Math.round((row.totalExclGst + lineGst) * 100) / 100;
+    row.costWithGst = q > 0 ? Math.round((row.totalWithGst / q) * 100) / 100 : Math.round(up * (1 + gst / 100) * 100) / 100;
+
+    this.recalculateDeliveryShares();
+  }
+
+  // 2. User edits TOTAL (Pre-tax line total)
+  onTotalExclGstChanged(row: InwardRowForm): void {
+    const tot = Math.max(0, Number(row.totalExclGst) || 0);
+    const q = Math.max(0, Number(row.qty) || 0);
+    const gst = Number(row.gstRate) || 0;
+
+    row.unitPrice = q > 0 ? Math.round((tot / q) * 100) / 100 : 0;
+    const lineGst = Math.round(tot * (gst / 100) * 100) / 100;
+    row.totalWithGst = Math.round((tot + lineGst) * 100) / 100;
+    row.costWithGst = q > 0 ? Math.round((row.totalWithGst / q) * 100) / 100 : Math.round(row.unitPrice * (1 + gst / 100) * 100) / 100;
+
+    this.recalculateDeliveryShares();
+  }
+
+  // 3. User edits TOTAL+GST (Tax-inclusive line total)
+  onTotalWithGstChanged(row: InwardRowForm): void {
+    const totGst = Math.max(0, Number(row.totalWithGst) || 0);
+    const q = Math.max(0, Number(row.qty) || 0);
+    const gst = Number(row.gstRate) || 0;
+    const gstFactor = 1 + (gst / 100);
+
+    row.totalExclGst = Math.round((totGst / (gstFactor || 1)) * 100) / 100;
+    row.unitPrice = q > 0 ? Math.round((row.totalExclGst / q) * 100) / 100 : 0;
+    row.costWithGst = q > 0 ? Math.round((totGst / q) * 100) / 100 : Math.round(row.unitPrice * gstFactor * 100) / 100;
+
+    this.recalculateDeliveryShares();
+  }
+
+  // 4. User manually inputs an item's DELIVERY cost share
+  onDeliveryShareInput(row: InwardRowForm): void {
+    row.isDeliveryManual = true;
+    this.recalculateDeliveryShares();
+  }
+
+  // Reset a manually overridden row delivery share back to auto proportionate
+  resetRowDeliveryToAuto(row: InwardRowForm): void {
+    row.isDeliveryManual = false;
+    this.recalculateDeliveryShares();
+  }
+
+  // Main Consignment Delivery Cost changed by user
+  onConsignmentTransportCostChanged(): void {
+    this.recalculateDeliveryShares();
+  }
+
+  // Core distribution logic:
+  // Proportionate to Total+GST, adjusting remaining delivery cost among rest of the items
+  recalculateDeliveryShares(): void {
     const tCost = Math.max(0, Number(this.transportCost) || 0);
 
-    // Step 1: Calculate totalExclGst, GST and totalWithGst for each item
-    this.itemsList.forEach(r => {
-      const q = Math.max(0, Number(r.qty) || 0);
-      const up = Math.max(0, Number(r.unitPrice) || 0);
-      const gst = Number(r.gstRate) || 0;
+    const manualItems = this.itemsList.filter(r => r.isDeliveryManual);
+    const autoItems = this.itemsList.filter(r => !r.isDeliveryManual);
 
-      r.totalExclGst = Math.round(q * up * 100) / 100;
-      const gstFactor = 1 + (gst / 100);
-      const lineGst = Math.round(r.totalExclGst * (gst / 100) * 100) / 100;
-      r.totalWithGst = Math.round((r.totalExclGst + lineGst) * 100) / 100;
-      r.costWithGst = q > 0 ? Math.round((r.totalWithGst / q) * 100) / 100 : Math.round(up * gstFactor * 100) / 100;
-    });
+    const manualTotal = manualItems.reduce((s, r) => s + (Number(r.deliveryShare) || 0), 0);
 
-    // Step 2: Sum of Total+GST across all items
-    const sumTotalWithGst = this.itemsList.reduce((s, r) => s + (r.totalWithGst || 0), 0);
+    // If manual shares exceed consignment transport cost, adjust transport cost to avoid negative remaining
+    let remainingCost = tCost - manualTotal;
+    if (remainingCost < 0) {
+      this.transportCost = Math.round(manualTotal * 100) / 100;
+      remainingCost = 0;
+    }
 
-    // Step 3: Distribute Delivery Cost proportionately based on Total+GST
-    this.itemsList.forEach(r => {
-      const q = Math.max(0, Number(r.qty) || 0);
+    // Sum of Total+GST among the remaining auto items
+    const autoSumTotalWithGst = autoItems.reduce((s, r) => s + (Number(r.totalWithGst) || 0), 0);
+
+    // Distribute remaining delivery cost proportionately among auto items
+    autoItems.forEach(r => {
       let share = 0;
-      let percent = 0;
-
-      if (sumTotalWithGst > 0) {
-        const ratio = r.totalWithGst / sumTotalWithGst;
-        share = Math.round(tCost * ratio * 100) / 100;
-        percent = Math.round(ratio * 1000) / 10;
-      } else if (this.itemsList.length > 0) {
-        share = Math.round((tCost / this.itemsList.length) * 100) / 100;
-        percent = Math.round((100 / this.itemsList.length) * 10) / 10;
+      if (autoSumTotalWithGst > 0) {
+        const ratio = (Number(r.totalWithGst) || 0) / autoSumTotalWithGst;
+        share = Math.round(remainingCost * ratio * 100) / 100;
+      } else if (autoItems.length > 0) {
+        share = Math.round((remainingCost / autoItems.length) * 100) / 100;
       }
-
       r.deliveryShare = share;
-      r.deliveryPercent = percent;
+    });
 
-      // Effective Cost Per Unit = (Total+GST + Delivery Cost Share) / Quantity
+    // Compute deliveryPercent and effective costPerUnit for all items
+    const currentTotalDelivery = Math.max(1, Number(this.transportCost) || 1);
+    this.itemsList.forEach(r => {
+      const q = Math.max(0, Number(r.qty) || 0);
+      r.deliveryPercent = Math.round(((Number(r.deliveryShare) || 0) / currentTotalDelivery) * 1000) / 10;
       if (q > 0) {
-        r.costPerUnit = Math.round(((r.totalWithGst + share) / q) * 100) / 100;
+        r.costPerUnit = Math.round(((Number(r.totalWithGst) + (Number(r.deliveryShare) || 0)) / q) * 100) / 100;
       } else {
-        r.costPerUnit = r.costWithGst;
+        r.costPerUnit = Number(r.costWithGst) || 0;
       }
     });
+  }
+
+  // Alias for backward compatibility
+  recalculateCosts(): void {
+    this.recalculateDeliveryShares();
   }
 
   // --- Multiple File Upload Handling (Immediate Reactive Reflection) ---
