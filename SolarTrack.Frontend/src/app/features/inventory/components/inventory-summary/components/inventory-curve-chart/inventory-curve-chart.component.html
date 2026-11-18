@@ -15,26 +15,6 @@
         </span>
       </div>
     </div>
-
-    <!-- Interactive Series Legend Toggles -->
-    <div class="legend-toggles d-flex flex-wrap gap-2 mb-3 pb-2 border-bottom">
-      @for (s of seriesList(); track s.key) {
-        <button
-          type="button"
-          class="btn btn-sm legend-pill d-inline-flex align-items-center gap-2 py-1 px-2.5 rounded-pill fs-8 transition-all"
-          [class.active]="s.visible"
-          [style.--series-color]="s.color"
-          [style.--series-bg]="s.accentBg"
-          (click)="toggleSeries(s.key)"
-          [title]="'Click to toggle ' + s.label">
-          <span class="legend-dot" [style.background-color]="s.color"></span>
-          <span class="legend-label fw-medium">{{ s.label }}</span>
-          <span class="legend-val font-monospace fs-9 fw-bold">
-            {{ formatCurrencyAbbr(getSeriesTotal(s.key)) }}
-          </span>
-        </button>
-      }
-    </div>
   </div>
 
   <!-- SVG Chart Canvas Area -->

@@ -106,12 +106,12 @@ export class SiteDispatchModalComponent implements OnChanges {
     this.siteName = c.siteName || '';
     this.date = c.date || new Date().toISOString().slice(0, 10);
     this.driver = c.vehicle || '';
-    this.chargePerKm = null;
+    this.chargePerKm = c.chargePerKm !== undefined && c.chargePerKm !== null ? c.chargePerKm : null;
     this.distanceKm = c.distanceKm || null;
     this.deliveryCharge = c.transportCost || 0;
     this.activeTab = 'items';
     this.remarks = c.remarks || '';
-    this.customerRemarks = '';
+    this.customerRemarks = c.customerNotes || '';
     this.isSubmitting = false;
 
     if (c.documents && c.documents.length > 0) {
@@ -450,11 +450,6 @@ export class SiteDispatchModalComponent implements OnChanges {
 
     this.isSubmitting = true;
 
-    const fullRemarks = [
-      this.remarks ? this.remarks.trim() : '',
-      this.customerRemarks ? `Customer Notes: ${this.customerRemarks.trim()}` : ''
-    ].filter(Boolean).join('\n\n');
-
     const docsPayload = this.uploadedDocs().map(d => ({
       name: d.name,
       data: d.data
@@ -465,10 +460,12 @@ export class SiteDispatchModalComponent implements OnChanges {
       date: this.date || new Date().toISOString().slice(0, 10),
       vehicle: this.driver.trim(),
       transportCost: Number(this.deliveryCharge) || 0,
-      distanceKm: Number(this.distanceKm) || 0,
+      distanceKm: this.distanceKm !== null && this.distanceKm !== undefined ? Number(this.distanceKm) : undefined,
+      chargePerKm: this.chargePerKm !== null && this.chargePerKm !== undefined ? Number(this.chargePerKm) : undefined,
+      customerNotes: this.customerRemarks ? this.customerRemarks.trim() : undefined,
       extraDeliveryCost: 0,
       extraDeliveryComment: '',
-      remarks: fullRemarks,
+      remarks: this.remarks ? this.remarks.trim() : '',
       isOurProject: true,
       customerAllocations: this.customerAllocations,
       docName: docsPayload[0]?.name || undefined,

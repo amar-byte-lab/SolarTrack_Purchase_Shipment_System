@@ -282,8 +282,10 @@ public class InventoryDispatch
     public decimal DispatchedCost { get; set; }
     public decimal TransportCost { get; set; }
     public decimal? DistanceKm { get; set; }
+    public decimal? ChargePerKm { get; set; }
     public string? Vehicle { get; set; }
     public string? Remarks { get; set; }
+    public string? CustomerNotes { get; set; }
     public string? CustomerAllocations { get; set; }
     public string? DocumentName { get; set; }
     public string? DocumentData { get; set; }

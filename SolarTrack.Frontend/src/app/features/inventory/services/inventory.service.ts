@@ -218,6 +218,8 @@ export class InventoryService {
           vehicle: row.Vehicle || '',
           transportCost: Number(row.TransportCost) || 0,
           distanceKm: Number(row.DistanceKm) || 0,
+          chargePerKm: row.ChargePerKm !== undefined && row.ChargePerKm !== null ? Number(row.ChargePerKm) : undefined,
+          customerNotes: row.CustomerNotes || '',
           isOurProject: true,
           remarks: row.Remarks || '',
           items: [],
@@ -234,6 +236,12 @@ export class InventoryService {
 
       if (!grp.distanceKm && row.DistanceKm) {
         grp.distanceKm = Number(row.DistanceKm) || 0;
+      }
+      if (grp.chargePerKm === undefined && row.ChargePerKm !== undefined && row.ChargePerKm !== null) {
+        grp.chargePerKm = Number(row.ChargePerKm);
+      }
+      if (!grp.customerNotes && row.CustomerNotes) {
+        grp.customerNotes = row.CustomerNotes;
       }
 
       if (grp.customerAllocations.length === 0 && row.CustomerAllocations) {
@@ -803,6 +811,8 @@ export class InventoryService {
       vehicle: string;
       transportCost: number;
       distanceKm?: number;
+      chargePerKm?: number;
+      customerNotes?: string;
       extraDeliveryCost?: number;
       extraDeliveryComment?: string;
       remarks: string;
@@ -836,6 +846,8 @@ export class InventoryService {
         DispatchedCost: item.dispatchedCost,
         TransportCost: header.transportCost,
         DistanceKm: header.distanceKm !== undefined && header.distanceKm !== null ? Number(header.distanceKm) : null,
+        ChargePerKm: header.chargePerKm !== undefined && header.chargePerKm !== null ? Number(header.chargePerKm) : null,
+        CustomerNotes: idx === 0 && header.customerNotes ? header.customerNotes.trim() : null,
         Vehicle: header.vehicle,
         Remarks: header.remarks,
         CustomerAllocations: idx === 0 ? allocJson : null,
@@ -873,6 +885,8 @@ export class InventoryService {
       vehicle: string;
       transportCost: number;
       distanceKm?: number;
+      chargePerKm?: number;
+      customerNotes?: string;
       extraDeliveryCost?: number;
       extraDeliveryComment?: string;
       remarks: string;

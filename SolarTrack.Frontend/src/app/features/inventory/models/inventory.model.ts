@@ -112,8 +112,10 @@ export interface InventoryDispatchRow {
   DispatchedCost: number;
   TransportCost?: number;
   DistanceKm?: number;
+  ChargePerKm?: number;
   Vehicle?: string;
   Remarks?: string;
+  CustomerNotes?: string;
   CustomerAllocations?: string | CustomerAllocationEntry[];
   DocumentName?: string;
   DocumentData?: string;
@@ -129,6 +131,8 @@ export interface GroupedDispatchConsignment {
   vehicle: string;
   transportCost: number;
   distanceKm?: number;
+  chargePerKm?: number;
+  customerNotes?: string;
   costPerKm?: number;
   extraDeliveryCost?: number;
   extraDeliveryComment?: string;
