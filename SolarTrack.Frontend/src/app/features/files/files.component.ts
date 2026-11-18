@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -25,6 +25,7 @@ export class FilesComponent implements OnInit {
   confirmService = inject(ConfirmDialogService);
   private sanitizer = inject(DomSanitizer);
   private http = inject(HttpClient);
+  private cdr = inject(ChangeDetectorRef);
 
   // Preview Modal State
   previewFile: FileItem | null = null;
@@ -69,12 +70,14 @@ export class FilesComponent implements OnInit {
   }
 
   getFileUrl(file: FileItem): string {
+    if (file.url && file.url.startsWith('/bills/')) return file.url;
     return `/bills/${encodeURIComponent(file.storedFileName || file.fileName || file.originalName || '')}`;
   }
 
   getFileDownloadUrl(file: FileItem): string {
     const displayName = this.getDisplayName(file);
-    return `/bills/${encodeURIComponent(file.storedFileName || displayName)}?download=1&name=${encodeURIComponent(displayName)}`;
+    const base = this.getFileUrl(file);
+    return `${base}?download=1&name=${encodeURIComponent(displayName)}`;
   }
 
   // --- Preview Logic ---
@@ -85,6 +88,7 @@ export class FilesComponent implements OnInit {
     this.excelError = null;
     this.excelSearchQuery = '';
     this.docxContent = '';
+    this.cdr.markForCheck();
 
     if (this.isExcel(file)) {
       this.loadExcelPreview(file);
@@ -97,16 +101,22 @@ export class FilesComponent implements OnInit {
     this.previewFile = null;
     this.excelSheets = [];
     this.docxContent = '';
+    this.cdr.markForCheck();
   }
 
   selectSheet(index: number): void {
     this.activeSheetIndex = index;
     this.excelSearchQuery = '';
+    this.cdr.markForCheck();
   }
 
   loadExcelPreview(file: FileItem): void {
     this.isLoadingExcel = true;
     this.excelError = null;
+    this.excelSheets = [];
+    this.activeSheetIndex = 0;
+    this.cdr.markForCheck();
+
     const url = this.getFileUrl(file);
 
     this.http.get(url, { responseType: 'arraybuffer' }).subscribe({
@@ -131,17 +141,20 @@ export class FilesComponent implements OnInit {
           });
           this.activeSheetIndex = 0;
           this.isLoadingExcel = false;
+          this.cdr.markForCheck();
         } catch (e: any) {
           this.isLoadingExcel = false;
           this.excelError = 'Could not parse spreadsheet data: ' + (e?.message || 'Invalid format');
+          this.cdr.markForCheck();
         } finally {
           console.error = origError;
           console.warn = origWarn;
         }
       },
-      error: () => {
+      error: (err) => {
         this.isLoadingExcel = false;
-        this.excelError = 'Failed to load spreadsheet file from server.';
+        this.excelError = 'Failed to load spreadsheet file from server: ' + (err.statusText || err.message || 'Network error');
+        this.cdr.markForCheck();
       }
     });
   }
@@ -149,6 +162,8 @@ export class FilesComponent implements OnInit {
   loadDocxPreview(file: FileItem): void {
     this.isLoadingDocx = true;
     this.docxContent = '';
+    this.cdr.markForCheck();
+
     const url = this.getFileUrl(file);
 
     this.http.get(url, { responseType: 'arraybuffer' }).subscribe({
@@ -172,14 +187,17 @@ export class FilesComponent implements OnInit {
             this.docxContent = 'Document content could not be extracted.';
           }
           this.isLoadingDocx = false;
+          this.cdr.markForCheck();
         } catch (e: any) {
           this.isLoadingDocx = false;
           this.docxContent = 'Could not preview document: ' + (e?.message || 'Error parsing docx');
+          this.cdr.markForCheck();
         }
       },
       error: () => {
         this.isLoadingDocx = false;
         this.docxContent = 'Failed to load document from server.';
+        this.cdr.markForCheck();
       }
     });
   }
