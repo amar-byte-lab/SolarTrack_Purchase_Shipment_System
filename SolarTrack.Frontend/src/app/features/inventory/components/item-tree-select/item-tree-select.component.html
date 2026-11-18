@@ -18,10 +18,11 @@
         <span class="fw-semibold text-dark text-truncate fs-8" [title]="itm.ItemName">
           {{ itm.ItemName }}
         </span>
-        <!-- Available stock as plain text (NO badge) -->
-        <span class="text-secondary fs-8 font-monospace flex-shrink-0 ms-auto me-1">
-          ({{ itm.inHandQty }} {{ itm.Unit || '' }})
-        </span>
+        <!-- Available stock & latest cost as plain text -->
+        <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-auto me-1 font-monospace fs-8">
+          <span class="text-success fw-semibold">₹{{ (itm.BuyingPrice || 0) | number:'1.2-2' }}</span>
+          <span class="text-secondary">({{ itm.inHandQty }} {{ itm.Unit || '' }})</span>
+        </div>
       } @else {
         <span class="text-muted fs-8 d-inline-flex align-items-center gap-1">
           <app-icon name="boxes" [size]="13" class="text-secondary opacity-75"></app-icon>
@@ -112,13 +113,16 @@
                           </span>
                         </div>
 
-                        <!-- Right: Available Stock Plain Text (NO badge) & Selection Checkmark -->
-                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-                          <span class="stock-plain-text text-secondary fs-8 font-monospace">
-                            {{ item.inHandQty }} {{ item.Unit || 'Nos' }}
+                        <!-- Right: Latest Cost, Available Stock Plain Text & Selection Checkmark -->
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2 font-monospace fs-8">
+                          <span class="text-success fw-semibold" title="Latest Cost">
+                            ₹{{ (item.BuyingPrice || 0) | number:'1.2-2' }}
+                          </span>
+                          <span class="stock-plain-text text-secondary" title="Available Stock">
+                            ({{ item.inHandQty }} {{ item.Unit || 'Nos' }})
                           </span>
                           @if (item.ItemCode === selectedCode) {
-                            <app-icon name="check" [size]="13" class="text-primary fw-bold"></app-icon>
+                            <app-icon name="check" [size]="13" class="text-primary fw-bold ms-0.5"></app-icon>
                           }
                         </div>
 

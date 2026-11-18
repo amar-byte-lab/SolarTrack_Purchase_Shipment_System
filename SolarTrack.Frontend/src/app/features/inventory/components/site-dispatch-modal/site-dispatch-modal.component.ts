@@ -32,13 +32,17 @@ export class SiteDispatchModalComponent implements OnChanges {
 
   siteName = '';
   date = '';
-  vehicle = '';
-  transportCost = 0;
-  distanceKm = 0;
-  costPerKm = '';
-  extraDeliveryCost = 0;
-  extraDeliveryComment = '';
-  isOurProject = true;
+  
+  // Logistics & Transport Details: Only Driver, Charge/km, Distance, Delivery Charge, Description
+  driver = '';
+  chargePerKm: number | null = null;
+  distanceKm: number | null = null;
+  deliveryCharge = 0;
+  transportDescription = '';
+
+  // Customer-wise Cost Allocation: hidden by default, toggled via button
+  showCustomerAllocation = false;
+
   remarks = '';
   docName: string | null = null;
   docData: string | null = null;
@@ -63,10 +67,6 @@ export class SiteDispatchModalComponent implements OnChanges {
     return this.itemsList.reduce((s, r) => s + (Number(r.dispatchedCost) || 0), 0);
   }
 
-  get hasStockOverdraft(): boolean {
-    return this.itemsList.some(r => Number(r.qty) > (Number(r.availableStock) || 0));
-  }
-
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {
       this.resetForm();
@@ -76,13 +76,12 @@ export class SiteDispatchModalComponent implements OnChanges {
   resetForm(): void {
     this.siteName = '';
     this.date = new Date().toISOString().slice(0, 10);
-    this.vehicle = '';
-    this.transportCost = 0;
-    this.distanceKm = 0;
-    this.costPerKm = '';
-    this.extraDeliveryCost = 0;
-    this.extraDeliveryComment = '';
-    this.isOurProject = true;
+    this.driver = '';
+    this.chargePerKm = null;
+    this.distanceKm = null;
+    this.deliveryCharge = 0;
+    this.transportDescription = '';
+    this.showCustomerAllocation = false;
     this.remarks = '';
     this.docName = null;
     this.docData = null;
@@ -177,13 +176,27 @@ export class SiteDispatchModalComponent implements OnChanges {
     });
   }
 
-  recalcCostPerKm(): void {
-    const cost = Number(this.transportCost) || 0;
-    const km = Number(this.distanceKm) || 0;
-    if (km > 0 && cost > 0) {
-      this.costPerKm = (cost / km).toFixed(2);
-    } else {
-      this.costPerKm = '';
+  // Bidirectional calculation between Distance, Charge/km and Delivery Charge
+  onDistanceOrRateChange(): void {
+    const dist = Number(this.distanceKm) || 0;
+    const rate = Number(this.chargePerKm) || 0;
+    if (dist > 0 && rate > 0) {
+      this.deliveryCharge = Math.round(dist * rate * 100) / 100;
+    }
+  }
+
+  onDeliveryChargeChange(): void {
+    const charge = Number(this.deliveryCharge) || 0;
+    const dist = Number(this.distanceKm) || 0;
+    if (dist > 0 && charge > 0) {
+      this.chargePerKm = Math.round((charge / dist) * 100) / 100;
+    }
+  }
+
+  toggleCustomerAllocation(): void {
+    this.showCustomerAllocation = !this.showCustomerAllocation;
+    if (this.showCustomerAllocation && this.customerAllocations.length === 0) {
+      this.addCustomerAllocation();
     }
   }
 
@@ -255,16 +268,22 @@ export class SiteDispatchModalComponent implements OnChanges {
     }
 
     this.isSubmitting = true;
+
+    const fullRemarks = [
+      this.transportDescription ? `Transport: ${this.transportDescription.trim()}` : '',
+      this.remarks ? this.remarks.trim() : ''
+    ].filter(Boolean).join('\n');
+
     const header = {
       siteName: this.siteName.trim(),
       date: this.date || new Date().toISOString().slice(0, 10),
-      vehicle: this.vehicle.trim(),
-      transportCost: Number(this.transportCost) || 0,
+      vehicle: this.driver.trim(),
+      transportCost: Number(this.deliveryCharge) || 0,
       distanceKm: Number(this.distanceKm) || 0,
-      extraDeliveryCost: Number(this.extraDeliveryCost) || 0,
-      extraDeliveryComment: this.extraDeliveryComment.trim(),
-      remarks: this.remarks.trim(),
-      isOurProject: this.isOurProject,
+      extraDeliveryCost: 0,
+      extraDeliveryComment: '',
+      remarks: fullRemarks,
+      isOurProject: true,
       customerAllocations: this.customerAllocations,
       docName: this.docName || undefined,
       docData: this.docData || undefined
