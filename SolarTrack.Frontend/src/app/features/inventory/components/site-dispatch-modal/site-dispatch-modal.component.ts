@@ -50,10 +50,11 @@ export class SiteDispatchModalComponent implements OnChanges {
   distanceKm: number | null = null;
   deliveryCharge = 0;
 
-  // Customer-wise Cost Allocation: hidden by default, toggled via button
-  showCustomerAllocation = false;
+  // Active tab: 'items' (Equipment Items) or 'customer' (Customer Allocation)
+  activeTab: 'items' | 'customer' = 'items';
 
   remarks = '';
+  customerRemarks = '';
 
   // Multiple Uploaded Documents with Rename & Delete (Reactive Signal, same as Stock In)
   readonly uploadedDocs = signal<DispatchUploadedDoc[]>([]);
@@ -78,6 +79,16 @@ export class SiteDispatchModalComponent implements OnChanges {
     return this.itemsList.reduce((s, r) => s + (Number(r.dispatchedCost) || 0), 0);
   }
 
+  get perCustomerAvgMaterialCost(): number {
+    const count = this.customerAllocations.length;
+    if (count <= 0) return 0;
+    return Math.round((this.totalMaterialCost / count) * 100) / 100;
+  }
+
+  get totalCustomerAllocatedCost(): number {
+    return this.customerAllocations.reduce((sum, ca) => sum + (Number(ca.total) || 0), 0);
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {
       this.resetForm();
@@ -91,8 +102,9 @@ export class SiteDispatchModalComponent implements OnChanges {
     this.chargePerKm = null;
     this.distanceKm = null;
     this.deliveryCharge = 0;
-    this.showCustomerAllocation = false;
+    this.activeTab = 'items';
     this.remarks = '';
+    this.customerRemarks = '';
     this.uploadedDocs.set([]);
     this.isSubmitting = false;
 
@@ -199,13 +211,6 @@ export class SiteDispatchModalComponent implements OnChanges {
     const dist = Number(this.distanceKm) || 0;
     if (dist > 0 && charge > 0) {
       this.chargePerKm = Math.round((charge / dist) * 100) / 100;
-    }
-  }
-
-  toggleCustomerAllocation(): void {
-    this.showCustomerAllocation = !this.showCustomerAllocation;
-    if (this.showCustomerAllocation && this.customerAllocations.length === 0) {
-      this.addCustomerAllocation();
     }
   }
 
@@ -366,6 +371,11 @@ export class SiteDispatchModalComponent implements OnChanges {
 
     this.isSubmitting = true;
 
+    const fullRemarks = [
+      this.remarks ? this.remarks.trim() : '',
+      this.customerRemarks ? `Customer Notes: ${this.customerRemarks.trim()}` : ''
+    ].filter(Boolean).join('\n\n');
+
     const docsPayload = this.uploadedDocs().map(d => ({
       name: d.name,
       data: d.data
@@ -379,7 +389,7 @@ export class SiteDispatchModalComponent implements OnChanges {
       distanceKm: Number(this.distanceKm) || 0,
       extraDeliveryCost: 0,
       extraDeliveryComment: '',
-      remarks: this.remarks.trim(),
+      remarks: fullRemarks,
       isOurProject: true,
       customerAllocations: this.customerAllocations,
       docName: docsPayload[0]?.name || undefined,

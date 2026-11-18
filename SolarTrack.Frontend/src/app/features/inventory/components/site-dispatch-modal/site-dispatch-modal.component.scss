@@ -97,6 +97,32 @@
   overflow: visible !important;
 }
 
+// Modal Tabs Styling
+.nav-tabs {
+  border-bottom: 2px solid var(--st-border, #e2e8f0);
+
+  .nav-link {
+    color: #64748b;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    background: transparent;
+    transition: all 0.15s ease;
+
+    &:hover {
+      color: var(--st-primary, #ff4500);
+      background-color: transparent;
+    }
+
+    &.active {
+      color: var(--st-primary, #ff4500);
+      font-weight: 700;
+      border-bottom: 2px solid var(--st-primary, #ff4500);
+      background-color: transparent;
+    }
+  }
+}
+
 ::ng-deep tr:has(.is-open), tbody tr:has(.tree-select-container.is-open) {
   position: relative !important;
   z-index: 1080 !important;
