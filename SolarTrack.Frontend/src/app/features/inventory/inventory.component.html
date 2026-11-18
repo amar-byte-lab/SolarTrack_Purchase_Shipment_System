@@ -3,41 +3,49 @@
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- Tab Navigation (Always at Top)                             -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="nav-tabs-wrapper mb-3 border-bottom d-flex align-items-center justify-content-between">
-    <ul class="nav nav-tabs border-0 gap-1">
-      <li class="nav-item">
+  <div class="nav-tabs-wrapper mb-3">
+    <ul class="nav nav-tabs erp-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
         <button 
+          type="button"
+          role="tab"
           class="nav-link" 
-          [ngClass]="{ 'active': activeTab() === 'ledger' }"
+          [class.active]="activeTab() === 'ledger'"
           (click)="setTab('ledger')">
-          <app-icon name="boxes" class="me-1"></app-icon>
+          <app-icon name="boxes" [size]="14"></app-icon>
           <span>Live Stock Ledger</span>
         </button>
       </li>
-      <li class="nav-item">
+      <li class="nav-item" role="presentation">
         <button 
+          type="button"
+          role="tab"
           class="nav-link" 
-          [ngClass]="{ 'active': activeTab() === 'dispatches' }"
+          [class.active]="activeTab() === 'dispatches'"
           (click)="setTab('dispatches')">
-          <app-icon name="truck" class="me-1"></app-icon>
+          <app-icon name="truck" [size]="14"></app-icon>
           <span>Site Dispatches</span>
         </button>
       </li>
-      <li class="nav-item">
+      <li class="nav-item" role="presentation">
         <button 
+          type="button"
+          role="tab"
           class="nav-link" 
-          [ngClass]="{ 'active': activeTab() === 'inwards' }"
+          [class.active]="activeTab() === 'inwards'"
           (click)="setTab('inwards')">
-          <app-icon name="stock-in" class="me-1"></app-icon>
+          <app-icon name="stock-in" [size]="14"></app-icon>
           <span>Inward Purchases</span>
         </button>
       </li>
-      <li class="nav-item">
+      <li class="nav-item" role="presentation">
         <button 
+          type="button"
+          role="tab"
           class="nav-link" 
-          [ngClass]="{ 'active': activeTab() === 'summary' }"
+          [class.active]="activeTab() === 'summary'"
           (click)="setTab('summary')">
-          <app-icon name="trending-up" class="me-1"></app-icon>
+          <app-icon name="trending-up" [size]="14"></app-icon>
           <span>Summary</span>
         </button>
       </li>
@@ -623,7 +631,7 @@
               <th class="text-center" style="width: 1%;"></th>
               <th class="text-nowrap">Id</th>
               <th class="text-nowrap">Date</th>
-              <th>Supplier / Source</th>
+              <th>Supplier</th>
               <th class="text-end text-nowrap">Grand Total</th>
               <th class="text-center text-nowrap">Document</th>
               <th class="text-center text-nowrap">Action</th>

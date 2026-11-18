@@ -6,12 +6,13 @@
     </div>
   } @else {
     <!-- Tabs Navigation -->
-    <div class="settings-nav-wrapper mb-3 border-bottom">
-      <ul class="nav nav-tabs border-0 gap-1" role="tablist">
+    <div class="settings-nav-wrapper mb-3">
+      <ul class="nav nav-tabs erp-tabs" role="tablist">
         <li class="nav-item" role="presentation">
           <button 
             type="button" 
-            class="nav-link settings-tab-btn" 
+            role="tab"
+            class="nav-link" 
             [class.active]="activeTab() === 'company'" 
             (click)="setTab('company')">
             <app-icon name="gear" [size]="14"></app-icon>
@@ -21,7 +22,8 @@
         <li class="nav-item" role="presentation">
           <button 
             type="button" 
-            class="nav-link settings-tab-btn" 
+            role="tab"
+            class="nav-link" 
             [class.active]="activeTab() === 'users'" 
             (click)="setTab('users')">
             <app-icon name="customer" [size]="14"></app-icon>

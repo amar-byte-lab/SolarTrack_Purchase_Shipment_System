@@ -1,0 +1,17 @@
+[
+  {
+    "InwardID": "TEST_9999",
+    "Date": "2026-11-18",
+    "Supplier": "Test Supplier",
+    "ItemCode": "ITEM001",
+    "Quantity": 1,
+    "UnitPrice": 100,
+    "GstRate": 18,
+    "CostPerUnit": 118,
+    "TransportCost": 0,
+    "ConsignmentTransportCost": 0,
+    "TotalCost": 118,
+    "Location": "Main Warehouse",
+    "Remarks": "Test"
+  }
+]

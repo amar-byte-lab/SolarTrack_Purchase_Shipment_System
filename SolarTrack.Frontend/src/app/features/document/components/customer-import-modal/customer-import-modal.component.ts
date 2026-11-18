@@ -8,6 +8,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
 import { SummaryService } from '../../../../core/services/summary.service';
 import { InstallmentRow } from '../../../../core/models/summary.model';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { CustomerMappingTableComponent } from '../customer-mapping-table/customer-mapping-table.component';
 import { 
   ParsedCustomerItem, 
   ConflictingCustomerItem, 
@@ -18,7 +19,7 @@ import {
 @Component({
   selector: 'app-customer-import-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent],
+  imports: [CommonModule, FormsModule, IconComponent, CustomerMappingTableComponent],
   templateUrl: './customer-import-modal.component.html',
   styleUrls: ['./customer-import-modal.component.scss']
 })

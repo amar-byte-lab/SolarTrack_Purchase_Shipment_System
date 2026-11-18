@@ -229,6 +229,91 @@ textarea.form-control-sm {
   }
 }
 
+/* =========================================================================
+   Organic Pill Tab Switcher System (Global Unified Style)
+   ========================================================================= */
+.erp-tabs {
+  border: none !important;
+  background: rgba(24, 33, 19, 0.09);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 4px;
+  border-radius: var(--st-radius-pill, 999px) !important;
+  border: 1px solid rgba(24, 33, 19, 0.1) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+
+  .nav-item {
+    margin: 0;
+  }
+
+  .nav-link {
+    color: #2b3820 !important;
+    border: none !important;
+    padding: 7px 20px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    background: transparent !important;
+    border-radius: var(--st-radius-pill, 999px) !important;
+    transition: all 0.22s var(--st-ease-spring, ease);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    text-decoration: none;
+
+    svg, app-icon {
+      transition: stroke 0.15s ease, color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: var(--st-radius-pill, 999px);
+      font-weight: 600;
+      background: rgba(24, 33, 19, 0.08);
+      color: #2b3820;
+      border: 1px solid rgba(24, 33, 19, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    &:hover {
+      color: #182113 !important;
+      background: rgba(255, 255, 255, 0.45) !important;
+
+      .badge {
+        background: rgba(24, 33, 19, 0.12);
+        color: #182113;
+      }
+    }
+
+    &.active {
+      background: #182113 !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(24, 33, 19, 0.2);
+
+      svg {
+        stroke: var(--st-primary, #ff4500) !important;
+      }
+      app-icon, app-icon svg {
+        stroke: var(--st-primary, #ff4500) !important;
+        color: var(--st-primary, #ff4500) !important;
+      }
+
+      .badge {
+        background: rgba(255, 255, 255, 0.22) !important;
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+    }
+  }
+}
+
 /* Custom Scrollbar for desktop */
 ::-webkit-scrollbar {
   width: 6px;

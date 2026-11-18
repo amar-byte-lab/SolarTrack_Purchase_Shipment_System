@@ -179,60 +179,11 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
               <h6 class="fw-bold text-dark fs-7 mb-0">New Customers to Add ({{ summary.newCount }})</h6>
             </div>
-            <div class="table-responsive bg-white rounded-1 border" style="max-height: 280px; overflow-y: auto;">
-              <table class="table table-sm table-hover align-middle mb-0 fs-8">
-                <thead class="table-light sticky-top">
-                  <tr>
-                    <th class="text-center" style="width: 40px;">
-                      <input type="checkbox" [checked]="selectAllNew" (change)="toggleSelectAllNew($event)">
-                    </th>
-                    <th class="text-center" style="width: 45px;">SL.</th>
-                    <th>Consumer Name</th>
-                    <th>Consumer No</th>
-                    <th>Appl. Number</th>
-                    <th>Capacity</th>
-                    <th>Sub Div / Div</th>
-                    <th>Mobile</th>
-                    <th>Submitted On</th>
-                    <th>District</th>
-                    <th>Partner</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let c of newCustomers; let i = index">
-                    <td class="text-center">
-                      <input 
-                        *ngIf="!c.IsDuplicate" 
-                        type="checkbox" 
-                        [(ngModel)]="c.selected">
-                    </td>
-                    <td class="text-center font-monospace">{{ i + 1 }}</td>
-                    <td class="fw-semibold">{{ c.Name }}</td>
-                    <td class="font-monospace">{{ c.ConsumerNo || '—' }}</td>
-                    <td class="font-monospace text-nowrap">{{ c.ApplicationNumber || '—' }}</td>
-                    <td>{{ c.ProposedCapacity || '—' }}</td>
-                    <td class="text-truncate" style="max-width: 140px;">
-                      {{ formatDiscom(c.SubDivision, c.DivisionName, c.CircleName) }}
-                    </td>
-                    <td>{{ c.MobileNumber || '—' }}</td>
-                    <td class="font-monospace">
-                      <span>{{ fmtDateExcel(c.LoginDate) }}</span>
-                      <span *ngIf="getDelayInfo(c.LoginDate) as d" class="badge erp-delay-badge ms-1" [ngClass]="'delay-' + d.colorType">({{ d.text }})</span>
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-xs py-0 px-1 fs-8" [(ngModel)]="c.District" style="min-width: 100px;">
-                    </td>
-                    <td>
-                      <input type="text" class="form-control form-control-xs py-0 px-1 fs-8" [(ngModel)]="c.BrokerName" style="min-width: 110px;">
-                    </td>
-                    <td>
-                      <span class="badge" [ngClass]="c.IsDuplicate ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success-emphasis border border-success-subtle'">{{ c.Status }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <app-customer-mapping-table
+              [customers]="newCustomers"
+              [(selectAll)]="selectAllNew"
+              maxHeight="280px">
+            </app-customer-mapping-table>
           </div>
 
           <!-- Section 3: Grid Records Missing in Excel File (Exact matching screenshot) -->

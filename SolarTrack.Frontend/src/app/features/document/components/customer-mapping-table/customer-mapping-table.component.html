@@ -1,0 +1,84 @@
+<div class="table-responsive bg-white rounded-1 border" [ngStyle]="{'max-height': maxHeight, 'overflow-y': maxHeight === 'none' ? 'visible' : 'auto'}">
+  <table class="table table-sm table-hover align-middle mb-0 fs-8">
+    <thead class="table-light sticky-top">
+      <tr>
+        <th *ngIf="allowSelection" class="text-center" style="width: 40px;">
+          <input 
+            type="checkbox" 
+            [checked]="selectAll" 
+            (change)="toggleSelectAll($event)"
+            title="Select / Deselect all">
+        </th>
+        <th class="text-center" style="width: 45px;">SL.</th>
+        <th>Consumer Name</th>
+        <th>Consumer No</th>
+        <th>Appl. Number</th>
+        <th>Capacity</th>
+        <th>Sub Div / Div</th>
+        <th>Mobile</th>
+        <th>Submitted On</th>
+        <th>District</th>
+        <th>Partner</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let c of customers; let i = index" [class.table-light-warning]="c._isDirty">
+        <td *ngIf="allowSelection" class="text-center">
+          <input 
+            *ngIf="!c.IsDuplicate" 
+            type="checkbox" 
+            [(ngModel)]="c.selected"
+            (change)="onItemSelectChange()">
+        </td>
+        <td class="text-center font-monospace">{{ c.SlNo || (i + 1) }}</td>
+        <td class="fw-semibold text-dark text-nowrap">
+          {{ c.Name }}
+          <span *ngIf="c._isDirty" class="badge bg-warning text-dark ms-1 py-0 px-1 fs-9">Modified</span>
+        </td>
+        <td class="font-monospace">{{ c.ConsumerNo || '—' }}</td>
+        <td class="font-monospace text-nowrap">{{ c.ApplicationNumber || '—' }}</td>
+        <td>{{ c.ProposedCapacity || '—' }}</td>
+        <td class="text-truncate" style="max-width: 150px;" [title]="formatDiscom(c.SubDivision, c.DivisionName, c.CircleName)">
+          {{ formatDiscom(c.SubDivision, c.DivisionName, c.CircleName) }}
+        </td>
+        <td class="font-monospace text-nowrap">{{ c.MobileNumber || '—' }}</td>
+        <td class="font-monospace text-nowrap">
+          <span>{{ fmtDateExcel(c.LoginDate) }}</span>
+          <span *ngIf="getDelayInfo(c.LoginDate) as d" class="badge erp-delay-badge ms-1" [ngClass]="'delay-' + d.colorType">({{ d.text }})</span>
+        </td>
+        <td>
+          <input 
+            type="text" 
+            class="form-control form-control-xs py-0 px-1 fs-8" 
+            [(ngModel)]="c.District"
+            (ngModelChange)="onFieldChanged(c, 'District')" 
+            placeholder="District"
+            style="min-width: 100px;">
+        </td>
+        <td>
+          <input 
+            type="text" 
+            class="form-control form-control-xs py-0 px-1 fs-8" 
+            [(ngModel)]="c.BrokerName"
+            (ngModelChange)="onFieldChanged(c, 'BrokerName')" 
+            placeholder="Partner"
+            style="min-width: 110px;">
+        </td>
+        <td>
+          <span 
+            class="badge" 
+            [ngClass]="c.IsDuplicate ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success-emphasis border border-success-subtle'">
+            {{ c.Status || 'Active' }}
+          </span>
+        </td>
+      </tr>
+
+      <tr *ngIf="!customers || customers.length === 0">
+        <td [attr.colspan]="allowSelection ? 12 : 11" class="text-center py-4 text-muted fs-8">
+          {{ emptyMessage }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

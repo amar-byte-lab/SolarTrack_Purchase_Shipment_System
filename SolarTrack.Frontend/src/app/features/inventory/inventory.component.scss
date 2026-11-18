@@ -92,30 +92,6 @@
   }
 }
 
-.nav-tabs {
-  .nav-link {
-    color: #64748b;
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 0.5rem 0.9rem;
-    border: none;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    transition: all 0.15s ease;
-
-    &:hover {
-      color: #1e293b;
-      border-bottom-color: #cbd5e1;
-    }
-
-    &.active {
-      color: var(--st-primary, #2563eb);
-      border-bottom-color: var(--st-primary, #2563eb);
-      background: transparent;
-    }
-  }
-}
-
 .inventory-table {
   font-size: 0.82rem;
 

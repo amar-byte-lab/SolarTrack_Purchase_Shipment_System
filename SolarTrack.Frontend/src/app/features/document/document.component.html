@@ -1,6 +1,48 @@
 <div class="document-page container-fluid px-2 px-md-3 py-2">
   
-  <div class="row g-3">
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- TOP LEVEL PAGE TABS: Form & Customer mapping                         -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <ul class="nav nav-tabs erp-tabs mb-0" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button 
+          type="button" 
+          role="tab"
+          class="nav-link" 
+          [class.active]="mainTab() === 'form'" 
+          (click)="setMainTab('form')">
+          <app-icon name="file" [size]="14"></app-icon>
+          <span>Form</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button 
+          type="button" 
+          role="tab"
+          class="nav-link" 
+          [class.active]="mainTab() === 'customer-mapping'" 
+          (click)="setMainTab('customer-mapping')">
+          <app-icon name="customer" [size]="14"></app-icon>
+          <span>Customer mapping</span>
+          <span class="badge ms-1.5">
+            {{ mappingCustomers().length }}
+          </span>
+        </button>
+      </li>
+    </ul>
+
+    <!-- Quick info / context hint -->
+    <div class="d-flex align-items-center gap-2">
+      <span *ngIf="mainTab() === 'form'" class="text-secondary fs-8">Official DISCOM Application &amp; Commissioning Documentation</span>
+      <span *ngIf="mainTab() === 'customer-mapping'" class="text-secondary fs-8">Customer District &amp; Partner Management</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: FORM VIEW (Customer Directory + Forms Agreement/1/3/4/6)      -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="mainTab() === 'form'" class="row g-3">
     
     <!-- Left Column: Reusable Customer Directory Component -->
     <div class="col-lg-5 col-xl-4">
@@ -123,6 +165,132 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: CUSTOMER MAPPING VIEW                                         -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="mainTab() === 'customer-mapping'" class="customer-mapping-view">
+    <div class="st-card p-3 bg-white border rounded shadow-xs mb-3">
+      
+      <!-- Header Toolbar -->
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 pb-2 border-bottom">
+        <div>
+          <h5 class="fw-bold text-dark fs-6 mb-0 d-flex align-items-center gap-2">
+            <span>Customer Mapping</span>
+          </h5>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button 
+            type="button" 
+            class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5 fw-semibold"
+            (click)="openImportModal()"
+            title="Import PMSGY application file from Excel">
+            <app-icon name="download" [size]="14"></app-icon>
+            <span>Import Excel</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-sm btn-outline-success d-flex align-items-center gap-1.5 fw-semibold"
+            (click)="onAddCustomerFromMapping()"
+            title="Add New Customer Record">
+            <app-icon name="plus" [size]="14"></app-icon>
+            <span>Add Customer</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-sm btn-primary d-flex align-items-center gap-1.5 fw-semibold px-3"
+            [disabled]="isSavingMapping() || dirtyCount() === 0"
+            (click)="saveMappingChanges()">
+            <span *ngIf="isSavingMapping()" class="spinner-border spinner-border-sm" role="status"></span>
+            <app-icon *ngIf="!isSavingMapping()" name="check" [size]="14"></app-icon>
+            <span>Save Mappings</span>
+            <span *ngIf="dirtyCount() > 0" class="badge bg-white text-primary ms-1">
+              {{ dirtyCount() }}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters Toolbar -->
+      <div class="row g-2 align-items-center mb-3">
+        <!-- Search Input -->
+        <div class="col-md-4 col-lg-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0 text-muted">
+              <app-icon name="search" [size]="13"></app-icon>
+            </span>
+            <input 
+              type="text" 
+              class="form-control border-start-0 ps-1 fs-8" 
+              placeholder="Search name, consumer no, appl no..." 
+              [ngModel]="mappingSearchQuery()" 
+              (ngModelChange)="onMappingSearchChange($event)">
+            <button 
+              *ngIf="mappingSearchQuery()" 
+              class="btn btn-outline-secondary border-start-0 border-end" 
+              type="button" 
+              (click)="onMappingSearchChange('')">
+              &times;
+            </button>
+          </div>
+        </div>
+
+        <!-- District Filter Dropdown -->
+        <div class="col-md-3 col-lg-2">
+          <select 
+            class="form-select form-select-sm fs-8" 
+            [ngModel]="mappingDistrictFilter()" 
+            (ngModelChange)="onMappingDistrictChange($event)">
+            <option value="All">All Districts</option>
+            <option value="__unmapped__">⚠️ Unmapped District</option>
+            <option *ngFor="let dist of mappingDistrictsList()" [value]="dist">{{ dist }}</option>
+          </select>
+        </div>
+
+        <!-- Partner Filter Dropdown -->
+        <div class="col-md-3 col-lg-2">
+          <select 
+            class="form-select form-select-sm fs-8" 
+            [ngModel]="mappingPartnerFilter()" 
+            (ngModelChange)="onMappingPartnerChange($event)">
+            <option value="All">All Partners</option>
+            <option value="__unmapped__">⚠️ Unmapped Partner</option>
+            <option *ngFor="let part of mappingPartnersList()" [value]="part">{{ part }}</option>
+          </select>
+        </div>
+
+        <!-- Stats Chips -->
+        <div class="col-md-2 col-lg-5 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
+          <span class="badge bg-light text-secondary border fs-8">
+            Selected: {{ selectedMappingCount() }}
+          </span>
+          <span *ngIf="unmappedDistrictCount() > 0" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-8">
+            Pending District: {{ unmappedDistrictCount() }}
+          </span>
+          <span *ngIf="unmappedPartnerCount() > 0" class="badge bg-info-subtle text-info-emphasis border border-info-subtle fs-8">
+            Pending Partner: {{ unmappedPartnerCount() }}
+          </span>
+          <span *ngIf="dirtyCount() > 0" class="badge bg-success-subtle text-success-emphasis border border-success-subtle fs-8">
+            Modified: {{ dirtyCount() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Reusable Customer Mapping Table Component -->
+      <app-customer-mapping-table
+        [customers]="filteredMappingCustomers()"
+        [(selectAll)]="selectAllMapping"
+        (selectionChange)="onMappingSelectionChange($event)"
+        (customerChange)="onMappingCustomerChange($event)"
+        maxHeight="calc(100vh - 280px)"
+        emptyMessage="No customer records match the mapping criteria.">
+      </app-customer-mapping-table>
+
+    </div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -313,5 +481,15 @@
     (close)="closeImportModal()"
     (importCompleted)="onImportCompleted()">
   </app-customer-import-modal>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- REUSABLE MODAL COMPONENT: ADD / EDIT CUSTOMER                       -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <app-customer-modal
+    [isOpen]="isCustomerModalOpen()"
+    [customer]="customerForModal"
+    (close)="closeCustomerModal()"
+    (saved)="onCustomerSaved($event)">
+  </app-customer-modal>
 
 </div>
