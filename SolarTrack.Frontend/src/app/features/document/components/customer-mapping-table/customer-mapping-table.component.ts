@@ -1,24 +1,41 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SummaryService } from '../../../../core/services/summary.service';
+import { ODISHA_DISTRICTS } from '../../../../shared/components/customer-modal/customer-modal.component';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-customer-mapping-table',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   templateUrl: './customer-mapping-table.component.html',
   styleUrls: ['./customer-mapping-table.component.scss']
 })
 export class CustomerMappingTableComponent {
+  private summaryService = inject(SummaryService);
+
   @Input() customers: any[] = [];
   @Input() selectAll: boolean = true;
   @Input() maxHeight: string = '500px';
-  @Input() allowSelection: boolean = true;
+  @Input() showCheckbox: boolean = true;
+  @Input() showActions: boolean = false;
   @Input() emptyMessage: string = 'No customer records to display.';
+  @Input() partnerOptions: string[] = [];
 
   @Output() selectAllChange = new EventEmitter<boolean>();
   @Output() selectionChange = new EventEmitter<any[]>();
   @Output() customerChange = new EventEmitter<{ item: any; field: string }>();
+  @Output() editClicked = new EventEmitter<any>();
+  @Output() deactiveClicked = new EventEmitter<any>();
+  @Output() deleteClicked = new EventEmitter<any>();
+
+  readonly districts = ODISHA_DISTRICTS;
+  readonly defaultStatuses: string[] = ['Active', 'Deactive', 'Pending', 'New Name', 'Duplicate (In Excel)'];
+
+  getColspan(): number {
+    return 10 + (this.showCheckbox ? 1 : 0) + (this.showActions ? 1 : 0);
+  }
 
   toggleSelectAll(event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
@@ -47,6 +64,29 @@ export class CustomerMappingTableComponent {
 
   getSelectedCustomers(): any[] {
     return this.customers.filter(c => c.selected && !c.IsDuplicate);
+  }
+
+  getPartnerList(c: any): string[] {
+    const base = this.partnerOptions.length > 0 ? this.partnerOptions : this.summaryService.partnerList();
+    if (c.BrokerName && !base.includes(c.BrokerName.trim())) {
+      return [c.BrokerName.trim(), ...base];
+    }
+    return base;
+  }
+
+  getStatusList(c: any): string[] {
+    if (c.Status && !this.defaultStatuses.includes(c.Status)) {
+      return [c.Status, ...this.defaultStatuses];
+    }
+    return this.defaultStatuses;
+  }
+
+  getStatusClass(status: string): string {
+    if (!status) return '';
+    const s = status.toLowerCase();
+    if (s.includes('active') && !s.includes('deactive')) return 'text-success-emphasis bg-success-subtle border-success-subtle';
+    if (s.includes('deactive') || s.includes('duplicate')) return 'text-danger bg-danger-subtle border-danger-subtle';
+    return 'text-primary bg-primary-subtle border-primary-subtle';
   }
 
   formatDiscom(subDiv?: string, div?: string, circle?: string): string {

@@ -35,7 +35,7 @@
     <!-- Quick info / context hint -->
     <div class="d-flex align-items-center gap-2">
       <span *ngIf="mainTab() === 'form'" class="text-secondary fs-8">Official DISCOM Application &amp; Commissioning Documentation</span>
-      <span *ngIf="mainTab() === 'customer-mapping'" class="text-secondary fs-8">Customer District &amp; Partner Management</span>
+      <span *ngIf="mainTab() === 'customer-mapping'" class="text-secondary fs-8">Customer District, Partner &amp; Status Management</span>
     </div>
   </div>
 
@@ -173,12 +173,18 @@
   <div *ngIf="mainTab() === 'customer-mapping'" class="customer-mapping-view">
     <div class="st-card p-3 bg-white border rounded shadow-xs mb-3">
       
-      <!-- Header Toolbar -->
+      <!-- Top Action Strip -->
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 pb-2 border-bottom">
         <div>
           <h5 class="fw-bold text-dark fs-6 mb-0 d-flex align-items-center gap-2">
             <span>Customer Mapping</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8">
+              {{ filteredMappingCustomers().length }} of {{ mappingCustomers().length }} Records
+            </span>
           </h5>
+          <p class="text-secondary fs-8 mb-0 mt-0.5">
+            Manage customer mappings, assign District &amp; Partner via dropdowns, manage Active/Deactive status, and save changes.
+          </p>
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -215,78 +221,112 @@
         </div>
       </div>
 
-      <!-- Filters Toolbar -->
-      <div class="row g-2 align-items-center mb-3">
-        <!-- Search Input -->
-        <div class="col-md-4 col-lg-3">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white border-end-0 text-muted">
-              <app-icon name="search" [size]="13"></app-icon>
-            </span>
-            <input 
-              type="text" 
-              class="form-control border-start-0 ps-1 fs-8" 
-              placeholder="Search name, consumer no, appl no..." 
-              [ngModel]="mappingSearchQuery()" 
-              (ngModelChange)="onMappingSearchChange($event)">
+      <!-- Filters Strip: Replaces old dropdowns with exact Summary page District & Partner filters + Clear button -->
+      <div class="summary-style-filters mb-3">
+        <!-- Row 1: Search, Partner Multiselect Dropdown, Clear Filters -->
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+          <!-- Search Box -->
+          <div class="search-box flex-grow-1" style="max-width: 420px; min-width: 220px;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
+                <app-icon name="search" [size]="13"></app-icon>
+              </span>
+              <input 
+                type="text" 
+                class="form-control border-start-0 ps-1 bg-white fs-8" 
+                [ngModel]="mappingSearchQuery()"
+                (ngModelChange)="onMappingSearchChange($event)"
+                placeholder="Search customer, mobile, address, consumer no..." 
+                style="font-size: 0.83rem;">
+            </div>
+          </div>
+
+          <!-- Partner Multi-select Dropdown & Clear Button (from Summary page) -->
+          <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+            <!-- Partner Multi-select Dropdown -->
+            <div class="dropdown position-relative" style="min-width: 140px; max-width: 220px;">
+              <button 
+                class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2 shadow-none" 
+                type="button" 
+                (click)="toggleMappingPartnerDropdown()">
+                {{ mappingPartnerDropdownLabel }}
+              </button>
+              <div 
+                class="dropdown-menu p-3 shadow-sm border" 
+                [class.show]="isMappingPartnerMenuOpen"
+                style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size: 0.82rem; position: absolute; right: 0; z-index: 1050;">
+                <!-- (No Partner) filter -->
+                <div class="form-check mb-1">
+                  <input 
+                    class="form-check-input cursor-pointer" 
+                    type="checkbox" 
+                    id="chk_map_nopartner"
+                    [checked]="isMappingPartnerSelected('(No Partner)')"
+                    (change)="toggleMappingPartner('(No Partner)')">
+                  <label class="form-check-label fs-8 cursor-pointer" for="chk_map_nopartner">
+                    (No Partner)
+                  </label>
+                </div>
+                <div *ngIf="mappingPartnersList().length === 0" class="text-muted p-1 fs-9">No partners available</div>
+                <div *ngFor="let partner of mappingPartnersList()" class="form-check mb-1">
+                  <input 
+                    class="form-check-input cursor-pointer" 
+                    type="checkbox" 
+                    [id]="'map_partner_' + partner"
+                    [checked]="isMappingPartnerSelected(partner)"
+                    (change)="toggleMappingPartner(partner)">
+                  <label class="form-check-label fs-8 cursor-pointer text-truncate" [for]="'map_partner_' + partner">
+                    {{ partner }}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Clear Button -->
             <button 
-              *ngIf="mappingSearchQuery()" 
-              class="btn btn-outline-secondary border-start-0 border-end" 
               type="button" 
-              (click)="onMappingSearchChange('')">
-              &times;
+              class="btn btn-sm btn-link text-muted text-decoration-none py-1 px-1.5 fs-8" 
+              (click)="clearMappingFilters()">
+              Clear
             </button>
           </div>
         </div>
 
-        <!-- District Filter Dropdown -->
-        <div class="col-md-3 col-lg-2">
-          <select 
-            class="form-select form-select-sm fs-8" 
-            [ngModel]="mappingDistrictFilter()" 
-            (ngModelChange)="onMappingDistrictChange($event)">
-            <option value="All">All Districts</option>
-            <option value="__unmapped__">⚠️ Unmapped District</option>
-            <option *ngFor="let dist of mappingDistrictsList()" [value]="dist">{{ dist }}</option>
-          </select>
-        </div>
-
-        <!-- Partner Filter Dropdown -->
-        <div class="col-md-3 col-lg-2">
-          <select 
-            class="form-select form-select-sm fs-8" 
-            [ngModel]="mappingPartnerFilter()" 
-            (ngModelChange)="onMappingPartnerChange($event)">
-            <option value="All">All Partners</option>
-            <option value="__unmapped__">⚠️ Unmapped Partner</option>
-            <option *ngFor="let part of mappingPartnersList()" [value]="part">{{ part }}</option>
-          </select>
-        </div>
-
-        <!-- Stats Chips -->
-        <div class="col-md-2 col-lg-5 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
-          <span class="badge bg-light text-secondary border fs-8">
-            Selected: {{ selectedMappingCount() }}
-          </span>
-          <span *ngIf="unmappedDistrictCount() > 0" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-8">
-            Pending District: {{ unmappedDistrictCount() }}
-          </span>
-          <span *ngIf="unmappedPartnerCount() > 0" class="badge bg-info-subtle text-info-emphasis border border-info-subtle fs-8">
-            Pending Partner: {{ unmappedPartnerCount() }}
-          </span>
-          <span *ngIf="dirtyCount() > 0" class="badge bg-success-subtle text-success-emphasis border border-success-subtle fs-8">
-            Modified: {{ dirtyCount() }}
-          </span>
+        <!-- Row 2: Area / District Badges (Horizontal Scrollable Strip from Summary page) -->
+        <div class="mw-chips-scroll-strip mw-district-strip d-flex gap-1 overflow-auto py-1">
+          <button 
+            type="button"
+            class="erp-tag-purple-total"
+            [class.active]="isMappingDistrictSelected('ALL')"
+            (click)="toggleMappingDistrict('ALL')"
+            title="Show all districts">
+            Total: {{ mappingCustomers().length }}
+          </button>
+          <button 
+            *ngFor="let d of mappingDistrictStats()"
+            type="button"
+            class="erp-tag"
+            [class.active]="d.active"
+            (click)="toggleMappingDistrict(d.name)"
+            [title]="'Filter by ' + d.name">
+            {{ d.name }} ({{ d.count }})
+          </button>
         </div>
       </div>
 
-      <!-- Reusable Customer Mapping Table Component -->
+      <!-- Reusable Customer Mapping Table Component:
+           - First column (checkbox) REMOVED via [showCheckbox]="false"
+           - Action column ADDED via [showActions]="true" (Edit, Deactive, Delete)
+           - District, Partner, Status are DROPDOWNS -->
       <app-customer-mapping-table
         [customers]="filteredMappingCustomers()"
-        [(selectAll)]="selectAllMapping"
-        (selectionChange)="onMappingSelectionChange($event)"
+        [showCheckbox]="false"
+        [showActions]="true"
         (customerChange)="onMappingCustomerChange($event)"
-        maxHeight="calc(100vh - 280px)"
+        (editClicked)="onEditCustomerFromMapping($event)"
+        (deactiveClicked)="onToggleStatusCustomer($event)"
+        (deleteClicked)="onDeleteCustomer($event)"
+        maxHeight="calc(100vh - 310px)"
         emptyMessage="No customer records match the mapping criteria.">
       </app-customer-mapping-table>
 

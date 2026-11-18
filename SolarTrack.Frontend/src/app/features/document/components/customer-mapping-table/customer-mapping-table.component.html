@@ -2,7 +2,7 @@
   <table class="table table-sm table-hover align-middle mb-0 fs-8">
     <thead class="table-light sticky-top">
       <tr>
-        <th *ngIf="allowSelection" class="text-center" style="width: 40px;">
+        <th *ngIf="showCheckbox" class="text-center" style="width: 40px;">
           <input 
             type="checkbox" 
             [checked]="selectAll" 
@@ -20,62 +20,122 @@
         <th>District</th>
         <th>Partner</th>
         <th>Status</th>
+        <th *ngIf="showActions" class="text-center" style="width: 105px;">Action</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let c of customers; let i = index" [class.table-light-warning]="c._isDirty">
-        <td *ngIf="allowSelection" class="text-center">
+        <!-- Checkbox Column -->
+        <td *ngIf="showCheckbox" class="text-center">
           <input 
             *ngIf="!c.IsDuplicate" 
             type="checkbox" 
             [(ngModel)]="c.selected"
             (change)="onItemSelectChange()">
         </td>
+
+        <!-- SL. -->
         <td class="text-center font-monospace">{{ c.SlNo || (i + 1) }}</td>
+
+        <!-- Consumer Name -->
         <td class="fw-semibold text-dark text-nowrap">
           {{ c.Name }}
           <span *ngIf="c._isDirty" class="badge bg-warning text-dark ms-1 py-0 px-1 fs-9">Modified</span>
         </td>
+
+        <!-- Consumer No -->
         <td class="font-monospace">{{ c.ConsumerNo || '—' }}</td>
+
+        <!-- Appl. Number -->
         <td class="font-monospace text-nowrap">{{ c.ApplicationNumber || '—' }}</td>
+
+        <!-- Capacity -->
         <td>{{ c.ProposedCapacity || '—' }}</td>
+
+        <!-- Sub Div / Div -->
         <td class="text-truncate" style="max-width: 150px;" [title]="formatDiscom(c.SubDivision, c.DivisionName, c.CircleName)">
           {{ formatDiscom(c.SubDivision, c.DivisionName, c.CircleName) }}
         </td>
+
+        <!-- Mobile -->
         <td class="font-monospace text-nowrap">{{ c.MobileNumber || '—' }}</td>
+
+        <!-- Submitted On -->
         <td class="font-monospace text-nowrap">
           <span>{{ fmtDateExcel(c.LoginDate) }}</span>
           <span *ngIf="getDelayInfo(c.LoginDate) as d" class="badge erp-delay-badge ms-1" [ngClass]="'delay-' + d.colorType">({{ d.text }})</span>
         </td>
+
+        <!-- District Dropdown -->
         <td>
-          <input 
-            type="text" 
-            class="form-control form-control-xs py-0 px-1 fs-8" 
+          <select 
+            class="form-select form-select-xs py-0 px-1 fs-8" 
             [(ngModel)]="c.District"
             (ngModelChange)="onFieldChanged(c, 'District')" 
-            placeholder="District"
-            style="min-width: 100px;">
+            style="min-width: 115px;">
+            <option value="">Select District</option>
+            <option *ngIf="c.District && !districts.includes(c.District)" [value]="c.District">{{ c.District }}</option>
+            <option *ngFor="let dist of districts" [value]="dist">{{ dist }}</option>
+          </select>
         </td>
+
+        <!-- Partner Dropdown -->
         <td>
-          <input 
-            type="text" 
-            class="form-control form-control-xs py-0 px-1 fs-8" 
+          <select 
+            class="form-select form-select-xs py-0 px-1 fs-8" 
             [(ngModel)]="c.BrokerName"
             (ngModelChange)="onFieldChanged(c, 'BrokerName')" 
-            placeholder="Partner"
-            style="min-width: 110px;">
+            style="min-width: 125px;">
+            <option value="">Select Partner</option>
+            <option *ngFor="let part of getPartnerList(c)" [value]="part">{{ part }}</option>
+          </select>
         </td>
+
+        <!-- Status Dropdown -->
         <td>
-          <span 
-            class="badge" 
-            [ngClass]="c.IsDuplicate ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success-emphasis border border-success-subtle'">
-            {{ c.Status || 'Active' }}
-          </span>
+          <select 
+            class="form-select form-select-xs py-0 px-1 fs-8 fw-semibold" 
+            [ngClass]="getStatusClass(c.Status)"
+            [(ngModel)]="c.Status"
+            (ngModelChange)="onFieldChanged(c, 'Status')" 
+            style="min-width: 105px;">
+            <option *ngFor="let st of getStatusList(c)" [value]="st">{{ st }}</option>
+          </select>
+        </td>
+
+        <!-- Action Column (Consistent with Summary Table) -->
+        <td class="text-center text-nowrap" *ngIf="showActions">
+          <div class="d-inline-flex align-items-center gap-1">
+            <!-- 1. Customer Edit -->
+            <button 
+              type="button" 
+              class="btn btn-xs btn-outline-primary p-1 lh-1" 
+              (click)="$event.stopPropagation(); editClicked.emit(c)" 
+              title="Edit Customer Record">
+              <app-icon name="edit" [size]="12"></app-icon>
+            </button>
+            <!-- 2. Customer Deactivate -->
+            <button 
+              type="button" 
+              class="btn btn-xs btn-outline-warning p-1 lh-1 text-dark" 
+              (click)="$event.stopPropagation(); deactiveClicked.emit(c)" 
+              [title]="c.Status === 'Deactive' ? 'Activate Customer' : 'Deactivate Customer'">
+              <app-icon name="user-x" [size]="12"></app-icon>
+            </button>
+            <!-- 3. Customer Remove -->
+            <button 
+              type="button" 
+              class="btn btn-xs btn-outline-danger p-1 lh-1" 
+              (click)="$event.stopPropagation(); deleteClicked.emit(c)" 
+              title="Remove Customer Record">
+              <app-icon name="trash" [size]="12"></app-icon>
+            </button>
+          </div>
         </td>
       </tr>
 
       <tr *ngIf="!customers || customers.length === 0">
-        <td [attr.colspan]="allowSelection ? 12 : 11" class="text-center py-4 text-muted fs-8">
+        <td [attr.colspan]="getColspan()" class="text-center py-4 text-muted fs-8">
           {{ emptyMessage }}
         </td>
       </tr>

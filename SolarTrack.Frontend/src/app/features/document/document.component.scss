@@ -10,6 +10,77 @@
   box-shadow: var(--st-shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.04));
 }
 
+/* ══ Organic Pill Tab Switcher (Matching Screenshot) ══════════════════════ */
+.erp-tabs {
+  border: none !important;
+  background: #ffffff !important;
+  padding: 4px;
+  border-radius: 12px !important;
+  border: 1px solid rgba(24, 33, 19, 0.12) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .nav-item {
+    margin: 0;
+  }
+
+  .nav-link {
+    color: #182113 !important;
+    border: none !important;
+    padding: 7px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: transparent !important;
+    border-radius: 8px !important;
+    transition: all 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+
+    app-icon, app-icon svg, svg {
+      transition: stroke 0.15s ease, color 0.15s ease;
+      stroke: #182113 !important;
+      color: #182113 !important;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+      background: rgba(24, 33, 19, 0.08) !important;
+      color: #182113 !important;
+      border: none !important;
+      transition: all 0.2s ease;
+    }
+
+    &:hover {
+      background: rgba(24, 33, 19, 0.05) !important;
+    }
+
+    &.active {
+      background: #ff0000 !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(255, 0, 0, 0.3);
+
+      app-icon, app-icon svg, svg {
+        stroke: #ffffff !important;
+        color: #ffffff !important;
+      }
+
+      .badge {
+        background: rgba(255, 255, 255, 0.28) !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+}
+
 /* Document Tabs */
 .custom-doc-tabs {
   display: flex;
@@ -64,6 +135,87 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Summary Page Style Filter Strips */
+.summary-style-filters {
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.mw-chips-scroll-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* District / Area Tags (Matching Summary page) */
+.erp-tag {
+  font-family: var(--st-font-mono, monospace);
+  font-size: 0.73rem !important;
+  padding: 2.5px 9px !important;
+  border-radius: 999px !important;
+  height: 24px !important;
+  line-height: 18px !important;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #94a3b8;
+  }
+
+  &.active {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #0f172a !important;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  }
+}
+
+.erp-tag-purple-total {
+  font-family: var(--st-font-mono, monospace);
+  font-size: 0.73rem !important;
+  padding: 2.5px 12px !important;
+  border-radius: 999px !important;
+  height: 24px !important;
+  line-height: 18px !important;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(109, 40, 217, 0.1);
+  border: 1px solid rgba(109, 40, 217, 0.3);
+  color: var(--st-primary, #6d28d9);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(109, 40, 217, 0.18);
+    color: #5b21b6;
+  }
+
+  &.active {
+    background: var(--st-primary, #6d28d9) !important;
+    color: #ffffff !important;
+    border-color: var(--st-primary, #6d28d9) !important;
+    box-shadow: 0 2px 8px rgba(109, 40, 217, 0.3);
   }
 }
 

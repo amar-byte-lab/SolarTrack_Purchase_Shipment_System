@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -7,6 +7,7 @@ import { forkJoin } from 'rxjs';
 import { DocumentService } from './services/document.service';
 import { SummaryService } from '../../core/services/summary.service';
 import { ToastService } from '../../shared/services/toast.service';
+import { ConfirmDialogService } from '../../shared/services/confirm-dialog.service';
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { CustomerModalComponent } from '../../shared/components/customer-modal/customer-modal.component';
 import { InstallmentRow } from '../../core/models/summary.model';
@@ -50,6 +51,7 @@ export class DocumentComponent implements OnInit {
   docService = inject(DocumentService);
   summaryService = inject(SummaryService);
   toastService = inject(ToastService);
+  confirmDialogService = inject(ConfirmDialogService);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
 
@@ -69,12 +71,12 @@ export class DocumentComponent implements OnInit {
   districtStats = this.docService.districtStats;
   filteredCustomers = this.docService.filteredCustomers;
 
-  // Customer Mapping Tab Signals
+  // Customer Mapping Tab Signals (Matching Summary page filter design)
   mappingCustomers = signal<any[]>([]);
   mappingSearchQuery = signal<string>('');
-  mappingDistrictFilter = signal<string>('All');
-  mappingPartnerFilter = signal<string>('All');
-  selectAllMapping = signal<boolean>(true);
+  mappingSelectedPartners = signal<string[]>([]);
+  mappingSelectedDistricts = signal<string[]>([]);
+  isMappingPartnerMenuOpen = false;
   isSavingMapping = signal<boolean>(false);
 
   // Technical Specs Modal State
@@ -91,12 +93,56 @@ export class DocumentComponent implements OnInit {
   isPreviewModalOpen = signal<boolean>(false);
   previewDocType = signal<DocumentType>('form4');
 
-  // Computed signals for Customer Mapping Tab
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.dropdown')) {
+      this.isMappingPartnerMenuOpen = false;
+    }
+  }
+
+  // --- Computed signals for Customer Mapping Tab ---
+  mappingPartnersList = computed<string[]>(() => {
+    const set = new Set<string>();
+    this.summaryService.partnerList().forEach(p => {
+      if (p && p.trim()) set.add(p.trim());
+    });
+    this.mappingCustomers().forEach(c => {
+      if (c.BrokerName && c.BrokerName.trim()) {
+        set.add(c.BrokerName.trim());
+      }
+    });
+    return Array.from(set).sort();
+  });
+
+  mappingDistrictStats = computed<{ name: string; count: number; active: boolean }[]>(() => {
+    const list = this.mappingCustomers();
+    const map = new Map<string, number>();
+    
+    list.forEach(c => {
+      const dist = (c.District && c.District.trim()) ? c.District.trim() : '(No District)';
+      map.set(dist, (map.get(dist) || 0) + 1);
+    });
+
+    const sel = this.mappingSelectedDistricts();
+    return Array.from(map.entries())
+      .map(([name, count]) => ({
+        name,
+        count,
+        active: sel.includes(name)
+      }))
+      .sort((a, b) => {
+        if (a.name === '(No District)') return 1;
+        if (b.name === '(No District)') return -1;
+        return a.name.localeCompare(b.name);
+      });
+  });
+
   filteredMappingCustomers = computed(() => {
     let items = this.mappingCustomers();
     const query = this.mappingSearchQuery().trim().toLowerCase();
-    const dist = this.mappingDistrictFilter();
-    const part = this.mappingPartnerFilter();
+    const partners = this.mappingSelectedPartners();
+    const districts = this.mappingSelectedDistricts();
 
     if (query) {
       items = items.filter(c => 
@@ -107,51 +153,36 @@ export class DocumentComponent implements OnInit {
         (c.District && c.District.toLowerCase().includes(query)) ||
         (c.BrokerName && c.BrokerName.toLowerCase().includes(query)) ||
         (c.SubDivision && c.SubDivision.toLowerCase().includes(query)) ||
-        (c.DivisionName && c.DivisionName.toLowerCase().includes(query))
+        (c.DivisionName && c.DivisionName.toLowerCase().includes(query)) ||
+        (c.Status && c.Status.toLowerCase().includes(query))
       );
     }
 
-    if (dist === '__unmapped__') {
-      items = items.filter(c => !c.District || c.District.trim() === '');
-    } else if (dist && dist !== 'All') {
-      items = items.filter(c => c.District && c.District.toLowerCase() === dist.toLowerCase());
+    if (partners.length > 0) {
+      items = items.filter(c => {
+        const broker = c.BrokerName ? c.BrokerName.trim() : '';
+        if (partners.includes('(No Partner)') && !broker) {
+          return true;
+        }
+        return broker ? partners.includes(broker) : false;
+      });
     }
 
-    if (part === '__unmapped__') {
-      items = items.filter(c => !c.BrokerName || c.BrokerName.trim() === '');
-    } else if (part && part !== 'All') {
-      items = items.filter(c => c.BrokerName && c.BrokerName.toLowerCase() === part.toLowerCase());
+    if (districts.length > 0) {
+      items = items.filter(c => {
+        const dist = c.District ? c.District.trim() : '';
+        if (districts.includes('(No District)') && !dist) {
+          return true;
+        }
+        return dist ? districts.includes(dist) : false;
+      });
     }
 
     return items;
   });
 
-  mappingDistrictsList = computed(() => {
-    const set = new Set<string>();
-    this.mappingCustomers().forEach(c => {
-      if (c.District && c.District.trim()) {
-        set.add(c.District.trim());
-      }
-    });
-    return Array.from(set).sort();
-  });
-
-  mappingPartnersList = computed(() => {
-    const set = new Set<string>();
-    this.mappingCustomers().forEach(c => {
-      if (c.BrokerName && c.BrokerName.trim()) {
-        set.add(c.BrokerName.trim());
-      }
-    });
-    return Array.from(set).sort();
-  });
-
   dirtyCount = computed(() => {
     return this.mappingCustomers().filter(c => c._isDirty).length;
-  });
-
-  selectedMappingCount = computed(() => {
-    return this.filteredMappingCustomers().filter(c => c.selected && !c.IsDuplicate).length;
   });
 
   unmappedDistrictCount = computed(() => {
@@ -246,7 +277,7 @@ export class DocumentComponent implements OnInit {
       LoginDate: r.LoginDate || '',
       Status: r.Status || 'Active',
       IsDuplicate: false,
-      selected: true,
+      selected: false,
       _isDirty: false
     };
   }
@@ -256,24 +287,67 @@ export class DocumentComponent implements OnInit {
     this.mappingCustomers.set(items);
   }
 
+  // --- Mapping Filters Methods (Exact matching Summary toolbar) ---
   onMappingSearchChange(query: string): void {
     this.mappingSearchQuery.set(query);
   }
 
-  onMappingDistrictChange(dist: string): void {
-    this.mappingDistrictFilter.set(dist);
+  toggleMappingPartnerDropdown(): void {
+    this.isMappingPartnerMenuOpen = !this.isMappingPartnerMenuOpen;
   }
 
-  onMappingPartnerChange(partner: string): void {
-    this.mappingPartnerFilter.set(partner);
+  closeMappingPartnerDropdown(): void {
+    this.isMappingPartnerMenuOpen = false;
   }
 
-  onMappingSelectionChange(items: any[]): void {
-    // updates reactive counts
+  isMappingPartnerSelected(partner: string): boolean {
+    return this.mappingSelectedPartners().includes(partner);
+  }
+
+  toggleMappingPartner(partner: string): void {
+    const current = this.mappingSelectedPartners();
+    if (current.includes(partner)) {
+      this.mappingSelectedPartners.set(current.filter(p => p !== partner));
+    } else {
+      this.mappingSelectedPartners.set([...current, partner]);
+    }
+  }
+
+  get mappingPartnerDropdownLabel(): string {
+    const sel = this.mappingSelectedPartners();
+    if (sel.length === 0) return 'All Partners';
+    if (sel.length === 1) return sel[0];
+    return `${sel.length} Partners`;
+  }
+
+  isMappingDistrictSelected(distVal: string): boolean {
+    if (distVal === 'ALL') {
+      return this.mappingSelectedDistricts().length === 0;
+    }
+    return this.mappingSelectedDistricts().includes(distVal);
+  }
+
+  toggleMappingDistrict(distVal: string): void {
+    if (distVal === 'ALL') {
+      this.mappingSelectedDistricts.set([]);
+      return;
+    }
+    const current = this.mappingSelectedDistricts();
+    if (current.includes(distVal)) {
+      this.mappingSelectedDistricts.set(current.filter(d => d !== distVal));
+    } else {
+      this.mappingSelectedDistricts.set([...current, distVal]);
+    }
+  }
+
+  clearMappingFilters(): void {
+    this.mappingSearchQuery.set('');
+    this.mappingSelectedPartners.set([]);
+    this.mappingSelectedDistricts.set([]);
   }
 
   onMappingCustomerChange(event: { item: any; field: string }): void {
-    // triggered when District or Partner edited
+    // Dropdown change marks row dirty
   }
 
   saveMappingChanges(): void {
@@ -299,6 +373,7 @@ export class DocumentComponent implements OnInit {
       const updatePayload = {
         District: c.District,
         BrokerName: c.BrokerName,
+        Status: c.Status,
         BrokerNumber: newBrokerNum
       };
       return this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${c.SlNo}`, updatePayload);
@@ -320,6 +395,80 @@ export class DocumentComponent implements OnInit {
     });
   }
 
+  // --- Action Column Methods: Edit, Deactive/Activate, Delete ---
+  onEditCustomerFromMapping(c: any): void {
+    const existing = this.summaryService.rawInstallments().find(r => Number(r.SlNo) === Number(c.SlNo));
+    this.customerForModal = existing || c;
+    this.isCustomerModalOpen.set(true);
+  }
+
+  onToggleStatusCustomer(c: any): void {
+    const desc = c.Name ? `${c.Name}${c.District ? ' (' + c.District + ')' : ''}` : `Sl No. ${c.SlNo}`;
+    const isCurrentlyDeactive = c.Status === 'Deactive';
+    const actionText = isCurrentlyDeactive ? 'activate' : 'deactivate';
+
+    this.confirmDialogService.confirm({
+      title: isCurrentlyDeactive ? 'Confirm Activation' : 'Confirm Deactivation',
+      message: `Are you sure you want to ${actionText} customer ${desc}?`,
+      confirmText: isCurrentlyDeactive ? 'Activate' : 'Deactivate',
+      isDanger: !isCurrentlyDeactive
+    }).then(confirmed => {
+      if (confirmed) {
+        if (isCurrentlyDeactive) {
+          this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${c.SlNo}`, { Status: 'Active' }).subscribe({
+            next: () => {
+              c.Status = 'Active';
+              this.toastService.success(`Customer ${desc} activated successfully.`);
+              this.summaryService.loadAllData().subscribe(() => {
+                this.initMappingCustomers(this.summaryService.rawInstallments());
+              });
+            },
+            error: (err) => {
+              this.toastService.error('Error activating customer: ' + (err.message || 'Server error'));
+            }
+          });
+        } else {
+          this.summaryService.deactivateCustomer(c.SlNo).subscribe({
+            next: () => {
+              c.Status = 'Deactive';
+              this.toastService.success(`Customer ${desc} deactivated successfully.`);
+              this.summaryService.loadAllData().subscribe(() => {
+                this.initMappingCustomers(this.summaryService.rawInstallments());
+              });
+            },
+            error: (err) => {
+              this.toastService.error('Error deactivating customer: ' + (err.message || 'Server error'));
+            }
+          });
+        }
+      }
+    });
+  }
+
+  onDeleteCustomer(c: any): void {
+    const desc = c.Name ? `${c.Name}${c.District ? ' (' + c.District + ')' : ''}` : `Sl No. ${c.SlNo}`;
+    this.confirmDialogService.confirm({
+      title: 'Confirm Customer Removal',
+      message: `Are you sure you want to permanently delete customer ${desc}? This action cannot be undone.`,
+      confirmText: 'Delete Permanently',
+      isDanger: true
+    }).then(confirmed => {
+      if (confirmed) {
+        this.summaryService.deleteCustomer(c.SlNo).subscribe({
+          next: () => {
+            this.toastService.success(`Customer ${desc} removed successfully.`);
+            this.summaryService.loadAllData().subscribe(() => {
+              this.initMappingCustomers(this.summaryService.rawInstallments());
+            });
+          },
+          error: (err) => {
+            this.toastService.error('Error removing customer: ' + (err.message || 'Server error'));
+          }
+        });
+      }
+    });
+  }
+
   onAddCustomerFromMapping(): void {
     this.customerForModal = null;
     this.isCustomerModalOpen.set(true);
@@ -333,7 +482,7 @@ export class DocumentComponent implements OnInit {
     this.isCustomerModalOpen.set(false);
     this.summaryService.loadAllData().subscribe(() => {
       this.initMappingCustomers(this.summaryService.rawInstallments());
-      this.toastService.success('Customer added successfully.');
+      this.toastService.success('Customer saved successfully.');
     });
   }
 
