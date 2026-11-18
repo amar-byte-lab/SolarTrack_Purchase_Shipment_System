@@ -42,7 +42,12 @@ export class CustomerMappingTableComponent {
   editingSlNo: any = null;
   private editBackup: any = null;
 
+  isDeactivated(c: any): boolean {
+    return String(c?.Status || '').trim().toLowerCase() === 'deactive';
+  }
+
   startEdit(c: any): void {
+    if (this.isDeactivated(c)) return;
     if (this.editingSlNo && this.editingSlNo !== c.SlNo) {
       const prev = this.customers.find(x => x.SlNo === this.editingSlNo);
       if (prev && this.editBackup) {

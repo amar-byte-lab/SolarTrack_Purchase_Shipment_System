@@ -169,30 +169,35 @@
 
           <!-- State 2: Normal View Mode -->
           <div *ngIf="editingSlNo !== c.SlNo" class="d-inline-flex align-items-center gap-1">
-            <!-- 1. Customer Inline Edit -->
+            <!-- Deactivated Customer: ONLY Delete option -->
             <button 
-              type="button" 
-              class="btn btn-xs btn-outline-primary p-1 lh-1" 
-              (click)="$event.stopPropagation(); startEdit(c)" 
-              title="Edit Customer">
-              <app-icon name="edit" [size]="12"></app-icon>
-            </button>
-            <!-- 2. Customer Deactivate -->
-            <button 
-              type="button" 
-              class="btn btn-xs btn-outline-warning p-1 lh-1 text-dark" 
-              (click)="$event.stopPropagation(); deactiveClicked.emit(c)" 
-              [title]="c.Status === 'Deactive' ? 'Activate Customer' : 'Deactivate Customer'">
-              <app-icon name="user-x" [size]="12"></app-icon>
-            </button>
-            <!-- 3. Customer Remove -->
-            <button 
+              *ngIf="isDeactivated(c)"
               type="button" 
               class="btn btn-xs btn-outline-danger p-1 lh-1" 
               (click)="$event.stopPropagation(); deleteClicked.emit(c)" 
               title="Remove Customer Record">
               <app-icon name="trash" [size]="12"></app-icon>
             </button>
+
+            <!-- Active / Other Customers: Edit, Deactivate, Delete -->
+            <ng-container *ngIf="!isDeactivated(c)">
+              <!-- 1. Customer Inline Edit -->
+              <button 
+                type="button" 
+                class="btn btn-xs btn-outline-primary p-1 lh-1" 
+                (click)="$event.stopPropagation(); startEdit(c)" 
+                title="Edit Customer">
+                <app-icon name="edit" [size]="12"></app-icon>
+              </button>
+              <!-- 2. Customer Deactivate -->
+              <button 
+                type="button" 
+                class="btn btn-xs btn-outline-warning p-1 lh-1 text-dark" 
+                (click)="$event.stopPropagation(); deactiveClicked.emit(c)" 
+                title="Deactivate Customer">
+                <app-icon name="user-x" [size]="12"></app-icon>
+              </button>
+            </ng-container>
           </div>
         </td>
       </tr>
