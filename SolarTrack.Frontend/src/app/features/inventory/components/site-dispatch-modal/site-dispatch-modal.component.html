@@ -7,7 +7,10 @@
       <!-- Modal Header -->
       <div class="modal-header py-2.5 px-3 border-bottom bg-light d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
-            <h6 class="modal-title fw-bold text-dark m-0 fs-7">Dispatch Equipment to Site</h6>
+          <div class="dispatch-badge text-warning-emphasis">
+              <app-icon name="stock-out" [size]="16"></app-icon>
+          </div>
+          <h6 class="modal-title fw-bold text-dark m-0 fs-7">Dispatch Equipment to Site</h6>
         </div>
         <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
       </div>
