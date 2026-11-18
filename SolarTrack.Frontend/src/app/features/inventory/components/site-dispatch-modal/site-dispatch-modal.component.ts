@@ -5,6 +5,7 @@ import { InventoryService } from '../../services/inventory.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { ItemTreeSelectComponent } from '../item-tree-select/item-tree-select.component';
+import { CustomerSelectComponent } from '../customer-select/customer-select.component';
 import {
   InventoryItemWithStock,
   DispatchItemEntry,
@@ -25,7 +26,7 @@ export interface DispatchUploadedDoc {
 @Component({
   selector: 'app-site-dispatch-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent, ItemTreeSelectComponent],
+  imports: [CommonModule, FormsModule, IconComponent, ItemTreeSelectComponent, CustomerSelectComponent],
   templateUrl: './site-dispatch-modal.component.html',
   styleUrls: ['./site-dispatch-modal.component.scss']
 })
@@ -232,19 +233,18 @@ export class SiteDispatchModalComponent implements OnChanges {
     this.customerAllocations.splice(index, 1);
   }
 
-  onCustomerSelected(ca: CustomerAllocationEntry): void {
-    const found = this.customersList.find(c => c.Name === ca.customerName);
+  onCustomerSelected(ca: CustomerAllocationEntry, cust?: InstallmentRow): void {
+    const found = cust || this.customersList.find(c => c.Name === ca.customerName);
     if (found) {
       ca.slNo = found.SlNo;
+      ca.customerName = found.Name || '';
     }
   }
 
   recalcCustomerTotal(ca: CustomerAllocationEntry): void {
     const sc = Number(ca.setCost) || 0;
-    const ic = Number(ca.installCost) || 0;
     const dc = Number(ca.deliveryCost) || 0;
-    const oc = Number(ca.otherCost) || 0;
-    ca.total = Math.round((sc + ic + dc + oc) * 100) / 100;
+    ca.total = Math.round((sc + dc) * 100) / 100;
   }
 
   // --- Multiple File Upload Handling (Same as Stock In: Reactive, Rename & Delete) ---

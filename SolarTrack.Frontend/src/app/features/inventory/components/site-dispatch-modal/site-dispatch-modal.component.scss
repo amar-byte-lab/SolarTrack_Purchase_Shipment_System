@@ -123,7 +123,7 @@
   }
 }
 
-::ng-deep tr:has(.is-open), tbody tr:has(.tree-select-container.is-open) {
+::ng-deep tr:has(.is-open), tbody tr:has(.tree-select-container.is-open), tbody tr:has(.customer-select-container.is-open) {
   position: relative !important;
   z-index: 1080 !important;
 }

@@ -1,0 +1,109 @@
+<div class="customer-select-container position-relative" [class.is-open]="isOpen()">
+
+  <!-- Trigger Button -->
+  <button 
+    type="button" 
+    class="customer-select-trigger form-control form-control-sm text-start d-flex align-items-center justify-content-between p-1.5"
+    [class.active]="isOpen()"
+    [class.disabled]="disabled"
+    [disabled]="disabled"
+    (click)="toggleDropdown($event)">
+
+    <!-- Selected Customer Preview -->
+    <div class="trigger-content text-truncate d-flex align-items-center gap-1.5 flex-grow-1 min-w-0">
+      @if (selectedCustomer(); as cust) {
+        <span class="fw-semibold text-dark text-truncate fs-8" [title]="cust.Name">
+          {{ cust.Name }}
+        </span>
+        <span class="text-secondary fs-8 flex-shrink-0">
+          ({{ cust.District || 'No District' }})
+        </span>
+      } @else {
+        <span class="text-muted fs-8 d-inline-flex align-items-center gap-1">
+          <app-icon name="customer" [size]="13" class="text-secondary opacity-75"></app-icon>
+          <span>{{ placeholder }}</span>
+        </span>
+      }
+    </div>
+
+    <!-- Dropdown Chevron -->
+    <app-icon 
+      [name]="isOpen() ? 'chevron-up' : 'chevron-down'" 
+      [size]="13" 
+      class="text-secondary flex-shrink-0 ms-1">
+    </app-icon>
+  </button>
+
+  <!-- Dropdown Popover Menu -->
+  @if (isOpen()) {
+    <div class="customer-dropdown-menu shadow border rounded bg-white" (click)="$event.stopPropagation()">
+      
+      <!-- Search Bar -->
+      <div class="p-2 border-bottom bg-light bg-opacity-50">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white border-end-0 py-1 px-2 text-secondary">
+            <app-icon name="search" [size]="13"></app-icon>
+          </span>
+          <input 
+            type="text" 
+            class="form-control form-control-sm border-start-0 ps-0 fs-8 shadow-none" 
+            [ngModel]="searchQuery()" 
+            (ngModelChange)="searchQuery.set($event)"
+            placeholder="Search customer by name, district, consumer no..." 
+            autofocus>
+          @if (searchQuery()) {
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-secondary border-start-0 py-0 px-2"
+              (click)="clearSearch($event)">
+              <app-icon name="close" [size]="12"></app-icon>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Customers List (Scrollable) -->
+      <div class="customer-list-scroll p-1">
+        @for (cust of filteredCustomers(); track cust.SlNo || cust.Name) {
+          <div 
+            class="customer-option-item px-2.5 py-1.5 rounded cursor-pointer d-flex align-items-center justify-content-between gap-2"
+            [class.selected]="cust.Name === selectedName"
+            (click)="selectCustomer(cust, $event)">
+            
+            <div class="d-flex flex-column text-truncate min-w-0">
+              <div class="d-flex align-items-center gap-1.5 text-truncate">
+                <span class="fw-semibold text-dark fs-8 text-truncate">{{ cust.Name }}</span>
+                <span class="text-secondary fs-9">({{ cust.District || 'No District' }})</span>
+              </div>
+              @if (cust.ConsumerNo || cust.ProposedCapacity) {
+                <div class="text-muted fs-9 font-monospace">
+                  @if (cust.ConsumerNo) {
+                    <span>No: {{ cust.ConsumerNo }}</span>
+                  }
+                  @if (cust.ConsumerNo && cust.ProposedCapacity) {
+                    <span class="mx-1">•</span>
+                  }
+                  @if (cust.ProposedCapacity) {
+                    <span>{{ cust.ProposedCapacity }} kW</span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (cust.Name === selectedName) {
+              <div class="text-primary flex-shrink-0">
+                <app-icon name="check" [size]="14"></app-icon>
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="text-center py-3 text-muted fs-8">
+            No customers found matching "{{ searchQuery() }}"
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+
+</div>
