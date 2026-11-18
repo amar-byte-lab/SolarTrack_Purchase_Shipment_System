@@ -675,9 +675,43 @@
                   <!-- Document Link -->
                   <td class="text-center">
                     @if (c.documents && c.documents.length > 0) {
-                      <span class="badge bg-light text-primary border" [title]="c.documents[0].name">
-                        <app-icon name="file-text" class="me-1"></app-icon>Doc
-                      </span>
+                      <div class="d-inline-flex align-items-center gap-1">
+                        @if (c.documents.length === 1) {
+                          <button 
+                            type="button" 
+                            class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 text-truncate"
+                            style="max-width: 120px;"
+                            (click)="openDocument(c.documents[0])"
+                            [title]="'View ' + c.documents[0].name">
+                            <app-icon name="file" [size]="12"></app-icon>
+                            <span class="text-truncate">{{ c.documents[0].name }}</span>
+                          </button>
+                        } @else {
+                          <div class="dropdown">
+                            <button 
+                              type="button" 
+                              class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 dropdown-toggle"
+                              data-bs-toggle="dropdown" 
+                              aria-expanded="false"
+                              [title]="c.documents.length + ' files attached'">
+                              <app-icon name="file" [size]="12"></app-icon>
+                              <span>{{ c.documents.length }} Files</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm p-1 fs-8" style="min-width: 180px;">
+                              @for (doc of c.documents; track doc.name) {
+                                <li>
+                                  <a 
+                                    class="dropdown-item py-1 px-2 d-flex align-items-center gap-2 cursor-pointer text-truncate"
+                                    (click)="openDocument(doc)">
+                                    <app-icon name="file" [size]="13" class="text-primary flex-shrink-0"></app-icon>
+                                    <span class="text-truncate">{{ doc.name }}</span>
+                                  </a>
+                                </li>
+                              }
+                            </ul>
+                          </div>
+                        }
+                      </div>
                     } @else {
                       <span class="text-muted fs-8">-</span>
                     }
@@ -731,6 +765,23 @@
                             </tbody>
                           </table>
                         </div>
+
+                        <!-- Attached Documents List if any -->
+                        @if (c.documents && c.documents.length > 0) {
+                          <div class="mt-2 pt-2 border-top d-flex align-items-center gap-2 flex-wrap">
+                            <span class="fs-9 fw-bold text-secondary text-uppercase">Attached Documents:</span>
+                            @for (doc of c.documents; track doc.name) {
+                              <button 
+                                type="button" 
+                                class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 shadow-xs"
+                                (click)="openDocument(doc)"
+                                [title]="'Open ' + doc.name">
+                                <app-icon name="file" [size]="12"></app-icon>
+                                <span>{{ doc.name }}</span>
+                              </button>
+                            }
+                          </div>
+                        }
 
                       </div>
                     </td>

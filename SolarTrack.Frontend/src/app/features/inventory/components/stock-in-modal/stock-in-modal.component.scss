@@ -4,11 +4,9 @@
   z-index: 1055;
 }
 
-.stockin-badge {
+.stock-header-icon {
   width: 28px;
   height: 28px;
-  background-color: #dcfce7;
-  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,4 +34,67 @@
 
 .fs-9 {
   font-size: 0.75rem;
+}
+
+// Upload & Document Cards
+.upload-section {
+  background-color: #fafaf9;
+}
+
+.upload-dropzone {
+  border-style: dashed !important;
+  border-color: var(--st-border, #cbd5e1) !important;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--st-primary, #ff4500) !important;
+    background-color: #fff9f6 !important;
+  }
+}
+
+.file-item-card {
+  transition: all 0.15s ease;
+  border-color: var(--st-border, #e2e8f0) !important;
+
+  &:hover {
+    border-color: var(--st-primary, #ff4500) !important;
+  }
+
+  .file-icon-badge {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .file-display-name {
+    cursor: default;
+    user-select: text;
+  }
+
+  .rename-btn {
+    opacity: 0.6;
+    transition: opacity 0.12s ease;
+
+    &:hover {
+      opacity: 1;
+      color: var(--st-primary, #ff4500) !important;
+    }
+  }
+
+  .rename-input {
+    max-width: 320px;
+    font-weight: 600;
+  }
+}
+
+// Table overflow for custom dropdown
+.table-responsive.overflow-visible {
+  overflow: visible !important;
+}
+
+.inv-keep-note {
+  border-color: var(--st-border, #e2e8f0) !important;
+  background-color: #fff;
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../services/inventory.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { ItemTreeSelectComponent } from '../item-tree-select/item-tree-select.component';
 import {
   InventoryItemWithStock,
   DispatchItemEntry,
@@ -14,7 +15,7 @@ import { InstallmentRow } from '../../../../core/models/summary.model';
 @Component({
   selector: 'app-site-dispatch-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent],
+  imports: [CommonModule, FormsModule, IconComponent, ItemTreeSelectComponent],
   templateUrl: './site-dispatch-modal.component.html',
   styleUrls: ['./site-dispatch-modal.component.scss']
 })
@@ -146,6 +147,15 @@ export class SiteDispatchModalComponent implements OnChanges {
       row.unit = itm.Unit;
       row.availableStock = itm.inHandQty;
     }
+    this.recalculateCosts();
+  }
+
+  onTreeItemSelected(row: DispatchItemEntry, itm: InventoryItemWithStock): void {
+    row.itemCode = itm.ItemCode;
+    row.itemName = itm.ItemName;
+    row.unitBuyingPrice = Number(itm.BuyingPrice) || 0;
+    row.unit = itm.Unit;
+    row.availableStock = itm.inHandQty;
     this.recalculateCosts();
   }
 

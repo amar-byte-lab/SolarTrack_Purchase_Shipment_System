@@ -232,13 +232,13 @@
               <tbody>
                 <tr *ngFor="let row of itemsList; let idx = index">
                   <!-- Item Select -->
-                  <td>
-                    <select class="form-select form-select-sm fs-8 py-0.5" [(ngModel)]="row.itemCode" (change)="onItemChanged(row)">
-                      <option value="" disabled>-- Select Item --</option>
-                      <option *ngFor="let itm of availableItemsWithStock" [value]="itm.ItemCode">
-                        {{ itm.ItemName }} (Stock: {{ itm.inHandQty }} {{ itm.Unit }})
-                      </option>
-                    </select>
+                  <td class="p-1 position-relative" style="min-width: 250px;">
+                    <app-item-tree-select 
+                      [items]="availableItemsWithStock"
+                      [(selectedCode)]="row.itemCode"
+                      (itemSelected)="onTreeItemSelected(row, $event)"
+                      placeholder="-- Select Item --">
+                    </app-item-tree-select>
                   </td>
 
                   <!-- In Stock -->

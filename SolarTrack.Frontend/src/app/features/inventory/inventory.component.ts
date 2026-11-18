@@ -461,6 +461,27 @@ export class InventoryComponent implements OnInit {
     this.showPriceHistoryModal.set(true);
   }
 
+  // Document Viewer / Download Helper
+  openDocument(doc: { name: string; data?: string }): void {
+    if (!doc.data) {
+      this.toastService.info(`Document "${doc.name}" has no preview data.`);
+      return;
+    }
+    const win = window.open();
+    if (win) {
+      if (doc.data.startsWith('data:image/') || doc.data.startsWith('data:application/pdf')) {
+        win.document.write(
+          `<html><head><title>${doc.name}</title></head><body style="margin:0;background:#1e1e1e;display:flex;align-items:center;justify-content:center;"><iframe src="${doc.data}" style="border:none;width:100%;height:100vh;"></iframe></body></html>`
+        );
+      } else {
+        const link = document.createElement('a');
+        link.href = doc.data;
+        link.download = doc.name;
+        link.click();
+      }
+    }
+  }
+
   // Formatting helpers
   formatDate(d: string): string {
     if (!d) return '-';

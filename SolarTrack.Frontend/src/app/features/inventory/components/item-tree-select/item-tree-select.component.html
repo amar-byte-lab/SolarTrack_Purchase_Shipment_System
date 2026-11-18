@@ -1,0 +1,180 @@
+<div class="tree-select-container position-relative">
+
+  <!-- Trigger Button -->
+  <button 
+    type="button" 
+    class="tree-select-trigger form-control form-control-sm text-start d-flex align-items-center justify-content-between p-1.5"
+    [class.active]="isOpen()"
+    [class.disabled]="disabled"
+    [disabled]="disabled"
+    (click)="toggleDropdown($event)">
+
+    <!-- Selected Item Preview -->
+    <div class="trigger-content text-truncate d-flex align-items-center gap-1.5 flex-grow-1 min-w-0">
+      @if (selectedItem(); as itm) {
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-1.5 py-0.5 rounded flex-shrink-0">
+          {{ itm.Category || 'Item' }}
+        </span>
+        <span class="fw-semibold text-dark text-truncate fs-8" [title]="itm.ItemName">
+          {{ itm.ItemName }}
+        </span>
+        <span class="stock-pill flex-shrink-0 ms-auto me-1" 
+          [class.stock-ok]="itm.inHandQty > (itm.MinThreshold || 5)"
+          [class.stock-low]="itm.inHandQty > 0 && itm.inHandQty <= (itm.MinThreshold || 5)"
+          [class.stock-out]="itm.inHandQty <= 0"
+          [title]="'Available stock: ' + itm.inHandQty + ' ' + (itm.Unit || '')">
+          Avail: {{ itm.inHandQty }} {{ itm.Unit || '' }}
+        </span>
+      } @else {
+        <span class="text-muted fs-8 d-inline-flex align-items-center gap-1">
+          <app-icon name="boxes" [size]="13" class="text-secondary opacity-75"></app-icon>
+          <span>{{ placeholder }}</span>
+        </span>
+      }
+    </div>
+
+    <!-- Dropdown Chevron -->
+    <app-icon 
+      [name]="isOpen() ? 'chevron-up' : 'chevron-down'" 
+      [size]="13" 
+      class="text-secondary flex-shrink-0 ms-1">
+    </app-icon>
+  </button>
+
+  <!-- Dropdown Popover Menu -->
+  @if (isOpen()) {
+    <div class="tree-dropdown-menu shadow-lg border rounded-3 bg-white" (click)="$event.stopPropagation()">
+      
+      <!-- Search Bar -->
+      <div class="p-2 border-bottom bg-light bg-opacity-50">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white border-end-0 py-1 px-2 text-secondary">
+            <app-icon name="search" [size]="13"></app-icon>
+          </span>
+          <input 
+            type="text" 
+            class="form-control form-control-sm border-start-0 ps-0 fs-8 shadow-none" 
+            [ngModel]="searchQuery()" 
+            (ngModelChange)="searchQuery.set($event)"
+            placeholder="Search items, code or category..." 
+            autofocus>
+          @if (searchQuery()) {
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-secondary border-start-0 py-0 px-2"
+              (click)="clearSearch($event)">
+              <app-icon name="close" [size]="12"></app-icon>
+            </button>
+          }
+        </div>
+
+        <!-- Meta bar: Matches and Expand/Collapse All -->
+        <div class="d-flex align-items-center justify-content-between mt-1 px-1 fs-9 text-muted">
+          <span>
+            @if (searchQuery()) {
+              Found <strong>{{ totalMatches() }}</strong> items
+            } @else {
+              <strong>{{ treeNodes().length }}</strong> categories ({{ totalMatches() }} items)
+            }
+          </span>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-link p-0 text-decoration-none text-primary fs-9" (click)="expandAll()">
+              Expand all
+            </button>
+            <span>•</span>
+            <button type="button" class="btn btn-link p-0 text-decoration-none text-secondary fs-9" (click)="collapseAll()">
+              Collapse all
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tree Nodes List -->
+      <div class="tree-scroll-area">
+        @if (treeNodes().length === 0) {
+          <div class="p-4 text-center text-muted fs-8">
+            <app-icon name="boxes" [size]="24" class="text-secondary opacity-50 mb-1"></app-icon>
+            <div>No inventory items found matching "<em>{{ searchQuery() }}</em>"</div>
+          </div>
+        } @else {
+          <div class="tree-list">
+            @for (node of treeNodes(); track node.category) {
+              <!-- Category Node Header -->
+              <div class="category-node">
+                <div 
+                  class="category-header d-flex align-items-center justify-content-between px-2 py-1.5"
+                  (click)="toggleCategory(node.category, $event)">
+                  <div class="d-flex align-items-center gap-1.5 min-w-0">
+                    <button type="button" class="btn btn-xs btn-link p-0 text-secondary border-0 expand-btn">
+                      <app-icon [name]="node.isExpanded ? 'chevron-down' : 'chevron-right'" [size]="12"></app-icon>
+                    </button>
+                    <app-icon name="folder" [size]="14" class="text-primary opacity-80 flex-shrink-0"></app-icon>
+                    <span class="category-title fw-bold text-dark fs-8 text-truncate">
+                      {{ node.category }}
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary fs-9 px-1.5 py-0 rounded-pill">
+                      {{ node.items.length }}
+                    </span>
+                  </div>
+
+                  <!-- Category Total Available Stock Badge -->
+                  <div class="category-stock-badge flex-shrink-0">
+                    <span class="badge bg-light text-dark border font-monospace fs-9 fw-semibold">
+                      Total Stock: <strong class="text-primary">{{ node.totalStock | number:'1.0-2' }}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Child Items -->
+                @if (node.isExpanded) {
+                  <div class="category-children">
+                    @for (item of node.items; track item.ItemCode) {
+                      <div 
+                        class="tree-item-row d-flex align-items-center justify-content-between px-3 py-1.5"
+                        [class.selected]="item.ItemCode === selectedCode"
+                        (click)="selectItem(item, $event)">
+                        
+                        <!-- Left: Tree branch + Item info -->
+                        <div class="item-info d-flex align-items-center gap-2 min-w-0">
+                          <span class="tree-branch-symbol text-muted opacity-50">└─</span>
+                          <div class="min-w-0">
+                            <div class="item-name fw-semibold text-dark fs-8 text-truncate" [title]="item.ItemName">
+                              {{ item.ItemName }}
+                            </div>
+                            <div class="d-flex align-items-center gap-2 fs-9 text-muted font-monospace">
+                              <span>Code: {{ item.ItemCode }}</span>
+                              @if (item.BuyingPrice) {
+                                <span>• Rate: ₹{{ item.BuyingPrice | number:'1.2-2' }}</span>
+                              }
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Right: Stock Pill & Selection Indicator -->
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+                          <span 
+                            class="stock-pill" 
+                            [class.stock-ok]="item.inHandQty > (item.MinThreshold || 5)"
+                            [class.stock-low]="item.inHandQty > 0 && item.inHandQty <= (item.MinThreshold || 5)"
+                            [class.stock-out]="item.inHandQty <= 0">
+                            {{ item.inHandQty }} {{ item.Unit || 'Nos' }}
+                          </span>
+                          @if (item.ItemCode === selectedCode) {
+                            <app-icon name="check" [size]="14" class="text-primary fw-bold"></app-icon>
+                          }
+                        </div>
+
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+
+</div>

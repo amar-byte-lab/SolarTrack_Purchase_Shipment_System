@@ -155,6 +155,18 @@ export class InventoryService {
       grp.totalGst += gstAmt;
       grp.grandTotal += totalCost + gstAmt;
 
+      if (row.Documents) {
+        try {
+          const parsed = typeof row.Documents === 'string' ? JSON.parse(row.Documents) : row.Documents;
+          if (Array.isArray(parsed)) {
+            parsed.forEach((d: any) => {
+              if (d && d.name && !grp.documents.some(x => x.name === d.name)) {
+                grp.documents.push({ name: d.name, data: d.data });
+              }
+            });
+          }
+        } catch {}
+      }
       if (row.DocumentName && !grp.documents.some(d => d.name === row.DocumentName)) {
         grp.documents.push({ name: row.DocumentName, data: row.DocumentData });
       }
@@ -230,6 +242,18 @@ export class InventoryService {
       grp.totalQty += qty;
       grp.totalMaterialCost += dispatchedCost;
 
+      if (row.Documents) {
+        try {
+          const parsed = typeof row.Documents === 'string' ? JSON.parse(row.Documents) : row.Documents;
+          if (Array.isArray(parsed)) {
+            parsed.forEach((d: any) => {
+              if (d && d.name && !grp.documents.some(x => x.name === d.name)) {
+                grp.documents.push({ name: d.name, data: d.data });
+              }
+            });
+          }
+        } catch {}
+      }
       if (row.DocumentName && !grp.documents.some(d => d.name === row.DocumentName)) {
         grp.documents.push({ name: row.DocumentName, data: row.DocumentData });
       }
@@ -367,9 +391,32 @@ export class InventoryService {
 
   // --- Inward Purchases (Stock In) ---
   saveStockInConsignment(
-    header: { date: string; supplier: string; location: string; transportCost: number; remarks: string; docName?: string; docData?: string },
-    itemsList: Array<{ itemCode: string; qty: number; unitPrice: number; gstRate: number; costPerUnit: number; totalCost: number }>
+    header: {
+      date: string;
+      supplier: string;
+      location: string;
+      transportCost: number;
+      remarks: string;
+      docName?: string;
+      docData?: string;
+      documents?: Array<{ name: string; data?: string }>;
+    },
+    itemsList: Array<{
+      itemCode: string;
+      qty: number;
+      unitPrice: number;
+      gstRate: number;
+      costPerUnit: number;
+      totalCost: number;
+      deliveryShare?: number;
+    }>
   ): Observable<any> {
+    const docsJson = header.documents && header.documents.length > 0
+      ? JSON.stringify(header.documents)
+      : null;
+    const primaryDocName = header.documents?.[0]?.name || header.docName || null;
+    const primaryDocData = header.documents?.[0]?.data || header.docData || null;
+
     const rowsToInsert: any[] = itemsList.map((item, idx) => {
       const inwardId = 'INW_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substring(2, 6);
       return {
@@ -381,13 +428,14 @@ export class InventoryService {
         UnitPrice: item.unitPrice,
         GstRate: item.gstRate,
         CostPerUnit: item.costPerUnit,
-        TransportCost: (header.transportCost / (itemsList.length || 1)),
+        TransportCost: item.deliveryShare !== undefined ? item.deliveryShare : (header.transportCost / (itemsList.length || 1)),
         ConsignmentTransportCost: header.transportCost,
         TotalCost: item.totalCost,
         Location: header.location,
         Remarks: header.remarks,
-        DocumentName: header.docName || null,
-        DocumentData: header.docData || null
+        DocumentName: primaryDocName,
+        DocumentData: primaryDocData,
+        Documents: docsJson
       };
     });
 

@@ -49,6 +49,7 @@ export interface InventoryInwardRow {
   Remarks?: string;
   DocumentName?: string;
   DocumentData?: string;
+  Documents?: string;
 }
 
 export interface GroupedInwardConsignment {
@@ -114,6 +115,7 @@ export interface InventoryDispatchRow {
   CustomerAllocations?: string | CustomerAllocationEntry[];
   DocumentName?: string;
   DocumentData?: string;
+  Documents?: string;
 }
 
 export interface GroupedDispatchConsignment {
