@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService } from './services/inventory.service';
@@ -74,9 +74,14 @@ export class InventoryComponent implements OnInit {
   showPriceHistoryModal = signal(false);
   priceHistoryItem = signal<InventoryItemWithStock | null>(null);
 
-  // Selected item for specific Stock In or Stock Out
+  // Selected items for specific Stock In or Stock Out
   selectedItemForStockIn = signal<string | undefined>(undefined);
   selectedItemForStockOut = signal<string | undefined>(undefined);
+  selectedItemCodesForStockIn = signal<string[]>([]);
+  selectedItemCodesForStockOut = signal<string[]>([]);
+
+  // Active Document Dropdown Popover Key in table
+  openDocMenuKey = signal<string | null>(null);
 
   // Filtered Items with Stock
   filteredItems = computed(() => {
@@ -353,25 +358,73 @@ export class InventoryComponent implements OnInit {
   }
 
   openStockIn(itemCode?: string): void {
-    this.selectedItemForStockIn.set(itemCode);
+    if (itemCode) {
+      this.selectedItemCodesForStockIn.set([itemCode]);
+      this.selectedItemForStockIn.set(itemCode);
+    } else if (this.selectedCodes().size > 0) {
+      const codes = Array.from(this.selectedCodes());
+      this.selectedItemCodesForStockIn.set(codes);
+      this.selectedItemForStockIn.set(codes[0]);
+    } else {
+      this.selectedItemCodesForStockIn.set([]);
+      this.selectedItemForStockIn.set(undefined);
+    }
     this.showStockInModal.set(true);
   }
 
   openStockOut(itemCode?: string): void {
-    this.selectedItemForStockOut.set(itemCode);
+    if (itemCode) {
+      this.selectedItemCodesForStockOut.set([itemCode]);
+      this.selectedItemForStockOut.set(itemCode);
+    } else if (this.selectedCodes().size > 0) {
+      const codes = Array.from(this.selectedCodes());
+      this.selectedItemCodesForStockOut.set(codes);
+      this.selectedItemForStockOut.set(codes[0]);
+    } else {
+      this.selectedItemCodesForStockOut.set([]);
+      this.selectedItemForStockOut.set(undefined);
+    }
     this.showDispatchModal.set(true);
   }
 
   onStockInSaved(): void {
     this.showStockInModal.set(false);
     this.selectedItemForStockIn.set(undefined);
+    this.selectedItemCodesForStockIn.set([]);
+    this.selectedCodes.set(new Set());
+    // Switch to Inwards tab so user immediately sees newly saved stock in and documents!
+    this.activeTab.set('inwards');
     this.invService.loadAllData().subscribe();
   }
 
   onDispatchSaved(): void {
     this.showDispatchModal.set(false);
     this.selectedItemForStockOut.set(undefined);
+    this.selectedItemCodesForStockOut.set([]);
+    this.selectedCodes.set(new Set());
+    // Switch to Dispatches tab so user immediately sees newly saved dispatch!
+    this.activeTab.set('dispatches');
     this.invService.loadAllData().subscribe();
+  }
+
+  toggleDocMenu(key: string, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.openDocMenuKey() === key) {
+      this.openDocMenuKey.set(null);
+    } else {
+      this.openDocMenuKey.set(key);
+    }
+  }
+
+  closeDocMenu(): void {
+    this.openDocMenuKey.set(null);
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.openDocMenuKey()) {
+      this.closeDocMenu();
+    }
   }
 
   async deleteItem(item: InventoryItem): Promise<void> {

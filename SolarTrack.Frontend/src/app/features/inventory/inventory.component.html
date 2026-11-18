@@ -673,42 +673,43 @@
                   </td>
 
                   <!-- Document Link -->
-                  <td class="text-center">
+                  <td class="text-center position-relative">
                     @if (c.documents && c.documents.length > 0) {
                       <div class="d-inline-flex align-items-center gap-1">
                         @if (c.documents.length === 1) {
                           <button 
                             type="button" 
-                            class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 text-truncate"
-                            style="max-width: 120px;"
+                            class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 text-truncate shadow-xs"
+                            style="max-width: 130px;"
                             (click)="openDocument(c.documents[0])"
                             [title]="'View ' + c.documents[0].name">
                             <app-icon name="file" [size]="12"></app-icon>
                             <span class="text-truncate">{{ c.documents[0].name }}</span>
                           </button>
                         } @else {
-                          <div class="dropdown">
+                          <div class="position-relative d-inline-block">
                             <button 
                               type="button" 
-                              class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 dropdown-toggle"
-                              data-bs-toggle="dropdown" 
-                              aria-expanded="false"
-                              [title]="c.documents.length + ' files attached'">
+                              class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 shadow-xs"
+                              (click)="toggleDocMenu(c.key, $event)"
+                              [title]="c.documents.length + ' files attached. Click to view.'">
                               <app-icon name="file" [size]="12"></app-icon>
-                              <span>{{ c.documents.length }} Files</span>
+                              <span class="fw-semibold">{{ c.documents.length }} Files</span>
+                              <app-icon [name]="openDocMenuKey() === c.key ? 'chevron-up' : 'chevron-down'" [size]="11"></app-icon>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm p-1 fs-8" style="min-width: 180px;">
-                              @for (doc of c.documents; track doc.name) {
-                                <li>
-                                  <a 
-                                    class="dropdown-item py-1 px-2 d-flex align-items-center gap-2 cursor-pointer text-truncate"
-                                    (click)="openDocument(doc)">
+                            @if (openDocMenuKey() === c.key) {
+                              <div class="doc-dropdown-popover shadow border rounded-2 bg-white p-1 text-start" (click)="$event.stopPropagation()">
+                                <div class="px-2 py-1 border-bottom text-muted fs-9 fw-bold text-uppercase">Attached Files ({{ c.documents.length }})</div>
+                                @for (doc of c.documents; track doc.name) {
+                                  <div 
+                                    class="doc-dropdown-item d-flex align-items-center gap-2 px-2 py-1.5 cursor-pointer rounded fs-8 text-truncate"
+                                    (click)="openDocument(doc); closeDocMenu()">
                                     <app-icon name="file" [size]="13" class="text-primary flex-shrink-0"></app-icon>
-                                    <span class="text-truncate">{{ doc.name }}</span>
-                                  </a>
-                                </li>
-                              }
-                            </ul>
+                                    <span class="text-truncate text-dark fw-medium" [title]="doc.name">{{ doc.name }}</span>
+                                  </div>
+                                }
+                              </div>
+                            }
                           </div>
                         }
                       </div>
@@ -828,16 +829,18 @@
   <!-- Stock In Modal -->
   <app-stock-in-modal
     [isOpen]="showStockInModal()"
+    [initialItemCodes]="selectedItemCodesForStockIn()"
     [initialItemCode]="selectedItemForStockIn()"
-    (close)="showStockInModal.set(false); selectedItemForStockIn.set(undefined)"
+    (close)="showStockInModal.set(false); selectedItemForStockIn.set(undefined); selectedItemCodesForStockIn.set([])"
     (saved)="onStockInSaved()">
   </app-stock-in-modal>
 
   <!-- Site Dispatch Modal -->
   <app-site-dispatch-modal
     [isOpen]="showDispatchModal()"
+    [initialItemCodes]="selectedItemCodesForStockOut()"
     [initialItemCode]="selectedItemForStockOut()"
-    (close)="showDispatchModal.set(false); selectedItemForStockOut.set(undefined)"
+    (close)="showDispatchModal.set(false); selectedItemForStockOut.set(undefined); selectedItemCodesForStockOut.set([])"
     (saved)="onDispatchSaved()">
   </app-site-dispatch-modal>
 

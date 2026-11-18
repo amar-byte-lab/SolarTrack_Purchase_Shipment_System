@@ -52,20 +52,23 @@
                   <div class="d-flex align-items-center gap-2">
                     <app-icon name="file" [size]="15" class="text-primary"></app-icon>
                     <span class="small fw-bold text-dark">
-                      Invoices
+                      Consignment Documents & Invoices
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary fs-9 rounded-pill">
+                      {{ uploadedDocs().length }} {{ uploadedDocs().length === 1 ? 'file' : 'files' }}
                     </span>
                   </div>
 
                   <!-- Upload Button -->
                   <label class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8 mb-0 cursor-pointer d-inline-flex align-items-center gap-1 shadow-xs">
                     <app-icon name="upload" [size]="13"></app-icon>
-                    <span>{{ uploadedDocs.length > 0 ? '+ Add More Files' : 'Upload Multiple Files' }}</span>
+                    <span>{{ uploadedDocs().length > 0 ? '+ Add More Files' : 'Upload Multiple Files' }}</span>
                     <input type="file" multiple (change)="onFilesSelected($event)" class="d-none">
                   </label>
                 </div>
 
                 <!-- Empty state when no files uploaded -->
-                @if (uploadedDocs.length === 0) {
+                @if (uploadedDocs().length === 0) {
                   <label class="d-block text-center p-3 border border-dashed rounded bg-white cursor-pointer upload-dropzone mb-0">
                     <app-icon name="upload" [size]="20" class="text-secondary opacity-60 mb-1"></app-icon>
                     <div class="small fw-semibold text-secondary">Click or drop vendor invoice, challan, or receipt files here</div>
@@ -75,9 +78,9 @@
                 }
 
                 <!-- Uploaded Files List -->
-                @if (uploadedDocs.length > 0) {
+                @if (uploadedDocs().length > 0) {
                   <div class="uploaded-files-grid d-flex flex-column gap-1.5">
-                    @for (doc of uploadedDocs; track doc.id; let docIdx = $index) {
+                    @for (doc of uploadedDocs(); track doc.id; let docIdx = $index) {
                       <div class="file-item-card d-flex align-items-center justify-content-between p-2 bg-white border rounded shadow-xs">
                         
                         <!-- File Icon & Name (or Inline Rename Input) -->

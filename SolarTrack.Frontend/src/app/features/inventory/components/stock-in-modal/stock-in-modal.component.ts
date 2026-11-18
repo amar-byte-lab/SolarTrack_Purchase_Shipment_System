@@ -1,4 +1,14 @@
-import { Component, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  inject,
+  OnChanges,
+  SimpleChanges,
+  signal,
+  ChangeDetectorRef
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../services/inventory.service';
@@ -40,8 +50,10 @@ export interface InwardRowForm {
 export class StockInModalComponent implements OnChanges {
   private inventoryService = inject(InventoryService);
   private toastService = inject(ToastService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Input() isOpen = false;
+  @Input() initialItemCodes: string[] = [];
   @Input() initialItemCode?: string;
 
   @Output() close = new EventEmitter<void>();
@@ -53,8 +65,8 @@ export class StockInModalComponent implements OnChanges {
   transportCost = 0;
   remarks = '';
 
-  // Multiple Uploaded Documents with Rename & Delete
-  uploadedDocs: StockInUploadedDoc[] = [];
+  // Multiple Uploaded Documents with Rename & Delete (Reactive Signal)
+  readonly uploadedDocs = signal<StockInUploadedDoc[]>([]);
 
   itemsList: InwardRowForm[] = [];
   isSubmitting = false;
@@ -91,28 +103,40 @@ export class StockInModalComponent implements OnChanges {
     this.location = 'Main Godown';
     this.transportCost = 0;
     this.remarks = '';
-    this.uploadedDocs = [];
+    this.uploadedDocs.set([]);
     this.isSubmitting = false;
 
     this.itemsList = [];
-    if (this.initialItemCode) {
-      const itm = this.availableItemsWithStock.find(i => i.ItemCode === this.initialItemCode);
-      if (itm) {
-        const bp = Number(itm.BuyingPrice) || 0;
-        this.itemsList.push({
-          itemCode: itm.ItemCode,
-          qty: 1,
-          unitPrice: bp,
-          gstRate: 18,
-          totalExclGst: bp,
-          costWithGst: Math.round(bp * 1.18 * 100) / 100,
-          totalWithGst: Math.round(bp * 1.18 * 100) / 100,
-          deliveryShare: 0,
-          deliveryPercent: 0,
-          costPerUnit: Math.round(bp * 1.18 * 100) / 100
-        });
-      }
-    } else if (this.availableItemsWithStock.length > 0) {
+
+    // Support multiple selected items from ledger checkboxes or single initial code
+    const codesToLoad = (this.initialItemCodes && this.initialItemCodes.length > 0)
+      ? this.initialItemCodes
+      : (this.initialItemCode ? [this.initialItemCode] : []);
+
+    if (codesToLoad.length > 0) {
+      codesToLoad.forEach(code => {
+        const itm = this.availableItemsWithStock.find(
+          i => (i.ItemCode || '').toLowerCase() === code.toLowerCase()
+        );
+        if (itm) {
+          const bp = Number(itm.BuyingPrice) || 0;
+          this.itemsList.push({
+            itemCode: itm.ItemCode,
+            qty: 1,
+            unitPrice: bp,
+            gstRate: 18,
+            totalExclGst: bp,
+            costWithGst: Math.round(bp * 1.18 * 100) / 100,
+            totalWithGst: Math.round(bp * 1.18 * 100) / 100,
+            deliveryShare: 0,
+            deliveryPercent: 0,
+            costPerUnit: Math.round(bp * 1.18 * 100) / 100
+          });
+        }
+      });
+    }
+
+    if (this.itemsList.length === 0 && this.availableItemsWithStock.length > 0) {
       this.addItemRow();
     }
     this.recalculateCosts();
@@ -186,7 +210,7 @@ export class StockInModalComponent implements OnChanges {
       if (sumTotalWithGst > 0) {
         const ratio = r.totalWithGst / sumTotalWithGst;
         share = Math.round(tCost * ratio * 100) / 100;
-        percent = Math.round(ratio * 1000) / 10; // e.g. 35.5%
+        percent = Math.round(ratio * 1000) / 10;
       } else if (this.itemsList.length > 0) {
         share = Math.round((tCost / this.itemsList.length) * 100) / 100;
         percent = Math.round((100 / this.itemsList.length) * 10) / 10;
@@ -204,16 +228,19 @@ export class StockInModalComponent implements OnChanges {
     });
   }
 
-  // --- Multiple File Upload Handling ---
+  // --- Multiple File Upload Handling (Immediate Reactive Reflection) ---
   onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
     const files = Array.from(input.files);
+    let remaining = files.length;
+    const newDocs: StockInUploadedDoc[] = [];
+
     files.forEach(f => {
       const reader = new FileReader();
       reader.onload = () => {
-        const doc: StockInUploadedDoc = {
+        newDocs.push({
           id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
           name: f.name,
           originalName: f.name,
@@ -221,13 +248,24 @@ export class StockInModalComponent implements OnChanges {
           sizeFormatted: this.formatFileSize(f.size),
           isEditingName: false,
           tempName: f.name
-        };
-        this.uploadedDocs.push(doc);
+        });
+        remaining--;
+        if (remaining === 0) {
+          this.uploadedDocs.update(docs => [...docs, ...newDocs]);
+          this.cdr.markForCheck();
+        }
+      };
+      reader.onerror = () => {
+        remaining--;
+        if (remaining === 0) {
+          this.uploadedDocs.update(docs => [...docs, ...newDocs]);
+          this.cdr.markForCheck();
+        }
       };
       reader.readAsDataURL(f);
     });
 
-    // Reset input value so same files can be selected again if needed
+    // Reset input value so same files can be selected again
     input.value = '';
   }
 
@@ -235,6 +273,7 @@ export class StockInModalComponent implements OnChanges {
     if (event) event.stopPropagation();
     doc.tempName = doc.name;
     doc.isEditingName = true;
+    this.cdr.markForCheck();
   }
 
   saveRenameDoc(doc: StockInUploadedDoc, event?: Event): void {
@@ -243,24 +282,30 @@ export class StockInModalComponent implements OnChanges {
     if (newName) {
       doc.name = newName;
       doc.isEditingName = false;
+      this.uploadedDocs.update(docs => [...docs]);
       this.toastService.info(`File renamed to "${newName}"`);
     } else {
       this.toastService.warning('File name cannot be empty.');
     }
+    this.cdr.markForCheck();
   }
 
   cancelRenameDoc(doc: StockInUploadedDoc, event?: Event): void {
     if (event) event.stopPropagation();
     doc.tempName = doc.name;
     doc.isEditingName = false;
+    this.cdr.markForCheck();
   }
 
   removeDoc(index: number, event?: Event): void {
     if (event) event.stopPropagation();
-    const removed = this.uploadedDocs.splice(index, 1);
-    if (removed && removed[0]) {
-      this.toastService.info(`Document "${removed[0].name}" removed.`);
+    const docs = this.uploadedDocs();
+    const removed = docs[index];
+    this.uploadedDocs.update(list => list.filter((_, i) => i !== index));
+    if (removed) {
+      this.toastService.info(`Document "${removed.name}" removed.`);
     }
+    this.cdr.markForCheck();
   }
 
   previewDoc(doc: StockInUploadedDoc, event?: Event): void {
@@ -309,7 +354,7 @@ export class StockInModalComponent implements OnChanges {
     this.isSubmitting = true;
 
     // Prepare documents payload
-    const docsPayload = this.uploadedDocs.map(d => ({
+    const docsPayload = this.uploadedDocs().map(d => ({
       name: d.name,
       data: d.data
     }));

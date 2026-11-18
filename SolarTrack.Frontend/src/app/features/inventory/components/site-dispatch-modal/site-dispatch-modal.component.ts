@@ -24,6 +24,7 @@ export class SiteDispatchModalComponent implements OnChanges {
   private toastService = inject(ToastService);
 
   @Input() isOpen = false;
+  @Input() initialItemCodes: string[] = [];
   @Input() initialItemCode?: string;
 
   @Output() close = new EventEmitter<void>();
@@ -90,19 +91,28 @@ export class SiteDispatchModalComponent implements OnChanges {
     this.itemsList = [];
     this.customerAllocations = [];
 
-    if (this.initialItemCode) {
-      const itm = this.availableItemsWithStock.find(i => i.ItemCode === this.initialItemCode);
-      if (itm) {
-        this.itemsList.push({
-          itemCode: itm.ItemCode,
-          itemName: itm.ItemName,
-          qty: 1,
-          unitBuyingPrice: Number(itm.BuyingPrice) || 0,
-          dispatchedCost: Number(itm.BuyingPrice) || 0,
-          unit: itm.Unit,
-          availableStock: itm.inHandQty
-        });
-      }
+    const codesToLoad = (this.initialItemCodes && this.initialItemCodes.length > 0)
+      ? this.initialItemCodes
+      : (this.initialItemCode ? [this.initialItemCode] : []);
+
+    if (codesToLoad.length > 0) {
+      codesToLoad.forEach(code => {
+        const itm = this.availableItemsWithStock.find(
+          i => (i.ItemCode || '').toLowerCase() === code.toLowerCase()
+        );
+        if (itm) {
+          const bp = Number(itm.BuyingPrice) || 0;
+          this.itemsList.push({
+            itemCode: itm.ItemCode,
+            itemName: itm.ItemName,
+            qty: 1,
+            unitBuyingPrice: bp,
+            dispatchedCost: bp,
+            unit: itm.Unit || 'Nos',
+            availableStock: itm.inHandQty || 0
+          });
+        }
+      });
     } else if (this.availableItemsWithStock.length > 0) {
       this.addItemRow();
     }

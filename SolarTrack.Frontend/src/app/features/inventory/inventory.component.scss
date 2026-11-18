@@ -347,8 +347,27 @@
 .fs-8 {
   font-size: 0.78rem;
 }
-.fs-9 {
-  font-size: 0.7rem;
+.doc-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1065;
+  min-width: 200px;
+  max-width: 280px;
+  border-color: var(--st-border, #d1d5db) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
+}
+
+.doc-dropdown-item {
+  transition: all 0.12s ease;
+
+  &:hover {
+    background-color: #f1f5f9;
+  }
+}
+
+.shadow-xs {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 768px) {
