@@ -226,6 +226,7 @@ export class InventoryService {
           dispatchIds: [],
           totalQty: 0,
           totalMaterialCost: 0,
+          grandTotal: 0,
           customerAllocations: custAllocs,
           documents: []
         });
@@ -291,6 +292,10 @@ export class InventoryService {
       if (row.DocumentName && !grp.documents.some(d => d.name === row.DocumentName)) {
         grp.documents.push({ name: row.DocumentName, data: row.DocumentData });
       }
+    });
+
+    mapGroup.forEach(grp => {
+      grp.grandTotal = (grp.totalMaterialCost || 0) + (grp.transportCost || 0);
     });
 
     return Array.from(mapGroup.values()).sort(

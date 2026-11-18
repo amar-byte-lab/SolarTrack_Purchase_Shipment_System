@@ -430,8 +430,7 @@
               <th>Site</th>
               <th class="text-nowrap">Vehicle</th>
               <th class="text-end text-nowrap">Distance</th>
-              <th class="text-end text-nowrap">Material Cost</th>
-              <th class="text-end text-nowrap">Transportation Cost</th>
+              <th class="text-end text-nowrap">Grand Total</th>
               <th class="text-center text-nowrap">Document</th>
               <th class="text-center text-nowrap">Action</th>
             </tr>
@@ -439,7 +438,7 @@
           <tbody>
             @if (filteredDispatches().length === 0) {
               <tr>
-                <td colspan="10" class="text-center py-5 text-muted">
+                <td colspan="9" class="text-center py-5 text-muted">
                   <app-icon name="truck" class="fs-2 mb-2 text-secondary"></app-icon>
                   <div>No site dispatch consignments recorded.</div>
                 </td>
@@ -480,14 +479,9 @@
                     {{ c.distanceKm ? (c.distanceKm + ' km') : '-' }}
                   </td>
 
-                  <!-- Material Cost -->
-                  <td class="text-end font-monospace fw-bold text-dark fs-8 text-nowrap">
-                    ₹{{ c.totalMaterialCost | number:'1.2-2' }}
-                  </td>
-
-                  <!-- Transportation Cost -->
-                  <td class="text-end font-monospace text-indigo-700 fs-8 text-nowrap">
-                    ₹{{ c.transportCost | number:'1.2-2' }}
+                  <!-- Grand Total -->
+                  <td class="text-end font-monospace fw-bold text-primary fs-8 text-nowrap">
+                    ₹{{ c.grandTotal | number:'1.2-2' }}
                   </td>
 
                   <!-- Document -->
@@ -559,7 +553,7 @@
                 <!-- Expanded Consignment Details -->
                 @if (isConsignmentExpanded(c.key)) {
                   <tr class="bg-light">
-                    <td colspan="10" class="p-3">
+                    <td colspan="9" class="p-3">
                       <div class="border rounded p-3 bg-white">
                         
                         <!-- Dispatched Items Sub-table -->

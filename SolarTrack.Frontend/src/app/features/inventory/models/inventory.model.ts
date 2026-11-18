@@ -150,6 +150,7 @@ export interface GroupedDispatchConsignment {
   dispatchIds: string[];
   totalQty: number;
   totalMaterialCost: number;
+  grandTotal: number;
   customerAllocations: CustomerAllocationEntry[];
   documents: Array<{ name: string; data?: string }>;
 }
