@@ -424,7 +424,6 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th class="text-center" style="width: 1%;"></th>
               <th class="text-nowrap">Id</th>
               <th class="text-nowrap">Date</th>
               <th>Site</th>
@@ -438,7 +437,7 @@
           <tbody>
             @if (filteredDispatches().length === 0) {
               <tr>
-                <td colspan="9" class="text-center py-5 text-muted">
+                <td colspan="8" class="text-center py-5 text-muted">
                   <app-icon name="truck" class="fs-2 mb-2 text-secondary"></app-icon>
                   <div>No site dispatch consignments recorded.</div>
                 </td>
@@ -446,16 +445,6 @@
             } @else {
               @for (c of filteredDispatches(); track c.key) {
                 <tr>
-                  <!-- Expand Chevron -->
-                  <td class="text-center">
-                    <button 
-                      type="button" 
-                      class="btn btn-xs btn-link p-0 text-secondary"
-                      (click)="toggleConsignment(c.key)">
-                      <app-icon [name]="isConsignmentExpanded(c.key) ? 'chevron-up' : 'chevron-down'"></app-icon>
-                    </button>
-                  </td>
-
                   <!-- Id -->
                   <td class="text-nowrap">
                     <span class="badge bg-secondary-subtle text-secondary border font-monospace fs-9">{{ c.id || c.challanNo || c.dispatchIds[0] }}</span>
@@ -549,62 +538,6 @@
                     </div>
                   </td>
                 </tr>
-
-                <!-- Expanded Consignment Details -->
-                @if (isConsignmentExpanded(c.key)) {
-                  <tr class="bg-light">
-                    <td colspan="9" class="p-3">
-                      <div class="border rounded p-3 bg-white">
-                        
-                        <!-- Dispatched Items Sub-table -->
-                        <h6 class="fw-bold fs-8 text-secondary text-uppercase mb-2">Dispatched Equipment ({{ c.items.length }} items)</h6>
-                        <div class="table-responsive mb-3">
-                          <table class="table table-sm table-bordered mb-0 fs-8">
-                            <thead class="table-light">
-                              <tr>
-                                <th>SKU Code</th>
-                                <th>Equipment Name</th>
-                                <th class="text-end">Dispatched Qty</th>
-                                <th class="text-end">Unit Rate (₹)</th>
-                                <th class="text-end">Material Cost (₹)</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              @for (it of c.items; track it.id) {
-                                <tr>
-                                  <td class="font-monospace">{{ it.itemCode }}</td>
-                                  <td>{{ it.itemName }}</td>
-                                  <td class="text-end font-monospace fw-bold text-amber-700">{{ it.qty }}</td>
-                                  <td class="text-end font-monospace">₹{{ it.unitBuyingPrice | number:'1.2-2' }}</td>
-                                  <td class="text-end font-monospace fw-bold">₹{{ it.dispatchedCost | number:'1.2-2' }}</td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        </div>
-
-                        <!-- Customer Allocations (if any) -->
-                        @if (c.customerAllocations && c.customerAllocations.length > 0) {
-                          <h6 class="fw-bold fs-8 text-secondary text-uppercase mb-2">Project / Customer Allocations</h6>
-                          <div class="d-flex flex-wrap gap-2 mb-3">
-                            @for (alloc of c.customerAllocations; track alloc.customerName) {
-                              <div class="p-2 border rounded bg-light" style="font-size: 0.8rem;">
-                                <div class="fw-bold text-dark">{{ alloc.customerName }}</div>
-                                <div class="text-secondary fs-8">
-                                  <span>Total Cost: <strong class="text-primary font-monospace">₹{{ alloc.total | number:'1.2-2' }}</strong></span>
-                                  @if (alloc.remark) {
-                                    <span class="ms-2">({{ alloc.remark }})</span>
-                                  }
-                                </div>
-                              </div>
-                            }
-                          </div>
-                        }
-
-                      </div>
-                    </td>
-                  </tr>
-                }
               }
             }
           </tbody>
@@ -622,7 +555,6 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th class="text-center" style="width: 1%;"></th>
               <th class="text-nowrap">Id</th>
               <th class="text-nowrap">Date</th>
               <th>Supplier</th>
@@ -634,7 +566,7 @@
           <tbody>
             @if (filteredInwards().length === 0) {
               <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="6" class="text-center py-5 text-muted">
                   <app-icon name="upload" class="fs-2 mb-2 text-secondary"></app-icon>
                   <div>No inward purchase consignments recorded.</div>
                 </td>
@@ -642,16 +574,6 @@
             } @else {
               @for (c of filteredInwards(); track c.key) {
                 <tr>
-                  <!-- Expand Chevron -->
-                  <td class="text-center">
-                    <button 
-                      type="button" 
-                      class="btn btn-xs btn-link p-0 text-secondary"
-                      (click)="toggleConsignment(c.key)">
-                      <app-icon [name]="isConsignmentExpanded(c.key) ? 'chevron-up' : 'chevron-down'"></app-icon>
-                    </button>
-                  </td>
-
                   <!-- Id -->
                   <td class="text-nowrap">
                     <span class="badge bg-secondary-subtle text-secondary border font-monospace fs-9">{{ c.id || c.inwardIds[0] }}</span>
@@ -735,65 +657,6 @@
                     </div>
                   </td>
                 </tr>
-
-                <!-- Expanded Consignment Details -->
-                @if (isConsignmentExpanded(c.key)) {
-                  <tr class="bg-light">
-                    <td colspan="7" class="p-3">
-                      <div class="border rounded p-3 bg-white">
-                        
-                        <!-- Received Equipment Table -->
-                        <h6 class="fw-bold fs-8 text-secondary text-uppercase mb-2">Received Equipment ({{ c.items.length }} items)</h6>
-                        <div class="table-responsive mb-3">
-                          <table class="table table-sm table-bordered mb-0 fs-8">
-                            <thead class="table-light">
-                              <tr>
-                                <th>SKU Code</th>
-                                <th>Equipment Name</th>
-                                <th class="text-end">Received Qty</th>
-                                <th class="text-end">Unit Price (₹)</th>
-                                <th class="text-end">Pre-tax Total (₹)</th>
-                                <th class="text-end">GST %</th>
-                                <th class="text-end">Landed Unit Cost (₹)</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              @for (it of c.items; track it.id || it.itemCode) {
-                                <tr>
-                                  <td class="font-monospace">{{ it.itemCode }}</td>
-                                  <td>{{ it.itemName }}</td>
-                                  <td class="text-end font-monospace fw-bold text-success">{{ it.qty }}</td>
-                                  <td class="text-end font-monospace">₹{{ it.unitPrice | number:'1.2-2' }}</td>
-                                  <td class="text-end font-monospace">₹{{ it.totalCost | number:'1.2-2' }}</td>
-                                  <td class="text-end font-monospace">{{ it.gstRate || 0 }}%</td>
-                                  <td class="text-end font-monospace fw-bold text-dark">₹{{ it.costPerUnit | number:'1.2-2' }}</td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        </div>
-
-                        <!-- Attached Documents List if any -->
-                        @if (c.documents && c.documents.length > 0) {
-                          <div class="mt-2 pt-2 border-top d-flex align-items-center gap-2 flex-wrap">
-                            <span class="fs-9 fw-bold text-secondary text-uppercase">Attached Documents:</span>
-                            @for (doc of c.documents; track doc.name) {
-                              <button 
-                                type="button" 
-                                class="btn btn-xs btn-outline-primary py-0.5 px-2 fs-9 d-inline-flex align-items-center gap-1 shadow-xs"
-                                (click)="openDocument(doc)"
-                                [title]="'Open ' + doc.name">
-                                <app-icon name="file" [size]="12"></app-icon>
-                                <span>{{ doc.name }}</span>
-                              </button>
-                            }
-                          </div>
-                        }
-
-                      </div>
-                    </td>
-                  </tr>
-                }
               }
             }
           </tbody>

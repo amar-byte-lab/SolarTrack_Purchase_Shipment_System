@@ -69,12 +69,12 @@ export class FilesComponent implements OnInit {
   }
 
   getFileUrl(file: FileItem): string {
-    return `/files/${encodeURIComponent(file.storedFileName || file.fileName || file.originalName || '')}`;
+    return `/bills/${encodeURIComponent(file.storedFileName || file.fileName || file.originalName || '')}`;
   }
 
   getFileDownloadUrl(file: FileItem): string {
     const displayName = this.getDisplayName(file);
-    return `/files/${encodeURIComponent(file.storedFileName || displayName)}?download=1&name=${encodeURIComponent(displayName)}`;
+    return `/bills/${encodeURIComponent(file.storedFileName || displayName)}?download=1&name=${encodeURIComponent(displayName)}`;
   }
 
   // --- Preview Logic ---
@@ -111,7 +111,18 @@ export class FilesComponent implements OnInit {
 
     this.http.get(url, { responseType: 'arraybuffer' }).subscribe({
       next: (buffer: ArrayBuffer) => {
+        const origError = console.error;
+        const origWarn = console.warn;
         try {
+          console.error = (...args: any[]) => {
+            if (args.length > 0 && typeof args[0] === 'string' && args[0].includes('Bad uncompressed size')) return;
+            origError.apply(console, args);
+          };
+          console.warn = (...args: any[]) => {
+            if (args.length > 0 && typeof args[0] === 'string' && args[0].includes('Bad uncompressed size')) return;
+            origWarn.apply(console, args);
+          };
+
           const wb = XLSX.read(new Uint8Array(buffer), { type: 'array' });
           this.excelSheets = wb.SheetNames.map(sheetName => {
             const ws = wb.Sheets[sheetName];
@@ -123,6 +134,9 @@ export class FilesComponent implements OnInit {
         } catch (e: any) {
           this.isLoadingExcel = false;
           this.excelError = 'Could not parse spreadsheet data: ' + (e?.message || 'Invalid format');
+        } finally {
+          console.error = origError;
+          console.warn = origWarn;
         }
       },
       error: () => {
