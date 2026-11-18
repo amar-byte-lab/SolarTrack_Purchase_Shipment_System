@@ -14,12 +14,12 @@
         <th *ngIf="!hideConsumerAndApplNo">Consumer No</th>
         <th *ngIf="!hideConsumerAndApplNo">Appl. Number</th>
         <th>Sub Div / Div</th>
-        <th>Address</th>
-        <th>Pin</th>
-        <th>District</th>
+        <th style="min-width: 260px;">Address</th>
+        <th style="width: 80px;" class="text-nowrap">Pin</th>
+        <th style="width: 115px;" class="text-nowrap">District</th>
         <th>Partner</th>
         <th *ngIf="showStatus">Status</th>
-        <th *ngIf="showActions" class="text-center" style="width: 105px;">Action</th>
+        <th *ngIf="showActions" class="text-center" style="width: 85px;">Action</th>
       </tr>
     </thead>
     <tbody>
@@ -54,26 +54,25 @@
         </td>
 
         <!-- Address -->
-        <td style="max-width: 220px;">
+        <td style="min-width: 260px; max-width: 360px;">
           <input 
             *ngIf="editingSlNo === c.SlNo"
             type="text" 
-            class="form-control form-control-xs py-0 px-1.5 fs-8" 
+            class="form-control form-control-xs py-0 px-1.5 fs-8 w-100" 
             [(ngModel)]="c.Address" 
             (ngModelChange)="onFieldChanged(c, 'Address')" 
-            placeholder="Enter Address" 
-            style="min-width: 140px;">
+            placeholder="Enter Address">
           <span 
             *ngIf="editingSlNo !== c.SlNo" 
             class="text-truncate d-inline-block" 
-            style="max-width: 180px;" 
+            style="max-width: 340px;" 
             [title]="c.Address || ''">
             {{ c.Address || '—' }}
           </span>
         </td>
 
         <!-- Pin -->
-        <td>
+        <td style="width: 80px;" class="text-nowrap">
           <input 
             *ngIf="editingSlNo === c.SlNo"
             type="text" 
@@ -81,7 +80,7 @@
             [(ngModel)]="c.PinCode" 
             (ngModelChange)="c.Pin = $event; onFieldChanged(c, 'PinCode')" 
             placeholder="PIN" 
-            style="width: 85px;">
+            style="width: 72px;">
           <span 
             *ngIf="editingSlNo !== c.SlNo" 
             class="font-monospace text-nowrap">
@@ -90,13 +89,13 @@
         </td>
 
         <!-- District Dropdown -->
-        <td>
+        <td style="width: 115px;" class="text-nowrap">
           <select 
             *ngIf="editingSlNo === c.SlNo"
             class="form-select form-select-xs py-0 px-1 fs-8" 
             [(ngModel)]="c.District"
             (ngModelChange)="onFieldChanged(c, 'District')" 
-            style="min-width: 115px;">
+            style="width: 110px;">
             <option value="">Select District</option>
             <option *ngIf="c.District && !districts.includes(c.District)" [value]="c.District">{{ c.District }}</option>
             <option *ngFor="let dist of districts" [value]="dist">{{ dist }}</option>
