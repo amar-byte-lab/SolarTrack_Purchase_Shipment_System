@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, HostListener } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -84,6 +84,17 @@ export class DocumentComponent implements OnInit {
   // Document Preview Modal State
   isPreviewModalOpen = signal<boolean>(false);
   previewDocType = signal<DocumentType>('form4');
+
+  constructor() {
+    effect(() => {
+      const cust = this.selectedCustomer();
+      const isModalOpen = this.isPreviewModalOpen();
+      const docType = this.previewDocType();
+      if (isModalOpen && docType === 'agreement' && cust) {
+        setTimeout(() => this.renderAgreementDocxPreview(), 50);
+      }
+    });
+  }
 
   // Searchable Customer Dropdown in Form Tab
   isCustomerDropdownOpen = false;
@@ -689,8 +700,15 @@ export class DocumentComponent implements OnInit {
       this.toastService.warning('Please select a customer first.');
       return;
     }
-    this.previewDocType.set(docType || this.activeDocType());
+    const targetDocType = docType || this.activeDocType();
+    this.previewDocType.set(targetDocType);
     this.isPreviewModalOpen.set(true);
+
+    if (targetDocType === 'agreement') {
+      setTimeout(() => {
+        this.renderAgreementDocxPreview();
+      }, 50);
+    }
   }
 
   closePreviewModal(): void {
@@ -754,6 +772,148 @@ export class DocumentComponent implements OnInit {
     }
   }
 
+  async buildAgreementDocxBlob(options?: { useLivePreviewValues?: boolean }): Promise<{
+    blob: Blob;
+    filename: string;
+    consumerName: string;
+    consumerNo: string;
+    addressStr: string;
+    dateStr: string;
+  }> {
+    const cust = this.selectedCustomer();
+    if (!cust) {
+      throw new Error('Please select a customer first.');
+    }
+
+    let consumerName = this.getCustomerSalutationName();
+    let addressStr = this.getAgreementAddress();
+    let consumerNo = cust.ConsumerNo || cust.ApplicationNumber || '';
+    let dateStr = this.getFormattedAgreementDate();
+
+    // If reading live values modified by user directly in preview container
+    if (options?.useLivePreviewValues) {
+      const container = document.getElementById('docxPreviewTarget');
+      if (container) {
+        const paragraphs = Array.from(container.querySelectorAll('p'));
+
+        // 1. First Party Paragraph
+        const firstPartyP = paragraphs.find(p => {
+          const t = p.textContent || '';
+          return t.includes('having premises') && t.includes('as the first Party');
+        });
+        if (firstPartyP) {
+          const text = (firstPartyP.textContent || '').trim();
+          const m = text.match(/^(?:Between\s+)?([\s\S]+?)\s+having premises\s+([\s\S]+?)\s+and Consumer No\s+([0-9a-zA-Z\s\/-]+?)\s+as the first Party/i);
+          if (m) {
+            if (m[1]?.trim()) consumerName = m[1].trim();
+            if (m[2]?.trim()) addressStr = m[2].trim();
+            if (m[3]?.trim()) consumerNo = m[3].trim();
+          }
+        }
+
+        // 2. Execution Date Paragraph
+        const dateP = paragraphs.find(p => (p.textContent || '').includes('This agreement is executed on'));
+        if (dateP) {
+          const dText = (dateP.textContent || '').trim();
+          const dm = dText.match(/This agreement is executed on\s+([0-9a-zA-Z\s\/.,-]+?)\s+for design/i);
+          if (dm && dm[1]?.trim()) {
+            dateStr = dm[1].trim();
+          }
+        }
+      }
+    }
+
+    // 1. Fetch authentic uploaded master template
+    const response = await fetch('assets/Agreement_Template.docx');
+    if (!response.ok) {
+      throw new Error(`Failed to load template: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+
+    // 2. Open archive with JSZip
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const docXmlEntry = zip.file('word/document.xml');
+    if (!docXmlEntry) {
+      throw new Error('Invalid docx format in template');
+    }
+
+    let xml = await docXmlEntry.async('string');
+
+    // 3. Exact in-place substitution of values into genuine OpenXML
+    xml = xml.replace('Mr KIRAN KUMAR BINDHANI', consumerName);
+    xml = xml.replace('AT: 601, PATANA, AJODHYA, DISTRICT: BALASORE, STATE: ODISHA, PIN: 756020', addressStr);
+    xml = xml.replace('324313051063', consumerNo);
+
+    const dateSnippet = 'This agreement is executed on</w:t></w:r><w:r w:rsidR="00ED05EC"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00577AF0"><w:t>2</w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>2</w:t></w:r><w:r w:rsidR="00577AF0"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>April</w:t></w:r><w:r w:rsidR="00644EAD"><w:t xml:space="preserve"> 2026 for</w:t></w:r>';
+    xml = xml.replace(dateSnippet, `This agreement is executed on ${dateStr} for</w:t></w:r>`);
+
+    zip.file('word/document.xml', xml);
+
+    // 4. Generate native .docx binary blob
+    const outBlob = await zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+    const filename = `Agreement_${consumerName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${consumerNo || cust.SlNo}.docx`;
+
+    return {
+      blob: outBlob,
+      filename,
+      consumerName,
+      consumerNo,
+      addressStr,
+      dateStr
+    };
+  }
+
+  async renderAgreementDocxPreview(): Promise<void> {
+    const cust = this.selectedCustomer();
+    if (!cust) return;
+
+    const container = document.getElementById('docxPreviewTarget');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+        <div class="spinner-border text-primary mb-2" role="status">
+          <span class="visually-hidden">Loading document...</span>
+        </div>
+        <div class="fs-8">Rendering exact Word document preview...</div>
+      </div>
+    `;
+
+    try {
+      const { blob } = await this.buildAgreementDocxBlob({ useLivePreviewValues: false });
+      container.innerHTML = '';
+
+      const { renderAsync } = await import('docx-preview');
+      await renderAsync(blob, container, undefined, {
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        breakPages: true,
+        experimental: true,
+        className: 'docx-preview-wrap'
+      });
+
+      // Enable direct inline editing on preview
+      container.setAttribute('contenteditable', 'true');
+      container.setAttribute('spellcheck', 'false');
+
+      const sections = container.querySelectorAll('section.docx');
+      sections.forEach(sec => {
+        (sec as HTMLElement).style.outline = 'none';
+        (sec as HTMLElement).style.cursor = 'text';
+      });
+
+    } catch (err) {
+      console.error('docx-preview rendering error, fallback to verbatim:', err);
+      container.innerHTML = this.generateAgreementHtmlVerbatim();
+      container.setAttribute('contenteditable', 'true');
+    }
+  }
+
   async downloadAgreementDoc(): Promise<void> {
     const cust = this.selectedCustomer();
     if (!cust) {
@@ -761,64 +921,26 @@ export class DocumentComponent implements OnInit {
       return;
     }
 
-    // Read live values from preview if modified, otherwise from customer model
-    const consumerNameEl = document.getElementById('previewCustomerName');
-    const addressEl = document.getElementById('previewCustomerAddress');
-    const consumerNoEl = document.getElementById('previewConsumerNo');
-    const dateEl = document.getElementById('previewAgreementDate');
-
-    const consumerName = (consumerNameEl?.innerText || this.getCustomerSalutationName()).trim();
-    const addressStr = (addressEl?.innerText || this.getAgreementAddress()).trim();
-    const consumerNo = (consumerNoEl?.innerText || cust.ConsumerNo || cust.ApplicationNumber || '').trim();
-    const dateStr = (dateEl?.innerText || this.getFormattedAgreementDate()).trim();
-
     try {
-      // 1. Fetch authentic uploaded master template
-      const response = await fetch('assets/Agreement_Template.docx');
-      if (!response.ok) {
-        throw new Error(`Failed to load template: ${response.statusText}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-
-      // 2. Open archive with JSZip
-      const zip = await JSZip.loadAsync(arrayBuffer);
-      const docXmlEntry = zip.file('word/document.xml');
-      if (!docXmlEntry) {
-        throw new Error('Invalid docx format in template');
-      }
-
-      let xml = await docXmlEntry.async('string');
-
-      // 3. Exact in-place substitution of values into genuine OpenXML
-      xml = xml.replace('Mr KIRAN KUMAR BINDHANI', consumerName);
-      xml = xml.replace('AT: 601, PATANA, AJODHYA, DISTRICT: BALASORE, STATE: ODISHA, PIN: 756020', addressStr);
-      xml = xml.replace('324313051063', consumerNo);
-
-      const dateSnippet = 'This agreement is executed on</w:t></w:r><w:r w:rsidR="00ED05EC"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00577AF0"><w:t>2</w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>2</w:t></w:r><w:r w:rsidR="00577AF0"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>April</w:t></w:r><w:r w:rsidR="00644EAD"><w:t xml:space="preserve"> 2026 for</w:t></w:r>';
-      xml = xml.replace(dateSnippet, `This agreement is executed on ${dateStr} for</w:t></w:r>`);
-
-      zip.file('word/document.xml', xml);
-
-      // 4. Generate native .docx binary blob
-      const outBlob = await zip.generateAsync({
-        type: 'blob',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      });
-
-      const filename = `Agreement_${consumerName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${consumerNo || cust.SlNo}.docx`;
+      const { blob, filename } = await this.buildAgreementDocxBlob({ useLivePreviewValues: true });
 
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(outBlob);
+      link.href = URL.createObjectURL(blob);
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
 
-      this.toastService.success(`Original Agreement downloaded: ${filename}`);
+      this.toastService.success(`Agreement downloaded: ${filename}`);
     } catch (err) {
       console.warn('Direct DOCX generation fallback to HTML doc:', err);
-      this.downloadAgreementDocHtmlFallback(consumerName, addressStr, consumerNo, dateStr);
+      this.downloadAgreementDocHtmlFallback(
+        this.getCustomerSalutationName(),
+        this.getAgreementAddress(),
+        cust.ConsumerNo || cust.ApplicationNumber || '',
+        this.getFormattedAgreementDate()
+      );
     }
   }
 
@@ -826,25 +948,7 @@ export class DocumentComponent implements OnInit {
     const cust = this.selectedCustomer();
     if (!cust) return;
 
-    const previewSheet = document.getElementById('agreementPreviewSheet');
-    let contentHtml = '';
-
-    if (previewSheet) {
-      const clone = previewSheet.cloneNode(true) as HTMLElement;
-      clone.removeAttribute('contenteditable');
-      clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-      clone.querySelectorAll('.no-print').forEach(el => el.remove());
-      clone.querySelectorAll('.page-indicator').forEach(el => el.remove());
-      clone.querySelectorAll('.stamp-space-badge').forEach(el => el.remove());
-      clone.querySelectorAll('.inline-edit-notice').forEach(el => el.remove());
-      clone.querySelectorAll('.editable-field').forEach(el => {
-        (el as HTMLElement).style.backgroundColor = 'transparent';
-        (el as HTMLElement).style.borderBottom = 'none';
-      });
-      contentHtml = clone.innerHTML;
-    } else {
-      contentHtml = this.generateAgreementHtmlVerbatim();
-    }
+    const contentHtml = this.generateAgreementHtmlVerbatim();
 
     const docFileContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
