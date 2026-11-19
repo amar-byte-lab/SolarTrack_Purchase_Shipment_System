@@ -201,8 +201,12 @@
                       <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.name }}</div>
                       <div class="col-4 text-muted fw-semibold">A/c No:</div>
                       <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.accountNo }}</div>
-                      <div class="col-4 text-muted fw-semibold">IFS Code:</div>
-                      <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.ifsc }}</div>
+                      @if (quotationService.companyProfile().bank.branch) {
+                        <div class="col-4 text-muted fw-semibold">Branch:</div>
+                        <div class="col-8 fw-bold text-dark">{{ quotationService.companyProfile().bank.branch }}</div>
+                      }
+                      <div class="col-4 text-muted fw-semibold">IFSC Code:</div>
+                      <div class="col-8 fw-bold text-dark font-monospace">{{ quotationService.companyProfile().bank.ifsc }}</div>
                     </div>
                   </div>
 
@@ -686,7 +690,7 @@
               </tr>
               <tr>
                 <td class="pdf-bank-lbl">Branch &amp; IFSC:</td>
-                <td>{{ quotationService.companyProfile().bank.ifsc }}</td>
+                <td>{{ quotationService.companyProfile().bank.branch ? quotationService.companyProfile().bank.branch + ' & ' + quotationService.companyProfile().bank.ifsc : quotationService.companyProfile().bank.ifsc }}</td>
               </tr>
             </tbody>
           </table>

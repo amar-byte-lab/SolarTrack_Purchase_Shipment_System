@@ -196,14 +196,20 @@
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankName">
                 </div>
               </div>
+              <div class="row g-2 mb-2">
+                <div class="col-12">
+                  <label class="form-label fs-8 text-secondary mb-1">Account Number</label>
+                  <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().bankAcNo" placeholder="e.g. 0936202100000988">
+                </div>
+              </div>
               <div class="row g-2">
                 <div class="col-sm-6 col-12">
-                  <label class="form-label fs-8 text-secondary mb-1">Account Number</label>
-                  <input type="text" class="form-control form-control-sm font-monospace" [(ngModel)]="settingsService.settings().bankAcNo">
+                  <label class="form-label fs-8 text-secondary mb-1">Branch Name</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="settingsService.settings().bankBranch" placeholder="e.g. Nuapatna Branch">
                 </div>
                 <div class="col-sm-6 col-12">
-                  <label class="form-label fs-8 text-secondary mb-1">Branch &amp; IFSC Code</label>
-                  <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().bankBranchIfs">
+                  <label class="form-label fs-8 text-secondary mb-1">IFSC Code</label>
+                  <input type="text" class="form-control form-control-sm font-monospace text-uppercase" [(ngModel)]="settingsService.settings().bankIfsc" placeholder="e.g. PUNB0093620">
                 </div>
               </div>
             </div>

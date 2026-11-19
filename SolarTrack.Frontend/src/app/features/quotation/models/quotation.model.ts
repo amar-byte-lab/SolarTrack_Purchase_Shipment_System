@@ -46,6 +46,7 @@ export interface CompanyBank {
   holder: string;
   name: string;
   accountNo: string;
+  branch?: string;
   ifsc: string;
 }
 

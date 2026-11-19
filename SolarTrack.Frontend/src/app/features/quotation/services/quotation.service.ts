@@ -30,7 +30,8 @@ export class QuotationService {
       holder: 'SHRI TRUTIYADEV SOLAR ENTERPRISES',
       name: 'PUNJAB NATIONAL BANK',
       accountNo: '0936202100000988',
-      ifsc: 'NUAPATNA Branch & PUNB0093620'
+      branch: 'NUAPATNA Branch',
+      ifsc: 'PUNB0093620'
     },
     terms: '1. We declare that this quotation reflects actual price.\n2. Payment within 7 days.\n3. Bhubaneswar jurisdiction.',
     subsidies: [{ kw: 3, state: 60000, central: 78000, total: 138000 }]
@@ -197,12 +198,29 @@ export class QuotationService {
             defaultGst: defaultGstNum,
             addresses: parsedAddresses.length > 0 ? parsedAddresses : ['Chandi Chhaka, Nuapatna, Tigiria, Cuttack, Odisha 754035'],
             selectedAddress: parsedAddresses[0] || 'Chandi Chhaka, Nuapatna, Tigiria, Cuttack, Odisha 754035',
-            bank: {
-              holder: getVal('BankAcHolder', 'SHRI TRUTIYADEV SOLAR ENTERPRISES'),
-              name: getVal('BankName', 'PUNJAB NATIONAL BANK'),
-              accountNo: getVal('BankAcNo', '0936202100000988'),
-              ifsc: getVal('BankBranchIFS', 'NUAPATNA Branch & PUNB0093620')
-            },
+            bank: (() => {
+              const rawBranch = getVal('BankBranch', '');
+              const rawIfsc = getVal('BankIFSC', '');
+              const rawCombined = getVal('BankBranchIFS', 'NUAPATNA Branch & PUNB0093620');
+              let branchVal = rawBranch;
+              let ifscVal = rawIfsc;
+              if (!branchVal && !ifscVal && rawCombined) {
+                if (rawCombined.includes('&')) {
+                  const p = rawCombined.split('&');
+                  branchVal = p[0].trim();
+                  ifscVal = p[1].trim();
+                } else {
+                  branchVal = rawCombined.trim();
+                }
+              }
+              return {
+                holder: getVal('BankAcHolder', 'SHRI TRUTIYADEV SOLAR ENTERPRISES'),
+                name: getVal('BankName', 'PUNJAB NATIONAL BANK'),
+                accountNo: getVal('BankAcNo', '0936202100000988'),
+                branch: branchVal || 'NUAPATNA Branch',
+                ifsc: ifscVal || 'PUNB0093620'
+              };
+            })(),
             terms: getVal('CompanyTerms', '1. Quotation reflects actual goods price.\n2. Payment within 7 days.\n3. Bhubaneswar jurisdiction.'),
             subsidies: parsedSubsidies
           });

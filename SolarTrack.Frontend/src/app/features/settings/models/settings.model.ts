@@ -18,6 +18,8 @@ export interface SettingsState {
   bankAcHolder: string;
   bankName: string;
   bankAcNo: string;
+  bankBranch: string;
+  bankIfsc: string;
   bankBranchIfs: string;
   upiId: string;
   addresses: string[];

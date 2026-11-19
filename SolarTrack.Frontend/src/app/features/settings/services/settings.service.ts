@@ -17,6 +17,8 @@ export class SettingsService {
     bankAcHolder: '',
     bankName: '',
     bankAcNo: '',
+    bankBranch: '',
+    bankIfsc: '',
     bankBranchIfs: '',
     upiId: '',
     addresses: [],
@@ -53,6 +55,23 @@ export class SettingsService {
             parsedSubsidies = JSON.parse(getVal('GovtSubsidies', '[]'));
           } catch {}
 
+          const rawBranch = getVal('BankBranch', '');
+          const rawIfsc = getVal('BankIFSC', '');
+          const rawCombined = getVal('BankBranchIFS', '');
+
+          let parsedBranch = rawBranch;
+          let parsedIfsc = rawIfsc;
+
+          if (!parsedBranch && !parsedIfsc && rawCombined) {
+            if (rawCombined.includes('&')) {
+              const parts = rawCombined.split('&');
+              parsedBranch = parts[0].trim();
+              parsedIfsc = parts[1].trim();
+            } else {
+              parsedBranch = rawCombined.trim();
+            }
+          }
+
           this.settings.set({
             companyName: getVal('CompanyName', 'Shri Trutiyadev Solar Enterprises'),
             companyEmail: getVal('CompanyEmail', 'shritrutiyadevsolar@gmail.com'),
@@ -63,7 +82,9 @@ export class SettingsService {
             bankAcHolder: getVal('BankAcHolder', ''),
             bankName: getVal('BankName', ''),
             bankAcNo: getVal('BankAcNo', ''),
-            bankBranchIfs: getVal('BankBranchIFS', ''),
+            bankBranch: parsedBranch,
+            bankIfsc: parsedIfsc,
+            bankBranchIfs: rawCombined || (parsedBranch && parsedIfsc ? `${parsedBranch} & ${parsedIfsc}` : ''),
             upiId: getVal('CompanyUPI', ''),
             addresses: parsedAddresses,
             subsidies: parsedSubsidies
@@ -83,6 +104,10 @@ export class SettingsService {
     this.isSaving.set(true);
     const s = this.settings();
 
+    const combinedIfs = s.bankBranch && s.bankIfsc 
+      ? `${s.bankBranch} & ${s.bankIfsc}` 
+      : (s.bankBranch || s.bankIfsc || '');
+
     const settingsRows = [
       { Key: 'CompanyName', Value: s.companyName },
       { Key: 'CompanyEmail', Value: s.companyEmail },
@@ -93,7 +118,9 @@ export class SettingsService {
       { Key: 'BankAcHolder', Value: s.bankAcHolder },
       { Key: 'BankName', Value: s.bankName },
       { Key: 'BankAcNo', Value: s.bankAcNo },
-      { Key: 'BankBranchIFS', Value: s.bankBranchIfs },
+      { Key: 'BankBranch', Value: s.bankBranch },
+      { Key: 'BankIFSC', Value: s.bankIfsc },
+      { Key: 'BankBranchIFS', Value: combinedIfs },
       { Key: 'CompanyUPI', Value: s.upiId },
       { Key: 'CompanyAddresses', Value: JSON.stringify(s.addresses) },
       { Key: 'GovtSubsidies', Value: JSON.stringify(s.subsidies) }
