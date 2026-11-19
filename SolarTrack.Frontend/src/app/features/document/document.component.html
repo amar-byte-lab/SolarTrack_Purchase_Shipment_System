@@ -56,108 +56,128 @@
       </app-customer-directory>
     </div>
 
-    <!-- Right Column: Document Tabs & Individual Form Components -->
+    <!-- Right Column: Document Tabs & Technical Specs Accordion Component -->
     <div class="col-lg-7 col-xl-8">
       <div class="st-card h-100 p-3 bg-white border rounded shadow-xs">
         
+        <!-- Consumer Profile Pill & Document Action Bar -->
+        <div class="doc-tab-toolbar mb-3 p-2 bg-light border rounded-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="doc-consumer-pill d-flex align-items-center gap-2 min-w-0">
+            <div class="doc-consumer-avatar bg-primary text-white rounded-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <app-icon name="customer" [size]="15"></app-icon>
+            </div>
+            <div class="doc-consumer-meta min-w-0">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="doc-consumer-name fw-bold text-dark fs-7 text-truncate">
+                  {{ selectedCustomer()?.Name || 'No Customer Selected' }}
+                </span>
+                <span *ngIf="selectedCustomer()?.ConsumerNo" class="text-muted font-monospace fs-8">
+                  ({{ selectedCustomer()?.ConsumerNo }})
+                </span>
+                <span *ngIf="selectedCustomer()?.District" class="text-secondary fs-8">
+                  &bull; {{ selectedCustomer()?.District }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Document Action Buttons -->
+          <div class="doc-actions-group d-flex align-items-center gap-1.5 ms-auto flex-wrap">
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
+              (click)="resetCurrentDocument()" 
+              title="Reset specs">
+              <app-icon name="refresh" [size]="12"></app-icon>
+              <span>Reset</span>
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" 
+              (click)="openPreviewModal(activeDocType())" 
+              title="Preview document">
+              <app-icon name="eye" [size]="12"></app-icon>
+              <span>Preview</span>
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-primary d-flex align-items-center gap-1 fw-semibold" 
+              (click)="openPreviewModal(activeDocType())" 
+              title="Print document">
+              <app-icon name="print" [size]="13"></app-icon>
+              <span>Print / Download</span>
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-success d-flex align-items-center gap-1 fw-semibold text-white" 
+              (click)="onSaveSpecs(currentSpecs())" 
+              title="Save specs">
+              <app-icon name="check" [size]="13"></app-icon>
+              <span>Save Specs</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Document Navigation Tabs -->
-        <ul class="nav custom-doc-tabs mb-3" role="tablist">
-          <li class="nav-item">
-            <button 
-              type="button" 
-              class="nav-link" 
-              [class.active]="activeDocType() === 'agreement'" 
-              (click)="setDocType('agreement')">
-              <span>Agreement</span>
-            </button>
-          </li>
-          <li class="nav-item">
-            <button 
-              type="button" 
-              class="nav-link" 
-              [class.active]="activeDocType() === 'form1'" 
-              (click)="setDocType('form1')">
-              <span>Form 1 (Application)</span>
-            </button>
-          </li>
-          <li class="nav-item">
-            <button 
-              type="button" 
-              class="nav-link" 
-              [class.active]="activeDocType() === 'form3'" 
-              (click)="setDocType('form3')">
-              <span>Form 3 (Inspection)</span>
-            </button>
-          </li>
-          <li class="nav-item">
-            <button 
-              type="button" 
-              class="nav-link" 
-              [class.active]="activeDocType() === 'form4'" 
-              (click)="setDocType('form4')">
-              <span>Form 4 (Completion)</span>
-            </button>
-          </li>
-          <li class="nav-item">
-            <button 
-              type="button" 
-              class="nav-link" 
-              [class.active]="activeDocType() === 'form6'" 
-              (click)="setDocType('form6')">
-              <span>Form 6 (Commission)</span>
-            </button>
-          </li>
-        </ul>
+        <div class="mb-3">
+          <ul class="nav custom-doc-tabs mb-0" role="tablist">
+            <li class="nav-item">
+              <button 
+                type="button" 
+                class="nav-link" 
+                [class.active]="activeDocType() === 'agreement'" 
+                (click)="setDocType('agreement')">
+                <span>Agreement</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button 
+                type="button" 
+                class="nav-link" 
+                [class.active]="activeDocType() === 'form1'" 
+                (click)="setDocType('form1')">
+                <span>Form 1 (Application)</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button 
+                type="button" 
+                class="nav-link" 
+                [class.active]="activeDocType() === 'form3'" 
+                (click)="setDocType('form3')">
+                <span>Form 3 (Inspection)</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button 
+                type="button" 
+                class="nav-link" 
+                [class.active]="activeDocType() === 'form4'" 
+                (click)="setDocType('form4')">
+                <span>Form 4 (Completion)</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button 
+                type="button" 
+                class="nav-link" 
+                [class.active]="activeDocType() === 'form6'" 
+                (click)="setDocType('form6')">
+                <span>Form 6 (Commission)</span>
+              </button>
+            </li>
+          </ul>
+        </div>
 
-        <!-- Separate Standalone Component: Agreement -->
-        <app-agreement-form
-          *ngIf="activeDocType() === 'agreement'"
-          [customer]="selectedCustomer()"
+        <!-- NEW REUSABLE ACCORDION COMPONENT FOR SPECIFICATIONS (Site, Inverter, PV Module, DCDB & ACDB, Cables & Earthing) -->
+        <app-technical-specs-accordion
           [specs]="currentSpecs()"
-          (editSpecsClicked)="openSpecsModal()"
-          (previewClicked)="openPreviewModal('agreement')"
-          (resetClicked)="resetCurrentDocument()">
-        </app-agreement-form>
-
-        <!-- Separate Standalone Component: Form 1 Application -->
-        <app-form1-application
-          *ngIf="activeDocType() === 'form1'"
           [customer]="selectedCustomer()"
-          [specs]="currentSpecs()"
-          (editSpecsClicked)="openSpecsModal()"
-          (previewClicked)="openPreviewModal('form1')"
-          (resetClicked)="resetCurrentDocument()">
-        </app-form1-application>
-
-        <!-- Separate Standalone Component: Form 3 Inspection -->
-        <app-form3-inspection
-          *ngIf="activeDocType() === 'form3'"
-          [customer]="selectedCustomer()"
-          [specs]="currentSpecs()"
-          (editSpecsClicked)="openSpecsModal()"
-          (previewClicked)="openPreviewModal('form3')"
-          (resetClicked)="resetCurrentDocument()">
-        </app-form3-inspection>
-
-        <!-- Separate Standalone Component: Form 4 Joint Completion -->
-        <app-form4-completion
-          *ngIf="activeDocType() === 'form4'"
-          [customer]="selectedCustomer()"
-          [specs]="currentSpecs()"
-          (editSpecsClicked)="openSpecsModal()"
-          (previewClicked)="openPreviewModal('form4')"
-          (resetClicked)="resetCurrentDocument()">
-        </app-form4-completion>
-
-        <!-- Separate Standalone Component: Form 6 Commissioning -->
-        <app-form6-commission
-          *ngIf="activeDocType() === 'form6'"
-          [customer]="selectedCustomer()"
-          [specs]="currentSpecs()"
-          (editSpecsClicked)="openSpecsModal()"
-          (previewClicked)="openPreviewModal('form6')"
-          (resetClicked)="resetCurrentDocument()">
-        </app-form6-commission>
+          [showActions]="false"
+          (specsChange)="onSpecsUpdated($event)"
+          (saveSpecs)="onSaveSpecs($event)"
+          (resetSpecs)="resetCurrentDocument()">
+        </app-technical-specs-accordion>
 
       </div>
     </div>

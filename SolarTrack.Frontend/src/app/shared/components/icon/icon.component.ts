@@ -196,6 +196,17 @@ import { CommonModule } from '@angular/common';
           <polyline points="12 17 12 11"/>
           <polyline points="9 14 12 11 15 14"/>
         </ng-container>
+        <!-- map-pin / location -->
+        <ng-container *ngSwitchCase="'map-pin'">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </ng-container>
+        <ng-container *ngSwitchCase="'location'">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </ng-container>
+        <!-- shield -->
+        <ng-container *ngSwitchCase="'shield'">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </ng-container>
         <!-- alert-triangle -->
         <ng-container *ngSwitchCase="'alert-triangle'">
           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>

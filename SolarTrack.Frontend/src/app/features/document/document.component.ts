@@ -16,11 +16,7 @@ import { TechnicalProductSpecs, DocumentType } from './models/document.model';
 // Reusable Sub-components
 import { CustomerDirectoryComponent } from './components/customer-directory/customer-directory.component';
 import { ProductSpecsModalComponent } from './components/product-specs-modal/product-specs-modal.component';
-import { AgreementFormComponent } from './components/agreement-form/agreement-form.component';
-import { Form1ApplicationComponent } from './components/form1-application/form1-application.component';
-import { Form3InspectionComponent } from './components/form3-inspection/form3-inspection.component';
-import { Form4CompletionComponent } from './components/form4-completion/form4-completion.component';
-import { Form6CommissionComponent } from './components/form6-commission/form6-commission.component';
+import { TechnicalSpecsAccordionComponent } from './components/technical-specs-accordion/technical-specs-accordion.component';
 import { CustomerImportModalComponent } from './components/customer-import-modal/customer-import-modal.component';
 import { CustomerMappingTableComponent } from './components/customer-mapping-table/customer-mapping-table.component';
 
@@ -35,11 +31,7 @@ export type MainDocumentTab = 'form' | 'customer-mapping';
     IconComponent,
     CustomerDirectoryComponent,
     ProductSpecsModalComponent,
-    AgreementFormComponent,
-    Form1ApplicationComponent,
-    Form3InspectionComponent,
-    Form4CompletionComponent,
-    Form6CommissionComponent,
+    TechnicalSpecsAccordionComponent,
     CustomerImportModalComponent,
     CustomerMappingTableComponent,
     CustomerModalComponent
@@ -611,6 +603,10 @@ export class DocumentComponent implements OnInit {
 
   closeSpecsModal(): void {
     this.isSpecsModalOpen.set(false);
+  }
+
+  onSpecsUpdated(updatedSpecs: TechnicalProductSpecs): void {
+    this.docService.currentSpecs.set({ ...updatedSpecs });
   }
 
   onSaveSpecs(updatedSpecs: TechnicalProductSpecs): void {
