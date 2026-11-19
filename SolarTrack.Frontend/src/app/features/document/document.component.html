@@ -136,11 +136,11 @@
             <span>Preview</span>
           </button>
 
-          <!-- Download Button beside Dropdown -->
+          <!-- Download Button beside Dropdown (Downloads .doc for Agreement, or opens preview) -->
           <button 
             type="button" 
             class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
-            (click)="openPreviewModal(activeDocType())" 
+            (click)="onDownloadClicked()" 
             title="Download selected document">
             <app-icon name="download" [size]="13"></app-icon>
             <span>Download</span>
@@ -428,138 +428,337 @@
         </div>
 
         <!-- Modal Body (Printable Sheet) -->
-        <div class="modal-body p-4 bg-secondary bg-opacity-10 printable-area">
-          <div class="a4-sheet bg-white p-4 shadow-sm mx-auto border" style="max-width: 800px; min-height: 1000px; color: #000; font-family: serif; font-size: 13px; line-height: 1.5;">
+        <div class="modal-body p-3 p-md-4 bg-secondary bg-opacity-10 printable-area">
+          
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <!-- PREVIEW OPTION 1: AGREEMENT (ANNEXURE 2 MODEL DRAFT AGREEMENT)       -->
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <div *ngIf="previewDocType() === 'agreement'" class="w-100 d-flex flex-column align-items-center">
             
-            <!-- HEADER -->
-            <div class="text-center mb-3">
-              <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.05em;">
-                <span *ngIf="previewDocType() === 'agreement'">AGREEMENT BETWEEN CONSUMER AND VENDOR</span>
-                <span *ngIf="previewDocType() === 'form1'">APPLICATION FORM FOR NET-METERING (FORM-1)</span>
-                <span *ngIf="previewDocType() === 'form3'">WORK COMPLETION AND INSPECTION REPORT (FORM-3)</span>
-                <span *ngIf="previewDocType() === 'form4'">WORK COMPLETION REPORT (FORM-4)</span>
-                <span *ngIf="previewDocType() === 'form6'">COMMISSIONING CERTIFICATE FOR RTS (FORM-6)</span>
-              </h5>
-              <div class="small text-muted">
-                Under PM - Surya Ghar Muft Bijli Yojana &bull; Grid Connected Solar Rooftop PV System
+            <!-- Inline edit notice banner -->
+            <div class="inline-edit-notice p-2 mb-3 d-flex align-items-center justify-content-between fs-8 w-100" style="max-width: 210mm;">
+              <div class="d-flex align-items-center gap-2">
+                <app-icon name="edit-3" [size]="14"></app-icon>
+                <span><strong>Live Editable Document:</strong> Click any highlighted field or text to edit directly. Your modifications will appear exactly in the downloaded .doc file.</span>
               </div>
-              <hr class="my-2 border-dark">
+              <span class="badge bg-warning text-dark fw-normal">Direct Edit Mode</span>
             </div>
 
-            <!-- APPLICANT / TO ADDRESS -->
-            <div class="mb-3">
-              <div><strong>To,</strong></div>
-              <div>The Executive Engineer / Designated Authority (Elec.),</div>
-              <div>{{ selectedCustomer()?.DivisionName || 'Electrical Division' }}, {{ selectedCustomer()?.District || 'Odisha' }}</div>
-              <div class="mt-2"><strong>Sub:</strong> Formal Submission of Official RTS Documentation for Commissioning.</div>
-              <div><strong>PMSGY Reg. No:</strong> {{ selectedCustomer()?.ApplicationNumber || selectedCustomer()?.ConsumerNo }}</div>
-            </div>
-
-            <!-- SUMMARY DETAILS TABLE -->
-            <table class="table table-bordered border-dark table-sm mb-3" style="font-size: 12px; border-color: #000;">
-              <tbody>
-                <tr class="table-light fw-bold">
-                  <td colspan="3">A. Applicant &amp; Site Details</td>
-                </tr>
-                <tr>
-                  <td style="width: 35px;" class="text-center">1</td>
-                  <td style="width: 45%;">Name of Applicant / Consumer</td>
-                  <td class="fw-bold">{{ selectedCustomer()?.Name }}</td>
-                </tr>
-                <tr>
-                  <td class="text-center">2</td>
-                  <td>Consumer Number</td>
-                  <td class="font-monospace fw-bold">{{ selectedCustomer()?.ConsumerNo }}</td>
-                </tr>
-                <tr>
-                  <td class="text-center">3</td>
-                  <td>Premises Address</td>
-                  <td>{{ currentSpecs().address }}</td>
-                </tr>
-                <tr>
-                  <td class="text-center">4</td>
-                  <td>Sanctioned Load &amp; Solar Plant Capacity</td>
-                  <td>{{ currentSpecs().inverterCapacity || '3' }} kWp ({{ currentSpecs().connectionType || '1ph LT' }})</td>
-                </tr>
-
-                <tr class="table-light fw-bold">
-                  <td colspan="3">B. Technical Specifications</td>
-                </tr>
-                <tr>
-                  <td class="text-center">5</td>
-                  <td>PV Module Make &amp; Total Modules</td>
-                  <td>{{ currentSpecs().moduleMake }} ({{ currentSpecs().moduleCount }} Nos. &bull; {{ currentSpecs().moduleTotalCapacity }})</td>
-                </tr>
-                <tr>
-                  <td class="text-center">6</td>
-                  <td>Inverter Make &amp; Serial Number</td>
-                  <td>{{ currentSpecs().inverterMake }} - S/N: {{ currentSpecs().inverterSerialNo }}</td>
-                </tr>
-                <tr>
-                  <td class="text-center">7</td>
-                  <td>DCDB &amp; ACDB Protection Boxes</td>
-                  <td>DCDB: {{ currentSpecs().dcdbMake }} | ACDB: {{ currentSpecs().acdbMake }}</td>
-                </tr>
-                <tr>
-                  <td class="text-center">8</td>
-                  <td>Earth Resistance Test Result</td>
-                  <td>{{ currentSpecs().earthResistance }} Ohms (Safe Grounding)</td>
-                </tr>
-                <tr>
-                  <td class="text-center">9</td>
-                  <td>Executing Vendor</td>
-                  <td class="fw-bold">SHRI TRUTIYADEV SOLAR ENTERPRISES</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <!-- MODULE SERIALS IF PRESENT -->
-            <div *ngIf="currentSpecs().moduleSerials && (currentSpecs().moduleSerials?.length || 0) > 0" class="mb-3">
-              <div class="fw-bold small mb-1">C. Installed PV Module Serial Numbers:</div>
-              <div class="p-2 border border-dark rounded font-monospace small" style="background: #fbfbfb;">
-                <span *ngFor="let s of currentSpecs().moduleSerials; let last = last">
-                  {{ s.serialNo }} ({{ s.capacity }}W){{ last ? '' : ', ' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- DECLARATION & SIGNATURE BLOCKS -->
-            <div class="mt-4 pt-2">
-              <div class="small mb-4 text-justify">
-                We hereby verify that the above Solar Rooftop PV system has been installed in full accordance with DISCOM standards, CEA regulations, and MNRE guidelines.
-              </div>
-
-              <div class="d-flex justify-content-between text-center mt-5 pt-4">
-                <div style="width: 200px;">
-                  <div class="border-top border-dark pt-1">
-                    <strong>Signature of Consumer</strong>
-                    <div class="small text-muted">{{ selectedCustomer()?.Name }}</div>
-                  </div>
+            <div id="agreementPreviewSheet" class="agreement-document-body w-100" contenteditable="true" spellcheck="false">
+              
+              <!-- PAGE 1: 17 blank lines (stamp paper space) + Header + Parties -->
+              <div class="agreement-page">
+                <div class="page-indicator text-muted fs-9 text-end mb-1 no-print">— Page 1 of 4 (Stamp Paper Page) —</div>
+                
+                <div class="stamp-space-badge no-print text-center py-4 text-muted border border-dashed rounded mb-3 fs-8 bg-light" style="min-height: 95mm; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                  <div class="fw-bold text-secondary fs-7 mb-1">▲ NON-JUDICIAL STAMP PAPER SPACE (17 BLANK LINES / ~100 MM) ▲</div>
+                  <div class="fs-9 text-muted">Legal agreement body starts below this reserved header space, matching your original Word document exactly.</div>
                 </div>
 
-                <div style="width: 240px;">
-                  <div class="border-top border-dark pt-1">
-                    <strong>For SHRI TRUTIYADEV SOLAR ENTERPRISES</strong>
-                    <div class="small text-muted">Authorized Signatory / Vendor Stamp</div>
-                  </div>
+                <p style="text-align: right;">Annexure 2</p>
+                <p style="font-weight: bold; text-align: left;">
+                  Model Draft Agreement between Consumer &amp; Vendor for Installation of grid connected rooftop solar (RTS) project under PM _Surya Ghar: Muft Bijli Yojana
+                </p>
+                <p>----------------------------------------------------------------------------------------------------------------------------</p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-weight: bold;">
+                  This agreement is executed on <span id="previewAgreementDate" class="editable-field" contenteditable="true">{{ getFormattedAgreementDate() }}</span> for design, supply, installation, commissioning, and 5-year comprehensive maintenance of RTS project/system along with warranty under PM Surya Ghar: Muft Bijli Yojana.
+                </p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-weight: bold;">Between</p>
+
+                <p style="font-weight: bold;">
+                  <span id="previewCustomerName" class="editable-field" contenteditable="true">{{ getCustomerSalutationName() }}</span> having premises <span id="previewCustomerAddress" class="editable-field" contenteditable="true">{{ getAgreementAddress() }}</span> and Consumer No <span id="previewConsumerNo" class="editable-field" contenteditable="true">{{ selectedCustomer()?.ConsumerNo || '' }}</span> as the first Party,
+                </p>
+
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-weight: bold;">
+                  SHRI TRUTIYADEV SOLAR ENTERPRISES, having registered office AT-TALAMUNDALI, PO-KANKADAJODI, PS-MANIABANDHA, DIST-CUTTACK, ODISHA-754035 (hereinafter referred to as second Party i.e. Vendor.)
+                </p>
+
+                <p class="empty-line">&nbsp;</p>
+              </div>
+
+              <!-- PAGE 2: Whereas + First Party Undertakings -->
+              <div class="agreement-page page-break" style="page-break-before: always; mso-break-type: section-break;">
+                <div class="page-indicator text-muted fs-9 text-end mb-1 no-print">— Page 2 of 4 —</div>
+
+                <p>Whereas</p>
+                <p>
+                  The First Party wishes to install a Grid Connected Rooftop Solar Plant on the rooftop of the residential building of the Consumer under PM Surya Ghar: Muft Bijli Yojana.
+                </p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-weight: bold;">And whereas</p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p>
+                  Second Party has verified availability of appropriate roof and found it feasible to install a Grid Connected Roof Top Solar plant and that the second party is willing to design, supply, install, test, commission and carry out Operation &amp; Maintenance of the Rooftop Solar plant for 5 year period
+                </p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p>On this day, the First Party and Second Party agree to the following:</p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-weight: bold;">The First Party hereby undertakes to perform the following activities:</p>
+                <p>Submission of online application at National Portal for installation of RTS project/system, Submission of application for net-metering and system inspection and upload of the relevant documents on the National Portal of the scheme</p>
+                <p>Provide secure storage of the material of the RTS plant delivered at the premises till handover of the system.</p>
+                <p>Provide access to the Roof Top during installation of the plant, operation &amp;                maintenance, testing of the plant and equipment and for meter reading from solar meter, inverter etc.</p>
+                <p>Provide electricity during plant installation and water for cleaning of the panels.</p>
+                <p>Report any malfunctioning of the plant to the Vendor during the warranty period.</p>
+                <p>Pay the amount as per the payment schedule as mutually agreed with the vendor, including any additional amount to the second party for any additional work /customization required depending upon the building condition.</p>
+                <p>Acknowledge that, if the Grid-tied Rooftop Solar plant (or any part thereof), gets damaged to any extent because of the following reasons:</p>
+                <p>i. &ldquo;Act of God Phenomena&rdquo;,<br>ii. Poor Maintenance,<br>iii. Structural issues with the home itself,<br>iv.  Burglary, sabotage or riot like scenarios then,</p>
+                <p>For Solar Modules or panels that suffer physical damage (breakage of glass layer regardless of severity, bending, twisting or complete dismantling), no requests regarding repairs or replacement shall be entertained by the Vendor (as such damages aren't covered under warranty); the damaged Solar modules (panels) shall be treated as scrap and dealt accordingly.</p>
+              </div>
+
+              <!-- PAGE 3: Damage Repairs + Clause 8 + Second Party start -->
+              <div class="agreement-page page-break" style="page-break-before: always; mso-break-type: section-break;">
+                <div class="page-indicator text-muted fs-9 text-end mb-1 no-print">— Page 3 of 4 —</div>
+
+                <p>For other parts if damaged, there could be a repair job done, for which, the first party has to bear the cost (after a mutually agreed budget &amp; date etc are discussed) only within the time frame of this agreement.</p>
+                <p>8. The first party understands that following actions might compromise the project itself and if the installation/modification/repair is carried out anyway then the first party will be responsible for partial or total loss of the Rooftop Solar system:</p>
+                <p>Any undisclosed modifications to the rooftop area between the initial survey (by vendor) and the day of installation.</p>
+                <p>Absence or lack of cooperation of first party (contact person) OR, Disturbance created by any third-party during installation, modifications, repair or maintenance jobs.</p>
+
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-weight: bold;">The Second Party hereby undertakes to perform the following activities:</p>
+                <p>The Vendor must follow all the standards and safety guidelines prescribed under state regulations and technical standards prescribed by MNRE for RTS projects, failing which the vendor is liable for blacklisting from participation in the govt. project/ scheme and other penal actions in accordance with the law. The responsibility of supply, installation and commissioning of the rooftop solar project/system in complete compliance with MNRE scheme guidelines lies with the Vendor.</p>
+                <p><strong>Site Survey:</strong> Site visit, survey and development of detailed project report for installation of RTS system. This also includes, feasibility study of roof, strength of roof and shadow free area.  If any additional work or customization is involved for the plant installation as per site condition and requirement of the consumer building, the Vendor shall prepare an estimate and can raise a separate invoice including GST in addition to the amount towards standard plant cost. The consumer shall pay the amount for such additional work directly to the Vendor.</p>
+                <p><strong>Design &amp; Engineering:</strong> Design of plant along with drawings and selection of components as per standard provided by the DISCOM/SERC/MNRE for best performance and safety of the plant.</p>
+                <p><strong>Module and Inverter:</strong> The solar modules, including the solar cells, should be manufactured in India. Both the solar modules and inverters shall conform to the relevant standards and specifications prescribed by MNRE. Any other requirement, viz. star labelling (solar modules), quality control orders and standards &amp; labelling (inverters) etc., shall also be complied.</p>
+                <p><strong>Procurement &amp; Supply:</strong> Procurement of complete system as per BIS/IS/IEC standard (whatever applicable) &amp; safety guidelines for installation of rooftop solar plants. The supplied materials should comply with all MNRE standards for release of subsidy.</p>
+              </div>
+
+              <!-- PAGE 4: Second Party remaining + Payment + Signatures + Disclaimer -->
+              <div class="agreement-page page-break" style="page-break-before: always; mso-break-type: section-break;">
+                <div class="page-indicator text-muted fs-9 text-end mb-1 no-print">— Page 4 of 4 —</div>
+
+                <p><strong>Installation &amp; Civil work:</strong> Complete civil work, structure work and electrical work (including drawings) following all the safety and relevant BIS standards.</p>
+                <p><strong>Documentation (Technical Catalogues/Warranty Certificates/BIS certificates/other test reports etc):</strong> All such documents shall be provided to the consumer for online uploading and submission of technical specifications, IEC/BIS report, Sr. Nos, Warranty card of Solar Panel &amp; Inverter, Layout &amp; Electrical SLD, Structure Design and Drawing, Cable and other detailed documents.</p>
+                <p><strong>Project completion report (PCR):</strong> Assisting the consumer in filling and uploading signed documents (Consumer &amp; Vendor) on the national portal.</p>
+                <p><strong>Warranty:</strong> System warranty certificates should be provided to the consumer. The complete system should be warranted for 5 years from the date of commissioning by DISCOM. Individual component warranty documents provided by the manufacturer shall be provided to the consumer and all possible assistance should be extended to the consumer for claiming the warranty from the manufacturer.</p>
+                <p><strong>NET meter &amp; Grid Connectivity:</strong> Net meter supply/procurement, testing and approvals shall be in the scope of vendor. Grid connection of the plant shall be in the scope of the vendor.</p>
+                <p><strong>Testing and Commissioning:</strong> The vendor shall be present at the time of testing and commissioning by the DISCOM.</p>
+                <p><strong>Operation &amp; Maintenance:</strong> Five (5) years Comprehensive Operation and Maintenance including overhauling, wear and tear and regular checking of healthiness of system at proper interval shall be in the scope of vendor. The vendor shall also educate the consumer on best practices for cleaning of the modules and system maintenance.</p>
+                <p><strong>Insurance:</strong> Any insurance cost pertaining to material transfer/storage before commissioning of the system shall be in the scope of the vendor.</p>
+                <p><strong>Applicable Standard:</strong> The system must meet the technical standards and specifications notified by MNRE. The vendor is solely responsible to supply component and service which meets the technical standards and specification prescribed by MNRE and State DISCOMs.</p>
+                <p><strong>Project/system cost &amp; payment terms:</strong>  The cost of the plant and payment schedule should be mutually discussed and decided between the vendor and consumer. The consumer may opt for milestone-based payment to the vendor and the same shall be included in the agreement.</p>
+                <p><strong>Dispute:</strong> In-case of any dispute between consumer and vendor (in supply/installation/maintenance of system or payment terms), both parties must settle the same mutually or as per law. MNRE/DISCOM shall not be liable for, and would not be a party to any dispute arising between vendor and consumer.</p>
+                <p><strong>Subsidy / Project Related Documents:</strong> Vendor must provide all the documents to the consumer and help in uploading the same to National Portal for smooth release of subsidy.</p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p><strong>Performance of Plant:</strong> The Performance Ratio (PR) of Plant must be 75% at the time of commissioning of the project by DISCOM or its authorised agency. Vendor must provide (returnable basis) radiation sensor with valid calibration certificate of any NABL / International laboratory at the time of commissioning / testing of the plant. Vendor must maintain the PR of the plant till warranty of project i.e. 5 years from the date of commissioning.</p>
+
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-weight: bold;">Mutually Agreed Terms of Payment …</p>
+
+                <p class="empty-line">&nbsp;</p>
+
+                <p><span class="editable-field" contenteditable="true">Payment should be 100% In advance. (in this case 70% advance and rest on the completion of installation)</span></p>
+
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+
+                <table class="sig-table" style="width: 100%; border-collapse: collapse; margin-top: 0; margin-bottom: 0;">
+                  <tr>
+                    <td style="width: 50%; vertical-align: top; padding-right: 12pt;">
+                      <p style="font-weight: bold;">First Party</p>
+                      <p>Name: <span class="editable-field" contenteditable="true">{{ getCustomerSalutationName() }}</span></p>
+                      <p>Address: <span class="editable-field" contenteditable="true">{{ getAgreementAddress() }}</span></p>
+                      <p>Sign: <span class="editable-field" contenteditable="true">_______________________</span></p>
+                      <p>Date: <span class="editable-field" contenteditable="true">{{ getFormattedAgreementDate() }}</span></p>
+                    </td>
+                    <td style="width: 50%; vertical-align: top; padding-left: 12pt;">
+                      <p style="font-weight: bold;">Second Party</p>
+                      <p>Name: <span class="editable-field" contenteditable="true">SHRI TRUTIYADEV SOLAR ENTERPRISES</span></p>
+                      <p>Address: <span class="editable-field" contenteditable="true">AT-TALAMUNDALI, PO-KANKADAJODI, PS-MANIABANDHA, DIST-CUTTACK, ODISHA-754035</span></p>
+                      <p>Sign: <span class="editable-field" contenteditable="true">_______________________</span></p>
+                      <p>Date: <span class="editable-field" contenteditable="true">{{ getFormattedAgreementDate() }}</span></p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+                <p class="empty-line">&nbsp;</p>
+
+                <p style="font-size: 9.5pt; font-style: italic;">Disclaimer: This agreement is between vendor and consumer and any dispute related to the same shall not involve any third party including MNRE and Distribution Utilities.</p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <!-- PREVIEW OPTION 2: TECHNICAL DISCOM FORMS (FORM 1, 3, 4, 6)           -->
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <div *ngIf="previewDocType() !== 'agreement'" class="a4-sheet bg-white p-4 shadow-sm mx-auto border" style="max-width: 800px; min-height: 1000px; color: #000; font-family: serif; font-size: 13px; line-height: 1.5;">
+              <!-- HEADER -->
+              <div class="text-center mb-3">
+                <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.05em;">
+                  <span *ngIf="previewDocType() === 'form1'">APPLICATION FORM FOR NET-METERING (FORM-1)</span>
+                  <span *ngIf="previewDocType() === 'form3'">WORK COMPLETION AND INSPECTION REPORT (FORM-3)</span>
+                  <span *ngIf="previewDocType() === 'form4'">WORK COMPLETION REPORT (FORM-4)</span>
+                  <span *ngIf="previewDocType() === 'form6'">COMMISSIONING CERTIFICATE FOR RTS (FORM-6)</span>
+                </h5>
+                <div class="small text-muted">
+                  Under PM - Surya Ghar Muft Bijli Yojana &bull; Grid Connected Solar Rooftop PV System
+                </div>
+                <hr class="my-2 border-dark">
+              </div>
+
+              <!-- APPLICANT / TO ADDRESS -->
+              <div class="mb-3">
+                <div><strong>To,</strong></div>
+                <div>The Executive Engineer / Designated Authority (Elec.),</div>
+                <div>{{ selectedCustomer()?.DivisionName || 'Electrical Division' }}, {{ selectedCustomer()?.District || 'Odisha' }}</div>
+                <div class="mt-2"><strong>Sub:</strong> Formal Submission of Official RTS Documentation for Commissioning.</div>
+                <div><strong>PMSGY Reg. No:</strong> {{ selectedCustomer()?.ApplicationNumber || selectedCustomer()?.ConsumerNo }}</div>
+              </div>
+
+              <!-- SUMMARY DETAILS TABLE -->
+              <table class="table table-bordered border-dark table-sm mb-3" style="font-size: 12px; border-color: #000;">
+                <tbody>
+                  <tr class="table-light fw-bold">
+                    <td colspan="3">A. Applicant &amp; Site Details</td>
+                  </tr>
+                  <tr>
+                    <td style="width: 35px;" class="text-center">1</td>
+                    <td style="width: 45%;">Name of Applicant / Consumer</td>
+                    <td class="fw-bold">{{ selectedCustomer()?.Name }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">2</td>
+                    <td>Consumer Number</td>
+                    <td class="font-monospace fw-bold">{{ selectedCustomer()?.ConsumerNo }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">3</td>
+                    <td>Premises Address</td>
+                    <td>{{ currentSpecs().address }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">4</td>
+                    <td>Sanctioned Load &amp; Solar Plant Capacity</td>
+                    <td>{{ currentSpecs().inverterCapacity || '3' }} kWp ({{ currentSpecs().connectionType || '1ph LT' }})</td>
+                  </tr>
+
+                  <tr class="table-light fw-bold">
+                    <td colspan="3">B. Technical Specifications</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">5</td>
+                    <td>PV Module Make &amp; Total Modules</td>
+                    <td>{{ currentSpecs().moduleMake }} ({{ currentSpecs().moduleCount }} Nos. &bull; {{ currentSpecs().moduleTotalCapacity }})</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">6</td>
+                    <td>Inverter Make &amp; Serial Number</td>
+                    <td>{{ currentSpecs().inverterMake }} - S/N: {{ currentSpecs().inverterSerialNo }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">7</td>
+                    <td>DCDB &amp; ACDB Protection Boxes</td>
+                    <td>DCDB: {{ currentSpecs().dcdbMake }} | ACDB: {{ currentSpecs().acdbMake }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">8</td>
+                    <td>Earth Resistance Test Result</td>
+                    <td>{{ currentSpecs().earthResistance }} Ohms (Safe Grounding)</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center">9</td>
+                    <td>Executing Vendor</td>
+                    <td class="fw-bold">SHRI TRUTIYADEV SOLAR ENTERPRISES</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- MODULE SERIALS IF PRESENT -->
+              <div *ngIf="currentSpecs().moduleSerials && (currentSpecs().moduleSerials?.length || 0) > 0" class="mb-3">
+                <div class="fw-bold small mb-1">C. Installed PV Module Serial Numbers:</div>
+                <div class="p-2 border border-dark rounded font-monospace small" style="background: #fbfbfb;">
+                  <span *ngFor="let s of currentSpecs().moduleSerials; let last = last">
+                    {{ s.serialNo }} ({{ s.capacity }}W){{ last ? '' : ', ' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- DECLARATION & SIGNATURE BLOCKS -->
+              <div class="mt-4 pt-2">
+                <div class="small mb-4 text-justify">
+                  We hereby verify that the above Solar Rooftop PV system has been installed in full accordance with DISCOM standards, CEA regulations, and MNRE guidelines.
                 </div>
 
-                <div style="width: 200px;">
-                  <div class="border-top border-dark pt-1">
-                    <strong>Inspecting Officer</strong>
-                    <div class="small text-muted">DISCOM Official</div>
+                <div class="d-flex justify-content-between text-center mt-5 pt-4">
+                  <div style="width: 200px;">
+                    <div class="border-top border-dark pt-1">
+                      <strong>Signature of Consumer</strong>
+                      <div class="small text-muted">{{ selectedCustomer()?.Name }}</div>
+                    </div>
+                  </div>
+
+                  <div style="width: 240px;">
+                    <div class="border-top border-dark pt-1">
+                      <strong>For SHRI TRUTIYADEV SOLAR ENTERPRISES</strong>
+                      <div class="small text-muted">Authorized Signatory / Vendor Stamp</div>
+                    </div>
+                  </div>
+
+                  <div style="width: 200px;">
+                    <div class="border-top border-dark pt-1">
+                      <strong>Inspecting Officer</strong>
+                      <div class="small text-muted">DISCOM Official</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
           </div>
-        </div>
 
         <!-- Footer -->
         <div class="modal-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
           <button type="button" class="btn btn-outline-secondary btn-sm px-3" (click)="closePreviewModal()">Close</button>
           <div class="d-flex gap-2">
+            <button 
+              *ngIf="previewDocType() === 'agreement'" 
+              type="button" 
+              class="btn btn-outline-primary btn-sm px-3 fw-semibold d-flex align-items-center gap-1" 
+              (click)="downloadAgreementDoc()">
+              <app-icon name="download" [size]="14"></app-icon>
+              <span>Download .DOC</span>
+            </button>
             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" (click)="printDocument()">
               <app-icon name="print" [size]="14" class="me-1"></app-icon>
               Print Document

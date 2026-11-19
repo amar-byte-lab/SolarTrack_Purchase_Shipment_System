@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import JSZip from 'jszip';
 import { DocumentService } from './services/document.service';
 import { SummaryService } from '../../core/services/summary.service';
 import { ToastService } from '../../shared/services/toast.service';
@@ -698,6 +699,426 @@ export class DocumentComponent implements OnInit {
 
   printDocument(): void {
     window.print();
+  }
+
+  getFormattedAgreementDate(): string {
+    const cust = this.selectedCustomer();
+    const raw = cust?.AgreementDate || cust?.InstallationDate;
+    if (raw) {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+      return String(raw);
+    }
+    const today = new Date();
+    return today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  getCustomerSalutationName(): string {
+    const name = (this.selectedCustomer()?.Name || '').trim();
+    if (!name) return 'Consumer';
+    if (/^(mr|mrs|ms|dr|shri|smt)\b/i.test(name)) {
+      return name;
+    }
+    return `Mr ${name}`;
+  }
+
+  getAgreementAddress(): string {
+    const cust = this.selectedCustomer();
+    const specs = this.currentSpecs();
+    let addr = (specs.address || cust?.Address || '').trim();
+    const dist = (specs.district || cust?.District || '').trim();
+    const state = (specs.state || cust?.State || 'ODISHA').trim();
+    const pin = (specs.pinCode || cust?.PinCode || '').trim();
+
+    const parts: string[] = [];
+    if (addr) {
+      if (!addr.toUpperCase().startsWith('AT:') && !addr.toUpperCase().startsWith('AT-') && !addr.toUpperCase().startsWith('AT ')) {
+        addr = `AT: ${addr}`;
+      }
+      parts.push(addr);
+    }
+    if (dist) parts.push(`DISTRICT: ${dist}`);
+    if (state) parts.push(`STATE: ${state}`);
+    if (pin) parts.push(`PIN: ${pin}`);
+    return parts.length > 0 ? parts.join(', ') : (addr || 'AT: _______________________');
+  }
+
+  onDownloadClicked(): void {
+    const docType = this.activeDocType();
+    if (docType === 'agreement') {
+      this.downloadAgreementDoc();
+    } else {
+      this.openPreviewModal(docType);
+    }
+  }
+
+  async downloadAgreementDoc(): Promise<void> {
+    const cust = this.selectedCustomer();
+    if (!cust) {
+      this.toastService.warning('Please select a customer first.');
+      return;
+    }
+
+    // Read live values from preview if modified, otherwise from customer model
+    const consumerNameEl = document.getElementById('previewCustomerName');
+    const addressEl = document.getElementById('previewCustomerAddress');
+    const consumerNoEl = document.getElementById('previewConsumerNo');
+    const dateEl = document.getElementById('previewAgreementDate');
+
+    const consumerName = (consumerNameEl?.innerText || this.getCustomerSalutationName()).trim();
+    const addressStr = (addressEl?.innerText || this.getAgreementAddress()).trim();
+    const consumerNo = (consumerNoEl?.innerText || cust.ConsumerNo || cust.ApplicationNumber || '').trim();
+    const dateStr = (dateEl?.innerText || this.getFormattedAgreementDate()).trim();
+
+    try {
+      // 1. Fetch authentic uploaded master template
+      const response = await fetch('assets/Agreement_Template.docx');
+      if (!response.ok) {
+        throw new Error(`Failed to load template: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+
+      // 2. Open archive with JSZip
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const docXmlEntry = zip.file('word/document.xml');
+      if (!docXmlEntry) {
+        throw new Error('Invalid docx format in template');
+      }
+
+      let xml = await docXmlEntry.async('string');
+
+      // 3. Exact in-place substitution of values into genuine OpenXML
+      xml = xml.replace('Mr KIRAN KUMAR BINDHANI', consumerName);
+      xml = xml.replace('AT: 601, PATANA, AJODHYA, DISTRICT: BALASORE, STATE: ODISHA, PIN: 756020', addressStr);
+      xml = xml.replace('324313051063', consumerNo);
+
+      const dateSnippet = 'This agreement is executed on</w:t></w:r><w:r w:rsidR="00ED05EC"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00577AF0"><w:t>2</w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>2</w:t></w:r><w:r w:rsidR="00577AF0"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>April</w:t></w:r><w:r w:rsidR="00644EAD"><w:t xml:space="preserve"> 2026 for</w:t></w:r>';
+      xml = xml.replace(dateSnippet, `This agreement is executed on ${dateStr} for</w:t></w:r>`);
+
+      zip.file('word/document.xml', xml);
+
+      // 4. Generate native .docx binary blob
+      const outBlob = await zip.generateAsync({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
+
+      const filename = `Agreement_${consumerName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${consumerNo || cust.SlNo}.docx`;
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(outBlob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      this.toastService.success(`Original Agreement downloaded: ${filename}`);
+    } catch (err) {
+      console.warn('Direct DOCX generation fallback to HTML doc:', err);
+      this.downloadAgreementDocHtmlFallback(consumerName, addressStr, consumerNo, dateStr);
+    }
+  }
+
+  downloadAgreementDocHtmlFallback(consumerName: string, addressStr: string, consumerNo: string, dateStr: string): void {
+    const cust = this.selectedCustomer();
+    if (!cust) return;
+
+    const previewSheet = document.getElementById('agreementPreviewSheet');
+    let contentHtml = '';
+
+    if (previewSheet) {
+      const clone = previewSheet.cloneNode(true) as HTMLElement;
+      clone.removeAttribute('contenteditable');
+      clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+      clone.querySelectorAll('.no-print').forEach(el => el.remove());
+      clone.querySelectorAll('.page-indicator').forEach(el => el.remove());
+      clone.querySelectorAll('.stamp-space-badge').forEach(el => el.remove());
+      clone.querySelectorAll('.inline-edit-notice').forEach(el => el.remove());
+      clone.querySelectorAll('.editable-field').forEach(el => {
+        (el as HTMLElement).style.backgroundColor = 'transparent';
+        (el as HTMLElement).style.borderBottom = 'none';
+      });
+      contentHtml = clone.innerHTML;
+    } else {
+      contentHtml = this.generateAgreementHtmlVerbatim();
+    }
+
+    const docFileContent = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>Agreement_${consumerName}</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          @page Section1 {
+            size: 210mm 297mm;
+            margin: 25.9mm 22.5mm 31.4mm 23.6mm;
+            mso-header-margin: 36pt;
+            mso-footer-margin: 36pt;
+            mso-page-orientation: portrait;
+          }
+          div.Section1 {
+            page: Section1;
+          }
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10.5pt;
+            line-height: 1.15;
+            color: #000000;
+          }
+          p {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10.5pt;
+            line-height: 1.15;
+            margin: 0;
+            padding: 0;
+            text-align: justify;
+          }
+          .empty-line {
+            min-height: 1.15em;
+          }
+          .page-break {
+            page-break-before: always;
+            mso-break-type: section-break;
+            clear: both;
+          }
+          .text-right { text-align: right; }
+          .text-left { text-align: left; }
+          .text-center { text-align: center; }
+          .fw-bold { font-weight: bold; }
+          table.sig-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0;
+            margin-bottom: 0;
+          }
+          table.sig-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10.5pt;
+            line-height: 1.15;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="Section1">
+          ${contentHtml}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff' + docFileContent], { type: 'application/msword;charset=utf-8' });
+    const filename = `Agreement_${consumerName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${consumerNo || cust.SlNo}.doc`;
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    this.toastService.success(`Agreement downloaded: ${filename}`);
+  }
+
+  generateAgreementHtmlVerbatim(): string {
+    const dateStr = this.getFormattedAgreementDate();
+    const consumerName = this.getCustomerSalutationName();
+    const consumerNo = this.selectedCustomer()?.ConsumerNo || '';
+    const addressStr = this.getAgreementAddress();
+
+    return `
+      <!-- PAGE 1: 17 blank lines top space + Header + Parties -->
+      <div class="agreement-page">
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="text-align: right;">Annexure 2</p>
+        <p style="font-weight: bold; text-align: left;">
+          Model Draft Agreement between Consumer &amp; Vendor for Installation of grid connected rooftop solar (RTS) project under PM _Surya Ghar: Muft Bijli Yojana
+        </p>
+        <p>----------------------------------------------------------------------------------------------------------------------------</p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-weight: bold;">
+          This agreement is executed on ${dateStr} for design, supply, installation, commissioning, and 5-year comprehensive maintenance of RTS project/system along with warranty under PM Surya Ghar: Muft Bijli Yojana.
+        </p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-weight: bold;">Between</p>
+
+        <p style="font-weight: bold;">
+          ${consumerName} having premises ${addressStr} and Consumer No ${consumerNo} as the first Party,
+        </p>
+
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-weight: bold;">
+          SHRI TRUTIYADEV SOLAR ENTERPRISES, having registered office AT-TALAMUNDALI, PO-KANKADAJODI, PS-MANIABANDHA, DIST-CUTTACK, ODISHA-754035 (hereinafter referred to as second Party i.e. Vendor.)
+        </p>
+
+        <p class="empty-line">&nbsp;</p>
+      </div>
+
+      <!-- PAGE 2: Whereas + First Party Undertakings -->
+      <div class="agreement-page page-break" style="page-break-before: always; mso-break-type: section-break;">
+        <p>Whereas</p>
+        <p>
+          The First Party wishes to install a Grid Connected Rooftop Solar Plant on the rooftop of the residential building of the Consumer under PM Surya Ghar: Muft Bijli Yojana.
+        </p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-weight: bold;">And whereas</p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p>
+          Second Party has verified availability of appropriate roof and found it feasible to install a Grid Connected Roof Top Solar plant and that the second party is willing to design, supply, install, test, commission and carry out Operation &amp; Maintenance of the Rooftop Solar plant for 5 year period
+        </p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p>On this day, the First Party and Second Party agree to the following:</p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-weight: bold;">The First Party hereby undertakes to perform the following activities:</p>
+        <p>Submission of online application at National Portal for installation of RTS project/system, Submission of application for net-metering and system inspection and upload of the relevant documents on the National Portal of the scheme</p>
+        <p>Provide secure storage of the material of the RTS plant delivered at the premises till handover of the system.</p>
+        <p>Provide access to the Roof Top during installation of the plant, operation &amp;                maintenance, testing of the plant and equipment and for meter reading from solar meter, inverter etc.</p>
+        <p>Provide electricity during plant installation and water for cleaning of the panels.</p>
+        <p>Report any malfunctioning of the plant to the Vendor during the warranty period.</p>
+        <p>Pay the amount as per the payment schedule as mutually agreed with the vendor, including any additional amount to the second party for any additional work /customization required depending upon the building condition.</p>
+        <p>Acknowledge that, if the Grid-tied Rooftop Solar plant (or any part thereof), gets damaged to any extent because of the following reasons:</p>
+        <p>i. &ldquo;Act of God Phenomena&rdquo;,</p>
+        <p>ii. Poor Maintenance,</p>
+        <p>iii. Structural issues with the home itself,</p>
+        <p>iv.  Burglary, sabotage or riot like scenarios then,</p>
+        <p>For Solar Modules or panels that suffer physical damage (breakage of glass layer regardless of severity, bending, twisting or complete dismantling), no requests regarding repairs or replacement shall be entertained by the Vendor (as such damages aren't covered under warranty); the damaged Solar modules (panels) shall be treated as scrap and dealt accordingly.</p>
+      </div>
+
+      <!-- PAGE 3: Damage Repairs + Clause 8 + Second Party start -->
+      <div class="agreement-page page-break" style="page-break-before: always; mso-break-type: section-break;">
+        <p>For other parts if damaged, there could be a repair job done, for which, the first party has to bear the cost (after a mutually agreed budget &amp; date etc are discussed) only within the time frame of this agreement.</p>
+        <p>8. The first party understands that following actions might compromise the project itself and if the installation/modification/repair is carried out anyway then the first party will be responsible for partial or total loss of the Rooftop Solar system:</p>
+        <p>Any undisclosed modifications to the rooftop area between the initial survey (by vendor) and the day of installation.</p>
+        <p>Absence or lack of cooperation of first party (contact person) OR, Disturbance created by any third-party during installation, modifications, repair or maintenance jobs.</p>
+
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-weight: bold;">The Second Party hereby undertakes to perform the following activities:</p>
+        <p>The Vendor must follow all the standards and safety guidelines prescribed under state regulations and technical standards prescribed by MNRE for RTS projects, failing which the vendor is liable for blacklisting from participation in the govt. project/ scheme and other penal actions in accordance with the law. The responsibility of supply, installation and commissioning of the rooftop solar project/system in complete compliance with MNRE scheme guidelines lies with the Vendor.</p>
+        <p><strong>Site Survey:</strong> Site visit, survey and development of detailed project report for installation of RTS system. This also includes, feasibility study of roof, strength of roof and shadow free area.  If any additional work or customization is involved for the plant installation as per site condition and requirement of the consumer building, the Vendor shall prepare an estimate and can raise a separate invoice including GST in addition to the amount towards standard plant cost. The consumer shall pay the amount for such additional work directly to the Vendor.</p>
+        <p><strong>Design &amp; Engineering:</strong> Design of plant along with drawings and selection of components as per standard provided by the DISCOM/SERC/MNRE for best performance and safety of the plant.</p>
+        <p><strong>Module and Inverter:</strong> The solar modules, including the solar cells, should be manufactured in India. Both the solar modules and inverters shall conform to the relevant standards and specifications prescribed by MNRE. Any other requirement, viz. star labelling (solar modules), quality control orders and standards &amp; labelling (inverters) etc., shall also be complied.</p>
+        <p><strong>Procurement &amp; Supply:</strong> Procurement of complete system as per BIS/IS/IEC standard (whatever applicable) &amp; safety guidelines for installation of rooftop solar plants. The supplied materials should comply with all MNRE standards for release of subsidy.</p>
+      </div>
+
+      <!-- PAGE 4: Second Party remaining + Payment Terms + Signatures + Disclaimer -->
+      <div class="agreement-page page-break" style="page-break-before: always; mso-break-type: section-break;">
+        <p><strong>Installation &amp; Civil work:</strong> Complete civil work, structure work and electrical work (including drawings) following all the safety and relevant BIS standards.</p>
+        <p><strong>Documentation (Technical Catalogues/Warranty Certificates/BIS certificates/other test reports etc):</strong> All such documents shall be provided to the consumer for online uploading and submission of technical specifications, IEC/BIS report, Sr. Nos, Warranty card of Solar Panel &amp; Inverter, Layout &amp; Electrical SLD, Structure Design and Drawing, Cable and other detailed documents.</p>
+        <p><strong>Project completion report (PCR):</strong> Assisting the consumer in filling and uploading signed documents (Consumer &amp; Vendor) on the national portal.</p>
+        <p><strong>Warranty:</strong> System warranty certificates should be provided to the consumer. The complete system should be warranted for 5 years from the date of commissioning by DISCOM. Individual component warranty documents provided by the manufacturer shall be provided to the consumer and all possible assistance should be extended to the consumer for claiming the warranty from the manufacturer.</p>
+        <p><strong>NET meter &amp; Grid Connectivity:</strong> Net meter supply/procurement, testing and approvals shall be in the scope of vendor. Grid connection of the plant shall be in the scope of the vendor.</p>
+        <p><strong>Testing and Commissioning:</strong> The vendor shall be present at the time of testing and commissioning by the DISCOM.</p>
+        <p><strong>Operation &amp; Maintenance:</strong> Five (5) years Comprehensive Operation and Maintenance including overhauling, wear and tear and regular checking of healthiness of system at proper interval shall be in the scope of vendor. The vendor shall also educate the consumer on best practices for cleaning of the modules and system maintenance.</p>
+        <p><strong>Insurance:</strong> Any insurance cost pertaining to material transfer/storage before commissioning of the system shall be in the scope of the vendor.</p>
+        <p><strong>Applicable Standard:</strong> The system must meet the technical standards and specifications notified by MNRE. The vendor is solely responsible to supply component and service which meets the technical standards and specification prescribed by MNRE and State DISCOMs.</p>
+        <p><strong>Project/system cost &amp; payment terms:</strong>  The cost of the plant and payment schedule should be mutually discussed and decided between the vendor and consumer. The consumer may opt for milestone-based payment to the vendor and the same shall be included in the agreement.</p>
+        <p><strong>Dispute:</strong> In-case of any dispute between consumer and vendor (in supply/installation/maintenance of system or payment terms), both parties must settle the same mutually or as per law. MNRE/DISCOM shall not be liable for, and would not be a party to any dispute arising between vendor and consumer.</p>
+        <p><strong>Subsidy / Project Related Documents:</strong> Vendor must provide all the documents to the consumer and help in uploading the same to National Portal for smooth release of subsidy.</p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p><strong>Performance of Plant:</strong> The Performance Ratio (PR) of Plant must be 75% at the time of commissioning of the project by DISCOM or its authorised agency. Vendor must provide (returnable basis) radiation sensor with valid calibration certificate of any NABL / International laboratory at the time of commissioning / testing of the plant. Vendor must maintain the PR of the plant till warranty of project i.e. 5 years from the date of commissioning.</p>
+
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-weight: bold;">Mutually Agreed Terms of Payment …</p>
+
+        <p class="empty-line">&nbsp;</p>
+
+        <p>Payment should be 100% In advance. (in this case 70% advance and rest on the completion of installation)</p>
+
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+
+        <table class="sig-table" style="width: 100%; border-collapse: collapse; margin-top: 0; margin-bottom: 0;">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 12pt;">
+              <p style="font-weight: bold;">First Party</p>
+              <p>Name: ${consumerName}</p>
+              <p>Address: ${addressStr}</p>
+              <p>Sign: _______________________</p>
+              <p>Date: ${dateStr}</p>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding-left: 12pt;">
+              <p style="font-weight: bold;">Second Party</p>
+              <p>Name: SHRI TRUTIYADEV SOLAR ENTERPRISES</p>
+              <p>Address: AT-TALAMUNDALI, PO-KANKADAJODI, PS-MANIABANDHA, DIST-CUTTACK, ODISHA-754035</p>
+              <p>Sign: _______________________</p>
+              <p>Date: ${dateStr}</p>
+            </td>
+          </tr>
+        </table>
+
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+        <p class="empty-line">&nbsp;</p>
+
+        <p style="font-size: 9.5pt; font-style: italic;">Disclaimer: This agreement is between vendor and consumer and any dispute related to the same shall not involve any third party including MNRE and Distribution Utilities.</p>
+      </div>
+    `;
   }
 
   resetCurrentDocument(): void {

@@ -255,6 +255,87 @@
   border-radius: 8px;
 }
 
+/* Agreement Preview & Live Inline Editing Styles */
+.inline-edit-notice {
+  background-color: #fefce8;
+  border: 1px solid #fef08a;
+  border-left: 4px solid #eab308;
+  color: #854d0e;
+  border-radius: 6px;
+}
+
+.agreement-document-body {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10.5pt;
+  line-height: 1.15;
+  color: #000000;
+  outline: none;
+
+  .agreement-page {
+    width: 100%;
+    max-width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 24px auto;
+    padding: 25.9mm 22.5mm 31.4mm 23.6mm; /* Exact OpenXML twip margins: Top 25.9mm, Right 22.5mm, Bottom 31.4mm, Left 23.6mm */
+    background-color: #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border: 1px solid #cbd5e1;
+    box-sizing: border-box;
+    position: relative;
+    page-break-after: always;
+    break-after: page;
+
+    p {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 10.5pt;
+      line-height: 1.15;
+      margin: 0;
+      padding: 0;
+      text-align: justify;
+    }
+
+    .empty-line {
+      min-height: 1.15em;
+    }
+
+    table.sig-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0;
+      margin-bottom: 0;
+
+      td {
+        width: 50%;
+        vertical-align: top;
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 10.5pt;
+        line-height: 1.15;
+        padding: 0;
+      }
+    }
+  }
+
+  .editable-field {
+    background-color: rgba(254, 240, 138, 0.5);
+    border-bottom: 1.5px dashed #d97706;
+    padding: 0 2px;
+    border-radius: 2px;
+    outline: none;
+    cursor: text;
+    transition: background-color 0.2s, box-shadow 0.2s;
+
+    &:hover {
+      background-color: rgba(254, 240, 138, 0.85);
+    }
+
+    &:focus {
+      background-color: #fef08a;
+      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.3);
+      border-bottom: 1.5px solid #b45309;
+    }
+  }
+}
+
 /* Print Stylesheet */
 @media print {
   body * {
@@ -275,6 +356,21 @@
     background: #ffffff !important;
   }
 
+  .agreement-page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 25.9mm 22.5mm 31.4mm 23.6mm !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 297mm !important;
+
+    &.page-break {
+      page-break-before: always !important;
+      break-before: page !important;
+    }
+  }
+
   .a4-sheet {
     box-shadow: none !important;
     border: none !important;
@@ -283,7 +379,19 @@
     max-width: none !important;
   }
 
-  .no-print, .btn, .modal-header, .modal-footer, .btn-close {
+  .page-indicator,
+  .stamp-space-badge,
+  .inline-edit-notice,
+  .no-print,
+  .btn,
+  .modal-header,
+  .modal-footer,
+  .btn-close {
     display: none !important;
+  }
+
+  .editable-field {
+    background-color: transparent !important;
+    border-bottom: none !important;
   }
 }
