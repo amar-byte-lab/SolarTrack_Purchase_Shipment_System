@@ -290,14 +290,14 @@ export class CalculatorService {
       // On-Grid GTI: Inverter sizes strictly to match Solar PV Array (DC/AC ~1.15)
       // Home appliances run in parallel from solar + grid.
       if (solarResult && solarResult.actualArrayKwp > 0) {
-        requiredContinuousW = Math.max(1000, Math.round((solarResult.actualArrayKwp / 1.15) * 1000));
+        requiredContinuousW = Math.max(1000, Math.round((solarResult.actualArrayKwp / 1.2) * 1000));
       } else {
         requiredContinuousW = Math.max(1000, Math.round(sanctionedLoadKw * 1000));
       }
     } else if (sysTypeKey === 'off-grid') {
       // Off-Grid Solar PCU: Must supply running loads (+ safety margin) AND MPPT solar charger must support PV array
       const offGridRunningW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 1000);
-      const loadDrivenW = Math.round(offGridRunningW * (1 + safetyMarginPct / 100));
+      const loadDrivenW = Math.round(offGridRunningW * 1.25);
       const solarDrivenW = solarResult && solarResult.actualArrayKwp > 0
         ? Math.round((solarResult.actualArrayKwp / 1.25) * 1000)
         : 0;
@@ -305,7 +305,7 @@ export class CalculatorService {
     } else if (sysTypeKey === 'hybrid') {
       // Hybrid Inverter: Must support grid-tied solar export AND emergency backup load during power outage
       const backupRunningW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 1000);
-      const backupDrivenW = Math.round(backupRunningW * (1 + safetyMarginPct / 100));
+      const backupDrivenW = Math.round(backupRunningW * 1.25);
       const solarDrivenW = solarResult && solarResult.actualArrayKwp > 0
         ? Math.round((solarResult.actualArrayKwp / 1.15) * 1000)
         : 0;
@@ -313,25 +313,23 @@ export class CalculatorService {
     } else {
       // Without-solar (Home UPS): Sized strictly on backup appliances load with safety margin
       const upsLoadW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 500);
-      requiredContinuousW = Math.round(upsLoadW * (1 + safetyMarginPct / 100));
+      requiredContinuousW = Math.round(upsLoadW * 1.25);
     }
 
     const requiredPeakSurgeW = (sysTypeKey === 'on-grid')
       ? requiredContinuousW // GTI does not handle motor starting inrush; grid absorbs it
-      : Math.round(requiredContinuousW + maxMotorSurgeDeltaW);
+      : Math.max(Math.round(requiredContinuousW * 1.5), Math.round((sysTypeKey === 'off-grid' ? (backupLoadW || connectedLoadW) : backupLoadW) + maxMotorSurgeDeltaW));
 
     // 4. Validate Single-Phase Limit & Sanctioned Load
     const rawRequiredKw = Math.round((requiredContinuousW / 1000) * 10) / 10;
     const effectiveSolarKw = solarResult ? solarResult.actualArrayKwp : rawRequiredKw;
-    const maxPermissibleSinglePhaseDcKw = Math.round(SINGLE_PHASE_MAX_LIMIT_KW * 1.15 * 10) / 10;
-    const maxPermissibleSanctionedDcKw = Math.round(sanctionedLoadKw * 1.15 * 10) / 10;
 
     let exceedsSinglePhase = false;
     let exceedsSanctionedLoad = false;
 
     if (sysTypeKey === 'on-grid' || sysTypeKey === 'hybrid') {
-      exceedsSinglePhase = isSinglePhase && (rawRequiredKw > SINGLE_PHASE_MAX_LIMIT_KW || (solarResult !== null && solarResult.actualArrayKwp > maxPermissibleSinglePhaseDcKw));
-      exceedsSanctionedLoad = rawRequiredKw > sanctionedLoadKw || (solarResult !== null && solarResult.actualArrayKwp > maxPermissibleSanctionedDcKw);
+      exceedsSinglePhase = isSinglePhase && solarResult !== null && solarResult.actualArrayKwp > SINGLE_PHASE_MAX_LIMIT_KW;
+      exceedsSanctionedLoad = solarResult !== null && solarResult.actualArrayKwp > sanctionedLoadKw;
     } else if (sysTypeKey === 'off-grid') {
       exceedsSinglePhase = isSinglePhase && rawRequiredKw > SINGLE_PHASE_MAX_LIMIT_KW;
       exceedsSanctionedLoad = rawRequiredKw > sanctionedLoadKw;
@@ -358,7 +356,7 @@ export class CalculatorService {
         valSuggestion = 'Switch to a Three-Phase (415V) Solar PCU configuration or optimize connected loads to ≤ 5.0 kW.';
       } else {
         valTitle = 'Single-Phase Statutory Net-Metering Limit Exceeded';
-        valMessage = `Calculated solar capacity (${plantDisplayKw} kWp / ${rawRequiredKw} kW inverter) exceeds the permissible Single-Phase (230V) DISCOM export cap of 5.0 kW.`;
+        valMessage = `Calculated solar array (${plantDisplayKw} kWp) exceeds the 5.0 kWp Single-Phase (230V) DISCOM export cap.`;
         valSuggestion = 'Switch your utility connection to Three-Phase (415V), or cap your solar system to ≤ 5.0 kWp.';
       }
     } else if (exceedsSanctionedLoad) {
@@ -373,7 +371,7 @@ export class CalculatorService {
         valSuggestion = 'If grid bypass charging is used, consider enhancing sanctioned load to avoid utility overload penalties.';
       } else {
         valTitle = 'Sanctioned Meter Load Enhancement Advised';
-        valMessage = `Solar capacity (${plantDisplayKw} kWp) exceeds your current sanctioned load (${sanctionedLoadKw} kW).`;
+        valMessage = `Solar array (${plantDisplayKw} kWp) exceeds your current sanctioned meter load (${sanctionedLoadKw} kW).`;
         valSuggestion = 'DISCOM net-metering regulations mandate that installed solar PV capacity cannot exceed 100% of sanctioned load. Apply for load enhancement before net-metering application.';
       }
     }
@@ -383,7 +381,7 @@ export class CalculatorService {
       isSinglePhase,
       sanctionedLoadKw,
       requiredKw: (sysTypeKey === 'on-grid' || sysTypeKey === 'hybrid')
-        ? Math.max(rawRequiredKw, Math.ceil(effectiveSolarKw / 1.15))
+        ? Math.max(rawRequiredKw, Math.ceil(effectiveSolarKw))
         : rawRequiredKw,
       effectiveSolarKw,
       maxAllowedSinglePhaseKw: SINGLE_PHASE_MAX_LIMIT_KW,
@@ -626,7 +624,8 @@ export class CalculatorService {
       else if (approxKw <= 2) fallbackVolt = 24;
       else if (approxKw <= 5) fallbackVolt = 48;
       else if (approxKw <= 8) fallbackVolt = 96;
-      else fallbackVolt = 120;
+      else if (approxKw <= 12) fallbackVolt = 120;
+      else fallbackVolt = 240;
     }
 
     return {
@@ -726,9 +725,10 @@ export class CalculatorService {
     if (!systemVoltage || systemVoltage === 0) {
       if (backupLoadW <= 1000) systemVoltage = 12;
       else if (backupLoadW <= 2000) systemVoltage = 24;
-      else if (backupLoadW <= 4000) systemVoltage = 48;
+      else if (backupLoadW <= 5000) systemVoltage = 48;
       else if (backupLoadW <= 8000) systemVoltage = 96;
-      else systemVoltage = 120;
+      else if (backupLoadW <= 12000) systemVoltage = 120;
+      else systemVoltage = 240;
     }
 
     const requiredAh = Math.ceil(requiredBatteryWh / systemVoltage);
@@ -875,13 +875,13 @@ export class CalculatorService {
 
     let totalSolarDailyTargetKwh = dailyDemand;
     if (opts.systemType === 'off-grid') {
-      const daytimeDirectKwh = Math.max(0.5, dailyDemand * 0.35);
-      const bRechargeKwh = (opts.batteryRechargeKwh && opts.batteryRechargeKwh > 0) ? opts.batteryRechargeKwh : (dailyDemand * 0.65 / 0.88);
-      totalSolarDailyTargetKwh = Math.max(dailyDemand * 1.15, daytimeDirectKwh + bRechargeKwh);
+      const daytimeDirectKwh = dailyDemand * 0.35;
+      const bRechargeKwh = dailyDemand * 0.65 / 0.88;
+      totalSolarDailyTargetKwh = daytimeDirectKwh + bRechargeKwh;
     } else if (opts.systemType === 'hybrid') {
-      const daytimeDirectKwh = Math.max(0.5, dailyDemand * 0.35);
-      const bRechargeKwh = opts.batteryRechargeKwh || 0;
-      totalSolarDailyTargetKwh = Math.max(dailyDemand, daytimeDirectKwh + bRechargeKwh);
+      const daytimeDirectKwh = dailyDemand * 0.35;
+      const bRechargeKwh = dailyDemand * 0.65 / 0.88;
+      totalSolarDailyTargetKwh = daytimeDirectKwh + bRechargeKwh;
     }
 
     const sunHours = Math.max(1, Number(opts.peakSunHours) || 5.0);
@@ -891,7 +891,8 @@ export class CalculatorService {
 
     const requiredSolarKwp = totalSolarDailyTargetKwh / (sunHours * prEff);
     const panelWatts = 550;
-    const panelCount = Math.max(2, Math.ceil((requiredSolarKwp * 1000) / panelWatts));
+    const sanctionedCapKwp = Number(opts.sanctionedLoadKw) > 0 ? Number(opts.sanctionedLoadKw) : requiredSolarKwp;
+    const panelCount = Math.max(1, Math.ceil((Math.min(requiredSolarKwp, sanctionedCapKwp) * 1000) / panelWatts));
     const actualArrayKwp = Math.round(((panelCount * panelWatts) / 1000) * 100) / 100;
 
     const estDailyGenKwh = Math.round((actualArrayKwp * sunHours * prEff) * 100) / 100;
@@ -900,8 +901,8 @@ export class CalculatorService {
     const roofAreaSqFt = Math.round(actualArrayKwp * 100);
 
     const sLoadKw = Number(opts.sanctionedLoadKw) || 3;
-    const maxPermissibleDcKwp = Math.round(sLoadKw * 1.15 * 10) / 10;
-    const exceedsSanctioned = actualArrayKwp > maxPermissibleDcKwp;
+    const maxPermissibleDcKwp = sLoadKw;
+    const exceedsSanctioned = requiredSolarKwp > maxPermissibleDcKwp;
     const permissibleSolarKwp = Math.min(actualArrayKwp, maxPermissibleDcKwp);
     const permissiblePanelCount = Math.floor((permissibleSolarKwp * 1000) / panelWatts);
     const permissibleArrayKwp = Math.round(((permissiblePanelCount * panelWatts) / 1000) * 100) / 100;
@@ -1106,11 +1107,6 @@ export class CalculatorService {
 
   capToSinglePhaseLimit() {
     this.sanctionedLoadKw.set(5);
-    if (this.systemType() === 'on-grid' || this.systemType() === 'hybrid') {
-      if (this.monthlyUnits() > 550) {
-        this.monthlyUnits.set(550);
-      }
-    }
   }
 
   enhanceSanctionedLoad(targetKw: number) {
