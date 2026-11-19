@@ -37,88 +37,83 @@
       </div>
 
       <div class="accordion-body" *ngIf="isSectionOpen('site')">
-        <div class="row g-2">
+        <div class="row g-2.5 align-items-stretch">
           
-          <!-- Highlighted: Date of Installation -->
-          <div class="col-md-4">
-            <label class="specs-label highlighted-label">Date of Installation *</label>
-            <input 
-              type="date" 
-              class="form-control form-control-sm highlighted-input" 
-              [(ngModel)]="specs.dateOfInstallation" 
-              (ngModelChange)="emitChange()"
-              [disabled]="readOnly">
+          <!-- Left Column: Date of Installation, Type of Connection, State, District, Pin Code -->
+          <div class="col-md-7 col-lg-6 d-flex flex-column justify-content-between gap-2">
+            
+            <!-- Row 1: Date of Installation & Type of Connection -->
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="specs-label highlighted-label">DATE OF INSTALLATION</label>
+                <input 
+                  type="date" 
+                  class="form-control form-control-sm highlighted-input" 
+                  [(ngModel)]="specs.dateOfInstallation" 
+                  (ngModelChange)="emitChange()"
+                  [disabled]="readOnly">
+              </div>
+              <div class="col-6">
+                <label class="specs-label">TYPE OF CONNECTION</label>
+                <select 
+                  class="form-select form-select-sm" 
+                  [(ngModel)]="specs.connectionType" 
+                  (ngModelChange)="emitChange()"
+                  [disabled]="readOnly">
+                  <option value="1ph LT">1PH LT</option>
+                  <option value="3ph LT">3PH LT</option>
+                  <option value="3ph HT">3PH HT</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 2: State, District, Pin Code -->
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="specs-label">STATE</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm text-uppercase" 
+                  [(ngModel)]="specs.state" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="ODISHA"
+                  [disabled]="readOnly">
+              </div>
+              <div class="col-4">
+                <label class="specs-label">DISTRICT</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm text-uppercase" 
+                  [(ngModel)]="specs.district" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="CUTTACK"
+                  [disabled]="readOnly">
+              </div>
+              <div class="col-4">
+                <label class="specs-label highlighted-label">PIN CODE</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
+                  [(ngModel)]="specs.pinCode" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="E.G. 756001"
+                  maxlength="6"
+                  [disabled]="readOnly">
+              </div>
+            </div>
+
           </div>
 
-          <!-- Highlighted: Pin Code -->
-          <div class="col-md-4">
-            <label class="specs-label highlighted-label">Pin Code *</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm font-monospace highlighted-input" 
-              [(ngModel)]="specs.pinCode" 
-              (ngModelChange)="emitChange()"
-              placeholder="e.g. 766012"
-              maxlength="6"
-              [disabled]="readOnly">
-          </div>
-
-          <!-- Standard: Connection Type -->
-          <div class="col-md-4">
-            <label class="specs-label">Connection Type</label>
-            <select 
-              class="form-select form-select-sm" 
-              [(ngModel)]="specs.connectionType" 
-              (ngModelChange)="emitChange()"
-              [disabled]="readOnly">
-              <option value="1ph LT">1ph LT</option>
-              <option value="3ph LT">3ph LT</option>
-              <option value="3ph HT">3ph HT</option>
-            </select>
-          </div>
-
-          <!-- Highlighted: Site Address / Location -->
-          <div class="col-12">
-            <label class="specs-label highlighted-label">Site Address / Location *</label>
+          <!-- Right Column: Address / Location (Full height textarea) -->
+          <div class="col-md-5 col-lg-6 d-flex flex-column">
+            <label class="specs-label highlighted-label">ADDRESS / LOCATION</label>
             <textarea 
-              class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
-              rows="2" 
+              class="form-control form-control-sm font-monospace text-uppercase highlighted-input flex-grow-1 site-address-textarea" 
               [(ngModel)]="specs.address" 
               (ngModelChange)="emitChange()"
-              placeholder="e.g. AT/PO KESINGA, KALAHANDI, ODISHA"
+              placeholder="VILLAGE / LOCALITY / SITE ADDRESS..."
               autocomplete="off"
               [disabled]="readOnly"></textarea>
-          </div>
-
-          <!-- Standard: State, District, Date of Commission -->
-          <div class="col-md-4">
-            <label class="specs-label">State</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.state" 
-              (ngModelChange)="emitChange()"
-              placeholder="Odisha"
-              [disabled]="readOnly">
-          </div>
-          <div class="col-md-4">
-            <label class="specs-label">District</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.district" 
-              (ngModelChange)="emitChange()"
-              placeholder="District"
-              [disabled]="readOnly">
-          </div>
-          <div class="col-md-4">
-            <label class="specs-label">Date of Commission</label>
-            <input 
-              type="date" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.dateOfCommission" 
-              (ngModelChange)="emitChange()"
-              [disabled]="readOnly">
           </div>
 
         </div>
@@ -147,7 +142,7 @@
           
           <!-- Highlighted: Inverter Make -->
           <div class="col-md-6">
-            <label class="specs-label highlighted-label">Inverter Make *</label>
+            <label class="specs-label highlighted-label">INVERTER MAKE</label>
             <input 
               type="text" 
               class="form-control form-control-sm text-uppercase highlighted-input" 
@@ -159,7 +154,7 @@
 
           <!-- Highlighted: Inverter Serial No. -->
           <div class="col-md-6">
-            <label class="specs-label highlighted-label">Inverter Serial No. *</label>
+            <label class="specs-label highlighted-label">INVERTER SERIAL NO.</label>
             <input 
               type="text" 
               class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
@@ -171,7 +166,7 @@
 
           <!-- Standard: Name, Capacity, Count, Voltages -->
           <div class="col-md-4">
-            <label class="specs-label">Inverter Type</label>
+            <label class="specs-label">INVERTER TYPE</label>
             <select 
               class="form-select form-select-sm" 
               [(ngModel)]="specs.inverterName" 
@@ -185,7 +180,7 @@
           </div>
 
           <div class="col-md-4">
-            <label class="specs-label">Capacity (kW)</label>
+            <label class="specs-label">CAPACITY (KW)</label>
             <input 
               type="number" 
               step="any" 
@@ -197,7 +192,7 @@
           </div>
 
           <div class="col-md-4">
-            <label class="specs-label">Inverter Count</label>
+            <label class="specs-label">INVERTER COUNT</label>
             <input 
               type="number" 
               min="1" 
@@ -209,7 +204,7 @@
           </div>
 
           <div class="col-md-6">
-            <label class="specs-label">Input Voltage (V DC)</label>
+            <label class="specs-label">INPUT VOLTAGE (V DC)</label>
             <input 
               type="number" 
               class="form-control form-control-sm" 
@@ -220,7 +215,7 @@
           </div>
 
           <div class="col-md-6">
-            <label class="specs-label">Output Voltage (V AC)</label>
+            <label class="specs-label">OUTPUT VOLTAGE (V AC)</label>
             <input 
               type="text" 
               class="form-control form-control-sm" 
@@ -256,7 +251,7 @@
           
           <!-- Highlighted: Module Make -->
           <div class="col-md-4">
-            <label class="specs-label highlighted-label">Module Make *</label>
+            <label class="specs-label highlighted-label">MODULE MAKE</label>
             <input 
               type="text" 
               class="form-control form-control-sm text-uppercase highlighted-input" 
@@ -268,7 +263,7 @@
 
           <!-- Highlighted: No. of Modules -->
           <div class="col-md-4">
-            <label class="specs-label highlighted-label">No. of Modules *</label>
+            <label class="specs-label highlighted-label">NO. OF MODULES</label>
             <input 
               type="number" 
               min="1" 
@@ -281,7 +276,7 @@
 
           <!-- Highlighted: Type of Module & Model -->
           <div class="col-md-4">
-            <label class="specs-label highlighted-label">Type of Module &amp; Model *</label>
+            <label class="specs-label highlighted-label">TYPE OF MODULE &amp; MODEL</label>
             <input 
               type="text" 
               class="form-control form-control-sm text-uppercase highlighted-input" 
@@ -293,7 +288,7 @@
 
           <!-- Standard: Capacity Each & Total -->
           <div class="col-md-6">
-            <label class="specs-label">Module Capacity Each (Wp)</label>
+            <label class="specs-label">MODULE CAPACITY EACH (WP)</label>
             <input 
               type="number" 
               class="form-control form-control-sm" 
@@ -304,7 +299,7 @@
           </div>
 
           <div class="col-md-6">
-            <label class="specs-label">Total Capacity (kWp)</label>
+            <label class="specs-label">TOTAL CAPACITY (KWP)</label>
             <input 
               type="text" 
               class="form-control form-control-sm bg-light fw-bold" 
@@ -366,10 +361,10 @@
           
           <!-- DCDB Column -->
           <div class="col-md-6">
-            <div class="fs-8 fw-bold text-dark pb-1 mb-2 border-bottom">DC Distribution Box (DCDB)</div>
+            <div class="fs-8 fw-bold text-dark pb-1 mb-2 border-bottom">DC DISTRIBUTION BOX (DCDB)</div>
             <div class="row g-2">
               <div class="col-12">
-                <label class="specs-label">DCDB Make</label>
+                <label class="specs-label">DCDB MAKE</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm text-uppercase" 
@@ -379,7 +374,7 @@
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
-                <label class="specs-label">MCB / Isolator (A)</label>
+                <label class="specs-label">MCB / ISOLATOR (A)</label>
                 <input 
                   type="number" 
                   class="form-control form-control-sm" 
@@ -389,7 +384,7 @@
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
-                <label class="specs-label">SPD Rating</label>
+                <label class="specs-label">SPD RATING</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm font-monospace" 
@@ -399,7 +394,7 @@
                   [disabled]="readOnly">
               </div>
               <div class="col-12">
-                <label class="specs-label">DCDB Serial No.</label>
+                <label class="specs-label">DCDB SERIAL NO.</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm font-monospace text-uppercase" 
@@ -413,10 +408,10 @@
 
           <!-- ACDB Column -->
           <div class="col-md-6">
-            <div class="fs-8 fw-bold text-dark pb-1 mb-2 border-bottom">AC Distribution Box (ACDB)</div>
+            <div class="fs-8 fw-bold text-dark pb-1 mb-2 border-bottom">AC DISTRIBUTION BOX (ACDB)</div>
             <div class="row g-2">
               <div class="col-12">
-                <label class="specs-label">ACDB Make</label>
+                <label class="specs-label">ACDB MAKE</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm text-uppercase" 
@@ -436,7 +431,7 @@
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
-                <label class="specs-label">SPD Rating</label>
+                <label class="specs-label">SPD RATING</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm font-monospace" 
@@ -446,7 +441,7 @@
                   [disabled]="readOnly">
               </div>
               <div class="col-12">
-                <label class="specs-label">ACDB Serial No.</label>
+                <label class="specs-label">ACDB SERIAL NO.</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm font-monospace text-uppercase" 
@@ -482,7 +477,7 @@
       <div class="accordion-body" *ngIf="isSectionOpen('cables')">
         <div class="row g-2">
           <div class="col-md-6">
-            <label class="specs-label">DC Cable Make</label>
+            <label class="specs-label">DC CABLE MAKE</label>
             <input 
               type="text" 
               class="form-control form-control-sm text-uppercase" 
@@ -492,7 +487,7 @@
               [disabled]="readOnly">
           </div>
           <div class="col-md-6">
-            <label class="specs-label">DC Cable Size (sq mm)</label>
+            <label class="specs-label">DC CABLE SIZE (SQ MM)</label>
             <input 
               type="number" 
               class="form-control form-control-sm" 
@@ -502,7 +497,7 @@
               [disabled]="readOnly">
           </div>
           <div class="col-md-4">
-            <label class="specs-label">Earth Resistance (Ω)</label>
+            <label class="specs-label">EARTH RESISTANCE (Ω)</label>
             <input 
               type="number" 
               step="0.1" 
@@ -513,7 +508,7 @@
               [disabled]="readOnly">
           </div>
           <div class="col-md-4">
-            <label class="specs-label">DC Earthing (Ω)</label>
+            <label class="specs-label">DC EARTHING (Ω)</label>
             <input 
               type="number" 
               step="0.1" 
@@ -524,7 +519,7 @@
               [disabled]="readOnly">
           </div>
           <div class="col-md-4">
-            <label class="specs-label">AC Earthing (Ω)</label>
+            <label class="specs-label">AC EARTHING (Ω)</label>
             <input 
               type="number" 
               step="0.1" 
@@ -535,7 +530,7 @@
               [disabled]="readOnly">
           </div>
           <div class="col-md-6">
-            <label class="specs-label">Earth Wire Size (sq mm)</label>
+            <label class="specs-label">EARTH WIRE SIZE (SQ MM)</label>
             <input 
               type="number" 
               class="form-control form-control-sm" 
@@ -545,7 +540,7 @@
               [disabled]="readOnly">
           </div>
           <div class="col-md-6">
-            <label class="specs-label">LA Size &amp; Type</label>
+            <label class="specs-label">LA SIZE &amp; TYPE</label>
             <input 
               type="text" 
               class="form-control form-control-sm text-uppercase" 

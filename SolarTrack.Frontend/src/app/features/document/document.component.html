@@ -56,33 +56,68 @@
       </app-customer-directory>
     </div>
 
-    <!-- Right Column: Document Tabs & Technical Specs Accordion Component -->
+    <!-- Right Column: Document Header & Technical Specs Accordion Component -->
     <div class="col-lg-7 col-xl-8">
       <div class="st-card h-100 p-3 bg-white border rounded shadow-xs">
         
-        <!-- Consumer Profile Pill & Document Action Bar -->
-        <div class="doc-tab-toolbar mb-3 p-2 bg-light border rounded-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div class="doc-consumer-pill d-flex align-items-center gap-2 min-w-0">
-            <div class="doc-consumer-avatar bg-primary text-white rounded-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-              <app-icon name="customer" [size]="15"></app-icon>
-            </div>
-            <div class="doc-consumer-meta min-w-0">
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span class="doc-consumer-name fw-bold text-dark fs-7 text-truncate">
-                  {{ selectedCustomer()?.Name || 'No Customer Selected' }}
-                </span>
-                <span *ngIf="selectedCustomer()?.ConsumerNo" class="text-muted font-monospace fs-8">
-                  ({{ selectedCustomer()?.ConsumerNo }})
-                </span>
-                <span *ngIf="selectedCustomer()?.District" class="text-secondary fs-8">
-                  &bull; {{ selectedCustomer()?.District }}
-                </span>
-              </div>
-            </div>
+        <!-- Header Strip: Customer Name, Document Dropdown with Preview & Download, Save & Reset -->
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
+          
+          <!-- Left: Customer Name -->
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <app-icon name="customer" [size]="18" class="text-primary"></app-icon>
+            <span class="fw-bold text-dark fs-6 text-truncate">
+              {{ selectedCustomer()?.Name || 'No Customer Selected' }}
+            </span>
           </div>
 
-          <!-- Document Action Buttons -->
-          <div class="doc-actions-group d-flex align-items-center gap-1.5 ms-auto flex-wrap">
+          <!-- Right: Document Dropdown with Preview & Download, Save Specs, Reset -->
+          <div class="d-flex align-items-center gap-1.5 flex-wrap ms-auto">
+            
+            <!-- Document Dropdown: Agreement, Form 1, Form 3, Form 4, Form 6 -->
+            <select 
+              class="form-select form-select-sm" 
+              style="width: auto; min-width: 195px;"
+              [ngModel]="activeDocType()"
+              (ngModelChange)="setDocType($event)">
+              <option value="agreement">Agreement</option>
+              <option value="form1">Form 1 - Application</option>
+              <option value="form3">Form 3 - Inspection</option>
+              <option value="form4">Form 4 - Completion</option>
+              <option value="form6">Form 6 - Commissioning</option>
+            </select>
+
+            <!-- Preview Button beside Dropdown -->
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" 
+              (click)="openPreviewModal(activeDocType())" 
+              title="Preview selected document">
+              <app-icon name="eye" [size]="13"></app-icon>
+              <span>Preview</span>
+            </button>
+
+            <!-- Download Button beside Dropdown -->
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
+              (click)="openPreviewModal(activeDocType())" 
+              title="Download selected document">
+              <app-icon name="download" [size]="13"></app-icon>
+              <span>Download</span>
+            </button>
+
+            <!-- Save Specs Button -->
+            <button 
+              type="button" 
+              class="btn btn-sm btn-primary d-flex align-items-center gap-1 fw-semibold ms-1" 
+              (click)="onSaveSpecs(currentSpecs())" 
+              title="Save specs">
+              <app-icon name="check" [size]="13"></app-icon>
+              <span>Save Specs</span>
+            </button>
+
+            <!-- Reset Specs Button -->
             <button 
               type="button" 
               class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
@@ -91,82 +126,8 @@
               <app-icon name="refresh" [size]="12"></app-icon>
               <span>Reset</span>
             </button>
-            <button 
-              type="button" 
-              class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" 
-              (click)="openPreviewModal(activeDocType())" 
-              title="Preview document">
-              <app-icon name="eye" [size]="12"></app-icon>
-              <span>Preview</span>
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-sm btn-primary d-flex align-items-center gap-1 fw-semibold" 
-              (click)="openPreviewModal(activeDocType())" 
-              title="Print document">
-              <app-icon name="print" [size]="13"></app-icon>
-              <span>Print / Download</span>
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-sm btn-success d-flex align-items-center gap-1 fw-semibold text-white" 
-              (click)="onSaveSpecs(currentSpecs())" 
-              title="Save specs">
-              <app-icon name="check" [size]="13"></app-icon>
-              <span>Save Specs</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- Document Navigation Tabs -->
-        <div class="mb-3">
-          <ul class="nav custom-doc-tabs mb-0" role="tablist">
-            <li class="nav-item">
-              <button 
-                type="button" 
-                class="nav-link" 
-                [class.active]="activeDocType() === 'agreement'" 
-                (click)="setDocType('agreement')">
-                <span>Agreement</span>
-              </button>
-            </li>
-            <li class="nav-item">
-              <button 
-                type="button" 
-                class="nav-link" 
-                [class.active]="activeDocType() === 'form1'" 
-                (click)="setDocType('form1')">
-                <span>Form 1 (Application)</span>
-              </button>
-            </li>
-            <li class="nav-item">
-              <button 
-                type="button" 
-                class="nav-link" 
-                [class.active]="activeDocType() === 'form3'" 
-                (click)="setDocType('form3')">
-                <span>Form 3 (Inspection)</span>
-              </button>
-            </li>
-            <li class="nav-item">
-              <button 
-                type="button" 
-                class="nav-link" 
-                [class.active]="activeDocType() === 'form4'" 
-                (click)="setDocType('form4')">
-                <span>Form 4 (Completion)</span>
-              </button>
-            </li>
-            <li class="nav-item">
-              <button 
-                type="button" 
-                class="nav-link" 
-                [class.active]="activeDocType() === 'form6'" 
-                (click)="setDocType('form6')">
-                <span>Form 6 (Commission)</span>
-              </button>
-            </li>
-          </ul>
+          </div>
         </div>
 
         <!-- NEW REUSABLE ACCORDION COMPONENT FOR SPECIFICATIONS (Site, Inverter, PV Module, DCDB & ACDB, Cables & Earthing) -->
