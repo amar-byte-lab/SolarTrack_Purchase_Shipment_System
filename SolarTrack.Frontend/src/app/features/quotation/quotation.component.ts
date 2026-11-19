@@ -22,11 +22,36 @@ export class QuotationComponent implements OnInit {
   isBankExpanded = signal<boolean>(false);
   activeAddressTab = signal<'to' | 'from'>('to');
   expandedProduct = signal<string | null>(null);
+  isPreviewVisible = signal<boolean>(false);
 
   isFormValid = computed<boolean>(() => {
     const name = this.quotationService.customerName()?.trim();
     const address = this.quotationService.customerAddress()?.trim();
     return Boolean(name && address);
+  });
+
+  selectedProductTitle = computed<string>(() => {
+    const sets = this.quotationService.selectedProductSets();
+    if (sets && sets.length > 0) {
+      return sets.join(' & ').toUpperCase();
+    }
+    return '3 KW DCR ONGRID SOLAR SET';
+  });
+
+  currentSubsidy = computed(() => {
+    return this.quotationService.selectedSubsidy() || 
+           this.quotationService.companyProfile().subsidies[0] || 
+           { kw: 3, central: 78000, state: 60000, total: 138000 };
+  });
+
+  cgstRate = computed<number>(() => {
+    const adj = this.quotationService.adjustments().find(a => a.key === 'cgst');
+    return (adj && adj.active) ? (Number(adj.value) || 0) : 2.5;
+  });
+
+  sgstRate = computed<number>(() => {
+    const adj = this.quotationService.adjustments().find(a => a.key === 'sgst');
+    return (adj && adj.active) ? (Number(adj.value) || 0) : 2.5;
   });
 
   ngOnInit(): void {
@@ -130,7 +155,85 @@ export class QuotationComponent implements OnInit {
     window.history.back();
   }
 
+  togglePdfPreview(): void {
+    this.isPreviewVisible.update(v => !v);
+  }
+
+  formatQuoteDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}-${month}-${year}`;
+  }
+
+  getAmountInWords(amount: number): string {
+    const num = Math.round(Math.max(0, Number(amount) || 0));
+    if (num === 0) return 'Zero';
+
+    const ones = [
+      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+      'Seventeen', 'Eighteen', 'Nineteen'
+    ];
+    const tens = [
+      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
+    ];
+
+    const convertLessThanOneThousand = (n: number): string => {
+      let str = '';
+      if (n >= 100) {
+        str += ones[Math.floor(n / 100)] + ' Hundred ';
+        n %= 100;
+      }
+      if (n >= 20) {
+        str += tens[Math.floor(n / 10)] + ' ';
+        n %= 10;
+      }
+      if (n > 0) {
+        str += ones[n] + ' ';
+      }
+      return str.trim();
+    };
+
+    let words = '';
+    let rem = num;
+
+    if (rem >= 10000000) {
+      const crore = Math.floor(rem / 10000000);
+      words += convertLessThanOneThousand(crore) + ' Crore ';
+      rem %= 10000000;
+    }
+
+    if (rem >= 100000) {
+      const lakh = Math.floor(rem / 100000);
+      words += convertLessThanOneThousand(lakh) + ' Lakh ';
+      rem %= 100000;
+    }
+
+    if (rem >= 1000) {
+      const thousand = Math.floor(rem / 1000);
+      words += convertLessThanOneThousand(thousand) + ' Thousand ';
+      rem %= 1000;
+    }
+
+    if (rem > 0) {
+      words += convertLessThanOneThousand(rem);
+    }
+
+    return words.trim();
+  }
+
   printQuotation(): void {
+    const origTitle = document.title;
+    const custName = (this.quotationService.customerName() || '').trim().replace(/\s+/g, '_') || 'Customer';
+    document.title = `Quot_${custName}`;
     window.print();
+    setTimeout(() => {
+      document.title = origTitle;
+    }, 1000);
   }
 }

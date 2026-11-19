@@ -264,16 +264,338 @@
   }
 }
 
+/* On-Screen PDF Preview Card */
+.quotation-screen-preview-card {
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: #f8fafc;
+
+  .preview-paper-wrapper {
+    background: #ffffff;
+    padding: 30px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    max-width: 794px; /* A4 width at 96 dpi */
+    margin: 0 auto;
+  }
+}
+
+/* Quotation PDF Document Base Styles (Used in both on-screen preview & print) */
+.quotation-pdf-document {
+  font-family: Arial, Helvetica, sans-serif !important;
+  color: #000000 !important;
+  line-height: 1.25;
+  font-size: 8pt;
+  width: 100%;
+  box-sizing: border-box;
+
+  .pdf-top-title {
+    margin-bottom: 8px;
+
+    .doc-title-main {
+      font-size: 15pt;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      margin: 0;
+      color: #000;
+      line-height: 1.1;
+    }
+
+    .doc-title-sub {
+      font-size: 10.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin: 2px 0 1px 0;
+      color: #000;
+      line-height: 1.2;
+    }
+
+    .doc-title-recip {
+      font-size: 8pt;
+      font-style: italic;
+      color: #333;
+      margin: 0;
+    }
+  }
+
+  .pdf-header-box {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1.5px solid #000000 !important;
+
+    td {
+      border: 1.5px solid #000000 !important;
+      color: #000000 !important;
+    }
+
+    .pdf-logo-img {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .pdf-company-name {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 13pt;
+      font-weight: bold;
+      line-height: 1.15;
+      color: #000;
+    }
+
+    .pdf-company-addr {
+      font-size: 8pt;
+      color: #000;
+      margin-top: 1px;
+    }
+
+    .pdf-company-contact {
+      font-size: 8pt;
+      color: #000;
+      margin-top: 3px;
+    }
+
+    .pdf-company-gstin {
+      font-size: 8pt;
+      color: #000;
+      margin-top: 2px;
+      font-weight: bold;
+    }
+
+    .pdf-meta-inner-table {
+      width: 100% !important;
+      height: 100% !important;
+      border-collapse: collapse !important;
+
+      td {
+        border: none !important;
+        padding: 2px 6px !important;
+        font-size: 8pt !important;
+      }
+
+      .pdf-meta-label {
+        font-weight: bold;
+        width: 110px;
+        white-space: nowrap;
+        color: #000;
+      }
+
+      .pdf-meta-val {
+        color: #000;
+      }
+    }
+
+    .pdf-buyer-cell {
+      border-top: 1.5px solid #000000 !important;
+      padding: 4px 8px !important;
+      font-size: 8.5pt !important;
+
+      strong {
+        font-weight: bold;
+      }
+    }
+  }
+
+  .pdf-items-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1.5px solid #000000 !important;
+    border-top: none !important;
+
+    th {
+      border: 1.5px solid #000000 !important;
+      padding: 3.5px 4px !important;
+      font-size: 8pt !important;
+      font-weight: bold !important;
+      text-align: center !important;
+      vertical-align: middle !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      line-height: 1.15 !important;
+    }
+
+    td {
+      border: 1.5px solid #000000 !important;
+      padding: 3px 5px !important;
+      font-size: 8pt !important;
+      color: #000000 !important;
+      line-height: 1.2 !important;
+    }
+
+    .pdf-total-row td {
+      border: 1.5px solid #000000 !important;
+      font-size: 8pt !important;
+      padding: 3px 6px !important;
+    }
+  }
+
+  .pdf-notes-list {
+    font-size: 7.5pt;
+    line-height: 1.35;
+    color: #000000;
+    margin: 4px 0 5px 0;
+  }
+
+  .pdf-amount-in-words-box {
+    border: 1.5px solid #000000;
+    padding: 3px 6px;
+    font-size: 8pt;
+    color: #000000;
+    margin-bottom: 6px;
+
+    strong {
+      font-weight: bold;
+    }
+  }
+
+  .pdf-scheme-declaration-row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 4px;
+    width: 100%;
+
+    .pdf-left-col {
+      width: 48%;
+      box-sizing: border-box;
+    }
+
+    .pdf-right-col {
+      width: 52%;
+      box-sizing: border-box;
+    }
+
+    .pdf-sec-heading {
+      font-size: 8pt;
+      font-weight: bold;
+      color: #000000;
+      margin-bottom: 2px;
+    }
+
+    .pdf-subsidy-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      border: 1.5px solid #000000 !important;
+
+      th, td {
+        border: 1.5px solid #000000 !important;
+        padding: 2.5px 4px !important;
+        font-size: 7.5pt !important;
+        text-align: center !important;
+        color: #000000 !important;
+      }
+
+      th {
+        font-weight: bold !important;
+      }
+    }
+
+    .pdf-bank-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+
+      td {
+        border: none !important;
+        padding: 1.5px 2px !important;
+        font-size: 7.5pt !important;
+        color: #000000 !important;
+      }
+
+      .pdf-bank-lbl {
+        font-weight: bold;
+        width: 85px;
+        white-space: nowrap;
+        color: #000000;
+      }
+    }
+
+    .pdf-declaration-box {
+      border: 1.5px solid #000000;
+      padding: 4px 6px;
+      height: 100%;
+      box-sizing: border-box;
+
+      .pdf-declaration-ol {
+        margin: 0;
+        padding-left: 14px;
+        font-size: 7.2pt;
+        line-height: 1.25;
+        color: #000000;
+
+        li {
+          margin-bottom: 2px;
+        }
+      }
+    }
+  }
+
+  .pdf-signatory-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 4px;
+    margin-right: 8px;
+
+    .pdf-signatory-company {
+      font-size: 8.5pt;
+      font-weight: bold;
+      color: #000000;
+    }
+
+    .pdf-stamp-container {
+      height: 58px;
+      margin: 1px 0;
+
+      .pdf-stamp-img {
+        height: 58px;
+        width: auto;
+        object-fit: contain;
+      }
+    }
+
+    .pdf-signatory-title {
+      font-size: 8.5pt;
+      font-weight: bold;
+      color: #000000;
+    }
+  }
+
+  .pdf-computer-gen-footer {
+    margin-top: 4px;
+    text-align: center;
+
+    .pdf-footer-hr {
+      border: none;
+      border-top: 1px solid #000000;
+      margin: 3px 0 2px 0;
+      opacity: 1;
+    }
+
+    .pdf-footer-text {
+      font-size: 7.5pt;
+      font-style: italic;
+      color: #000000;
+    }
+  }
+}
+
 /* Print CSS */
 @media print {
-  body, .app-shell, .main-content, .page-body {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  body, html, .app-shell, .main-content, .page-body {
     background: #ffffff !important;
     color: #000000 !important;
     padding: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .no-print, app-sidebar, app-topbar {
+  .no-print, app-sidebar, app-topbar, .quotation-screen-preview-card, .modal, .modal-backdrop {
     display: none !important;
   }
 
@@ -282,23 +604,12 @@
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    color: #000000 !important;
+    box-sizing: border-box !important;
   }
 
-  .word-border-table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    border: 1px solid #000000 !important;
-
-    th, td {
-      border: 1px solid #000000 !important;
-      padding: 4px 6px !important;
-      font-size: 8.5pt !important;
-      color: #000000 !important;
-    }
-
-    th {
-      background-color: #f2f2f2 !important;
-      font-weight: bold !important;
-    }
+  .quotation-pdf-document {
+    page-break-inside: avoid !important;
   }
 }

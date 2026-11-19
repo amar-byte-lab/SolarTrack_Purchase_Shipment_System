@@ -131,13 +131,14 @@
               <span class="fw-bold fs-8">CUSTOMER: STATUS</span>
             </div>
           </th>
-          <th *ngIf="isColumnVisible('payment')" class="th-col-payment text-nowrap text-center">PAYMENT</th>
+          <th *ngIf="isColumnVisible('payment')" class="th-col-payment text-nowrap text-center">CUSTOMER PAYMENT</th>
           <th *ngIf="isColumnVisible('material')" class="th-col-material text-end text-nowrap">MATERIAL COST</th>
           <th *ngIf="isColumnVisible('delivery')" class="th-col-delivery text-end text-nowrap">DELIVERY COST</th>
           <th *ngIf="isColumnVisible('meter')" class="th-col-meter text-end text-nowrap">NETMETER COST</th>
           <th *ngIf="isColumnVisible('install')" class="th-col-install text-end text-nowrap">INSTALLATION COST</th>
           <th *ngIf="isColumnVisible('gst')" class="th-col-gst text-end text-nowrap">GST</th>
           <th *ngIf="isColumnVisible('others')" class="th-col-others text-end text-nowrap">OTHERS</th>
+          <th *ngIf="isColumnVisible('profit')" class="th-col-profit text-end text-nowrap">PROFIT</th>
           <th *ngIf="isColumnVisible('pvmodule')" class="th-col-pvmodule text-nowrap">PVMODULE MAKE</th>
           <th *ngIf="isColumnVisible('inverter')" class="th-col-inverter text-nowrap">INVERTERR MAKE</th>
           <th class="th-col-actions text-center text-nowrap">ACTIONS</th>
@@ -271,6 +272,11 @@
                 {{ fmtCurr(item.fin.others) }}
               </td>
 
+              <!-- Profit -->
+              <td *ngIf="isColumnVisible('profit')" class="td-col-profit text-end text-nowrap fs-8 fw-semibold" [ngClass]="item.fin.profit >= 0 ? 'text-success' : 'text-danger'">
+                {{ fmtCurr(item.fin.profit) }}
+              </td>
+
               <!-- PVModule Make -->
               <td *ngIf="isColumnVisible('pvmodule')" class="td-col-pvmodule text-nowrap">
                 <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.pvModuleMake }}</span>
@@ -331,6 +337,9 @@
           </td>
           <td *ngIf="isColumnVisible('others')" class="tfoot-col-others text-end fw-bold text-nowrap fs-8">
             {{ fmtCurr(summaryService.totals().others) }}
+          </td>
+          <td *ngIf="isColumnVisible('profit')" class="tfoot-col-profit text-end fw-bold text-nowrap fs-8" [ngClass]="summaryService.totals().profit >= 0 ? 'text-success' : 'text-danger'">
+            {{ fmtCurr(summaryService.totals().profit) }}
           </td>
           <td *ngIf="isColumnVisible('pvmodule')" class="tfoot-col-pvmodule">-</td>
           <td *ngIf="isColumnVisible('inverter')" class="tfoot-col-inverter">-</td>

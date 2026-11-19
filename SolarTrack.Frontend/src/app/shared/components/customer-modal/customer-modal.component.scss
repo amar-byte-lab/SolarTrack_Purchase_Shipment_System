@@ -1,60 +1,39 @@
 .modal {
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(2px);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 1055;
 }
 
-.modal-dialog {
-  max-width: 860px;
+.mw-financial-dialog {
+  max-width: 720px;
+  width: 95%;
+  margin: 1.5rem auto;
+
+  @media (max-width: 768px) {
+    width: 96%;
+    margin: 0.5rem auto;
+  }
 }
 
 .modal-content {
-  border-radius: 8px;
+  border-radius: var(--st-radius-card, 16px);
   overflow: hidden;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 45px rgba(24, 33, 19, 0.18);
 }
 
-.modal-header {
-  background-color: #f8fafc;
+.modal-body {
+  max-height: calc(85vh - 140px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.modal-left-column {
-  @media (min-width: 768px) {
-    border-right: 1px solid #e2e8f0;
-    padding-right: 1rem;
-  }
+.letter-spacing-sm {
+  letter-spacing: 0.03em;
 }
 
-.admin-only-column {
-  @media (min-width: 768px) {
-    padding-left: 1rem;
-  }
-}
-
-.erp-delay-badge {
-  font-size: 0.72rem;
-  padding: 1.5px 6px;
-  border-radius: 4px;
-  font-family: var(--st-font-mono, monospace);
-  font-weight: 600;
-
-  &.delay-red {
-    background-color: #fee2e2 !important;
-    color: #dc2626 !important;
-    border: 1px solid #fca5a5 !important;
-  }
-
-  &.delay-yellow {
-    background-color: #fef3c7 !important;
-    color: #b45309 !important;
-    border: 1px solid #fcd34d !important;
-  }
-
-  &.delay-normal {
-    background-color: #e0f2fe !important;
-    color: #0369a1 !important;
-    border: 1px solid #bae6fd !important;
-  }
+.shadow-xs {
+  box-shadow: 0 1px 3px rgba(24, 33, 19, 0.05);
 }
 
 .fs-7 {
@@ -69,10 +48,28 @@
   font-size: 0.75rem;
 }
 
-.shadow-xs {
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
 .cursor-pointer {
   cursor: pointer;
+}
+
+.form-label {
+  margin-bottom: 3px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.form-control-sm, .form-select-sm {
+  min-height: 32px;
+  border-radius: 6px;
+  border-color: rgba(24, 33, 19, 0.16);
+
+  &:focus {
+    border-color: var(--st-primary, #ff4500);
+    box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.15);
+  }
+}
+
+.input-group-sm > .form-control,
+.input-group-sm > .input-group-text {
+  min-height: 32px;
 }

@@ -283,6 +283,7 @@ export class SummaryTableComponent {
         if (this.isColumnVisible('install')) lines.push(`   Installation Cost: ${this.fmtCurr(fin.install)}`);
         if (this.isColumnVisible('gst')) lines.push(`   GST: ${this.fmtCurr(fin.gst)}`);
         if (this.isColumnVisible('others')) lines.push(`   Others: ${this.fmtCurr(fin.others)}`);
+        if (this.isColumnVisible('profit')) lines.push(`   Profit: ${this.fmtCurr(fin.profit)}`);
         if (this.isColumnVisible('pvmodule')) lines.push(`   PV Module: ${item.pvModuleMake}`);
         if (this.isColumnVisible('inverter')) lines.push(`   Inverter: ${item.inverterMake}`);
         if (fin.comment) lines.push(`   Note: ${fin.comment}`);
@@ -308,6 +309,7 @@ export class SummaryTableComponent {
     if (this.isColumnVisible('install')) lines.push(`Total Installation Cost: ${this.fmtCurr(tot.install)}`);
     if (this.isColumnVisible('gst')) lines.push(`Total GST: ${this.fmtCurr(tot.gst)}`);
     if (this.isColumnVisible('others')) lines.push(`Total Others: ${this.fmtCurr(tot.others)}`);
+    if (this.isColumnVisible('profit')) lines.push(`Total Profit: ${this.fmtCurr(tot.profit)}`);
     lines.push('==============================');
 
     const textToCopy = lines.join('\n');

@@ -26,13 +26,14 @@ import { AuthService } from './auth.service';
 
 export const DEFAULT_SUMMARY_COLUMNS: SummaryColumn[] = [
   { key: 'customer', label: 'Customer: Status', visible: true },
-  { key: 'payment', label: 'Payment', visible: true },
-  { key: 'material', label: 'Material Cost', visible: true },
-  { key: 'delivery', label: 'Delivery Cost', visible: true },
-  { key: 'meter', label: 'NetMeter Cost', visible: true },
-  { key: 'install', label: 'Installation Cost', visible: true },
-  { key: 'gst', label: 'GST', visible: true },
-  { key: 'others', label: 'Others', visible: true },
+  { key: 'payment', label: 'Customer Payment', visible: true },
+  { key: 'material', label: 'Material Cost', visible: false },
+  { key: 'delivery', label: 'Delivery Cost', visible: false },
+  { key: 'meter', label: 'NetMeter Cost', visible: false },
+  { key: 'install', label: 'Installation Cost', visible: false },
+  { key: 'gst', label: 'GST', visible: false },
+  { key: 'others', label: 'Others', visible: false },
+  { key: 'profit', label: 'Profit', visible: false },
   { key: 'pvmodule', label: 'PVModule Make', visible: false },
   { key: 'inverter', label: 'Inverterr Make', visible: false }
 ];
@@ -1242,12 +1243,19 @@ export class SummaryService {
       ? Number(expenses.delivery)
       : (Number(expenses.transport) || 0);
     const others = Number(expenses.other) || 0;
+    const billing = (expenses.billing !== undefined && expenses.billing !== null && expenses.billing !== '')
+      ? Number(expenses.billing)
+      : 0;
     const gst = (expenses.gst !== undefined && expenses.gst !== '')
       ? Number(expenses.gst)
-      : (expenses.gst_pct ? Math.round(turnover * (Number(expenses.gst_pct) / 100)) : 0);
+      : (expenses.gst_pct ? Math.round((billing > 0 ? billing : turnover) * (Number(expenses.gst_pct) / 100)) : 0);
 
-    const setCost = material + install + meter + delivery + others;
-    const profit = turnover - setCost;
+    const setCost = material + install + meter + delivery + others + (gst || 0);
+    const partner = (expenses.partner !== undefined && expenses.partner !== null && expenses.partner !== '')
+      ? Number(expenses.partner)
+      : 0;
+    const profitBase = partner > 0 ? partner : turnover;
+    const profit = profitBase - setCost;
 
     let payCategory: 'Unpaid' | 'Partial Paid' | 'Fully Paid' = 'Unpaid';
     if (turnover > 0 && paid >= turnover) {

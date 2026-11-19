@@ -353,8 +353,9 @@
                         <div class="col-sm-6 col-12">
                           <label class="form-label fs-8 text-secondary mb-1">Company Phone</label>
                           <input 
-                            class="form-control form-control-sm font-monospace fw-semibold" 
-                            [(ngModel)]="quotationService.companyProfile().phone"
+                            class="form-control form-control-sm font-monospace fw-semibold bg-light" 
+                            [ngModel]="quotationService.companyProfile().phone"
+                            disabled
                             placeholder="Seller Phone">
                         </div>
                         <div class="col-sm-6 col-12">
@@ -362,7 +363,7 @@
                           <input 
                             class="form-control form-control-sm font-monospace fw-semibold bg-light" 
                             [value]="quotationService.companyProfile().email" 
-                            readonly>
+                            disabled>
                         </div>
                       </div>
                       <div class="row g-2 mb-2">
@@ -370,17 +371,17 @@
                           <label class="form-label fs-8 text-secondary mb-1">Quotation Date</label>
                           <input 
                             type="date" 
-                            class="form-control form-control-sm font-monospace fw-semibold" 
+                            class="form-control form-control-sm font-monospace fw-semibold bg-light" 
                             [ngModel]="quotationService.quoteDate()"
-                            (ngModelChange)="quotationService.quoteDate.set($event)">
+                            disabled>
                         </div>
                         <div class="col-sm-6 col-12">
                           <label class="form-label fs-8 text-secondary mb-1">Quote No.</label>
                           <input 
                             type="text" 
-                            class="form-control form-control-sm font-monospace fw-semibold" 
+                            class="form-control form-control-sm font-monospace fw-semibold bg-light" 
                             [ngModel]="quotationService.quoteNo()"
-                            (ngModelChange)="quotationService.quoteNo.set($event)">
+                            disabled>
                         </div>
                       </div>
                       <div class="row g-2">
@@ -388,25 +389,25 @@
                           <label class="form-label fs-9 text-secondary mb-1">Validity</label>
                           <input 
                             type="text" 
-                            class="form-control form-control-sm fw-semibold" 
+                            class="form-control form-control-sm fw-semibold bg-light" 
                             [ngModel]="quotationService.validity()"
-                            (ngModelChange)="quotationService.validity.set($event)">
+                            disabled>
                         </div>
                         <div class="col-sm-4 col-12">
                           <label class="form-label fs-9 text-secondary mb-1">Delivery</label>
                           <input 
                             type="text" 
-                            class="form-control form-control-sm fw-semibold" 
+                            class="form-control form-control-sm fw-semibold bg-light" 
                             [ngModel]="quotationService.delivery()"
-                            (ngModelChange)="quotationService.delivery.set($event)">
+                            disabled>
                         </div>
                         <div class="col-sm-4 col-12">
                           <label class="form-label fs-9 text-secondary mb-1">Payment</label>
                           <input 
                             type="text" 
-                            class="form-control form-control-sm fw-semibold" 
+                            class="form-control form-control-sm fw-semibold bg-light" 
                             [ngModel]="quotationService.paymentTerms()"
-                            (ngModelChange)="quotationService.paymentTerms.set($event)">
+                            disabled>
                         </div>
                       </div>
                     </div>
@@ -462,8 +463,16 @@
           </div>
 
           <!-- Bottom Actions Bar -->
-          <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center gap-2">
+          <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center gap-2 no-print">
             <button type="button" class="btn btn-outline-secondary px-3 py-1.5 fw-semibold fs-7" (click)="goBack()">Back</button>
+            <button 
+              type="button" 
+              class="btn btn-outline-primary px-3 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
+              [disabled]="!isFormValid()"
+              (click)="togglePdfPreview()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>{{ isPreviewVisible() ? 'Hide Preview' : 'Preview PDF' }}</span>
+            </button>
             <button 
               type="button" 
               class="btn btn-danger px-4 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
@@ -474,142 +483,268 @@
               <span>Generate (PDF)</span>
             </button>
           </div>
+
+          <!-- On-screen Preview Modal Popup (Visible when Preview PDF is clicked) -->
+          @if (isPreviewVisible()) {
+            <div 
+              class="modal fade show d-block no-print" 
+              tabindex="-1" 
+              style="background-color: rgba(15, 23, 42, 0.65); z-index: 1055; backdrop-filter: blur(2px);"
+              (click)="togglePdfPreview()">
+              <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" (click)="$event.stopPropagation()">
+                <div class="modal-content shadow-lg border-0 rounded-3 overflow-hidden">
+                  <div class="modal-header py-2.5 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-danger"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                      <h6 class="modal-title fw-bold text-dark mb-0 fs-7">Quotation Preview (A4 Format)</h6>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <button 
+                        type="button" 
+                        class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1.5 px-3 py-1 fw-semibold fs-8 shadow-sm"
+                        (click)="printQuotation()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        <span>Print / Save PDF</span>
+                      </button>
+                      <button type="button" class="btn-close" (click)="togglePdfPreview()" aria-label="Close"></button>
+                    </div>
+                  </div>
+                  <div class="modal-body p-3 p-md-4 bg-secondary-subtle">
+                    <div class="preview-paper-wrapper">
+                      <ng-container *ngTemplateOutlet="quotationDocumentTemplate"></ng-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
         </div>
       }
     </div>
   }
 
   <!-- PRINT ONLY QUOTATION TEMPLATE (A4 Compact Official Layout) -->
-  <div class="d-none print-only-container text-dark" style="font-family: 'Times New Roman', Times, serif; line-height: 1.2;">
-    <!-- Document Header -->
-    <div class="text-center mb-1">
-      <h3 class="fw-bold mb-0" style="font-size: 14pt; letter-spacing: 0.6px;">QUOTATION</h3>
-      <h5 class="fw-bold mb-0 text-uppercase" style="font-size: 10pt;">
-        FOR {{ quotationService.selectedProductSets().join(' & ') || 'SOLAR POWER SYSTEM' }}
-      </h5>
-      <span style="font-size: 8pt; font-style: italic; color: #444;">(ORIGINAL FOR RECIPIENT)</span>
-    </div>
-
-    <!-- Seller & Quotation Details Block -->
-    <table class="word-border-table mb-1">
-      <tbody>
-        <tr>
-          <!-- Left: Seller -->
-          <td style="width: 58%; vertical-align: top;">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <img src="assets/sampleFiles/CompanyLogo.jpeg" alt="Logo" style="height: 50px; width: auto; object-fit: contain;">
-              <div>
-                <div class="fw-bold" style="font-size: 12pt;">{{ quotationService.companyProfile().name }}</div>
-                <div style="font-size: 8.5pt;">{{ quotationService.companyProfile().selectedAddress }}</div>
-              </div>
-            </div>
-            <div style="font-size: 8pt; border-top: 1px solid #000; padding-top: 2px;">
-              Email: {{ quotationService.companyProfile().email }} | Phone: {{ quotationService.companyProfile().phone }}<br>
-              <strong>GSTIN: {{ quotationService.companyProfile().gst }}</strong>
-            </div>
-          </td>
-
-          <!-- Right: Quote Info -->
-          <td style="width: 42%; vertical-align: top; font-size: 8.5pt;">
-            <strong>Quote No:</strong> {{ quotationService.quoteNo() }}<br>
-            <strong>Date:</strong> {{ quotationService.quoteDate() }}<br>
-            <strong>Validity:</strong> {{ quotationService.validity() }}<br>
-            <strong>Delivery:</strong> {{ quotationService.delivery() }}<br>
-            <strong>Payment:</strong> {{ quotationService.paymentTerms() }}
-          </td>
-        </tr>
-        <tr>
-          <!-- Client Details -->
-          <td colspan="2" style="font-size: 8.5pt; vertical-align: top;">
-            <strong>To:</strong><br>
-            <span class="fw-bold">{{ quotationService.customerName() || 'Valued Customer' }}</span>
-            @if (quotationService.customerMobile()) {
-              <span> | Mob: {{ quotationService.customerMobile() }}</span>
-            }
-            @if (quotationService.customerAddress()) {
-              <div>{{ quotationService.customerAddress() }}</div>
-            }
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Quotation Items Table -->
-    <table class="word-border-table mb-1">
-      <thead>
-        <tr>
-          <th style="width: 35px; text-align: center;">Sl.</th>
-          <th>Item Name &amp; Description</th>
-          <th style="width: 60px; text-align: center;">Qty</th>
-          <th style="width: 120px; text-align: right;">Amount (₹)</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of quotationService.quotationItems(); track item.id; let i = $index) {
-          <tr>
-            <td style="text-align: center;">{{ i + 1 }}</td>
-            <td>{{ item.itemName }}</td>
-            <td style="text-align: center;">{{ item.qty }}</td>
-            <td style="text-align: right;">₹{{ (item.price * item.qty) | number:'1.2-2' }}</td>
-          </tr>
-        }
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3" style="text-align: right; font-weight: bold;">Subtotal:</td>
-          <td style="text-align: right; font-weight: bold;">₹{{ quotationService.subtotal() | number:'1.2-2' }}</td>
-        </tr>
-        @if (quotationService.discountAmount() > 0) {
-          <tr>
-            <td colspan="3" style="text-align: right;">Discount:</td>
-            <td style="text-align: right;">- ₹{{ quotationService.discountAmount() | number:'1.2-2' }}</td>
-          </tr>
-        }
-        @if (quotationService.totalTaxAmount() > 0) {
-          <tr>
-            <td colspan="3" style="text-align: right;">Taxes (GST/CGST/SGST):</td>
-            <td style="text-align: right;">+ ₹{{ quotationService.totalTaxAmount() | number:'1.2-2' }}</td>
-          </tr>
-        }
-        @if (quotationService.additionsAmount() > 0) {
-          <tr>
-            <td colspan="3" style="text-align: right;">Other Additions:</td>
-            <td style="text-align: right;">+ ₹{{ quotationService.additionsAmount() | number:'1.2-2' }}</td>
-          </tr>
-        }
-        <tr>
-          <td colspan="3" style="text-align: right; font-weight: bold; font-size: 10pt;">Grand Total:</td>
-          <td style="text-align: right; font-weight: bold; font-size: 10pt;">₹{{ quotationService.grandTotal() | number:'1.2-2' }}</td>
-        </tr>
-        @if (quotationService.selectedSubsidy(); as sub) {
-          <tr>
-            <td colspan="3" style="text-align: right; color: #166534; font-weight: bold;">Govt. Subsidy:</td>
-            <td style="text-align: right; color: #166534; font-weight: bold;">- ₹{{ sub.total | number:'1.2-2' }}</td>
-          </tr>
-          <tr>
-            <td colspan="3" style="text-align: right; font-weight: bold; font-size: 10.5pt; color: #166534;">Net Payable:</td>
-            <td style="text-align: right; font-weight: bold; font-size: 10.5pt; color: #166534;">₹{{ quotationService.netPayable() | number:'1.2-2' }}</td>
-          </tr>
-        }
-      </tfoot>
-    </table>
-
-    <!-- Bank Details & Signatory -->
-    <table class="word-border-table mb-1">
-      <tbody>
-        <tr>
-          <td style="width: 60%; vertical-align: top; font-size: 8pt;">
-            <strong>Bank Details:</strong><br>
-            A/c Holder: {{ quotationService.companyProfile().bank.holder }}<br>
-            Bank Name: {{ quotationService.companyProfile().bank.name }}<br>
-            A/c No: {{ quotationService.companyProfile().bank.accountNo }} | IFS: {{ quotationService.companyProfile().bank.ifsc }}
-          </td>
-          <td style="width: 40%; text-align: center; vertical-align: bottom; height: 75px; font-size: 8pt;">
-            <strong>For {{ quotationService.companyProfile().name }}</strong><br><br>
-            <span>Authorized Signatory</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="d-none print-only-container text-dark">
+    <ng-container *ngTemplateOutlet="quotationDocumentTemplate"></ng-container>
   </div>
+
+  <ng-template #quotationDocumentTemplate>
+    <div class="quotation-pdf-document">
+      <!-- Header Outside Table: Document Title & Set -->
+      <div class="pdf-top-title text-center mb-2">
+        <h2 class="doc-title-main">QUOTATION</h2>
+        <h4 class="doc-title-sub">FOR {{ selectedProductTitle() }}</h4>
+        <div class="doc-title-recip">(ORIGINAL FOR RECIPIENT)</div>
+      </div>
+
+      <!-- Seller & Meta Box (with Buyer details) -->
+      <table class="pdf-header-box mb-0">
+        <tbody>
+          <tr>
+            <!-- Left: Company Info -->
+            <td style="width: 58%; vertical-align: top;" class="p-2">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <img src="assets/sampleFiles/CompanyLogo.jpeg" alt="Logo" class="pdf-logo-img">
+                <div>
+                  <div class="pdf-company-name">{{ quotationService.companyProfile().name }}</div>
+                  <div class="pdf-company-addr">{{ quotationService.companyProfile().selectedAddress }}</div>
+                </div>
+              </div>
+              <div class="pdf-company-contact">
+                Email: {{ quotationService.companyProfile().email }}, Mobile: {{ quotationService.companyProfile().phone }}
+              </div>
+              <div class="pdf-company-gstin">
+                <strong>GSTIN: {{ quotationService.companyProfile().gst }}</strong>
+              </div>
+            </td>
+
+            <!-- Right: Meta Details -->
+            <td style="width: 42%; vertical-align: top;" class="p-0">
+              <table class="pdf-meta-inner-table">
+                <tbody>
+                  <tr>
+                    <td class="pdf-meta-label">Quotation No.:</td>
+                    <td class="pdf-meta-val">{{ quotationService.quoteNo() }}</td>
+                  </tr>
+                  <tr>
+                    <td class="pdf-meta-label">Dated:</td>
+                    <td class="pdf-meta-val">{{ formatQuoteDate(quotationService.quoteDate()) }}</td>
+                  </tr>
+                  <tr>
+                    <td class="pdf-meta-label">Validity:</td>
+                    <td class="pdf-meta-val">{{ quotationService.validity() }}</td>
+                  </tr>
+                  <tr>
+                    <td class="pdf-meta-label">Delivery Date:</td>
+                    <td class="pdf-meta-val">{{ quotationService.delivery() }}</td>
+                  </tr>
+                  <tr>
+                    <td class="pdf-meta-label">Payment Terms:</td>
+                    <td class="pdf-meta-val">{{ quotationService.paymentTerms() }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Buyer Row -->
+          <tr>
+            <td colspan="2" class="pdf-buyer-cell p-2">
+              <div><strong>Buyer:</strong> {{ quotationService.customerName() }}</div>
+              <div><strong>Mobile:</strong> {{ quotationService.customerMobile() }}</div>
+              <div><strong>Address:</strong> {{ quotationService.customerAddress() }}</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Items Table -->
+      <table class="pdf-items-table mb-0">
+        <thead>
+          <tr>
+            <th style="width: 40px; text-align: center;">Sl<br>No</th>
+            <th style="text-align: center;">Description of Goods</th>
+            <th style="width: 65px; text-align: center;">Qty.</th>
+            <th style="width: 110px; text-align: center;">Total Value (₹)</th>
+            <th style="width: 80px; text-align: center;">CGST<br>Rate {{ cgstRate() }}%</th>
+            <th style="width: 80px; text-align: center;">SGST Rate<br>{{ sgstRate() }}%</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of quotationService.quotationItems(); track item.id; let i = $index; let first = $first) {
+            <tr>
+              <td class="text-center align-middle">{{ i + 1 }}</td>
+              <td class="text-start align-middle">{{ item.itemName }}</td>
+              <td class="text-center align-middle">{{ item.qty }} SET</td>
+
+              @if (quotationService.mergeTotalValue()) {
+                @if (first) {
+                  <td [attr.rowspan]="quotationService.quotationItems().length" class="text-end align-middle fw-medium">
+                    ₹{{ quotationService.subtotal() | number:'1.2-2' }}
+                  </td>
+                }
+              } @else {
+                <td class="text-end align-middle">₹{{ (item.price * item.qty) | number:'1.2-2' }}</td>
+              }
+
+              @if (first) {
+                <td [attr.rowspan]="quotationService.quotationItems().length" class="text-end align-middle fw-medium">
+                  ₹{{ quotationService.cgstAmount() | number:'1.2-2' }}
+                </td>
+                <td [attr.rowspan]="quotationService.quotationItems().length" class="text-end align-middle fw-medium">
+                  ₹{{ quotationService.sgstAmount() | number:'1.2-2' }}
+                </td>
+              }
+            </tr>
+          }
+
+          <!-- Grand Total Row -->
+          <tr class="pdf-total-row">
+            <td colspan="4" class="text-end fw-bold">Grand Total</td>
+            <td colspan="2" class="text-end fw-bold">₹{{ quotationService.grandTotal() | number:'1.2-2' }}</td>
+          </tr>
+
+          <!-- Less Govt Subsidy Row -->
+          @if (quotationService.selectedSubsidy(); as sub) {
+            <tr class="pdf-total-row">
+              <td colspan="4" class="text-end fw-bold">Less: Total Govt. Subsidy ({{ sub.kw }} KW)</td>
+              <td colspan="2" class="text-end fw-bold">-₹{{ quotationService.subsidyTotal() | number:'1.2-2' }}</td>
+            </tr>
+            <tr class="pdf-total-row">
+              <td colspan="4" class="text-end fw-bold">Net Customer Payable</td>
+              <td colspan="2" class="text-end fw-bold">₹{{ quotationService.netPayable() | number:'1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Notes below table -->
+      <div class="pdf-notes-list my-1">
+        <div>* If more than 20 mtr Solar DC Cable is required, extra charges @ Rs 60/meter to be paid by customer.</div>
+        <div>* For high-rise table structure, extra charges to be paid by customer.</div>
+        <div>* Civil materials to be arranged by customer at the installation site.</div>
+      </div>
+
+      <!-- Amount Chargeable in words Box -->
+      <div class="pdf-amount-in-words-box mb-2 p-1">
+        <strong>Amount Chargeable (in words):</strong> Rupees {{ getAmountInWords(quotationService.grandTotal()) }} Only
+      </div>
+
+      <!-- Subsidy Scheme & Declaration Section (2 Columns) -->
+      <div class="pdf-scheme-declaration-row mb-1">
+        <!-- Left: Subsidy Table + Bank Details -->
+        <div class="pdf-left-col">
+          <div class="pdf-sec-heading">Subsidy Scheme as per MNRE</div>
+          <table class="pdf-subsidy-table mb-2">
+            <thead>
+              <tr>
+                <th>Per KW</th>
+                <th>Central Subsidy</th>
+                <th>State Subsidy</th>
+                <th>Total Subsidy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ currentSubsidy().kw }} KW</td>
+                <td>{{ currentSubsidy().central | number:'1.0-0' }}</td>
+                <td>{{ currentSubsidy().state | number:'1.0-0' }}</td>
+                <td>{{ currentSubsidy().total | number:'1.0-0' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pdf-sec-heading">Company's Bank Details</div>
+          <table class="pdf-bank-table">
+            <tbody>
+              <tr>
+                <td class="pdf-bank-lbl">Bank Name:</td>
+                <td>{{ quotationService.companyProfile().bank.name }}</td>
+              </tr>
+              <tr>
+                <td class="pdf-bank-lbl">A/C Holder:</td>
+                <td>{{ quotationService.companyProfile().bank.holder }}</td>
+              </tr>
+              <tr>
+                <td class="pdf-bank-lbl">A/C No.:</td>
+                <td>{{ quotationService.companyProfile().bank.accountNo }}</td>
+              </tr>
+              <tr>
+                <td class="pdf-bank-lbl">Branch &amp; IFSC:</td>
+                <td>{{ quotationService.companyProfile().bank.ifsc }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right: Declaration Box -->
+        <div class="pdf-right-col">
+          <div class="pdf-declaration-box p-1">
+            <div class="pdf-sec-heading mb-1">Declaration:</div>
+            <ol class="pdf-declaration-ol">
+              <li>We hereby declare that this quotation reflects the actual price of the goods described herein, and that all the particulars provided are true and correct.</li>
+              <li>An advance payment must be made within 7 days from the date of this quotation. Otherwise, the prices are subject to change in accordance with the manufacturer's revised prices.</li>
+              <li>All disputes are subject to the exclusive jurisdiction of the courts at Bhubaneswar.</li>
+              <li>Goods once sold cannot be returned or exchanged.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signatory Block -->
+      <div class="pdf-signatory-block text-end mt-2 me-1">
+        <div class="pdf-signatory-company">for {{ quotationService.companyProfile().name | uppercase }}</div>
+        <div class="pdf-stamp-container">
+          <img src="assets/sampleFiles/CompanyStamp.jpeg" alt="Stamp" class="pdf-stamp-img">
+        </div>
+        <div class="pdf-signatory-title">/Authorized Signatory</div>
+      </div>
+
+      <!-- Bottom Computer-Generated Notice -->
+      <div class="pdf-computer-gen-footer text-center mt-2">
+        <hr class="pdf-footer-hr">
+        <div class="pdf-footer-text">This is a Computer-Generated Copy</div>
+      </div>
+    </div>
+  </ng-template>
 </div>
