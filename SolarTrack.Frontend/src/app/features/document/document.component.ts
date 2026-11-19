@@ -14,7 +14,6 @@ import { InstallmentRow } from '../../core/models/summary.model';
 import { TechnicalProductSpecs, DocumentType } from './models/document.model';
 
 // Reusable Sub-components
-import { CustomerDirectoryComponent } from './components/customer-directory/customer-directory.component';
 import { ProductSpecsModalComponent } from './components/product-specs-modal/product-specs-modal.component';
 import { TechnicalSpecsAccordionComponent } from './components/technical-specs-accordion/technical-specs-accordion.component';
 import { CustomerImportModalComponent } from './components/customer-import-modal/customer-import-modal.component';
@@ -29,7 +28,6 @@ export type MainDocumentTab = 'form' | 'customer-mapping';
     CommonModule, 
     FormsModule,
     IconComponent,
-    CustomerDirectoryComponent,
     ProductSpecsModalComponent,
     TechnicalSpecsAccordionComponent,
     CustomerImportModalComponent,
@@ -86,12 +84,60 @@ export class DocumentComponent implements OnInit {
   isPreviewModalOpen = signal<boolean>(false);
   previewDocType = signal<DocumentType>('form4');
 
+  // Searchable Customer Dropdown in Form Tab
+  isCustomerDropdownOpen = false;
+  customerSearchText = signal<string>('');
+
+  searchedCustomers = computed<InstallmentRow[]>(() => {
+    const list = this.docService.allCustomers();
+    const query = this.customerSearchText().toLowerCase().trim();
+    if (!query) return list;
+
+    // Split query by whitespace so user can search by name or title (surname)
+    const tokens = query.split(/\s+/).filter(t => t.length > 0);
+
+    return list.filter((c: InstallmentRow) => {
+      const name = (c.Name || '').toLowerCase();
+      const district = (c.District || '').toLowerCase();
+      const cons = (c.ConsumerNo || '').toLowerCase();
+
+      return tokens.every(token => name.includes(token) || district.includes(token) || cons.includes(token));
+    });
+  });
+
+  toggleCustomerDropdown(): void {
+    this.isCustomerDropdownOpen = !this.isCustomerDropdownOpen;
+  }
+
+  onCustomerSearchTextChange(val: string): void {
+    this.customerSearchText.set(val);
+  }
+
+  clearCustomerSearch(): void {
+    this.customerSearchText.set('');
+  }
+
+  selectDropdownCustomer(cust: InstallmentRow): void {
+    this.docService.selectCustomer(cust);
+    this.isCustomerDropdownOpen = false;
+    this.customerSearchText.set('');
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.dropdown')) {
       this.isMappingPartnerMenuOpen = false;
     }
+    if (!target.closest('.customer-dropdown-container')) {
+      this.isCustomerDropdownOpen = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.isCustomerDropdownOpen = false;
+    this.isMappingPartnerMenuOpen = false;
   }
 
   // --- Computed signals for Customer Mapping Tab ---

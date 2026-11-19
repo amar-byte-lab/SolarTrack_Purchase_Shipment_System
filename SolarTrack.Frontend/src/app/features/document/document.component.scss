@@ -152,6 +152,70 @@
   }
 }
 
+/* Searchable Customer Dropdown in Form Tab */
+.customer-dropdown-container {
+  min-width: 260px;
+  max-width: 380px;
+
+  .customer-dropdown-trigger {
+    height: 33px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    font-size: 0.82rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #94a3b8;
+      background: #f8fafc;
+    }
+
+    &.active {
+      border-color: var(--st-primary, #ff4500);
+      box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.15);
+    }
+
+    .rotated {
+      transform: rotate(180deg);
+    }
+  }
+
+  .customer-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 320px;
+    max-width: 90vw;
+    z-index: 1060;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  }
+
+  .customer-dropdown-list {
+    max-height: 250px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .customer-dropdown-item {
+    padding: 6px 10px;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: #f1f5f9;
+    }
+
+    &.selected {
+      background: rgba(255, 69, 0, 0.08);
+      font-weight: 600;
+    }
+  }
+}
+
 /* Print Stylesheet */
 @media print {
   body * {
