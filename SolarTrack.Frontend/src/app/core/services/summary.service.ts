@@ -26,17 +26,15 @@ import { AuthService } from './auth.service';
 
 export const DEFAULT_SUMMARY_COLUMNS: SummaryColumn[] = [
   { key: 'customer', label: 'Customer: Status', visible: true },
-  { key: 'pvmodule', label: 'PVModule Make', visible: false },
-  { key: 'inverter', label: 'Inverter Make', visible: false },
   { key: 'payment', label: 'Payment', visible: true },
-  { key: 'install', label: 'Install', visible: true },
-  { key: 'meter', label: 'Meter', visible: true },
-  { key: 'delivery', label: 'Delivery', visible: false },
-  { key: 'others', label: 'Others', visible: false },
-  { key: 'comment', label: 'Comment', visible: false },
-  { key: 'material', label: 'Material', visible: false },
-  { key: 'setcost', label: 'Set Cost', visible: false },
-  { key: 'profit', label: 'Profit', visible: false }
+  { key: 'material', label: 'Material Cost', visible: true },
+  { key: 'delivery', label: 'Delivery Cost', visible: true },
+  { key: 'meter', label: 'NetMeter Cost', visible: true },
+  { key: 'install', label: 'Installation Cost', visible: true },
+  { key: 'gst', label: 'GST', visible: true },
+  { key: 'others', label: 'Others', visible: true },
+  { key: 'pvmodule', label: 'PVModule Make', visible: false },
+  { key: 'inverter', label: 'Inverterr Make', visible: false }
 ];
 
 @Injectable({
@@ -399,6 +397,7 @@ export class SummaryService {
     let totMeter = 0;
     let totDelivery = 0;
     let totOthers = 0;
+    let totGst = 0;
     let totMaterial = 0;
     let totSetCost = 0;
     let totProfit = 0;
@@ -411,6 +410,7 @@ export class SummaryService {
       totMeter += i.fin.meter;
       totDelivery += i.fin.delivery;
       totOthers += i.fin.others;
+      totGst += (i.fin.gst || 0);
       totMaterial += i.fin.material;
       totSetCost += i.fin.setCost;
       totProfit += i.fin.profit;
@@ -425,6 +425,7 @@ export class SummaryService {
       meter: totMeter,
       delivery: totDelivery,
       others: totOthers,
+      gst: totGst,
       material: totMaterial,
       setCost: totSetCost,
       profit: totProfit
@@ -1241,6 +1242,9 @@ export class SummaryService {
       ? Number(expenses.delivery)
       : (Number(expenses.transport) || 0);
     const others = Number(expenses.other) || 0;
+    const gst = (expenses.gst !== undefined && expenses.gst !== '')
+      ? Number(expenses.gst)
+      : (expenses.gst_pct ? Math.round(turnover * (Number(expenses.gst_pct) / 100)) : 0);
 
     const setCost = material + install + meter + delivery + others;
     const profit = turnover - setCost;
@@ -1265,6 +1269,7 @@ export class SummaryService {
       meter,
       delivery,
       others,
+      gst,
       setCost,
       profit,
       payCategory,

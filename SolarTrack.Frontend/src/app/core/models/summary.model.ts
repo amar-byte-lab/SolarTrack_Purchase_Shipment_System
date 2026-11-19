@@ -133,6 +133,7 @@ export interface SummaryFinancials {
   meter: number;
   delivery: number;
   others: number;
+  gst: number;
   setCost: number;
   profit: number;
   payCategory: 'Unpaid' | 'Partial Paid' | 'Fully Paid';

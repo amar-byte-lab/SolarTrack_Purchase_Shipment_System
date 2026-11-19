@@ -274,19 +274,17 @@ export class SummaryTableComponent {
         if (r.BrokerName) lines.push(`   Partner: ${r.BrokerName}`);
         lines.push(`   Status: ${item.stageName}`);
 
-        if (this.isColumnVisible('pvmodule')) lines.push(`   PV Module: ${item.pvModuleMake}`);
-        if (this.isColumnVisible('inverter')) lines.push(`   Inverter: ${item.inverterMake}`);
-
         if (this.isColumnVisible('payment')) {
           lines.push(`   Paid: ${this.fmtCurr(fin.paid)} | Unpaid: ${this.fmtCurr(fin.unpaid)} | Turnover: ${this.fmtCurr(fin.turnover)}`);
         }
-        if (this.isColumnVisible('install')) lines.push(`   Install: ${this.fmtCurr(fin.install)}`);
-        if (this.isColumnVisible('meter')) lines.push(`   Meter: ${this.fmtCurr(fin.meter)}`);
-        if (this.isColumnVisible('delivery')) lines.push(`   Delivery: ${this.fmtCurr(fin.delivery)}`);
+        if (this.isColumnVisible('material')) lines.push(`   Material Cost: ${this.fmtCurr(fin.material)}`);
+        if (this.isColumnVisible('delivery')) lines.push(`   Delivery Cost: ${this.fmtCurr(fin.delivery)}`);
+        if (this.isColumnVisible('meter')) lines.push(`   NetMeter Cost: ${this.fmtCurr(fin.meter)}`);
+        if (this.isColumnVisible('install')) lines.push(`   Installation Cost: ${this.fmtCurr(fin.install)}`);
+        if (this.isColumnVisible('gst')) lines.push(`   GST: ${this.fmtCurr(fin.gst)}`);
         if (this.isColumnVisible('others')) lines.push(`   Others: ${this.fmtCurr(fin.others)}`);
-        if (this.isColumnVisible('material')) lines.push(`   Material: ${this.fmtCurr(fin.material)}`);
-        if (this.isColumnVisible('setcost')) lines.push(`   Set Cost: ${this.fmtCurr(fin.setCost)}`);
-        if (this.isColumnVisible('profit')) lines.push(`   Profit: ${this.fmtCurr(fin.profit)}`);
+        if (this.isColumnVisible('pvmodule')) lines.push(`   PV Module: ${item.pvModuleMake}`);
+        if (this.isColumnVisible('inverter')) lines.push(`   Inverter: ${item.inverterMake}`);
         if (fin.comment) lines.push(`   Note: ${fin.comment}`);
 
         lines.push('');
@@ -304,13 +302,12 @@ export class SummaryTableComponent {
       lines.push(`Unpaid: ${this.fmtCurr(tot.unpaid)}`);
       lines.push(`Turnover: ${this.fmtCurr(tot.turnover)}`);
     }
-    if (this.isColumnVisible('install')) lines.push(`Total Install: ${this.fmtCurr(tot.install)}`);
-    if (this.isColumnVisible('meter')) lines.push(`Total Meter: ${this.fmtCurr(tot.meter)}`);
-    if (this.isColumnVisible('delivery')) lines.push(`Total Delivery: ${this.fmtCurr(tot.delivery)}`);
+    if (this.isColumnVisible('material')) lines.push(`Total Material Cost: ${this.fmtCurr(tot.material)}`);
+    if (this.isColumnVisible('delivery')) lines.push(`Total Delivery Cost: ${this.fmtCurr(tot.delivery)}`);
+    if (this.isColumnVisible('meter')) lines.push(`Total NetMeter Cost: ${this.fmtCurr(tot.meter)}`);
+    if (this.isColumnVisible('install')) lines.push(`Total Installation Cost: ${this.fmtCurr(tot.install)}`);
+    if (this.isColumnVisible('gst')) lines.push(`Total GST: ${this.fmtCurr(tot.gst)}`);
     if (this.isColumnVisible('others')) lines.push(`Total Others: ${this.fmtCurr(tot.others)}`);
-    if (this.isColumnVisible('material')) lines.push(`Total Material: ${this.fmtCurr(tot.material)}`);
-    if (this.isColumnVisible('setcost')) lines.push(`Total Investment (Set Cost): ${this.fmtCurr(tot.setCost)}`);
-    if (this.isColumnVisible('profit')) lines.push(`Total Profit: ${this.fmtCurr(tot.profit)}`);
     lines.push('==============================');
 
     const textToCopy = lines.join('\n');
