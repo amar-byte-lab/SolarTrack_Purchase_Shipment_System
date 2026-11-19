@@ -2,10 +2,6 @@
   
   <!-- 1. Numbered Multi-Step Progress Bar (Pratiti Step re Number) -->
   <div class="mw-stepper-box p-2.5 rounded-3 bg-white border shadow-xs mb-1">
-    <div class="d-flex align-items-center justify-content-between mb-2 px-1">
-      <span class="fs-8 fw-bold text-dark text-uppercase letter-spacing-sm">Milestone Progress</span>
-      <span class="fs-8 fw-bold text-primary font-monospace">{{ completedStagesCount }}/8 Completed ({{ trackPct }}%)</span>
-    </div>
 
     <!-- Stepper Bar with Step Numbers 1 to 8 -->
     <div class="position-relative mw-stepper-track-wrap px-2 py-1">
@@ -48,8 +44,8 @@
         {{ st.label }}
       </span>
 
-      <!-- Controls (Right side: Switch + Datepicker perfectly aligned) -->
-      <div class="d-flex align-items-center gap-2.5 mw-stage-ctrls">
+      <!-- Controls (Right side: Switch + Datepicker + Charges perfectly aligned) -->
+      <div class="d-flex align-items-center gap-2 mw-stage-ctrls">
         <!-- Switch Slider -->
         <label 
           class="mw-switch" 
@@ -70,6 +66,23 @@
             [value]="getStageDate(st.key)" 
             (change)="onDateChange(st, $event)"
             title="Milestone Date">
+        </div>
+
+        <!-- Net Meter Charges Input (Visible in same row when Net Meter toggle is completed/ON) -->
+        <div 
+          *ngIf="st.key === 'NetMeterDate' && isStageCompleted(st.key)" 
+          class="mw-stage-charges-wrap"
+          title="Net Meter Charges">
+          <div class="input-group input-group-sm mw-stage-charges-group">
+            <span class="input-group-text bg-white text-muted fw-bold fs-9 border-end-0">₹</span>
+            <input 
+              type="number" 
+              class="form-control form-control-sm mw-stage-charges-input fs-8 font-monospace fw-bold text-dark border-start-0" 
+              [value]="getNetMeterCharges()" 
+              (change)="onChargesChange($event)"
+              (keydown.enter)="onChargesKeyEnter($event)"
+              placeholder="Charges">
+          </div>
         </div>
       </div>
 

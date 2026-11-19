@@ -960,6 +960,21 @@ export class SummaryService {
 
     let brokerNumber = existing.BrokerNumber || '';
     if (brokerNumber) {
+      if (patch.NetMeterPayment !== undefined || patch.NetMeterPaid !== undefined) {
+        const expIdx = brokerNumber.indexOf('|expenses:');
+        if (expIdx !== -1) {
+          try {
+            const expEnd = brokerNumber.indexOf('|', expIdx + 1);
+            const expJson = expEnd !== -1 ? brokerNumber.slice(expIdx + 10, expEnd) : brokerNumber.slice(expIdx + 10);
+            const expObj = JSON.parse(expJson) || {};
+            if (patch.NetMeterPayment !== undefined) expObj.net_meter_payment = Number(patch.NetMeterPayment) || 0;
+            if (patch.NetMeterPaid !== undefined) expObj.net_meter_paid = Boolean(patch.NetMeterPaid);
+            const expNew = `|expenses:${JSON.stringify(expObj)}`;
+            brokerNumber = brokerNumber.slice(0, expIdx) + expNew + (expEnd !== -1 ? brokerNumber.slice(expEnd) : '');
+          } catch {}
+        }
+      }
+
       let workObj: any = {};
       const workIdx = brokerNumber.indexOf('|work:');
       if (workIdx !== -1) {

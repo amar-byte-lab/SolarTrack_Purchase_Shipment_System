@@ -165,6 +165,16 @@ export class SummaryTableComponent {
     // Note: markedRowSlNo is intentionally NOT cleared, so the row remains marked after popup closes
   }
 
+  onWorkflowModalUpdated(): void {
+    if (this.selectedCustomerForWorkflow) {
+      const slNo = this.selectedCustomerForWorkflow.SlNo;
+      const found = this.summaryService.rawInstallments().find(r => Number(r.SlNo) === Number(slNo));
+      if (found) {
+        this.selectedCustomerForWorkflow = { ...found };
+      }
+    }
+  }
+
   deactivateCustomer(row: InstallmentRow): void {
     const desc = row.Name ? `${row.Name}${row.District ? ' (' + row.District + ')' : ''}` : `Sl No. ${row.SlNo}`;
     this.confirmDialogService.confirm({

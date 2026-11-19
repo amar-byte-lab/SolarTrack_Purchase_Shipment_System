@@ -202,15 +202,80 @@ export class ProcessCardComponent {
     });
   }
 
+  getNetMeterCharges(): number | string {
+    if (!this.customer) return '';
+    const val = this.customer.NetMeterPayment;
+    if (val !== undefined && val !== null && (val as any) !== '') {
+      return Number(val);
+    }
+    return '';
+  }
+
+  onChargesChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const rawVal = input.value.trim();
+    const newCharges = rawVal === '' ? 0 : Number(rawVal);
+
+    if (isNaN(newCharges) || newCharges < 0) {
+      this.toastService.warning('Please enter a valid charges amount.');
+      input.value = String(this.getNetMeterCharges());
+      return;
+    }
+
+    const c = this.customer;
+    if (!c) return;
+
+    const currentCharges = (c.NetMeterPayment != null && (c.NetMeterPayment as any) !== '')
+      ? Number(c.NetMeterPayment)
+      : 0;
+
+    if (newCharges === currentCharges) {
+      return;
+    }
+
+    const dateVal = this.getStageDate('NetMeterDate') || this.todayISO;
+    const isPaid = true;
+
+    this.summaryService.saveNetMeter(c.SlNo, newCharges, dateVal, isPaid).subscribe({
+      next: () => {
+        this.toastService.success(`Net Meter charges updated to ₹${newCharges.toLocaleString('en-IN')}`);
+        if (this.customer) {
+          this.customer.NetMeterPayment = newCharges;
+          this.customer.NetMeterPaid = true;
+          this.customer.NetMeterDate = dateVal;
+        }
+        this.refreshData();
+      },
+      error: (err) => {
+        this.toastService.error('Error updating Net Meter charges: ' + (err.message || 'Server error'));
+        input.value = String(this.getNetMeterCharges());
+      }
+    });
+  }
+
+  onChargesKeyEnter(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    input.blur();
+  }
+
   private applyStageChange(key: keyof InstallmentRow, dateVal: string | null): void {
     const c = this.customer;
     if (!c) return;
 
     if (key === 'NetMeterDate') {
       const isPaid = dateVal !== null;
-      this.summaryService.saveNetMeter(c.SlNo, 0, dateVal || '', isPaid).subscribe({
+      const currentCharges = isPaid 
+        ? ((c.NetMeterPayment != null && (c.NetMeterPayment as any) !== '') ? Number(c.NetMeterPayment) : 0)
+        : 0;
+
+      this.summaryService.saveNetMeter(c.SlNo, currentCharges, dateVal || '', isPaid).subscribe({
         next: () => {
           this.toastService.success(`Net Meter status updated successfully.`);
+          if (this.customer) {
+            this.customer.NetMeterPaid = isPaid;
+            this.customer.NetMeterDate = dateVal || '';
+            this.customer.NetMeterPayment = currentCharges;
+          }
           this.refreshData();
         },
         error: (err) => {
@@ -223,6 +288,9 @@ export class ProcessCardComponent {
     this.summaryService.saveStageProgress(c.SlNo, { [key]: dateVal || undefined }).subscribe({
       next: () => {
         this.toastService.success(`Milestone stage updated successfully.`);
+        if (this.customer) {
+          (this.customer as any)[key] = dateVal || undefined;
+        }
         this.refreshData();
       },
       error: (err) => {

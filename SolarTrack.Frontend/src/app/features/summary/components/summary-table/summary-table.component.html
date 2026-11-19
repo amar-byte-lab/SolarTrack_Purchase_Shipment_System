@@ -388,5 +388,5 @@
   [customer]="selectedCustomerForWorkflow"
   [initialTab]="workflowModalTab"
   (close)="closeWorkflowModal()"
-  (updated)="summaryService.loadAllData().subscribe()">
+  (updated)="onWorkflowModalUpdated()">
 </app-workflow-modal>
