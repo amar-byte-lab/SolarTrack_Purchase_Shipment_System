@@ -170,16 +170,39 @@ export class DocumentService {
 
   saveCustomerSpecs(specs: TechnicalProductSpecs): void {
     const cust = this.selectedCustomer();
-    if (!cust) return;
+    if (!cust) {
+      this.toastService.warning('Please select a customer first.');
+      return;
+    }
 
-    this.currentSpecs.set(specs);
+    this.currentSpecs.set({ ...specs });
     cust.ProductSpecs = specs;
+    if (specs.address) cust.Address = specs.address;
+    if (specs.pinCode) cust.PinCode = specs.pinCode;
+    if (specs.district) cust.District = specs.district;
+    if (specs.state) cust.State = specs.state;
+    if (specs.dateOfInstallation) cust.InstallationDate = specs.dateOfInstallation;
 
-    this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${cust.SlNo}`, {
-      ProductSpecs: JSON.stringify(specs)
-    }).subscribe({
+    const payload: any = {
+      ProductSpecs: JSON.stringify(specs),
+      InstallationDate: specs.dateOfInstallation || null,
+      Address: specs.address || '',
+      PinCode: specs.pinCode || null,
+      District: specs.district || cust.District || '',
+      State: specs.state || 'Odisha'
+    };
+
+    this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${cust.SlNo}`, payload).subscribe({
       next: () => {
-        this.toastService.success('Technical specifications & RTS record updated successfully!');
+        const inMemory = this.summaryService.rawInstallments().find(r => Number(r.SlNo) === Number(cust.SlNo));
+        if (inMemory) {
+          inMemory.ProductSpecs = specs;
+          if (specs.address) inMemory.Address = specs.address;
+          if (specs.pinCode) inMemory.PinCode = specs.pinCode;
+          if (specs.district) inMemory.District = specs.district;
+          if (specs.dateOfInstallation) inMemory.InstallationDate = specs.dateOfInstallation;
+        }
+        this.toastService.success(`Specifications saved for ${cust.Name || 'customer'}!`);
       },
       error: () => {
         this.toastService.info('Specifications saved in active session.');
