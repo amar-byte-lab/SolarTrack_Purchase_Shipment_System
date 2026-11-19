@@ -264,80 +264,62 @@
       </div>
 
       <div class="accordion-body" *ngIf="isSectionOpen('module')">
-        <div class="row g-2">
+        <div class="row g-3">
           
-          <!-- Highlighted: Module Make -->
-          <div class="col-md-4">
-            <label class="specs-label highlighted-label">MODULE MAKE</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm text-uppercase highlighted-input" 
-              [(ngModel)]="specs.moduleMake" 
-              (ngModelChange)="emitChange()"
-              placeholder="e.g. LUMINOUS"
-              [disabled]="readOnly">
-          </div>
-
-          <!-- Highlighted: No. of Modules -->
-          <div class="col-md-4">
-            <label class="specs-label highlighted-label">NO. OF MODULES</label>
-            <input 
-              type="number" 
-              min="1" 
-              max="48" 
-              class="form-control form-control-sm highlighted-input" 
-              [(ngModel)]="specs.moduleCount" 
-              (change)="onModuleCountChange()"
-              [disabled]="readOnly">
-          </div>
-
-          <!-- Highlighted: Type of Module & Model -->
-          <div class="col-md-4">
-            <label class="specs-label highlighted-label">TYPE OF MODULE &amp; MODEL</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm text-uppercase highlighted-input" 
-              [(ngModel)]="specs.moduleTypeModel" 
-              (ngModelChange)="emitChange()"
-              placeholder="e.g. BIFACIAL / TOPCON 545Wp"
-              [disabled]="readOnly">
-          </div>
-
-          <!-- Standard: Capacity Each & Total -->
-          <div class="col-md-6">
-            <label class="specs-label">MODULE CAPACITY EACH (WP)</label>
-            <input 
-              type="number" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.moduleCapacityEach" 
-              (change)="onModuleCountChange()"
-              placeholder="545"
-              [disabled]="readOnly">
-          </div>
-
-          <div class="col-md-6">
-            <label class="specs-label">TOTAL CAPACITY (KWP)</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm bg-light fw-bold" 
-              [(ngModel)]="specs.moduleTotalCapacity" 
-              (ngModelChange)="emitChange()"
-              readonly>
-          </div>
-
-          <!-- Serials List -->
-          <div class="col-12 mt-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="fs-8 text-secondary">Module Serials ({{ specs.moduleSerials?.length || 0 }})</span>
-              <button 
-                *ngIf="!readOnly" 
-                type="button" 
-                class="btn btn-xs btn-outline-primary"
-                (click)="regenerateSerials()">
-                Auto-fill Serials
-              </button>
+          <!-- Col-1: MODULE MAKE (Row 1), NO. OF MODULES (Row 2) -->
+          <div class="col-md-6 d-flex flex-column gap-2">
+            <div>
+              <label class="specs-label highlighted-label">MODULE MAKE</label>
+              <input 
+                type="text" 
+                class="form-control form-control-sm text-uppercase highlighted-input" 
+                [(ngModel)]="specs.moduleMake" 
+                (ngModelChange)="emitChange()"
+                placeholder="e.g. LUMINOUS"
+                [disabled]="readOnly">
             </div>
-            <div class="row g-1 font-monospace" style="max-height: 140px; overflow-y: auto;">
+            <div>
+              <label class="specs-label highlighted-label">NO. OF MODULES</label>
+              <input 
+                type="number" 
+                min="1" 
+                max="48" 
+                class="form-control form-control-sm highlighted-input" 
+                [(ngModel)]="specs.moduleCount" 
+                (change)="onModuleCountChange()"
+                [disabled]="readOnly">
+            </div>
+          </div>
+
+          <!-- Col-2: TYPE OF MODULE & MODEL (Row 1), TOTAL CAPACITY (KWP) (Row 2) -->
+          <div class="col-md-6 d-flex flex-column gap-2">
+            <div>
+              <label class="specs-label highlighted-label">TYPE OF MODULE &amp; MODEL</label>
+              <input 
+                type="text" 
+                class="form-control form-control-sm text-uppercase highlighted-input" 
+                [(ngModel)]="specs.moduleTypeModel" 
+                (ngModelChange)="emitChange()"
+                placeholder="e.g. BIFACIAL / TOPCON 545Wp"
+                [disabled]="readOnly">
+            </div>
+            <div>
+              <label class="specs-label">TOTAL CAPACITY (KWP)</label>
+              <input 
+                type="text" 
+                class="form-control form-control-sm bg-light fw-bold" 
+                [(ngModel)]="specs.moduleTotalCapacity" 
+                (ngModelChange)="emitChange()"
+                readonly>
+            </div>
+          </div>
+
+          <!-- Serials List with capacity input beside serial number -->
+          <div class="col-12 mt-1">
+            <div class="mb-1">
+              <span class="fs-8 text-secondary">Module Serials &amp; Capacity</span>
+            </div>
+            <div class="row g-1.5 font-monospace" style="max-height: 150px; overflow-y: auto;">
               <div *ngFor="let s of specs.moduleSerials" class="col-sm-6 col-md-4">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text py-0 px-1.5 fs-9 text-muted">#{{ s.index }}</span>
@@ -346,7 +328,17 @@
                     class="form-control font-monospace text-uppercase fs-9 py-0.5 px-2" 
                     [(ngModel)]="s.serialNo"
                     (ngModelChange)="emitChange()"
+                    placeholder="Serial No"
                     [disabled]="readOnly">
+                  <input 
+                    type="number" 
+                    class="form-control fs-9 py-0.5 px-1.5 text-end" 
+                    style="max-width: 70px;"
+                    [(ngModel)]="s.capacity"
+                    (ngModelChange)="onSerialCapacityChange()"
+                    placeholder="545"
+                    [disabled]="readOnly">
+                  <span class="input-group-text py-0 px-1 fs-9 text-muted">Wp</span>
                 </div>
               </div>
             </div>

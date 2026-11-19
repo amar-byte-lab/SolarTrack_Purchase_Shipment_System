@@ -47,12 +47,9 @@ export class TechnicalSpecsAccordionComponent implements OnInit {
     const count = Math.max(1, Math.min(48, Number(this.specs.moduleCount) || 1));
     this.specs.moduleCount = count;
 
-    const capEach = Number(this.specs.moduleCapacityEach) || 545;
-    const totalKWp = ((count * capEach) / 1000).toFixed(2);
-    this.specs.moduleTotalCapacity = `${totalKWp} kWp`;
-
     const existingSerials = this.specs.moduleSerials || [];
     const prefix = this.customer?.ConsumerNo ? this.customer.ConsumerNo.slice(-4) : '7721';
+    const fallbackCap = (existingSerials[0]?.capacity) || Number(this.specs.moduleCapacityEach) || 545;
     const newSerials: ModuleSerialItem[] = [];
 
     for (let i = 1; i <= count; i++) {
@@ -63,29 +60,27 @@ export class TechnicalSpecsAccordionComponent implements OnInit {
         newSerials.push({
           index: i,
           serialNo: `SLM${prefix}${String(i).padStart(3, '0')}`,
-          capacity: capEach
+          capacity: fallbackCap
         });
       }
     }
     this.specs.moduleSerials = newSerials;
+    this.recalculateTotalCapacity();
     this.emitChange();
   }
 
-  regenerateSerials(): void {
-    const count = Number(this.specs.moduleCount) || 6;
-    const capEach = Number(this.specs.moduleCapacityEach) || 545;
-    const prefix = this.customer?.ConsumerNo ? this.customer.ConsumerNo.slice(-4) : '7721';
-    const list: ModuleSerialItem[] = [];
-
-    for (let i = 1; i <= count; i++) {
-      list.push({
-        index: i,
-        serialNo: `SLM${prefix}${String(i).padStart(3, '0')}`,
-        capacity: capEach
-      });
-    }
-    this.specs.moduleSerials = list;
+  onSerialCapacityChange(): void {
+    this.recalculateTotalCapacity();
     this.emitChange();
+  }
+
+  recalculateTotalCapacity(): void {
+    if (this.specs.moduleSerials && this.specs.moduleSerials.length > 0) {
+      const totalWp = this.specs.moduleSerials.reduce((sum, s) => sum + (Number(s.capacity) || 0), 0);
+      if (totalWp > 0) {
+        this.specs.moduleTotalCapacity = `${(totalWp / 1000).toFixed(2)} kWp`;
+      }
+    }
   }
 
   emitChange(): void {
