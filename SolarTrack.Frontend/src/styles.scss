@@ -391,3 +391,32 @@ textarea.form-control-sm {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* Global Print Styles */
+@media print {
+  .no-print,
+  app-sidebar,
+  app-topbar,
+  header.topbar,
+  .topbar,
+  .sidebar-backdrop {
+    display: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app-shell,
+  .main-content,
+  .page-body {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    width: 100% !important;
+  }
+}

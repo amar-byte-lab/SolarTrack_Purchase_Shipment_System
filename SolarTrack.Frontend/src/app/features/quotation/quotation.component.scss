@@ -533,7 +533,7 @@
     flex-direction: column;
     align-items: flex-end;
     margin-top: 4px;
-    margin-right: 8px;
+    margin-right: 12px;
 
     .pdf-signatory-company {
       font-size: 8.5pt;
@@ -542,12 +542,16 @@
     }
 
     .pdf-stamp-container {
-      height: 58px;
-      margin: 1px 0;
+      height: 90px;
+      margin: 2px 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
 
       .pdf-stamp-img {
-        height: 58px;
+        height: 90px;
         width: auto;
+        max-width: 130px;
         object-fit: contain;
       }
     }

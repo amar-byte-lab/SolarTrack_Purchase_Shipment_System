@@ -290,6 +290,8 @@ export class QuotationService {
   }
 
   toggleAdjustment(key: string): void {
+    const isActivating = !this.adjustments().find(a => a.key === key)?.active;
+
     const updated = this.adjustments().map(a => {
       if (a.key === key) {
         const nextActive = !a.active;
@@ -303,6 +305,17 @@ export class QuotationService {
         }
         return { ...a, active: nextActive, value: defaultVal };
       }
+
+      // If user activated GST, deactivate CGST & SGST
+      if (isActivating && key === 'gst' && (a.key === 'cgst' || a.key === 'sgst')) {
+        return { ...a, active: false };
+      }
+
+      // If user activated CGST or SGST, deactivate GST
+      if (isActivating && (key === 'cgst' || key === 'sgst') && a.key === 'gst') {
+        return { ...a, active: false };
+      }
+
       return a;
     });
     this.adjustments.set(updated);

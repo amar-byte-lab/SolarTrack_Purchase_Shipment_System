@@ -1,17 +1,17 @@
 <div class="app-shell">
   <!-- Mobile Sidebar Backdrop -->
   <div 
-    class="sidebar-backdrop" 
+    class="sidebar-backdrop no-print" 
     [class.show]="navService.isMobileSidebarOpen()" 
     (click)="navService.closeMobileSidebar()">
   </div>
 
   <!-- Left Sidebar Navigation -->
-  <app-sidebar></app-sidebar>
+  <app-sidebar class="no-print"></app-sidebar>
 
   <!-- Right / Main Content Layout -->
   <div class="main-content">
-    <app-topbar></app-topbar>
+    <app-topbar class="no-print"></app-topbar>
 
     <main class="page-body">
       <router-outlet></router-outlet>

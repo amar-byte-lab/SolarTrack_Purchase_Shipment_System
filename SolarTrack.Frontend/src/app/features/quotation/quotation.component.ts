@@ -54,6 +54,55 @@ export class QuotationComponent implements OnInit {
     return (adj && adj.active) ? (Number(adj.value) || 0) : 2.5;
   });
 
+  gstRate = computed<number>(() => {
+    const adj = this.quotationService.adjustments().find(a => a.key === 'gst');
+    return (adj && adj.active) ? (Number(adj.value) || 0) : 5;
+  });
+
+  isCgstSgstActive = computed<boolean>(() => {
+    const cgst = this.quotationService.adjustments().find(a => a.key === 'cgst');
+    const sgst = this.quotationService.adjustments().find(a => a.key === 'sgst');
+    return Boolean((cgst && cgst.active) || (sgst && sgst.active));
+  });
+
+  isGstActive = computed<boolean>(() => {
+    const gst = this.quotationService.adjustments().find(a => a.key === 'gst');
+    return Boolean(gst && gst.active);
+  });
+
+  taxColspan = computed<number>(() => {
+    if (this.isCgstSgstActive()) return 2;
+    return 1;
+  });
+
+  labelColspan = computed<number>(() => {
+    if (this.isCgstSgstActive() || this.isGstActive()) return 4;
+    return 3;
+  });
+
+  activeAdditions = computed(() => {
+    return this.quotationService.adjustments().filter(a => a.active && a.type === 'addition' && (Number(a.value) || 0) > 0);
+  });
+
+  getCleanAdditionLabel(adj: AdjustmentLine): string {
+    const clean = (adj.label || '').replace(/\s*\([^)]*\)/g, '').trim();
+    if (clean.toLowerCase().includes('charge') || clean.toLowerCase().includes('other')) {
+      return clean.toLowerCase().includes('charge') ? clean : `${clean} Charges`;
+    }
+    return `${clean} Charges`;
+  }
+
+  isAdjustmentButtonVisible(key: string): boolean {
+    const adjustments = this.quotationService.adjustments();
+    const cgstActive = adjustments.find(a => a.key === 'cgst')?.active;
+    const sgstActive = adjustments.find(a => a.key === 'sgst')?.active;
+    const gstActive = adjustments.find(a => a.key === 'gst')?.active;
+
+    if (key === 'gst' && (cgstActive || sgstActive)) return false;
+    if ((key === 'cgst' || key === 'sgst') && gstActive) return false;
+    return true;
+  }
+
   ngOnInit(): void {
     this.navService.setPageTitle('Quotation');
     this.quotationService.loadInitialData().subscribe({
