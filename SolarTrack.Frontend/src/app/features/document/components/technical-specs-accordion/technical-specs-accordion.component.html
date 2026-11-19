@@ -65,6 +65,7 @@
                 [(ngModel)]="specs.connectionType" 
                 (ngModelChange)="emitChange()"
                 [disabled]="readOnly">
+                <option value="">-- SELECT CONNECTION --</option>
                 <option value="1ph LT">1PH LT</option>
                 <option value="3ph LT">3PH LT</option>
                 <option value="3ph HT">3PH HT</option>
@@ -157,6 +158,7 @@
                   [(ngModel)]="specs.inverterName" 
                   (ngModelChange)="emitChange()"
                   [disabled]="readOnly">
+                  <option value="">-- SELECT INVERTER TYPE --</option>
                   <option value="GRID-TIED">GRID-TIED</option>
                   <option value="HYBRID">HYBRID</option>
                   <option value="SOLAR PCU">SOLAR PCU</option>
@@ -171,7 +173,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterCount" 
                   (ngModelChange)="emitChange()"
-                  placeholder="1"
+                  placeholder="e.g. 1"
                   [disabled]="readOnly">
               </div>
             </div>
@@ -198,7 +200,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterCapacity" 
                   (ngModelChange)="emitChange()"
-                  placeholder="3"
+                  placeholder="e.g. 3.3"
                   [disabled]="readOnly">
               </div>
               <div class="col-4">
@@ -208,7 +210,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterInputVoltage" 
                   (ngModelChange)="emitChange()"
-                  placeholder="300"
+                  placeholder="e.g. 300"
                   [disabled]="readOnly">
               </div>
               <div class="col-4">
@@ -218,7 +220,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterOutputVoltage" 
                   (ngModelChange)="emitChange()"
-                  placeholder="220 - 240"
+                  placeholder="e.g. 220 - 240"
                   [disabled]="readOnly">
               </div>
             </div>
@@ -287,6 +289,7 @@
                 class="form-control form-control-sm highlighted-input" 
                 [(ngModel)]="specs.moduleCount" 
                 (change)="onModuleCountChange()"
+                placeholder="e.g. 6"
                 [disabled]="readOnly">
             </div>
           </div>
@@ -310,6 +313,7 @@
                 class="form-control form-control-sm bg-light fw-bold" 
                 [(ngModel)]="specs.moduleTotalCapacity" 
                 (ngModelChange)="emitChange()"
+                placeholder="e.g. 3.27 kWp"
                 readonly>
             </div>
           </div>
@@ -397,7 +401,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.dcdbMake" 
                   (ngModelChange)="emitChange()"
-                  placeholder="HAVELLS"
+                  placeholder="e.g. HAVELLS"
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
@@ -407,7 +411,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.dcdbMcbDetails" 
                   (ngModelChange)="emitChange()"
-                  placeholder="32"
+                  placeholder="e.g. 32"
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
@@ -417,7 +421,7 @@
                   class="form-control form-control-sm font-monospace" 
                   [(ngModel)]="specs.dcdbSpdRating" 
                   (ngModelChange)="emitChange()"
-                  placeholder="600V DC / 20kA"
+                  placeholder="e.g. 600V DC / 20kA"
                   [disabled]="readOnly">
               </div>
               <div class="col-12">
@@ -427,7 +431,7 @@
                   class="form-control form-control-sm font-monospace text-uppercase" 
                   [(ngModel)]="specs.dcdbSerialNo" 
                   (ngModelChange)="emitChange()"
-                  placeholder="Serial No."
+                  placeholder="e.g. DCDB-001"
                   [disabled]="readOnly">
               </div>
             </div>
@@ -444,7 +448,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.acdbMake" 
                   (ngModelChange)="emitChange()"
-                  placeholder="HAVELLS"
+                  placeholder="e.g. HAVELLS"
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
@@ -454,7 +458,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.acdbMcbDetails" 
                   (ngModelChange)="emitChange()"
-                  placeholder="32"
+                  placeholder="e.g. 32"
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
@@ -464,7 +468,7 @@
                   class="form-control form-control-sm font-monospace" 
                   [(ngModel)]="specs.acdbSpdRating" 
                   (ngModelChange)="emitChange()"
-                  placeholder="415V AC / 40kA"
+                  placeholder="e.g. 415V AC / 40kA"
                   [disabled]="readOnly">
               </div>
               <div class="col-12">
@@ -474,7 +478,8 @@
                   class="form-control form-control-sm font-monospace text-uppercase" 
                   [(ngModel)]="specs.acdbSerialNo" 
                   (ngModelChange)="emitChange()"
-                  placeholder="Serial No."
+                  placeholder="e.g. ACDB-001"
+                  [disabled]="readOnly">
                   [disabled]="readOnly">
               </div>
             </div>
@@ -543,7 +548,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.earthResistance" 
                   (ngModelChange)="emitChange()"
-                  placeholder="3.0"
+                  placeholder="e.g. 3.0"
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
@@ -553,7 +558,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.earthWireSize" 
                   (ngModelChange)="emitChange()"
-                  placeholder="16"
+                  placeholder="e.g. 16"
                   [disabled]="readOnly">
               </div>
             </div>
@@ -569,7 +574,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.laSizeType" 
                   (ngModelChange)="emitChange()"
-                  placeholder="COPPER BONDED"
+                  placeholder="e.g. COPPER BONDED"
                   [disabled]="readOnly">
               </div>
               <div class="col-5">
@@ -579,7 +584,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.dcCableSizeType" 
                   (ngModelChange)="emitChange()"
-                  placeholder="4"
+                  placeholder="e.g. 4"
                   [disabled]="readOnly">
               </div>
             </div>
@@ -592,7 +597,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.dcEarthing" 
                   (ngModelChange)="emitChange()"
-                  placeholder="1.7"
+                  placeholder="e.g. 1.7"
                   [disabled]="readOnly">
               </div>
               <div class="col-6">
@@ -603,7 +608,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.acEarthing" 
                   (ngModelChange)="emitChange()"
-                  placeholder="2.3"
+                  placeholder="e.g. 2.3"
                   [disabled]="readOnly">
               </div>
             </div>

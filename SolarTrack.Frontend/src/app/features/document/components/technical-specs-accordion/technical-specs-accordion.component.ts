@@ -44,12 +44,17 @@ export class TechnicalSpecsAccordionComponent implements OnInit {
   }
 
   onModuleCountChange(): void {
-    const count = Math.max(1, Math.min(48, Number(this.specs.moduleCount) || 1));
+    const raw = Number(this.specs.moduleCount);
+    if (!raw || raw < 1) {
+      this.specs.moduleSerials = [];
+      this.specs.moduleTotalCapacity = '';
+      this.emitChange();
+      return;
+    }
+    const count = Math.min(48, raw);
     this.specs.moduleCount = count;
 
     const existingSerials = this.specs.moduleSerials || [];
-    const prefix = this.customer?.ConsumerNo ? this.customer.ConsumerNo.slice(-4) : '7721';
-    const fallbackCap = (existingSerials[0]?.capacity) || Number(this.specs.moduleCapacityEach) || 545;
     const newSerials: ModuleSerialItem[] = [];
 
     for (let i = 1; i <= count; i++) {
@@ -59,8 +64,8 @@ export class TechnicalSpecsAccordionComponent implements OnInit {
       } else {
         newSerials.push({
           index: i,
-          serialNo: `SLM${prefix}${String(i).padStart(3, '0')}`,
-          capacity: fallbackCap
+          serialNo: '',
+          capacity: 0
         });
       }
     }

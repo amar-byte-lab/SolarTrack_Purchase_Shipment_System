@@ -93,7 +93,7 @@ export class DocumentService {
 
     this.selectedCustomer.set(customer);
 
-    // Parse or build specs
+    // Parse saved specs from database if available
     let specs: TechnicalProductSpecs = {};
     if (customer.ProductSpecs) {
       try {
@@ -105,67 +105,58 @@ export class DocumentService {
       }
     }
 
-    const loadKW = parseFloat(customer.ProposedCapacity || '3') || 3;
-    const defaultModuleCount = Math.max(1, Math.round(loadKW * 2));
-
+    // Only populate what is actually saved in the database (ProductSpecs or customer record columns)
+    // No mock/dummy fillers: all unsaved fields remain empty so the user can fill them up
     const completeSpecs: TechnicalProductSpecs = {
-      dateOfInstallation: specs.dateOfInstallation || customer.InstallationDate || new Date().toISOString().slice(0, 10),
+      // 1. Site
+      dateOfInstallation: specs.dateOfInstallation || customer.InstallationDate || '',
       dateOfCommission: specs.dateOfCommission || customer.CommissioningDate || '',
-      connectionType: specs.connectionType || (loadKW > 5 ? '3ph LT' : '1ph LT'),
-      state: specs.state || customer.State || 'Odisha',
+      connectionType: specs.connectionType || '',
+      state: specs.state || customer.State || '',
       district: specs.district || customer.District || '',
       pinCode: specs.pinCode || customer.PinCode || '',
       address: specs.address || customer.Address || '',
 
-      inverterMake: specs.inverterMake || customer.CommittedBrand || 'V-GUARD',
-      inverterName: specs.inverterName || 'GRID-TIED',
-      inverterSerialNo: specs.inverterSerialNo || ('INV' + (customer.ConsumerNo || customer.SlNo || '101')),
-      inverterCapacity: specs.inverterCapacity !== undefined ? specs.inverterCapacity : loadKW,
-      inverterInputVoltage: specs.inverterInputVoltage || 300,
-      inverterOutputVoltage: specs.inverterOutputVoltage || '220 - 240',
-      inverterCount: specs.inverterCount || 1,
+      // 2. Inverter
+      inverterMake: specs.inverterMake || customer.CommittedBrand || '',
+      inverterName: specs.inverterName || '',
+      inverterSerialNo: specs.inverterSerialNo || '',
+      inverterCapacity: specs.inverterCapacity !== undefined && specs.inverterCapacity !== null 
+        ? specs.inverterCapacity 
+        : (customer.ProposedCapacity ? parseFloat(customer.ProposedCapacity) || undefined : undefined),
+      inverterInputVoltage: specs.inverterInputVoltage ?? undefined,
+      inverterOutputVoltage: specs.inverterOutputVoltage || '',
+      inverterCount: specs.inverterCount ?? undefined,
 
-      moduleMake: specs.moduleMake || customer.CommittedBrand || 'LUMINOUS',
-      moduleCount: specs.moduleCount || defaultModuleCount,
-      moduleTypeModel: specs.moduleTypeModel || 'BIFACIAL / TOPCON 545Wp',
-      moduleCapacityEach: specs.moduleCapacityEach || 545,
-      moduleTotalCapacity: specs.moduleTotalCapacity || (loadKW.toFixed(2) + ' kWp'),
-      moduleSerials: specs.moduleSerials && specs.moduleSerials.length > 0 
-        ? specs.moduleSerials 
-        : this.generateDefaultModuleSerials(specs.moduleCount || defaultModuleCount, 545, customer.ConsumerNo || ''),
+      // 3. PV Module
+      moduleMake: specs.moduleMake || customer.CommittedBrand || '',
+      moduleCount: specs.moduleCount ?? undefined,
+      moduleTypeModel: specs.moduleTypeModel || '',
+      moduleCapacityEach: specs.moduleCapacityEach ?? undefined,
+      moduleTotalCapacity: specs.moduleTotalCapacity || '',
+      moduleSerials: specs.moduleSerials && specs.moduleSerials.length > 0 ? specs.moduleSerials : [],
 
-      dcdbMake: specs.dcdbMake || 'HAVELLS',
-      dcdbMcbDetails: specs.dcdbMcbDetails || 32,
-      dcdbSerialNo: specs.dcdbSerialNo || ('DCDB-' + (customer.ConsumerNo || customer.SlNo)),
-      dcdbSpdRating: specs.dcdbSpdRating || '600V DC / 20kA',
-      acdbMake: specs.acdbMake || 'HAVELLS',
-      acdbMcbDetails: specs.acdbMcbDetails || 32,
-      acdbSerialNo: specs.acdbSerialNo || ('ACDB-' + (customer.ConsumerNo || customer.SlNo)),
-      acdbSpdRating: specs.acdbSpdRating || '415V AC / 40kA',
+      // 4. DCDB & ACDB
+      dcdbMake: specs.dcdbMake || '',
+      dcdbMcbDetails: specs.dcdbMcbDetails ?? undefined,
+      dcdbSerialNo: specs.dcdbSerialNo || '',
+      dcdbSpdRating: specs.dcdbSpdRating || '',
+      acdbMake: specs.acdbMake || '',
+      acdbMcbDetails: specs.acdbMcbDetails ?? undefined,
+      acdbSerialNo: specs.acdbSerialNo || '',
+      acdbSpdRating: specs.acdbSpdRating || '',
 
-      dcCableMake: specs.dcCableMake || 'KEI',
-      earthResistance: specs.earthResistance || 3,
-      dcEarthing: specs.dcEarthing || 1.7,
-      acEarthing: specs.acEarthing || 2.3,
-      earthWireSize: specs.earthWireSize || 16,
-      laSizeType: specs.laSizeType || 'COPPER BONDED',
-      dcCableSizeType: specs.dcCableSizeType || 4
+      // 5. Cables & Earthing
+      dcCableMake: specs.dcCableMake || '',
+      earthResistance: specs.earthResistance ?? undefined,
+      dcEarthing: specs.dcEarthing ?? undefined,
+      acEarthing: specs.acEarthing ?? undefined,
+      earthWireSize: specs.earthWireSize ?? undefined,
+      laSizeType: specs.laSizeType || '',
+      dcCableSizeType: specs.dcCableSizeType ?? undefined
     };
 
     this.currentSpecs.set(completeSpecs);
-  }
-
-  generateDefaultModuleSerials(count: number, capEach: number, prefix: string): ModuleSerialItem[] {
-    const serials: ModuleSerialItem[] = [];
-    const base = prefix ? prefix.slice(-4) : '7721';
-    for (let i = 1; i <= count; i++) {
-      serials.push({
-        index: i,
-        serialNo: `SLM${base}${String(i).padStart(3, '0')}`,
-        capacity: capEach
-      });
-    }
-    return serials;
   }
 
   saveCustomerSpecs(specs: TechnicalProductSpecs): void {
