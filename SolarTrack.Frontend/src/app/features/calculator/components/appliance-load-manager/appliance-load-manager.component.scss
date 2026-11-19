@@ -69,3 +69,14 @@
   .simple-edit-link { grid-column: 2 / 4; justify-self: start; padding: 0; }
   .simple-calc-modal .modal-dialog { margin: 8px; }
 }
+.sizing-basis-options { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; box-shadow: none !important; }
+.sizing-basis-option { min-height: 62px; display: flex !important; align-items: center; justify-content: flex-start; gap: 9px; padding: 9px 12px !important; border: 1px solid #cbd5e1 !important; border-radius: 10px !important; background: #fff; color: #334155 !important; text-align: left; white-space: normal; }
+.sizing-basis-option strong, .sizing-basis-option small { display: block; }
+.sizing-basis-option strong { font-size: .83rem; line-height: 1.2; }
+.sizing-basis-option small { margin-top: 3px; color: #64748b; font-size: .69rem; font-weight: 400; }
+.sizing-basis-option.selected { border: 2px solid #2563eb !important; background: #eff6ff !important; color: #1d4ed8 !important; box-shadow: 0 0 0 2px rgba(37,99,235,.1); }
+.sizing-basis-option.selected small { color: #1e40af; }
+.basis-radio-mark { width: 22px; height: 22px; flex: 0 0 22px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid #94a3b8; border-radius: 50%; color: #fff; font-size: .75rem; font-weight: 800; }
+.sizing-basis-option.selected .basis-radio-mark { border-color: #2563eb; background: #2563eb; }
+#grpEnergyBasisRadios .btn-check:checked + .sizing-basis-option { border: 2px solid #2563eb !important; background: #eff6ff !important; color: #1d4ed8 !important; }
+@media (max-width: 420px) { .sizing-basis-option { padding: 8px !important; gap: 6px; } .sizing-basis-option strong { font-size: .75rem; } }

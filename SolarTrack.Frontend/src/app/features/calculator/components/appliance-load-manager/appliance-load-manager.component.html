@@ -25,7 +25,7 @@
       </div>
 
       <!-- 3-Way Radio Group for Energy Sizing Basis -->
-      <div class="btn-group w-100 shadow-2xs" role="group" id="grpEnergyBasisRadios">
+      <div class="btn-group w-100 shadow-2xs sizing-basis-options" role="group" id="grpEnergyBasisRadios" aria-label="Choose how to size your solar system">
         
         <!-- 1. Monthly Units (Visible on On-Grid & Hybrid) -->
         @if (calc.systemType() === 'on-grid' || calc.systemType() === 'hybrid') {
@@ -37,8 +37,9 @@
             value="monthly_units" 
             [checked]="calc.energyCalculationBasis() === 'monthly_units'"
             (change)="calc.setEnergyBasis('monthly_units')">
-          <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisMonthlyUnits" id="lblRadBasisMonthlyUnits">
-            Monthly Units
+          <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold sizing-basis-option" [class.selected]="calc.energyCalculationBasis() === 'monthly_units'" for="radBasisMonthlyUnits" id="lblRadBasisMonthlyUnits">
+            <span class="basis-radio-mark" aria-hidden="true">{{ calc.energyCalculationBasis() === 'monthly_units' ? '✓' : '' }}</span>
+            <span><strong>Monthly Units</strong><small>Use electricity bill units</small></span>
           </label>
         }
 
@@ -51,8 +52,9 @@
           value="appliance_load" 
           [checked]="calc.energyCalculationBasis() === 'appliance_load' || isBackupOnlyBasis()"
           (change)="calc.setEnergyBasis('appliance_load')">
-        <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisApplianceLoad" id="lblRadBasisApplianceLoad">
-          Appliances Load
+        <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold sizing-basis-option" [class.selected]="calc.energyCalculationBasis() === 'appliance_load' || isBackupOnlyBasis()" for="radBasisApplianceLoad" id="lblRadBasisApplianceLoad">
+          <span class="basis-radio-mark" aria-hidden="true">{{ calc.energyCalculationBasis() === 'appliance_load' || isBackupOnlyBasis() ? '✓' : '' }}</span>
+          <span><strong>Appliances Load</strong><small>Choose appliances at home</small></span>
         </label>
 
         <!-- 3. Backup Duration -->
