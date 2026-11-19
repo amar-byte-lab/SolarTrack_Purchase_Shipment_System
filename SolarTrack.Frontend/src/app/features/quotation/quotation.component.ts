@@ -84,6 +84,13 @@ export class QuotationComponent implements OnInit {
     return this.quotationService.adjustments().filter(a => a.active && a.type === 'addition' && (Number(a.value) || 0) > 0);
   });
 
+  totalBodyRowsCount = computed<number>(() => {
+    const itemsCount = this.quotationService.quotationItems().length;
+    const discountCount = this.quotationService.discountAmount() > 0 ? 1 : 0;
+    const additionsCount = this.activeAdditions().length;
+    return itemsCount + discountCount + additionsCount;
+  });
+
   getCleanAdditionLabel(adj: AdjustmentLine): string {
     const clean = (adj.label || '').replace(/\s*\([^)]*\)/g, '').trim();
     if (clean.toLowerCase().includes('charge') || clean.toLowerCase().includes('other')) {

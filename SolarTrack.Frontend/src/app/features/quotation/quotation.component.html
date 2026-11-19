@@ -633,14 +633,14 @@
 
               @if (first) {
                 @if (isCgstSgstActive()) {
-                  <td [attr.rowspan]="quotationService.quotationItems().length" class="text-end align-middle fw-medium">
+                  <td [attr.rowspan]="totalBodyRowsCount()" class="text-end align-middle fw-medium">
                     ₹{{ quotationService.cgstAmount() | number:'1.2-2' }}
                   </td>
-                  <td [attr.rowspan]="quotationService.quotationItems().length" class="text-end align-middle fw-medium">
+                  <td [attr.rowspan]="totalBodyRowsCount()" class="text-end align-middle fw-medium">
                     ₹{{ quotationService.sgstAmount() | number:'1.2-2' }}
                   </td>
                 } @else if (isGstActive()) {
-                  <td [attr.rowspan]="quotationService.quotationItems().length" class="text-end align-middle fw-medium">
+                  <td [attr.rowspan]="totalBodyRowsCount()" class="text-end align-middle fw-medium">
                     ₹{{ quotationService.gstAmount() | number:'1.2-2' }}
                   </td>
                 }
@@ -648,19 +648,23 @@
             </tr>
           }
 
-          <!-- Active Discount (if active and > 0) -->
+          <!-- Active Discount Row (Inside Description of Goods) -->
           @if (quotationService.discountAmount() > 0) {
-            <tr class="pdf-total-row">
-              <td [attr.colspan]="labelColspan()" class="text-end fw-bold">Less: Discount</td>
-              <td [attr.colspan]="taxColspan()" class="text-end fw-bold">-₹{{ quotationService.discountAmount() | number:'1.2-2' }}</td>
+            <tr>
+              <td class="text-center align-middle">-</td>
+              <td class="text-start align-middle fw-semibold">Less: Discount</td>
+              <td class="text-center align-middle">-</td>
+              <td class="text-end align-middle fw-semibold">-₹{{ quotationService.discountAmount() | number:'1.2-2' }}</td>
             </tr>
           }
 
-          <!-- Active Additions: Transport, Labour, Other -->
-          @for (adj of activeAdditions(); track adj.key) {
-            <tr class="pdf-total-row">
-              <td [attr.colspan]="labelColspan()" class="text-end fw-bold">{{ getCleanAdditionLabel(adj) }}</td>
-              <td [attr.colspan]="taxColspan()" class="text-end fw-bold">+₹{{ adj.value | number:'1.2-2' }}</td>
+          <!-- Active Additions Rows: Transport, Labour, Other (Inside Description of Goods) -->
+          @for (adj of activeAdditions(); track adj.key; let aIdx = $index) {
+            <tr>
+              <td class="text-center align-middle">{{ quotationService.quotationItems().length + (quotationService.discountAmount() > 0 ? 1 : 0) + aIdx + 1 }}</td>
+              <td class="text-start align-middle fw-semibold">{{ getCleanAdditionLabel(adj) }}</td>
+              <td class="text-center align-middle">-</td>
+              <td class="text-end align-middle fw-semibold">+₹{{ adj.value | number:'1.2-2' }}</td>
             </tr>
           }
 
