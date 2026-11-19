@@ -105,28 +105,27 @@ export class DocumentService {
       }
     }
 
-    // Only populate what is actually saved in the database (ProductSpecs or customer record columns)
-    // No mock/dummy fillers: all unsaved fields remain empty so the user can fill them up
+    // Database values with user-requested defaults for specific fields
     const completeSpecs: TechnicalProductSpecs = {
       // 1. Site
       dateOfInstallation: specs.dateOfInstallation || customer.InstallationDate || '',
       dateOfCommission: specs.dateOfCommission || customer.CommissioningDate || '',
-      connectionType: specs.connectionType || '',
+      connectionType: specs.connectionType || '1ph LT',
       state: specs.state || customer.State || '',
       district: specs.district || customer.District || '',
       pinCode: specs.pinCode || customer.PinCode || '',
       address: specs.address || customer.Address || '',
 
-      // 2. Inverter
+      // 2. Inverter (Defaults: GRID-TIED, count 1, capacity 3, i/p voltage 300, o/p voltage 220-240)
       inverterMake: specs.inverterMake || customer.CommittedBrand || '',
-      inverterName: specs.inverterName || '',
+      inverterName: specs.inverterName || 'GRID-TIED',
       inverterSerialNo: specs.inverterSerialNo || '',
       inverterCapacity: specs.inverterCapacity !== undefined && specs.inverterCapacity !== null 
         ? specs.inverterCapacity 
-        : (customer.ProposedCapacity ? parseFloat(customer.ProposedCapacity) || undefined : undefined),
-      inverterInputVoltage: specs.inverterInputVoltage ?? undefined,
-      inverterOutputVoltage: specs.inverterOutputVoltage || '',
-      inverterCount: specs.inverterCount ?? undefined,
+        : (customer.ProposedCapacity ? parseFloat(customer.ProposedCapacity) || 3 : 3),
+      inverterInputVoltage: specs.inverterInputVoltage ?? 300,
+      inverterOutputVoltage: specs.inverterOutputVoltage || '220-240',
+      inverterCount: specs.inverterCount ?? 1,
 
       // 3. PV Module
       moduleMake: specs.moduleMake || customer.CommittedBrand || '',
@@ -136,24 +135,22 @@ export class DocumentService {
       moduleTotalCapacity: specs.moduleTotalCapacity || '',
       moduleSerials: specs.moduleSerials && specs.moduleSerials.length > 0 ? specs.moduleSerials : [],
 
-      // 4. DCDB & ACDB
+      // 4. DCDB & ACDB (Defaults: MCB 32)
       dcdbMake: specs.dcdbMake || '',
-      dcdbMcbDetails: specs.dcdbMcbDetails ?? undefined,
+      dcdbMcbDetails: specs.dcdbMcbDetails ?? 32,
       dcdbSerialNo: specs.dcdbSerialNo || '',
-      dcdbSpdRating: specs.dcdbSpdRating || '',
       acdbMake: specs.acdbMake || '',
-      acdbMcbDetails: specs.acdbMcbDetails ?? undefined,
+      acdbMcbDetails: specs.acdbMcbDetails ?? 32,
       acdbSerialNo: specs.acdbSerialNo || '',
-      acdbSpdRating: specs.acdbSpdRating || '',
 
-      // 5. Cables & Earthing
+      // 5. Cables & Earthing (Defaults: Earth res 3, Wire size 16, DC earth 1.7, AC earth 2.3, LA COPPER BOUNDED, DC cable size 4)
       dcCableMake: specs.dcCableMake || '',
-      earthResistance: specs.earthResistance ?? undefined,
-      dcEarthing: specs.dcEarthing ?? undefined,
-      acEarthing: specs.acEarthing ?? undefined,
-      earthWireSize: specs.earthWireSize ?? undefined,
-      laSizeType: specs.laSizeType || '',
-      dcCableSizeType: specs.dcCableSizeType ?? undefined
+      earthResistance: specs.earthResistance ?? 3,
+      dcEarthing: specs.dcEarthing ?? 1.7,
+      acEarthing: specs.acEarthing ?? 2.3,
+      earthWireSize: specs.earthWireSize ?? 16,
+      laSizeType: specs.laSizeType || 'COPPER BOUNDED',
+      dcCableSizeType: specs.dcCableSizeType ?? 4
     };
 
     this.currentSpecs.set(completeSpecs);

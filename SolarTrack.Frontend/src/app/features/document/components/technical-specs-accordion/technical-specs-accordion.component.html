@@ -29,8 +29,7 @@
                 type="date" 
                 class="form-control form-control-sm highlighted-input" 
                 [(ngModel)]="specs.dateOfInstallation" 
-                (ngModelChange)="emitChange()"
-                [disabled]="readOnly">
+                (ngModelChange)="emitChange()">
             </div>
             <div class="row g-2">
               <div class="col-6">
@@ -40,8 +39,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.state" 
                   (ngModelChange)="emitChange()"
-                  placeholder="ODISHA"
-                  [disabled]="readOnly">
+                  placeholder="ODISHA">
               </div>
               <div class="col-6">
                 <label class="specs-label">DISTRICT</label>
@@ -50,8 +48,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.district" 
                   (ngModelChange)="emitChange()"
-                  placeholder="CUTTACK"
-                  [disabled]="readOnly">
+                  placeholder="CUTTACK">
               </div>
             </div>
           </div>
@@ -63,9 +60,7 @@
               <select 
                 class="form-select form-select-sm" 
                 [(ngModel)]="specs.connectionType" 
-                (ngModelChange)="emitChange()"
-                [disabled]="readOnly">
-                <option value="">-- SELECT CONNECTION --</option>
+                (ngModelChange)="emitChange()">
                 <option value="1ph LT">1PH LT</option>
                 <option value="3ph LT">3PH LT</option>
                 <option value="3ph HT">3PH HT</option>
@@ -79,8 +74,7 @@
                 [(ngModel)]="specs.pinCode" 
                 (ngModelChange)="emitChange()"
                 placeholder="E.G. 756001"
-                maxlength="6"
-                [disabled]="readOnly">
+                maxlength="6">
             </div>
           </div>
 
@@ -92,8 +86,7 @@
               [(ngModel)]="specs.address" 
               (ngModelChange)="emitChange()"
               placeholder="VILLAGE / LOCALITY / SITE ADDRESS..."
-              autocomplete="off"
-              [disabled]="readOnly"></textarea>
+              autocomplete="off"></textarea>
           </div>
 
         </div>
@@ -147,8 +140,7 @@
                 class="form-control form-control-sm text-uppercase highlighted-input" 
                 [(ngModel)]="specs.inverterMake" 
                 (ngModelChange)="emitChange()"
-                placeholder="e.g. V-GUARD"
-                [disabled]="readOnly">
+                placeholder="e.g. V-GUARD">
             </div>
             <div class="row g-2">
               <div class="col-7">
@@ -156,9 +148,7 @@
                 <select 
                   class="form-select form-select-sm" 
                   [(ngModel)]="specs.inverterName" 
-                  (ngModelChange)="emitChange()"
-                  [disabled]="readOnly">
-                  <option value="">-- SELECT INVERTER TYPE --</option>
+                  (ngModelChange)="emitChange()">
                   <option value="GRID-TIED">GRID-TIED</option>
                   <option value="HYBRID">HYBRID</option>
                   <option value="SOLAR PCU">SOLAR PCU</option>
@@ -173,8 +163,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterCount" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 1"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 1">
               </div>
             </div>
           </div>
@@ -188,8 +177,7 @@
                 class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
                 [(ngModel)]="specs.inverterSerialNo" 
                 (ngModelChange)="emitChange()"
-                placeholder="e.g. INV202409821"
-                [disabled]="readOnly">
+                placeholder="e.g. INV202409821">
             </div>
             <div class="row g-2">
               <div class="col-4">
@@ -200,8 +188,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterCapacity" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 3.3"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 3">
               </div>
               <div class="col-4">
                 <label class="specs-label">I/P VOLTAGE (V DC)</label>
@@ -210,8 +197,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterInputVoltage" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 300"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 300">
               </div>
               <div class="col-4">
                 <label class="specs-label">O/P VOLTAGE (V AC)</label>
@@ -220,8 +206,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.inverterOutputVoltage" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 220 - 240"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 220-240">
               </div>
             </div>
           </div>
@@ -277,8 +262,7 @@
                 class="form-control form-control-sm text-uppercase highlighted-input" 
                 [(ngModel)]="specs.moduleMake" 
                 (ngModelChange)="emitChange()"
-                placeholder="e.g. LUMINOUS"
-                [disabled]="readOnly">
+                placeholder="e.g. LUMINOUS">
             </div>
             <div>
               <label class="specs-label highlighted-label">NO. OF MODULES</label>
@@ -289,8 +273,7 @@
                 class="form-control form-control-sm highlighted-input" 
                 [(ngModel)]="specs.moduleCount" 
                 (change)="onModuleCountChange()"
-                placeholder="e.g. 6"
-                [disabled]="readOnly">
+                placeholder="e.g. 6">
             </div>
           </div>
 
@@ -303,8 +286,7 @@
                 class="form-control form-control-sm text-uppercase highlighted-input" 
                 [(ngModel)]="specs.moduleTypeModel" 
                 (ngModelChange)="emitChange()"
-                placeholder="e.g. BIFACIAL / TOPCON 545Wp"
-                [disabled]="readOnly">
+                placeholder="e.g. BIFACIAL / TOPCON 545Wp">
             </div>
             <div>
               <label class="specs-label">TOTAL CAPACITY (KWP)</label>
@@ -332,16 +314,14 @@
                     class="form-control font-monospace text-uppercase fs-9 py-0.5 px-2" 
                     [(ngModel)]="s.serialNo"
                     (ngModelChange)="emitChange()"
-                    placeholder="Serial No"
-                    [disabled]="readOnly">
+                    placeholder="Serial No">
                   <input 
                     type="number" 
                     class="form-control fs-9 py-0.5 px-2 text-end" 
                     style="max-width: 85px;"
                     [(ngModel)]="s.capacity"
                     (ngModelChange)="onSerialCapacityChange()"
-                    placeholder="545"
-                    [disabled]="readOnly">
+                    placeholder="545">
                   <span class="input-group-text py-0 px-1.5 fs-9 text-muted">Wp</span>
                 </div>
               </div>
@@ -401,8 +381,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.dcdbMake" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. HAVELLS"
-                  [disabled]="readOnly">
+                  placeholder="e.g. HAVELLS">
               </div>
               <div class="col-6">
                 <label class="specs-label">MCB / ISOLATOR (A)</label>
@@ -411,28 +390,16 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.dcdbMcbDetails" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 32"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 32">
               </div>
               <div class="col-6">
-                <label class="specs-label">SPD RATING</label>
-                <input 
-                  type="text" 
-                  class="form-control form-control-sm font-monospace" 
-                  [(ngModel)]="specs.dcdbSpdRating" 
-                  (ngModelChange)="emitChange()"
-                  placeholder="e.g. 600V DC / 20kA"
-                  [disabled]="readOnly">
-              </div>
-              <div class="col-12">
                 <label class="specs-label">DCDB SERIAL NO.</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm font-monospace text-uppercase" 
                   [(ngModel)]="specs.dcdbSerialNo" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. DCDB-001"
-                  [disabled]="readOnly">
+                  placeholder="e.g. DCDB-001">
               </div>
             </div>
           </div>
@@ -448,8 +415,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.acdbMake" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. HAVELLS"
-                  [disabled]="readOnly">
+                  placeholder="e.g. HAVELLS">
               </div>
               <div class="col-6">
                 <label class="specs-label">MCB / MCCB (A)</label>
@@ -458,29 +424,16 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.acdbMcbDetails" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 32"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 32">
               </div>
               <div class="col-6">
-                <label class="specs-label">SPD RATING</label>
-                <input 
-                  type="text" 
-                  class="form-control form-control-sm font-monospace" 
-                  [(ngModel)]="specs.acdbSpdRating" 
-                  (ngModelChange)="emitChange()"
-                  placeholder="e.g. 415V AC / 40kA"
-                  [disabled]="readOnly">
-              </div>
-              <div class="col-12">
                 <label class="specs-label">ACDB SERIAL NO.</label>
                 <input 
                   type="text" 
                   class="form-control form-control-sm font-monospace text-uppercase" 
                   [(ngModel)]="specs.acdbSerialNo" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. ACDB-001"
-                  [disabled]="readOnly">
-                  [disabled]="readOnly">
+                  placeholder="e.g. ACDB-001">
               </div>
             </div>
           </div>
@@ -536,8 +489,7 @@
                 class="form-control form-control-sm text-uppercase" 
                 [(ngModel)]="specs.dcCableMake" 
                 (ngModelChange)="emitChange()"
-                placeholder="e.g. KEI"
-                [disabled]="readOnly">
+                placeholder="e.g. KEI">
             </div>
             <div class="row g-2">
               <div class="col-6">
@@ -548,8 +500,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.earthResistance" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 3.0"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 3">
               </div>
               <div class="col-6">
                 <label class="specs-label">EARTH WIRE SIZE (SQ MM)</label>
@@ -558,8 +509,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.earthWireSize" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 16"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 16">
               </div>
             </div>
           </div>
@@ -574,8 +524,7 @@
                   class="form-control form-control-sm text-uppercase" 
                   [(ngModel)]="specs.laSizeType" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. COPPER BONDED"
-                  [disabled]="readOnly">
+                  placeholder="e.g. COPPER BOUNDED">
               </div>
               <div class="col-5">
                 <label class="specs-label">DC CABLE SIZE (SQ MM)</label>
@@ -584,8 +533,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.dcCableSizeType" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 4"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 4">
               </div>
             </div>
             <div class="row g-2">
@@ -597,8 +545,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.dcEarthing" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 1.7"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 1.7">
               </div>
               <div class="col-6">
                 <label class="specs-label">AC EARTHING (Ω)</label>
@@ -608,8 +555,7 @@
                   class="form-control form-control-sm" 
                   [(ngModel)]="specs.acEarthing" 
                   (ngModelChange)="emitChange()"
-                  placeholder="e.g. 2.3"
-                  [disabled]="readOnly">
+                  placeholder="e.g. 2.3">
               </div>
             </div>
           </div>
