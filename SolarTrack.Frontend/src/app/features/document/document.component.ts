@@ -655,6 +655,10 @@ export class DocumentComponent implements OnInit {
     this.docService.currentSpecs.set({ ...updatedSpecs });
   }
 
+  onAgreementFieldChange(): void {
+    this.docService.currentSpecs.set({ ...this.currentSpecs() });
+  }
+
   onSaveSpecs(updatedSpecs: TechnicalProductSpecs): void {
     this.docService.saveCustomerSpecs(updatedSpecs);
     this.isSpecsModalOpen.set(false);

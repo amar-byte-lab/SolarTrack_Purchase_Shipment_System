@@ -150,8 +150,71 @@
 
       </div>
 
-      <!-- NEW REUSABLE ACCORDION COMPONENT FOR SPECIFICATIONS (Site, Inverter, PV Module, DCDB & ACDB, Cables & Earthing) -->
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <!-- VIEW 1: AGREEMENT VIEW (Row 1: District, Pin | Row 2: Address)       -->
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <div *ngIf="activeDocType() === 'agreement'" class="agreement-section-card p-3 border rounded bg-white">
+        <div class="row g-3">
+          
+          <!-- Row 1: District & Pin -->
+          <div class="col-md-6">
+            <label class="specs-label">DISTRICT</label>
+            <input 
+              type="text" 
+              class="form-control form-control-sm text-uppercase" 
+              [(ngModel)]="currentSpecs().district" 
+              (ngModelChange)="onAgreementFieldChange()"
+              placeholder="e.g. CUTTACK">
+          </div>
+
+          <div class="col-md-6">
+            <label class="specs-label highlighted-label">PIN CODE</label>
+            <input 
+              type="text" 
+              class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
+              [(ngModel)]="currentSpecs().pinCode" 
+              (ngModelChange)="onAgreementFieldChange()"
+              placeholder="e.g. 756001"
+              maxlength="6">
+          </div>
+
+          <!-- Row 2: Address -->
+          <div class="col-12">
+            <label class="specs-label highlighted-label">ADDRESS</label>
+            <textarea 
+              class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
+              rows="3"
+              [(ngModel)]="currentSpecs().address" 
+              (ngModelChange)="onAgreementFieldChange()"
+              placeholder="VILLAGE / LOCALITY / SITE ADDRESS..."></textarea>
+          </div>
+
+        </div>
+
+        <!-- Section Action Buttons: Reset and Save -->
+        <div class="d-flex justify-content-end align-items-center gap-2 mt-3 pt-2 border-top">
+          <button 
+            type="button" 
+            class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+            (click)="resetCurrentDocument()">
+            <app-icon name="refresh" [size]="12"></app-icon>
+            <span>Reset</span>
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-sm btn-primary d-flex align-items-center gap-1 fw-semibold"
+            (click)="onSaveSpecs(currentSpecs())">
+            <app-icon name="check" [size]="13"></app-icon>
+            <span>Save</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <!-- VIEW 2: TECHNICAL ACCORDIONS (For Form 1, Form 3, Form 4, Form 6)    -->
+      <!-- ════════════════════════════════════════════════════════════════════ -->
       <app-technical-specs-accordion
+        *ngIf="activeDocType() !== 'agreement'"
         [specs]="currentSpecs()"
         [customer]="selectedCustomer()"
         [showActions]="false"
