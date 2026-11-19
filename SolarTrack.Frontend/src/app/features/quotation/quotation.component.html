@@ -467,14 +467,6 @@
             <button type="button" class="btn btn-outline-secondary px-3 py-1.5 fw-semibold fs-7" (click)="goBack()">Back</button>
             <button 
               type="button" 
-              class="btn btn-outline-primary px-3 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
-              [disabled]="!isFormValid()"
-              (click)="togglePdfPreview()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>{{ isPreviewVisible() ? 'Hide Preview' : 'Preview PDF' }}</span>
-            </button>
-            <button 
-              type="button" 
               class="btn btn-danger px-4 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
               [disabled]="!isFormValid()"
               [title]="!isFormValid() ? 'Please fill mandatory Customer Name and Address' : 'Generate Quotation (PDF)'"
@@ -483,41 +475,6 @@
               <span>Generate (PDF)</span>
             </button>
           </div>
-
-          <!-- On-screen Preview Modal Popup (Visible when Preview PDF is clicked) -->
-          @if (isPreviewVisible()) {
-            <div 
-              class="modal fade show d-block no-print" 
-              tabindex="-1" 
-              style="background-color: rgba(15, 23, 42, 0.65); z-index: 1055; backdrop-filter: blur(2px);"
-              (click)="togglePdfPreview()">
-              <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" (click)="$event.stopPropagation()">
-                <div class="modal-content shadow-lg border-0 rounded-3 overflow-hidden">
-                  <div class="modal-header py-2.5 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-danger"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                      <h6 class="modal-title fw-bold text-dark mb-0 fs-7">Quotation Preview (A4 Format)</h6>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                      <button 
-                        type="button" 
-                        class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1.5 px-3 py-1 fw-semibold fs-8 shadow-sm"
-                        (click)="printQuotation()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                        <span>Print / Save PDF</span>
-                      </button>
-                      <button type="button" class="btn-close" (click)="togglePdfPreview()" aria-label="Close"></button>
-                    </div>
-                  </div>
-                  <div class="modal-body p-3 p-md-4 bg-secondary-subtle">
-                    <div class="preview-paper-wrapper">
-                      <ng-container *ngTemplateOutlet="quotationDocumentTemplate"></ng-container>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          }
         </div>
       }
     </div>
@@ -673,18 +630,6 @@
             <td [attr.colspan]="labelColspan()" class="text-end fw-bold">Grand Total</td>
             <td [attr.colspan]="taxColspan()" class="text-end fw-bold">₹{{ quotationService.grandTotal() | number:'1.2-2' }}</td>
           </tr>
-
-          <!-- Less Govt Subsidy Row -->
-          @if (quotationService.selectedSubsidy(); as sub) {
-            <tr class="pdf-total-row">
-              <td [attr.colspan]="labelColspan()" class="text-end fw-bold">Less: Total Govt. Subsidy ({{ sub.kw }} KW)</td>
-              <td [attr.colspan]="taxColspan()" class="text-end fw-bold">-₹{{ quotationService.subsidyTotal() | number:'1.2-2' }}</td>
-            </tr>
-            <tr class="pdf-total-row">
-              <td [attr.colspan]="labelColspan()" class="text-end fw-bold">Net Customer Payable</td>
-              <td [attr.colspan]="taxColspan()" class="text-end fw-bold">₹{{ quotationService.netPayable() | number:'1.2-2' }}</td>
-            </tr>
-          }
         </tbody>
       </table>
 
