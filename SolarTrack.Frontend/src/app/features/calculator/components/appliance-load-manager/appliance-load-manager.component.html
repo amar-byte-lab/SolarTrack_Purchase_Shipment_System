@@ -627,11 +627,10 @@
   </div>
 }
 
-<!-- ================= MODAL 1.C: STANDARD LOAD (PER UNIT) MASTER MODAL ================= -->
-<!-- Exactly matches the user's uploaded screenshot! -->
+<!-- Standard appliance load picker -->
 @if (showStandardMasterModal()) {
   <div class="modal fade show d-block" id="standardLoadModal" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1055;">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable simple-load-modal">
       <div class="modal-content shadow-lg border-0 rounded-3">
         
         <!-- Modal Header -->
@@ -639,80 +638,25 @@
           <div class="d-flex align-items-center gap-2">
             <span class="fs-5">🧮</span>
             <div>
-              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Standard Load (Per Unit)</h5>
-              <div class="text-muted fs-8">Standard rated power per unit for appliances</div>
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Typical appliance power</h5>
+              <div class="text-muted fs-8">Choose an appliance to adjust its usual power use.</div>
             </div>
           </div>
           <button type="button" class="btn-close" (click)="closeStandardMasterModal()" aria-label="Close"></button>
         </div>
 
-        <!-- Modal Body: Table of Standard Loads -->
-        <div class="modal-body p-2.5 p-md-3">
-          <div class="table-responsive border rounded-3 mb-0" style="max-height: 480px; overflow-y: auto;">
-            <table class="table table-hover align-middle mb-0 standard-load-table">
-              <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
-                <tr>
-                  <th style="min-width: 140px;" class="p-2">APPLIANCE</th>
-                  <th style="min-width: 180px;" class="p-2">STANDARD SPECIFICATION / PRESET</th>
-                  <th style="width: 130px;" class="text-center p-2">PER UNIT WATT</th>
-                  <th style="width: 100px;" class="text-center p-2">ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (app of localAppliances(); track app.id; let idx = $index) {
-                  <tr>
-                    <!-- Appliance Name & Heavy Load Badge -->
-                    <td class="p-2">
-                      <div class="d-flex align-items-center gap-1.5">
-                        <span class="fs-6 flex-shrink-0">{{ app.icon || '⚡' }}</span>
-                        <div>
-                          <strong class="text-dark fs-8 d-block">{{ app.name }}</strong>
-                          @if (app.id === 'ac' || app.id === 'pump' || app.isHeavy) {
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-9 px-1.5 py-0.5 rounded-pill">
-                              Heavy Load
-                            </span>
-                          }
-                        </div>
-                      </div>
-                    </td>
-
-                    <!-- Standard Specification / Preset Badge -->
-                    <td class="p-2">
-                      <span class="badge bg-light text-dark border fs-8 text-wrap text-start fw-normal px-2.5 py-1 rounded-2 shadow-2xs">
-                        {{ getAppPresetSummary(app) }}
-                      </span>
-                    </td>
-
-                    <!-- Per Unit Watt Input Box -->
-                    <td class="text-center p-2">
-                      <div class="d-flex align-items-center justify-content-center gap-1.5">
-                        <input 
-                          type="number" 
-                          min="1" 
-                          class="form-control form-control-sm text-center fw-bold fs-8 shadow-2xs" 
-                          style="width: 76px; height: 32px;"
-                          [ngModel]="app.watts"
-                          (ngModelChange)="updateStdWatt(app, $event)">
-                        <span class="text-muted fw-semibold fs-8">W</span>
-                      </div>
-                    </td>
-
-                    <!-- Action: Specs Button -->
-                    <td class="text-center p-2">
-                      <button 
-                        type="button" 
-                        class="btn btn-sm btn-outline-secondary py-1 px-2.5 fs-8 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs rounded-2"
-                        (click)="openSpecsForApp(app)" 
-                        title="Configure technical specs for {{ app.name }}">
-                        <span class="fs-9">⚙️</span>
-                        <span>Specs</span>
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+        <div class="modal-body p-3">
+          <div class="simple-load-list">
+            @for (app of localAppliances(); track app.id) {
+              <div class="simple-load-row">
+                <span class="simple-load-icon">{{ app.icon || '⚡' }}</span>
+                <div class="simple-load-name"><strong>{{ app.name }}</strong><small>{{ getAppPresetSummary(app) }}</small></div>
+                <label class="simple-watt-input"><input type="number" min="1" [attr.aria-label]="app.name + ' watts per appliance'" [ngModel]="app.watts" (ngModelChange)="updateStdWatt(app, $event)"><span>W</span></label>
+                <button type="button" class="simple-edit-link" (click)="openSpecsForApp(app)" [attr.aria-label]="'Adjust ' + app.name + ' estimate'">Adjust</button>
+              </div>
+            }
           </div>
+          <p class="text-muted fs-9 mt-2 mb-0">These are typical estimates. Use the value printed on your appliance label for a closer estimate.</p>
         </div>
 
         <!-- Modal Footer -->
@@ -721,7 +665,7 @@
             type="button" 
             class="btn btn-sm btn-outline-secondary fs-8 fw-semibold py-1.5 px-3 rounded-2" 
             (click)="resetStandardDefaults()">
-            ↺ Reset Standard Defaults
+            ↺ Use typical values
           </button>
           <button 
             type="button" 
@@ -740,7 +684,7 @@
 <!-- Opened when clicking ⚙️ Specs button inside the Standard Load Master Modal! -->
 @if (showSpecsChildModal()) {
   <div class="modal fade show d-block" id="applianceLoadCalcModal" tabindex="-1" style="background: rgba(0,0,0,0.6); z-index: 1060;">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 580px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable simple-calc-modal" style="max-width: 460px;">
       <div class="modal-content shadow-lg border-0 rounded-3">
         
         <!-- Header -->
@@ -749,10 +693,10 @@
             <span class="fs-5 flex-shrink-0">{{ currentSpecsApp()?.icon || '🧮' }}</span>
             <div class="min-w-0">
               <h5 class="modal-title fw-bold text-dark fs-6 mb-0 text-truncate">
-                {{ currentSpecsApp()?.name }} — Standard Load Calculator
+                Estimate {{ currentSpecsApp()?.name }} power
               </h5>
               <div class="text-muted fs-8 text-truncate">
-                Configure engineering parameters for {{ currentSpecsApp()?.name }} & calculate accurate rated and operating energy
+                Pick a few familiar details. We’ll estimate typical power use.
               </div>
             </div>
           </div>
@@ -765,10 +709,9 @@
           <div class="mb-3">
             <div class="d-flex align-items-center justify-content-between mb-1.5">
               <h6 class="fw-bold text-dark fs-7 mb-0 d-flex align-items-center gap-1.5">
-                <span class="badge bg-primary text-white fs-9 px-1.5 py-0.5 rounded-1">1</span>
-                <span>Appliance Specifications</span>
+                <span>Choose appliance details</span>
               </h6>
-              <span class="text-muted fs-9">{{ getCategoryBadgeTitle(currentCategory()) }}</span>
+              <span class="text-muted fs-9">Typical estimate</span>
             </div>
 
             <div class="p-2.5 bg-light rounded-3 border">
@@ -788,7 +731,7 @@
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Display Technology</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Screen type</label>
                     <select class="form-select form-select-sm" [ngModel]="specParams['displayType']" (ngModelChange)="onCalcParamChange('displayType', $event)">
                       <option value="led">LED (Standard)</option>
                       <option value="qled">QLED (+15%)</option>
@@ -796,7 +739,7 @@
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Resolution</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Picture quality</label>
                     <select class="form-select form-select-sm" [ngModel]="specParams['resolution']" (ngModelChange)="onCalcParamChange('resolution', $event)">
                       <option value="hd">HD (720p)</option>
                       <option value="fhd">Full HD (1080p)</option>
@@ -805,7 +748,7 @@
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Brightness & HDR</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Brightness</label>
                     <div class="d-flex gap-1">
                       <select class="form-select form-select-sm" style="width: 58%;" [ngModel]="specParams['brightness']" (ngModelChange)="onCalcParamChange('brightness', $event)">
                         <option value="low">Low (Eco)</option>
@@ -829,14 +772,14 @@
               @if (currentCategory() === 'fridge') {
                 <div class="row g-2">
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Capacity (Litres)</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Fridge size</label>
                     <div class="input-group input-group-sm">
                       <input type="number" min="50" max="850" class="form-control" [ngModel]="specParams['capacityL']" (ngModelChange)="onCalcParamChange('capacityL', $event)">
                       <span class="input-group-text fs-8">L</span>
                     </div>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Door Configuration</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Fridge style</label>
                     <select class="form-select form-select-sm" [ngModel]="specParams['doorType']" (ngModelChange)="onCalcParamChange('doorType', $event)">
                       <option value="single">Single Door (Direct Cool)</option>
                       <option value="double">Double Door (Frost Free)</option>
@@ -844,7 +787,7 @@
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">BEE Star Rating</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Energy rating</label>
                     <select class="form-select form-select-sm" [ngModel]="specParams['starRating']" (ngModelChange)="onCalcParamChange('starRating', $event)">
                       <option value="1">1 Star (Least Efficient)</option>
                       <option value="2">2 Star</option>
@@ -854,7 +797,7 @@
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Compressor Type</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Compressor</label>
                     <select class="form-select form-select-sm" [ngModel]="specParams['compressorType']" (ngModelChange)="onCalcParamChange('compressorType', $event)">
                       <option value="inverter">Smart Inverter</option>
                       <option value="nonInverter">Fixed Speed</option>
@@ -1100,7 +1043,7 @@
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Room Size & Insulation</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Room size & insulation</label>
                     <div class="d-flex gap-1">
                       <select class="form-select form-select-sm" style="width: 50%;" [ngModel]="specParams['roomSize']" (ngModelChange)="onCalcParamChange('roomSize', $event)">
                         <option value="small">Small</option>
@@ -1125,7 +1068,7 @@
               @if (currentCategory() === 'pump') {
                 <div class="row g-2">
                   <div class="col-6">
-                    <label class="form-label fs-8 text-secondary mb-1">Motor Capacity (HP)</label>
+                    <label class="form-label fs-8 text-secondary mb-1">Pump size</label>
                     <select class="form-select form-select-sm" [ngModel]="specParams['motorHp']" (ngModelChange)="onCalcParamChange('motorHp', $event)">
                       <option value="0.5">0.5 HP (373 W shaft)</option>
                       <option value="0.75">0.75 HP (560 W shaft)</option>
@@ -1223,12 +1166,11 @@
             </div>
           </div>
 
-          <!-- SECTION 2: Usage Pattern -->
+          <!-- Usage time -->
           <div class="mb-3">
             <div class="d-flex align-items-center justify-content-between mb-1.5">
               <h6 class="fw-bold text-dark fs-7 mb-0 d-flex align-items-center gap-1.5">
-                <span class="badge bg-primary text-white fs-9 px-1.5 py-0.5 rounded-1">2</span>
-                <span>Usage Pattern</span>
+                <span>How long do you use it?</span>
               </h6>
               <span class="text-muted fs-9">Daily Schedule</span>
             </div>
@@ -1384,12 +1326,11 @@
             </div>
           </div>
 
-          <!-- SECTION 3: Calculated Results Preview -->
+          <!-- Simple live estimate -->
           <div>
             <div class="d-flex align-items-center justify-content-between mb-1.5">
               <h6 class="fw-bold text-dark fs-7 mb-0 d-flex align-items-center gap-1.5">
-                <span class="badge bg-success text-white fs-9 px-1.5 py-0.5 rounded-1">3</span>
-                <span>Calculated Results Preview</span>
+                <span>Estimated power</span>
               </h6>
               <span class="text-success fw-semibold fs-9">{{ getBadgeTextForApp(currentCategory()) }}</span>
             </div>
@@ -1398,30 +1339,23 @@
               <div class="row g-2 text-center">
                 <div class="col-4">
                   <div class="p-2 bg-white rounded-2 border shadow-2xs h-100">
-                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Rated Power</div>
-                    <div class="fw-bold text-dark fs-7">{{ childSpecsResult()?.ratedWatts }} W</div>
-                    <div class="fs-9 text-muted">Simultaneous Load</div>
-                  </div>
-                </div>
-                <div class="col-4">
-                  <div class="p-2 bg-white rounded-2 border shadow-2xs h-100">
-                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Est. Avg Power</div>
-                    <div class="fw-bold text-primary fs-7">{{ childSpecsResult()?.averageWatts }} W</div>
+                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Typical power</div>
+                    <div class="fw-bold text-primary fs-4">{{ childSpecsResult()?.averageWatts }} W</div>
                     <div class="fs-9 text-muted">Operating Average</div>
                   </div>
                 </div>
                 <div class="col-4">
                   <div class="p-2 bg-white rounded-2 border shadow-2xs h-100">
-                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Daily Time</div>
+                    <div class="text-muted fs-9 text-uppercase fw-semibold mb-0.5">Daily time</div>
                     <div class="fw-bold text-dark fs-7">{{ childSpecsResult()?.dailyHours }} hr</div>
-                    <div class="fs-9 text-muted">Operating Hours</div>
+                    <div class="fs-9 text-muted">per day</div>
                   </div>
                 </div>
               </div>
 
               <div class="d-flex align-items-center justify-content-between p-2 mt-2 bg-white rounded-2 border">
                 <div>
-                  <span class="fs-8 fw-semibold text-secondary">Estimated Daily Energy:</span>
+                  <span class="fs-8 fw-semibold text-secondary">Estimated daily use:</span>
                 </div>
                 <div class="text-end">
                   <strong class="text-success fs-7">{{ childSpecsResult()?.dailyWh?.toLocaleString() }} Wh/day</strong>
@@ -1440,10 +1374,10 @@
         <!-- Footer -->
         <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-end gap-2">
           <button type="button" class="btn btn-sm btn-outline-secondary fs-8" (click)="closeSpecsChildModal()">
-            Cancel
+            Back
           </button>
           <button type="button" class="btn btn-sm btn-primary fw-bold fs-8 px-3.5" (click)="applyChildSpecsCalculation()">
-            ✓ Apply Calculation
+            Use this estimate
           </button>
         </div>
 
