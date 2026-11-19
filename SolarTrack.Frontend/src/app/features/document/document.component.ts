@@ -1016,26 +1016,32 @@ export class DocumentComponent implements OnInit {
         <p class="empty-line">&nbsp;</p>
 
         <p style="font-weight: bold;">The First Party hereby undertakes to perform the following activities:</p>
-        <p>Submission of online application at National Portal for installation of RTS project/system, Submission of application for net-metering and system inspection and upload of the relevant documents on the National Portal of the scheme</p>
-        <p>Provide secure storage of the material of the RTS plant delivered at the premises till handover of the system.</p>
-        <p>Provide access to the Roof Top during installation of the plant, operation &amp;                maintenance, testing of the plant and equipment and for meter reading from solar meter, inverter etc.</p>
-        <p>Provide electricity during plant installation and water for cleaning of the panels.</p>
-        <p>Report any malfunctioning of the plant to the Vendor during the warranty period.</p>
-        <p>Pay the amount as per the payment schedule as mutually agreed with the vendor, including any additional amount to the second party for any additional work /customization required depending upon the building condition.</p>
-        <p>Acknowledge that, if the Grid-tied Rooftop Solar plant (or any part thereof), gets damaged to any extent because of the following reasons:</p>
-        <p>i. &ldquo;Act of God Phenomena&rdquo;,</p>
-        <p>ii. Poor Maintenance,</p>
-        <p>iii. Structural issues with the home itself,</p>
-        <p>iv.  Burglary, sabotage or riot like scenarios then,</p>
-        <p>For Solar Modules or panels that suffer physical damage (breakage of glass layer regardless of severity, bending, twisting or complete dismantling), no requests regarding repairs or replacement shall be entertained by the Vendor (as such damages aren't covered under warranty); the damaged Solar modules (panels) shall be treated as scrap and dealt accordingly.</p>
+        <p>1. Submission of online application at National Portal for installation of RTS project/system, Submission of application for net-metering and system inspection and upload of the relevant documents on the National Portal of the scheme</p>
+        <p>2. Provide secure storage of the material of the RTS plant delivered at the premises till handover of the system.</p>
+        <p>3. Provide access to the Roof Top during installation of the plant, operation &amp;                maintenance, testing of the plant and equipment and for meter reading from solar meter, inverter etc.</p>
+        <p>4. Provide electricity during plant installation and water for cleaning of the panels.</p>
+        <p>5. Report any malfunctioning of the plant to the Vendor during the warranty period.</p>
+        <p>6. Pay the amount as per the payment schedule as mutually agreed with the vendor, including any additional amount to the second party for any additional work /customization required depending upon the building condition.</p>
+        <p>7. Acknowledge that, if the Grid-tied Rooftop Solar plant (or any part thereof), gets damaged to any extent because of the following reasons:</p>
+        <div style="padding-left: 24pt;">
+          <p>i. &ldquo;Act of God Phenomena&rdquo;,</p>
+          <p>ii. Poor Maintenance,</p>
+          <p>iii. Structural issues with the home itself,</p>
+          <p>iv.  Burglary, sabotage or riot like scenarios then,</p>
+          <p>For Solar Modules or panels that suffer physical damage (breakage of glass layer regardless of severity, bending, twisting or complete dismantling), no requests regarding repairs or replacement shall be entertained by the Vendor (as such damages aren't covered under warranty); the damaged Solar modules (panels) shall be treated as scrap and dealt accordingly.</p>
+        </div>
       </div>
 
       <!-- PAGE 3: Damage Repairs + Clause 8 + Second Party start -->
       <div class="agreement-page page-break" style="page-break-before: always; mso-break-type: section-break;">
-        <p>For other parts if damaged, there could be a repair job done, for which, the first party has to bear the cost (after a mutually agreed budget &amp; date etc are discussed) only within the time frame of this agreement.</p>
+        <div style="padding-left: 24pt;">
+          <p>For other parts if damaged, there could be a repair job done, for which, the first party has to bear the cost (after a mutually agreed budget &amp; date etc are discussed) only within the time frame of this agreement.</p>
+        </div>
         <p>8. The first party understands that following actions might compromise the project itself and if the installation/modification/repair is carried out anyway then the first party will be responsible for partial or total loss of the Rooftop Solar system:</p>
-        <p>Any undisclosed modifications to the rooftop area between the initial survey (by vendor) and the day of installation.</p>
-        <p>Absence or lack of cooperation of first party (contact person) OR, Disturbance created by any third-party during installation, modifications, repair or maintenance jobs.</p>
+        <div style="padding-left: 24pt;">
+          <p>Any undisclosed modifications to the rooftop area between the initial survey (by vendor) and the day of installation.</p>
+          <p>Absence or lack of cooperation of first party (contact person) OR, Disturbance created by any third-party during installation, modifications, repair or maintenance jobs.</p>
+        </div>
 
         <p class="empty-line">&nbsp;</p>
         <p class="empty-line">&nbsp;</p>
