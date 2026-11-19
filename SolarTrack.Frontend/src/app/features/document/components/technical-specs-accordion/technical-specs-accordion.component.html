@@ -21,37 +21,19 @@
       <div class="accordion-body" *ngIf="isSectionOpen('site')">
         <div class="row g-2.5 align-items-stretch">
           
-          <!-- Left Column: Date of Installation, Type of Connection, State, District, Pin Code -->
-          <div class="col-md-7 col-lg-6 d-flex flex-column justify-content-between gap-2">
-            
-            <!-- Row 1: Date of Installation & Type of Connection -->
-            <div class="row g-2">
-              <div class="col-6">
-                <label class="specs-label highlighted-label">DATE OF INSTALLATION</label>
-                <input 
-                  type="date" 
-                  class="form-control form-control-sm highlighted-input" 
-                  [(ngModel)]="specs.dateOfInstallation" 
-                  (ngModelChange)="emitChange()"
-                  [disabled]="readOnly">
-              </div>
-              <div class="col-6">
-                <label class="specs-label">TYPE OF CONNECTION</label>
-                <select 
-                  class="form-select form-select-sm" 
-                  [(ngModel)]="specs.connectionType" 
-                  (ngModelChange)="emitChange()"
-                  [disabled]="readOnly">
-                  <option value="1ph LT">1PH LT</option>
-                  <option value="3ph LT">3PH LT</option>
-                  <option value="3ph HT">3PH HT</option>
-                </select>
-              </div>
+          <!-- Column 1: DATE OF INSTALLATION (Row 1), STATE and DISTRICT in one row (Row 2) -->
+          <div class="col-md-4 col-lg-3 d-flex flex-column gap-2">
+            <div>
+              <label class="specs-label highlighted-label">DATE OF INSTALLATION</label>
+              <input 
+                type="date" 
+                class="form-control form-control-sm highlighted-input" 
+                [(ngModel)]="specs.dateOfInstallation" 
+                (ngModelChange)="emitChange()"
+                [disabled]="readOnly">
             </div>
-
-            <!-- Row 2: State, District, Pin Code -->
             <div class="row g-2">
-              <div class="col-4">
+              <div class="col-6">
                 <label class="specs-label">STATE</label>
                 <input 
                   type="text" 
@@ -61,7 +43,7 @@
                   placeholder="ODISHA"
                   [disabled]="readOnly">
               </div>
-              <div class="col-4">
+              <div class="col-6">
                 <label class="specs-label">DISTRICT</label>
                 <input 
                   type="text" 
@@ -71,23 +53,38 @@
                   placeholder="CUTTACK"
                   [disabled]="readOnly">
               </div>
-              <div class="col-4">
-                <label class="specs-label highlighted-label">PIN CODE</label>
-                <input 
-                  type="text" 
-                  class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
-                  [(ngModel)]="specs.pinCode" 
-                  (ngModelChange)="emitChange()"
-                  placeholder="E.G. 756001"
-                  maxlength="6"
-                  [disabled]="readOnly">
-              </div>
             </div>
-
           </div>
 
-          <!-- Right Column: Address / Location (Full height textarea) -->
-          <div class="col-md-5 col-lg-6 d-flex flex-column">
+          <!-- Column 2: TYPE OF CONNECTION, PIN CODE in one column -->
+          <div class="col-md-4 col-lg-3 d-flex flex-column gap-2">
+            <div>
+              <label class="specs-label">TYPE OF CONNECTION</label>
+              <select 
+                class="form-select form-select-sm" 
+                [(ngModel)]="specs.connectionType" 
+                (ngModelChange)="emitChange()"
+                [disabled]="readOnly">
+                <option value="1ph LT">1PH LT</option>
+                <option value="3ph LT">3PH LT</option>
+                <option value="3ph HT">3PH HT</option>
+              </select>
+            </div>
+            <div>
+              <label class="specs-label highlighted-label">PIN CODE</label>
+              <input 
+                type="text" 
+                class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
+                [(ngModel)]="specs.pinCode" 
+                (ngModelChange)="emitChange()"
+                placeholder="E.G. 756001"
+                maxlength="6"
+                [disabled]="readOnly">
+            </div>
+          </div>
+
+          <!-- Column 3: Address / Location (Full height textarea) -->
+          <div class="col-md-4 col-lg-6 d-flex flex-column">
             <label class="specs-label highlighted-label">ADDRESS / LOCATION</label>
             <textarea 
               class="form-control form-control-sm font-monospace text-uppercase highlighted-input flex-grow-1 site-address-textarea" 
@@ -138,91 +135,93 @@
       </div>
 
       <div class="accordion-body" *ngIf="isSectionOpen('inverter')">
-        <div class="row g-2">
+        <div class="row g-3">
           
-          <!-- Highlighted: Inverter Make -->
-          <div class="col-md-6">
-            <label class="specs-label highlighted-label">INVERTER MAKE</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm text-uppercase highlighted-input" 
-              [(ngModel)]="specs.inverterMake" 
-              (ngModelChange)="emitChange()"
-              placeholder="e.g. V-GUARD"
-              [disabled]="readOnly">
+          <!-- Col-1: INVERTER MAKE (Row 1), INVERTER TYPE & INVERTER COUNT (Row 2) -->
+          <div class="col-md-6 d-flex flex-column gap-2">
+            <div>
+              <label class="specs-label highlighted-label">INVERTER MAKE</label>
+              <input 
+                type="text" 
+                class="form-control form-control-sm text-uppercase highlighted-input" 
+                [(ngModel)]="specs.inverterMake" 
+                (ngModelChange)="emitChange()"
+                placeholder="e.g. V-GUARD"
+                [disabled]="readOnly">
+            </div>
+            <div class="row g-2">
+              <div class="col-7">
+                <label class="specs-label">INVERTER TYPE</label>
+                <select 
+                  class="form-select form-select-sm" 
+                  [(ngModel)]="specs.inverterName" 
+                  (ngModelChange)="emitChange()"
+                  [disabled]="readOnly">
+                  <option value="GRID-TIED">GRID-TIED</option>
+                  <option value="HYBRID">HYBRID</option>
+                  <option value="SOLAR PCU">SOLAR PCU</option>
+                  <option value="PURE SINE WAVE UPS">PURE SINE WAVE UPS</option>
+                </select>
+              </div>
+              <div class="col-5">
+                <label class="specs-label">INVERTER COUNT</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  class="form-control form-control-sm" 
+                  [(ngModel)]="specs.inverterCount" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="1"
+                  [disabled]="readOnly">
+              </div>
+            </div>
           </div>
 
-          <!-- Highlighted: Inverter Serial No. -->
-          <div class="col-md-6">
-            <label class="specs-label highlighted-label">INVERTER SERIAL NO.</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
-              [(ngModel)]="specs.inverterSerialNo" 
-              (ngModelChange)="emitChange()"
-              placeholder="e.g. INV202409821"
-              [disabled]="readOnly">
-          </div>
-
-          <!-- Standard: Name, Capacity, Count, Voltages -->
-          <div class="col-md-4">
-            <label class="specs-label">INVERTER TYPE</label>
-            <select 
-              class="form-select form-select-sm" 
-              [(ngModel)]="specs.inverterName" 
-              (ngModelChange)="emitChange()"
-              [disabled]="readOnly">
-              <option value="GRID-TIED">GRID-TIED</option>
-              <option value="HYBRID">HYBRID</option>
-              <option value="SOLAR PCU">SOLAR PCU</option>
-              <option value="PURE SINE WAVE UPS">PURE SINE WAVE UPS</option>
-            </select>
-          </div>
-
-          <div class="col-md-4">
-            <label class="specs-label">CAPACITY (KW)</label>
-            <input 
-              type="number" 
-              step="any" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.inverterCapacity" 
-              (ngModelChange)="emitChange()"
-              placeholder="3"
-              [disabled]="readOnly">
-          </div>
-
-          <div class="col-md-4">
-            <label class="specs-label">INVERTER COUNT</label>
-            <input 
-              type="number" 
-              min="1" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.inverterCount" 
-              (ngModelChange)="emitChange()"
-              placeholder="1"
-              [disabled]="readOnly">
-          </div>
-
-          <div class="col-md-6">
-            <label class="specs-label">INPUT VOLTAGE (V DC)</label>
-            <input 
-              type="number" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.inverterInputVoltage" 
-              (ngModelChange)="emitChange()"
-              placeholder="300"
-              [disabled]="readOnly">
-          </div>
-
-          <div class="col-md-6">
-            <label class="specs-label">OUTPUT VOLTAGE (V AC)</label>
-            <input 
-              type="text" 
-              class="form-control form-control-sm" 
-              [(ngModel)]="specs.inverterOutputVoltage" 
-              (ngModelChange)="emitChange()"
-              placeholder="220 - 240"
-              [disabled]="readOnly">
+          <!-- Col-2: SERIAL NO (Row 1), CAPACITY, I/P VOLTAGE, O/P VOLTAGE (Row 2) -->
+          <div class="col-md-6 d-flex flex-column gap-2">
+            <div>
+              <label class="specs-label highlighted-label">INVERTER SERIAL NO.</label>
+              <input 
+                type="text" 
+                class="form-control form-control-sm font-monospace text-uppercase highlighted-input" 
+                [(ngModel)]="specs.inverterSerialNo" 
+                (ngModelChange)="emitChange()"
+                placeholder="e.g. INV202409821"
+                [disabled]="readOnly">
+            </div>
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="specs-label">CAPACITY (KW)</label>
+                <input 
+                  type="number" 
+                  step="any" 
+                  class="form-control form-control-sm" 
+                  [(ngModel)]="specs.inverterCapacity" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="3"
+                  [disabled]="readOnly">
+              </div>
+              <div class="col-4">
+                <label class="specs-label">I/P VOLTAGE (V DC)</label>
+                <input 
+                  type="number" 
+                  class="form-control form-control-sm" 
+                  [(ngModel)]="specs.inverterInputVoltage" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="300"
+                  [disabled]="readOnly">
+              </div>
+              <div class="col-4">
+                <label class="specs-label">O/P VOLTAGE (V AC)</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm" 
+                  [(ngModel)]="specs.inverterOutputVoltage" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="220 - 240"
+                  [disabled]="readOnly">
+              </div>
+            </div>
           </div>
 
         </div>
