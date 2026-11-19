@@ -152,8 +152,7 @@ export class ActivityTabComponent {
     const sources = [
       { key: 'ALL', label: 'All Pages' },
       { key: 'Summary', label: 'Summary' },
-      { key: 'Ledger', label: 'Ledger' },
-      { key: 'Shipment', label: 'Shipment' }
+      { key: 'Ledger', label: 'Ledger' }
     ];
 
     return sources.map(s => {
