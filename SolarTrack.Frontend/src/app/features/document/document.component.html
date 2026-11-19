@@ -42,78 +42,78 @@
   <div *ngIf="mainTab() === 'form'" class="w-100">
     <div class="st-card p-3 bg-white border rounded shadow-xs">
       
-      <!-- Header Strip: Searchable Customer Dropdown, Document Dropdown with Preview & Download -->
-      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
+      <!-- Header Strip: Customer Dropdown, Document Dropdown on right side of Customer, Preview & Download -->
+      <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
         
-        <!-- Left: Searchable Customer Dropdown (search by name or title) -->
-        <div class="customer-dropdown-container position-relative">
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary d-flex align-items-center justify-content-between text-start customer-dropdown-trigger"
-            (click)="toggleCustomerDropdown()"
-            [class.active]="isCustomerDropdownOpen">
-            <div class="d-flex align-items-center gap-2 text-truncate me-2">
-              <app-icon name="customer" [size]="15" class="text-primary flex-shrink-0"></app-icon>
-              <span class="fw-bold text-dark text-truncate fs-7">
-                {{ selectedCustomer()?.Name || 'Select Customer...' }}
-              </span>
-              <span *ngIf="selectedCustomer()?.District" class="badge bg-light text-secondary border fs-9 fw-normal flex-shrink-0">
-                {{ selectedCustomer()?.District }}
-              </span>
-            </div>
-            <app-icon name="chevron-down" [size]="13" class="text-muted flex-shrink-0" [class.rotated]="isCustomerDropdownOpen"></app-icon>
-          </button>
+        <!-- Combined Control Group: Customer Dropdown + Document Dropdown + Preview & Download -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          
+          <!-- Searchable Customer Dropdown -->
+          <div class="customer-dropdown-container position-relative">
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary d-flex align-items-center justify-content-between text-start customer-dropdown-trigger"
+              (click)="toggleCustomerDropdown()"
+              [class.active]="isCustomerDropdownOpen">
+              <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                <app-icon name="customer" [size]="15" class="text-primary flex-shrink-0"></app-icon>
+                <span class="fw-bold text-dark text-truncate fs-7">
+                  {{ selectedCustomer()?.Name || 'Select Customer...' }}
+                </span>
+                <span *ngIf="selectedCustomer()?.District" class="badge bg-light text-secondary border fs-9 fw-normal flex-shrink-0">
+                  {{ selectedCustomer()?.District }}
+                </span>
+              </div>
+              <app-icon name="chevron-down" [size]="13" class="text-muted flex-shrink-0" [class.rotated]="isCustomerDropdownOpen"></app-icon>
+            </button>
 
-          <!-- Dropdown Menu with Search Input & Filtered List -->
-          <div *ngIf="isCustomerDropdownOpen" class="customer-dropdown-menu shadow-lg border rounded p-2 bg-white">
-            <!-- Search Box: name or title -->
-            <div class="input-group input-group-sm mb-2">
-              <span class="input-group-text bg-white border-end-0 text-muted">
-                <app-icon name="search" [size]="13"></app-icon>
-              </span>
-              <input 
-                type="text" 
-                class="form-control border-start-0 ps-1 fs-8 shadow-none" 
-                placeholder="Search by name or title..." 
-                [ngModel]="customerSearchText()" 
-                (ngModelChange)="onCustomerSearchTextChange($event)"
-                autofocus>
-              <button 
-                *ngIf="customerSearchText()" 
-                type="button" 
-                class="btn btn-sm btn-outline-secondary border-start-0 border text-muted py-0 px-2"
-                (click)="clearCustomerSearch()">
-                ✕
-              </button>
-            </div>
-
-            <!-- Customer Items List -->
-            <div class="customer-dropdown-list">
-              <div *ngIf="searchedCustomers().length === 0" class="text-center text-muted py-3 fs-8">
-                No customer found matching "{{ customerSearchText() }}"
+            <!-- Dropdown Menu with Search Input & Filtered List -->
+            <div *ngIf="isCustomerDropdownOpen" class="customer-dropdown-menu shadow-lg border rounded p-2 bg-white">
+              <!-- Search Box: name or title -->
+              <div class="input-group input-group-sm mb-2">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                  <app-icon name="search" [size]="13"></app-icon>
+                </span>
+                <input 
+                  type="text" 
+                  class="form-control border-start-0 ps-1 fs-8 shadow-none" 
+                  placeholder="Search by name or title..." 
+                  [ngModel]="customerSearchText()" 
+                  (ngModelChange)="onCustomerSearchTextChange($event)"
+                  autofocus>
+                <button 
+                  *ngIf="customerSearchText()" 
+                  type="button" 
+                  class="btn btn-sm btn-outline-secondary border-start-0 border text-muted py-0 px-2"
+                  (click)="clearCustomerSearch()">
+                  ✕
+                </button>
               </div>
 
-              <div 
-                *ngFor="let cust of searchedCustomers()" 
-                class="customer-dropdown-item d-flex align-items-center justify-content-between px-2.5 py-1.5 rounded cursor-pointer"
-                [class.selected]="selectedCustomer()?.SlNo === cust.SlNo"
-                (click)="selectDropdownCustomer(cust)">
-                <div class="text-truncate pe-2">
-                  <div class="fw-semibold fs-8 text-dark text-truncate">{{ cust.Name || 'Unnamed' }}</div>
-                  <div class="text-muted fs-9">{{ cust.District || 'No District' }}</div>
+              <!-- Customer Items List -->
+              <div class="customer-dropdown-list">
+                <div *ngIf="searchedCustomers().length === 0" class="text-center text-muted py-3 fs-8">
+                  No customer found matching "{{ customerSearchText() }}"
                 </div>
-                <span *ngIf="selectedCustomer()?.SlNo === cust.SlNo" class="text-primary flex-shrink-0">
-                  <app-icon name="check" [size]="14"></app-icon>
-                </span>
+
+                <div 
+                  *ngFor="let cust of searchedCustomers()" 
+                  class="customer-dropdown-item d-flex align-items-center justify-content-between px-2.5 py-1.5 rounded cursor-pointer"
+                  [class.selected]="selectedCustomer()?.SlNo === cust.SlNo"
+                  (click)="selectDropdownCustomer(cust)">
+                  <div class="text-truncate pe-2">
+                    <div class="fw-semibold fs-8 text-dark text-truncate">{{ cust.Name || 'Unnamed' }}</div>
+                    <div class="text-muted fs-9">{{ cust.District || 'No District' }}</div>
+                  </div>
+                  <span *ngIf="selectedCustomer()?.SlNo === cust.SlNo" class="text-primary flex-shrink-0">
+                    <app-icon name="check" [size]="14"></app-icon>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Right: Document Dropdown with Preview & Download -->
-        <div class="d-flex align-items-center gap-1.5 flex-wrap ms-auto">
-          
-          <!-- Document Dropdown: Agreement, Form 1, Form 3, Form 4, Form 6 -->
+          <!-- Document Dropdown (positioned on right side of Customer Name) -->
           <select 
             class="form-select form-select-sm" 
             style="width: auto; min-width: 195px;"
@@ -147,6 +147,7 @@
           </button>
 
         </div>
+
       </div>
 
       <!-- NEW REUSABLE ACCORDION COMPONENT FOR SPECIFICATIONS (Site, Inverter, PV Module, DCDB & ACDB, Cables & Earthing) -->

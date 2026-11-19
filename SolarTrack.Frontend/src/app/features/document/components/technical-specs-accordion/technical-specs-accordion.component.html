@@ -314,15 +314,15 @@
             </div>
           </div>
 
-          <!-- Serials List with capacity input beside serial number -->
+          <!-- Serials List with capacity input beside serial number (2 items per row / 2 columns) -->
           <div class="col-12 mt-1">
             <div class="mb-1">
               <span class="fs-8 text-secondary">Module Serials &amp; Capacity</span>
             </div>
-            <div class="row g-1.5 font-monospace" style="max-height: 150px; overflow-y: auto;">
-              <div *ngFor="let s of specs.moduleSerials" class="col-sm-6 col-md-4">
+            <div class="row g-2 font-monospace" style="max-height: 180px; overflow-y: auto;">
+              <div *ngFor="let s of specs.moduleSerials" class="col-md-6">
                 <div class="input-group input-group-sm">
-                  <span class="input-group-text py-0 px-1.5 fs-9 text-muted">#{{ s.index }}</span>
+                  <span class="input-group-text py-0 px-2 fs-9 text-muted fw-semibold">#{{ s.index }}</span>
                   <input 
                     type="text" 
                     class="form-control font-monospace text-uppercase fs-9 py-0.5 px-2" 
@@ -332,13 +332,13 @@
                     [disabled]="readOnly">
                   <input 
                     type="number" 
-                    class="form-control fs-9 py-0.5 px-1.5 text-end" 
-                    style="max-width: 70px;"
+                    class="form-control fs-9 py-0.5 px-2 text-end" 
+                    style="max-width: 85px;"
                     [(ngModel)]="s.capacity"
                     (ngModelChange)="onSerialCapacityChange()"
                     placeholder="545"
                     [disabled]="readOnly">
-                  <span class="input-group-text py-0 px-1 fs-9 text-muted">Wp</span>
+                  <span class="input-group-text py-0 px-1.5 fs-9 text-muted">Wp</span>
                 </div>
               </div>
             </div>
