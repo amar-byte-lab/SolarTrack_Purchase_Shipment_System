@@ -841,7 +841,56 @@ export class DocumentComponent implements OnInit {
 
     // 3. Exact in-place substitution of values into genuine OpenXML
     xml = xml.replace('Mr KIRAN KUMAR BINDHANI', consumerName);
-    xml = xml.replace('AT: 601, PATANA, AJODHYA, DISTRICT: BALASORE, STATE: ODISHA, PIN: 756020', addressStr);
+
+    // Calculate extra lines produced by Address to auto-adjust Page 5 Disclaimer spacing
+    const cleanAddress = (addressStr || '').replace(/\r/g, '').trim();
+    const addressLines = cleanAddress.split('\n');
+    let totalAddressRenderedLines = 0;
+    for (const line of addressLines) {
+      totalAddressRenderedLines += Math.max(1, Math.ceil(line.length / 65));
+    }
+    // Baseline address in template was 1 line (71 characters)
+    const extraAddressLines = Math.max(0, totalAddressRenderedLines - 1);
+
+    // Auto-adjust blank spacer paragraphs on Page 5 so Disclaimer stays strictly on Page 5
+    const dateEndStr = '</w:p><w:p w14:paraId="00000059"';
+    const discStartStr = '<w:p w14:paraId="00000067"';
+    const startIdx = xml.indexOf(dateEndStr);
+    const endIdx = xml.indexOf(discStartStr);
+
+    if (startIdx !== -1 && endIdx !== -1) {
+      const singleP = '<w:p w14:paraId="00000059" w14:textId="77777777" w:rsidR="007E1B41" w:rsidRDefault="007E1B41"><w:pPr><w:tabs><w:tab w:val="center" w:pos="720"/><w:tab w:val="center" w:pos="1440"/><w:tab w:val="center" w:pos="2161"/><w:tab w:val="center" w:pos="2881"/><w:tab w:val="center" w:pos="3601"/><w:tab w:val="center" w:pos="4321"/><w:tab w:val="center" w:pos="5041"/><w:tab w:val="center" w:pos="5761"/><w:tab w:val="center" w:pos="6481"/><w:tab w:val="center" w:pos="7434"/></w:tabs><w:spacing w:after="0" w:line="276" w:lineRule="auto"/><w:ind w:left="0" w:right="0" w:firstLine="0"/><w:jc w:val="left"/></w:pPr></w:p>';
+
+      // Original template had 11 blank paragraphs. If extraAddressLines > 0, deduct extra lines + 1 safety buffer
+      const adjustedBlanksCount = Math.max(1, 11 - extraAddressLines - (extraAddressLines > 0 ? 1 : 0));
+      const newBlankBlock = singleP.repeat(adjustedBlanksCount);
+      xml = xml.substring(0, startIdx + '</w:p>'.length) + newBlankBlock + xml.substring(endIdx);
+    }
+
+    // If address is extraordinarily long (> 8 extra lines), also compress the 4 blank lines between payment and signatures
+    if (extraAddressLines > 8) {
+      const p86End = 'installation)</w:t></w:r></w:p>';
+      const p91Start = '<w:p w14:paraId="00000054"';
+      const s = xml.indexOf(p86End);
+      const e = xml.indexOf(p91Start);
+      if (s !== -1 && e !== -1) {
+        const singleP = '<w:p w14:paraId="00000059" w14:textId="77777777" w:rsidR="007E1B41" w:rsidRDefault="007E1B41"><w:pPr><w:tabs><w:tab w:val="center" w:pos="720"/><w:tab w:val="center" w:pos="1440"/><w:tab w:val="center" w:pos="2161"/><w:tab w:val="center" w:pos="2881"/><w:tab w:val="center" w:pos="3601"/><w:tab w:val="center" w:pos="4321"/><w:tab w:val="center" w:pos="5041"/><w:tab w:val="center" w:pos="5761"/><w:tab w:val="center" w:pos="6481"/><w:tab w:val="center" w:pos="7434"/></w:tabs><w:spacing w:after="0" w:line="276" w:lineRule="auto"/><w:ind w:left="0" w:right="0" w:firstLine="0"/><w:jc w:val="left"/></w:pPr></w:p>';
+        const reducedPaymentBlanks = singleP.repeat(Math.max(1, 4 - Math.floor((extraAddressLines - 8) / 2)));
+        xml = xml.substring(0, s + p86End.length) + reducedPaymentBlanks + xml.substring(e);
+      }
+    }
+
+    // Format address for OpenXML (convert newlines to <w:br/>)
+    const formattedAddressXml = cleanAddress
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean)
+      .join('</w:t><w:br/><w:t xml:space="preserve">');
+
+    xml = xml.replace('AT: 601, PATANA, AJODHYA, DISTRICT: BALASORE, STATE: ODISHA, PIN: 756020', formattedAddressXml);
     xml = xml.replace('324313051063', consumerNo);
 
     const dateSnippet = 'This agreement is executed on</w:t></w:r><w:r w:rsidR="00ED05EC"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00577AF0"><w:t>2</w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>2</w:t></w:r><w:r w:rsidR="00577AF0"><w:t xml:space="preserve"> </w:t></w:r><w:r w:rsidR="00F45C3C"><w:t>April</w:t></w:r><w:r w:rsidR="00644EAD"><w:t xml:space="preserve"> 2026 for</w:t></w:r>';
@@ -1045,6 +1094,23 @@ export class DocumentComponent implements OnInit {
     const consumerNo = this.selectedCustomer()?.ConsumerNo || '';
     const addressStr = this.getAgreementAddress();
 
+    // Auto-adjust blank spacer paragraphs so Disclaimer stays on Page 5
+    const cleanAddress = (addressStr || '').replace(/\r/g, '').trim();
+    const addressLines = cleanAddress.split('\n');
+    let totalAddressRenderedLines = 0;
+    for (const line of addressLines) {
+      totalAddressRenderedLines += Math.max(1, Math.ceil(line.length / 65));
+    }
+    const extraP1Lines = Math.max(0, totalAddressRenderedLines - 1);
+    const sigExtraLines = Math.max(0, Math.ceil(cleanAddress.length / 35) - 2);
+    const totalExtra = extraP1Lines + sigExtraLines;
+
+    const emptyLinesCount = Math.max(1, 11 - totalExtra - (totalExtra > 0 ? 1 : 0));
+    const dynamicBlankLines = Array(emptyLinesCount).fill('        <p class="empty-line">&nbsp;</p>').join('\n');
+
+    const paymentEmptyCount = totalExtra > 8 ? Math.max(1, 4 - Math.floor((totalExtra - 8) / 2)) : 4;
+    const dynamicPaymentBlankLines = Array(paymentEmptyCount).fill('        <p class="empty-line">&nbsp;</p>').join('\n');
+
     return `
       <!-- PAGE 1: 17 blank lines top space + Header + Parties -->
       <div class="agreement-page">
@@ -1190,10 +1256,7 @@ export class DocumentComponent implements OnInit {
 
         <p>Payment should be 100% In advance. (in this case 70% advance and rest on the completion of installation)</p>
 
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
+${dynamicPaymentBlankLines}
 
         <table class="sig-table" style="width: 100%; border-collapse: collapse; margin-top: 0; margin-bottom: 0;">
           <tr>
@@ -1214,17 +1277,7 @@ export class DocumentComponent implements OnInit {
           </tr>
         </table>
 
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
-        <p class="empty-line">&nbsp;</p>
+${dynamicBlankLines}
 
         <p style="font-size: 9.5pt; font-style: italic;">Disclaimer: This agreement is between vendor and consumer and any dispute related to the same shall not involve any third party including MNRE and Distribution Utilities.</p>
       </div>

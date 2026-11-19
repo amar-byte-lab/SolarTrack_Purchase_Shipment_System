@@ -126,8 +126,9 @@
             <option value="form6">Form 6 - Commissioning</option>
           </select>
 
-          <!-- Preview Button beside Dropdown -->
+          <!-- Preview Button beside Dropdown (Hidden when Agreement is selected) -->
           <button 
+            *ngIf="activeDocType() !== 'agreement'"
             type="button" 
             class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" 
             (click)="openPreviewModal(activeDocType())" 
