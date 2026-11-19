@@ -9,12 +9,12 @@
             <div class="d-flex align-items-start gap-2.5">
               <span class="fs-4">⛔</span>
               <div>
-                <div class="fw-bold text-danger fs-7">Single-Phase Statutory Limit Exceeded</div>
+                <div class="fw-bold text-danger fs-7">{{ calc.result().validation.title }}</div>
                 <div class="fs-8 text-dark mt-0.5">
-                  Calculated capacity (<strong>{{ calc.result().validation.requiredKw }} kW</strong>) exceeds the permissible Single-Phase (230V) limit of <strong>5.0 kW</strong>. Under DISCOM net-metering regulations across India, single-phase rooftop solar export is capped at 5.0 kW.
+                  {{ calc.result().validation.message }}
                 </div>
                 <div class="fs-8 text-secondary mt-1">
-                  DISCOM connection requires upgrade to Three-Phase (415V), or system capacity can be capped to 5.0 kWp.
+                  {{ calc.result().validation.suggestion }}
                 </div>
               </div>
             </div>
@@ -25,12 +25,14 @@
                 (click)="calc.switchToThreePhase()">
                 Switch to 3-Phase (415V)
               </button>
-              <button 
-                type="button" 
-                class="btn btn-sm btn-outline-danger fw-semibold text-nowrap py-1.5 px-3 fs-8" 
-                (click)="calc.capToSinglePhaseLimit()">
-                Cap System to 5.0 kWp
-              </button>
+              @if (calc.systemType() !== 'without-solar') {
+                <button 
+                  type="button" 
+                  class="btn btn-sm btn-outline-danger fw-semibold text-nowrap py-1.5 px-3 fs-8" 
+                  (click)="calc.capToSinglePhaseLimit()">
+                  Cap System to 5.0 kWp
+                </button>
+              }
             </div>
           </div>
         </div>
@@ -42,12 +44,12 @@
             <div class="d-flex align-items-start gap-2.5">
               <span class="fs-4">⚠️</span>
               <div>
-                <div class="fw-bold text-dark fs-7">Sanctioned Meter Load Enhancement Advised</div>
+                <div class="fw-bold text-dark fs-7">{{ calc.result().validation.title }}</div>
                 <div class="fs-8 text-dark mt-0.5">
-                  Required inverter capacity (<strong>{{ calc.result().validation.requiredKw }} kW</strong>) exceeds current sanctioned load (<strong>{{ calc.result().validation.sanctionedLoadKw }} kW</strong>).
+                  {{ calc.result().validation.message }}
                 </div>
                 <div class="fs-8 text-secondary mt-1">
-                  DISCOM net-metering regulations require rooftop solar capacity to not exceed 100% of sanctioned load.
+                  {{ calc.result().validation.suggestion }}
                 </div>
               </div>
             </div>
@@ -155,7 +157,15 @@
 
             <ul class="list-unstyled fs-8 mb-0 d-flex flex-column gap-1 text-secondary ps-1">
               <li>• <strong>System Voltage:</strong> {{ calc.result().inverter.batteryVoltage > 0 ? (calc.result().inverter.batteryVoltage + 'V DC System') : 'Grid-Tied (Direct AC)' }}</li>
-              <li>• <strong>Max Running Load:</strong> Up to {{ calc.result().inverter.continuousOutput || (calc.result().inverter.kW * 1000) }} Watts</li>
+              @if (calc.systemType() === 'on-grid') {
+                <li>• <strong>Continuous AC Output:</strong> {{ calc.result().inverter.continuousOutput || (calc.result().inverter.kW * 1000) }} Watts</li>
+                @if (calc.result().inverter.mpptVoltageRange && calc.result().inverter.mpptVoltageRange !== 'N/A') {
+                  <li>• <strong>MPPT Voltage Range:</strong> {{ calc.result().inverter.mpptVoltageRange }}</li>
+                }
+              } @else {
+                <li>• <strong>Max Running Load:</strong> Up to {{ calc.result().inverter.continuousOutput || (calc.result().inverter.kW * 1000) }} Watts</li>
+                <li>• <strong>Peak Surge Capacity:</strong> {{ calc.result().inverter.surgeOutput || (calc.result().inverter.kW * 2000) }} Watts</li>
+              }
               <li>• <strong>Grid Output:</strong> {{ calc.result().inverter.phase || '1-Phase (230V)' }} AC (50 Hz)</li>
               <li>• <strong>Inverter Model:</strong> {{ calc.result().inverter.brand }} {{ calc.result().inverter.model }}</li>
             </ul>
