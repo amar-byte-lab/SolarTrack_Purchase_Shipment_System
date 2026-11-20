@@ -269,3 +269,91 @@ export interface Form4Data {
   officerTitle: string;
   officerDate: string;
 }
+
+export interface Form6Data {
+  discomName: string;
+  capacityKwp: string;
+  certText: string;
+  headerSummary: string;
+
+  // A. Applicant Details
+  applicantName: string;
+  applicationNoWithDate: string;
+  address: string;
+  consumerNo: string;
+  consumerCategory: string;
+  connectionType: string;
+  contractDemand: string;
+  arrear: string;
+
+  // B. Distribution Transformer Details
+  transformerCapacity: string;
+  transformerLocation: string;
+  transformerTotalRtsCapacity: string;
+  transformerCapacityAdequate: string;
+
+  // C. Solar Rooftop PV Power Plant Details
+  proposedPlantDetails: string;
+  sldOkStatus: string;
+
+  // D. Grid Tied Inverter
+  inverterMake: string;
+  inverterSerialNo: string;
+  inverterCapacity: string;
+  inverterVoltages: string;
+  inverterAntiIslanding: string;
+  inverterInstallDate: string;
+
+  // E. P.V Module
+  moduleMake: string;
+  moduleSerials: string;
+  moduleTypeModel: string;
+  moduleCapacityEach: string;
+  moduleCount: string;
+  moduleTotalCapacity: string;
+  moduleInstallDate: string;
+
+  // F. Earthing Verification
+  dcEarthing: string;
+  acEarthing: string;
+  earthingPermissibleText: string;
+
+  // G. Details of protective system available
+  protectiveSystemDetails: string;
+  protectiveSystemObs: string;
+
+  // H to K
+  protectionBackFeeding: string;
+  eicInspectionLetter: string;
+  safetyCertificate: string;
+  workCompletionReportConsumer: string;
+
+  // L
+  testReportComponents: string;
+
+  // M. Meter Details (If arranged before Inspection)
+  netMeterTotal: string;
+  netMeterMake: string;
+  netMeterSerial: string;
+  netMeterPhase: string;
+  netMeterCapacity: string;
+  netMeterConstant: string;
+
+  solarMeterTotal: string;
+  solarMeterMake: string;
+  solarMeterSerial: string;
+  solarMeterPhase: string;
+  solarMeterCapacity: string;
+  solarMeterConstant: string;
+
+  // N
+  otherRemarks: string;
+
+  // Inspection Report
+  satisfactorySyncStatus: string;
+
+  // Bottom
+  observationsText: string;
+  authorizedSignatoryText: string;
+  signDate: string;
+}

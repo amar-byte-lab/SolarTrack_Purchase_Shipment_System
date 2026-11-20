@@ -123,7 +123,7 @@
             <option value="form1">Form 1 - Application</option>
             <option value="form3">Form 3 - Inspection</option>
             <option value="form4">Form 4 - Completion</option>
-            <option value="form6">Form 6 - Commissioning</option>
+            <option value="form6">Form 6 - Inspection Report</option>
           </select>
 
           <!-- Preview Button beside Dropdown (Hidden when Agreement is selected) -->
@@ -1448,9 +1448,401 @@
           </div>
 
           <!-- ════════════════════════════════════════════════════════════════════ -->
-          <!-- PREVIEW OPTION 5: OTHER TECHNICAL DISCOM FORMS (FORM 6)                -->
+          <!-- PREVIEW OPTION 5: EXACT OFFICIAL DISCOM FORM 6 (INSPECTION REPORT)  -->
           <!-- ════════════════════════════════════════════════════════════════════ -->
-          <div *ngIf="previewDocType() !== 'agreement' && previewDocType() !== 'form1' && previewDocType() !== 'form3' && previewDocType() !== 'form4'" class="a4-sheet bg-white p-4 shadow-sm mx-auto border" style="max-width: 800px; min-height: 1000px; color: #000; font-family: serif; font-size: 13px; line-height: 1.5;">
+          <div *ngIf="previewDocType() === 'form6'" class="d-flex flex-column gap-4 align-items-center">
+
+            <!-- PAGE 1 SHEET -->
+            <div class="a4-sheet bg-white p-4 p-md-5 shadow-sm mx-auto border position-relative" style="max-width: 800px; min-height: 1050px; color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4;">
+              <!-- Header Titles -->
+              <div class="text-center mb-1">
+                <strong class="f1-editable px-1 rounded" contenteditable="true" id="f6PrevDiscomName" spellcheck="false" style="font-size: 15px;">{{ form6Data().discomName }}</strong>
+              </div>
+              <div class="text-center mb-3">
+                <strong style="font-size: 13px;">INSPECTION REPORT FOR RTS (FORM-06)</strong>
+              </div>
+
+              <!-- Cert Statement -->
+              <div class="f1-editable px-1 rounded mb-2 text-justify" contenteditable="true" id="f6PrevCertText" spellcheck="false" style="font-size: 10px; line-height: 1.45;">
+                {{ form6Data().certText }}
+              </div>
+
+              <!-- Intro line -->
+              <div class="mb-1" style="font-size: 10px;">The details of inspection report are as below:</div>
+
+              <!-- Inspection Report Summary Title -->
+              <div class="f1-editable px-1 rounded mb-3 fw-bold" contenteditable="true" id="f6PrevHeaderSummary" spellcheck="false" style="font-size: 10.5px;">
+                {{ form6Data().headerSummary }}
+              </div>
+
+              <!-- Table: Section A, B, C -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <thead>
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <th style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px;">Sl. No.</th>
+                    <th style="width: 50%; border: 1px solid #000; padding: 4px 6px;">Parameter</th>
+                    <th style="border: 1px solid #000; padding: 4px 6px;">Utility Observation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Section A: Applicant Details -->
+                  <tr class="fw-bold">
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">A</td>
+                    <td colspan="2" style="border: 1px solid #000; padding: 4px 6px;">Applicant Details</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Name of Applicant</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevAppName" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().applicantName }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Application No./Registration No. with Date</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevAppNoDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().applicationNoWithDate }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Address</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevAddress" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().address }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Consumer Number</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevConsumerNo" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().consumerNo }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Consumer Category</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevCategory" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().consumerCategory }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Type of Connection: 1ph LT or 3 ph LT/HT</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevConnType" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().connectionType }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Contract demand of consumer</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevContractDemand" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().contractDemand }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">7</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Arrear, if any</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevArrear" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().arrear }}</td>
+                  </tr>
+
+                  <!-- Section B: Distribution Transformer Details -->
+                  <tr class="fw-bold">
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">B</td>
+                    <td colspan="2" style="border: 1px solid #000; padding: 4px 6px;">Distribution Transformer Details</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity in KVA</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevTrCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().transformerCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Location</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevTrLoc" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().transformerLocation }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp (individual capacity may be mentioned)</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevTrTotalRts" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().transformerTotalRtsCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Whether the transformer capacity is adequate to deliver the proposed Solar rooftop PV system in addition to existing SRTPV systems</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevTrAdequate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().transformerCapacityAdequate }}</td>
+                  </tr>
+
+                  <!-- Section C: Solar Rooftop PV Power Plant Details -->
+                  <tr class="fw-bold">
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">C</td>
+                    <td colspan="2" style="border: 1px solid #000; padding: 4px 6px;">Solar Rooftop PV Power Plant Details</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">
+                      Details of proposed power plant<br>
+                      Capacity of the SPV Power Plant (kWp)<br>
+                      Plant proposed at single site/multiple sites<br>
+                      Interconnection with the electricity network at single point or multiple point
+                    </td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevProposedDetails" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; white-space: pre-line;">{{ form6Data().proposedPlantDetails }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Whether the Single Line Diagram of the SRTPV System (Submitted by the consumer indicating all the Safety aspects of Grid Connectivity) is OK for grid Connectivity</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSldOk" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().sldOkStatus }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Page 1 of 3 indicator -->
+              <div class="d-flex justify-content-end text-muted small mt-auto pt-2" style="font-size: 10px;">
+                Page 1 of 3
+              </div>
+            </div>
+
+            <!-- PAGE 2 SHEET -->
+            <div class="a4-sheet bg-white p-4 p-md-5 shadow-sm mx-auto border position-relative" style="max-width: 800px; min-height: 1050px; color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4;">
+              <!-- Table Header -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <thead>
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <th style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px;">Sl. No.</th>
+                    <th style="width: 50%; border: 1px solid #000; padding: 4px 6px;">Parameter</th>
+                    <th style="border: 1px solid #000; padding: 4px 6px;">Utility Observation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Section D: Grid Tied Inverter -->
+                  <tr class="fw-bold">
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">D</td>
+                    <td colspan="2" style="border: 1px solid #000; padding: 4px 6px;">Grid Tied Inverter</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevInvMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().inverterMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Serial No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevInvSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form6Data().inverterSerialNo }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevInvCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().inverterCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Input Voltage/ Output Voltage</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevInvVolt" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().inverterVoltages }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Whether Anti-islanding feature is in working condition</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevInvAntiIsland" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().inverterAntiIslanding }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of installation</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevInvInstallDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().inverterInstallDate }}</td>
+                  </tr>
+
+                  <!-- Section E: P.V Module -->
+                  <tr class="fw-bold">
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">E</td>
+                    <td colspan="2" style="border: 1px solid #000; padding: 4px 6px;">P.V Module</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevModMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().moduleMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Serial No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevModSerials" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace; white-space: pre-line;">{{ form6Data().moduleSerials }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Type of Module &amp; model</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevModType" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().moduleTypeModel }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity of each Module</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevModCapEach" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().moduleCapacityEach }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">No. of Module</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevModCount" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().moduleCount }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Total capacity of Module</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevModTotal" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().moduleTotalCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">7</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of installation</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevModInstallDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().moduleInstallDate }}</td>
+                  </tr>
+
+                  <!-- Section F: Earthing Verification -->
+                  <tr class="fw-bold">
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">F</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Earthing Verification (i) D.C Earthing (ii) A.C Earthing</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">
+                      <div>(i) <span class="f1-editable px-1 rounded" contenteditable="true" id="f6PrevDcEarth" spellcheck="false">{{ form6Data().dcEarthing }}</span> &nbsp; (ii) <span class="f1-editable px-1 rounded" contenteditable="true" id="f6PrevAcEarth" spellcheck="false">{{ form6Data().acEarthing }}</span></div>
+                      <div class="f1-editable px-1 rounded mt-1 text-muted" contenteditable="true" id="f6PrevEarthPermissible" spellcheck="false" style="font-size: 9.5px;">{{ form6Data().earthingPermissibleText }}</div>
+                    </td>
+                  </tr>
+
+                  <!-- Section G: Details of protective system available -->
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">G</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevProtSys" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; white-space: pre-line;">{{ form6Data().protectiveSystemDetails }}</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevProtObs" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; white-space: pre-line;">{{ form6Data().protectiveSystemObs }}</td>
+                  </tr>
+
+                  <!-- Section H to K -->
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">H</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevBackFeed" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().protectionBackFeeding }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">I</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">EIC inspection and approval letter Submitted by the consumer above 50KVA</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevEic" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().eicInspectionLetter }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">J</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Safety certificate from designated Safety officer below 50KVA</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSafetyCert" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().safetyCertificate }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">K</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Work Completion Report of SRTPV by consumer</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevWorkCompletion" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().workCompletionReportConsumer }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Page 2 of 3 indicator -->
+              <div class="d-flex justify-content-end text-muted small mt-auto pt-2" style="font-size: 10px;">
+                Page 2 of 3
+              </div>
+            </div>
+
+            <!-- PAGE 3 SHEET -->
+            <div class="a4-sheet bg-white p-4 p-md-5 shadow-sm mx-auto border position-relative" style="max-width: 800px; min-height: 1050px; color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4;">
+              <!-- Table Header -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <thead>
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <th style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px;">Sl. No.</th>
+                    <th style="width: 50%; border: 1px solid #000; padding: 4px 6px;">Parameter</th>
+                    <th style="border: 1px solid #000; padding: 4px 6px;">Utility Observation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Section L -->
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">L</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevTestReport" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().testReportComponents }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Section M: Meter Details (4-Column Layout) -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <thead>
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <th style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px;">Sl. No.</th>
+                    <th style="border: 1px solid #000; padding: 4px 6px;">Meter Details (If arranged before Inspection)</th>
+                    <th style="width: 25%; border: 1px solid #000; padding: 4px 6px;">Net Meter (Bi-directional Meter)</th>
+                    <th style="width: 25%; border: 1px solid #000; padding: 4px 6px;">Solar Generation Meter (Details of all Solar meters)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Total Nos. of Meters</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevNmTotal" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().netMeterTotal }}</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSmTotal" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().solarMeterTotal }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Meter Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevNmMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().netMeterMake }}</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSmMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().solarMeterMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Meter Sl. No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevNmSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form6Data().netMeterSerial }}</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSmSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form6Data().solarMeterSerial }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">1 Ph/ 3Ph</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevNmPhase" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().netMeterPhase }}</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSmPhase" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().solarMeterPhase }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevNmCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().netMeterCapacity }}</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSmCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().solarMeterCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Meter Constant</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevNmConst" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().netMeterConstant }}</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSmConst" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().solarMeterConstant }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Section N & Inspection Report Table -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <tbody>
+                  <!-- Section N -->
+                  <tr>
+                    <td style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">N</td>
+                    <td style="width: 50%; border: 1px solid #000; padding: 4px 6px;">Any other necessary details with Remarks</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevRemarks" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form6Data().otherRemarks }}</td>
+                  </tr>
+                  <!-- Inspection Report Header -->
+                  <tr class="fw-bold text-center" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">Inspection Report</td>
+                  </tr>
+                  <tr>
+                    <td style="border: 1px solid #000; padding: 4px 6px;"></td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization</td>
+                    <td class="f1-editable" contenteditable="true" id="f6PrevSyncStatus" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; white-space: pre-line;">{{ form6Data().satisfactorySyncStatus }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Observations & Signatures -->
+              <div class="row pt-3 mb-4" style="font-size: 11px;">
+                <div class="col-6">
+                  <div class="f1-editable px-1 rounded" contenteditable="true" id="f6PrevObsText" spellcheck="false">
+                    {{ form6Data().observationsText }}
+                  </div>
+                </div>
+                <div class="col-6 text-end">
+                  <div class="f1-editable px-1 rounded fw-bold" contenteditable="true" id="f6PrevAuthSignText" spellcheck="false">
+                    {{ form6Data().authorizedSignatoryText }}
+                  </div>
+                  <div class="f1-editable px-1 rounded mt-3" contenteditable="true" id="f6PrevSignDate" spellcheck="false">
+                    {{ form6Data().signDate }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Page 3 of 3 indicator -->
+              <div class="d-flex justify-content-end text-muted small mt-auto pt-3" style="font-size: 10px;">
+                Page 3 of 3
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <!-- PREVIEW OPTION 6: OTHER TECHNICAL DISCOM FORMS GENERIC FALLBACK       -->
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <div *ngIf="previewDocType() !== 'agreement' && previewDocType() !== 'form1' && previewDocType() !== 'form3' && previewDocType() !== 'form4' && previewDocType() !== 'form6'" class="a4-sheet bg-white p-4 shadow-sm mx-auto border" style="max-width: 800px; min-height: 1000px; color: #000; font-family: serif; font-size: 13px; line-height: 1.5;">
               <!-- HEADER -->
               <div class="text-center mb-3">
                 <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.05em;">
@@ -1607,6 +1999,14 @@
               (click)="downloadForm4Pdf({ useLivePreviewValues: true })">
               <app-icon name="download" [size]="14"></app-icon>
               <span>Download Form 4 (PDF)</span>
+            </button>
+            <button 
+              *ngIf="previewDocType() === 'form6'" 
+              type="button" 
+              class="btn btn-primary btn-sm px-3 fw-semibold d-flex align-items-center gap-1" 
+              (click)="downloadForm6Pdf({ useLivePreviewValues: true })">
+              <app-icon name="download" [size]="14"></app-icon>
+              <span>Download Form 6 (PDF)</span>
             </button>
           </div>
         </div>

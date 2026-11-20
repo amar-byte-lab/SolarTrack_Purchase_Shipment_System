@@ -13,7 +13,7 @@ import { ConfirmDialogService } from '../../shared/services/confirm-dialog.servi
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { CustomerModalComponent } from '../../shared/components/customer-modal/customer-modal.component';
 import { InstallmentRow } from '../../core/models/summary.model';
-import { TechnicalProductSpecs, DocumentType, Form1Data, Form3Data, Form4Data } from './models/document.model';
+import { TechnicalProductSpecs, DocumentType, Form1Data, Form3Data, Form4Data, Form6Data } from './models/document.model';
 
 // Reusable Sub-components
 import { ProductSpecsModalComponent } from './components/product-specs-modal/product-specs-modal.component';
@@ -95,6 +95,9 @@ export class DocumentComponent implements OnInit {
   // Form 4 State
   form4Data = signal<Form4Data>(this.buildDefaultForm4Data(null, {}));
 
+  // Form 6 State
+  form6Data = signal<Form6Data>(this.buildDefaultForm6Data(null, {}));
+
   constructor() {
     effect(() => {
       const cust = this.selectedCustomer();
@@ -102,6 +105,7 @@ export class DocumentComponent implements OnInit {
       this.form1Data.set(this.buildDefaultForm1Data(cust, specs));
       this.form3Data.set(this.buildDefaultForm3Data(cust, specs));
       this.form4Data.set(this.buildDefaultForm4Data(cust, specs));
+      this.form6Data.set(this.buildDefaultForm6Data(cust, specs));
     });
 
     effect(() => {
@@ -1387,6 +1391,229 @@ export class DocumentComponent implements OnInit {
     };
   }
 
+  buildDefaultForm6Data(cust: InstallmentRow | null, specs: TechnicalProductSpecs): Form6Data {
+    if (!cust) {
+      return {
+        discomName: 'TP NORTHERN ODISHA DISTRIBUTION LIMITED',
+        capacityKwp: '',
+        certText: 'Certified that the ___ KWP SPV system AT: _________________________ under ________ Section ________ Sub-Division & ________ Division has been inspected on date.....................................',
+        headerSummary: 'Inspection Report for ___ KWP Solar Roof Top PV System (SRTPV) AT: _________________________',
+        applicantName: '',
+        applicationNoWithDate: '',
+        address: '',
+        consumerNo: '',
+        consumerCategory: 'DOMESTIC',
+        connectionType: '1PH LT',
+        contractDemand: '',
+        arrear: '0',
+        transformerCapacity: '',
+        transformerLocation: '',
+        transformerTotalRtsCapacity: '',
+        transformerCapacityAdequate: 'Yes / No',
+        proposedPlantDetails: '',
+        sldOkStatus: 'YES / NO (if it is no, state reasons for the same and suggest alternate arrangements )',
+        inverterMake: '',
+        inverterSerialNo: '',
+        inverterCapacity: '',
+        inverterVoltages: '',
+        inverterAntiIslanding: 'Need to be checked practically before charging',
+        inverterInstallDate: '',
+        moduleMake: '',
+        moduleSerials: '',
+        moduleTypeModel: '',
+        moduleCapacityEach: '',
+        moduleCount: '',
+        moduleTotalCapacity: '',
+        moduleInstallDate: '',
+        dcEarthing: '',
+        acEarthing: '',
+        earthingPermissibleText: 'Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)',
+        protectiveSystemDetails: '(i) AC & DC DB: Yes/No\n(ii) Manual Switch at Solar Side: Yes/No\n(iii) Relay operated automatic switch at net-meter side: Yes/ No',
+        protectiveSystemObs: '(i) Yes / No\n(ii) Yes / No\n(iii) Yes / No',
+        protectionBackFeeding: '',
+        eicInspectionLetter: 'Yes / No',
+        safetyCertificate: 'Yes / No',
+        workCompletionReportConsumer: 'Yes / No',
+        testReportComponents: 'Yes / No',
+        netMeterTotal: '',
+        netMeterMake: '',
+        netMeterSerial: '',
+        netMeterPhase: '',
+        netMeterCapacity: '',
+        netMeterConstant: '',
+        solarMeterTotal: '',
+        solarMeterMake: '',
+        solarMeterSerial: '',
+        solarMeterPhase: '',
+        solarMeterCapacity: '',
+        solarMeterConstant: '',
+        otherRemarks: '',
+        satisfactorySyncStatus: 'Yes/No\n(if it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)',
+        observationsText: 'Observations (If any)',
+        authorizedSignatoryText: 'Authorized signatory TPNODL',
+        signDate: 'Date-'
+      };
+    }
+
+    // DISCOM determination
+    const dist = (specs.district || cust.District || '').toUpperCase().trim();
+    let discomShort = 'TPNODL';
+    let discomFullName = 'TP NORTHERN ODISHA DISTRIBUTION LIMITED';
+    const tpwodlDists = ['SAMBALPUR', 'BARGARH', 'JHARSUGUDA', 'DEOGARH', 'SUNDARGARH', 'BOLANGIR', 'SONEPUR', 'KALAHANDI', 'NUAPADA', 'KORAPUT', 'NABARANGPUR', 'MALKANGIRI', 'RAYAGADA'];
+    const tpsodlDists = ['GANJAM', 'GAJAPATI', 'KANDHAMAL', 'BOUDH'];
+    const tpcodlDists = ['CUTTACK', 'PURI', 'KHURDA', 'KHORDHA', 'NAYAGARH', 'KENDRAPARA', 'JAGATSINGHPUR', 'JAJPUR', 'DHENKANAL', 'ANGUL'];
+
+    if (tpwodlDists.some(d => dist.includes(d))) {
+      discomShort = 'TPWODL';
+      discomFullName = 'TP WESTERN ODISHA DISTRIBUTION LIMITED';
+    } else if (tpsodlDists.some(d => dist.includes(d))) {
+      discomShort = 'TPSODL';
+      discomFullName = 'TP SOUTHERN ODISHA DISTRIBUTION LIMITED';
+    } else if (tpcodlDists.some(d => dist.includes(d))) {
+      discomShort = 'TPCODL';
+      discomFullName = 'TP CENTRAL ODISHA DISTRIBUTION LIMITED';
+    }
+
+    const distPart = (specs.district || cust.District || '').trim();
+    const div = cust.DivisionName || (distPart ? `CED ${distPart.toUpperCase()} Division` : '');
+    const subDiv = cust.SubDivision ? `${cust.SubDivision} Sub-Division` : '';
+    const sectionName = distPart ? `${distPart.toUpperCase()} Section` : '';
+    const officeHierarchy = [sectionName, subDiv, div].filter(Boolean).join(' & ');
+
+    // Full Address
+    let fullAddr = (specs.address || cust.Address || '').trim();
+    if (fullAddr && !fullAddr.toUpperCase().startsWith('AT:') && !fullAddr.toUpperCase().startsWith('AT-') && !fullAddr.toUpperCase().startsWith('AT ')) {
+      fullAddr = `AT: ${fullAddr}`;
+    }
+    const pinPart = specs.pinCode || cust.PinCode;
+    if (distPart && !fullAddr.toUpperCase().includes(distPart.toUpperCase())) {
+      fullAddr += `, DIST-${distPart.toUpperCase()}`;
+    }
+    if (pinPart && !fullAddr.includes(pinPart)) {
+      fullAddr += `, PIN-${pinPart}`;
+    }
+
+    // Applicant Name
+    let name = (cust.Name || '').trim();
+    if (name && !/^(mr|mrs|ms|dr|shri|smt)\b/i.test(name)) {
+      name = `MR ${name.toUpperCase()}`;
+    }
+
+    // Capacity & Demand
+    const cap = cust.ProposedCapacity || specs.inverterCapacity || '';
+    const capNum = parseFloat(String(cap)) || 0;
+    const capacityKwp = cap ? `${cap} KWP` : '';
+    const contractDemand = capNum ? `${Math.round(capNum)} KW` : '';
+    const connectionType = specs.connectionType || (capNum > 5 ? '3PH LT' : '1PH LT');
+
+    // App No & Date
+    const appNo = cust.ApplicationNumber || cust.ConsumerNo || '';
+    const rawDate = cust.LoginDate || cust.InstallationDate || specs.dateOfInstallation;
+    let dateStr = '';
+    if (rawDate) {
+      try {
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) {
+          const dd = String(d.getDate()).padStart(2, '0');
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const yy = d.getFullYear();
+          dateStr = `${dd}-${mm}-${yy}`;
+        }
+      } catch {}
+    }
+    const applicationNoWithDate = appNo ? (dateStr ? `${appNo}/${dateStr}` : appNo) : '';
+
+    // Date of installation
+    const installDate = specs.dateOfInstallation 
+      ? this.formatDateToDisplay(specs.dateOfInstallation) 
+      : (cust.InstallationDate ? this.formatDateToDisplay(cust.InstallationDate) : '');
+
+    // Inverter
+    const invMake = (specs.inverterMake || '').trim();
+    const invSerial = (specs.inverterSerialNo || '').trim();
+    const invCap = specs.inverterCapacity ? `${specs.inverterCapacity} KW` : (cap ? `${cap} KW` : '');
+    const inVolt = specs.inverterInputVoltage ? `${specs.inverterInputVoltage}V DC` : '';
+    const outVolt = specs.inverterOutputVoltage ? `${specs.inverterOutputVoltage}V AC` : '';
+    const invVoltages = (inVolt || outVolt) ? `${inVolt} / ${outVolt}` : '';
+
+    // Modules
+    const modMake = (specs.moduleMake || '').trim();
+    const modType = (specs.moduleTypeModel || '').trim();
+    const modCapEach = specs.moduleCapacityEach ? `${specs.moduleCapacityEach} WP` : '';
+    const modCount = specs.moduleCount ? `${specs.moduleCount} NOS` : '';
+    const modTotal = specs.moduleTotalCapacity || (cap ? `${cap} KWp` : '');
+
+    let serialsText = '';
+    if (specs.moduleSerials && specs.moduleSerials.length > 0) {
+      serialsText = specs.moduleSerials.map((s: any) => s.serialNo).filter(Boolean).join('\n');
+    }
+
+    // Earthing
+    const dcEarth = specs.dcEarthing ? String(specs.dcEarthing) : '';
+    const acEarth = specs.acEarthing ? String(specs.acEarthing) : '';
+
+    return {
+      discomName: discomFullName,
+      capacityKwp,
+      certText: `Certified that the ${capacityKwp || '___ KWP'} SPV system ${fullAddr} under ${officeHierarchy || 'Section/Division'} has been inspected on date.....................................`,
+      headerSummary: `Inspection Report for ${capacityKwp || '___ KWP'} Solar Roof Top PV System (SRTPV) ${fullAddr}`,
+      applicantName: name,
+      applicationNoWithDate,
+      address: fullAddr,
+      consumerNo: cust.ConsumerNo || cust.ApplicationNumber || '',
+      consumerCategory: 'DOMESTIC',
+      connectionType,
+      contractDemand,
+      arrear: '0',
+      transformerCapacity: '',
+      transformerLocation: '',
+      transformerTotalRtsCapacity: '',
+      transformerCapacityAdequate: 'Yes / No',
+      proposedPlantDetails: cap ? `A. ${cap} KWP\nB. SINGLE SITE\nC. SINGLE POINT` : '',
+      sldOkStatus: 'YES / NO (if it is no, state reasons for the same and suggest alternate arrangements )',
+      inverterMake: invMake,
+      inverterSerialNo: invSerial,
+      inverterCapacity: invCap,
+      inverterVoltages: invVoltages,
+      inverterAntiIslanding: 'Need to be checked practically before charging',
+      inverterInstallDate: installDate,
+      moduleMake: modMake,
+      moduleSerials: serialsText,
+      moduleTypeModel: modType,
+      moduleCapacityEach: modCapEach,
+      moduleCount: modCount,
+      moduleTotalCapacity: modTotal,
+      moduleInstallDate: installDate,
+      dcEarthing: dcEarth,
+      acEarthing: acEarth,
+      earthingPermissibleText: 'Within permissible limit or Not (Values should be certified by contractor with HV Supervisory license)',
+      protectiveSystemDetails: '(i) AC & DC DB: Yes/No\n(ii) Manual Switch at Solar Side: Yes/No\n(iii) Relay operated automatic switch at net-meter side: Yes/ No',
+      protectiveSystemObs: '(i) Yes / No\n(ii) Yes / No\n(iii) Yes / No',
+      protectionBackFeeding: '',
+      eicInspectionLetter: 'Yes / No',
+      safetyCertificate: 'Yes / No',
+      workCompletionReportConsumer: 'Yes / No',
+      testReportComponents: 'Yes / No',
+      netMeterTotal: '',
+      netMeterMake: '',
+      netMeterSerial: '',
+      netMeterPhase: '',
+      netMeterCapacity: '',
+      netMeterConstant: '',
+      solarMeterTotal: '',
+      solarMeterMake: '',
+      solarMeterSerial: '',
+      solarMeterPhase: '',
+      solarMeterCapacity: '',
+      solarMeterConstant: '',
+      otherRemarks: '',
+      satisfactorySyncStatus: 'Yes/No\n(if it is not satisfactory, state reasons for the same and suggest alternate arrangements required to evacuate power from the SRTPV system)',
+      observationsText: 'Observations (If any)',
+      authorizedSignatoryText: `Authorized signatory ${discomShort}`,
+      signDate: 'Date-'
+    };
+  }
+
   setPreviewMeterProc(choice: 'Beneficiary' | 'DISCOM'): void {
     this.form1Data.update(d => ({ ...d, meterProcChoice: choice }));
   }
@@ -2403,6 +2630,368 @@ export class DocumentComponent implements OnInit {
     }
   }
 
+  downloadForm6Pdf(options?: { useLivePreviewValues?: boolean }): void {
+    const cust = this.selectedCustomer();
+    if (!cust) {
+      this.toastService.warning('Please select a customer first.');
+      return;
+    }
+
+    try {
+      let d = { ...this.form6Data() };
+
+      if (options?.useLivePreviewValues) {
+        const getText = (id: string, fallback: string = '') => {
+          const el = document.getElementById(id);
+          if (!el) return fallback;
+          return (el.innerText || el.textContent || '').trim();
+        };
+
+        d.discomName = getText('f6PrevDiscomName', d.discomName);
+        d.certText = getText('f6PrevCertText', d.certText);
+        d.headerSummary = getText('f6PrevHeaderSummary', d.headerSummary);
+
+        // Section A
+        d.applicantName = getText('f6PrevAppName', d.applicantName);
+        d.applicationNoWithDate = getText('f6PrevAppNoDate', d.applicationNoWithDate);
+        d.address = getText('f6PrevAddress', d.address);
+        d.consumerNo = getText('f6PrevConsumerNo', d.consumerNo);
+        d.consumerCategory = getText('f6PrevCategory', d.consumerCategory);
+        d.connectionType = getText('f6PrevConnType', d.connectionType);
+        d.contractDemand = getText('f6PrevContractDemand', d.contractDemand);
+        d.arrear = getText('f6PrevArrear', d.arrear);
+
+        // Section B
+        d.transformerCapacity = getText('f6PrevTrCap', d.transformerCapacity);
+        d.transformerLocation = getText('f6PrevTrLoc', d.transformerLocation);
+        d.transformerTotalRtsCapacity = getText('f6PrevTrTotalRts', d.transformerTotalRtsCapacity);
+        d.transformerCapacityAdequate = getText('f6PrevTrAdequate', d.transformerCapacityAdequate);
+
+        // Section C
+        d.proposedPlantDetails = getText('f6PrevProposedDetails', d.proposedPlantDetails);
+        d.sldOkStatus = getText('f6PrevSldOk', d.sldOkStatus);
+
+        // Section D
+        d.inverterMake = getText('f6PrevInvMake', d.inverterMake);
+        d.inverterSerialNo = getText('f6PrevInvSerial', d.inverterSerialNo);
+        d.inverterCapacity = getText('f6PrevInvCap', d.inverterCapacity);
+        d.inverterVoltages = getText('f6PrevInvVolt', d.inverterVoltages);
+        d.inverterAntiIslanding = getText('f6PrevInvAntiIsland', d.inverterAntiIslanding);
+        d.inverterInstallDate = getText('f6PrevInvInstallDate', d.inverterInstallDate);
+
+        // Section E
+        d.moduleMake = getText('f6PrevModMake', d.moduleMake);
+        d.moduleSerials = getText('f6PrevModSerials', d.moduleSerials);
+        d.moduleTypeModel = getText('f6PrevModType', d.moduleTypeModel);
+        d.moduleCapacityEach = getText('f6PrevModCapEach', d.moduleCapacityEach);
+        d.moduleCount = getText('f6PrevModCount', d.moduleCount);
+        d.moduleTotalCapacity = getText('f6PrevModTotal', d.moduleTotalCapacity);
+        d.moduleInstallDate = getText('f6PrevModInstallDate', d.moduleInstallDate);
+
+        // Section F
+        d.dcEarthing = getText('f6PrevDcEarth', d.dcEarthing);
+        d.acEarthing = getText('f6PrevAcEarth', d.acEarthing);
+        d.earthingPermissibleText = getText('f6PrevEarthPermissible', d.earthingPermissibleText);
+
+        // Section G
+        d.protectiveSystemDetails = getText('f6PrevProtSys', d.protectiveSystemDetails);
+        d.protectiveSystemObs = getText('f6PrevProtObs', d.protectiveSystemObs);
+
+        // Section H - K
+        d.protectionBackFeeding = getText('f6PrevBackFeed', d.protectionBackFeeding);
+        d.eicInspectionLetter = getText('f6PrevEic', d.eicInspectionLetter);
+        d.safetyCertificate = getText('f6PrevSafetyCert', d.safetyCertificate);
+        d.workCompletionReportConsumer = getText('f6PrevWorkCompletion', d.workCompletionReportConsumer);
+
+        // Section L
+        d.testReportComponents = getText('f6PrevTestReport', d.testReportComponents);
+
+        // Section M
+        d.netMeterTotal = getText('f6PrevNmTotal', d.netMeterTotal);
+        d.netMeterMake = getText('f6PrevNmMake', d.netMeterMake);
+        d.netMeterSerial = getText('f6PrevNmSerial', d.netMeterSerial);
+        d.netMeterPhase = getText('f6PrevNmPhase', d.netMeterPhase);
+        d.netMeterCapacity = getText('f6PrevNmCap', d.netMeterCapacity);
+        d.netMeterConstant = getText('f6PrevNmConst', d.netMeterConstant);
+
+        d.solarMeterTotal = getText('f6PrevSmTotal', d.solarMeterTotal);
+        d.solarMeterMake = getText('f6PrevSmMake', d.solarMeterMake);
+        d.solarMeterSerial = getText('f6PrevSmSerial', d.solarMeterSerial);
+        d.solarMeterPhase = getText('f6PrevSmPhase', d.solarMeterPhase);
+        d.solarMeterCapacity = getText('f6PrevSmCap', d.solarMeterCapacity);
+        d.solarMeterConstant = getText('f6PrevSmConst', d.solarMeterConstant);
+
+        // Section N & Inspection Report
+        d.otherRemarks = getText('f6PrevRemarks', d.otherRemarks);
+        d.satisfactorySyncStatus = getText('f6PrevSyncStatus', d.satisfactorySyncStatus);
+
+        // Observations & Signatures
+        d.observationsText = getText('f6PrevObsText', d.observationsText);
+        d.authorizedSignatoryText = getText('f6PrevAuthSignText', d.authorizedSignatoryText);
+        d.signDate = getText('f6PrevSignDate', d.signDate);
+      }
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = 210;
+      const marginX = 14;
+      const tableWidth = 182;
+      const col1Width = 12;
+      const col2Width = 90;
+      const col3Width = 80;
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setTextColor(0, 0, 0);
+
+      const drawTableRow = (y: number, slText: string, labelText: string, valText: string, opt: any = {}) => {
+        const fontSize = opt.fontSize || 8.0;
+        doc.setFontSize(fontSize);
+        doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
+
+        const col2Lines = doc.splitTextToSize(labelText || '', col2Width - 4);
+        const col3Lines = doc.splitTextToSize(valText || '', col3Width - 4);
+        const maxLines = Math.max(col2Lines.length, col3Lines.length, 1);
+        const lineHeight = opt.lineHeight || 3.7;
+        const padding = 2.0;
+        const rowHeight = Math.max(opt.minHeight || 5.0, maxLines * lineHeight + padding);
+
+        doc.setLineWidth(0.2);
+        doc.rect(marginX, y, tableWidth, rowHeight);
+        doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+        doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+
+        if (slText) {
+          doc.text(String(slText), marginX + (col1Width / 2), y + 3.6, { align: 'center' });
+        }
+        doc.text(col2Lines, marginX + col1Width + 2, y + 3.6);
+        doc.text(col3Lines, marginX + col1Width + col2Width + 2, y + 3.6);
+
+        return rowHeight;
+      };
+
+      const drawSectionHeader = (y: number, slText: string, sectionTitle: string) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.2);
+        doc.setLineWidth(0.2);
+
+        const titleLines = doc.splitTextToSize(sectionTitle || '', tableWidth - col1Width - 4);
+        const rowHeight = Math.max(5.2, titleLines.length * 3.8 + 1.8);
+
+        doc.rect(marginX, y, tableWidth, rowHeight);
+        doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+        doc.text(slText, marginX + (col1Width / 2), y + 3.7, { align: 'center' });
+        doc.text(titleLines, marginX + col1Width + 2, y + 3.7);
+        return rowHeight;
+      };
+
+      const drawTableHeaderRow = (y: number) => {
+        const rowHeight = 5.4;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.2);
+        doc.setLineWidth(0.2);
+        doc.rect(marginX, y, tableWidth, rowHeight);
+        doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+        doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+        doc.text('Sl. No.', marginX + (col1Width / 2), y + 3.8, { align: 'center' });
+        doc.text('Parameter', marginX + col1Width + 2, y + 3.8);
+        doc.text('Utility Observation', marginX + col1Width + col2Width + 2, y + 3.8);
+        return rowHeight;
+      };
+
+      // ══════════════════════════════════════════════════════════
+      // PAGE 1
+      // ══════════════════════════════════════════════════════════
+      let curY = 13;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11.5);
+      doc.text(d.discomName || 'TP NORTHERN ODISHA DISTRIBUTION LIMITED', pageWidth / 2, curY, { align: 'center' });
+      curY += 5.2;
+
+      doc.setFontSize(10.5);
+      doc.text('INSPECTION REPORT FOR RTS (FORM-06)', pageWidth / 2, curY, { align: 'center' });
+      curY += 6.0;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.6);
+      const certLines = doc.splitTextToSize(d.certText || '', tableWidth);
+      doc.text(certLines, marginX, curY);
+      curY += (certLines.length * 3.4) + 2.5;
+
+      doc.text('The details of inspection report are as below:', marginX, curY);
+      curY += 4.0;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.0);
+      const summaryLines = doc.splitTextToSize(d.headerSummary || '', tableWidth);
+      doc.text(summaryLines, marginX, curY);
+      curY += (summaryLines.length * 3.6) + 3.0;
+
+      // Page 1 Table
+      curY += drawTableHeaderRow(curY);
+
+      // Section A
+      curY += drawSectionHeader(curY, 'A', 'Applicant Details');
+      curY += drawTableRow(curY, '1', 'Name of Applicant', d.applicantName);
+      curY += drawTableRow(curY, '2', 'Application No./Registration No. with Date', d.applicationNoWithDate);
+      curY += drawTableRow(curY, '2', 'Address', d.address);
+      curY += drawTableRow(curY, '3', 'Consumer Number', d.consumerNo);
+      curY += drawTableRow(curY, '4', 'Consumer Category', d.consumerCategory);
+      curY += drawTableRow(curY, '5', 'Type of Connection: 1ph LT or 3 ph LT/HT', d.connectionType);
+      curY += drawTableRow(curY, '6', 'Contract demand of consumer', d.contractDemand);
+      curY += drawTableRow(curY, '7', 'Arrear, if any', d.arrear);
+
+      // Section B
+      curY += drawSectionHeader(curY, 'B', 'Distribution Transformer Details');
+      curY += drawTableRow(curY, '1', 'Capacity in KVA', d.transformerCapacity);
+      curY += drawTableRow(curY, '2', 'Location', d.transformerLocation);
+      curY += drawTableRow(curY, '3', 'Total Capacity of rooftop solar photovoltaic systems already connected to the Distribution Transformer in kWp (individual capacity may be mentioned)', d.transformerTotalRtsCapacity);
+      curY += drawTableRow(curY, '4', 'Whether the transformer capacity is adequate to deliver the proposed Solar rooftop PV system in addition to existing SRTPV systems', d.transformerCapacityAdequate);
+
+      // Section C
+      curY += drawSectionHeader(curY, 'C', 'Solar Rooftop PV Power Plant Details');
+      curY += drawTableRow(curY, '1', 'Details of proposed power plant\nCapacity of the SPV Power Plant (kWp)\nPlant proposed at single site/multiple sites\nInterconnection with the electricity network at single point or multiple point', d.proposedPlantDetails);
+      curY += drawTableRow(curY, '2', 'Whether the Single Line Diagram of the SRTPV System (Submitted by the consumer indicating all the Safety aspects of Grid Connectivity) is OK for grid Connectivity', d.sldOkStatus);
+
+      // Page 1 Footer
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text('Page 1 of 3', pageWidth - marginX, 288, { align: 'right' });
+
+      // ══════════════════════════════════════════════════════════
+      // PAGE 2
+      // ══════════════════════════════════════════════════════════
+      doc.addPage();
+      curY = 12;
+
+      curY += drawTableHeaderRow(curY);
+
+      // Section D
+      curY += drawSectionHeader(curY, 'D', 'Grid Tied Inverter');
+      curY += drawTableRow(curY, '1', 'Make', d.inverterMake);
+      curY += drawTableRow(curY, '2', 'Serial No.', d.inverterSerialNo);
+      curY += drawTableRow(curY, '3', 'Capacity', d.inverterCapacity);
+      curY += drawTableRow(curY, '4', 'Input Voltage/ Output Voltage', d.inverterVoltages);
+      curY += drawTableRow(curY, '5', 'Whether Anti-islanding feature is in working condition', d.inverterAntiIslanding);
+      curY += drawTableRow(curY, '6', 'Date of installation', d.inverterInstallDate);
+
+      // Section E
+      curY += drawSectionHeader(curY, 'E', 'P.V Module');
+      curY += drawTableRow(curY, '1', 'Make', d.moduleMake);
+      curY += drawTableRow(curY, '2', 'Serial No.', d.moduleSerials);
+      curY += drawTableRow(curY, '3', 'Type of Module & model', d.moduleTypeModel);
+      curY += drawTableRow(curY, '4', 'Capacity of each Module', d.moduleCapacityEach);
+      curY += drawTableRow(curY, '5', 'No. of Module', d.moduleCount);
+      curY += drawTableRow(curY, '6', 'Total capacity of Module', d.moduleTotalCapacity);
+      curY += drawTableRow(curY, '7', 'Date of installation', d.moduleInstallDate);
+
+      // Section F
+      const fObsText = [
+        (d.dcEarthing || d.acEarthing) ? `(i) ${d.dcEarthing || '____'}   (ii) ${d.acEarthing || '____'}` : '',
+        d.earthingPermissibleText
+      ].filter(Boolean).join('\n');
+      curY += drawTableRow(curY, 'F', 'Earthing Verification (i) D.C Earthing (ii) A.C Earthing', fObsText);
+
+      // Section G
+      curY += drawTableRow(curY, 'G', d.protectiveSystemDetails || '(i) AC & DC DB: Yes/No\n(ii) Manual Switch at Solar Side: Yes/No\n(iii) Relay operated automatic switch at net-meter side: Yes/ No', d.protectiveSystemObs || '(i) Yes / No\n(ii) Yes / No\n(iii) Yes / No');
+
+      // Section H to K
+      curY += drawTableRow(curY, 'H', 'Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other', d.protectionBackFeeding);
+      curY += drawTableRow(curY, 'I', 'EIC inspection and approval letter Submitted by the consumer above 50KVA', d.eicInspectionLetter);
+      curY += drawTableRow(curY, 'J', 'Safety certificate from designated Safety officer below 50KVA', d.safetyCertificate);
+      curY += drawTableRow(curY, 'K', 'Work Completion Report of SRTPV by consumer', d.workCompletionReportConsumer);
+
+      // Page 2 Footer
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text('Page 2 of 3', pageWidth - marginX, 288, { align: 'right' });
+
+      // ══════════════════════════════════════════════════════════
+      // PAGE 3
+      // ══════════════════════════════════════════════════════════
+      doc.addPage();
+      curY = 12;
+
+      curY += drawTableHeaderRow(curY);
+
+      // Section L
+      curY += drawTableRow(curY, 'L', 'Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards', d.testReportComponents);
+
+      // Section M: Meter Details (4 columns)
+      const mCol1W = 12;
+      const mCol2W = 80;
+      const mCol3W = 45;
+      const mCol4W = 45;
+
+      const drawMeterRow = (y: number, sl: string, param: string, netVal: string, solarVal: string, isHead: boolean = false) => {
+        doc.setFont('helvetica', isHead ? 'bold' : 'normal');
+        doc.setFontSize(7.8);
+        const pLines = doc.splitTextToSize(param || '', mCol2W - 4);
+        const nLines = doc.splitTextToSize(netVal || '', mCol3W - 4);
+        const sLines = doc.splitTextToSize(solarVal || '', mCol4W - 4);
+        const maxL = Math.max(pLines.length, nLines.length, sLines.length, 1);
+        const rH = Math.max(5.0, maxL * 3.6 + 1.8);
+
+        doc.setLineWidth(0.2);
+        doc.rect(marginX, y, tableWidth, rH);
+        doc.line(marginX + mCol1W, y, marginX + mCol1W, y + rH);
+        doc.line(marginX + mCol1W + mCol2W, y, marginX + mCol1W + mCol2W, y + rH);
+        doc.line(marginX + mCol1W + mCol2W + mCol3W, y, marginX + mCol1W + mCol2W + mCol3W, y + rH);
+
+        doc.text(sl, marginX + (mCol1W / 2), y + 3.6, { align: 'center' });
+        doc.text(pLines, marginX + mCol1W + 2, y + 3.6);
+        doc.text(nLines, marginX + mCol1W + mCol2W + 2, y + 3.6);
+        doc.text(sLines, marginX + mCol1W + mCol2W + mCol3W + 2, y + 3.6);
+        return rH;
+      };
+
+      curY += drawMeterRow(curY, 'M', 'Meter Details (If arranged before Inspection)', 'Net Meter (Bi-directional Meter)', 'Solar Generation Meter (Details of all Solar meters)', true);
+      curY += drawMeterRow(curY, '1', 'Total Nos. of Meters', d.netMeterTotal, d.solarMeterTotal);
+      curY += drawMeterRow(curY, '2', 'Meter Make', d.netMeterMake, d.solarMeterMake);
+      curY += drawMeterRow(curY, '3', 'Meter Sl. No.', d.netMeterSerial, d.solarMeterSerial);
+      curY += drawMeterRow(curY, '4', '1 Ph/ 3Ph', d.netMeterPhase, d.solarMeterPhase);
+      curY += drawMeterRow(curY, '5', 'Capacity', d.netMeterCapacity, d.solarMeterCapacity);
+      curY += drawMeterRow(curY, '6', 'Meter Constant', d.netMeterConstant, d.solarMeterConstant);
+
+      // Section N
+      curY += drawTableRow(curY, 'N', 'Any other necessary details with Remarks', d.otherRemarks);
+
+      // Inspection Report Header
+      const inspHeadH = 5.2;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.2);
+      doc.rect(marginX, curY, tableWidth, inspHeadH);
+      doc.text('Inspection Report', pageWidth / 2, curY + 3.7, { align: 'center' });
+      curY += inspHeadH;
+
+      curY += drawTableRow(curY, '', 'Whether this installed SRTPV system is satisfactory for grid connectivity/ Synchronization', d.satisfactorySyncStatus);
+
+      curY += 10;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(d.observationsText || 'Observations (If any)', marginX, curY);
+
+      const authLines = doc.splitTextToSize(d.authorizedSignatoryText || `Authorized signatory ${d.discomName || 'DISCOM'}`, 70);
+      doc.text(authLines, marginX + 110, curY);
+      curY += (authLines.length * 4.2) + 6;
+      doc.text(d.signDate || 'Date-', marginX + 110, curY);
+
+      // Page 3 Footer
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text('Page 3 of 3', pageWidth - marginX, 288, { align: 'right' });
+
+      // Save PDF
+      const cleanName = (d.applicantName || 'Customer').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanConsumerNo = (cust.ConsumerNo || cust.ApplicationNumber || 'Form6').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `Form_6_Inspection_Report_${cleanName}_${cleanConsumerNo}.pdf`;
+
+      doc.save(fileName);
+      this.toastService.success(`Form 6 PDF (${fileName}) downloaded successfully!`);
+    } catch (err: any) {
+      console.error('Error generating Form 6 PDF:', err);
+      this.toastService.error(`Error generating Form 6 PDF: ${err?.message || err}`);
+    }
+  }
+
   onDownloadClicked(): void {
     const docType = this.activeDocType();
     if (docType === 'agreement') {
@@ -2413,6 +3002,8 @@ export class DocumentComponent implements OnInit {
       this.downloadForm3Pdf();
     } else if (docType === 'form4') {
       this.downloadForm4Pdf();
+    } else if (docType === 'form6') {
+      this.downloadForm6Pdf();
     } else {
       this.openPreviewModal(docType);
     }
