@@ -85,6 +85,8 @@ export class DocumentComponent implements OnInit {
   // Document Preview Modal State
   isPreviewModalOpen = signal<boolean>(false);
   previewDocType = signal<DocumentType>('form4');
+  isPreviewDirty = signal<boolean>(false);
+  isResettingPreview = signal<boolean>(false);
 
   // Form 1 State
   form1Data = signal<Form1Data>(this.buildDefaultForm1Data(null, {}));
@@ -724,6 +726,8 @@ export class DocumentComponent implements OnInit {
     }
     const targetDocType = docType || this.activeDocType();
     this.previewDocType.set(targetDocType);
+    this.isPreviewDirty.set(false);
+    this.isResettingPreview.set(false);
     this.isPreviewModalOpen.set(true);
 
     if (targetDocType === 'agreement') {
@@ -735,6 +739,41 @@ export class DocumentComponent implements OnInit {
 
   closePreviewModal(): void {
     this.isPreviewModalOpen.set(false);
+    this.isPreviewDirty.set(false);
+    this.isResettingPreview.set(false);
+  }
+
+  onPreviewContentInput(): void {
+    if (!this.isPreviewDirty()) {
+      this.isPreviewDirty.set(true);
+    }
+  }
+
+  resetPreview(): void {
+    const cust = this.selectedCustomer();
+    const specs = this.currentSpecs();
+    const docType = this.previewDocType();
+
+    if (docType === 'form1') {
+      this.form1Data.set(this.buildDefaultForm1Data(cust, specs));
+    } else if (docType === 'form3') {
+      this.form3Data.set(this.buildDefaultForm3Data(cust, specs));
+    } else if (docType === 'form4') {
+      this.form4Data.set(this.buildDefaultForm4Data(cust, specs));
+    } else if (docType === 'form6') {
+      this.form6Data.set(this.buildDefaultForm6Data(cust, specs));
+    }
+
+    this.isResettingPreview.set(true);
+    this.isPreviewDirty.set(false);
+
+    setTimeout(() => {
+      this.isResettingPreview.set(false);
+      if (docType === 'agreement') {
+        this.renderAgreementDocxPreview();
+      }
+      this.toastService.info('Preview has been reset to original values.');
+    }, 25);
   }
 
   printDocument(): void {

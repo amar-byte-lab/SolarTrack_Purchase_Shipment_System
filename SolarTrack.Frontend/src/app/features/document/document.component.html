@@ -28,12 +28,6 @@
         </button> 
       </li>
     </ul>
-
-    <!-- Quick info / context hint -->
-    <div class="d-flex align-items-center gap-2">
-      <span *ngIf="mainTab() === 'form'" class="text-secondary fs-8">Official DISCOM Application &amp; Commissioning Documentation</span>
-      <span *ngIf="mainTab() === 'customer-mapping'" class="text-secondary fs-8">Customer District, Partner &amp; Status Management</span>
-    </div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -421,15 +415,24 @@
               <span *ngIf="previewDocType() === 'form1'">Application Form (Form-1)</span>
               <span *ngIf="previewDocType() === 'form3'">Work Completion &amp; Inspection Report (Form-3)</span>
               <span *ngIf="previewDocType() === 'form4'">Work Completion Report (Form-4)</span>
-              <span *ngIf="previewDocType() === 'form6'">Commissioning Certificate (Form-6)</span>
+              <span *ngIf="previewDocType() === 'form6'">Inspection Report (Form-6)</span>
             </h6>
             <span class="badge bg-white text-secondary border fs-9">A4 Format</span>
+            <span *ngIf="isPreviewDirty()" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-9 d-flex align-items-center gap-1">
+              <span class="spinner-grow spinner-grow-sm" style="width: 6px; height: 6px;"></span> Modified
+            </span>
           </div>
           <button type="button" class="btn-close" (click)="closePreviewModal()"></button>
         </div>
 
         <!-- Modal Body (Printable Sheet) -->
-        <div class="modal-body p-3 p-md-4 bg-secondary bg-opacity-10 printable-area">
+        <div 
+          class="modal-body p-3 p-md-4 bg-secondary bg-opacity-10 printable-area position-relative"
+          (input)="onPreviewContentInput()"
+          (keyup)="onPreviewContentInput()"
+          (change)="onPreviewContentInput()">
+          
+          <div *ngIf="!isResettingPreview()" class="w-100">
           
           <!-- ════════════════════════════════════════════════════════════════════ -->
           <!-- PREVIEW OPTION 1: AGREEMENT (EXACT NATIVE DOCX PREVIEW & DIRECT EDIT)-->
@@ -1964,9 +1967,31 @@
 
           </div>
 
+          <!-- Loading state when resetting preview -->
+          <div *ngIf="isResettingPreview()" class="d-flex flex-column justify-content-center align-items-center py-5 my-5">
+            <div class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+            <span class="text-muted small">Resetting preview to original values...</span>
+          </div>
+
+        </div>
+
         <!-- Footer -->
         <div class="modal-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
-          <button type="button" class="btn btn-outline-secondary btn-sm px-3" (click)="closePreviewModal()">Close</button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm px-3" (click)="closePreviewModal()">Close</button>
+            
+            <!-- Reset Button: ONLY visible if preview has been modified -->
+            <button 
+              *ngIf="isPreviewDirty()" 
+              type="button" 
+              class="btn btn-outline-danger btn-sm px-3 fw-semibold d-flex align-items-center gap-1 shadow-sm" 
+              (click)="resetPreview()"
+              title="Reset preview back to original values">
+              <app-icon name="rotate-ccw" [size]="14"></app-icon>
+              <span>Reset</span>
+            </button>
+          </div>
+
           <div class="d-flex gap-2">
             <button 
               *ngIf="previewDocType() === 'agreement'" 
