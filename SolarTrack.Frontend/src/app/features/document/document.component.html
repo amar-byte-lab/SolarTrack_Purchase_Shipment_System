@@ -986,13 +986,474 @@
           </div>
 
           <!-- ════════════════════════════════════════════════════════════════════ -->
-          <!-- PREVIEW OPTION 4: OTHER TECHNICAL DISCOM FORMS (FORM 4, 6)             -->
+          <!-- PREVIEW OPTION 4: EXACT OFFICIAL DISCOM FORM 4 (WORK COMPLETION REPORT) -->
           <!-- ════════════════════════════════════════════════════════════════════ -->
-          <div *ngIf="previewDocType() !== 'agreement' && previewDocType() !== 'form1' && previewDocType() !== 'form3'" class="a4-sheet bg-white p-4 shadow-sm mx-auto border" style="max-width: 800px; min-height: 1000px; color: #000; font-family: serif; font-size: 13px; line-height: 1.5;">
+          <div *ngIf="previewDocType() === 'form4'" class="d-flex flex-column gap-4 align-items-center">
+
+            <!-- PAGE 1 SHEET -->
+            <div class="a4-sheet bg-white p-4 p-md-5 shadow-sm mx-auto border position-relative" style="max-width: 800px; min-height: 1050px; color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4;">
+              <!-- Header Titles -->
+              <div class="text-center mb-1">
+                <strong style="font-size: 15px;">Work Completion Report (Form-4)</strong>
+              </div>
+              <div class="text-center mb-3">
+                <strong style="font-size: 11.5px;">(To be submitted by the applicant)</strong>
+              </div>
+
+              <!-- Addressee & Subject -->
+              <div class="mb-3" style="font-size: 10.5px; line-height: 1.45;">
+                <div>To,</div>
+                <div class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevOffDesig" spellcheck="false">{{ form4Data().officerDesignation }}</div>
+                <div class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevOffAddr" spellcheck="false">{{ form4Data().officerAddress }}</div>
+                <div class="fw-bold mt-1.5">Sub: Submission of work completion report for System documentation requirements.</div>
+                <div class="fw-bold"><span class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevRefPmsgy" spellcheck="false">Ref: {{ form4Data().refPmsgy }}</span></div>
+                <div class="mt-1">Sir,</div>
+                <div class="text-justify mb-2" style="font-size: 10px; line-height: 1.45;">
+                  With reference to the above, I would like to submit the following basic information of my Solar Rooftop PV System (SRTPV System) for your kind perusal and request for arranging to Inspect and Commission at the earliest:
+                </div>
+              </div>
+
+              <!-- Table: Section A, B, C (Part 1) -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <tbody>
+                  <!-- Section A: Details of the Application -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">A. Details of the Application:</td>
+                  </tr>
+                  <tr>
+                    <td style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="width: 50%; border: 1px solid #000; padding: 4px 6px;">Application FG No/Date</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAppFgNo" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().appFgNoDate }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Application fees in Rs.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAppFees" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().appFees }}</td>
+                  </tr>
+
+                  <!-- Section B: Details of the Solar PV Module -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">B. Details of the Solar PV Module:</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Model No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModModel" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().moduleModelNo }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Total Capacity in kWp</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModTotalCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().moduleTotalCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().moduleMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Sl. NO</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModSerials" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace; white-space: pre-line;">{{ form4Data().moduleSerials }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Total No. of PV Modules</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModCount" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().moduleCount }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity of each Module in kWp</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModCapEach" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().moduleCapacityEach }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">7</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of Installation</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModInstDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().moduleInstallDate }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">8</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of Commission</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevModCommDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().moduleCommissionDate }}</td>
+                  </tr>
+
+                  <!-- Section C: Details of the Inverter (Part 1) -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">C. Details of the Inverter:</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Total No of Inverter</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvCount" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterCount }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Name of the inverter (Type)</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvType" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterType }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Model No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvModel" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterModelNo }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Serial No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form4Data().inverterSerialNo }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Page 1 of 3 indicator -->
+              <div class="d-flex justify-content-end text-muted small mt-auto pt-2" style="font-size: 10px;">
+                Page 1 of 3
+              </div>
+            </div>
+
+            <!-- PAGE 2 SHEET -->
+            <div class="a4-sheet bg-white p-4 p-md-5 shadow-sm mx-auto border position-relative" style="max-width: 800px; min-height: 1050px; color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4;">
+              <!-- Table: Section C (cont) to Section I -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <tbody>
+                  <!-- Section C (cont.) -->
+                  <tr>
+                    <td style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px;">7</td>
+                    <td style="width: 50%; border: 1px solid #000; padding: 4px 6px;">Input Voltage</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvInVolt" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterInputVolt }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">8</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Output Voltage</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvOutVolt" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterOutputVolt }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">9</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of Installation</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvInstDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterInstallDate }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">10</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of Commission</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevInvCommDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().inverterCommissionDate }}</td>
+                  </tr>
+
+                  <!-- Section D: Details of Cables: DC -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">D. Details of Cables: DC</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevDcCableMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().dcCableMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Size &amp; Type</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevDcCableSize" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().dcCableSize }}</td>
+                  </tr>
+
+                  <!-- Section E: Details of AC Wiring -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">E. Details of AC Wiring:</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAcCableMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().acCableMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Size &amp; Type</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAcCableSize" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().acCableSize }}</td>
+                  </tr>
+
+                  <!-- Section F: Details of the DC distribution box -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">F. Details of the DC distribution box:</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevDcdbMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().dcdbMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Sl. No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevDcdbSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().dcdbSerialNo }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">DC Surge Protection Device rating</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevDcdbSpd" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().dcdbSpdRating }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">MCB / Isolator quantity &amp; capacity</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevDcdbMcb" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().dcdbMcbDetails }}</td>
+                  </tr>
+
+                  <!-- Section G: Details of AC distribution box -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">G. Details of AC distribution box:</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAcdbMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().acdbMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Sl. No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAcdbSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().acdbSerialNo }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">AC Surge Protection Device rating</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAcdbSpd" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().acdbSpdRating }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">MCB / MCCB quantity &amp; capacity</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevAcdbMcb" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().acdbMcbDetails }}</td>
+                  </tr>
+
+                  <!-- Section H: Details of Earthing -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">H. Details of Earthing:</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Earth resistance (in ohms)</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevEarthRes" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().earthResistance }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Size of the Earth wire / flat*(Copper/Al)</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevEarthWire" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().earthWireSize }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Two separate earthing points</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevTwoPoints" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().twoEarthingPoints }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Lightening Arrester</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevLa" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().lighteningArrester }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">LA Size &amp; Type</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevLaType" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().laSizeType }}</td>
+                  </tr>
+
+                  <!-- Note below H -->
+                  <tr>
+                    <td colspan="3" class="fw-bold" style="border: 1px solid #000; padding: 4px 6px;">
+                      {{ form4Data().earthingNote }}
+                    </td>
+                  </tr>
+
+                  <!-- Section I: Net Meter -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">
+                      I. Details of the NET and Solar meters details (please enclose the test report of the bidirectional meter tested at MRT division, TPNODL)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">No of Net Meter</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmCount" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().netMeterCount }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().netMeterMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Serial No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form4Data().netMeterSerial }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().netMeterCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Type/Model</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmModel" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().netMeterModel }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Single ph./Three ph.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmPhase" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().netMeterPhase }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">7</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Line CT/ PT Ratio</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmCtPt" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().netMeterCtPtRatio }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">8</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of Test by MRT, TPNODL</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevNmDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().netMeterTestDate }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Page 2 of 3 indicator -->
+              <div class="d-flex justify-content-end text-muted small mt-auto pt-2" style="font-size: 10px;">
+                Page 2 of 3
+              </div>
+            </div>
+
+            <!-- PAGE 3 SHEET -->
+            <div class="a4-sheet bg-white p-4 p-md-5 shadow-sm mx-auto border position-relative" style="max-width: 800px; min-height: 1050px; color: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4;">
+              <!-- Table: Section I (Solar Meters) & Section J -->
+              <table class="table table-bordered border-dark table-sm mb-4" style="font-size: 10.5px; border-color: #000; border-collapse: collapse; width: 100%;">
+                <tbody>
+                  <!-- Solar Meters -->
+                  <tr>
+                    <td style="width: 42px; text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="width: 50%; border: 1px solid #000; padding: 4px 6px;">No. of Solar Meters</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmCount" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().solarMeterCount }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Make</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().solarMeterMake }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Serial No.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmSerial" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form4Data().solarMeterSerial }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Capacity</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmCap" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().solarMeterCapacity }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Type/Model</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmModel" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().solarMeterModel }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Single ph./Three ph.</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmPhase" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().solarMeterPhase }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">7</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Line CT/ PT Ratio</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmCtPt" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().solarMeterCtPtRatio }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">8</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Date of Test by MRT, TPNODL</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevSmDate" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().solarMeterTestDate }}</td>
+                  </tr>
+
+                  <!-- Section J: Caution Signs -->
+                  <tr class="fw-bold" style="background: #f8fafc;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 4px 6px;">
+                      J. Details of the Caution signs<br>
+                      <span style="font-weight: normal; font-size: 9.5px;">(Size of the caution label: 105 mm width X 20 mm height, with white letters on a red background)</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">1</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Panels</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevCautPanels" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().cautionPanels }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Inverters</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevCautInverters" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().cautionInverters }}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">DC/ AC distribution box</td>
+                    <td class="f1-editable" contenteditable="true" id="f4PrevCautBoxes" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().cautionDcAcdb }}</td>
+                  </tr>
+
+                  <!-- Row K & L -->
+                  <tr>
+                    <td colspan="3" class="fw-bold f1-editable" contenteditable="true" id="f4PrevSwitches" style="border: 1px solid #000; padding: 4px 6px;">{{ form4Data().provisionSwitches }}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" class="fw-bold f1-editable" contenteditable="true" id="f4PrevOmInfo" style="border: 1px solid #000; padding: 4px 6px; white-space: pre-line;">{{ form4Data().omInfoStatus }}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Compliance Statement -->
+              <div class="f1-editable px-1 rounded my-3 text-justify" contenteditable="true" id="f4PrevCompliance" spellcheck="false" style="font-size: 10px; line-height: 1.45;">
+                {{ form4Data().complianceCert }}
+              </div>
+
+              <!-- Signatures Row -->
+              <div class="row g-4 mb-4 pt-2" style="font-size: 10.5px;">
+                <div class="col-6">
+                  <div class="fw-bold mb-1">Signature of the Applicant</div>
+                  <div>Name:- <span class="f1-editable px-1 rounded fw-semibold" contenteditable="true" id="f4PrevSignAppName" spellcheck="false">{{ form4Data().applicantName }}</span></div>
+                  <div>Address:- <span class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevSignAppAddr" spellcheck="false" style="white-space: pre-line;">{{ form4Data().applicantAddress }}</span></div>
+                  <div>Date: <span class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevSignAppDate" spellcheck="false">{{ form4Data().applicantDate }}</span></div>
+                </div>
+                <div class="col-6">
+                  <div class="fw-bold mb-1">Name and Signature of the System Installer with Seal</div>
+                  <div class="text-muted" style="font-size: 9.5px;">Name of the firm:</div>
+                  <div class="f1-editable px-1 rounded fw-bold" contenteditable="true" id="f4PrevSignInstFirm" spellcheck="false">{{ form4Data().installerFirm }}</div>
+                  <div class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevSignInstAddr" spellcheck="false" style="white-space: pre-line;">{{ form4Data().installerAddress }}</div>
+                  <div class="mt-1">Date: <span class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevSignInstDate" spellcheck="false">{{ form4Data().installerDate }}</span></div>
+                </div>
+              </div>
+
+              <!-- Certified by -->
+              <div class="mb-4" style="font-size: 10.5px;">
+                <div class="fw-bold">Certified by</div>
+                <div class="f1-editable px-1 rounded fw-semibold" contenteditable="true" id="f4PrevSignOffTitle" spellcheck="false">{{ form4Data().officerTitle }}</div>
+                <div>Date: <span class="f1-editable px-1 rounded" contenteditable="true" id="f4PrevSignOffDate" spellcheck="false">{{ form4Data().officerDate }}</span></div>
+              </div>
+
+              <!-- Enclosures -->
+              <div class="pt-2 border-top" style="font-size: 10px;">
+                <div class="fw-bold mb-1">Enclosures:</div>
+                <ul class="list-unstyled mb-0 ps-1" style="line-height: 1.5;">
+                  <li>1. Test report of bi-directional meter tested at MMG/MRT division, TPNODL.</li>
+                  <li>2. Copy of the IEC/IS Test reports/ certificate of PV modules, Inverter, Cable etc.</li>
+                  <li>3. Data sheets/Drawing for the array mounting System.</li>
+                  <li>4. Actual Single line wiring diagram of the SPV System.</li>
+                  <li>5. Copy of Maintenance &amp; Operation information provided by the System Installer.</li>
+                </ul>
+              </div>
+
+              <!-- Page 3 of 3 indicator -->
+              <div class="d-flex justify-content-end text-muted small mt-auto pt-3" style="font-size: 10px;">
+                Page 3 of 3
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <!-- PREVIEW OPTION 5: OTHER TECHNICAL DISCOM FORMS (FORM 6)                -->
+          <!-- ════════════════════════════════════════════════════════════════════ -->
+          <div *ngIf="previewDocType() !== 'agreement' && previewDocType() !== 'form1' && previewDocType() !== 'form3' && previewDocType() !== 'form4'" class="a4-sheet bg-white p-4 shadow-sm mx-auto border" style="max-width: 800px; min-height: 1000px; color: #000; font-family: serif; font-size: 13px; line-height: 1.5;">
               <!-- HEADER -->
               <div class="text-center mb-3">
                 <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.05em;">
-                  <span *ngIf="previewDocType() === 'form4'">WORK COMPLETION REPORT (FORM-4)</span>
                   <span *ngIf="previewDocType() === 'form6'">COMMISSIONING CERTIFICATE FOR RTS (FORM-6)</span>
                 </h5>
                 <div class="small text-muted">
@@ -1138,6 +1599,14 @@
               (click)="downloadForm3Pdf({ useLivePreviewValues: true })">
               <app-icon name="download" [size]="14"></app-icon>
               <span>Download Form 3 (PDF)</span>
+            </button>
+            <button 
+              *ngIf="previewDocType() === 'form4'" 
+              type="button" 
+              class="btn btn-primary btn-sm px-3 fw-semibold d-flex align-items-center gap-1" 
+              (click)="downloadForm4Pdf({ useLivePreviewValues: true })">
+              <app-icon name="download" [size]="14"></app-icon>
+              <span>Download Form 4 (PDF)</span>
             </button>
           </div>
         </div>

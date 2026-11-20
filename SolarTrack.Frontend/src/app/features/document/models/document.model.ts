@@ -164,3 +164,105 @@ export interface Form3Data {
   certifiedOfficerTitle: string;
   certifiedOfficerDate: string;
 }
+
+export interface Form4Data {
+  officerDesignation: string;
+  officerAddress: string;
+  refPmsgy: string;
+
+  // A. Details of the Application:
+  appFgNoDate: string;
+  appFees: string;
+
+  // B. Details of the Solar PV Module:
+  moduleModelNo: string;
+  moduleTotalCapacity: string;
+  moduleMake: string;
+  moduleSerials: string;
+  moduleCount: string;
+  moduleCapacityEach: string;
+  moduleInstallDate: string;
+  moduleCommissionDate: string;
+
+  // C. Details of the Inverter:
+  inverterCount: string;
+  inverterType: string;
+  inverterMake: string;
+  inverterModelNo: string;
+  inverterCapacity: string;
+  inverterSerialNo: string;
+  inverterInputVolt: string;
+  inverterOutputVolt: string;
+  inverterInstallDate: string;
+  inverterCommissionDate: string;
+
+  // D. Details of Cables: DC
+  dcCableMake: string;
+  dcCableSize: string;
+
+  // E. Details of AC Wiring:
+  acCableMake: string;
+  acCableSize: string;
+
+  // F. Details of the DC distribution box:
+  dcdbMake: string;
+  dcdbSerialNo: string;
+  dcdbSpdRating: string;
+  dcdbMcbDetails: string;
+
+  // G. Details of AC distribution box:
+  acdbMake: string;
+  acdbSerialNo: string;
+  acdbSpdRating: string;
+  acdbMcbDetails: string;
+
+  // H. Details of Earthing:
+  earthResistance: string;
+  earthWireSize: string;
+  twoEarthingPoints: string;
+  lighteningArrester: string;
+  laSizeType: string;
+  earthingNote: string;
+
+  // I. Net Meter details
+  netMeterCount: string;
+  netMeterMake: string;
+  netMeterSerial: string;
+  netMeterCapacity: string;
+  netMeterModel: string;
+  netMeterPhase: string;
+  netMeterCtPtRatio: string;
+  netMeterTestDate: string;
+
+  // I (cont.) Solar Meter details
+  solarMeterCount: string;
+  solarMeterMake: string;
+  solarMeterSerial: string;
+  solarMeterCapacity: string;
+  solarMeterModel: string;
+  solarMeterPhase: string;
+  solarMeterCtPtRatio: string;
+  solarMeterTestDate: string;
+
+  // J. Details of Caution signs
+  cautionPanels: string;
+  cautionInverters: string;
+  cautionDcAcdb: string;
+
+  // K & L
+  provisionSwitches: string;
+  omInfoStatus: string;
+  complianceCert: string;
+
+  // Signatures
+  applicantName: string;
+  applicantAddress: string;
+  applicantDate: string;
+
+  installerFirm: string;
+  installerAddress: string;
+  installerDate: string;
+
+  officerTitle: string;
+  officerDate: string;
+}
