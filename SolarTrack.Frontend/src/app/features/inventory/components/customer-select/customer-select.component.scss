@@ -86,3 +86,20 @@
 .fs-9 {
   font-size: 0.75rem;
 }
+
+@media (max-width: 576px) {
+  .customer-dropdown-menu {
+    min-width: 100% !important;
+    max-width: calc(100vw - 32px) !important;
+    left: 0 !important;
+  }
+
+  .customer-select-trigger {
+    min-height: 38px;
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .customer-option-item {
+    padding: 0.6rem 0.75rem !important;
+  }
+}

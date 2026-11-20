@@ -47,13 +47,13 @@
         <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
           <div class="row g-2.5">
 
-            <!-- Row 1: Dispatch Date, Site Name, Delivery Charge (3 equal columns) -->
-            <div class="col-md-4 col-12">
+            <!-- Row 1: Dispatch Date, Site Name, Delivery Charge -->
+            <div class="col-12 col-md-4">
               <label class="form-label small fw-semibold text-secondary mb-1">Dispatch Date *</label>
               <input type="date" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="date">
             </div>
 
-            <div class="col-md-4 col-12">
+            <div class="col-12 col-md-4">
               <label class="form-label small fw-semibold text-secondary mb-1">Site Name *</label>
               <input 
                 type="text" 
@@ -62,7 +62,7 @@
                 placeholder="e.g. Balasore Site">
             </div>
 
-            <div class="col-md-4 col-12">
+            <div class="col-12 col-md-4">
               <label class="form-label small fw-semibold text-secondary mb-1">Delivery Charge (₹)</label>
               <input 
                 type="number" 
@@ -74,8 +74,8 @@
                 placeholder="0.00">
             </div>
 
-            <!-- Row 2: Driver, Charge, Distance (3 equal columns, column-wise aligned) -->
-            <div class="col-md-4 col-12">
+            <!-- Row 2: Driver, Charge, Distance -->
+            <div class="col-12 col-md-4">
               <label class="form-label small fw-semibold text-secondary mb-1">Driver</label>
               <input 
                 type="text" 
@@ -84,7 +84,7 @@
                 placeholder="Driver Name / Phone / Vehicle">
             </div>
 
-            <div class="col-md-4 col-12">
+            <div class="col-12 col-md-4">
               <label class="form-label small fw-semibold text-secondary mb-1">Charge/km (₹)</label>
               <input 
                 type="number" 
@@ -95,7 +95,7 @@
                 placeholder="0.00">
             </div>
 
-            <div class="col-md-4 col-12">
+            <div class="col-12 col-md-4">
               <label class="form-label small fw-semibold text-secondary mb-1">Distance (km)</label>
               <input 
                 type="number" 
@@ -244,8 +244,8 @@
               </div>
             </div>
 
-            <!-- Items Table -->
-            <div class="table-responsive border rounded bg-white overflow-visible">
+            <!-- Desktop Items Table (Hidden on Mobile) -->
+            <div class="d-none d-md-block table-responsive border rounded bg-white overflow-visible">
               <table class="table table-sm align-middle table-bordered mb-0" style="font-size: 0.8rem;">
                 <thead class="table-light">
                   <tr>
@@ -312,8 +312,73 @@
               </table>
             </div>
 
+            <!-- Mobile Items Cards (Visible on Mobile only < 768px) -->
+            <div class="d-md-none mobile-items-container d-flex flex-column gap-2.5">
+              @for (row of itemsList; track $index; let idx = $index) {
+                <div class="card border rounded-2 p-2.5 bg-white shadow-xs mobile-item-card">
+                  <!-- Header: Item # and Remove -->
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge bg-light text-dark border fw-bold fs-9">Item #{{ idx + 1 }}</span>
+                    <button type="button" class="btn btn-xs btn-outline-danger py-0.5 px-2 border-0 d-inline-flex align-items-center gap-1" (click)="removeItemRow(idx)" title="Remove item">
+                      <app-icon name="trash" [size]="13"></app-icon>
+                      <span class="fs-9">Remove</span>
+                    </button>
+                  </div>
+
+                  <!-- Select Item Tree -->
+                  <div class="mb-2">
+                    <label class="form-label small text-secondary fw-semibold mb-1">Item *</label>
+                    <app-item-tree-select 
+                      [items]="availableItemsWithStock"
+                      [(selectedCode)]="row.itemCode"
+                      (itemSelected)="onTreeItemSelected(row, $event)"
+                      placeholder="-- Select Item --">
+                    </app-item-tree-select>
+                  </div>
+
+                  <!-- Qty and Cost / Unit -->
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="form-label small text-secondary fw-semibold mb-1">Qty</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        step="any" 
+                        class="form-control form-control-sm text-center font-monospace fs-8" 
+                        [(ngModel)]="row.qty" 
+                        (ngModelChange)="recalculateCosts()">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small text-secondary fw-semibold mb-1">Cost / Unit (₹)</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="any" 
+                        class="form-control form-control-sm text-end font-monospace fs-8" 
+                        [(ngModel)]="row.unitBuyingPrice" 
+                        (ngModelChange)="recalculateCosts()">
+                    </div>
+                  </div>
+
+                  <!-- Total Dispatched Cost -->
+                  <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded border">
+                    <span class="text-secondary fs-9 fw-semibold">Total Item Cost:</span>
+                    <span class="text-dark fw-bold font-monospace fs-8">
+                      ₹{{ row.dispatchedCost | number:'1.2-2' }}
+                    </span>
+                  </div>
+                </div>
+              }
+
+              @if (itemsList.length === 0) {
+                <div class="text-center py-4 text-muted fs-8 border rounded-2 bg-white">
+                  No items selected for dispatch. Click <strong>+ Add Item</strong> above.
+                </div>
+              }
+            </div>
+
             <!-- Valuation Summary Bar -->
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded mt-2 border">
+            <div class="summary-valuation-bar d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded mt-2 border">
               <div class="d-flex align-items-baseline gap-2">
                 <span class="text-secondary small fw-medium">Delivery Charge:</span>
                 <span class="text-dark fw-bold fs-6 font-monospace">₹{{ deliveryCharge | number:'1.2-2' }}</span>
@@ -346,24 +411,24 @@
           <div class="card border rounded-2 p-3 bg-white mb-2.5 shadow-xs">
             
             <!-- 1 & 2: Cost Summary Metrics (Clean, simple, no badges, no filler cards) -->
-            <div class="d-flex align-items-center flex-wrap gap-4 py-2 px-3 bg-light rounded border mb-2.5 fs-8">
-              <div class="d-flex align-items-baseline gap-1.5">
+            <div class="customer-metrics-bar d-flex align-items-center flex-wrap gap-4 py-2 px-3 bg-light rounded border mb-2.5 fs-8">
+              <div class="metric-row d-flex align-items-baseline gap-1.5">
                 <span class="text-secondary fw-semibold">Total Material Cost:</span>
                 <span class="text-dark fw-bold font-monospace">₹{{ totalMaterialCost | number:'1.2-2' }}</span>
               </div>
 
-              <div class="d-flex align-items-baseline gap-1.5">
+              <div class="metric-row d-flex align-items-baseline gap-1.5">
                 <span class="text-secondary fw-semibold">Delivery Charge:</span>
                 <span class="text-dark fw-bold font-monospace">₹{{ deliveryCharge | number:'1.2-2' }}</span>
               </div>
 
-              <div class="d-flex align-items-baseline gap-1.5">
+              <div class="metric-row d-flex align-items-baseline gap-1.5">
                 <span class="text-secondary fw-semibold">Per Customer Average Material Cost:</span>
                 <span class="text-dark fw-bold font-monospace">₹{{ perCustomerAvgMaterialCost | number:'1.2-2' }}</span>
               </div>
             </div>
 
-            <!-- 3: Customer-wise Cost Allocation Table -->
+            <!-- 3: Customer-wise Cost Allocation Section -->
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="fw-bold text-dark fs-8 text-uppercase" style="letter-spacing: 0.03em;">
                 Customer-wise Cost Allocation ({{ customerAllocations.length }})
@@ -374,7 +439,8 @@
               </button>
             </div>
 
-            <div class="table-responsive border rounded bg-white mb-2 overflow-visible">
+            <!-- Desktop Customer Table (Hidden on Mobile) -->
+            <div class="d-none d-md-block table-responsive border rounded bg-white mb-2 overflow-visible">
               <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.78rem;">
                 <thead class="table-light">
                   <tr>
@@ -432,6 +498,70 @@
               </table>
             </div>
 
+            <!-- Mobile Customer Cards (Visible on Mobile only < 768px) -->
+            <div class="d-md-none mobile-customers-container d-flex flex-column gap-2.5 mb-2">
+              @for (ca of customerAllocations; track $index; let cIdx = $index) {
+                <div class="card border rounded-2 p-2.5 bg-white shadow-xs mobile-customer-card">
+                  <!-- Header: Customer # and Remove -->
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge bg-light text-dark border fw-bold fs-9">Customer #{{ cIdx + 1 }}</span>
+                    <button type="button" class="btn btn-xs btn-outline-danger py-0.5 px-2 border-0 d-inline-flex align-items-center gap-1" (click)="removeCustomerAllocation(cIdx)" title="Remove customer">
+                      <app-icon name="trash" [size]="13"></app-icon>
+                      <span class="fs-9">Remove</span>
+                    </button>
+                  </div>
+
+                  <!-- Select Customer -->
+                  <div class="mb-2">
+                    <label class="form-label small text-secondary fw-semibold mb-1">Customer Name *</label>
+                    <app-customer-select
+                      [customers]="customersList"
+                      [(selectedName)]="ca.customerName"
+                      (customerSelected)="onCustomerSelected(ca, $event)">
+                    </app-customer-select>
+                  </div>
+
+                  <!-- Set Cost and Delivery Cost -->
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="form-label small text-secondary fw-semibold mb-1">Set Cost (₹)</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="any" 
+                        class="form-control form-control-sm text-end font-monospace fs-8" 
+                        [(ngModel)]="ca.setCost" 
+                        (ngModelChange)="onCustomerSetCostChange(ca)">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small text-secondary fw-semibold mb-1">Delivery (₹)</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="any" 
+                        class="form-control form-control-sm text-end font-monospace fs-8 bg-light" 
+                        [(ngModel)]="ca.deliveryCost" 
+                        (ngModelChange)="recalcCustomerTotal(ca)">
+                    </div>
+                  </div>
+
+                  <!-- Total Allocated -->
+                  <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded border">
+                    <span class="text-secondary fs-9 fw-semibold">Total Share:</span>
+                    <span class="text-dark fw-bold font-monospace fs-8">
+                      ₹{{ ca.total | number:'1.2-2' }}
+                    </span>
+                  </div>
+                </div>
+              }
+
+              @if (customerAllocations.length === 0) {
+                <div class="text-center py-4 text-muted fs-8 border rounded-2 bg-white">
+                  No customer allocation added. Click <strong>+ Add Customer</strong> to allocate logistics/costs.
+                </div>
+              }
+            </div>
+
             <!-- Customer Total Summary Bar -->
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded border">
               <div class="d-flex align-items-baseline gap-1.5 ms-auto fs-8">
@@ -441,7 +571,6 @@
             </div>
 
           </div>
-
           <!-- 4: Customer Notes (Google Keep-style Note) -->
           <div class="inv-keep-note border rounded-2 p-2 bg-white">
             <div class="d-flex align-items-center gap-1.5 mb-1 text-secondary fs-9 fw-semibold">

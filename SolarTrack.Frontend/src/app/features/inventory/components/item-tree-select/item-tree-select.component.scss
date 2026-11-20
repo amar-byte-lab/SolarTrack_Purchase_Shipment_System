@@ -129,3 +129,24 @@
     color: #64748b;
   }
 }
+
+@media (max-width: 576px) {
+  .tree-dropdown-menu {
+    min-width: 100% !important;
+    max-width: calc(100vw - 32px) !important;
+    left: 0 !important;
+  }
+
+  .tree-select-trigger {
+    min-height: 38px;
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .category-header {
+    padding: 0.6rem 0.75rem !important;
+  }
+
+  .tree-item-row {
+    padding: 0.55rem 0.75rem !important;
+  }
+}
