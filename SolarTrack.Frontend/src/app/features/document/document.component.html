@@ -2078,4 +2078,16 @@
     (saved)="onCustomerSaved($event)">
   </app-customer-modal>
 
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- REUSABLE MODAL COMPONENT: EDIT CUSTOMER MAPPING POPUP                -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <app-customer-mapping-edit-modal
+    [isOpen]="isMappingEditModalOpen()"
+    [customer]="customerForMappingEdit()"
+    [partnerOptions]="mappingPartnersList()"
+    [isSaving]="isSavingCustomerMapping()"
+    (close)="closeCustomerMappingEditModal()"
+    (save)="onSaveCustomerFromMappingEditModal($event)">
+  </app-customer-mapping-edit-modal>
+
 </div>

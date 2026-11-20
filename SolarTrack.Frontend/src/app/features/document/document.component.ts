@@ -22,6 +22,7 @@ import { ProductSpecsModalComponent } from './components/product-specs-modal/pro
 import { TechnicalSpecsAccordionComponent } from './components/technical-specs-accordion/technical-specs-accordion.component';
 import { CustomerImportModalComponent } from './components/customer-import-modal/customer-import-modal.component';
 import { CustomerMappingTableComponent } from './components/customer-mapping-table/customer-mapping-table.component';
+import { CustomerMappingEditModalComponent } from './components/customer-mapping-edit-modal/customer-mapping-edit-modal.component';
 
 export type MainDocumentTab = 'form' | 'customer-mapping';
 
@@ -36,6 +37,7 @@ export type MainDocumentTab = 'form' | 'customer-mapping';
     TechnicalSpecsAccordionComponent,
     CustomerImportModalComponent,
     CustomerMappingTableComponent,
+    CustomerMappingEditModalComponent,
     CustomerModalComponent
   ],
   templateUrl: './document.component.html',
@@ -85,6 +87,11 @@ export class DocumentComponent implements OnInit {
   // Add / Edit Customer Modal State
   isCustomerModalOpen = signal<boolean>(false);
   customerForModal: InstallmentRow | null = null;
+
+  // Customer Mapping Edit Modal State (Edit via Popup)
+  isMappingEditModalOpen = signal<boolean>(false);
+  customerForMappingEdit = signal<any | null>(null);
+  isSavingCustomerMapping = signal<boolean>(false);
 
   // Document Preview Modal State
   isPreviewModalOpen = signal<boolean>(false);
@@ -565,8 +572,61 @@ export class DocumentComponent implements OnInit {
 
   onEditCustomerFromMapping(c: any): void {
     const existing = this.summaryService.rawInstallments().find(r => Number(r.SlNo) === Number(c.SlNo));
-    this.customerForModal = existing || c;
-    this.isCustomerModalOpen.set(true);
+    const merged = { ...(existing || {}), ...c };
+    if (c.Address) merged.Address = c.Address;
+    if (c.District) merged.District = c.District;
+    if (c.BrokerName) merged.BrokerName = c.BrokerName;
+    if (c.PinCode || c.Pin) merged.PinCode = c.PinCode || c.Pin;
+    if (c.Status) merged.Status = c.Status;
+    this.customerForMappingEdit.set(merged);
+    this.isMappingEditModalOpen.set(true);
+  }
+
+  closeCustomerMappingEditModal(): void {
+    this.isMappingEditModalOpen.set(false);
+    this.customerForMappingEdit.set(null);
+  }
+
+  onSaveCustomerFromMappingEditModal(c: any): void {
+    this.isSavingCustomerMapping.set(true);
+    const existingRow = this.summaryService.rawInstallments().find(r => Number(r.SlNo) === Number(c.SlNo));
+    const currentBrokerNumber = existingRow?.BrokerNumber || '';
+    const workMetaUpdates = {
+      SubDivision: c.SubDivision || '',
+      DivisionName: c.DivisionName || '',
+      CircleName: c.CircleName || '',
+      ApplicationNumber: c.ApplicationNumber || '',
+      ProposedCapacity: c.ProposedCapacity || ''
+    };
+    const newBrokerNum = this.formatBrokerNumberWithWorkMeta(currentBrokerNumber, workMetaUpdates);
+
+    const updatePayload = {
+      Name: c.Name || '',
+      ConsumerNo: c.ConsumerNo || '',
+      Address: (c.Address || '').toUpperCase(),
+      PinCode: c.PinCode || c.Pin || '',
+      District: c.District || '',
+      BrokerName: c.BrokerName || '',
+      Status: c.Status || 'Active',
+      MobileNumber: c.MobileNumber || '',
+      BrokerNumber: newBrokerNum
+    };
+
+    this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${c.SlNo}`, updatePayload).subscribe({
+      next: () => {
+        this.isSavingCustomerMapping.set(false);
+        this.closeCustomerMappingEditModal();
+        this.toastService.success(`Customer "${c.Name || 'Record'}" updated successfully.`);
+        this.summaryService.loadAllData().subscribe(() => {
+          this.initMappingCustomers(this.summaryService.rawInstallments());
+        });
+      },
+      error: (err) => {
+        this.isSavingCustomerMapping.set(false);
+        this.toastService.error('Error saving customer: ' + (err.message || 'Server error'));
+        console.error(err);
+      }
+    });
   }
 
   onToggleStatusCustomer(c: any): void {

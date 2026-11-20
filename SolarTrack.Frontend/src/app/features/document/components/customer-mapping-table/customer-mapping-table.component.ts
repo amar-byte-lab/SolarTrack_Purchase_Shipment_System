@@ -48,20 +48,7 @@ export class CustomerMappingTableComponent {
 
   startEdit(c: any): void {
     if (this.isDeactivated(c)) return;
-    if (this.editingSlNo && this.editingSlNo !== c.SlNo) {
-      const prev = this.customers.find(x => x.SlNo === this.editingSlNo);
-      if (prev && this.editBackup) {
-        this.restoreBackup(prev, this.editBackup);
-      }
-    }
-    this.editingSlNo = c.SlNo;
-    this.editBackup = {
-      Address: c.Address,
-      PinCode: c.PinCode || c.Pin,
-      Pin: c.PinCode || c.Pin,
-      District: c.District,
-      BrokerName: c.BrokerName
-    };
+    this.editClicked.emit(c);
   }
 
   cancelEdit(c: any): void {

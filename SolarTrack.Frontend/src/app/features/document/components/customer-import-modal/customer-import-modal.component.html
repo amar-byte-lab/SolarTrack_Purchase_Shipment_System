@@ -21,13 +21,12 @@
             (dragover)="onDragOver($event)"
             (click)="excelInput.click()">
             <app-icon name="file" [size]="36" class="text-primary mb-2"></app-icon>
-            <h6 class="fw-bold text-primary mb-1">Select or Drop Excel Application File</h6>
-            <p class="text-muted fs-8 mb-2">Upload PM Surya Ghar / DISCOM application export (.xlsx, .xls, .csv)</p>
+            <h6 class="fw-bold text-primary mb-1">Select or Drop Excel Application File</h6> 
             <div class="d-flex align-items-center justify-content-center gap-2 mt-2">
               <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold">Browse Excel File</button>
               <button type="button" class="btn btn-sm btn-outline-secondary px-3 fw-semibold" (click)="$event.stopPropagation(); loadSampleFile()">
                 <app-icon name="download" [size]="14" class="me-1"></app-icon>
-                Load Sample Application Data
+                Load Sample
               </button>
             </div>
             <input 
@@ -50,7 +49,6 @@
           <!-- Summary Header Strip matching user screenshot -->
           <div class="mb-3 d-flex justify-content-between align-items-start flex-wrap gap-2 border-bottom pb-2">
             <div>
-              <div class="text-secondary fs-8 mb-1.5">Compare client details and analyze data differences before saving.</div>
               <div class="d-flex flex-wrap gap-2 align-items-center">
                 <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2 py-1 fs-8">
                   New Customers: {{ summary.newCount }}
@@ -66,7 +64,6 @@
                 </span>
               </div>
             </div>
-
             <div class="d-flex align-items-center gap-2">
               <button 
                 type="button" 
@@ -241,9 +238,6 @@
 
       <!-- Footer matching screenshot -->
       <div class="modal-footer bg-light border-top py-2.5 px-3 d-flex justify-content-between align-items-center">
-        <span class="text-muted fs-8 fst-normal">
-          * Selected customer records will be saved directly to the database. Identical existing records are auto-skipped.
-        </span>
         <div class="d-flex align-items-center gap-2">
           <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" (click)="closeModal()">Cancel</button>
           <button 

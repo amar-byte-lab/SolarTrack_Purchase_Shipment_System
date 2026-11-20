@@ -37,7 +37,9 @@
         <td class="text-center font-monospace">{{ c.SlNo || (i + 1) }}</td>
 
         <!-- Consumer Name -->
-        <td class="fw-semibold text-dark text-nowrap">
+        <td class="fw-semibold text-dark text-nowrap cursor-pointer" 
+            (dblclick)="!isDeactivated(c) && editClicked.emit(c)" 
+            title="Double-click to edit">
           {{ c.Name }}
           <span *ngIf="c._isDirty" class="badge bg-warning text-dark ms-1 py-0 px-1 fs-9">Modified</span>
         </td>
@@ -181,11 +183,11 @@
 
             <!-- Active / Other Customers: Edit, Deactivate, Delete -->
             <ng-container *ngIf="!isDeactivated(c)">
-              <!-- 1. Customer Inline Edit -->
+              <!-- 1. Customer Edit (Opens Modal Popup) -->
               <button 
                 type="button" 
                 class="btn btn-xs btn-outline-primary p-1 lh-1" 
-                (click)="$event.stopPropagation(); startEdit(c)" 
+                (click)="$event.stopPropagation(); editClicked.emit(c)" 
                 title="Edit Customer">
                 <app-icon name="edit" [size]="12"></app-icon>
               </button>

@@ -1,6 +1,7 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CalculatorService } from './services/calculator.service';
+import { NavService } from '../../core/services/nav.service';
 import { SystemTypeSelectorComponent } from './components/system-type-selector/system-type-selector.component';
 import { ApplianceLoadManagerComponent } from './components/appliance-load-manager/appliance-load-manager.component';
 import { SizingResultsCardComponent } from './components/sizing-results-card/sizing-results-card.component';
@@ -23,8 +24,13 @@ import { SchematicViewerModalComponent } from './components/schematic-viewer-mod
   templateUrl: './calculator.component.html',
   styleUrls: ['./calculator.component.scss']
 })
-export class CalculatorComponent {
+export class CalculatorComponent implements OnInit {
   readonly calc = inject(CalculatorService);
+  private navService = inject(NavService);
+
+  ngOnInit(): void {
+    this.navService.setPageTitle('Calculator');
+  }
 
   readonly showSchematicModal = signal<boolean>(false);
   readonly showCatalogModal = signal<boolean>(false);

@@ -1,0 +1,48 @@
+.letter-spacing-sm {
+  letter-spacing: 0.04em;
+}
+
+.shadow-xs {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.fs-7 {
+  font-size: 0.88rem;
+}
+
+.fs-8 {
+  font-size: 0.8rem;
+}
+
+.fs-9 {
+  font-size: 0.72rem;
+}
+
+.modal {
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1060;
+}
+
+.modal-backdrop {
+  z-index: 1050;
+}
+
+.modal-content {
+  border-radius: var(--st-radius-card, 12px) !important;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25) !important;
+}
+
+.form-label {
+  font-size: 0.76rem !important;
+  font-weight: 600;
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 8px;
+    max-width: calc(100% - 16px);
+  }
+}

@@ -1,0 +1,229 @@
+<div *ngIf="isOpen" class="modal-backdrop fade show" (click)="onClose()"></div>
+
+<div *ngIf="isOpen" class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="onClose()">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" (click)="$event.stopPropagation()">
+    <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden bg-white">
+      
+      <!-- Modal Header -->
+      <div class="modal-header py-2.5 px-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <app-icon name="edit" [size]="16" class="text-primary"></app-icon>
+          <h6 class="modal-title fw-bold text-dark mb-0 fs-7">Edit Customer Mapping</h6>
+          <span *ngIf="form.Name" class="badge bg-light text-secondary border fs-9 text-uppercase">
+            {{ form.Name }}
+          </span>
+          <span *ngIf="form.SlNo" class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9">
+            #{{ form.SlNo }}
+          </span>
+        </div>
+        <button 
+          type="button" 
+          class="btn-close fs-9" 
+          aria-label="Close" 
+          (click)="onClose()" 
+          [disabled]="isSaving">
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-3 bg-light-subtle">
+        <form (ngSubmit)="onSave()" class="d-flex flex-column gap-3">
+          
+          <!-- Card 1: Consumer Identification -->
+          <div class="card border rounded-3 bg-white p-3 shadow-xs">
+            <div class="d-flex align-items-center gap-2 pb-2 mb-2.5 border-bottom">
+              <app-icon name="customer" [size]="14" class="text-secondary"></app-icon>
+              <span class="fw-bold text-dark fs-8 text-uppercase letter-spacing-sm">Consumer Identification</span>
+            </div>
+            
+            <div class="row g-2.5">
+              <!-- Consumer Name -->
+              <div class="col-md-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Consumer Name *</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm fs-8 fw-semibold" 
+                  [(ngModel)]="form.Name" 
+                  name="custName" 
+                  placeholder="Enter full customer name" 
+                  required>
+              </div>
+
+              <!-- Consumer No -->
+              <div class="col-md-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Consumer No</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm fs-8 font-monospace" 
+                  [(ngModel)]="form.ConsumerNo" 
+                  name="custConsumerNo" 
+                  placeholder="e.g. 1029384756">
+              </div>
+
+              <!-- Application Number -->
+              <div class="col-md-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Application Number</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm fs-8 font-monospace" 
+                  [(ngModel)]="form.ApplicationNumber" 
+                  name="custAppNo" 
+                  placeholder="e.g. APP-2024-998">
+              </div>
+
+              <!-- Mobile Number -->
+              <div class="col-md-6 col-12">
+                <label class="form-label fs-8 text-secondary mb-1">Mobile Number</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm fs-8 font-monospace" 
+                  [(ngModel)]="form.MobileNumber" 
+                  name="custMobile" 
+                  placeholder="e.g. 9876543210">
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Address & Location Mapping -->
+          <div class="card border rounded-3 bg-white p-3 shadow-xs">
+            <div class="d-flex align-items-center gap-2 pb-2 mb-2.5 border-bottom">
+              <app-icon name="building" [size]="14" class="text-secondary"></app-icon>
+              <span class="fw-bold text-dark fs-8 text-uppercase letter-spacing-sm">Address &amp; Location Details</span>
+            </div>
+
+            <div class="row g-2.5">
+              <!-- Full Address -->
+              <div class="col-12">
+                <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Address (Uppercase) *</label>
+                <textarea 
+                  rows="2" 
+                  class="form-control form-control-sm fs-8 text-uppercase" 
+                  [ngModel]="form.Address" 
+                  (ngModelChange)="onAddressInput($event)" 
+                  name="custAddress" 
+                  placeholder="ENTER COMPLETE VILLAGE / STREET / POST / POLICE STATION ADDRESS..."></textarea>
+              </div>
+
+              <!-- Pin Code -->
+              <div class="col-md-4 col-12">
+                <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">PIN Code</label>
+                <input 
+                  type="text" 
+                  maxlength="6" 
+                  class="form-control form-control-sm fs-8 font-monospace" 
+                  [(ngModel)]="form.PinCode" 
+                  name="custPinCode" 
+                  placeholder="e.g. 753001">
+              </div>
+
+              <!-- District Dropdown -->
+              <div class="col-md-4 col-12">
+                <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">District *</label>
+                <select 
+                  class="form-select form-select-sm fs-8" 
+                  [(ngModel)]="form.District" 
+                  name="custDistrict">
+                  <option value="">Select District</option>
+                  <option *ngIf="form.District && !districts.includes(form.District)" [value]="form.District">
+                    {{ form.District }}
+                  </option>
+                  <option *ngFor="let dist of districts" [value]="dist">{{ dist }}</option>
+                </select>
+              </div>
+
+              <!-- Partner / Broker Dropdown -->
+              <div class="col-md-4 col-12">
+                <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Associated Partner</label>
+                <select 
+                  class="form-select form-select-sm fs-8" 
+                  [(ngModel)]="form.BrokerName" 
+                  name="custBrokerName">
+                  <option value="">Select Partner</option>
+                  <option *ngIf="form.BrokerName && !partnerOptions.includes(form.BrokerName)" [value]="form.BrokerName">
+                    {{ form.BrokerName }}
+                  </option>
+                  <option *ngFor="let part of partnerOptions" [value]="part">{{ part }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Status & Discom Technical Details -->
+          <div class="card border rounded-3 bg-white p-3 shadow-xs">
+            <div class="d-flex align-items-center gap-2 pb-2 mb-2.5 border-bottom">
+              <app-icon name="gear" [size]="14" class="text-secondary"></app-icon>
+              <span class="fw-bold text-dark fs-8 text-uppercase letter-spacing-sm">Status &amp; Electrical Discom Details</span>
+            </div>
+
+            <div class="row g-2.5">
+              <!-- Customer Status -->
+              <div class="col-md-3 col-6">
+                <label class="form-label fs-8 text-secondary mb-1 fw-bold text-dark">Record Status</label>
+                <select 
+                  class="form-select form-select-sm fs-8 fw-semibold" 
+                  [(ngModel)]="form.Status" 
+                  name="custStatus">
+                  <option *ngFor="let st of statusOptions" [value]="st">{{ st }}</option>
+                </select>
+              </div>
+
+              <!-- Proposed Capacity (kW) -->
+              <div class="col-md-3 col-6">
+                <label class="form-label fs-8 text-secondary mb-1">Capacity (kW)</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm fs-8 font-monospace" 
+                  [(ngModel)]="form.ProposedCapacity" 
+                  name="custCapacity" 
+                  placeholder="e.g. 3">
+              </div>
+
+              <!-- Sub-Division -->
+              <div class="col-md-3 col-6">
+                <label class="form-label fs-8 text-secondary mb-1">Sub-Division</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm fs-8 text-uppercase" 
+                  [(ngModel)]="form.SubDivision" 
+                  name="custSubDiv" 
+                  placeholder="SUB-DIVISION">
+              </div>
+
+              <!-- Division -->
+              <div class="col-md-3 col-6">
+                <label class="form-label fs-8 text-secondary mb-1">Division</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm fs-8 text-uppercase" 
+                  [(ngModel)]="form.DivisionName" 
+                  name="custDiv" 
+                  placeholder="DIVISION">
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer py-2 px-3 bg-white border-top d-flex align-items-center justify-content-between">
+        <button 
+          type="button" 
+          class="btn btn-sm btn-outline-secondary px-3" 
+          (click)="onClose()" 
+          [disabled]="isSaving">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-sm btn-primary px-4 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm" 
+          (click)="onSave()" 
+          [disabled]="isSaving || !form.Name">
+          <span *ngIf="isSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>{{ isSaving ? 'Saving Changes...' : 'Save Customer' }}</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
