@@ -131,50 +131,55 @@
       <div class="accordion-body" *ngIf="isSectionOpen('inverter')">
         <div class="row g-3">
           
-          <!-- Col-1: INVERTER MAKE & MODEL (Row 1), INVERTER TYPE & INVERTER COUNT (Row 2) -->
-          <div class="col-md-6 d-flex flex-column gap-2">
+          <!-- Col-1: Left (MAKE & TYPE), Right (MODEL & COUNT) -->
+          <div class="col-md-6">
             <div class="row g-2">
-              <div class="col-6">
-                <label class="specs-label highlighted-label">INVERTER MAKE</label>
-                <input 
-                  type="text" 
-                  class="form-control form-control-sm text-uppercase highlighted-input" 
-                  [(ngModel)]="specs.inverterMake" 
-                  (ngModelChange)="emitChange()"
-                  placeholder="e.g. V-GUARD">
+              <!-- Left: INVERTER MAKE and INVERTER TYPE in one column -->
+              <div class="col-6 d-flex flex-column gap-2">
+                <div>
+                  <label class="specs-label highlighted-label">INVERTER MAKE</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm text-uppercase highlighted-input" 
+                    [(ngModel)]="specs.inverterMake" 
+                    (ngModelChange)="emitChange()"
+                    placeholder="e.g. V-GUARD">
+                </div>
+                <div>
+                  <label class="specs-label">INVERTER TYPE</label>
+                  <select 
+                    class="form-select form-select-sm" 
+                    [(ngModel)]="specs.inverterName" 
+                    (ngModelChange)="emitChange()">
+                    <option value="GRID-TIED">GRID-TIED</option>
+                    <option value="HYBRID">HYBRID</option>
+                    <option value="SOLAR PCU">SOLAR PCU</option>
+                    <option value="PURE SINE WAVE UPS">PURE SINE WAVE UPS</option>
+                  </select>
+                </div>
               </div>
-              <div class="col-6">
-                <label class="specs-label highlighted-label">INVERTER MODEL NO.</label>
-                <input 
-                  type="text" 
-                  class="form-control form-control-sm text-uppercase highlighted-input" 
-                  [(ngModel)]="specs.inverterModelNo" 
-                  (ngModelChange)="emitChange()"
-                  placeholder="e.g. NXIT130">
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col-7">
-                <label class="specs-label">INVERTER TYPE</label>
-                <select 
-                  class="form-select form-select-sm" 
-                  [(ngModel)]="specs.inverterName" 
-                  (ngModelChange)="emitChange()">
-                  <option value="GRID-TIED">GRID-TIED</option>
-                  <option value="HYBRID">HYBRID</option>
-                  <option value="SOLAR PCU">SOLAR PCU</option>
-                  <option value="PURE SINE WAVE UPS">PURE SINE WAVE UPS</option>
-                </select>
-              </div>
-              <div class="col-5">
-                <label class="specs-label">INVERTER COUNT</label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  class="form-control form-control-sm" 
-                  [(ngModel)]="specs.inverterCount" 
-                  (ngModelChange)="emitChange()"
-                  placeholder="e.g. 1">
+
+              <!-- Right: INVERTER MODEL NO. and INVERTER COUNT in one column -->
+              <div class="col-6 d-flex flex-column gap-2">
+                <div>
+                  <label class="specs-label highlighted-label">INVERTER MODEL NO.</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm text-uppercase highlighted-input" 
+                    [(ngModel)]="specs.inverterModelNo" 
+                    (ngModelChange)="emitChange()"
+                    placeholder="e.g. NXIT130">
+                </div>
+                <div>
+                  <label class="specs-label">INVERTER COUNT</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    class="form-control form-control-sm" 
+                    [(ngModel)]="specs.inverterCount" 
+                    (ngModelChange)="emitChange()"
+                    placeholder="e.g. 1">
+                </div>
               </div>
             </div>
           </div>
