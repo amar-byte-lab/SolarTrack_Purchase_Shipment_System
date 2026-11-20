@@ -15,6 +15,7 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
 import { CustomerModalComponent } from '../../shared/components/customer-modal/customer-modal.component';
 import { InstallmentRow } from '../../core/models/summary.model';
 import { TechnicalProductSpecs, DocumentType, Form1Data, Form3Data, Form4Data, Form6Data } from './models/document.model';
+import { NavService } from '../../core/services/nav.service';
 
 // Reusable Sub-components
 import { ProductSpecsModalComponent } from './components/product-specs-modal/product-specs-modal.component';
@@ -46,6 +47,7 @@ export class DocumentComponent implements OnInit {
   toastService = inject(ToastService);
   rolePermissionService = inject(RolePermissionService);
   confirmDialogService = inject(ConfirmDialogService);
+  private navService = inject(NavService);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
 
@@ -305,6 +307,7 @@ export class DocumentComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.navService.setPageTitle('Document');
     // Ensure all customer data is loaded from server
     if (this.summaryService.rawInstallments().length === 0) {
       this.summaryService.loadAllData().subscribe(() => {

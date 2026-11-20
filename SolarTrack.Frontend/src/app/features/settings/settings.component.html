@@ -440,12 +440,12 @@
                 </div>
               </div>
 
-              <!-- Roles Tabs / Chips -->
-              <div class="d-flex flex-wrap gap-2 mb-2">
+              <!-- Roles Tabs / Chips (Horizontal Scrollable Strip on Mobile) -->
+              <div class="d-flex align-items-center gap-2 mb-2 role-chips-strip overflow-auto py-1">
                 @for (role of settingsService.roles(); track role) {
                   <button 
                     type="button" 
-                    class="btn btn-sm role-select-btn d-inline-flex align-items-center gap-1.5"
+                    class="btn btn-sm role-select-btn d-inline-flex align-items-center gap-1.5 flex-shrink-0"
                     [class.active]="selectedRoleName().toLowerCase() === role.toLowerCase()"
                     (click)="onSelectRoleForRule(role)">
                     <span class="fw-semibold fs-8">{{ role }}</span>
@@ -467,7 +467,7 @@
                   <h6 class="modal-title fw-bold text-dark fs-7 mb-0">Permissions &amp; Access Rules for Role: <span class="text-primary text-uppercase">{{ selectedRoleName() }}</span></h6>
                   <div class="text-muted fs-9">Changes here directly control what users with this role can view, edit, or access.</div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-none d-sm-flex align-items-center gap-2">
                   <button type="button" class="btn btn-sm btn-outline-secondary fs-8" (click)="onResetRoleRule()">
                     <app-icon name="rotate-ccw" [size]="12"></app-icon>
                     <span>Reset Defaults</span>
@@ -665,12 +665,14 @@
               </div>
 
               <!-- Bottom Save Button in Card (Fixed Position at Bottom) -->
-              <div class="d-flex justify-content-end align-items-center gap-2 mt-3 pt-3 border-top settings-fixed-action-bar">
-                <button type="button" class="btn btn-sm btn-outline-secondary fs-8" (click)="onResetRoleRule()">
-                  Reset to Defaults
+              <div class="d-flex justify-content-between justify-content-sm-end align-items-center gap-2 mt-3 pt-2.5 pb-2 border-top settings-fixed-action-bar">
+                <button type="button" class="btn btn-sm btn-outline-secondary fs-8 flex-grow-1 flex-sm-grow-0 d-inline-flex align-items-center justify-content-center gap-1" (click)="onResetRoleRule()">
+                  <app-icon name="rotate-ccw" [size]="12"></app-icon>
+                  <span>Reset to Defaults</span>
                 </button>
-                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold fs-8" (click)="onSaveRoleRule()">
-                  Save Access Rules for {{ selectedRoleName() }}
+                <button type="button" class="btn btn-primary btn-sm px-3 fw-semibold fs-8 flex-grow-1 flex-sm-grow-0 d-inline-flex align-items-center justify-content-center gap-1" (click)="onSaveRoleRule()">
+                  <app-icon name="check" [size]="13"></app-icon>
+                  <span>Save Rules ({{ selectedRoleName() }})</span>
                 </button>
               </div>
             </div>

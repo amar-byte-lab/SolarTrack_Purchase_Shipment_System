@@ -19,6 +19,7 @@ import { SiteDispatchModalComponent } from './components/site-dispatch-modal/sit
 import { InventorySummaryModalComponent } from './components/inventory-summary-modal/inventory-summary-modal.component';
 import { InventorySummaryComponent } from './components/inventory-summary/inventory-summary.component';
 import { PriceHistoryModalComponent } from './components/price-history-modal/price-history-modal.component';
+import { NavService } from '../../core/services/nav.service';
 
 type ActiveTab = 'ledger' | 'dispatches' | 'inwards' | 'summary';
 
@@ -44,6 +45,7 @@ export class InventoryComponent implements OnInit {
   protected readonly invService = inject(InventoryService);
   private toastService = inject(ToastService);
   private confirmDialogService = inject(ConfirmDialogService);
+  private navService = inject(NavService);
 
   // Active Tab
   activeTab = signal<ActiveTab>('ledger');
@@ -170,6 +172,7 @@ export class InventoryComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.navService.setPageTitle('Inventory');
     this.invService.loadAllData().subscribe();
   }
 

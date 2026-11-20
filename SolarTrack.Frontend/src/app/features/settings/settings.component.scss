@@ -44,6 +44,25 @@
   margin-top: auto;
 }
 
+@media (max-width: 768px) {
+  .settings-fixed-action-bar {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+
+    .btn {
+      font-size: 0.76rem !important;
+      padding: 6px 8px !important;
+    }
+  }
+
+  .role-chips-strip {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
 /* Cards */
 .settings-card {
   background: var(--st-surface);

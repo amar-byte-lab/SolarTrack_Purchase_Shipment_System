@@ -19,6 +19,25 @@
   }
 }
 
+/* Customer Mapping Sticky Action Bar & Filters */
+.customer-mapping-sticky-header {
+  position: sticky;
+  top: 42px;
+  z-index: 35;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+  .customer-mapping-sticky-header {
+    top: 92px; /* 50px mobile topbar + 42px tabs */
+  }
+}
+
 .st-card {
   background: var(--st-surface, #ffffff);
   border: 1px solid var(--st-border, #e2e8f0);
@@ -228,6 +247,65 @@
     &.selected {
       background: rgba(255, 69, 0, 0.08);
       font-weight: 600;
+    }
+  }
+}
+
+/* Document Header Controls & Actions Row */
+.doc-actions-single-row {
+  .doc-type-select {
+    min-width: 195px;
+    height: 33px;
+    font-size: 0.82rem;
+  }
+
+  .doc-action-btn {
+    height: 33px;
+    font-size: 0.82rem;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .doc-header-controls-strip {
+    width: 100%;
+  }
+
+  .customer-dropdown-container {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+
+    .customer-dropdown-trigger {
+      width: 100% !important;
+    }
+
+    .customer-dropdown-menu {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+
+  .doc-actions-single-row {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+
+    .doc-type-select {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      width: auto !important;
+      font-size: 0.78rem !important;
+      padding-left: 6px !important;
+      padding-right: 20px !important;
+    }
+
+    .doc-action-btn {
+      flex-shrink: 0 !important;
+      padding: 4px 7px !important;
+      font-size: 0.78rem !important;
     }
   }
 }
