@@ -75,3 +75,92 @@ export interface Form1Data {
   declarationText: string;
   signApplicant: string;
 }
+
+export interface Form3Data {
+  discomOffice: string;
+  capacityKwp: string;
+  inspectionLocation: string;
+  headerSummary: string;
+
+  // A. Applicant Details
+  applicantName: string;
+  applicationNoWithDate: string;
+  address: string;
+  consumerNo: string;
+  consumerCategory: string;
+  connectionType: string;
+  contractDemand: string;
+  arrear: string;
+  vendorName: string;
+  installationDate: string;
+
+  // B. Distribution Transformer Details
+  transformerCapacity: string;
+  transformerLocation: string;
+  transformerTotalRtsCapacity: string;
+  transformerCapacityAdequate: string;
+
+  // C. Solar Rooftop PV Power Plant Details
+  proposedPlantDetails: string;
+  sldOkStatus: string;
+
+  // D. Grid Tied Inverter
+  inverterMake: string;
+  inverterSerialNo: string;
+  inverterCapacity: string;
+  inverterVoltages: string;
+  inverterAntiIslanding: string;
+
+  // E. P.V Module
+  moduleMake: string;
+  moduleSerials: string;
+  moduleType: string;
+  moduleCapacityEach: string;
+  moduleCount: string;
+  moduleTotalCapacity: string;
+
+  // F. Earthing Verification
+  dcEarthing: string;
+  acEarthing: string;
+  earthingPermissibleText: string;
+
+  // G. Details of protective system available
+  protectiveSystemDetails: string;
+
+  // H - L
+  protectionBackFeeding: string;
+  eicInspectionLetter: string;
+  safetyCertificate: string;
+  actualSldDiagram: string;
+  testReportComponents: string;
+
+  // M. Meter Details
+  netMeterTotal: string;
+  netMeterMake: string;
+  netMeterSerial: string;
+  netMeterPhase: string;
+  netMeterCapacity: string;
+  netMeterConstant: string;
+
+  solarMeterTotal: string;
+  solarMeterMake: string;
+  solarMeterSerial: string;
+  solarMeterPhase: string;
+  solarMeterCapacity: string;
+  solarMeterConstant: string;
+
+  // N & Inspection Report
+  otherRemarks: string;
+  satisfactorySyncStatus: string;
+  provisionSwitches: string;
+  omInfoStatus: string;
+
+  // Signatures
+  applicantSignName: string;
+  applicantSignDate: string;
+  installerFirmName: string;
+  installerAddress: string;
+  installerSignDate: string;
+  certifiedOfficerTitle: string;
+  certifiedOfficerDate: string;
+}
