@@ -369,6 +369,30 @@
   }
 }
 
+/* Form 1 Inline Editable Preview Styling */
+.f1-editable {
+  outline: none;
+  cursor: text;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    background-color: rgba(59, 130, 246, 0.08);
+  }
+
+  &:focus {
+    background-color: rgba(59, 130, 246, 0.14);
+    box-shadow: inset 0 0 0 1px #3b82f6;
+  }
+}
+
+.f1-choice-row {
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+}
+
 /* Print Stylesheet */
 @media print {
   body * {

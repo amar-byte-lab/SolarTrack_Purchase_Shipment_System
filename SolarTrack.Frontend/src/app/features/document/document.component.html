@@ -462,8 +462,8 @@
             <!-- Designated Officer & Date -->
             <div class="mb-2" style="font-size: 11px; line-height: 1.4;">
               <div><strong>To,</strong></div>
-              <div><strong>{{ form1Data().discomOffice }},</strong></div>
-              <div class="mt-1">Date: {{ form1Data().displayDate }}</div>
+              <div class="f1-editable px-1 rounded" contenteditable="true" id="f1PrevDiscom" spellcheck="false"><strong>{{ form1Data().discomOffice }},</strong></div>
+              <div class="mt-1">Date: <span class="f1-editable px-1 rounded" contenteditable="true" id="f1PrevDate" spellcheck="false">{{ form1Data().displayDate }}</span></div>
             </div>
 
             <!-- Preamble -->
@@ -477,37 +477,37 @@
                 <tr>
                   <td style="width: 38px; text-align: center; border: 1px solid #000; padding: 4px 6px;">1.</td>
                   <td style="width: 55%; border: 1px solid #000; padding: 4px 6px;">Name of the Registered applicant/consumer</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().applicantName }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevName" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().applicantName }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">2.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Address of the Registered applicant/consumer</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().address }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevAddress" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().address }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">3.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Consumer No.</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form1Data().consumerNo }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevConsumerNo" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form1Data().consumerNo }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">4.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Telephone number(s) of Consumer/Applicant (Mobile No.)</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form1Data().mobile }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevMobile" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px; font-family: monospace;">{{ form1Data().mobile }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">5.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Email ID of Consumer/Applicant</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().email }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevEmail" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().email }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">6.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Type of RE (Solar/Wind) &amp; Capacity of RE system (Watts)</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().reTypeCapacity }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevReType" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().reTypeCapacity }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">7.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Sanction load as per latest electricity bill (kW)</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().sanctionLoad }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevSanctionLoad" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().sanctionLoad }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; vertical-align: middle;">8.</td>
@@ -516,13 +516,13 @@
                     <span style="font-size: 9.5px;">(Please Tick)</span>
                   </td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">
-                    <div class="d-flex align-items-center justify-content-between" style="max-width: 170px; line-height: 1.6;">
+                    <div class="d-flex align-items-center justify-content-between user-select-none py-1 px-1 rounded f1-choice-row" style="max-width: 170px; line-height: 1.6; cursor: pointer;" (click)="setPreviewMeterProc('Beneficiary')">
                       <strong>Beneficiary</strong>
                       <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #000; text-align: center; line-height: 12px; font-size: 11px;">
                         {{ form1Data().meterProcChoice === 'Beneficiary' ? '✔' : '' }}
                       </span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between" style="max-width: 170px; line-height: 1.6;">
+                    <div class="d-flex align-items-center justify-content-between user-select-none py-1 px-1 rounded f1-choice-row" style="max-width: 170px; line-height: 1.6; cursor: pointer;" (click)="setPreviewMeterProc('DISCOM')">
                       <strong>DISCOM</strong>
                       <span style="display: inline-block; width: 14px; height: 14px; border: 1px solid #000; text-align: center; line-height: 12px; font-size: 11px;">
                         {{ form1Data().meterProcChoice !== 'Beneficiary' ? '✔' : '' }}
@@ -533,42 +533,42 @@
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">9.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Location of proposed RE system (RTS system/Ground mounted system)</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().location }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevLocation" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().location }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">10.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Solar PV Project inverter make and type</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().inverterMakeType }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevInverterMake" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().inverterMakeType }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">11.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Solar PV Project inverter has automatic isolation protection (Y/N)?</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().inverterAutoIso }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevAutoIso" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().inverterAutoIso }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">12.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Are there any existing Solar or Renewable Energy plants currently installed? (Y/N)</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().existingPlants }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevExistingPlants" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().existingPlants }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">13.</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Capacity of existing Solar/RE plant.</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().existingCapacity }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevExistingCapacity" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().existingCapacity }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">14</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Expected date of commissioning of solar PV Project.</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().commissionDays }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevCommissionDays" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().commissionDays }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">15</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Category of consumer (Domestic/ Industrial/ Commercial/ Govt. establishment etc.)</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().category }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevCategory" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().category }}</td>
                 </tr>
                 <tr>
                   <td style="text-align: center; border: 1px solid #000; padding: 4px 6px;">16</td>
                   <td style="border: 1px solid #000; padding: 4px 6px;">Supply voltage level of RE system proposed to be connected [230 V (1-phase)/ 415 V (3- phase/11 kV &amp; above (3–phase)]</td>
-                  <td style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().voltageLevel }}</td>
+                  <td class="f1-editable" contenteditable="true" id="f1PrevVoltage" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form1Data().voltageLevel }}</td>
                 </tr>
               </tbody>
             </table>
@@ -576,14 +576,14 @@
             <!-- DECLARATION -->
             <div class="mt-3">
               <div class="fw-bold mb-1" style="font-size: 11px;">DECLARATION</div>
-              <div class="text-justify mb-4" style="font-size: 10px; line-height: 1.45;">
+              <div class="text-justify mb-4 f1-editable p-1 rounded" contenteditable="true" id="f1PrevDeclaration" spellcheck="false" style="font-size: 10px; line-height: 1.45;">
                 {{ form1Data().declarationText }}
               </div>
 
               <div class="d-flex justify-content-end mt-4 pt-3">
                 <div style="font-size: 11px; min-width: 280px;">
                   <div class="fw-bold">Signature with Name of the applicant /consumer:</div>
-                  <div>{{ form1Data().signApplicant || form1Data().applicantName }}</div>
+                  <div class="f1-editable p-1 rounded" contenteditable="true" id="f1PrevSign" spellcheck="false">{{ form1Data().signApplicant || form1Data().applicantName }}</div>
                 </div>
               </div>
             </div>
@@ -731,14 +731,10 @@
             <button 
               *ngIf="previewDocType() === 'form1'" 
               type="button" 
-              class="btn btn-outline-primary btn-sm px-3 fw-semibold d-flex align-items-center gap-1" 
-              (click)="downloadForm1Pdf()">
+              class="btn btn-primary btn-sm px-3 fw-semibold d-flex align-items-center gap-1" 
+              (click)="downloadForm1Pdf({ useLivePreviewValues: true })">
               <app-icon name="download" [size]="14"></app-icon>
               <span>Download Form 1 (PDF)</span>
-            </button>
-            <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" (click)="printDocument()">
-              <app-icon name="print" [size]="14" class="me-1"></app-icon>
-              Print Document
             </button>
           </div>
         </div>

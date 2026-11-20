@@ -894,7 +894,11 @@ export class DocumentComponent implements OnInit {
     };
   }
 
-  downloadForm1Pdf(): void {
+  setPreviewMeterProc(choice: 'Beneficiary' | 'DISCOM'): void {
+    this.form1Data.update(d => ({ ...d, meterProcChoice: choice }));
+  }
+
+  downloadForm1Pdf(options?: { useLivePreviewValues?: boolean }): void {
     const cust = this.selectedCustomer();
     if (!cust) {
       this.toastService.warning('Please select a customer first.');
@@ -902,7 +906,38 @@ export class DocumentComponent implements OnInit {
     }
 
     try {
-      const d = this.form1Data();
+      let d = { ...this.form1Data() };
+
+      if (options?.useLivePreviewValues) {
+        const getText = (id: string, fallback: string = '') => {
+          const el = document.getElementById(id);
+          if (!el) return fallback;
+          const val = (el.innerText || el.textContent || '').trim();
+          return val !== '' ? val : fallback;
+        };
+
+        const rawDiscom = getText('f1PrevDiscom', d.discomOffice);
+        d.discomOffice = rawDiscom.replace(/,\s*$/, '').trim();
+        d.displayDate = getText('f1PrevDate', d.displayDate);
+        d.applicantName = getText('f1PrevName', d.applicantName);
+        d.address = getText('f1PrevAddress', d.address);
+        d.consumerNo = getText('f1PrevConsumerNo', d.consumerNo);
+        d.mobile = getText('f1PrevMobile', d.mobile);
+        d.email = getText('f1PrevEmail', d.email);
+        d.reTypeCapacity = getText('f1PrevReType', d.reTypeCapacity);
+        d.sanctionLoad = getText('f1PrevSanctionLoad', d.sanctionLoad);
+        d.location = getText('f1PrevLocation', d.location);
+        d.inverterMakeType = getText('f1PrevInverterMake', d.inverterMakeType);
+        d.inverterAutoIso = getText('f1PrevAutoIso', d.inverterAutoIso);
+        d.existingPlants = getText('f1PrevExistingPlants', d.existingPlants);
+        d.existingCapacity = getText('f1PrevExistingCapacity', d.existingCapacity);
+        d.commissionDays = getText('f1PrevCommissionDays', d.commissionDays);
+        d.category = getText('f1PrevCategory', d.category);
+        d.voltageLevel = getText('f1PrevVoltage', d.voltageLevel);
+        d.declarationText = getText('f1PrevDeclaration', d.declarationText);
+        d.signApplicant = getText('f1PrevSign', d.signApplicant || d.applicantName);
+      }
+
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
       const pageWidth = 210;
@@ -927,7 +962,8 @@ export class DocumentComponent implements OnInit {
 
       doc.setFontSize(8.5);
       doc.text('To,', marginX, curY); curY += 4.2;
-      doc.text(`${d.discomOffice || 'The Designated Officer TPNODL'},`, marginX, curY); curY += 4.2;
+      const discomStr = d.discomOffice ? (d.discomOffice.endsWith(',') ? d.discomOffice : `${d.discomOffice},`) : 'The Designated Officer TPNODL,';
+      doc.text(discomStr, marginX, curY); curY += 4.2;
       doc.setFont('helvetica', 'normal');
       doc.text(`Date: ${d.displayDate || ''}`, marginX, curY); curY += 5;
 
