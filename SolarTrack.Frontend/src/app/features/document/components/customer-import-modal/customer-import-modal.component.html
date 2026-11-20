@@ -236,20 +236,18 @@
 
       </div>
 
-      <!-- Footer matching screenshot -->
-      <div class="modal-footer bg-light border-top py-2.5 px-3 d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" (click)="closeModal()">Cancel</button>
-          <button 
-            *ngIf="parsedFileLoaded()" 
-            type="button" 
-            class="btn btn-sm btn-primary px-4 fs-8 fw-semibold" 
-            [disabled]="isSaving() || (summary.newCount === 0 && summary.conflictCount === 0)" 
-            (click)="saveToDatabase()">
-            <span *ngIf="isSaving()" class="spinner-border spinner-border-sm me-1"></span>
-            Save to Database
-          </button>
-        </div>
+      <!-- Footer matching screenshot: Right aligned Cancel and Save/Submit buttons -->
+      <div class="modal-footer bg-light border-top py-2.5 px-3 d-flex justify-content-end align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" (click)="closeModal()">Cancel</button>
+        <button 
+          *ngIf="parsedFileLoaded()" 
+          type="button" 
+          class="btn btn-sm btn-primary px-4 fs-8 fw-semibold" 
+          [disabled]="isSaving() || (summary.newCount === 0 && summary.conflictCount === 0)" 
+          (click)="saveToDatabase()">
+          <span *ngIf="isSaving()" class="spinner-border spinner-border-sm me-1"></span>
+          Save to Database
+        </button>
       </div>
 
     </div>

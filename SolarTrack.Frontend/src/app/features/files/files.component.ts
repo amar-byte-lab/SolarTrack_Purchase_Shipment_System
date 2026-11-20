@@ -44,7 +44,7 @@ export class FilesComponent implements OnInit {
   isRenaming: boolean = false;
 
   ngOnInit(): void {
-    this.navService.setPageTitle('Saved Files & Documents');
+    this.navService.setPageTitle('Upload File');
     this.filesService.loadFiles().subscribe({
       next: () => {},
       error: () => this.toastService.error('Failed to load files from server.')

@@ -9,3 +9,21 @@
 .modal-dialog {
   font-family: 'Inter', system-ui, sans-serif;
 }
+
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 8px auto !important;
+    max-width: calc(100% - 16px) !important;
+    width: calc(100% - 16px) !important;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+
+    .text-muted {
+      width: 100% !important;
+      font-size: 0.72rem !important;
+    }
+  }
+}

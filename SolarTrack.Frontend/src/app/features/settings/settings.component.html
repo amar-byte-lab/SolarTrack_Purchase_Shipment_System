@@ -280,28 +280,28 @@
           <!-- Main Users Table Card -->
           <div class="col-12">
             <div class="rbac-card mb-3">
-              <!-- Header & Toolbar (Aligned with Files, Reports & Inventory) -->
-              <div class="rbac-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div class="d-flex align-items-center gap-2">
+              <!-- Header & Toolbar (Fixed Sticky Position) -->
+              <div class="rbac-header users-toolbar-sticky-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 user-header-title-group">
                   <app-icon name="customer" [size]="16" class="text-primary"></app-icon>
                   <span class="fw-bold text-dark fs-7">User &amp; Role Access Control</span>
                   <span class="badge bg-primary-subtle text-primary border fs-8">{{ filteredUsers().length }} Users</span>
                 </div>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                  <!-- Search input -->
-                  <div class="input-group input-group-sm" style="width: 210px;">
+                <div class="d-flex align-items-center gap-2 flex-wrap users-filter-group">
+                  <!-- Search input: full width on mobile -->
+                  <div class="input-group input-group-sm user-search-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted ps-2.5">
                       <app-icon name="search" [size]="13"></app-icon>
                     </span>
                     <input 
                       type="text" 
-                      class="form-control border-start-0 ps-1 fs-8" 
+                      class="form-control border-start-0 ps-1 fs-8 shadow-none" 
                       [(ngModel)]="userSearch" 
                       placeholder="Search users...">
                   </div>
 
                   <!-- Role filter dropdown -->
-                  <select class="form-select form-select-sm fs-8" style="width: 125px;" [(ngModel)]="selectedRoleFilter">
+                  <select class="form-select form-select-sm fs-8 user-role-filter-select" [(ngModel)]="selectedRoleFilter">
                     <option value="ALL">All Roles</option>
                     @for (r of settingsService.roles(); track r) {
                       <option [value]="r">{{ r }}</option>
@@ -309,7 +309,7 @@
                   </select>
 
                   <!-- Add User Button -->
-                  <button class="btn btn-sm btn-primary fw-semibold d-inline-flex align-items-center gap-1.5 fs-8" (click)="openUserModal()">
+                  <button class="btn btn-sm btn-primary fw-semibold d-inline-flex align-items-center gap-1.5 fs-8 user-add-btn" (click)="openUserModal()">
                     <app-icon name="plus" [size]="13"></app-icon>
                     <span>Add New User</span>
                   </button>
@@ -415,9 +415,9 @@
             </div>
           </div>
         } @else {
-          <!-- Role Selector Navigation Strip -->
-          <div class="col-12">
-            <div class="rbac-card p-3">
+          <!-- Role Selector Navigation Strip (Fixed Sticky Position) -->
+          <div class="col-12 role-selection-sticky-wrapper">
+            <div class="rbac-card p-3 role-selection-sticky-card">
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 pb-2 border-bottom">
                 <div class="d-flex align-items-center gap-2">
                   <app-icon name="shield" [size]="16" class="text-primary"></app-icon>

@@ -71,3 +71,11 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 6px auto !important;
+    max-width: calc(100% - 12px) !important;
+    width: calc(100% - 12px) !important;
+  }
+}

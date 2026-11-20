@@ -21,7 +21,7 @@ export class NavService {
   readonly navItems: NavItem[] = [
     { path: '/summary', label: 'Summary', icon: 'summary' },
     { path: '/inventory', label: 'Inventory', icon: 'boxes' },
-    { path: '/files', label: 'Files', icon: 'file' },
+    { path: '/files', label: 'Upload File', icon: 'file' },
     { path: '/quotation', label: 'Quotation', icon: 'offer' },
     { path: '/document', label: 'Document', icon: 'agreement' },
     { path: '/sizing-calc', label: 'Calculator', icon: 'calculator' },
@@ -50,7 +50,7 @@ export class NavService {
     } else if (path.startsWith('/inventory')) {
       this.pageTitle.set('Inventory');
     } else if (path.startsWith('/files')) {
-      this.pageTitle.set('Files');
+      this.pageTitle.set('Upload File');
     } else if (path.startsWith('/quotation')) {
       this.pageTitle.set('Quotation');
     } else if (path.startsWith('/document') || path.startsWith('/agreement')) {

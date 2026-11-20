@@ -8,12 +8,8 @@
       <div class="modal-header py-2.5 px-3 bg-white border-bottom d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
           <app-icon name="edit" [size]="16" class="text-primary"></app-icon>
-          <h6 class="modal-title fw-bold text-dark mb-0 fs-7">Edit Customer Mapping</h6>
           <span *ngIf="form.Name" class="badge bg-light text-secondary border fs-9 text-uppercase">
             {{ form.Name }}
-          </span>
-          <span *ngIf="form.SlNo" class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9">
-            #{{ form.SlNo }}
           </span>
         </div>
         <button 
