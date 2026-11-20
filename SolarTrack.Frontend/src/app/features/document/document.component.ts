@@ -2137,12 +2137,14 @@ export class DocumentComponent implements OnInit {
       };
 
       const drawSectionHeader = (y: number, sectionTitle: string) => {
-        const rowHeight = 5.2;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8.2);
+        doc.setFontSize(8.0);
+        const lines = doc.splitTextToSize(sectionTitle, tableWidth - 6);
+        const lineHeight = 3.6;
+        const rowHeight = Math.max(5.2, (lines.length * lineHeight) + 2.0);
         doc.setLineWidth(0.2);
         doc.rect(marginX, y, tableWidth, rowHeight);
-        doc.text(sectionTitle, marginX + 3, y + 3.7);
+        doc.text(lines, marginX + 3, y + 3.6);
         return rowHeight;
       };
 
@@ -2184,7 +2186,7 @@ export class DocumentComponent implements OnInit {
 
       // Section B
       curY += drawSectionHeader(curY, 'B. Details of the Solar PV Module:');
-      curY += drawTableRow(curY, '1', 'Model No.', d.moduleModelNo);
+      curY += drawTableRow(curY, '1', 'Model', d.moduleModelNo);
       curY += drawTableRow(curY, '2', 'Total Capacity in kWp', d.moduleTotalCapacity);
       curY += drawTableRow(curY, '3', 'Make', d.moduleMake);
       curY += drawTableRow(curY, '4', 'Sl. NO', d.moduleSerials);
