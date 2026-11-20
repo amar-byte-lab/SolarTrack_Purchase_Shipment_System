@@ -206,9 +206,10 @@
 }
 
 // Continuous Tree Branch Line on Child Items (zero space)
+.inventory-table td.tree-item-cell,
 .tree-item-cell {
   position: relative;
-  padding-left: 54px !important;
+  padding-left: 56px !important;
 
   &::before {
     content: '';
@@ -235,9 +236,10 @@
 }
 
 // Last node in the tree branch: L-shaped terminating branch
+.inventory-table td.tree-add-item-cell,
 .tree-add-item-cell {
   position: relative;
-  padding-left: 54px !important;
+  padding-left: 56px !important;
 
   &::before {
     content: '';
@@ -413,7 +415,7 @@
     max-width: 100% !important;
     table-layout: fixed;
 
-    th, td {
+    th, td:not(.tree-item-cell):not(.tree-add-item-cell) {
       padding: 0.45rem 0.35rem !important;
       font-size: 0.80rem;
     }
@@ -442,36 +444,36 @@
       padding-left: 2px !important;
       padding-right: 2px !important;
     }
-  }
 
-  .tree-item-cell {
-    padding-left: 52px !important;
+    td.tree-item-cell {
+      padding: 0.45rem 0.35rem 0.45rem 56px !important;
 
-    &::before {
-      left: 34px !important;
+      &::before {
+        left: 34px !important;
+      }
+
+      &::after {
+        left: 34px !important;
+        width: 12px !important;
+      }
     }
 
-    &::after {
-      left: 34px !important;
-      width: 12px !important;
+    td.tree-add-item-cell {
+      padding: 0.35rem 0.35rem 0.35rem 56px !important;
+
+      &::before {
+        left: 34px !important;
+      }
+
+      &::after {
+        left: 34px !important;
+        width: 12px !important;
+      }
     }
   }
 
   .category-header-row:not(.is-collapsed) .category-cell-node::before {
     left: 34px !important;
-  }
-
-  .tree-add-item-cell {
-    padding-left: 52px !important;
-
-    &::before {
-      left: 34px !important;
-    }
-
-    &::after {
-      left: 34px !important;
-      width: 12px !important;
-    }
   }
 
   .inventory-container {
