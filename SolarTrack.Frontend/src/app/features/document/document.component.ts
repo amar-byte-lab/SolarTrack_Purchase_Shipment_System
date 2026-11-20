@@ -153,7 +153,7 @@ export class DocumentComponent implements OnInit {
     this.customerSearchText.set('');
   }
 
-  selectDropdownCustomer(cust: InstallmentRow): void {
+  selectDropdownCustomer(cust: InstallmentRow | null): void {
     this.docService.selectCustomer(cust);
     this.isCustomerDropdownOpen = false;
     this.customerSearchText.set('');
@@ -307,9 +307,6 @@ export class DocumentComponent implements OnInit {
     if (this.summaryService.rawInstallments().length === 0) {
       this.summaryService.loadAllData().subscribe(() => {
         this.initMappingCustomers(this.summaryService.rawInstallments());
-        if (!this.selectedCustomer() && this.filteredCustomers().length > 0) {
-          this.docService.selectCustomer(this.filteredCustomers()[0]);
-        }
       });
     } else {
       this.initMappingCustomers(this.summaryService.rawInstallments());
@@ -329,11 +326,6 @@ export class DocumentComponent implements OnInit {
         this.activeDocType.set(doc as DocumentType);
       }
     });
-
-    // Auto-select first customer if none selected
-    if (!this.selectedCustomer() && this.filteredCustomers().length > 0) {
-      this.docService.selectCustomer(this.filteredCustomers()[0]);
-    }
   }
 
   setMainTab(tab: MainDocumentTab): void {

@@ -73,16 +73,7 @@ export class DocumentService {
     });
   });
 
-  constructor() {
-    this.initDefaultCustomer();
-  }
-
-  private initDefaultCustomer(): void {
-    const list = this.allCustomers();
-    if (list.length > 0 && !this.selectedCustomer()) {
-      this.selectCustomer(list[0]);
-    }
-  }
+  constructor() {}
 
   selectCustomer(customer: InstallmentRow | null): void {
     if (!customer) {

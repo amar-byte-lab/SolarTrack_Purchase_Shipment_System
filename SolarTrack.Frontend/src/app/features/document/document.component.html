@@ -52,7 +52,7 @@
               <div class="d-flex align-items-center gap-2 text-truncate me-2">
                 <app-icon name="customer" [size]="15" class="text-primary flex-shrink-0"></app-icon>
                 <span class="fw-bold text-dark text-truncate fs-7">
-                  {{ selectedCustomer()?.Name || 'Select Customer...' }}
+                  {{ selectedCustomer()?.Name || 'Select Customer' }}
                 </span>
                 <span *ngIf="selectedCustomer()?.District" class="badge bg-light text-secondary border fs-9 fw-normal flex-shrink-0">
                   {{ selectedCustomer()?.District }}
@@ -86,6 +86,19 @@
 
               <!-- Customer Items List -->
               <div class="customer-dropdown-list">
+                <!-- Default / Clear Selection option -->
+                <div 
+                  class="customer-dropdown-item d-flex align-items-center justify-content-between px-2.5 py-1.5 rounded cursor-pointer border-bottom mb-1"
+                  [class.selected]="!selectedCustomer()"
+                  (click)="selectDropdownCustomer(null)">
+                  <div class="text-truncate pe-2">
+                    <div class="fw-semibold fs-8 text-secondary">Select Customer</div>
+                  </div>
+                  <span *ngIf="!selectedCustomer()" class="text-primary flex-shrink-0">
+                    <app-icon name="check" [size]="14"></app-icon>
+                  </span>
+                </div>
+
                 <div *ngIf="searchedCustomers().length === 0" class="text-center text-muted py-3 fs-8">
                   No customer found matching "{{ customerSearchText() }}"
                 </div>
