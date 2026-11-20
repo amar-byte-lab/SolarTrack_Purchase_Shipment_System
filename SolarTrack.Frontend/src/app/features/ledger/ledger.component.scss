@@ -129,6 +129,37 @@
     background-color: #fef2f2 !important;
     box-shadow: inset 0 0 0 2px #ef4444 !important;
   }
+  &.customer-inactive {
+    background-color: #f8fafc;
+    opacity: 0.65;
+    filter: grayscale(0.8);
+
+    &:hover {
+      background-color: #f1f5f9;
+      opacity: 0.85;
+      filter: grayscale(0.4);
+    }
+
+    .kb-avatar {
+      background-color: #94a3b8 !important;
+      color: #f8fafc !important;
+      box-shadow: none !important;
+    }
+
+    .kb-name {
+      color: #64748b;
+    }
+
+    .kb-amount {
+      color: #94a3b8 !important;
+    }
+
+    .kb-status-label {
+      color: #64748b !important;
+      background: #e2e8f0;
+      border-color: #cbd5e1 !important;
+    }
+  }
 }
 
 .kb-borrower-actions {
@@ -149,6 +180,28 @@
 
     &:active {
       transform: translateY(0);
+    }
+  }
+
+  .btn-deactive {
+    border-color: #e2e8f0 !important;
+
+    &:hover {
+      background-color: #fef9c3 !important;
+      border-color: #fde047 !important;
+      box-shadow: 0 2px 8px rgba(202, 138, 4, 0.25) !important;
+    }
+  }
+
+  .btn-edit {
+    color: #2563eb;
+    border-color: #bfdbfe !important;
+
+    &:hover {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #1d4ed8 !important;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important;
     }
   }
 

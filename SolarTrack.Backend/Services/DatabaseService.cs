@@ -525,9 +525,10 @@ ELSE
 
     public async Task UpdateBorrowerAsync(Dictionary<string, object?> body)
     {
-        if (body.TryGetValue("BorrowerID", out var bId) && bId != null)
+        var clean = SanitizeRow("borrowers", body);
+        if (clean.TryGetValue("BorrowerID", out var bId) && bId != null)
         {
-            await UpdateRowAsync("borrowers", "BorrowerID", bId, body);
+            await UpdateRowAsync("borrowers", "BorrowerID", bId, clean);
         }
     }
 

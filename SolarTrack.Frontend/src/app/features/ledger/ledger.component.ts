@@ -27,8 +27,15 @@ export class LedgerComponent implements OnInit {
 
   // Modals state
   isAddBorrowerModalOpen = signal<boolean>(false);
+  isEditBorrowerModalOpen = signal<boolean>(false);
   isStatementModalOpen = signal<boolean>(false);
   isEditTxnModalOpen = signal<boolean>(false);
+
+  // Edit borrower form
+  editBorrowerId: number | null = null;
+  editBorrowerName = '';
+  editBorrowerMobile = '';
+  editBorrowerAddress = '';
 
   // Inline edit transaction state
   readonly editingTxn = signal<BorrowerTxn | null>(null);
@@ -215,6 +222,72 @@ export class LedgerComponent implements OnInit {
       },
       error: () => {
         this.toastService.show('Failed to delete customer.', 'danger');
+      }
+    });
+  }
+
+  isCustomerInactive(b?: Borrower): boolean {
+    if (!b) return false;
+    const s = (b.Status || '').toLowerCase();
+    return s === 'inactive' || s === 'closed' || s === 'deactive';
+  }
+
+  toggleBorrowerStatus(borrower: Borrower, event: Event): void {
+    event.stopPropagation();
+    const isInactive = this.isCustomerInactive(borrower);
+    const newStatus = isInactive ? 'Active' : 'Inactive';
+    this.ledgerService.updateBorrower({
+      BorrowerID: borrower.BorrowerID,
+      Status: newStatus
+    }).subscribe({
+      next: () => {
+        const actionLabel = newStatus === 'Inactive' ? 'deactivated' : 'activated';
+        this.toastService.show(`Customer "${borrower.Name}" ${actionLabel} successfully.`, 'success');
+        this.activeActionsBorrowerId.set(null);
+        this.loadData();
+      },
+      error: () => {
+        this.toastService.show('Failed to update customer status.', 'danger');
+      }
+    });
+  }
+
+  openEditBorrowerModal(borrower: Borrower, event: Event): void {
+    event.stopPropagation();
+    this.editBorrowerId = borrower.BorrowerID;
+    this.editBorrowerName = borrower.Name || '';
+    this.editBorrowerMobile = borrower.Mobile || '';
+    this.editBorrowerAddress = borrower.Address || '';
+    this.isEditBorrowerModalOpen.set(true);
+    this.activeActionsBorrowerId.set(null);
+  }
+
+  closeEditBorrowerModal(): void {
+    this.isEditBorrowerModalOpen.set(false);
+    this.editBorrowerId = null;
+  }
+
+  saveEditBorrower(): void {
+    if (!this.editBorrowerId) return;
+    const name = this.editBorrowerName.trim();
+    if (!name) {
+      this.toastService.show('Please enter customer name.', 'warning');
+      return;
+    }
+
+    this.ledgerService.updateBorrower({
+      BorrowerID: this.editBorrowerId,
+      Name: name,
+      Mobile: this.editBorrowerMobile.trim(),
+      Address: this.editBorrowerAddress.trim()
+    }).subscribe({
+      next: () => {
+        this.toastService.show('Customer details updated successfully!', 'success');
+        this.closeEditBorrowerModal();
+        this.loadData();
+      },
+      error: () => {
+        this.toastService.show('Failed to update customer.', 'danger');
       }
     });
   }

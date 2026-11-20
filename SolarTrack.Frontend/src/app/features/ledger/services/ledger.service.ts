@@ -101,9 +101,14 @@ export class LedgerService {
     });
   });
 
-  // Net Balance (sum of all balances)
+  // Net Balance (sum of all balances of active customers only, excluding inactive/closed/deactive)
   readonly netBalance = computed(() => {
-    return this.borrowers().reduce((sum, b) => sum + (b.balance || 0), 0);
+    return this.borrowers()
+      .filter(b => {
+        const s = (b.Status || '').toLowerCase();
+        return s !== 'inactive' && s !== 'closed' && s !== 'deactive';
+      })
+      .reduce((sum, b) => sum + (b.balance || 0), 0);
   });
 
   // Net Direction ('YOU GET' or 'YOU GIVE' or 'SETTLED')
@@ -116,7 +121,10 @@ export class LedgerService {
 
   // Active accounts count
   readonly activeAccountsCount = computed(() => {
-    return this.borrowers().filter(b => b.Status !== 'Inactive' && b.Status !== 'Closed').length;
+    return this.borrowers().filter(b => {
+      const s = (b.Status || '').toLowerCase();
+      return s !== 'inactive' && s !== 'closed' && s !== 'deactive';
+    }).length;
   });
 
   // Active borrower transactions for modal view
@@ -223,6 +231,10 @@ export class LedgerService {
 
   deleteTransaction(txnId: number): Observable<any> {
     return this.http.post('/api/borrower-txn-delete', { TxnID: txnId });
+  }
+
+  updateBorrower(payload: { BorrowerID: number; Name?: string; Mobile?: string; Address?: string; Status?: string }): Observable<any> {
+    return this.http.post('/api/borrower-update', payload);
   }
 
   deleteBorrower(borrowerId: number): Observable<any> {
