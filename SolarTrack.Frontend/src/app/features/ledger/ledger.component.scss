@@ -397,6 +397,20 @@
   }
 }
 
+.btn-download-pdf {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  width: 32px;
+  height: 32px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    transform: scale(1.08);
+  }
+}
+
 .btn-txn-row {
   border-radius: 8px;
   border: none;

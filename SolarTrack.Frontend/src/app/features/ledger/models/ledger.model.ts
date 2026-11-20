@@ -21,4 +21,5 @@ export interface BorrowerTxn {
   Type: 'Credit' | 'Debit'; // Credit = You Gave (Red), Debit = You Got / Received (Green)
   Remarks?: string;
   CreatedAt?: string;
+  runningBalance?: number;
 }

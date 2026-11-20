@@ -209,14 +209,16 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
-          <!-- WhatsApp Icon Button -->
+          <!-- Download Statement PDF Button -->
           <button 
             type="button" 
-            class="btn btn-sm btn-whatsapp p-1 rounded-circle d-flex align-items-center justify-content-center" 
-            (click)="shareWhatsapp()" 
-            title="Share Statement on WhatsApp">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e">
-              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.832 2.788.832 3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.586-5.767-5.765-5.767zm7.969 5.766c0 4.406-3.584 7.989-7.969 7.989-1.385 0-2.684-.361-3.818-.988l-4.213 1.103 1.127-4.103c-.722-1.189-1.144-2.586-1.144-4.079 0-4.406 3.584-7.989 7.969-7.989 4.406 0 7.969 3.583 7.969 7.989z"/>
+            class="btn btn-sm btn-download-pdf p-1 rounded-circle d-flex align-items-center justify-content-center" 
+            (click)="downloadStatementPdf()" 
+            title="Download Statement (PDF)">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
           </button>
           
@@ -295,7 +297,7 @@
               class="card p-2 border bg-white shadow-none chat-bubble-credit cursor-pointer"
               [class.bubble-active]="activeActionsTxnId() === t.TxnID"
               [class.bubble-editing]="editingTxn()?.TxnID === t.TxnID"
-              style="min-width: 140px; max-width: 75%;"
+              style="min-width: 175px; max-width: 80%;"
               (dblclick)="toggleTxnActions(t.TxnID, $event)"
               (touchstart)="onTouchStart(t.TxnID, $event)"
               (touchmove)="onTouchMove($event)"
@@ -306,7 +308,13 @@
               </div>
               <div class="text-danger fw-bold fs-6 my-0.5">- {{ fmtMoney(t.Amount) }}</div>
               <div *ngIf="t.Remarks" class="text-secondary fs-9 mb-1">{{ t.Remarks }}</div>
-              <div class="text-end text-muted fs-9">{{ ledgerService.formatDate(t.TxnDate) }}</div>
+              <div class="d-flex justify-content-between align-items-center pt-1 border-top mt-1" style="border-color: rgba(0,0,0,0.06) !important;">
+                <span 
+                  class="fs-9"
+                  [ngClass]="(t.runningBalance || 0) > 0.01 ? 'text-danger' : ((t.runningBalance || 0) < -0.01 ? 'text-success' : 'text-muted')">
+                  {{ fmtBal(t.runningBalance) }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -356,7 +364,7 @@
               class="card p-2 border bg-success-subtle shadow-none chat-bubble-debit cursor-pointer"
               [class.bubble-active]="activeActionsTxnId() === t.TxnID"
               [class.bubble-editing]="editingTxn()?.TxnID === t.TxnID"
-              style="min-width: 140px; max-width: 75%;"
+              style="min-width: 175px; max-width: 80%;"
               (dblclick)="toggleTxnActions(t.TxnID, $event)"
               (touchstart)="onTouchStart(t.TxnID, $event)"
               (touchmove)="onTouchMove($event)"
@@ -367,7 +375,14 @@
               </div>
               <div class="text-success fw-bold fs-6 my-0.5">+ {{ fmtMoney(t.Amount) }}</div>
               <div *ngIf="t.Remarks" class="text-secondary fs-9 mb-1">{{ t.Remarks }}</div>
-              <div class="text-end text-muted fs-9">{{ ledgerService.formatDate(t.TxnDate) }}</div>
+              <div class="d-flex justify-content-between align-items-center pt-1 border-top mt-1" style="border-color: rgba(0,0,0,0.06) !important;">
+                <span 
+                  class="fs-9 fw-bold"
+                  [ngClass]="(t.runningBalance || 0) > 0.01 ? 'text-danger' : ((t.runningBalance || 0) < -0.01 ? 'text-success' : 'text-muted')">
+                  {{ fmtBal(t.runningBalance) }}
+                </span>
+                <span class="text-muted fs-9 ms-2">{{ ledgerService.formatDate(t.TxnDate) }}</span>
+              </div>
             </div>
           </div>
         </ng-container>

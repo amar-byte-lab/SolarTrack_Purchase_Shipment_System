@@ -128,7 +128,21 @@ export class LedgerService {
     const txns = allTxns.filter(t => Number(t.BorrowerID) === bId);
     
     // Sort ascending by date
-    return [...txns].sort((x, y) => (x.TxnDate || '').localeCompare(y.TxnDate || '') || (x.TxnID - y.TxnID));
+    const sorted = [...txns].sort((x, y) => (x.TxnDate || '').localeCompare(y.TxnDate || '') || (x.TxnID - y.TxnID));
+
+    let running = 0;
+    return sorted.map(t => {
+      const amt = Number(t.Amount) || 0;
+      if (t.Type === 'Credit') {
+        running += amt;
+      } else {
+        running -= amt;
+      }
+      return {
+        ...t,
+        runningBalance: running
+      };
+    });
   });
 
   constructor(private http: HttpClient, private authService: AuthService) {}
