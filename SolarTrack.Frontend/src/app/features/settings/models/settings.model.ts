@@ -6,6 +6,9 @@ export interface ManagedUser {
   password?: string;
   role: string;
   status?: string;
+  isSpecialUser?: boolean;
+  allowedPartners?: string[];
+  assignedPartner?: string;
 }
 
 export interface SettingsState {

@@ -124,4 +124,14 @@ public class DatabaseController : ControllerBase
         await _db.ReplaceTableAsync(table, rows);
         return Ok(new { success = true });
     }
+
+    [HttpPost("api/save-table")]
+    public async Task<IActionResult> SaveTable([FromBody] ImportPayload payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload?.Table) || payload.Rows == null)
+            return BadRequest(new { error = "Table and rows are required" });
+
+        await _db.ReplaceTableAsync(payload.Table, payload.Rows);
+        return Ok(new { success = true });
+    }
 }

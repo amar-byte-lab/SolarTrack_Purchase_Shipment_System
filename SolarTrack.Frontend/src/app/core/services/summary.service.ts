@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable, map, of, catchError } from 'rxjs';
 import { 
@@ -23,6 +23,7 @@ import {
   getCustomerWorkStatus
 } from '../models/summary.model';
 import { AuthService } from './auth.service';
+import { RolePermissionService } from './role-permission.service';
 
 export const DEFAULT_SUMMARY_COLUMNS: SummaryColumn[] = [
   { key: 'customer', label: 'Customer: Status', visible: true },
@@ -86,7 +87,9 @@ export class SummaryService {
     return map;
   });
 
-  // Base rows filtered by user role (admin sees all non-deactive rows)
+  private rolePermissionService = inject(RolePermissionService);
+
+  // Base rows filtered by user role, special user allowed partners, and role scope
   readonly baseRows = computed<InstallmentRow[]>(() => {
     const installments = this.rawInstallmentsSignal();
     const currentUser = this.authService.currentUser();
@@ -97,9 +100,28 @@ export class SummaryService {
     if (isPowerUser) return nonDeactive;
     if (!currentUser) return [];
 
+    // 1. Check if user is a Special User configured with multiple allowed partners
+    const allowedPartners = this.rolePermissionService.currentUserAllowedPartners().map(p => p.toLowerCase().trim());
+    if (allowedPartners.length > 0) {
+      return nonDeactive.filter(r => {
+        const broker = (r.BrokerName || '').toLowerCase().trim();
+        return allowedPartners.includes(broker);
+      });
+    }
+
+    // 2. Check if the user's role allows viewing all customers
+    if (!this.rolePermissionService.isSummaryOwnOnly()) {
+      return nonDeactive;
+    }
+
+    // 3. Default own customer filter (e.g. for Associates)
+    const spec = this.rolePermissionService.currentUserSpecialConfig();
+    const assigned = spec?.assignedPartner ? [spec.assignedPartner.toLowerCase().trim()] : [];
+
     const partnerNames = [
       (currentUser.username || '').toLowerCase().trim(),
-      (currentUser.userid || '').toLowerCase().trim()
+      (currentUser.userid || '').toLowerCase().trim(),
+      ...assigned
     ].filter(Boolean);
 
     return nonDeactive.filter(r => {

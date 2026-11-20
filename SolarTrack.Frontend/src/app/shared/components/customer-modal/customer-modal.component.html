@@ -6,13 +6,17 @@
       
       <!-- Modal Header -->
       <div class="modal-header py-2.5 px-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
           <div *ngIf="name" class="fw-bold text-dark fs-8 text-uppercase mt-0.5">{{ name }}</div>
+          <span *ngIf="isViewOnly" class="badge bg-secondary-subtle text-secondary border fs-9">View Only</span>
+        </div>
         <button type="button" class="btn-close fs-9" aria-label="Close" (click)="onClose()"></button>
       </div>
 
       <!-- Modal Body (The Editable Financial Form Only) -->
       <div class="modal-body p-3 bg-light-subtle">
         <form (ngSubmit)="saveCustomer()">
+          <fieldset [disabled]="isViewOnly" class="border-0 p-0 m-0">
           <div class="d-flex flex-column gap-3">
 
             <!-- Card 1: Revenue & Pricing -->
@@ -212,6 +216,7 @@
             </div>
 
           </div>
+          </fieldset>
         </form>
       </div>
 
@@ -222,9 +227,10 @@
           class="btn btn-sm btn-outline-secondary px-3 fs-8" 
           [disabled]="isSaving"
           (click)="onClose()">
-          Cancel
+          {{ isViewOnly ? 'Close' : 'Cancel' }}
         </button>
         <button 
+          *ngIf="!isViewOnly"
           type="button" 
           class="btn btn-sm btn-primary px-4 fs-8 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm" 
           [disabled]="isSaving"

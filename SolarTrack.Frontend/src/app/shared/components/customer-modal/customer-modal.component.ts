@@ -30,6 +30,7 @@ export class CustomerModalComponent implements OnChanges {
 
   @Input() isOpen = false;
   @Input() customer: InstallmentRow | null = null;
+  @Input() isViewOnly = false;
 
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<InstallmentRow>();

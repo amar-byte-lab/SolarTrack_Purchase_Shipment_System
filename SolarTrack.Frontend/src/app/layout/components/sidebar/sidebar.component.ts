@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NavService, NavItem } from '../../../core/services/nav.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { RolePermissionService } from '../../../core/services/role-permission.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -14,21 +15,21 @@ import { AuthService } from '../../../core/services/auth.service';
 export class SidebarComponent {
   navService = inject(NavService);
   authService = inject(AuthService);
+  rolePermissionService = inject(RolePermissionService);
 
   visibleNavItems = computed(() => {
-    const user = this.authService.currentUser();
-    const role = (user?.role || '').toLowerCase().trim();
-    const isPowerUser = role === 'admin' || role === 'superadmin';
-    const isEmployee = role === 'employee';
+    if (this.authService.isAdmin()) return this.navService.navItems;
+    const rule = this.rolePermissionService.currentRule();
 
     return this.navService.navItems.filter(item => {
-      if (isPowerUser) return true;
-      if (isEmployee) {
-        return ['/quotation', '/document', '/sizing-calc', '/sld'].includes(item.path);
-      }
-      if (item.roles && !item.roles.includes(role)) {
-        return false;
-      }
+      if (item.path === '/summary') return rule.summaryAccess;
+      if (item.path === '/quotation') return rule.quotationAccess;
+      if (item.path === '/document') return rule.documentAccess;
+      if (item.path === '/sizing-calc' || item.path === '/sld') return rule.calculatorAccess;
+      if (item.path === '/ledger') return rule.ledgerAccess;
+      if (item.path === '/inventory') return rule.inventoryAccess;
+      if (item.path === '/files') return rule.filesAccess;
+      if (item.path === '/settings') return rule.settingsAccess;
       return true;
     });
   });

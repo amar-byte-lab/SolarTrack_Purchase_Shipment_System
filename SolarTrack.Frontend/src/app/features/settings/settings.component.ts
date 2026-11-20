@@ -7,6 +7,9 @@ import { NavService } from '../../core/services/nav.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/services/toast.service';
 import { ConfirmDialogService } from '../../shared/services/confirm-dialog.service';
+import { RolePermissionService, DEFAULT_ROLE_RULES } from '../../core/services/role-permission.service';
+import { RoleAccessRule } from '../../core/models/role-permission.model';
+import { SummaryService } from '../../core/services/summary.service';
 import { ManagedUser } from './models/settings.model';
 
 @Component({
@@ -22,9 +25,15 @@ export class SettingsComponent implements OnInit {
   authService = inject(AuthService);
   toastService = inject(ToastService);
   confirmService = inject(ConfirmDialogService);
+  rolePermissionService = inject(RolePermissionService);
+  summaryService = inject(SummaryService);
 
-  // Active Tab: 'company' | 'users'
-  activeTab = signal<'company' | 'users'>('company');
+  // Active Tab: 'company' | 'users' | 'roles'
+  activeTab = signal<'company' | 'users' | 'roles'>('company');
+
+  // Role Access Rules Management
+  selectedRoleName = signal<string>('Employee');
+  currentRoleRule = signal<RoleAccessRule>(this.rolePermissionService.getRuleForRole('Employee'));
 
   // User Filter & Search
   userSearch = signal<string>('');
@@ -42,8 +51,11 @@ export class SettingsComponent implements OnInit {
     email: '',
     mobile: '',
     password: '',
-    role: 'user',
-    status: 'Approved'
+    role: 'Employee',
+    status: 'Approved',
+    isSpecialUser: false,
+    allowedPartners: [],
+    assignedPartner: ''
   };
 
   // Filtered Users computed signal
@@ -67,10 +79,62 @@ export class SettingsComponent implements OnInit {
       next: () => {},
       error: () => this.toastService.error('Failed to load settings.')
     });
+    // Ensure customer & partner data is loaded for partner assignment
+    this.summaryService.loadAllData().subscribe();
   }
 
-  setTab(tab: 'company' | 'users'): void {
+  setTab(tab: 'company' | 'users' | 'roles'): void {
     this.activeTab.set(tab);
+    if (tab === 'roles') {
+      this.currentRoleRule.set(this.rolePermissionService.getRuleForRole(this.selectedRoleName()));
+    }
+  }
+
+  // --- Special User Helpers ---
+  getUserSpecialConfig(userid: string) {
+    return this.rolePermissionService.specialUsers()[userid?.toLowerCase().trim()] || null;
+  }
+
+  toggleAllowedPartner(partner: string): void {
+    if (!this.modalUser.allowedPartners) {
+      this.modalUser.allowedPartners = [];
+    }
+    const idx = this.modalUser.allowedPartners.indexOf(partner);
+    if (idx >= 0) {
+      this.modalUser.allowedPartners.splice(idx, 1);
+    } else {
+      this.modalUser.allowedPartners.push(partner);
+    }
+  }
+
+  isPartnerAllowed(partner: string): boolean {
+    return (this.modalUser.allowedPartners || []).includes(partner);
+  }
+
+  // --- Role Access Rules Actions ---
+  onSelectRoleForRule(role: string): void {
+    this.selectedRoleName.set(role);
+    this.currentRoleRule.set(this.rolePermissionService.getRuleForRole(role));
+  }
+
+  onSaveRoleRule(): void {
+    const updated = this.currentRoleRule();
+    this.rolePermissionService.updateRule(updated);
+    this.rolePermissionService.saveRules(this.rolePermissionService.roleRules()).subscribe({
+      next: () => this.toastService.success(`Access rules for role "${updated.role}" saved successfully!`),
+      error: () => this.toastService.error(`Failed to save rules for "${updated.role}".`)
+    });
+  }
+
+  onResetRoleRule(): void {
+    const role = this.selectedRoleName();
+    const defaultRule = DEFAULT_ROLE_RULES.find(r => r.role.toLowerCase() === role.toLowerCase());
+    if (defaultRule) {
+      this.currentRoleRule.set({ ...defaultRule });
+      this.toastService.info(`Reset rules to defaults for "${role}". Click Save to persist.`);
+    } else {
+      this.toastService.warning(`No predefined defaults for custom role "${role}".`);
+    }
   }
 
   // Office Addresses - open for edit
@@ -121,15 +185,24 @@ export class SettingsComponent implements OnInit {
       email: '',
       mobile: '',
       password: '',
-      role: this.settingsService.roles()[0] || 'user',
-      status: 'Approved'
+      role: 'Employee',
+      status: 'Approved',
+      isSpecialUser: false,
+      allowedPartners: [],
+      assignedPartner: ''
     };
     this.isUserModalOpen.set(true);
   }
 
   editUser(u: ManagedUser): void {
     this.isEditMode.set(true);
-    this.modalUser = { ...u };
+    const spec = this.getUserSpecialConfig(u.userid);
+    this.modalUser = { 
+      ...u,
+      isSpecialUser: spec?.isSpecialUser || false,
+      allowedPartners: spec?.allowedPartners ? [...spec.allowedPartners] : [],
+      assignedPartner: spec?.assignedPartner || ''
+    };
     this.isUserModalOpen.set(true);
   }
 
@@ -145,6 +218,21 @@ export class SettingsComponent implements OnInit {
       this.settingsService.addUser(this.modalUser);
       this.toastService.success(`User "${this.modalUser.username}" added.`);
     }
+
+    // Save special user mapping into settings
+    const specs = { ...this.rolePermissionService.specialUsers() };
+    const uid = this.modalUser.userid.toLowerCase().trim();
+    if (this.modalUser.isSpecialUser || (this.modalUser.allowedPartners && this.modalUser.allowedPartners.length > 0) || this.modalUser.assignedPartner) {
+      specs[uid] = {
+        isSpecialUser: this.modalUser.isSpecialUser || false,
+        allowedPartners: this.modalUser.allowedPartners || [],
+        assignedPartner: this.modalUser.assignedPartner || ''
+      };
+    } else {
+      delete specs[uid];
+    }
+    this.rolePermissionService.saveSpecialUsers(specs).subscribe();
+
     this.isUserModalOpen.set(false);
   }
 

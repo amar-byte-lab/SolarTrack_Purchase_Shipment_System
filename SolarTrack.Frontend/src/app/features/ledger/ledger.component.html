@@ -213,7 +213,7 @@
   </div>
 
   <!-- Floating "+ Add Customer" Button matching Screenshot 1 -->
-  <div class="kb-floating-actions">
+  <div class="kb-floating-actions" *ngIf="!ledgerService.rolePermissionService.isLedgerOwnOnly()">
     <button class="btn kb-btn-float d-flex align-items-center gap-1.5 shadow" (click)="openAddBorrowerModal()">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>

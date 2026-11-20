@@ -16,7 +16,7 @@
           <span>Form</span>
         </button>
       </li>
-      <li class="nav-item" role="presentation">
+      <li class="nav-item" role="presentation" *ngIf="!rolePermissionService.isDocumentViewOnly()">
         <button 
           type="button" 
           role="tab"
@@ -209,6 +209,7 @@
             <span>Reset</span>
           </button>
           <button 
+            *ngIf="!rolePermissionService.isDocumentViewOnly()"
             type="button" 
             class="btn btn-sm btn-primary d-flex align-items-center gap-1 fw-semibold"
             (click)="onSaveSpecs(currentSpecs())">

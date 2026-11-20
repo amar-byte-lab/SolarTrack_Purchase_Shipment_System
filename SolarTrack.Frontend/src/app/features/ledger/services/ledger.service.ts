@@ -1,8 +1,9 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of, catchError } from 'rxjs';
 import { Borrower, BorrowerTxn } from '../models/ledger.model';
 import { AuthService } from '../../../core/services/auth.service';
+import { RolePermissionService } from '../../../core/services/role-permission.service';
 
 export const AVATAR_COLORS = [
   '#ff4500', '#10b981', '#0ea5e9', '#14b8a6', '#f59e0b',
@@ -13,6 +14,7 @@ export const AVATAR_COLORS = [
   providedIn: 'root'
 })
 export class LedgerService {
+  rolePermissionService = inject(RolePermissionService);
   private rawBorrowersSignal = signal<Borrower[]>([]);
   private rawTxnsSignal = signal<BorrowerTxn[]>([]);
   
@@ -30,7 +32,41 @@ export class LedgerService {
     const rawList = this.rawBorrowersSignal();
     const allTxns = this.rawTxnsSignal();
 
-    return rawList.map(b => {
+    let sourceList = rawList;
+    if (this.rolePermissionService.isLedgerOwnOnly()) {
+      const currentUser = this.authService.currentUser();
+      if (currentUser) {
+        const spec = this.rolePermissionService.currentUserSpecialConfig();
+        const assigned = spec?.assignedPartner ? [spec.assignedPartner.toLowerCase().trim()] : [];
+        const identifiers = [
+          (currentUser.username || '').toLowerCase().trim(),
+          (currentUser.userid || '').toLowerCase().trim(),
+          ...assigned
+        ].filter(Boolean);
+        const userMob = (currentUser.mobile || '').trim();
+
+        sourceList = rawList.filter(b => {
+          const bName = (b.Name || '').toLowerCase().trim();
+          const bMob = (b.Mobile || '').trim();
+          const bCreated = (b.CreatedBy || '').toLowerCase().trim();
+          return identifiers.includes(bName) || 
+                 identifiers.includes(bCreated) || 
+                 (userMob && bMob === userMob);
+        });
+
+        if (sourceList.length === 0) {
+          sourceList = [{
+            BorrowerID: -1,
+            Name: currentUser.username || currentUser.userid,
+            Mobile: currentUser.mobile || '',
+            Status: 'Active',
+            CreatedAt: new Date().toISOString()
+          }];
+        }
+      }
+    }
+
+    return sourceList.map(b => {
       const bId = Number(b.BorrowerID);
       const bTxns = allTxns.filter(t => Number(t.BorrowerID) === bId);
       

@@ -10,6 +10,7 @@ import { DocumentService } from './services/document.service';
 import { SummaryService } from '../../core/services/summary.service';
 import { ToastService } from '../../shared/services/toast.service';
 import { ConfirmDialogService } from '../../shared/services/confirm-dialog.service';
+import { RolePermissionService } from '../../core/services/role-permission.service';
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { CustomerModalComponent } from '../../shared/components/customer-modal/customer-modal.component';
 import { InstallmentRow } from '../../core/models/summary.model';
@@ -43,6 +44,7 @@ export class DocumentComponent implements OnInit {
   docService = inject(DocumentService);
   summaryService = inject(SummaryService);
   toastService = inject(ToastService);
+  rolePermissionService = inject(RolePermissionService);
   confirmDialogService = inject(ConfirmDialogService);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);

@@ -1,9 +1,9 @@
 <!-- Table Top Action Bar -->
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-1 mb-2">
   <div class="d-flex align-items-center gap-2">   
-    <!-- Exclude from Summary Button (shown when checkbox selected) -->
+    <!-- Exclude from Summary Button (shown when checkbox selected and not default view) -->
     <button 
-      *ngIf="selectedSlNos().size > 0"
+      *ngIf="selectedSlNos().size > 0 && !rolePermissionService.isSummaryDefaultViewOnly()"
       type="button" 
       class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1.5 py-1 px-2.5 shadow-sm fs-8" 
       (click)="excludeSelected()" 
@@ -16,8 +16,8 @@
       <span>Exclude (<strong>{{ selectedSlNos().size }}</strong>)</span>
     </button>
 
-    <!-- Excluded Dropdown Button (shown if any customer is excluded) -->
-    <div *ngIf="summaryService.excludedRows().length > 0" class="dropdown position-relative">
+    <!-- Excluded Dropdown Button (shown if any customer is excluded and not default view) -->
+    <div *ngIf="summaryService.excludedRows().length > 0 && !rolePermissionService.isSummaryDefaultViewOnly()" class="dropdown position-relative">
       <button 
         type="button" 
         class="btn btn-sm btn-outline-danger dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-sm" 
@@ -66,7 +66,7 @@
   <!-- Separate Select Columns Dropdown & Standalone Copy Button -->
   <div class="d-flex align-items-center gap-2">
     <!-- Select Columns Dropdown Button -->
-    <div class="dropdown position-relative" *ngIf="authService.isAdmin()">
+    <div class="dropdown position-relative" *ngIf="authService.isAdmin() && !rolePermissionService.isSummaryDefaultViewOnly()">
       <button 
         class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" 
         type="button" 
@@ -123,6 +123,7 @@
           <th *ngIf="isColumnVisible('customer')" class="th-col-customer text-nowrap">
             <div class="d-flex align-items-center gap-2">
               <input 
+                *ngIf="!rolePermissionService.isSummaryDefaultViewOnly()"
                 type="checkbox" 
                 class="form-check-input mt-0 flex-shrink-0 cursor-pointer" 
                 [checked]="isAllSelected"
@@ -184,6 +185,7 @@
 
                   <!-- Group Select Checkbox -->
                   <input 
+                    *ngIf="!rolePermissionService.isSummaryDefaultViewOnly()"
                     type="checkbox" 
                     class="form-check-input mt-0 group-select-chk flex-shrink-0 cursor-pointer" 
                     [checked]="isGroupAllSelected(grp)"
@@ -217,6 +219,7 @@
               <td *ngIf="isColumnVisible('customer')" class="td-col-customer text-nowrap">
                 <div class="d-flex align-items-center gap-2">
                   <input 
+                    *ngIf="!rolePermissionService.isSummaryDefaultViewOnly()"
                     type="checkbox" 
                     class="form-check-input mt-0 sum-row-chk flex-shrink-0 cursor-pointer"
                     [checked]="isRowSelected(item.slNo)"
@@ -287,16 +290,17 @@
                 <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.inverterMake }}</span>
               </td>
 
-              <!-- Actions (Edit) -->
+              <!-- Actions (Edit or Popup View) -->
               <td class="td-col-actions text-center text-nowrap">
                 <div class="d-inline-flex align-items-center gap-1">
-                  <!-- Customer Edit -->
+                  <!-- Customer Action Button -->
                   <button 
                     type="button" 
-                    class="btn btn-xs btn-outline-primary p-1 lh-1" 
+                    class="btn btn-xs p-1 lh-1" 
+                    [ngClass]="rolePermissionService.isSummaryActionPopup() ? 'btn-outline-info text-info' : 'btn-outline-primary text-primary'"
                     (click)="$event.stopPropagation(); openEditCustomer(item.row)" 
-                    title="Edit Customer Record">
-                    <app-icon name="edit" [size]="12"></app-icon>
+                    [title]="rolePermissionService.isSummaryActionPopup() ? 'View Customer Record (Popup View)' : 'Edit Customer Record'">
+                    <app-icon [name]="rolePermissionService.isSummaryActionPopup() ? 'eye' : 'edit'" [size]="12"></app-icon>
                   </button>
                 </div>
               </td>
@@ -350,10 +354,11 @@
   </div>
 </div>
 
-<!-- Edit Customer Record Modal -->
+<!-- Edit / View Customer Record Modal -->
 <app-customer-modal
   [isOpen]="isEditModalOpen"
   [customer]="selectedCustomerForEdit"
+  [isViewOnly]="rolePermissionService.isSummaryActionPopup()"
   (close)="closeEditModal()"
   (saved)="onCustomerSaved($event)">
 </app-customer-modal>

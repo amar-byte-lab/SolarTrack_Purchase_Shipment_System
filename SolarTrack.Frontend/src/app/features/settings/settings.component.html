@@ -16,7 +16,7 @@
             [class.active]="activeTab() === 'company'" 
             (click)="setTab('company')">
             <app-icon name="gear" [size]="14"></app-icon>
-            <span>Company Profile Settings</span>
+            <span>Profile Settings</span>
           </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -27,7 +27,18 @@
             [class.active]="activeTab() === 'users'" 
             (click)="setTab('users')">
             <app-icon name="customer" [size]="14"></app-icon>
-            <span>User &amp; Role</span>
+            <span>User Accounts</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button 
+            type="button" 
+            role="tab"
+            class="nav-link" 
+            [class.active]="activeTab() === 'roles'" 
+            (click)="setTab('roles')">
+            <app-icon name="shield" [size]="14"></app-icon>
+            <span>Role &amp; Access Rules</span>
           </button>
         </li>
       </ul>
@@ -334,9 +345,16 @@
                           <td class="text-secondary fs-8">{{ u.email }}</td>
                           <td class="text-secondary fs-8 font-monospace">{{ u.mobile || '-' }}</td>
                           <td>
-                            <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fs-9 fw-semibold text-uppercase">
-                              {{ u.role }}
-                            </span>
+                            <div class="d-flex align-items-center flex-wrap gap-1">
+                              <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fs-9 fw-semibold text-uppercase">
+                                {{ u.role }}
+                              </span>
+                              @if (getUserSpecialConfig(u.userid)?.isSpecialUser) {
+                                <span class="badge bg-info-subtle text-info border rounded-pill px-2 py-0.5 fs-9" [title]="'Special User: ' + (getUserSpecialConfig(u.userid)?.allowedPartners?.join(', ') || 'Multi-partner')">
+                                  ⭐ Multi-Partner ({{ getUserSpecialConfig(u.userid)?.allowedPartners?.length || 0 }})
+                                </span>
+                              }
+                            </div>
                           </td>
                           <td>
                             <span class="badge rounded-pill px-2.5 py-1 fs-9 fw-semibold" 
@@ -381,48 +399,279 @@
               </div>
             </div>
           </div>
+        }
+      </div>
+    }
 
-          <!-- Roles Configuration Card -->
+    <!-- TAB 3: Role & Access Rules (Role Tab) -->
+    @if (activeTab() === 'roles') {
+      <div class="row g-3">
+        @if (!authService.isAdmin()) {
+          <div class="col-12">
+            <div class="rbac-card text-center py-5">
+              <div class="fs-1 mb-2">🔒</div>
+              <h5 class="fw-bold text-dark fs-6">Administrator Access Required</h5>
+              <p class="text-secondary fs-8 mb-0">You need administrator privileges to view and configure role access rules.</p>
+            </div>
+          </div>
+        } @else {
+          <!-- Role Selector Navigation Strip -->
           <div class="col-12">
             <div class="rbac-card p-3">
-              <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 pb-2 border-bottom">
                 <div class="d-flex align-items-center gap-2">
-                  <app-icon name="gear" [size]="15" class="text-primary"></app-icon>
-                  <span class="fw-bold text-dark fs-7">Role Management</span>
-                  <span class="badge bg-secondary-subtle text-secondary border fs-8">{{ settingsService.roles().length }} Roles</span>
+                  <app-icon name="shield" [size]="16" class="text-primary"></app-icon>
+                  <span class="fw-bold text-dark fs-7">Select Role to Configure</span>
+                  <span class="badge bg-primary-subtle text-primary border fs-8">Configuring: {{ selectedRoleName() }}</span>
                 </div>
-              </div>
-
-              <!-- Roles Badges List -->
-              <div class="d-flex flex-wrap gap-2 mb-3">
-                @for (role of settingsService.roles(); track role) {
-                  <div class="role-badge-chip">
-                    <span>{{ role }}</span>
-                    @if (role.toLowerCase() !== 'admin' && role.toLowerCase() !== 'superadmin' && role.toLowerCase() !== 'user') {
-                      <button type="button" class="btn btn-link text-danger text-decoration-none p-0 ms-1" title="Delete role" (click)="onRemoveRole(role)">
-                        ✕
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-
-              <!-- Add New Role Form -->
-              <div class="row g-2 align-items-center" style="max-width: 420px;">
-                <div class="col-8">
+                <!-- Add New Role Form inline -->
+                <div class="d-flex align-items-center gap-2">
                   <input 
                     type="text" 
                     class="form-control form-control-sm fs-8" 
+                    style="width: 170px;"
                     [(ngModel)]="newRoleName" 
-                    placeholder="Enter new role..." 
+                    placeholder="New role name..." 
                     (keyup.enter)="onAddRole()">
-                </div>
-                <div class="col-4">
-                  <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-semibold d-inline-flex align-items-center justify-content-center gap-1 fs-8" (click)="onAddRole()">
+                  <button type="button" class="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center gap-1 fs-8" (click)="onAddRole()">
                     <app-icon name="plus" [size]="12"></app-icon>
                     <span>Add Role</span>
                   </button>
                 </div>
+              </div>
+
+              <!-- Roles Tabs / Chips -->
+              <div class="d-flex flex-wrap gap-2 mb-2">
+                @for (role of settingsService.roles(); track role) {
+                  <button 
+                    type="button" 
+                    class="btn btn-sm role-select-btn d-inline-flex align-items-center gap-1.5"
+                    [class.active]="selectedRoleName().toLowerCase() === role.toLowerCase()"
+                    (click)="onSelectRoleForRule(role)">
+                    <span class="fw-semibold fs-8">{{ role }}</span>
+                    <span class="badge bg-secondary-subtle text-secondary border rounded-pill fs-9">{{ getUserCountForRole(role) }}</span>
+                    @if (role.toLowerCase() !== 'admin' && role.toLowerCase() !== 'superadmin' && role.toLowerCase() !== 'employee' && role.toLowerCase() !== 'associates' && role.toLowerCase() !== 'user') {
+                      <span class="ms-1 text-danger cursor-pointer" title="Delete role" (click)="$event.stopPropagation(); onRemoveRole(role)">✕</span>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Role Access Rules Matrix / Form -->
+          <div class="col-12">
+            <div class="rbac-card p-3">
+              <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom flex-wrap gap-2">
+                <div>
+                  <h6 class="modal-title fw-bold text-dark fs-7 mb-0">Permissions &amp; Access Rules for Role: <span class="text-primary text-uppercase">{{ selectedRoleName() }}</span></h6>
+                  <div class="text-muted fs-9">Changes here directly control what users with this role can view, edit, or access.</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary fs-8" (click)="onResetRoleRule()">
+                    <app-icon name="rotate-ccw" [size]="12"></app-icon>
+                    <span>Reset Defaults</span>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold fs-8" (click)="onSaveRoleRule()">
+                    <app-icon name="check" [size]="13"></app-icon>
+                    <span>Save Role Rules</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <!-- 1. Summary Page Access Rule -->
+                <div class="col-lg-6 col-12">
+                  <div class="p-3 rounded-2 border bg-light h-100">
+                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                      <div class="d-flex align-items-center gap-2">
+                        <app-icon name="summary" [size]="15" class="text-primary"></app-icon>
+                        <span class="fw-bold text-dark fs-8">Summary Page</span>
+                      </div>
+                      <div class="form-check form-switch m-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().summaryAccess">
+                      </div>
+                    </div>
+
+                    @if (currentRoleRule().summaryAccess) {
+                      <div class="d-flex flex-column gap-2.5 mt-2">
+                        <div>
+                          <label class="form-label fs-8 text-secondary fw-semibold mb-1">Customer Scope</label>
+                          <select class="form-select form-select-sm fs-8" [(ngModel)]="currentRoleRule().summaryScope">
+                            <option value="all">All Customers (Company Wide)</option>
+                            <option value="own_customers">Only Own Associated Customer (View only)</option>
+                          </select>
+                          <div class="text-muted fs-9 mt-0.5">"Only Own Associated Customer" filters list to the user's partner.</div>
+                        </div>
+
+                        <div>
+                          <label class="form-label fs-8 text-secondary fw-semibold mb-1">Table View Mode</label>
+                          <select class="form-select form-select-sm fs-8" [(ngModel)]="currentRoleRule().summaryMode">
+                            <option value="full">Full Access (Select checkbox column &amp; Exclude visible)</option>
+                            <option value="default_view">Default View Only (Hide Select checkbox column &amp; Exclude)</option>
+                          </select>
+                          <div class="text-muted fs-9 mt-0.5">"Default View Only" hides the Select checkbox column (for Associates).</div>
+                        </div>
+
+                        <div>
+                          <label class="form-label fs-8 text-secondary fw-semibold mb-1">Action Button Behavior</label>
+                          <select class="form-select form-select-sm fs-8" [(ngModel)]="currentRoleRule().summaryActionView">
+                            <option value="edit">Edit Financial Form</option>
+                            <option value="popup_view">Popup View (Read-Only Customer Details Popup)</option>
+                          </select>
+                          <div class="text-muted fs-9 mt-0.5">Opens clean details popup view instead of edit form.</div>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="text-muted fs-8 py-2">Summary Page is disabled for this role.</div>
+                    }
+                  </div>
+                </div>
+
+                <!-- 2. Quotation Page Access Rule -->
+                <div class="col-lg-6 col-12">
+                  <div class="p-3 rounded-2 border bg-light h-100">
+                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                      <div class="d-flex align-items-center gap-2">
+                        <app-icon name="offer" [size]="15" class="text-primary"></app-icon>
+                        <span class="fw-bold text-dark fs-8">Quotation Page</span>
+                      </div>
+                      <div class="form-check form-switch m-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().quotationAccess">
+                      </div>
+                    </div>
+
+                    @if (currentRoleRule().quotationAccess) {
+                      <div class="mt-2">
+                        <label class="form-label fs-8 text-secondary fw-semibold mb-1">Access Mode</label>
+                        <select class="form-select form-select-sm fs-8" [(ngModel)]="currentRoleRule().quotationMode">
+                          <option value="full">Full Access (Create, Edit &amp; Download Quotations)</option>
+                          <option value="view">View Only</option>
+                        </select>
+                      </div>
+                    } @else {
+                      <div class="text-muted fs-8 py-2">Quotation Page is disabled for this role.</div>
+                    }
+                  </div>
+                </div>
+
+                <!-- 3. Document Page Access Rule -->
+                <div class="col-lg-6 col-12">
+                  <div class="p-3 rounded-2 border bg-light h-100">
+                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                      <div class="d-flex align-items-center gap-2">
+                        <app-icon name="agreement" [size]="15" class="text-primary"></app-icon>
+                        <span class="fw-bold text-dark fs-8">Document Page</span>
+                      </div>
+                      <div class="form-check form-switch m-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().documentAccess">
+                      </div>
+                    </div>
+
+                    @if (currentRoleRule().documentAccess) {
+                      <div class="mt-2">
+                        <label class="form-label fs-8 text-secondary fw-semibold mb-1">Access Mode</label>
+                        <select class="form-select form-select-sm fs-8" [(ngModel)]="currentRoleRule().documentMode">
+                          <option value="view">Document (View Only - Preview, Print &amp; PDF/Docx Download)</option>
+                          <option value="full">Full Access (Can edit specifications &amp; customer mapping)</option>
+                        </select>
+                        <div class="text-muted fs-9 mt-0.5">"View Only" lets users view, preview and print official forms without editing specs.</div>
+                      </div>
+                    } @else {
+                      <div class="text-muted fs-8 py-2">Document Page is disabled for this role.</div>
+                    }
+                  </div>
+                </div>
+
+                <!-- 4. Calculator Page Access Rule -->
+                <div class="col-lg-6 col-12">
+                  <div class="p-3 rounded-2 border bg-light h-100">
+                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                      <div class="d-flex align-items-center gap-2">
+                        <app-icon name="calculator" [size]="15" class="text-primary"></app-icon>
+                        <span class="fw-bold text-dark fs-8">Calculator (Sizing Calc)</span>
+                      </div>
+                      <div class="form-check form-switch m-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().calculatorAccess">
+                      </div>
+                    </div>
+                    <div class="text-muted fs-8 mt-2">
+                      {{ currentRoleRule().calculatorAccess ? 'Allows solar system capacity sizing, load analysis, and appliance calculations.' : 'Calculator is disabled for this role.' }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. Ledger Page Access Rule -->
+                <div class="col-lg-6 col-12">
+                  <div class="p-3 rounded-2 border bg-light h-100">
+                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                      <div class="d-flex align-items-center gap-2">
+                        <app-icon name="wallet" [size]="15" class="text-primary"></app-icon>
+                        <span class="fw-bold text-dark fs-8">Ledger (Khatabook)</span>
+                      </div>
+                      <div class="form-check form-switch m-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().ledgerAccess">
+                      </div>
+                    </div>
+
+                    @if (currentRoleRule().ledgerAccess) {
+                      <div class="mt-2">
+                        <label class="form-label fs-8 text-secondary fw-semibold mb-1">Transaction Scope</label>
+                        <select class="form-select form-select-sm fs-8" [(ngModel)]="currentRoleRule().ledgerScope">
+                          <option value="own">Only Own Transaction (Restricted to logged-in user account)</option>
+                          <option value="all">All Accounts &amp; Transactions</option>
+                        </select>
+                        <div class="text-muted fs-9 mt-0.5">"Only Own Transaction" ensures the user only sees their personal balance and statement.</div>
+                      </div>
+                    } @else {
+                      <div class="text-muted fs-8 py-2">Ledger Page is disabled for this role.</div>
+                    }
+                  </div>
+                </div>
+
+                <!-- 6. Administrative Modules Access Rules -->
+                <div class="col-lg-6 col-12">
+                  <div class="p-3 rounded-2 border bg-light h-100">
+                    <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
+                      <app-icon name="gear" [size]="15" class="text-primary"></app-icon>
+                      <span class="fw-bold text-dark fs-8">Other Modules</span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2 mt-2">
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span class="fs-8 text-dark">Inventory Module</span>
+                        <div class="form-check form-switch m-0">
+                          <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().inventoryAccess">
+                        </div>
+                      </div>
+
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span class="fs-8 text-dark">Files &amp; Media Module</span>
+                        <div class="form-check form-switch m-0">
+                          <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().filesAccess">
+                        </div>
+                      </div>
+
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span class="fs-8 text-dark">System Settings</span>
+                        <div class="form-check form-switch m-0">
+                          <input class="form-check-input cursor-pointer" type="checkbox" [(ngModel)]="currentRoleRule().settingsAccess">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Bottom Save Button in Card -->
+              <div class="d-flex justify-content-end align-items-center gap-2 mt-3 pt-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary fs-8" (click)="onResetRoleRule()">
+                  Reset to Defaults
+                </button>
+                <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold fs-8" (click)="onSaveRoleRule()">
+                  Save Access Rules for {{ selectedRoleName() }}
+                </button>
               </div>
             </div>
           </div>
@@ -435,7 +684,7 @@
 <!-- Add/Edit User Modal -->
 @if (isUserModalOpen()) {
   <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header py-2.5 px-3 bg-light border-bottom">
           <div class="d-flex align-items-center gap-2">
@@ -483,6 +732,44 @@
               </select>
             </div>
           </div>
+
+          <!-- Special User: Multi-Partner Access Activity -->
+          <div class="p-2.5 rounded-2 bg-light border mb-3">
+            <div class="form-check form-switch mb-1">
+              <input 
+                class="form-check-input cursor-pointer" 
+                type="checkbox" 
+                id="chkSpecialUser"
+                [(ngModel)]="modalUser.isSpecialUser">
+              <label class="form-check-label fw-bold fs-8 cursor-pointer text-dark" for="chkSpecialUser">
+                Special User (Multi-Partner Data Access)
+              </label>
+            </div>
+            <div class="text-muted fs-9 mb-2">
+              Enable this activity to allow this user to view multiple selected partners' customer data in Summary page.
+            </div>
+
+            <div *ngIf="modalUser.isSpecialUser" class="mt-2 pt-2 border-top">
+              <div class="d-flex justify-content-between align-items-center mb-1.5">
+                <span class="fs-8 fw-semibold text-secondary">Allowed Partners ({{ modalUser.allowedPartners?.length || 0 }} selected):</span>
+              </div>
+              <div class="d-flex flex-wrap gap-1.5 p-2 bg-white rounded border" style="max-height: 140px; overflow-y: auto;">
+                <div *ngIf="summaryService.partnerList().length === 0" class="text-muted fs-9 p-1">
+                  No partners found in customer database.
+                </div>
+                <div *ngFor="let p of summaryService.partnerList()" class="form-check form-check-inline m-0 me-2 mb-1">
+                  <input 
+                    class="form-check-input cursor-pointer" 
+                    type="checkbox" 
+                    [id]="'p_' + p" 
+                    [checked]="isPartnerAllowed(p)"
+                    (change)="toggleAllowedPartner(p)">
+                  <label class="form-check-label fs-8 cursor-pointer" [for]="'p_' + p">{{ p }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="d-flex justify-content-end gap-2 pt-2.5 border-top">
             <button type="button" class="btn btn-sm btn-outline-secondary px-3 fs-8" (click)="isUserModalOpen.set(false)">Cancel</button>
             <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold fs-8" (click)="onSaveUserModal()">Save User</button>

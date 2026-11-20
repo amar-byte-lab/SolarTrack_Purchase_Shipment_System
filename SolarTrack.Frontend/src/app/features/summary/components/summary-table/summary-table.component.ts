@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SummaryService } from '../../../../core/services/summary.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { RolePermissionService } from '../../../../core/services/role-permission.service';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { CustomerModalComponent } from '../../../../shared/components/customer-modal/customer-modal.component';
 import { WorkflowModalComponent } from '../../../../shared/components/workflow-modal/workflow-modal.component';
@@ -21,6 +22,7 @@ export class SummaryTableComponent {
   summaryService = inject(SummaryService);
   toastService = inject(ToastService);
   authService = inject(AuthService);
+  rolePermissionService = inject(RolePermissionService);
   confirmDialogService = inject(ConfirmDialogService);
 
   // Exclude selection tracking
