@@ -80,6 +80,8 @@ export interface Form1Data {
 }
 
 export interface Form3Data {
+  discomFullName?: string;
+  discomShort?: string;
   discomOffice: string;
   capacityKwp: string;
   inspectionLocation: string;
@@ -169,6 +171,7 @@ export interface Form3Data {
 }
 
 export interface Form4Data {
+  discomShort?: string;
   officerDesignation: string;
   officerAddress: string;
   refPmsgy: string;

@@ -187,7 +187,7 @@
 .category-header-row:not(.is-collapsed) .category-cell-node::before {
   content: '';
   position: absolute;
-  left: 40px;
+  left: 36px;
   top: 65%;
   bottom: -1px;
   width: 2px;
@@ -208,12 +208,12 @@
 // Continuous Tree Branch Line on Child Items (zero space)
 .tree-item-cell {
   position: relative;
-  padding-left: 58px !important;
+  padding-left: 54px !important;
 
   &::before {
     content: '';
     position: absolute;
-    left: 40px;
+    left: 36px;
     top: -1px;
     bottom: -1px;
     width: 2px;
@@ -224,9 +224,9 @@
   &::after {
     content: '';
     position: absolute;
-    left: 40px;
+    left: 36px;
     top: 50%;
-    width: 14px;
+    width: 12px;
     height: 2px;
     background-color: #94a3b8;
     transform: translateY(-50%);
@@ -237,12 +237,12 @@
 // Last node in the tree branch: L-shaped terminating branch
 .tree-add-item-cell {
   position: relative;
-  padding-left: 58px !important;
+  padding-left: 54px !important;
 
   &::before {
     content: '';
     position: absolute;
-    left: 40px;
+    left: 36px;
     top: -1px;
     height: calc(50% + 1px);
     width: 2px;
@@ -253,9 +253,9 @@
   &::after {
     content: '';
     position: absolute;
-    left: 40px;
+    left: 36px;
     top: 50%;
-    width: 14px;
+    width: 12px;
     height: 2px;
     background-color: #94a3b8;
     transform: translateY(-50%);
@@ -414,21 +414,30 @@
     table-layout: fixed;
 
     th, td {
-      padding: 0.45rem 0.4rem !important;
+      padding: 0.45rem 0.35rem !important;
       font-size: 0.80rem;
     }
 
+    .col-checkbox {
+      width: 30px !important;
+      min-width: 30px !important;
+      max-width: 32px !important;
+      padding-left: 2px !important;
+      padding-right: 2px !important;
+      text-align: center;
+    }
+
     .col-stock {
-      width: 82px !important;
-      min-width: 76px !important;
+      width: 80px !important;
+      min-width: 74px !important;
       max-width: 85px !important;
       text-align: right;
     }
 
     .col-actions {
-      width: 72px !important;
-      min-width: 70px !important;
-      max-width: 75px !important;
+      width: 68px !important;
+      min-width: 64px !important;
+      max-width: 72px !important;
       text-align: center;
       padding-left: 2px !important;
       padding-right: 2px !important;
@@ -436,27 +445,32 @@
   }
 
   .tree-item-cell {
-    padding-left: 32px !important;
+    padding-left: 52px !important;
 
     &::before {
-      left: 16px !important;
+      left: 34px !important;
     }
 
     &::after {
-      left: 16px !important;
+      left: 34px !important;
       width: 12px !important;
     }
   }
 
   .category-header-row:not(.is-collapsed) .category-cell-node::before {
-    left: 16px !important;
+    left: 34px !important;
   }
 
   .tree-add-item-cell {
-    padding-left: 32px !important;
+    padding-left: 52px !important;
 
     &::before {
-      left: 16px !important;
+      left: 34px !important;
+    }
+
+    &::after {
+      left: 34px !important;
+      width: 12px !important;
     }
   }
 

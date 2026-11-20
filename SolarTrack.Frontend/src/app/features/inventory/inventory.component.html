@@ -195,7 +195,7 @@
         <table class="table table-hover align-middle mb-0 inventory-table">
           <thead class="table-light">
             <tr>
-              <th class="col-checkbox text-center px-1 d-none d-md-table-cell">
+              <th class="col-checkbox text-center px-1">
                 <input 
                   type="checkbox" 
                   class="form-check-input"
@@ -211,14 +211,14 @@
           <tbody>
             @if (invService.isLoading()) {
               <tr>
-                <td [attr.colspan]="isMobileScreen() ? 3 : 5" class="text-center py-4 text-muted">
+                <td [attr.colspan]="isMobileScreen() ? 4 : 5" class="text-center py-4 text-muted">
                   <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                   Loading warehouse stock...
                 </td>
               </tr>
             } @else if (categorizedItems().length === 0) {
               <tr>
-                <td [attr.colspan]="isMobileScreen() ? 3 : 5" class="text-center py-5 text-muted">
+                <td [attr.colspan]="isMobileScreen() ? 4 : 5" class="text-center py-5 text-muted">
                   <app-icon name="boxes" class="fs-2 mb-2 text-secondary"></app-icon>
                   <div>No equipment records found matching the current filters.</div>
                 </td>
@@ -227,8 +227,8 @@
               @for (grp of categorizedItems(); track grp.category) {
                 <!-- Category Section Banner (Inventory Tree Node) -->
                 <tr class="category-header-row tree-node-category" [ngClass]="{ 'is-collapsed': isCategoryCollapsed(grp.category) }" (click)="toggleCategoryCollapse(grp.category)">
-                  <!-- Col 1: Category Selection Checkbox (Desktop only) -->
-                  <td class="col-checkbox text-center bg-light px-1 d-none d-md-table-cell" (click)="$event.stopPropagation()">
+                  <!-- Col 1: Category Selection Checkbox (Visible on both Mobile and Desktop) -->
+                  <td class="col-checkbox text-center bg-light px-1" (click)="$event.stopPropagation()">
                     <input 
                       type="checkbox" 
                       class="form-check-input"
@@ -317,8 +317,8 @@
                 @if (!isCategoryCollapsed(grp.category)) {
                   @for (item of grp.items; track item.ItemCode) {
                     <tr [ngClass]="{ 'table-active': isItemSelected(item.ItemCode) }" class="tree-item-row">
-                      <!-- Selection Checkbox (Desktop only) -->
-                      <td class="col-checkbox text-center px-1 d-none d-md-table-cell">
+                      <!-- Selection Checkbox (Visible on all screens) -->
+                      <td class="col-checkbox text-center px-1">
                         <input 
                           type="checkbox" 
                           class="form-check-input"
@@ -394,7 +394,7 @@
 
                   <!-- Tree Add Item Row (at the bottom of category's items) -->
                   <tr class="tree-add-item-row bg-white">
-                    <td class="col-checkbox text-center px-1 d-none d-md-table-cell"></td>
+                    <td class="col-checkbox text-center px-1"></td>
                     <td [attr.colspan]="isMobileScreen() ? 3 : 4" class="tree-add-item-cell py-1 ps-2 pe-3">
                       <button 
                         type="button" 

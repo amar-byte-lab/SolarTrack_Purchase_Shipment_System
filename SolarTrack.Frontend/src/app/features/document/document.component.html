@@ -621,7 +621,7 @@
                 <strong style="font-size: 15px;">FORM- 3 : Work completion and Inspection Report</strong>
               </div>
               <div class="text-center mb-2">
-                <strong style="font-size: 13px;">TP NORTHERN ODISHA DISTRIBUTION LIMITED</strong>
+                <strong style="font-size: 13px;" class="f1-editable px-1 rounded" contenteditable="true" id="f3PrevDiscomFullName" spellcheck="false">{{ form3Data().discomFullName || 'TP NORTHERN ODISHA DISTRIBUTION LIMITED' }}</strong>
               </div>
 
               <!-- Certification Preamble -->
@@ -865,7 +865,7 @@
                   </tr>
                   <tr>
                     <td style="text-align: center; border: 1px solid #000; padding: 4px 6px; font-weight: bold;">J</td>
-                    <td style="border: 1px solid #000; padding: 4px 6px;">Safety certificate from designated Safety officer of TPNODL below 50KVA</td>
+                    <td style="border: 1px solid #000; padding: 4px 6px;">Safety certificate from designated Safety officer of {{ form3Data().discomShort || 'TPNODL' }} below 50KVA</td>
                     <td class="f1-editable" contenteditable="true" id="f3PrevSafetyCert" spellcheck="false" style="border: 1px solid #000; padding: 4px 6px;">{{ form3Data().safetyCertificate }}</td>
                   </tr>
                   <tr>

@@ -1002,9 +1002,36 @@ export class DocumentComponent implements OnInit {
     };
   }
 
+  getDiscomInfo(cust: InstallmentRow | null, specs: TechnicalProductSpecs): { short: string; full: string } {
+    const dist = (specs?.district || cust?.District || '').toUpperCase().trim();
+    const circle = (cust?.CircleName || '').toUpperCase().trim();
+    const divName = (cust?.DivisionName || '').toUpperCase().trim();
+    const subDiv = (cust?.SubDivision || '').toUpperCase().trim();
+    const specDiscom = ((specs as any)?.discom || '').toUpperCase().trim();
+    const combined = `${dist} ${circle} ${divName} ${subDiv} ${specDiscom}`;
+
+    const tpwodlKeywords = ['SAMBALPUR', 'BARGARH', 'JHARSUGUDA', 'DEOGARH', 'SUNDARGARH', 'BOLANGIR', 'SONEPUR', 'KALAHANDI', 'NUAPADA', 'KORAPUT', 'NABARANGPUR', 'MALKANGIRI', 'RAYAGADA', 'WESTERN', 'TPWODL', 'WODL'];
+    const tpsodlKeywords = ['GANJAM', 'GAJAPATI', 'KANDHAMAL', 'BOUDH', 'SOUTHERN', 'TPSODL', 'SODL', 'BERHAMPUR'];
+    const tpcodlKeywords = ['CUTTACK', 'PURI', 'KHURDA', 'KHORDHA', 'NAYAGARH', 'KENDRAPARA', 'JAGATSINGHPUR', 'JAJPUR', 'DHENKANAL', 'ANGUL', 'BHUBANESWAR', 'CENTRAL', 'TPCODL', 'CODL'];
+    const tpnodlKeywords = ['BALASORE', 'BALESHWAR', 'BHADRAK', 'MAYURBHANJ', 'KEONJHAR', 'NORTHERN', 'TPNODL', 'NODL'];
+
+    if (tpcodlKeywords.some(k => combined.includes(k))) {
+      return { short: 'TPCODL', full: 'TP CENTRAL ODISHA DISTRIBUTION LIMITED' };
+    } else if (tpwodlKeywords.some(k => combined.includes(k))) {
+      return { short: 'TPWODL', full: 'TP WESTERN ODISHA DISTRIBUTION LIMITED' };
+    } else if (tpsodlKeywords.some(k => combined.includes(k))) {
+      return { short: 'TPSODL', full: 'TP SOUTHERN ODISHA DISTRIBUTION LIMITED' };
+    } else if (tpnodlKeywords.some(k => combined.includes(k))) {
+      return { short: 'TPNODL', full: 'TP NORTHERN ODISHA DISTRIBUTION LIMITED' };
+    }
+    return { short: 'TPNODL', full: 'TP NORTHERN ODISHA DISTRIBUTION LIMITED' };
+  }
+
   buildDefaultForm3Data(cust: InstallmentRow | null, specs: TechnicalProductSpecs): Form3Data {
     if (!cust) {
       return {
+        discomFullName: 'TP NORTHERN ODISHA DISTRIBUTION LIMITED',
+        discomShort: 'TPNODL',
         discomOffice: '',
         capacityKwp: '',
         inspectionLocation: '',
@@ -1071,17 +1098,10 @@ export class DocumentComponent implements OnInit {
       };
     }
 
-    // DISCOM determination based on District
-    const dist = (specs.district || cust.District || '').toUpperCase().trim();
-    let discomName = 'TPNODL';
-    const tpwodlDists = ['SAMBALPUR', 'BARGARH', 'JHARSUGUDA', 'DEOGARH', 'SUNDARGARH', 'BOLANGIR', 'SONEPUR', 'KALAHANDI', 'NUAPADA', 'KORAPUT', 'NABARANGPUR', 'MALKANGIRI', 'RAYAGADA'];
-    const tpsodlDists = ['GANJAM', 'GAJAPATI', 'KANDHAMAL', 'BOUDH'];
-    const tpcodlDists = ['CUTTACK', 'PURI', 'KHURDA', 'KHORDHA', 'NAYAGARH', 'KENDRAPARA', 'JAGATSINGHPUR', 'JAJPUR', 'DHENKANAL', 'ANGUL'];
-
-    if (tpwodlDists.some(d => dist.includes(d))) discomName = 'TPWODL';
-    else if (tpsodlDists.some(d => dist.includes(d))) discomName = 'TPSODL';
-    else if (tpcodlDists.some(d => dist.includes(d))) discomName = 'TPCODL';
-    else discomName = 'TPNODL';
+    // Dynamic DISCOM determination based on Circle, Division, District or Specs
+    const discom = this.getDiscomInfo(cust, specs);
+    const discomName = discom.short;
+    const discomFullName = discom.full;
 
     const distPart = (specs.district || cust.District || '').trim();
     const div = cust.DivisionName || (distPart ? `CED ${distPart.toUpperCase()}` : '');
@@ -1160,6 +1180,8 @@ export class DocumentComponent implements OnInit {
     const acEarth = specs.acEarthing ? `${specs.acEarthing} in Ohm` : '';
 
     return {
+      discomFullName,
+      discomShort: discomName,
       discomOffice,
       capacityKwp,
       inspectionLocation: fullAddr,
@@ -1929,6 +1951,7 @@ export class DocumentComponent implements OnInit {
           return (el.innerText || el.textContent || '').trim();
         };
 
+        d.discomFullName = getText('f3PrevDiscomFullName', d.discomFullName || 'TP NORTHERN ODISHA DISTRIBUTION LIMITED');
         d.discomOffice = getText('f3PrevDiscomOffice', d.discomOffice);
         d.capacityKwp = getText('f3PrevCapacityKwp', d.capacityKwp);
         d.inspectionLocation = getText('f3PrevInspectionLoc', d.inspectionLocation);
@@ -2090,7 +2113,7 @@ export class DocumentComponent implements OnInit {
       curY += 4.8;
 
       doc.setFontSize(10);
-      doc.text('TP NORTHERN ODISHA DISTRIBUTION LIMITED', pageWidth / 2, curY, { align: 'center' });
+      doc.text(d.discomFullName || 'TP NORTHERN ODISHA DISTRIBUTION LIMITED', pageWidth / 2, curY, { align: 'center' });
       curY += 5.5;
 
       doc.setFont('helvetica', 'normal');
@@ -2174,7 +2197,7 @@ export class DocumentComponent implements OnInit {
       // Section H to L
       curY += drawTableRow(curY, 'H', 'Details of protection system provided to prevent back feeding from DG/ Battery/Inverter any other', d.protectionBackFeeding);
       curY += drawTableRow(curY, 'I', 'EIC inspection and approval letter Submitted by the consumer above 50KVA', d.eicInspectionLetter);
-      curY += drawTableRow(curY, 'J', 'Safety certificate from designated Safety officer of TPNODL below 50KVA', d.safetyCertificate);
+      curY += drawTableRow(curY, 'J', `Safety certificate from designated Safety officer of ${d.discomShort || 'TPNODL'} below 50KVA`, d.safetyCertificate);
       curY += drawTableRow(curY, 'K', 'Actual Single line wiring diagram of the SPV System.', d.actualSldDiagram);
       curY += drawTableRow(curY, 'L', 'Test report of all component of SRTPV system (including inverter) is as per CEA/OERC regulation and IS/ BIS standards', d.testReportComponents);
 
