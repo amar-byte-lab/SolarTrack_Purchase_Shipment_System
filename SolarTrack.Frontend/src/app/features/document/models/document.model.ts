@@ -52,3 +52,26 @@ export interface TechnicalProductSpecs {
 }
 
 export type DocumentType = 'agreement' | 'form1' | 'form3' | 'form4' | 'form6';
+
+export interface Form1Data {
+  discomOffice: string;
+  displayDate: string;
+  applicantName: string;
+  address: string;
+  consumerNo: string;
+  mobile: string;
+  email: string;
+  reTypeCapacity: string;
+  sanctionLoad: string;
+  meterProcChoice: 'Beneficiary' | 'DISCOM';
+  location: string;
+  inverterMakeType: string;
+  inverterAutoIso: string;
+  existingPlants: string;
+  existingCapacity: string;
+  commissionDays: string;
+  category: string;
+  voltageLevel: string;
+  declarationText: string;
+  signApplicant: string;
+}

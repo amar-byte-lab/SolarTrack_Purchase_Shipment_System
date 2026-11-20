@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import JSZip from 'jszip';
+import { jsPDF } from 'jspdf';
 import { DocumentService } from './services/document.service';
 import { SummaryService } from '../../core/services/summary.service';
 import { ToastService } from '../../shared/services/toast.service';
@@ -12,7 +13,7 @@ import { ConfirmDialogService } from '../../shared/services/confirm-dialog.servi
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { CustomerModalComponent } from '../../shared/components/customer-modal/customer-modal.component';
 import { InstallmentRow } from '../../core/models/summary.model';
-import { TechnicalProductSpecs, DocumentType } from './models/document.model';
+import { TechnicalProductSpecs, DocumentType, Form1Data } from './models/document.model';
 
 // Reusable Sub-components
 import { ProductSpecsModalComponent } from './components/product-specs-modal/product-specs-modal.component';
@@ -85,7 +86,16 @@ export class DocumentComponent implements OnInit {
   isPreviewModalOpen = signal<boolean>(false);
   previewDocType = signal<DocumentType>('form4');
 
+  // Form 1 State
+  form1Data = signal<Form1Data>(this.buildDefaultForm1Data(null, {}));
+
   constructor() {
+    effect(() => {
+      const cust = this.selectedCustomer();
+      const specs = this.currentSpecs();
+      this.form1Data.set(this.buildDefaultForm1Data(cust, specs));
+    });
+
     effect(() => {
       const cust = this.selectedCustomer();
       const isModalOpen = this.isPreviewModalOpen();
@@ -763,10 +773,300 @@ export class DocumentComponent implements OnInit {
     return parts.length > 0 ? parts.join(', ') : (addr || 'AT: _______________________');
   }
 
+  onForm1DataChange(data: Form1Data): void {
+    this.form1Data.set({ ...data });
+  }
+
+  resetForm1Data(): void {
+    this.form1Data.set(this.buildDefaultForm1Data(this.selectedCustomer(), this.currentSpecs()));
+    this.toastService.info('Form 1 reset to default database values.');
+  }
+
+  formatDateToDisplay(val: any): string {
+    if (!val) {
+      val = new Date();
+    }
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val).toUpperCase();
+    const day = d.getDate();
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day} ${month} ${year}`;
+  }
+
+  buildDefaultForm1Data(cust: InstallmentRow | null, specs: TechnicalProductSpecs): Form1Data {
+    if (!cust) {
+      return {
+        discomOffice: 'The Designated Officer TPNODL',
+        displayDate: this.formatDateToDisplay(new Date()),
+        applicantName: '',
+        address: '',
+        consumerNo: '',
+        mobile: '',
+        email: '',
+        reTypeCapacity: 'Solar – 3.0kwp',
+        sanctionLoad: '3',
+        meterProcChoice: 'DISCOM',
+        location: '',
+        inverterMakeType: 'WAAREE / Grid Tied',
+        inverterAutoIso: 'Yes',
+        existingPlants: 'No',
+        existingCapacity: '0',
+        commissionDays: '30 Days',
+        category: 'Domestic',
+        voltageLevel: '230 V',
+        declarationText: 'I hereby request you to provide grid connectivity to the solar Rooftop PV system installed or planning to install at premises owned/occupied by me. I do hereby declare that the information furnished above for NM/BD/GM have been checked & verified to the best of my knowledge and belief.',
+        signApplicant: ''
+      };
+    }
+
+    // DISCOM determination based on District
+    const dist = (specs.district || cust.District || '').toUpperCase().trim();
+    let discomName = 'TPNODL';
+    const tpwodlDists = ['SAMBALPUR', 'BARGARH', 'JHARSUGUDA', 'DEOGARH', 'SUNDARGARH', 'BOLANGIR', 'SONEPUR', 'KALAHANDI', 'NUAPADA', 'KORAPUT', 'NABARANGPUR', 'MALKANGIRI', 'RAYAGADA'];
+    const tpsodlDists = ['GANJAM', 'GAJAPATI', 'KANDHAMAL', 'BOUDH'];
+    const tpcodlDists = ['CUTTACK', 'PURI', 'KHURDA', 'KHORDHA', 'NAYAGARH', 'KENDRAPARA', 'JAGATSINGHPUR', 'JAJPUR', 'DHENKANAL', 'ANGUL'];
+
+    if (tpwodlDists.some(d => dist.includes(d))) discomName = 'TPWODL';
+    else if (tpsodlDists.some(d => dist.includes(d))) discomName = 'TPSODL';
+    else if (tpcodlDists.some(d => dist.includes(d))) discomName = 'TPCODL';
+    else discomName = 'TPNODL';
+
+    const discomOffice = `The Designated Officer ${discomName}`;
+
+    // Date determination
+    const dateVal = cust.LoginDate || cust.InstallationDate || specs.dateOfInstallation || new Date();
+    const displayDate = this.formatDateToDisplay(dateVal);
+
+    // Full Address
+    let fullAddr = (specs.address || cust.Address || '').trim();
+    if (fullAddr && !fullAddr.toUpperCase().startsWith('AT:') && !fullAddr.toUpperCase().startsWith('AT-') && !fullAddr.toUpperCase().startsWith('AT ')) {
+      fullAddr = `AT: ${fullAddr}`;
+    }
+    const distPart = specs.district || cust.District;
+    const pinPart = specs.pinCode || cust.PinCode;
+    if (distPart && !fullAddr.toUpperCase().includes(distPart.toUpperCase())) {
+      fullAddr += `, Dist-${distPart}`;
+    }
+    if (pinPart && !fullAddr.includes(pinPart)) {
+      fullAddr += `, ${pinPart}`;
+    }
+
+    // Applicant Name
+    let name = (cust.Name || '').trim();
+    if (name && !/^(mr|mrs|ms|dr|shri|smt)\b/i.test(name)) {
+      name = `Mr. ${name}`;
+    }
+
+    // Capacity & Load
+    const cap = cust.ProposedCapacity || specs.inverterCapacity || '3';
+    const capNum = parseFloat(String(cap)) || 3;
+    const reTypeCapacity = `Solar – ${cap}kwp`;
+    const sanctionLoad = String(Math.round(capNum) || 3);
+    const voltage = capNum > 5 ? '415 V' : '230 V';
+
+    // Inverter Make
+    const invMake = (specs.inverterMake || 'WAAREE').trim();
+    const inverterMakeType = `${invMake} / Grid Tied`;
+
+    return {
+      discomOffice,
+      displayDate,
+      applicantName: name,
+      address: fullAddr,
+      consumerNo: cust.ConsumerNo || cust.ApplicationNumber || '',
+      mobile: cust.MobileNumber || '',
+      email: (cust as any).Email || '',
+      reTypeCapacity,
+      sanctionLoad,
+      meterProcChoice: 'DISCOM',
+      location: fullAddr,
+      inverterMakeType,
+      inverterAutoIso: 'Yes',
+      existingPlants: 'No',
+      existingCapacity: '0',
+      commissionDays: '30 Days',
+      category: 'Domestic',
+      voltageLevel: voltage,
+      declarationText: 'I hereby request you to provide grid connectivity to the solar Rooftop PV system installed or planning to install at premises owned/occupied by me. I do hereby declare that the information furnished above for NM/BD/GM have been checked & verified to the best of my knowledge and belief.',
+      signApplicant: name
+    };
+  }
+
+  downloadForm1Pdf(): void {
+    const cust = this.selectedCustomer();
+    if (!cust) {
+      this.toastService.warning('Please select a customer first.');
+      return;
+    }
+
+    try {
+      const d = this.form1Data();
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      const pageWidth = 210;
+      const marginX = 14;
+      const tableWidth = 182;
+      const col1Width = 12;
+      const col2Width = 100;
+      const col3Width = 70;
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setTextColor(0, 0, 0);
+
+      let curY = 14;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Form - 1', pageWidth / 2, curY, { align: 'center' });
+      curY += 5;
+
+      doc.setFontSize(9.5);
+      doc.text('Application form - Net Metering/Bi-directional/Gross Metering Connection', pageWidth / 2, curY, { align: 'center' });
+      curY += 7;
+
+      doc.setFontSize(8.5);
+      doc.text('To,', marginX, curY); curY += 4.2;
+      doc.text(`${d.discomOffice || 'The Designated Officer TPNODL'},`, marginX, curY); curY += 4.2;
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Date: ${d.displayDate || ''}`, marginX, curY); curY += 5;
+
+      const preamble = 'I/we intend to connect Renewable Energy System through net-metering/ bi-directional/ Gross metering arrangement in compliance to order dated 19.08.2016 or OERC on Net Metering/bi-directional metering and their connectivity with respect to Solar PV projects as amended on 05.05.2022 and subsequent amendments from time to time. The details are given below:';
+      const preLines = doc.splitTextToSize(preamble, tableWidth);
+      doc.setFontSize(8.2);
+      doc.text(preLines, marginX, curY);
+      curY += (preLines.length * 3.8) + 2.5;
+
+      const drawTableRow = (y: number, slText: string, labelText: string, valText: string, opt: any = {}) => {
+        const fontSize = opt.fontSize || 8.2;
+        doc.setFontSize(fontSize);
+        doc.setFont('helvetica', opt.isBold ? 'bold' : 'normal');
+
+        const col2Lines = doc.splitTextToSize(labelText || '', col2Width - 4);
+        const col3Lines = doc.splitTextToSize(valText || '', col3Width - 4);
+        const maxLines = Math.max(col2Lines.length, col3Lines.length, 1);
+        const lineHeight = opt.lineHeight || 3.9;
+        const padding = 2.0;
+        const rowHeight = Math.max(opt.minHeight || 5.2, maxLines * lineHeight + padding);
+
+        doc.setLineWidth(0.2);
+        doc.rect(marginX, y, tableWidth, rowHeight);
+        doc.line(marginX + col1Width, y, marginX + col1Width, y + rowHeight);
+        doc.line(marginX + col1Width + col2Width, y, marginX + col1Width + col2Width, y + rowHeight);
+
+        if (slText) {
+          doc.text(String(slText), marginX + (col1Width / 2), y + 3.8, { align: 'center' });
+        }
+        doc.text(col2Lines, marginX + col1Width + 2, y + 3.8);
+        doc.text(col3Lines, marginX + col1Width + col2Width + 2, y + 3.8);
+
+        return rowHeight;
+      };
+
+      const rows: [string, string, string][] = [
+        ['1.', 'Name of the Registered applicant/consumer', d.applicantName || ''],
+        ['2.', 'Address of the Registered applicant/consumer', d.address || ''],
+        ['3.', 'Consumer No.', d.consumerNo || ''],
+        ['4.', 'Telephone number(s) of Consumer/Applicant (Mobile No.)', d.mobile || ''],
+        ['5.', 'Email ID of Consumer/Applicant', d.email || ''],
+        ['6.', 'Type of RE (Solar/Wind) & Capacity of RE system (Watts)', d.reTypeCapacity || ''],
+        ['7.', 'Sanction load as per latest electricity bill (kW)', d.sanctionLoad || ''],
+        ['8.', 'Meter procurement by (Please Tick)', d.meterProcChoice || 'DISCOM'],
+        ['9.', 'Location of proposed RE system (RTS system/Ground mounted system)', d.location || ''],
+        ['10.', 'Solar PV Project inverter make and type', d.inverterMakeType || ''],
+        ['11.', 'Solar PV Project inverter has automatic isolation protection (Y/N)?', d.inverterAutoIso || 'Yes'],
+        ['12.', 'Are there any existing Solar or Renewable Energy plants currently installed? (Y/N)', d.existingPlants || 'No'],
+        ['13.', 'Capacity of existing Solar/RE plant.', d.existingCapacity || '0'],
+        ['14', 'Expected date of commissioning of solar PV Project.', d.commissionDays || '30 Days'],
+        ['15', 'Category of consumer (Domestic/ Industrial/ Commercial/ Govt. establishment etc.)', d.category || 'Domestic'],
+        ['16', 'Supply voltage level of RE system proposed to be connected [230 V (1-phase)/ 415 V (3- phase/11 kV & above (3–phase)]', d.voltageLevel || '230 V']
+      ];
+
+      rows.forEach(r => {
+        if (r[0] === '8.') {
+          const rowHeight = 10.5;
+          doc.setLineWidth(0.2);
+          doc.rect(marginX, curY, tableWidth, rowHeight);
+          doc.line(marginX + col1Width, curY, marginX + col1Width, curY + rowHeight);
+          doc.line(marginX + col1Width + col2Width, curY, marginX + col1Width + col2Width, curY + rowHeight);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.2);
+          doc.text('8.', marginX + (col1Width / 2), curY + 3.8, { align: 'center' });
+          doc.text('Meter procurement by', marginX + col1Width + 2, curY + 3.8);
+          doc.text('(Please Tick)', marginX + col1Width + 2, curY + 7.8);
+
+          doc.setFont('helvetica', 'bold');
+          const c3x = marginX + col1Width + col2Width + 3;
+
+          // Beneficiary row
+          doc.text('Beneficiary', c3x, curY + 3.8);
+          const box1X = c3x + 24;
+          const box1Y = curY + 1.2;
+          doc.rect(box1X, box1Y, 3.2, 3.2);
+          if (d.meterProcChoice === 'Beneficiary') {
+            doc.setLineWidth(0.4);
+            doc.line(box1X + 0.6, box1Y + 1.6, box1X + 1.3, box1Y + 2.5);
+            doc.line(box1X + 1.3, box1Y + 2.5, box1X + 2.6, box1Y + 0.7);
+            doc.setLineWidth(0.2);
+          }
+
+          // DISCOM row
+          doc.text('DISCOM', c3x, curY + 8.0);
+          const box2X = c3x + 24;
+          const box2Y = curY + 5.4;
+          doc.rect(box2X, box2Y, 3.2, 3.2);
+          if (d.meterProcChoice !== 'Beneficiary') {
+            doc.setLineWidth(0.4);
+            doc.line(box2X + 0.6, box2Y + 1.6, box2X + 1.3, box2Y + 2.5);
+            doc.line(box2X + 1.3, box2Y + 2.5, box2X + 2.6, box2Y + 0.7);
+            doc.setLineWidth(0.2);
+          }
+
+          doc.setFont('helvetica', 'normal');
+          curY += rowHeight;
+        } else {
+          const h = drawTableRow(curY, r[0], r[1], r[2]);
+          curY += h;
+        }
+      });
+
+      curY += 4;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.8);
+      doc.text('DECLARATION', marginX, curY); curY += 4.2;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const decLines = doc.splitTextToSize(d.declarationText, tableWidth);
+      doc.text(decLines, marginX, curY);
+      curY += (decLines.length * 3.6) + 14;
+
+      const signX = marginX + tableWidth - 80;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.2);
+      doc.text('Signature with Name of the applicant /consumer:', signX, curY); curY += 4.5;
+      doc.setFont('helvetica', 'normal');
+      doc.text(d.signApplicant || d.applicantName || '', signX, curY);
+
+      const cleanName = (d.applicantName || 'Customer').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanConsumerNo = (d.consumerNo || 'Form1').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `Form_1_${cleanName}_${cleanConsumerNo}.pdf`;
+
+      doc.save(fileName);
+      this.toastService.success(`Form 1 PDF (${fileName}) downloaded successfully!`);
+    } catch (err: any) {
+      console.error('Error generating Form 1 PDF:', err);
+      this.toastService.error(`Error generating Form 1 PDF: ${err?.message || err}`);
+    }
+  }
+
   onDownloadClicked(): void {
     const docType = this.activeDocType();
     if (docType === 'agreement') {
       this.downloadAgreementDoc();
+    } else if (docType === 'form1') {
+      this.downloadForm1Pdf();
     } else {
       this.openPreviewModal(docType);
     }
