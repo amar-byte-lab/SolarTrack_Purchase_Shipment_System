@@ -1,6 +1,8 @@
 .ledger-page-container {
   background-color: var(--st-bg);
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ══ Khatabook Banner Card (White Light Theme) ══════════════════════════════════ */
@@ -100,6 +102,9 @@
 .kb-account-list {
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 270px);
+  max-height: calc(100dvh - 250px);
+  overflow-y: auto;
 }
 
 .kb-account-item {
@@ -360,6 +365,21 @@
 /* ══ Transaction Drawer & Chat Feed ═════════════════════════════════════════ */
 .chat-bg {
   background: #f8fafc !important;
+}
+
+.kb-chat-feed {
+  max-height: calc(100vh - 300px);
+  max-height: calc(100dvh - 280px);
+  min-height: 200px;
+  overflow-y: auto;
+}
+
+@media (max-height: 768px) {
+  .kb-chat-feed {
+    max-height: calc(100vh - 240px);
+    max-height: calc(100dvh - 220px);
+    min-height: 160px;
+  }
 }
 
 .chat-bubble-credit {

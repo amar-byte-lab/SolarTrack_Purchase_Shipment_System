@@ -248,8 +248,8 @@
           </div>
         </div>
 
-        <!-- Bottom Save Action -->
-        <div class="col-12 text-center mt-2 mb-4 pt-2">
+        <!-- Bottom Save Action (Fixed Position at Bottom) -->
+        <div class="col-12 text-center mt-3 pt-2 pb-2 settings-fixed-action-bar">
           <button 
             class="btn btn-primary px-5 py-2 fw-semibold" 
             [disabled]="settingsService.isSaving()"
@@ -664,8 +664,8 @@
 
               </div>
 
-              <!-- Bottom Save Button in Card -->
-              <div class="d-flex justify-content-end align-items-center gap-2 mt-3 pt-3 border-top">
+              <!-- Bottom Save Button in Card (Fixed Position at Bottom) -->
+              <div class="d-flex justify-content-end align-items-center gap-2 mt-3 pt-3 border-top settings-fixed-action-bar">
                 <button type="button" class="btn btn-sm btn-outline-secondary fs-8" (click)="onResetRoleRule()">
                   Reset to Defaults
                 </button>

@@ -10,8 +10,9 @@
   <!-- Main Quotation Container -->
   @if (quotationService.availableProducts().length > 0) {
     <div class="quote-container no-print">
+      <div class="quotation-scroll-content">
 
-      <!-- Product Sets Selection Section (Collapsible checkbox list matching screenshot) -->
+        <!-- Product Sets Selection Section (Collapsible checkbox list matching screenshot) -->
       <div class="st-card p-3 mb-3 bg-light border-0 no-print" style="border: 1px solid #e2e8f0 !important; border-radius: 6px;">
         <h6 class="fw-bold text-secondary mb-2 fs-7 border-bottom pb-2">Select Product Sets to include in Quotation</h6>
         <div class="d-flex flex-column gap-2" style="max-height: 180px; overflow-y: auto;">
@@ -466,19 +467,23 @@
             }
           </div>
 
-          <!-- Bottom Actions Bar -->
-          <div class="mt-4 pt-3 border-top d-flex justify-content-end align-items-center gap-2 no-print">
-            <button type="button" class="btn btn-outline-secondary px-3 py-1.5 fw-semibold fs-7" (click)="goBack()">Back</button>
-            <button 
-              type="button" 
-              class="btn btn-danger px-4 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
-              [disabled]="!isFormValid()"
-              [title]="!isFormValid() ? 'Please fill mandatory Customer Name and Address' : 'Generate Quotation (PDF)'"
-              (click)="printQuotation()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              <span>Generate (PDF)</span>
-            </button>
           </div>
+        }
+      </div>
+
+      <!-- Bottom Actions Bar (Fixed/Sticky at bottom, form content scrolls above it) -->
+      @if (quotationService.selectedProductSets().length > 0 || quotationService.quotationItems().length > 0) {
+        <div class="quotation-fixed-actions-bar no-print">
+          <button type="button" class="btn btn-outline-secondary px-3 py-1.5 fw-semibold fs-7" (click)="goBack()">Back</button>
+          <button 
+            type="button" 
+            class="btn btn-danger px-4 py-1.5 fw-semibold fs-7 d-inline-flex align-items-center gap-1.5 shadow-sm"
+            [disabled]="!isFormValid()"
+            [title]="!isFormValid() ? 'Please fill mandatory Customer Name and Address' : 'Generate Quotation (PDF)'"
+            (click)="printQuotation()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span>Generate (PDF)</span>
+          </button>
         </div>
       }
     </div>

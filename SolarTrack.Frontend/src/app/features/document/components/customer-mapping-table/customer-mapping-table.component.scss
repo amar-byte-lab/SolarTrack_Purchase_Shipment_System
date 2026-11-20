@@ -2,6 +2,24 @@
   display: block;
 }
 
+.mapping-table-wrap {
+  max-height: calc(100vh - 280px);
+  max-height: calc(100dvh - 260px);
+  overflow-y: auto;
+}
+
+@media (max-height: 768px) and (min-width: 769px) {
+  .mapping-table-wrap {
+    max-height: calc(100vh - 220px);
+  }
+}
+
+@media (max-width: 768px) {
+  .mapping-table-wrap {
+    max-height: calc(100dvh - 230px);
+  }
+}
+
 .sticky-top {
   position: sticky;
   top: 0;

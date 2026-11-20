@@ -1,5 +1,11 @@
 .reports-container {
-  padding: 16px 20px;
+  padding: 4px 0;
+}
+
+@media (max-width: 768px) {
+  .reports-container {
+    padding: 0;
+  }
 }
 
 .report-filter-card {
@@ -15,6 +21,30 @@
   border: 1px solid #e2e8f0;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .table-responsive {
+    max-height: calc(100vh - 270px);
+    max-height: calc(100dvh - 250px);
+    overflow-y: auto;
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+  }
+}
+
+@media (max-height: 768px) and (min-width: 769px) {
+  .report-table-card .table-responsive {
+    max-height: calc(100vh - 220px);
+  }
+}
+
+@media (max-width: 768px) {
+  .report-table-card .table-responsive {
+    max-height: calc(100dvh - 230px);
+  }
 }
 
 .table-report {

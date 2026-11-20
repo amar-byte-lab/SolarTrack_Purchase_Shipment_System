@@ -1,4 +1,4 @@
-<div class="ledger-page-container p-3">
+<div class="ledger-page-container">
   <!-- Khatabook Style Net Balance Banner -->
   <div class="kb-banner-card mb-3">
     <div class="d-flex align-items-center justify-content-between">
@@ -268,8 +268,7 @@
       <!-- Modal Body: Chat / Transaction Timeline Feed -->
       <div 
         #chatFeed
-        class="modal-body p-3 chat-bg" 
-        style="max-height: 420px; min-height: 240px; overflow-y: auto;"
+        class="modal-body p-3 chat-bg kb-chat-feed" 
         (click)="closeTxnActions()">
         <div *ngIf="ledgerService.selectedBorrowerTxns().length === 0" class="text-center py-5 text-muted fs-8">
           No transactions recorded yet. Use the drawer below to record a transaction.

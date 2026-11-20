@@ -52,6 +52,11 @@
 .fs-8 { font-size: 0.78rem !important; }
 .fs-9 { font-size: 0.72rem !important; }
 .simple-load-modal .modal-content { border-radius: 16px !important; }
+.simple-load-modal .modal-body {
+  max-height: calc(100vh - 150px);
+  max-height: calc(100dvh - 140px);
+  overflow-y: auto;
+}
 
 /* Clean simple accordion layout with section borders */
 .simple-load-accordion {

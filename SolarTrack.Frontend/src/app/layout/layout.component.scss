@@ -1,22 +1,38 @@
+:host {
+  display: block;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}
+
 .app-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
   background-color: var(--st-bg);
-  overflow-x: hidden;
+  overflow: hidden;
+  position: relative;
 }
 
 .main-content {
   flex: 1;
   min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background-color: var(--st-bg);
+  overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
 }
 
 .page-body {
-  padding: 16px 20px;
+  padding: 14px 18px;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .sidebar-backdrop {
@@ -31,6 +47,13 @@
   &.show {
     display: block;
     opacity: 1;
+  }
+}
+
+/* Screen height adaptations for compact desktop/laptops */
+@media (max-height: 768px) and (min-width: 901px) {
+  .page-body {
+    padding: 10px 14px;
   }
 }
 

@@ -1,46 +1,48 @@
-<div class="summary-page-container p-3">
-  <!-- Page Navigation Tabs: Summary & Activity -->
-  <ul class="nav nav-tabs erp-tabs mb-2.5" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button 
-        class="nav-link fw-semibold fs-8 d-inline-flex align-items-center gap-1.5" 
-        [class.active]="activeTab() === 'SUMMARY'"
-        type="button" 
-        role="tab"
-        (click)="setTab('SUMMARY')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
-        <span>Summary</span>
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button 
-        class="nav-link fw-semibold fs-8 d-inline-flex align-items-center gap-1.5" 
-        [class.active]="activeTab() === 'ACTIVITY'"
-        type="button" 
-        role="tab"
-        (click)="setTab('ACTIVITY')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-        </svg>
-        <span>Activity</span>
-      </button>
-    </li>
-  </ul>
+<div class="summary-page-container">
+  <!-- Page Navigation Tabs: Summary & Activity (Fixed Position) -->
+  <div class="summary-tabs-sticky-bar">
+    <ul class="nav nav-tabs erp-tabs mb-2" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button 
+          class="nav-link fw-semibold fs-8 d-inline-flex align-items-center gap-1.5" 
+          [class.active]="activeTab() === 'SUMMARY'"
+          type="button" 
+          role="tab"
+          (click)="setTab('SUMMARY')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span>Summary</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button 
+          class="nav-link fw-semibold fs-8 d-inline-flex align-items-center gap-1.5" 
+          [class.active]="activeTab() === 'ACTIVITY'"
+          type="button" 
+          role="tab"
+          (click)="setTab('ACTIVITY')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span>Activity</span>
+        </button>
+      </li>
+    </ul>
+  </div>
 
   <!-- Tab Content -->
-  <div class="tab-content">
+  <div class="tab-content flex-grow-1 d-flex flex-column min-h-0">
     <!-- TAB 1: Summary -->
-    <div *ngIf="activeTab() === 'SUMMARY'" class="tab-pane fade show active">
-      <app-summary-toolbar></app-summary-toolbar>
-      <app-summary-table></app-summary-table>
+    <div *ngIf="activeTab() === 'SUMMARY'" class="tab-pane fade show active flex-grow-1 d-flex flex-column min-h-0">
+      <app-summary-toolbar class="flex-shrink-0"></app-summary-toolbar>
+      <app-summary-table class="flex-grow-1 d-flex flex-column min-h-0"></app-summary-table>
     </div>
 
     <!-- TAB 2: Activity -->
-    <div *ngIf="activeTab() === 'ACTIVITY'" class="tab-pane fade show active">
+    <div *ngIf="activeTab() === 'ACTIVITY'" class="tab-pane fade show active flex-grow-1 d-flex flex-column min-h-0">
       <app-activity-tab></app-activity-tab>
     </div>
   </div>

@@ -67,12 +67,6 @@
         <span class="fw-bold text-dark fs-7">Saved Documents &amp; Bills</span>
         <span class="badge bg-primary-subtle text-primary border fs-8">{{ filesService.filteredFiles().length }} Files</span>
       </div>
-      <button 
-        type="button" 
-        class="btn btn-xs btn-outline-secondary py-1 px-2.5 d-inline-flex align-items-center gap-1 fs-8"
-        (click)="filesService.loadFiles().subscribe()">
-        <span>↻ Refresh</span>
-      </button>
     </div>
 
     <div class="table-responsive" style="max-height: calc(100vh - 230px); overflow-y: auto;">

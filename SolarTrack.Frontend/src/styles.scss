@@ -7,8 +7,19 @@
    ========================================================================= */
 
 /* Base resets & typography */
-body {
+html, body {
+  height: 100%;
+  height: 100dvh;
   margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
   font-family: var(--st-font-family);
   background-color: var(--st-bg);
   color: var(--st-text-main);
@@ -232,6 +243,28 @@ textarea.form-control-sm {
 /* =========================================================================
    Organic Pill Tab Switcher System (Global Unified Style)
    ========================================================================= */
+.page-tabs-sticky-wrapper,
+.nav-tabs-wrapper,
+.settings-nav-wrapper,
+.doc-top-tabs-sticky-bar,
+.summary-tabs-sticky-bar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 40 !important;
+  background: var(--st-bg) !important;
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 900px) {
+  .page-tabs-sticky-wrapper,
+  .nav-tabs-wrapper,
+  .settings-nav-wrapper,
+  .doc-top-tabs-sticky-bar,
+  .summary-tabs-sticky-bar {
+    top: 50px !important; /* Below fixed mobile topbar */
+  }
+}
+
 .erp-tabs {
   border: none !important;
   background: rgba(24, 33, 19, 0.09);

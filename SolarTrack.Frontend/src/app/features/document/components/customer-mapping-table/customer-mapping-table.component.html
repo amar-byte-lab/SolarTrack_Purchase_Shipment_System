@@ -1,4 +1,4 @@
-<div class="table-responsive bg-white rounded-1 border" [ngStyle]="{'max-height': maxHeight, 'overflow-y': maxHeight === 'none' ? 'visible' : 'auto'}">
+<div class="table-responsive bg-white rounded-1 border mapping-table-wrap" [ngStyle]="maxHeight && maxHeight !== '500px' ? {'max-height': maxHeight, 'overflow-y': maxHeight === 'none' ? 'visible' : 'auto'} : {}">
   <table class="table table-sm table-hover align-middle mb-0 fs-8">
     <thead class="table-light sticky-top">
       <tr>

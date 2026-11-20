@@ -1,12 +1,23 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .summary-table-card {
-  border-radius: var(--st-radius-card, 20px);
+  border-radius: var(--st-radius-card, 16px);
   border: 1px solid rgba(255, 255, 255, 0.85);
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 10px 30px rgba(24, 33, 19, 0.06);
+  box-shadow: 0 4px 16px rgba(24, 33, 19, 0.05);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .excluded-row-item {
@@ -25,8 +36,8 @@
   border: none !important;
   border-radius: var(--st-radius-pill, 999px) !important;
   font-weight: 600;
-  padding: 6px 18px !important;
-  font-size: 0.82rem;
+  padding: 5px 16px !important;
+  font-size: 0.80rem;
   box-shadow: 0 2px 8px rgba(255, 69, 0, 0.25);
   transition: all 0.22s var(--st-ease-spring);
 
@@ -41,9 +52,9 @@
 .mw-summary-table-wrap {
   width: 100%;
   max-width: 100%;
-  height: 540px !important;
-  max-height: calc(100vh - 310px) !important;
-  min-height: 400px !important;
+  height: 0 !important;
+  flex: 1 1 0px !important;
+  min-height: 0 !important;
   overflow-y: auto !important;
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch !important;
@@ -59,9 +70,9 @@
 
   th, td {
     white-space: nowrap !important;
-    padding: 9px 12px !important;
+    padding: 7px 10px !important;
     vertical-align: middle !important;
-    font-size: 0.80rem !important;
+    font-size: 0.79rem !important;
     border-bottom: 1px solid rgba(24, 33, 19, 0.06) !important;
   }
 
@@ -73,25 +84,37 @@
     background-color: #e8efe2 !important;
     color: #182113 !important;
     font-family: var(--st-font-mono);
-    font-size: 0.74rem !important;
+    font-size: 0.72rem !important;
     font-weight: 700 !important;
-    letter-spacing: 0.06em;
-    height: 36px !important;
+    letter-spacing: 0.05em;
+    height: 32px !important;
     border-bottom: 1px solid rgba(24, 33, 19, 0.12) !important;
     box-shadow: 0 1px 2px rgba(24, 33, 19, 0.04);
   }
 
-  /* Sticky Footer */
+  /* Sticky Footer - Always permanently visible at bottom of table */
+  tfoot {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 15 !important;
+  }
+
+  tfoot tr {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 15 !important;
+  }
+
   tfoot td {
     position: sticky !important;
     bottom: 0 !important;
-    z-index: 12 !important;
+    z-index: 15 !important;
     background-color: #e8efe2 !important;
     color: #182113 !important;
     font-family: var(--st-font-mono);
     font-weight: 700;
-    border-top: 1px solid rgba(24, 33, 19, 0.14) !important;
-    box-shadow: 0 -1px 2px rgba(24, 33, 19, 0.04);
+    border-top: 1.5px solid rgba(24, 33, 19, 0.2) !important;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.08) !important;
   }
 }
 
@@ -103,7 +126,7 @@
 
   td {
     position: sticky !important;
-    top: 36px !important;
+    top: 32px !important;
     z-index: 11 !important;
     box-shadow: 0 2px 4px rgba(24, 33, 19, 0.08) !important;
   }

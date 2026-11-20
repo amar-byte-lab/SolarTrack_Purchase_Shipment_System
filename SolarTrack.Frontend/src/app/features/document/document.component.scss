@@ -3,6 +3,22 @@
   color: var(--st-text-main, #0f172a);
 }
 
+/* Top Level Tabs - Fixed / Sticky Position */
+.doc-top-tabs-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--st-bg);
+  padding: 2px 0 6px 0;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .doc-top-tabs-sticky-bar {
+    top: 50px; /* Below fixed mobile topbar */
+  }
+}
+
 .st-card {
   background: var(--st-surface, #ffffff);
   border: 1px solid var(--st-border, #e2e8f0);

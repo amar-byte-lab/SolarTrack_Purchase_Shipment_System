@@ -1,6 +1,28 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .summary-page-container {
   background-color: transparent;
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.summary-tabs-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--st-bg);
+  flex-shrink: 0;
 }
 
 /* ══ Organic Pill Tab Switcher ══════════════════════════════════════════════ */
@@ -9,13 +31,14 @@
   background: rgba(24, 33, 19, 0.09);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  padding: 4px;
+  padding: 3px;
   border-radius: var(--st-radius-pill, 999px);
   border: 1px solid rgba(24, 33, 19, 0.1);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 16px;
+  gap: 3px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 
   .nav-item {
     margin: 0;
@@ -58,20 +81,31 @@
 }
 
 .fs-8 {
-  font-size: 0.82rem !important;
+  font-size: 0.80rem !important;
+}
+
+@media (max-height: 800px) and (min-width: 769px) {
+  .erp-tabs {
+    margin-bottom: 6px;
+
+    .nav-link {
+      padding: 4px 14px;
+      font-size: 0.78rem;
+    }
+  }
 }
 
 @media (max-width: 768px) {
   .summary-page-container {
-    padding: 6px !important;
+    padding: 0 !important;
   }
 
   .erp-tabs {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 
     .nav-link {
-      padding: 5px 14px;
-      font-size: 0.78rem;
+      padding: 4px 12px;
+      font-size: 0.75rem;
     }
   }
 }
