@@ -21,6 +21,9 @@ export class ApplianceLoadManagerComponent {
   readonly showStandardMasterModal = signal<boolean>(false);
   readonly showSpecsChildModal = signal<boolean>(false);
 
+  // Technical specs accordion state (at a time only one section open)
+  readonly expandedAppId = signal<string | null>(null);
+
   // Local working copy for editing
   readonly localAppliances = signal<ApplianceItem[]>([]);
 
@@ -246,24 +249,48 @@ export class ApplianceLoadManagerComponent {
   // Open / Close Standard Load Master Modal (Screenshot 1)
   openStandardLoadModal() {
     this.localAppliances.set(JSON.parse(JSON.stringify(this.calc.appliances())));
+    this.expandedAppId.set(null);
+    this.currentSpecsApp.set(null);
     this.showStandardMasterModal.set(true);
   }
 
   closeStandardMasterModal() {
     this.calc.appliances.set(JSON.parse(JSON.stringify(this.localAppliances())));
+    this.expandedAppId.set(null);
+    this.currentSpecsApp.set(null);
     this.showStandardMasterModal.set(false);
   }
 
-  // Open Child Specs Modal from Standard Load Master Modal row
+  // Toggle specs accordion (only one section can be open at a time)
+  toggleAccordion(app: ApplianceItem) {
+    if (this.expandedAppId() === app.id) {
+      this.closeSpecsAccordion();
+    } else {
+      this.openSpecsForApp(app);
+    }
+  }
+
+  // Open Child Specs in Accordion (only one section open at a time)
   openSpecsForApp(app: ApplianceItem) {
+    if (this.expandedAppId() === app.id) {
+      this.closeSpecsAccordion();
+      return;
+    }
     this.currentSpecsApp.set(app);
     this.specParams = this.getDefaultCalcParams(app);
     this.recalcChildSpecs();
-    this.showSpecsChildModal.set(true);
+    this.expandedAppId.set(app.id);
+    this.showSpecsChildModal.set(false);
+  }
+
+  closeSpecsAccordion() {
+    this.expandedAppId.set(null);
+    this.currentSpecsApp.set(null);
+    this.showSpecsChildModal.set(false);
   }
 
   closeSpecsChildModal() {
-    this.showSpecsChildModal.set(false);
+    this.closeSpecsAccordion();
   }
 
   onCalcParamChange(key: string, value: any) {
@@ -321,7 +348,7 @@ export class ApplianceLoadManagerComponent {
       }));
     }
 
-    this.closeSpecsChildModal();
+    this.closeSpecsAccordion();
   }
 
   getAppPresetSummary(app: ApplianceItem): string {
@@ -399,6 +426,8 @@ export class ApplianceLoadManagerComponent {
   resetStandardDefaults() {
     this.calc.resetAppliances();
     this.localAppliances.set(JSON.parse(JSON.stringify(this.calc.appliances())));
+    this.expandedAppId.set(null);
+    this.currentSpecsApp.set(null);
   }
 
   resetAppliances() {
