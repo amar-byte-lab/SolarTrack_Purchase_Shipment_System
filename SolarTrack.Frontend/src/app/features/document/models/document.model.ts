@@ -17,6 +17,7 @@ export interface TechnicalProductSpecs {
   // 2. Inverter
   inverterMake?: string;
   inverterName?: string;
+  inverterModelNo?: string;
   inverterSerialNo?: string;
   inverterCapacity?: number;
   inverterInputVoltage?: number;
@@ -43,12 +44,14 @@ export interface TechnicalProductSpecs {
 
   // 5. Cables & Earthing
   dcCableMake?: string;
+  dcCableSizeType?: number;
+  acCableMake?: string;
+  acCableSizeType?: number;
   earthResistance?: number;
   dcEarthing?: number;
   acEarthing?: number;
   earthWireSize?: number;
   laSizeType?: string;
-  dcCableSizeType?: number;
 }
 
 export type DocumentType = 'agreement' | 'form1' | 'form3' | 'form4' | 'form6';

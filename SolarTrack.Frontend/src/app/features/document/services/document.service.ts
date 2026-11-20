@@ -119,6 +119,7 @@ export class DocumentService {
       // 2. Inverter (Defaults: GRID-TIED, count 1, capacity 3, i/p voltage 300, o/p voltage 220-240)
       inverterMake: specs.inverterMake || customer.CommittedBrand || '',
       inverterName: specs.inverterName || 'GRID-TIED',
+      inverterModelNo: specs.inverterModelNo || '',
       inverterSerialNo: specs.inverterSerialNo || '',
       inverterCapacity: specs.inverterCapacity !== undefined && specs.inverterCapacity !== null 
         ? specs.inverterCapacity 
@@ -145,12 +146,14 @@ export class DocumentService {
 
       // 5. Cables & Earthing (Defaults: Earth res 3, Wire size 16, DC earth 1.7, AC earth 2.3, LA COPPER BOUNDED, DC cable size 4)
       dcCableMake: specs.dcCableMake || '',
+      dcCableSizeType: specs.dcCableSizeType ?? 4,
+      acCableMake: specs.acCableMake || '',
+      acCableSizeType: specs.acCableSizeType ?? 4,
       earthResistance: specs.earthResistance ?? 3,
       dcEarthing: specs.dcEarthing ?? 1.7,
       acEarthing: specs.acEarthing ?? 2.3,
       earthWireSize: specs.earthWireSize ?? 16,
-      laSizeType: specs.laSizeType || 'COPPER BOUNDED',
-      dcCableSizeType: specs.dcCableSizeType ?? 4
+      laSizeType: specs.laSizeType || 'COPPER BOUNDED'
     };
 
     this.currentSpecs.set(completeSpecs);

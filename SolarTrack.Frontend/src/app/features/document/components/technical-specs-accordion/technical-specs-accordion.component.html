@@ -131,16 +131,27 @@
       <div class="accordion-body" *ngIf="isSectionOpen('inverter')">
         <div class="row g-3">
           
-          <!-- Col-1: INVERTER MAKE (Row 1), INVERTER TYPE & INVERTER COUNT (Row 2) -->
+          <!-- Col-1: INVERTER MAKE & MODEL (Row 1), INVERTER TYPE & INVERTER COUNT (Row 2) -->
           <div class="col-md-6 d-flex flex-column gap-2">
-            <div>
-              <label class="specs-label highlighted-label">INVERTER MAKE</label>
-              <input 
-                type="text" 
-                class="form-control form-control-sm text-uppercase highlighted-input" 
-                [(ngModel)]="specs.inverterMake" 
-                (ngModelChange)="emitChange()"
-                placeholder="e.g. V-GUARD">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="specs-label highlighted-label">INVERTER MAKE</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm text-uppercase highlighted-input" 
+                  [(ngModel)]="specs.inverterMake" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="e.g. V-GUARD">
+              </div>
+              <div class="col-6">
+                <label class="specs-label highlighted-label">INVERTER MODEL NO.</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm text-uppercase highlighted-input" 
+                  [(ngModel)]="specs.inverterModelNo" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="e.g. NXIT130">
+              </div>
             </div>
             <div class="row g-2">
               <div class="col-7">
@@ -480,16 +491,27 @@
       <div class="accordion-body" *ngIf="isSectionOpen('cables')">
         <div class="row g-3">
           
-          <!-- Col-1: DC CABLE MAKE (Row 1), EARTH RESISTANCE & EARTH WIRE SIZE (Row 2) -->
+          <!-- Col-1: DC CABLE MAKE & AC CABLE MAKE, EARTH RESISTANCE & EARTH WIRE SIZE -->
           <div class="col-md-6 d-flex flex-column gap-2">
-            <div>
-              <label class="specs-label">DC CABLE MAKE</label>
-              <input 
-                type="text" 
-                class="form-control form-control-sm text-uppercase" 
-                [(ngModel)]="specs.dcCableMake" 
-                (ngModelChange)="emitChange()"
-                placeholder="e.g. KEI">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="specs-label">DC CABLE MAKE</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm text-uppercase" 
+                  [(ngModel)]="specs.dcCableMake" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="e.g. KEI">
+              </div>
+              <div class="col-6">
+                <label class="specs-label">AC CABLE MAKE</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm text-uppercase" 
+                  [(ngModel)]="specs.acCableMake" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="e.g. KEI">
+              </div>
             </div>
             <div class="row g-2">
               <div class="col-6">
@@ -514,19 +536,10 @@
             </div>
           </div>
 
-          <!-- Col-2: LA SIZE & TYPE, DC CABLE SIZE (Row 1), DC EARTHING, AC EARTHING (Row 2) -->
+          <!-- Col-2: LA SIZE & TYPE, DC & AC CABLE SIZE, DC EARTHING, AC EARTHING -->
           <div class="col-md-6 d-flex flex-column gap-2">
             <div class="row g-2">
-              <div class="col-7">
-                <label class="specs-label">LA SIZE &amp; TYPE</label>
-                <input 
-                  type="text" 
-                  class="form-control form-control-sm text-uppercase" 
-                  [(ngModel)]="specs.laSizeType" 
-                  (ngModelChange)="emitChange()"
-                  placeholder="e.g. COPPER BOUNDED">
-              </div>
-              <div class="col-5">
+              <div class="col-6">
                 <label class="specs-label">DC CABLE SIZE (SQ MM)</label>
                 <input 
                   type="number" 
@@ -534,6 +547,26 @@
                   [(ngModel)]="specs.dcCableSizeType" 
                   (ngModelChange)="emitChange()"
                   placeholder="e.g. 4">
+              </div>
+              <div class="col-6">
+                <label class="specs-label">AC CABLE SIZE (SQ MM)</label>
+                <input 
+                  type="number" 
+                  class="form-control form-control-sm" 
+                  [(ngModel)]="specs.acCableSizeType" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="e.g. 4">
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="specs-label">LA SIZE &amp; TYPE</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm text-uppercase" 
+                  [(ngModel)]="specs.laSizeType" 
+                  (ngModelChange)="emitChange()"
+                  placeholder="e.g. COPPER BOUNDED">
               </div>
             </div>
             <div class="row g-2">

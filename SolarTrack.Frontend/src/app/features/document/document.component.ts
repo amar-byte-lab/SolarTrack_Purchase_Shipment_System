@@ -875,8 +875,8 @@ export class DocumentComponent implements OnInit {
     const voltage = capNum > 5 ? '415 V' : '230 V';
 
     // Inverter Make
-    const invMake = (specs.inverterMake || 'WAAREE').trim();
-    const inverterMakeType = `${invMake} / Grid Tied`;
+    const invMake = (specs.inverterMake || '').trim();
+    const inverterMakeType = invMake ? `${invMake} / Grid Tied` : '';
 
     return {
       discomOffice,
@@ -905,39 +905,39 @@ export class DocumentComponent implements OnInit {
   buildDefaultForm3Data(cust: InstallmentRow | null, specs: TechnicalProductSpecs): Form3Data {
     if (!cust) {
       return {
-        discomOffice: 'CED BALASORE, TPNODL',
-        capacityKwp: '3.1 Kwp',
-        inspectionLocation: 'AT: 601, PATANA, AJODHYA, Dist-Balasore, 756020',
-        headerSummary: 'Work Completion and Inspection Report for 3.1 Kwp Solar Roof Top PV System(SRTPV) AT: 601, PATANA, AJODHYA, Dist-Balasore, 756020',
+        discomOffice: '',
+        capacityKwp: '',
+        inspectionLocation: '',
+        headerSummary: '',
         applicantName: '',
         applicationNoWithDate: '',
         address: '',
         consumerNo: '',
         consumerCategory: 'DOMESTIC',
         connectionType: '1ph LT',
-        contractDemand: '3 KW',
+        contractDemand: '',
         arrear: '0',
         vendorName: 'Shri Trutiyadev Solar Enterprises',
-        installationDate: '19 AUG 2026',
+        installationDate: '',
         transformerCapacity: '',
         transformerLocation: '',
         transformerTotalRtsCapacity: '',
         transformerCapacityAdequate: 'Yes',
-        proposedPlantDetails: '3.1 KW\nSINGLE SITE\nSINGLE POINT',
+        proposedPlantDetails: '',
         sldOkStatus: 'YES/NO(if it is no, state reasons for the same and suggest alternate arrangements )',
-        inverterMake: 'WAAREE',
-        inverterSerialNo: 'WPS033260720644',
-        inverterCapacity: '3.3 KW',
-        inverterVoltages: '300/220-240',
+        inverterMake: '',
+        inverterSerialNo: '',
+        inverterCapacity: '',
+        inverterVoltages: '',
         inverterAntiIslanding: 'YES/NO (Need to be checked practically before charging)',
-        moduleMake: 'WAAREE',
-        moduleSerials: 'WS05269070229959\nWS05269070229986\nWS05269070229964\nWS05269070229803\nWS05269070229989',
-        moduleType: 'TOPCON',
-        moduleCapacityEach: '610WP',
-        moduleCount: '5 NOS.',
-        moduleTotalCapacity: '3.050KW',
-        dcEarthing: '1.7 in Ohm',
-        acEarthing: '2.4 in Ohm',
+        moduleMake: '',
+        moduleSerials: '',
+        moduleType: '',
+        moduleCapacityEach: '',
+        moduleCount: '',
+        moduleTotalCapacity: '',
+        dcEarthing: '',
+        acEarthing: '',
         earthingPermissibleText: 'Within permissible limit or Not (Values should be certified by TPNODL official)',
         protectiveSystemDetails: 'AC & DC DB: Yes/No\nManual Switch at Solar Side: Yes/No\nlightening arrestor: Yes/No\nSPDs: Yes/No\nRelay operated automatic switch at net- meter side: Yes/ No',
         protectionBackFeeding: '',
@@ -984,8 +984,8 @@ export class DocumentComponent implements OnInit {
     else discomName = 'TPNODL';
 
     const distPart = (specs.district || cust.District || '').trim();
-    const div = cust.DivisionName || (distPart ? `CED ${distPart.toUpperCase()}` : 'CED BALASORE');
-    const discomOffice = `${div}, ${discomName}`;
+    const div = cust.DivisionName || (distPart ? `CED ${distPart.toUpperCase()}` : '');
+    const discomOffice = [div, discomName].filter(Boolean).join(', ');
 
     // Full Address
     let fullAddr = (specs.address || cust.Address || '').trim();
@@ -1007,61 +1007,63 @@ export class DocumentComponent implements OnInit {
     }
 
     // Capacity & Demand
-    const cap = cust.ProposedCapacity || specs.inverterCapacity || '3.1';
-    const capNum = parseFloat(String(cap)) || 3.1;
-    const capacityKwp = `${cap} Kwp`;
-    const contractDemand = `${Math.round(capNum) || 3} KW`;
+    const cap = cust.ProposedCapacity || specs.inverterCapacity || '';
+    const capNum = parseFloat(String(cap)) || 0;
+    const capacityKwp = cap ? `${cap} Kwp` : '';
+    const contractDemand = capNum ? `${Math.round(capNum)} KW` : '';
     const connectionType = specs.connectionType || (capNum > 5 ? '3 ph LT/HT' : '1ph LT');
 
     // App No & Date
-    const appNo = cust.ApplicationNumber || cust.ConsumerNo || 'NP-ODTNO26-13971420';
-    const rawDate = cust.LoginDate || cust.InstallationDate || specs.dateOfInstallation || new Date().toISOString();
-    let dateStr = '25-07-2026';
-    try {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) {
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const yy = d.getFullYear();
-        dateStr = `${dd}-${mm}-${yy}`;
-      }
-    } catch {}
-    const applicationNoWithDate = `${appNo} / ${dateStr}`;
+    const appNo = cust.ApplicationNumber || cust.ConsumerNo || '';
+    const rawDate = cust.LoginDate || cust.InstallationDate || specs.dateOfInstallation;
+    let dateStr = '';
+    if (rawDate) {
+      try {
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) {
+          const dd = String(d.getDate()).padStart(2, '0');
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const yy = d.getFullYear();
+          dateStr = `${dd}-${mm}-${yy}`;
+        }
+      } catch {}
+    }
+    const applicationNoWithDate = appNo ? (dateStr ? `${appNo} / ${dateStr}` : appNo) : '';
 
     // Date of installation
-    const installDate = specs.dateOfInstallation || '19 AUG 2026';
+    const installDate = specs.dateOfInstallation 
+      ? this.formatDateToDisplay(specs.dateOfInstallation) 
+      : (cust.InstallationDate ? this.formatDateToDisplay(cust.InstallationDate) : '');
 
     // Inverter
-    const invMake = (specs.inverterMake || 'WAAREE').trim();
-    const invSerial = (specs.inverterSerialNo || 'WPS033260720644').trim();
-    const invCap = `${specs.inverterCapacity || '3.3'} KW`;
-    const inVolt = specs.inverterInputVoltage || 300;
-    const outVolt = specs.inverterOutputVoltage || '220-240';
-    const invVoltages = `${inVolt}/${outVolt}`;
+    const invMake = (specs.inverterMake || '').trim();
+    const invSerial = (specs.inverterSerialNo || '').trim();
+    const invCap = specs.inverterCapacity ? `${specs.inverterCapacity} KW` : (cust.ProposedCapacity ? `${cust.ProposedCapacity} KW` : '');
+    const inVolt = specs.inverterInputVoltage;
+    const outVolt = specs.inverterOutputVoltage;
+    const invVoltages = (inVolt || outVolt) ? `${inVolt || ''}/${outVolt || ''}` : '';
 
     // Modules
-    const modMake = (specs.moduleMake || 'WAAREE').trim();
-    const modType = (specs.moduleTypeModel || 'TOPCON').trim();
-    const modCapEach = `${specs.moduleCapacityEach || 610}WP`;
-    const modCount = `${specs.moduleCount || 5} NOS.`;
-    const modTotal = specs.moduleTotalCapacity || `${(capNum).toFixed(3)}KW`;
+    const modMake = (specs.moduleMake || '').trim();
+    const modType = (specs.moduleTypeModel || '').trim();
+    const modCapEach = specs.moduleCapacityEach ? `${specs.moduleCapacityEach}WP` : '';
+    const modCount = specs.moduleCount ? `${specs.moduleCount} NOS.` : '';
+    const modTotal = specs.moduleTotalCapacity || (cust.ProposedCapacity ? `${cust.ProposedCapacity}KW` : '');
 
     let serialsText = '';
     if (specs.moduleSerials && specs.moduleSerials.length > 0) {
-      serialsText = specs.moduleSerials.map((s: any) => s.serialNo).join('\n');
-    } else {
-      serialsText = 'WS05269070229959\nWS05269070229986\nWS05269070229964\nWS05269070229803\nWS05269070229989';
+      serialsText = specs.moduleSerials.map((s: any) => s.serialNo).filter(Boolean).join('\n');
     }
 
     // Earthing
-    const dcEarth = `${specs.dcEarthing || '1.7'} in Ohm`;
-    const acEarth = `${specs.acEarthing || '2.4'} in Ohm`;
+    const dcEarth = specs.dcEarthing ? `${specs.dcEarthing} in Ohm` : '';
+    const acEarth = specs.acEarthing ? `${specs.acEarthing} in Ohm` : '';
 
     return {
       discomOffice,
       capacityKwp,
       inspectionLocation: fullAddr,
-      headerSummary: `Work Completion and Inspection Report for ${capacityKwp} Solar Roof Top PV System(SRTPV) ${fullAddr}`,
+      headerSummary: capacityKwp ? `Work Completion and Inspection Report for ${capacityKwp} Solar Roof Top PV System(SRTPV) ${fullAddr}` : '',
 
       applicantName: name,
       applicationNoWithDate,
@@ -1079,7 +1081,7 @@ export class DocumentComponent implements OnInit {
       transformerTotalRtsCapacity: '',
       transformerCapacityAdequate: 'Yes',
 
-      proposedPlantDetails: `${cap} KW\nSINGLE SITE\nSINGLE POINT`,
+      proposedPlantDetails: cap ? `${cap} KW\nSINGLE SITE\nSINGLE POINT` : '',
       sldOkStatus: 'YES/NO(if it is no, state reasons for the same and suggest alternate arrangements )',
 
       inverterMake: invMake,
@@ -1140,45 +1142,45 @@ export class DocumentComponent implements OnInit {
     if (!cust) {
       return {
         officerDesignation: 'The Circle solar executive/SDO/Executive Engineer (Ele),',
-        officerAddress: 'SDO NILGIRI Subdivision, CED BALASORE, BALASORE, TPNODL',
-        refPmsgy: 'Your PMSGY REG. N0.- NP-ODTNO26-13971420/25-07-2026',
-        appFgNoDate: 'NP-ODTNO26-13971420/19-08-2026',
+        officerAddress: '',
+        refPmsgy: '',
+        appFgNoDate: '',
         appFees: '',
-        moduleModelNo: 'TOPCON',
-        moduleTotalCapacity: '3.05 KWP',
-        moduleMake: 'WAAREE',
-        moduleSerials: 'WS05269070229959\nWS05269070229986\nWS05269070229964\nWS05269070229803\nWS05269070229989',
-        moduleCount: '5 Nos',
-        moduleCapacityEach: '610 Wp',
-        moduleInstallDate: '19 AUG 2026',
-        moduleCommissionDate: '19 AUG 2026',
-        inverterCount: '1 Nos',
-        inverterType: 'Grid Tied',
-        inverterMake: 'WAAREE',
-        inverterModelNo: 'NXIT130 3.3KW/1P-230V,50Hz',
-        inverterCapacity: '3.3 KW',
-        inverterSerialNo: 'WPS033260720644',
-        inverterInputVolt: '300V DC',
-        inverterOutputVolt: '220-240V AC',
-        inverterInstallDate: '19 AUG 2026',
-        inverterCommissionDate: '19 AUG 2026',
-        dcCableMake: 'KEI',
-        dcCableSize: '4 SQ MM',
-        acCableMake: 'KEI',
-        acCableSize: '4 SQ MM',
-        dcdbMake: 'HAVELLS',
+        moduleModelNo: '',
+        moduleTotalCapacity: '',
+        moduleMake: '',
+        moduleSerials: '',
+        moduleCount: '',
+        moduleCapacityEach: '',
+        moduleInstallDate: '',
+        moduleCommissionDate: '',
+        inverterCount: '',
+        inverterType: '',
+        inverterMake: '',
+        inverterModelNo: '',
+        inverterCapacity: '',
+        inverterSerialNo: '',
+        inverterInputVolt: '',
+        inverterOutputVolt: '',
+        inverterInstallDate: '',
+        inverterCommissionDate: '',
+        dcCableMake: '',
+        dcCableSize: '',
+        acCableMake: '',
+        acCableSize: '',
+        dcdbMake: '',
         dcdbSerialNo: '',
         dcdbSpdRating: '',
-        dcdbMcbDetails: '32AMP',
-        acdbMake: 'HAVELLS',
+        dcdbMcbDetails: '',
+        acdbMake: '',
         acdbSerialNo: '',
         acdbSpdRating: '',
-        acdbMcbDetails: '32AMP',
-        earthResistance: '3 OHM',
-        earthWireSize: '16 SQ MM Aluminum',
+        acdbMcbDetails: '',
+        earthResistance: '',
+        earthWireSize: '',
         twoEarthingPoints: 'YES',
         lighteningArrester: 'YES',
-        laSizeType: 'Copper bonded',
+        laSizeType: '',
         earthingNote: 'Note:* Earthing shall be done in accordance IS 3043-1986',
         netMeterCount: '',
         netMeterMake: '',
@@ -1202,8 +1204,8 @@ export class DocumentComponent implements OnInit {
         provisionSwitches: 'Provision of manual and automatic switches: Yes / No',
         omInfoStatus: "Whether Operation and Maintenance information:\nSuch as Do's and Don'ts are provided by the System Installer: Yes* / No*.",
         complianceCert: "Certified that the above said SPV system was installed by me and the equipment used, comply with the Technical and Safety standards as specified by CEA/MNRE/IEGC/OGC/OERC and TPNODL's requirement.",
-        applicantName: 'MR KIRAN KUMAR BINDHANI',
-        applicantAddress: 'AT: 601, PATANA, AJODHYA\nDist-BALASORE, PIN-756020',
+        applicantName: '',
+        applicantAddress: '',
         applicantDate: '',
         installerFirm: 'Shri Trutiyadev Solar Enterprises',
         installerAddress: 'AT-Talamundali,PO- Kankadajodi, PS-Maniabandha,\nDist-Cuttack PIN-754035',
@@ -1226,72 +1228,76 @@ export class DocumentComponent implements OnInit {
     else discomName = 'TPNODL';
 
     const distPart = (specs.district || cust.District || '').trim();
-    const div = cust.DivisionName || (distPart ? `CED ${distPart.toUpperCase()}` : 'CED BALASORE');
-    const subDiv = cust.SubDivision ? `${cust.SubDivision} Subdivision, ` : 'SDO NILGIRI Subdivision, ';
-    const officerAddress = `${subDiv}${div}, ${distPart ? distPart.toUpperCase() : 'BALASORE'}, ${discomName}`;
+    const div = cust.DivisionName || (distPart ? `CED ${distPart.toUpperCase()}` : '');
+    const subDiv = cust.SubDivision ? `${cust.SubDivision} Subdivision` : '';
+    const officerAddrParts = [subDiv, div, distPart ? distPart.toUpperCase() : '', discomName].filter(Boolean);
+    const officerAddress = officerAddrParts.join(', ');
 
     // App No & Registration Ref
-    const appNo = cust.ApplicationNumber || cust.ConsumerNo || 'NP-ODTNO26-13971420';
-    const rawDate = cust.LoginDate || cust.InstallationDate || specs.dateOfInstallation || new Date().toISOString();
-    let dateStr = '25-07-2026';
-    let installDateStr = '19-08-2026';
-    try {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) {
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const yy = d.getFullYear();
-        dateStr = `${dd}-${mm}-${yy}`;
-        installDateStr = `${dd}-${mm}-${yy}`;
-      }
-    } catch {}
-    const refPmsgy = `Your PMSGY REG. N0.- ${appNo}/${dateStr}`;
-    const appFgNoDate = `${appNo}/${installDateStr}`;
+    const appNo = cust.ApplicationNumber || cust.ConsumerNo || '';
+    const rawDate = cust.LoginDate || cust.InstallationDate || specs.dateOfInstallation;
+    let dateStr = '';
+    let installDateStr = '';
+    if (rawDate) {
+      try {
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) {
+          const dd = String(d.getDate()).padStart(2, '0');
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const yy = d.getFullYear();
+          dateStr = `${dd}-${mm}-${yy}`;
+          installDateStr = `${dd}-${mm}-${yy}`;
+        }
+      } catch {}
+    }
+    const refPmsgy = appNo ? (dateStr ? `Your PMSGY REG. N0.- ${appNo}/${dateStr}` : `Your PMSGY REG. N0.- ${appNo}`) : '';
+    const appFgNoDate = appNo ? (installDateStr ? `${appNo}/${installDateStr}` : appNo) : '';
 
     // Dates
-    const installDate = specs.dateOfInstallation || '19 AUG 2026';
-    const commissionDate = specs.dateOfCommission || installDate;
+    const installDate = specs.dateOfInstallation 
+      ? this.formatDateToDisplay(specs.dateOfInstallation) 
+      : (cust.InstallationDate ? this.formatDateToDisplay(cust.InstallationDate) : '');
+    const commissionDate = specs.dateOfCommission 
+      ? this.formatDateToDisplay(specs.dateOfCommission) 
+      : (cust.CommissioningDate ? this.formatDateToDisplay(cust.CommissioningDate) : '');
 
     // Modules
-    const cap = cust.ProposedCapacity || specs.inverterCapacity || '3.05';
-    const capNum = parseFloat(String(cap)) || 3.05;
-    const modTotal = specs.moduleTotalCapacity || `${capNum.toFixed(2)} KWP`;
-    const modMake = (specs.moduleMake || 'WAAREE').trim();
-    const modModel = (specs.moduleTypeModel || 'TOPCON').trim();
-    const modCount = `${specs.moduleCount || 5} Nos`;
-    const modCapEach = `${specs.moduleCapacityEach || 610} Wp`;
+    const cap = cust.ProposedCapacity || specs.inverterCapacity || '';
+    const modTotal = specs.moduleTotalCapacity ? specs.moduleTotalCapacity.trim() : (cap ? `${cap} KWP` : '');
+    const modMake = (specs.moduleMake || '').trim();
+    const modModel = (specs.moduleTypeModel || '').trim();
+    const modCount = specs.moduleCount ? `${specs.moduleCount} Nos` : '';
+    const modCapEach = specs.moduleCapacityEach ? `${specs.moduleCapacityEach} Wp` : '';
 
     let serialsText = '';
     if (specs.moduleSerials && specs.moduleSerials.length > 0) {
-      serialsText = specs.moduleSerials.map((s: any) => s.serialNo).join('\n');
-    } else {
-      serialsText = 'WS05269070229959\nWS05269070229986\nWS05269070229964\nWS05269070229803\nWS05269070229989';
+      serialsText = specs.moduleSerials.map((s: any) => s.serialNo).filter(Boolean).join('\n');
     }
 
     // Inverter
-    const invCount = `${specs.inverterCount || 1} Nos`;
-    const invType = 'Grid Tied';
-    const invMake = (specs.inverterMake || 'WAAREE').trim();
-    const invCap = `${specs.inverterCapacity || '3.3'} KW`;
-    const invModel = specs.inverterName || `NXIT130 ${specs.inverterCapacity || '3.3'}KW/1P-230V,50Hz`;
-    const invSerial = (specs.inverterSerialNo || 'WPS033260720644').trim();
-    const invInputVolt = `${specs.inverterInputVoltage || 300}V DC`;
-    const invOutputVolt = `${specs.inverterOutputVoltage || '220-240'}V AC`;
+    const invMake = (specs.inverterMake || '').trim();
+    const invModel = (specs.inverterModelNo || (specs.inverterName && specs.inverterName !== 'GRID-TIED' ? specs.inverterName : '') || '').trim();
+    const invSerial = (specs.inverterSerialNo || '').trim();
+    const invCount = specs.inverterCount ? `${specs.inverterCount} Nos` : (invMake || invModel || invSerial ? '1 Nos' : '');
+    const invType = specs.inverterName ? specs.inverterName : (invMake || invModel || invSerial ? 'Grid Tied' : '');
+    const invCap = specs.inverterCapacity ? `${specs.inverterCapacity} KW` : (cap ? `${cap} KW` : '');
+    const invInputVolt = specs.inverterInputVoltage ? `${specs.inverterInputVoltage}V DC` : '';
+    const invOutputVolt = specs.inverterOutputVoltage ? `${specs.inverterOutputVoltage}V AC` : '';
 
     // Cables & Protection
-    const dcCable = specs.dcCableMake || 'KEI';
-    const dcSize = `${specs.dcCableSizeType || 4} SQ MM`;
-    const acCable = 'KEI';
-    const acSize = '4 SQ MM';
-    const dcdb = specs.dcdbMake || 'HAVELLS';
-    const dcdbMcb = `${specs.dcdbMcbDetails || 32}AMP`;
-    const acdb = specs.acdbMake || 'HAVELLS';
-    const acdbMcb = `${specs.acdbMcbDetails || 32}AMP`;
+    const dcCable = (specs.dcCableMake || '').trim();
+    const dcSize = specs.dcCableSizeType ? `${specs.dcCableSizeType} SQ MM` : '';
+    const acCable = ((specs as any).acCableMake || '').trim();
+    const acSize = (specs as any).acCableSizeType ? `${(specs as any).acCableSizeType} SQ MM` : '';
+    const dcdb = (specs.dcdbMake || '').trim();
+    const dcdbMcb = specs.dcdbMcbDetails ? `${specs.dcdbMcbDetails}AMP` : '';
+    const acdb = (specs.acdbMake || '').trim();
+    const acdbMcb = specs.acdbMcbDetails ? `${specs.acdbMcbDetails}AMP` : '';
 
     // Earthing
-    const earthRes = `${specs.earthResistance || 3} OHM`;
-    const earthWire = `${specs.earthWireSize || 16} SQ MM Aluminum`;
-    const laType = specs.laSizeType || 'Copper bonded';
+    const earthRes = specs.earthResistance ? `${specs.earthResistance} OHM` : '';
+    const earthWire = specs.earthWireSize ? `${specs.earthWireSize} SQ MM Aluminum` : '';
+    const laType = (specs.laSizeType || '').trim();
 
     // Applicant Name & Address
     let name = (cust.Name || '').trim();
@@ -1303,7 +1309,8 @@ export class DocumentComponent implements OnInit {
       addr = `AT: ${addr}`;
     }
     const pin = specs.pinCode || cust.PinCode || '';
-    const applicantAddress = `${addr}\nDist-${distPart.toUpperCase() || 'BALASORE'}${pin ? `, PIN-${pin}` : ''}`;
+    const addrParts = [addr, distPart ? `Dist-${distPart.toUpperCase()}` : '', pin ? `PIN-${pin}` : ''].filter(Boolean);
+    const applicantAddress = addrParts.join('\n');
 
     return {
       officerDesignation: 'The Circle solar executive/SDO/Executive Engineer (Ele),',
@@ -1398,8 +1405,7 @@ export class DocumentComponent implements OnInit {
         const getText = (id: string, fallback: string = '') => {
           const el = document.getElementById(id);
           if (!el) return fallback;
-          const val = (el.innerText || el.textContent || '').trim();
-          return val !== '' ? val : fallback;
+          return (el.innerText || el.textContent || '').trim();
         };
 
         const rawDiscom = getText('f1PrevDiscom', d.discomOffice);
@@ -1597,8 +1603,7 @@ export class DocumentComponent implements OnInit {
         const getText = (id: string, fallback: string = '') => {
           const el = document.getElementById(id);
           if (!el) return fallback;
-          const val = (el.innerText || el.textContent || '').trim();
-          return val !== '' ? val : fallback;
+          return (el.innerText || el.textContent || '').trim();
         };
 
         d.discomOffice = getText('f3PrevDiscomOffice', d.discomOffice);
@@ -1997,8 +2002,7 @@ export class DocumentComponent implements OnInit {
         const getText = (id: string, fallback: string = '') => {
           const el = document.getElementById(id);
           if (!el) return fallback;
-          const val = (el.innerText || el.textContent || '').trim();
-          return val !== '' ? val : fallback;
+          return (el.innerText || el.textContent || '').trim();
         };
 
         d.officerDesignation = getText('f4PrevOffDesig', d.officerDesignation);
