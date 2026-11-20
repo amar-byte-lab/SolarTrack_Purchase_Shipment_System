@@ -258,19 +258,28 @@ ELSE
                 int idx = 0;
                 foreach (var kvp in cleanRow)
                 {
+                    if (string.Equals(kvp.Key, matchField, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (PrimaryKeys.TryGetValue(tableName, out var pkCol) && string.Equals(kvp.Key, pkCol, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     setClauses.Add($"[{kvp.Key}] = @p{idx}");
                     dynParams.Add($"p{idx}", UnwrapJsonElement(kvp.Value));
                     idx++;
                 }
 
-                dynParams.Add("matchVal", matchVal);
-                var sql = $"UPDATE [dbo].[{tableName}] SET {string.Join(", ", setClauses)} WHERE [{matchField}] = @matchVal";
-                await conn.ExecuteAsync(sql, dynParams);
-                return;
+                if (setClauses.Count > 0)
+                {
+                    dynParams.Add("matchVal", matchVal);
+                    var sql = $"UPDATE [dbo].[{tableName}] SET {string.Join(", ", setClauses)} WHERE [{matchField}] = @matchVal";
+                    await conn.ExecuteAsync(sql, dynParams);
+                    return;
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning("SQL Server UpdateRowAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                throw;
             }
         }
 
@@ -588,10 +597,11 @@ ELSE
 
     public async Task<object> UpdateBorrowerTxnAsync(Dictionary<string, object?> body)
     {
-        if (body.TryGetValue("TxnID", out var idObj) && idObj != null)
+        var clean = SanitizeRow("borrower_txns", body);
+        if (clean.TryGetValue("TxnID", out var idObj) && idObj != null)
         {
-            await UpdateRowAsync("borrower_txns", "TxnID", idObj, body);
-            return new { success = true, updated = body };
+            await UpdateRowAsync("borrower_txns", "TxnID", idObj, clean);
+            return new { success = true, updated = clean };
         }
         return new { success = false, error = "TxnID is required" };
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LedgerService } from './services/ledger.service';
@@ -15,6 +15,8 @@ import { Borrower, BorrowerTxn } from './models/ledger.model';
   styleUrls: ['./ledger.component.scss']
 })
 export class LedgerComponent implements OnInit {
+  @ViewChild('chatFeed') chatFeedRef?: ElementRef<HTMLDivElement>;
+
   ledgerService = inject(LedgerService);
   navService = inject(NavService);
   toastService = inject(ToastService);
@@ -27,13 +29,16 @@ export class LedgerComponent implements OnInit {
   isStatementModalOpen = signal<boolean>(false);
   isEditTxnModalOpen = signal<boolean>(false);
 
+  // Inline edit transaction state
+  readonly editingTxn = signal<BorrowerTxn | null>(null);
+
   // Active transaction actions ID (for double click on desktop or long hold on mobile)
   activeActionsTxnId = signal<number | null>(null);
 
   // Active borrower actions ID (for double click on desktop or long hold on mobile on customer row)
   activeActionsBorrowerId = signal<number | null>(null);
 
-  // Edit transaction modal form
+  // Edit transaction form
   editTxnId: number | null = null;
   editTxnType: 'Credit' | 'Debit' = 'Credit';
   editTxnDate: string = '';
@@ -130,19 +135,11 @@ export class LedgerComponent implements OnInit {
   }
 
   // Customer row interaction handlers (Click vs DblClick & Mobile Long Hold)
-  onBorrowerClick(borrower: Borrower, event: MouseEvent): void {
+  onBorrowerClick(borrower: Borrower, event?: MouseEvent): void {
     if (this.activeActionsBorrowerId() === borrower.BorrowerID) {
       return;
     }
-    if (this.borrowerClickTimer) {
-      clearTimeout(this.borrowerClickTimer);
-      this.borrowerClickTimer = null;
-      return;
-    }
-    this.borrowerClickTimer = setTimeout(() => {
-      this.openStatement(borrower);
-      this.borrowerClickTimer = null;
-    }, 220);
+    this.openStatement(borrower);
   }
 
   onBorrowerDblClick(borrower: Borrower, event: MouseEvent): void {
@@ -222,18 +219,34 @@ export class LedgerComponent implements OnInit {
   }
 
   openStatement(borrower: Borrower): void {
+    this.cancelEditTxn();
     this.ledgerService.selectedBorrower.set(borrower);
     this.txnDate = this.todayStr;
     this.txnAmount = null;
     this.txnRemarks = '';
     this.activeActionsTxnId.set(null);
     this.isStatementModalOpen.set(true);
+    this.scrollToLatestTxn();
   }
 
   closeStatement(): void {
+    this.cancelEditTxn();
     this.isStatementModalOpen.set(false);
     this.ledgerService.selectedBorrower.set(null);
     this.activeActionsTxnId.set(null);
+  }
+
+  scrollToLatestTxn(): void {
+    setTimeout(() => {
+      if (this.chatFeedRef?.nativeElement) {
+        this.chatFeedRef.nativeElement.scrollTop = this.chatFeedRef.nativeElement.scrollHeight;
+      }
+    }, 60);
+    setTimeout(() => {
+      if (this.chatFeedRef?.nativeElement) {
+        this.chatFeedRef.nativeElement.scrollTop = this.chatFeedRef.nativeElement.scrollHeight;
+      }
+    }, 200);
   }
 
   toggleTxnActions(txnId: number, event?: Event): void {
@@ -286,19 +299,31 @@ export class LedgerComponent implements OnInit {
     }
   }
 
-  openEditModal(txn: BorrowerTxn, event: Event): void {
-    event.stopPropagation();
+  startEditTxn(txn: BorrowerTxn, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.editingTxn.set(txn);
     this.editTxnId = txn.TxnID;
     this.editTxnType = txn.Type;
     this.editTxnDate = (txn.TxnDate ? txn.TxnDate.slice(0, 10) : '') || this.todayStr;
     this.editTxnAmount = txn.Amount;
     this.editTxnRemarks = txn.Remarks || '';
-    this.isEditTxnModalOpen.set(true);
     this.activeActionsTxnId.set(null);
+    this.scrollToLatestTxn();
+  }
+
+  cancelEditTxn(): void {
+    this.editingTxn.set(null);
+    this.editTxnId = null;
+    this.editTxnAmount = null;
+    this.editTxnRemarks = '';
+  }
+
+  openEditModal(txn: BorrowerTxn, event: Event): void {
+    this.startEditTxn(txn, event);
   }
 
   closeEditModal(): void {
-    this.isEditTxnModalOpen.set(false);
+    this.cancelEditTxn();
   }
 
   saveEditTxn(): void {
@@ -321,9 +346,10 @@ export class LedgerComponent implements OnInit {
       Remarks: this.editTxnRemarks.trim()
     }).subscribe({
       next: () => {
-        this.closeEditModal();
+        this.cancelEditTxn();
         this.toastService.show('Transaction updated successfully!', 'success');
         this.loadData();
+        this.scrollToLatestTxn();
       },
       error: () => {
         this.toastService.show('Failed to update transaction.', 'danger');
@@ -354,6 +380,7 @@ export class LedgerComponent implements OnInit {
         this.txnAmount = null;
         this.txnRemarks = '';
         this.loadData();
+        this.scrollToLatestTxn();
       },
       error: () => {
         this.toastService.show('Failed to record transaction.', 'danger');

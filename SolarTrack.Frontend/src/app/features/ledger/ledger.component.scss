@@ -322,6 +322,12 @@
     border-color: #3b82f6 !important;
     transform: scale(1.015);
   }
+
+  &.bubble-editing {
+    box-shadow: 0 0 0 2.5px #6366f1, 0 4px 12px rgba(99, 102, 241, 0.25) !important;
+    border-color: #6366f1 !important;
+    transform: scale(1.015);
+  }
 }
 
 .chat-bubble-debit {
@@ -335,6 +341,12 @@
   &.bubble-active {
     box-shadow: 0 0 0 2.5px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.2) !important;
     border-color: #3b82f6 !important;
+    transform: scale(1.015);
+  }
+
+  &.bubble-editing {
+    box-shadow: 0 0 0 2.5px #6366f1, 0 4px 12px rgba(99, 102, 241, 0.25) !important;
+    border-color: #6366f1 !important;
     transform: scale(1.015);
   }
 }
@@ -383,6 +395,55 @@
     border-color: #86efac;
     transform: scale(1.08);
   }
+}
+
+.btn-txn-row {
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  transition: all 0.15s ease-in-out;
+  letter-spacing: 0.3px;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.btn-received {
+    background: #16a34a !important; /* Green for Received */
+    color: #ffffff !important;
+
+    &:hover {
+      background: #15803d !important;
+      box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+    }
+  }
+
+  &.btn-given {
+    background: #dc2626 !important; /* Red for Given */
+    color: #ffffff !important;
+
+    &:hover {
+      background: #b91c1c !important;
+      box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+    }
+  }
+}
+
+.edit-inline-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .btn-txn-icon {
