@@ -404,10 +404,62 @@
 @media (max-width: 768px) {
   .inventory-table-wrap {
     max-height: calc(100dvh - 230px);
+    overflow-x: hidden !important;
+    width: 100% !important;
   }
-}
 
-@media (max-width: 768px) {
+  .inventory-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+
+    th, td {
+      padding: 0.45rem 0.4rem !important;
+      font-size: 0.80rem;
+    }
+
+    .col-stock {
+      width: 82px !important;
+      min-width: 76px !important;
+      max-width: 85px !important;
+      text-align: right;
+    }
+
+    .col-actions {
+      width: 72px !important;
+      min-width: 70px !important;
+      max-width: 75px !important;
+      text-align: center;
+      padding-left: 2px !important;
+      padding-right: 2px !important;
+    }
+  }
+
+  .tree-item-cell {
+    padding-left: 32px !important;
+
+    &::before {
+      left: 16px !important;
+    }
+
+    &::after {
+      left: 16px !important;
+      width: 12px !important;
+    }
+  }
+
+  .category-header-row:not(.is-collapsed) .category-cell-node::before {
+    left: 16px !important;
+  }
+
+  .tree-add-item-cell {
+    padding-left: 32px !important;
+
+    &::before {
+      left: 16px !important;
+    }
+  }
+
   .inventory-container {
     padding: 6px !important;
   }
@@ -441,6 +493,4 @@
       white-space: nowrap;
     }
   }
-
-
 }

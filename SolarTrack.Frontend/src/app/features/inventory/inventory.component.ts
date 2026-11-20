@@ -58,6 +58,16 @@ export class InventoryComponent implements OnInit {
   // Selected Item Codes for bulk delete
   selectedCodes = signal<Set<string>>(new Set<string>());
 
+  // Mobile viewport detection for responsive column layout
+  isMobileScreen = signal<boolean>(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (typeof window !== 'undefined') {
+      this.isMobileScreen.set(window.innerWidth < 768);
+    }
+  }
+
   // Collapsed categories state in ledger
   collapsedCategories = signal<Set<string>>(new Set<string>());
 

@@ -195,7 +195,7 @@
         <table class="table table-hover align-middle mb-0 inventory-table">
           <thead class="table-light">
             <tr>
-              <th class="col-checkbox text-center px-1">
+              <th class="col-checkbox text-center px-1 d-none d-md-table-cell">
                 <input 
                   type="checkbox" 
                   class="form-check-input"
@@ -203,22 +203,22 @@
                   (change)="toggleSelectAll()">
               </th>
               <th class="ps-2">Category</th>
-              <th class="text-end" style="width: 120px;">Stock</th>
-              <th class="text-end" style="width: 160px;">Rate</th>
-              <th class="text-center" style="width: 90px;">Actions</th>
+              <th class="text-end col-stock" style="width: 120px;">Stock</th>
+              <th class="text-end col-rate d-none d-md-table-cell" style="width: 160px;">Rate</th>
+              <th class="text-center col-actions" style="width: 90px;">Actions</th>
             </tr>
           </thead>
           <tbody>
             @if (invService.isLoading()) {
               <tr>
-                <td colspan="5" class="text-center py-4 text-muted">
+                <td [attr.colspan]="isMobileScreen() ? 3 : 5" class="text-center py-4 text-muted">
                   <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                   Loading warehouse stock...
                 </td>
               </tr>
             } @else if (categorizedItems().length === 0) {
               <tr>
-                <td colspan="5" class="text-center py-5 text-muted">
+                <td [attr.colspan]="isMobileScreen() ? 3 : 5" class="text-center py-5 text-muted">
                   <app-icon name="boxes" class="fs-2 mb-2 text-secondary"></app-icon>
                   <div>No equipment records found matching the current filters.</div>
                 </td>
@@ -227,8 +227,8 @@
               @for (grp of categorizedItems(); track grp.category) {
                 <!-- Category Section Banner (Inventory Tree Node) -->
                 <tr class="category-header-row tree-node-category" [ngClass]="{ 'is-collapsed': isCategoryCollapsed(grp.category) }" (click)="toggleCategoryCollapse(grp.category)">
-                  <!-- Col 1: Category Selection Checkbox -->
-                  <td class="col-checkbox text-center bg-light px-1" (click)="$event.stopPropagation()">
+                  <!-- Col 1: Category Selection Checkbox (Desktop only) -->
+                  <td class="col-checkbox text-center bg-light px-1 d-none d-md-table-cell" (click)="$event.stopPropagation()">
                     <input 
                       type="checkbox" 
                       class="form-check-input"
@@ -237,8 +237,8 @@
                       (change)="toggleSelectCategory(grp)">
                   </td>
 
-                  <!-- Col 2-4: Category Node: Chevron, Folder Icon, Category Name -->
-                  <td colspan="3" class="py-2 ps-2 pe-3 bg-light border-top border-bottom category-cell-node">
+                  <!-- Col 2: Category Node (spans 2 on mobile: Category + Stock; 3 on desktop: Category + Stock + Rate) -->
+                  <td [attr.colspan]="isMobileScreen() ? 2 : 3" class="py-2 ps-2 pe-3 bg-light border-top border-bottom category-cell-node">
                     <div class="d-flex align-items-center gap-2" (click)="$event.stopPropagation()">
                       <button 
                         type="button" 
@@ -317,8 +317,8 @@
                 @if (!isCategoryCollapsed(grp.category)) {
                   @for (item of grp.items; track item.ItemCode) {
                     <tr [ngClass]="{ 'table-active': isItemSelected(item.ItemCode) }" class="tree-item-row">
-                      <!-- Selection Checkbox -->
-                      <td class="col-checkbox text-center px-1">
+                      <!-- Selection Checkbox (Desktop only) -->
+                      <td class="col-checkbox text-center px-1 d-none d-md-table-cell">
                         <input 
                           type="checkbox" 
                           class="form-check-input"
@@ -347,16 +347,16 @@
                         </div>
                       </td>
 
-                      <!-- In-Hand Qty -->
-                      <td class="text-end">
+                      <!-- In-Hand Qty (Stock) -->
+                      <td class="text-end text-nowrap">
                         <span class="fw-bold font-monospace" [ngClass]="item.inHandQty <= item.MinThreshold ? (item.inHandQty <= 0 ? 'text-danger' : 'text-warning') : 'text-success'">
                           {{ item.inHandQty | number }}
                         </span>
                         <span class="text-muted ms-1 fs-9">{{ item.Unit || 'Nos' }}</span>
                       </td>
 
-                      <!-- Buying Rate with Rate History Button right beside it -->
-                      <td class="text-end font-monospace fs-8">
+                      <!-- Buying Rate with Rate History Button (Desktop only) -->
+                      <td class="text-end font-monospace fs-8 d-none d-md-table-cell">
                         <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
                           <span class="fw-semibold text-dark">₹{{ item.BuyingPrice | number:'1.2-2' }}</span>
                           <button 
@@ -370,7 +370,7 @@
                       </td>
 
                       <!-- Actions (Edit & Delete) -->
-                      <td class="text-center">
+                      <td class="text-center text-nowrap">
                         <div class="d-inline-flex align-items-center gap-1">
                           <button 
                             type="button" 
@@ -394,8 +394,8 @@
 
                   <!-- Tree Add Item Row (at the bottom of category's items) -->
                   <tr class="tree-add-item-row bg-white">
-                    <td class="col-checkbox text-center px-1"></td>
-                    <td colspan="4" class="tree-add-item-cell py-1 ps-2 pe-3">
+                    <td class="col-checkbox text-center px-1 d-none d-md-table-cell"></td>
+                    <td [attr.colspan]="isMobileScreen() ? 3 : 4" class="tree-add-item-cell py-1 ps-2 pe-3">
                       <button 
                         type="button" 
                         class="btn btn-xs btn-link text-primary text-decoration-none d-inline-flex align-items-center gap-1.5 p-0 fw-semibold tree-add-btn" 

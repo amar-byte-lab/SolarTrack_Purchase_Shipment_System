@@ -259,9 +259,12 @@ textarea.form-control-sm {
   .page-tabs-sticky-wrapper,
   .nav-tabs-wrapper,
   .settings-nav-wrapper,
-  .doc-top-tabs-sticky-bar,
-  .summary-tabs-sticky-bar {
+  .doc-top-tabs-sticky-bar {
     top: 50px !important; /* Below fixed mobile topbar */
+  }
+
+  .summary-tabs-sticky-bar {
+    top: 0 !important; /* Summary container is already offset by topbar in layout */
   }
 }
 

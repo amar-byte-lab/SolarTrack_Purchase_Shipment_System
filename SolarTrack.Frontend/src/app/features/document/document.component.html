@@ -428,14 +428,13 @@
         <div class="modal-header py-2 px-3 bg-light border-bottom d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">
             <h6 class="modal-title fw-bold text-dark mb-0 fs-7">
-              Document Preview — 
+              Preview — 
               <span *ngIf="previewDocType() === 'agreement'">Vendor &amp; Consumer Legal Agreement</span>
               <span *ngIf="previewDocType() === 'form1'">Application Form (Form-1)</span>
               <span *ngIf="previewDocType() === 'form3'">Work Completion &amp; Inspection Report (Form-3)</span>
               <span *ngIf="previewDocType() === 'form4'">Work Completion Report (Form-4)</span>
               <span *ngIf="previewDocType() === 'form6'">Inspection Report (Form-6)</span>
             </h6>
-            <span class="badge bg-white text-secondary border fs-9">A4 Format</span>
             <span *ngIf="isPreviewDirty()" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-9 d-flex align-items-center gap-1">
               <span class="spinner-grow spinner-grow-sm" style="width: 6px; height: 6px;"></span> Modified
             </span>

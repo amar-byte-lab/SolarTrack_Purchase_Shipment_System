@@ -19,10 +19,12 @@
 
 .summary-tabs-sticky-bar {
   position: sticky;
-  top: 0;
+  top: 0 !important;
   z-index: 30;
   background: var(--st-bg);
   flex-shrink: 0;
+  width: 100%;
+  padding-top: 2px;
 }
 
 /* ══ Organic Pill Tab Switcher ══════════════════════════════════════════════ */
