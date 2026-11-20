@@ -321,7 +321,7 @@ export class ApplianceLoadManagerComponent {
           ...a,
           watts: res.averageWatts,
           ratedWatts: res.ratedWatts,
-          defaultHours: res.dailyHours,
+          defaultHours: a.defaultHours,
           isCalculated: true,
           calcParams: JSON.parse(JSON.stringify(this.specParams)),
           calcResult: JSON.parse(JSON.stringify(res))
