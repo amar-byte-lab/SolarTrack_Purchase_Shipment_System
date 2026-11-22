@@ -17,7 +17,7 @@
           <span>Summary</span>
         </button>
       </li>
-      <li class="nav-item" role="presentation">
+      <li class="nav-item" role="presentation" *ngIf="authService.isAdmin()">
         <button 
           class="nav-link fw-semibold fs-8 d-inline-flex align-items-center gap-1.5" 
           [class.active]="activeTab() === 'ACTIVITY'"
@@ -42,7 +42,7 @@
     </div>
 
     <!-- TAB 2: Activity -->
-    <div *ngIf="activeTab() === 'ACTIVITY'" class="tab-pane fade show active flex-grow-1 d-flex flex-column min-h-0">
+    <div *ngIf="activeTab() === 'ACTIVITY' && authService.isAdmin()" class="tab-pane fade show active flex-grow-1 d-flex flex-column min-h-0">
       <app-activity-tab></app-activity-tab>
     </div>
   </div>

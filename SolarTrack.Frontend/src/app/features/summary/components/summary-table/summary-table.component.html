@@ -142,7 +142,7 @@
           <th *ngIf="isColumnVisible('profit')" class="th-col-profit text-end text-nowrap">PROFIT</th>
           <th *ngIf="isColumnVisible('pvmodule')" class="th-col-pvmodule text-nowrap">PVMODULE MAKE</th>
           <th *ngIf="isColumnVisible('inverter')" class="th-col-inverter text-nowrap">INVERTERR MAKE</th>
-          <th class="th-col-actions text-center text-nowrap">ACTIONS</th>
+          <th *ngIf="authService.isAdmin()" class="th-col-actions text-center text-nowrap">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
@@ -228,6 +228,7 @@
                   <span class="badge fs-9 px-1.5 py-0.5" [ngClass]="item.stageClass">{{ item.stageName }}</span>
                   <!-- Workflow Icon right next to Status Badge -->
                   <button 
+                    *ngIf="authService.isAdmin()"
                     type="button" 
                     class="btn btn-xs btn-outline-secondary p-0.5 border-0 text-primary d-inline-flex align-items-center justify-content-center mw-workflow-btn"
                     (click)="$event.stopPropagation(); openWorkflowModal(item.row, 'process')"
@@ -291,7 +292,7 @@
               </td>
 
               <!-- Actions (Edit or Popup View) -->
-              <td class="td-col-actions text-center text-nowrap">
+              <td *ngIf="authService.isAdmin()" class="td-col-actions text-center text-nowrap">
                 <div class="d-inline-flex align-items-center gap-1">
                   <!-- Customer Action Button -->
                   <button 
@@ -347,7 +348,7 @@
           </td>
           <td *ngIf="isColumnVisible('pvmodule')" class="tfoot-col-pvmodule">-</td>
           <td *ngIf="isColumnVisible('inverter')" class="tfoot-col-inverter">-</td>
-          <td class="tfoot-col-actions text-center fs-8">-</td>
+          <td *ngIf="authService.isAdmin()" class="tfoot-col-actions text-center fs-8">-</td>
         </tr>
       </tfoot>
     </table>

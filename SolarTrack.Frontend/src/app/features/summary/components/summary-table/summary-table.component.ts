@@ -136,10 +136,12 @@ export class SummaryTableComponent {
   }
 
   get visibleColumnsCount(): number {
-    return this.summaryService.columns().filter(c => c.visible).length + 1; // +1 for Actions column
+    const actionsCount = this.authService.isAdmin() ? 1 : 0;
+    return this.summaryService.columns().filter(c => c.visible).length + actionsCount;
   }
 
   openEditCustomer(row: InstallmentRow): void {
+    if (!this.authService.isAdmin()) return;
     this.markedRowSlNo.set(row.SlNo);
     this.selectedCustomerForEdit = row;
     this.isEditModalOpen = true;
@@ -155,6 +157,7 @@ export class SummaryTableComponent {
   }
 
   openWorkflowModal(row: InstallmentRow, tab: 'process' | 'payment' = 'process'): void {
+    if (!this.authService.isAdmin()) return;
     this.markedRowSlNo.set(row.SlNo);
     this.selectedCustomerForWorkflow = row;
     this.workflowModalTab = tab;
