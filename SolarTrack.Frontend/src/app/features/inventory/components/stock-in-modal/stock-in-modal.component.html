@@ -318,19 +318,19 @@
           <!-- Mobile Items Cards (Visible on Mobile only < 768px) -->
           <div class="d-md-none mobile-items-container d-flex flex-column gap-2.5">
             @for (row of itemsList; track $index; let idx = $index) {
-              <div class="card border rounded-2 p-2.5 bg-white shadow-xs mobile-item-card">
+              <div class="mobile-item-card border rounded-3 p-3 bg-white shadow-xs">
                 <!-- Card Header -->
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                  <span class="badge bg-light text-dark border fw-bold fs-9">Item #{{ idx + 1 }}</span>
-                  <button type="button" class="btn btn-xs btn-outline-danger py-0.5 px-2 border-0 d-inline-flex align-items-center gap-1" (click)="removeItemRow(idx)" title="Remove item row">
-                    <app-icon name="trash" [size]="13"></app-icon>
-                    <span class="fs-9">Remove</span>
+                <div class="d-flex align-items-center justify-content-between mb-2 pb-1.5 border-bottom">
+                  <span class="badge bg-light text-secondary border fw-semibold fs-9 px-2 py-0.5">Item #{{ idx + 1 }}</span>
+                  <button type="button" class="btn btn-xs text-danger py-0.5 px-1.5 border-0 d-inline-flex align-items-center gap-1 hover-danger" (click)="removeItemRow(idx)" title="Remove item row">
+                    <app-icon name="trash" [size]="12"></app-icon>
+                    <span class="fs-9 fw-semibold">Remove</span>
                   </button>
                 </div>
 
                 <!-- Select Item Tree -->
-                <div class="mb-2">
-                  <label class="form-label small text-secondary fw-semibold mb-1">Item *</label>
+                <div class="mb-2.5">
+                  <label class="form-label text-secondary fw-semibold fs-9 text-uppercase mb-1" style="letter-spacing: 0.03em;">Item *</label>
                   <app-item-tree-select 
                     [items]="availableItemsWithStock"
                     [(selectedCode)]="row.itemCode"
@@ -341,8 +341,8 @@
 
                 <!-- Qty and Unit Cost -->
                 <div class="row g-2 mb-2">
-                  <div class="col-6">
-                    <label class="form-label small text-secondary fw-semibold mb-1">Qty</label>
+                  <div class="col-4">
+                    <label class="form-label text-secondary fw-semibold fs-9 mb-1">Qty</label>
                     <input 
                       type="number" 
                       min="1" 
@@ -351,8 +351,8 @@
                       [(ngModel)]="row.qty" 
                       (ngModelChange)="onPriceOrQtyChanged(row)">
                   </div>
-                  <div class="col-6">
-                    <label class="form-label small text-secondary fw-semibold mb-1">Unit Cost (₹)</label>
+                  <div class="col-8">
+                    <label class="form-label text-secondary fw-semibold fs-9 mb-1">Unit Cost (₹)</label>
                     <input 
                       type="number" 
                       min="0" 
@@ -366,7 +366,7 @@
                 <!-- Total Excl GST and GST % -->
                 <div class="row g-2 mb-2">
                   <div class="col-7">
-                    <label class="form-label small text-secondary fw-semibold mb-1">Total Excl GST (₹)</label>
+                    <label class="form-label text-secondary fw-semibold fs-9 mb-1">Total Pre-GST (₹)</label>
                     <input 
                       type="number" 
                       min="0" 
@@ -377,7 +377,7 @@
                       placeholder="0.00">
                   </div>
                   <div class="col-5">
-                    <label class="form-label small text-secondary fw-semibold mb-1">GST %</label>
+                    <label class="form-label text-secondary fw-semibold fs-9 mb-1">GST Rate</label>
                     <select class="form-select form-select-sm fs-8" [(ngModel)]="row.gstRate" (ngModelChange)="onPriceOrQtyChanged(row)">
                       <option [value]="0">0%</option>
                       <option [value]="5">5%</option>
@@ -391,7 +391,7 @@
                 <!-- Total + GST and Delivery Share -->
                 <div class="row g-2 mb-2">
                   <div class="col-6">
-                    <label class="form-label small text-secondary fw-semibold mb-1">Total + GST (₹)</label>
+                    <label class="form-label text-secondary fw-semibold fs-9 mb-1">Total + GST (₹)</label>
                     <input 
                       type="number" 
                       min="0" 
@@ -403,7 +403,7 @@
                   </div>
                   <div class="col-6">
                     <div class="d-flex align-items-center justify-content-between mb-1">
-                      <label class="form-label small text-secondary fw-semibold mb-0">Delivery (₹)</label>
+                      <label class="form-label text-secondary fw-semibold fs-9 mb-0">Delivery (₹)</label>
                       @if (row.isDeliveryManual) {
                         <button 
                           type="button" 
@@ -427,8 +427,8 @@
                   </div>
                 </div>
 
-                <!-- Delivered Cost per Unit -->
-                <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded border">
+                <!-- Delivered Cost per Unit (Clean integrated row without bulky grey container) -->
+                <div class="d-flex align-items-center justify-content-between pt-2 mt-1 border-top">
                   <span class="text-secondary fs-9 fw-semibold">Delivered Cost / Unit:</span>
                   <span class="text-success fw-bold font-monospace fs-8">
                     ₹{{ row.costPerUnit | number:'1.2-2' }}
@@ -445,30 +445,30 @@
           </div>
 
           <!-- Valuation Summary Bar -->
-          <div class="summary-valuation-bar d-flex flex-wrap align-items-center justify-content-between gap-3 py-2 px-3 bg-light rounded mt-2 border">
-            <div class="summary-metrics-grid d-flex align-items-center gap-3 flex-wrap">
-              <div class="d-flex align-items-baseline gap-1.5">
-                <span class="text-secondary small fw-medium">Material:</span>
-                <span class="text-dark fw-semibold fs-8 font-monospace">₹{{ totalMaterialCost | number:'1.2-2' }}</span>
+          <div class="summary-valuation-bar rounded-3 mt-2.5 p-2.5 border">
+            <div class="summary-metrics-grid">
+              <div class="metric-row">
+                <span class="metric-title">Material:</span>
+                <span class="metric-val text-dark font-monospace fw-semibold">₹{{ totalMaterialCost | number:'1.2-2' }}</span>
               </div>
-              <div class="d-flex align-items-baseline gap-1.5">
-                <span class="text-secondary small fw-medium">GST:</span>
-                <span class="text-dark fw-semibold fs-8 font-monospace">₹{{ totalGst | number:'1.2-2' }}</span>
+              <div class="metric-row">
+                <span class="metric-title">GST:</span>
+                <span class="metric-val text-dark font-monospace fw-semibold">₹{{ totalGst | number:'1.2-2' }}</span>
               </div>
-              <div class="d-flex align-items-baseline gap-1.5">
-                <span class="text-secondary small fw-medium">Total:</span>
-                <span class="text-dark fw-bold fs-7 font-monospace">₹{{ totalWithGstAll | number:'1.2-2' }}</span>
+              <div class="metric-row">
+                <span class="metric-title">Total:</span>
+                <span class="metric-val text-dark font-monospace fw-bold">₹{{ totalWithGstAll | number:'1.2-2' }}</span>
               </div>
-              <div class="d-flex align-items-baseline gap-1.5">
-                <span class="text-secondary small fw-medium">Delivery:</span>
-                <span class="text-primary fw-semibold fs-8 font-monospace">₹{{ transportCost | number:'1.2-2' }}</span>
+              <div class="metric-row">
+                <span class="metric-title">Delivery:</span>
+                <span class="metric-val text-primary font-monospace fw-semibold">₹{{ transportCost | number:'1.2-2' }}</span>
               </div>
             </div>
 
             <!-- Grand Inward Total -->
-            <div class="summary-grand-total d-flex align-items-baseline gap-2">
-              <span class="text-secondary small fw-bold">Grand Total:</span>
-              <span class="text-success fw-bold fs-6 font-monospace">₹{{ grandInwardTotal | number:'1.2-2' }}</span>
+            <div class="summary-grand-total">
+              <span class="grand-title">Grand Total:</span>
+              <span class="grand-val text-success font-monospace fw-bold">₹{{ grandInwardTotal | number:'1.2-2' }}</span>
             </div>
           </div>
         </div>
