@@ -1,7 +1,6 @@
 # ☀️ SolarTrack ERP — Visual Design System Specification
 
-> **File Location**: `DESIGN_SYSTEM.md` (Project Root)  
-> **Master Theme SCSS**: [SolarTrack.Frontend/src/theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/theme.scss) & [theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/theme.scss)  
+> **Master Theme SCSS**: [SolarTrack.Frontend/src/theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/theme.scss)  
 > **Global Resets & Styles**: [SolarTrack.Frontend/src/styles.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/styles.scss)  
 > **Origin Reference**: Extracted from [Squared Media](https://www.squared-media.nl/) & Tuned for SolarTrack ERP  
 > **Core Architecture**: Angular 21 (Standalone Components + Signals + SCSS) | Bootstrap 5.3 Framework + Custom Design Tokens

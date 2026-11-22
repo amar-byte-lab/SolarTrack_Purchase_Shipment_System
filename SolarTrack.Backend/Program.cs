@@ -77,12 +77,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
-// Serve static frontend files from SolarPurchaseTracker directory
+// Serve static frontend files from SolarTrack.Frontend build directory
 var baseDir = AppContext.BaseDirectory;
 var projectDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", ".."));
-var candidate1 = Path.Combine(projectDir, "SolarPurchaseTracker");
-var candidate2 = Path.Combine(Directory.GetCurrentDirectory(), "SolarPurchaseTracker");
-var candidate3 = Path.Combine(Directory.GetCurrentDirectory(), "..", "SolarPurchaseTracker");
+var candidate1 = Path.Combine(projectDir, "SolarTrack.Frontend", "dist", "SolarTrack.Frontend", "browser");
+var candidate2 = Path.Combine(Directory.GetCurrentDirectory(), "SolarTrack.Frontend", "dist", "SolarTrack.Frontend", "browser");
+var candidate3 = Path.Combine(Directory.GetCurrentDirectory(), "..", "SolarTrack.Frontend", "dist", "SolarTrack.Frontend", "browser");
 
 string? frontendDir = null;
 if (Directory.Exists(candidate1)) frontendDir = candidate1;

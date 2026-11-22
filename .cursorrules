@@ -1,6 +1,6 @@
 # Design System Enforcement: Squared Media Theme
 
-Whenever adding new features, modifying UI, or writing CSS/SCSS in this project, you MUST strictly follow the design system defined in `theme.scss` and `FRONTEND_DESIGN_SYSTEM_AND_GUIDELINES.md`.
+Whenever adding new features, modifying UI, or writing CSS/SCSS in this project, you MUST strictly follow the design system defined in `SolarTrack.Frontend/src/theme.scss` and `FRONTEND_DESIGN_SYSTEM_AND_GUIDELINES.md`.
 
 ## Golden Rules
 1. **Colors**:

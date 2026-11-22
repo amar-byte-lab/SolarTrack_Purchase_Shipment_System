@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "SolarTrack Purchase & Shipment System with .NET Hybrid Backend",
   "scripts": {
-    "build": "node build.js",
-    "start": "dotnet run --project SolarTrack.Backend"
-  },
-  "devDependencies": {
-    "terser": "^5.49.0"
+    "start": "dotnet run --project SolarTrack.Backend",
+    "start:backend": "dotnet run --project SolarTrack.Backend",
+    "start:frontend": "cd SolarTrack.Frontend && npm start",
+    "build:frontend": "cd SolarTrack.Frontend && npm run build",
+    "build:backend": "dotnet build SolarTrack.Backend"
   }
 }

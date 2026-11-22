@@ -1,6 +1,6 @@
 # ☀️ SolarTrack ERP — Frontend Design System & Development Guidelines
 > **Design System Origin**: Extracted from [Squared Media](https://www.squared-media.nl/)  
-> **Master Theme File**: [src/theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/theme.scss) & root [theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/theme.scss)  
+> **Master Theme File**: [SolarTrack.Frontend/src/theme.scss](file:///c:/Users/AMAR%20CHAND%20MOHANTY/Downloads/SolarTrack_Purchase_Shipment_System/SolarTrack.Frontend/src/theme.scss)  
 > **Tech Stack**: Angular 21 (Standalone Components + Signals + SCSS) | .NET 10 Web API | Microsoft SQL Server (SolarDb)  
 > **Document Purpose**: Single source of truth for architectural standards, UI consistency, design tokens, reusable components, and audit checklist. **All project additions and modifications must strictly comply with this design system.**
 
