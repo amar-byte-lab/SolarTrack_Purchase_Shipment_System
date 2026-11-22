@@ -69,6 +69,34 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Automatically execute EF Core Code-First Migration on startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<SolarTrackDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        try
+        {
+            logger.LogInformation("Applying EF Core Code-First database migrations...");
+            dbContext.Database.Migrate();
+            logger.LogInformation("EF Core Code-First database migration applied successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("EF Core MigrateAsync encountered an issue: {Error}. Falling back to EnsureCreated...", ex.Message);
+            try
+            {
+                dbContext.Database.EnsureCreated();
+            }
+            catch (Exception ex2)
+            {
+                logger.LogError("EnsureCreated failed: {Error}", ex2.Message);
+            }
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

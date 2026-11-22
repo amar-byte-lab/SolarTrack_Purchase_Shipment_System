@@ -269,10 +269,33 @@ export class CustomerImportModalComponent {
   }
 
   private executeAnalysis(data: Uint8Array): void {
+    const originalConsoleError = console.error;
     try {
+      // Suppress harmless internal SheetJS streaming zip data descriptor warnings ("Bad uncompressed size")
+      console.error = (...args: any[]) => {
+        if (typeof args[0] === 'string' && (args[0].includes('Bad uncompressed size') || args[0].includes('Bad compressed size'))) {
+          return;
+        }
+        originalConsoleError.apply(console, args);
+      };
+
       const workbook = XLSX.read(data, { type: 'array' });
+      console.error = originalConsoleError;
+
+      if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+        this.toastService.error('The Excel file contains no worksheets.');
+        this.isLoading.set(false);
+        return;
+      }
+
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
+      if (!worksheet) {
+        this.toastService.error('The first worksheet could not be read.');
+        this.isLoading.set(false);
+        return;
+      }
+
       const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
       if (!jsonData || jsonData.length === 0) {
@@ -533,6 +556,7 @@ export class CustomerImportModalComponent {
       console.error('Excel parse error:', err);
       this.toastService.error('Error reading Excel: ' + (err.message || 'Invalid format'));
     } finally {
+      console.error = originalConsoleError;
       this.isLoading.set(false);
     }
   }
