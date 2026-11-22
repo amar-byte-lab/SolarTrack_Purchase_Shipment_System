@@ -56,11 +56,11 @@ public class SolarProductService : ISolarProductService
     {
         return
         [
-            new { id = "luminous", name = "Luminous Power Technologies", officialUrl = "https://www.luminousindia.com", logoUrl = "https://www.luminousindia.com/assets/images/logo.png", isDefault = true, supportedCategories = new[] { "panels", "inverters", "batteries" }, status = "active" },
-            new { id = "waaree", name = "Waaree Energies", officialUrl = "https://www.waaree.com", logoUrl = "https://www.waaree.com/images/waaree-logo.png", isDefault = false, supportedCategories = new[] { "panels", "inverters", "batteries" }, status = "active" },
-            new { id = "adani", name = "Adani Solar", officialUrl = "https://www.adanisolar.com", logoUrl = "https://www.adanisolar.com/images/adani-logo.png", isDefault = false, supportedCategories = new[] { "panels", "inverters" }, status = "active" },
-            new { id = "vikram", name = "Vikram Solar", officialUrl = "https://www.vikramsolar.com", logoUrl = "https://www.vikramsolar.com/images/logo.png", isDefault = false, supportedCategories = new[] { "panels", "inverters" }, status = "active" },
-            new { id = "tatapower", name = "Tata Power Solar", officialUrl = "https://www.tatapowersolar.com", logoUrl = "https://www.tatapowersolar.com/images/logo.png", isDefault = false, supportedCategories = new[] { "panels", "inverters", "batteries" }, status = "active" }
+            new { id = "luminous", name = "Luminous Power Technologies", officialUrl = "https://www.luminousindia.com", logoUrl = "assets/icons/brands/luminous.png", isDefault = true, supportedCategories = new[] { "panels", "inverters", "batteries" }, status = "active" },
+            new { id = "waaree", name = "Waaree Energies", officialUrl = "https://www.waaree.com", logoUrl = "assets/icons/brands/waaree.png", isDefault = false, supportedCategories = new[] { "panels", "inverters", "batteries" }, status = "active" },
+            new { id = "adani", name = "Adani Solar", officialUrl = "https://www.adanisolar.com", logoUrl = "assets/icons/brands/adani.png", isDefault = false, supportedCategories = new[] { "panels", "inverters" }, status = "active" },
+            new { id = "vikram", name = "Vikram Solar", officialUrl = "https://www.vikramsolar.com", logoUrl = "assets/icons/brands/vikram.png", isDefault = false, supportedCategories = new[] { "panels", "inverters" }, status = "active" },
+            new { id = "tatapower", name = "Tata Power Solar", officialUrl = "https://www.tatapowersolar.com", logoUrl = "assets/icons/brands/tatapower.png", isDefault = false, supportedCategories = new[] { "panels", "inverters", "batteries" }, status = "active" }
         ];
     }
 
