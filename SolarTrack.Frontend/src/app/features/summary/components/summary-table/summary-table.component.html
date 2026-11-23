@@ -8,11 +8,7 @@
       class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1.5 py-1 px-2.5 shadow-sm fs-8" 
       (click)="excludeSelected()" 
       title="Remove selected customers from summary view">
-      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="15" y1="9" x2="9" y2="15"></line>
-        <line x1="9" y1="9" x2="15" y2="15"></line>
-      </svg>
+      <app-icon name="ban" [size]="13" [strokeWidth]="2"></app-icon>
       <span>Exclude (<strong>{{ selectedSlNos().size }}</strong>)</span>
     </button>
 
@@ -23,10 +19,7 @@
         class="btn btn-sm btn-outline-danger dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-sm" 
         (click)="isExcludedMenuOpen = !isExcludedMenuOpen"
         title="Click to view and remove excluded customers">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-        </svg>
+        <app-icon name="ban" [size]="13" [strokeWidth]="2"></app-icon>
         <span>Excluded (<strong>{{ summaryService.excludedRows().length }}</strong>)</span>
       </button>
       <div 
@@ -71,9 +64,7 @@
         class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" 
         type="button" 
         (click)="isColumnsMenuOpen = !isColumnsMenuOpen">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 6h16M4 12h16M4 18h7"></path>
-        </svg>
+        <app-icon name="columns" [size]="13" [strokeWidth]="2"></app-icon>
         <span>Select Columns</span>
       </button>
       <div 
@@ -105,10 +96,7 @@
       class="btn btn-sm btn-purple-copy d-inline-flex align-items-center gap-1.5 py-1 px-3 shadow-sm fs-8" 
       (click)="copyFormattedSummary()" 
       title="Copy formatted for Notepad / WhatsApp">
-      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-      </svg>
+      <app-icon name="copy" [size]="13" [strokeWidth]="2"></app-icon>
       <span>Copy</span>
     </button>
   </div>

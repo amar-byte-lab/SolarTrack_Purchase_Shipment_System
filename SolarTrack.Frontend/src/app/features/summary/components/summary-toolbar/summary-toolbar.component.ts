@@ -1,12 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { SummaryService } from '../../../../core/services/summary.service';
 
 @Component({
   selector: 'app-summary-toolbar',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   templateUrl: './summary-toolbar.component.html',
   styleUrls: ['./summary-toolbar.component.scss']
 })

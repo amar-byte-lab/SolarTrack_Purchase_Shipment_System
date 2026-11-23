@@ -7,7 +7,6 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <svg 
-      xmlns="http://www.w3.org/2000/svg" 
       [attr.width]="size" 
       [attr.height]="size" 
       viewBox="0 0 24 24" 
@@ -232,6 +231,22 @@ import { CommonModule } from '@angular/common';
         <!-- pie-chart -->
         <ng-container *ngSwitchCase="'pie-chart'">
           <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+        </ng-container>
+        <!-- activity -->
+        <ng-container *ngSwitchCase="'activity'">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </ng-container>
+        <!-- info -->
+        <ng-container *ngSwitchCase="'info'">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </ng-container>
+        <!-- copy -->
+        <ng-container *ngSwitchCase="'copy'">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </ng-container>
+        <!-- columns -->
+        <ng-container *ngSwitchCase="'columns'">
+          <path d="M4 6h16M4 12h16M4 18h7"/>
         </ng-container>
       </ng-container>
     </svg>

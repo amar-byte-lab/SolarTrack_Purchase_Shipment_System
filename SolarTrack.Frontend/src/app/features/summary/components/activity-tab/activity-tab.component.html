@@ -5,10 +5,7 @@
     <div class="mw-search-box flex-grow-1" style="max-width: 420px; min-width: 200px;">
       <div class="input-group input-group-sm">
         <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
+          <app-icon name="search" [size]="13" [strokeWidth]="2"></app-icon>
         </span>
         <input 
           type="text" 
@@ -90,9 +87,7 @@
 <div class="card border rounded-2 bg-white shadow-sm p-3">
   <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom">
     <h6 class="fw-bold fs-7 text-dark mb-0 d-flex align-items-center gap-1.5">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-      </svg>
+      <app-icon name="activity" [size]="14" [strokeWidth]="2"></app-icon>
       <span>Database Transactions & Change History</span>
     </h6>
     <span class="badge bg-light text-muted border fs-9">
@@ -101,11 +96,7 @@
   </div>
 
   <div *ngIf="filteredLogs().length === 0" class="text-center py-5 text-muted fs-8">
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-secondary opacity-50 mb-2">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="8" x2="12" y2="12"></line>
-      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-    </svg>
+    <app-icon name="info" [size]="36" [strokeWidth]="1.5" customClass="text-secondary opacity-50 mb-2"></app-icon>
     <div class="fw-semibold fs-7 text-dark mb-1">No database transactions found for selected range</div>
     <div class="fs-8 text-muted">Any updates, payments, stages, or changes on Summary and Ledger pages will appear here.</div>
   </div>
@@ -161,10 +152,7 @@
           <div class="d-flex align-items-center gap-2">
             <!-- User Pill -->
             <span class="badge bg-light text-secondary border fs-9 d-inline-flex align-items-center gap-1" [title]="'User: ' + act.user">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <app-icon name="customer" [size]="11" [strokeWidth]="2"></app-icon>
               <span>{{ act.user || 'Admin' }}</span>
             </span>
 
@@ -178,19 +166,14 @@
                 class="btn btn-sm btn-outline-danger py-0.5 px-2.5 fs-8 d-inline-flex align-items-center gap-1 shadow-none" 
                 (click)="undoActivity(act)" 
                 title="Revert this database change directly">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="1 4 1 10 7 10"></polyline>
-                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                </svg>
+                <app-icon name="undo" [size]="12" [strokeWidth]="2"></app-icon>
                 <span>Undo</span>
               </button>
             </ng-container>
 
             <ng-container *ngIf="act.undone">
               <span class="badge bg-secondary-subtle text-secondary border fs-9 d-inline-flex align-items-center gap-1">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
+                <app-icon name="check" [size]="11" [strokeWidth]="2"></app-icon>
                 <span>Undone</span>
               </span>
             </ng-container>

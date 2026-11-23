@@ -1,6 +1,7 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { NavService, NavItem } from '../../../core/services/nav.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { RolePermissionService } from '../../../core/services/role-permission.service';
@@ -8,7 +9,7 @@ import { RolePermissionService } from '../../../core/services/role-permission.se
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, IconComponent],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss']
 })

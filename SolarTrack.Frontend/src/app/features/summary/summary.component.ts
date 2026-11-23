@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { SummaryToolbarComponent } from './components/summary-toolbar/summary-toolbar.component';
 import { SummaryTableComponent } from './components/summary-table/summary-table.component';
 import { ActivityTabComponent } from './components/activity-tab/activity-tab.component';
+import { IconComponent } from '../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-summary',
@@ -14,7 +15,8 @@ import { ActivityTabComponent } from './components/activity-tab/activity-tab.com
     CommonModule, 
     SummaryToolbarComponent,
     SummaryTableComponent, 
-    ActivityTabComponent
+    ActivityTabComponent,
+    IconComponent
   ],
   templateUrl: './summary.component.html',
   styleUrls: ['./summary.component.scss']

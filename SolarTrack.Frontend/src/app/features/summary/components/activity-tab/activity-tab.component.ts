@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { SummaryService } from '../../../../core/services/summary.service';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { ToastService } from '../../../../shared/services/toast.service';
@@ -9,7 +10,7 @@ import { ActivityLogItem } from '../../../../core/models/summary.model';
 @Component({
   selector: 'app-activity-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   templateUrl: './activity-tab.component.html',
   styleUrls: ['./activity-tab.component.scss']
 })
