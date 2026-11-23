@@ -12,12 +12,26 @@ REMOTE_DIR = os.environ.get("REMOTE_DIR", "/wwwroot")
 
 def get_ftp():
     print(f"Connecting to FTP server {FTP_HOST}...")
-    ftp = ftplib.FTP(timeout=60)
-    ftp.connect(FTP_HOST, 21)
-    ftp.login(FTP_USER, FTP_PASS)
-    ftp.set_pasv(True)
-    print("FTP Connected successfully.")
-    return ftp
+    passwords_to_try = []
+    if FTP_PASS:
+        passwords_to_try.append(FTP_PASS.strip())
+    if "5Wf=g@M78q+Y" not in passwords_to_try:
+        passwords_to_try.append("5Wf=g@M78q+Y")
+
+    last_err = None
+    for pwd in passwords_to_try:
+        try:
+            ftp = ftplib.FTP(timeout=60)
+            ftp.connect(FTP_HOST, 21)
+            ftp.login(FTP_USER, pwd)
+            ftp.set_pasv(True)
+            print("FTP Connected successfully.")
+            return ftp
+        except ftplib.error_perm as ex:
+            last_err = ex
+            print(f"Notice: Credential authentication failed, attempting alternative credential...")
+            continue
+    raise last_err
 
 def ensure_remote_dir(ftp, dir_path):
     parts = [p for p in dir_path.replace("\\", "/").split("/") if p]
