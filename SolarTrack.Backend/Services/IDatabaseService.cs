@@ -23,4 +23,8 @@ public interface IDatabaseService
     Task<object> UpdateBorrowerTxnAsync(Dictionary<string, object?> body);
     Task DeleteBorrowerTxnAsync(object txnId);
     Task DeleteBorrowerAsync(object borrowerId);
+
+    Task<List<string>> GetAllTableNamesAsync();
+    Task<Dictionary<string, int>> GetTableRecordCountsAsync();
+    Task<string> GenerateSqlInsertBackupAsync();
 }

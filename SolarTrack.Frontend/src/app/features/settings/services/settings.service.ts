@@ -164,4 +164,38 @@ export class SettingsService {
     this.roles.set(this.roles().filter(r => r !== role));
     this.saveAuthConfig().subscribe();
   }
+
+  // --- Database Backup & Export Operations ---
+  getBackupInfo(): Observable<{
+    success: boolean;
+    dbStatus: any;
+    tables: Record<string, number>;
+    totalTables: number;
+    totalRecords: number;
+    totalFiles: number;
+    totalFileSizeBytes: number;
+    totalFileSizeFormatted: string;
+    generatedAt: string;
+  }> {
+    return this.http.get<any>('/api/backup/info');
+  }
+
+  downloadSqlBackup(): Observable<Blob> {
+    return this.http.get('/api/backup/sql', { responseType: 'blob' });
+  }
+
+  downloadZipBackup(): Observable<Blob> {
+    return this.http.get('/api/backup/zip', { responseType: 'blob' });
+  }
+
+  downloadBlobAsFile(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+  }
 }

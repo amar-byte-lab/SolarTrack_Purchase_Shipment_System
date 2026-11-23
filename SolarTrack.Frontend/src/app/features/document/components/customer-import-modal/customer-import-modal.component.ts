@@ -642,6 +642,11 @@ export class CustomerImportModalComponent {
     const requests: any[] = [];
 
     // 1. Insert New Customers
+    let maxSlNo = 0;
+    if (this.existingCustomers && this.existingCustomers.length > 0) {
+      maxSlNo = Math.max(...this.existingCustomers.map(c => Number(c.SlNo) || 0), 0);
+    }
+
     selectedNew.forEach(c => {
       const workMeta = {
         SubDivision: c.SubDivision || '',
@@ -652,7 +657,7 @@ export class CustomerImportModalComponent {
       };
       const brokerNum = this.formatBrokerNumberWithWorkMeta('', workMeta);
 
-      const payload = {
+      const payload: any = {
         Name: c.Name,
         ConsumerNo: c.ConsumerNo || '',
         ApplicationNumber: c.ApplicationNumber || '',
@@ -681,6 +686,9 @@ export class CustomerImportModalComponent {
         CommissionPaid: 0,
         CommissioningDate: ''
       };
+      if (maxSlNo > 0) {
+        payload.SlNo = ++maxSlNo;
+      }
       requests.push(this.http.post('/api/insert?table=installments', payload));
     });
 

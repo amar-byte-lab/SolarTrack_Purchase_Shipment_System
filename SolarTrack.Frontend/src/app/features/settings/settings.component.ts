@@ -28,8 +28,11 @@ export class SettingsComponent implements OnInit {
   rolePermissionService = inject(RolePermissionService);
   summaryService = inject(SummaryService);
 
-  // Active Tab: 'company' | 'users' | 'roles'
-  activeTab = signal<'company' | 'users' | 'roles'>('company');
+  // Active Tab: 'company' | 'users' | 'roles' | 'backup'
+  activeTab = signal<'company' | 'users' | 'roles' | 'backup'>('company');
+
+  // Backup State
+  isDownloadingZip = signal<boolean>(false);
 
   // Role Access Rules Management
   selectedRoleName = signal<string>('Employee');
@@ -83,11 +86,28 @@ export class SettingsComponent implements OnInit {
     this.summaryService.loadAllData().subscribe();
   }
 
-  setTab(tab: 'company' | 'users' | 'roles'): void {
+  setTab(tab: 'company' | 'users' | 'roles' | 'backup'): void {
     this.activeTab.set(tab);
     if (tab === 'roles') {
       this.currentRoleRule.set(this.rolePermissionService.getRuleForRole(this.selectedRoleName()));
     }
+  }
+
+  downloadZipBackup(): void {
+    this.isDownloadingZip.set(true);
+    this.settingsService.downloadZipBackup().subscribe({
+      next: (blob) => {
+        const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+        const fileName = `SolarTrack_Full_Backup_${timestamp}.zip`;
+        this.settingsService.downloadBlobAsFile(blob, fileName);
+        this.isDownloadingZip.set(false);
+        this.toastService.success(`Full System ZIP Backup downloaded successfully (${fileName})`);
+      },
+      error: () => {
+        this.isDownloadingZip.set(false);
+        this.toastService.error('Failed to package or download full ZIP backup.');
+      }
+    });
   }
 
   // --- Special User Helpers ---

@@ -1,0 +1,31 @@
+[
+  {
+    "Name": "BHAGYASHREE DALEI",
+    "ConsumerNo": "324313020072",
+    "ApplicationNumber": "NP-ODTNO26-16825638",
+    "ProposedCapacity": "3.000",
+    "CircleName": "BALASORE",
+    "DivisionName": "CED BALASORE",
+    "SubDivision": "SDO NILGIRI",
+    "MobileNumber": "7894560776",
+    "Status": "Active",
+    "District": "Balasore",
+    "Address": "",
+    "PinCode": "",
+    "CommittedBrand": "",
+    "FirstInstallment": 0,
+    "SecondInstallment": 0,
+    "ThirdInstallment": 0,
+    "Total": 0,
+    "CommittedPrice": 0,
+    "VendorPrice": 0,
+    "VendorPaid": 0,
+    "LoginDate": "2026-11-23",
+    "InstallationDate": null,
+    "BrokerName": "Sripati Srichandan",
+    "BrokerNumber": "|work:{\u0022SubDivision\u0022:\u0022SDO NILGIRI\u0022,\u0022DivisionName\u0022:\u0022CED BALASORE\u0022,\u0022CircleName\u0022:\u0022BALASORE\u0022,\u0022ApplicationNumber\u0022:\u0022NP-ODTNO26-16825638\u0022,\u0022ProposedCapacity\u0022:\u00223.000\u0022}",
+    "Commission": 0,
+    "CommissionPaid": 0,
+    "CommissioningDate": ""
+  }
+]

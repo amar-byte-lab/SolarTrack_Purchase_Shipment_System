@@ -1,4 +1,5 @@
 using System.Data;
+using System.Text;
 using System.Text.Json;
 using Dapper;
 using SolarTrack.Backend.Data;
@@ -11,6 +12,31 @@ public class DatabaseService : IDatabaseService
     private readonly SolarTrackDbContext _dbContext;
     private readonly ILogger<DatabaseService> _logger;
     private readonly string _dataDir;
+
+    private static readonly string[] KnownTables = [
+        "roles",
+        "users",
+        "settings",
+        "vendors",
+        "items",
+        "products",
+        "product_items",
+        "materials",
+        "shipments",
+        "shipment_remarks",
+        "installments",
+        "installment_txns",
+        "installment_remarks",
+        "commission_txns",
+        "borrowers",
+        "borrower_txns",
+        "notifications",
+        "work_notes",
+        "price_history",
+        "inventory_items",
+        "inventory_inwards",
+        "inventory_dispatches"
+    ];
 
     private static readonly Dictionary<string, string> PrimaryKeys = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -146,14 +172,28 @@ public class DatabaseService : IDatabaseService
                 conn.Open();
                 using var tran = conn.BeginTransaction();
 
-                var isIdentity = string.Equals(tableName, "borrowers", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(tableName, "borrower_txns", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(tableName, "notifications", StringComparison.OrdinalIgnoreCase);
+                var isIdentity = await conn.ExecuteScalarAsync<int>(
+                    $"SELECT OBJECTPROPERTY(OBJECT_ID(N'[dbo].[{tableName}]'), 'TableHasIdentity');", transaction: tran) == 1;
+
+                int nextSlNo = 0;
+                if (string.Equals(tableName, "installments", StringComparison.OrdinalIgnoreCase))
+                {
+                    nextSlNo = await conn.ExecuteScalarAsync<int>("SELECT ISNULL(MAX([SlNo]), 0) + 1 FROM [dbo].[installments];", transaction: tran);
+                }
 
                 foreach (var originalRow in rowList)
                 {
                     var cleanRow = SanitizeRow(tableName, originalRow);
                     if (cleanRow.Count == 0) continue;
+
+                    if (string.Equals(tableName, "installments", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var hasSlNo = cleanRow.TryGetValue("SlNo", out var slVal) && slVal != null && int.TryParse(slVal.ToString(), out var sNum) && sNum > 0;
+                        if (!hasSlNo)
+                        {
+                            cleanRow["SlNo"] = nextSlNo++;
+                        }
+                    }
 
                     var hasExplicitPk = !string.IsNullOrEmpty(pk) && cleanRow.ContainsKey(pk) && cleanRow[pk] != null;
 
@@ -209,7 +249,8 @@ ELSE
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("SQL Server InsertRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                _logger.LogError(ex, "SQL Server InsertRowsAsync failed for '{Table}': {Message}.", tableName, ex.Message);
+                throw;
             }
         }
 
@@ -218,6 +259,15 @@ ELSE
         foreach (var row in rowList)
         {
             var clean = SanitizeRow(tableName, row);
+            if (string.Equals(tableName, "installments", StringComparison.OrdinalIgnoreCase))
+            {
+                var hasSlNo = clean.TryGetValue("SlNo", out var slVal) && slVal != null && int.TryParse(slVal.ToString(), out var sNum) && sNum > 0;
+                if (!hasSlNo)
+                {
+                    var maxLocal = localRows.Select(r => r.TryGetValue("SlNo", out var v) && int.TryParse(v?.ToString(), out var s) ? s : 0).DefaultIfEmpty(0).Max();
+                    clean["SlNo"] = maxLocal + 1;
+                }
+            }
             var pkVal = clean.TryGetValue(pk, out var v1) ? v1 : (clean.TryGetValue(pk.ToLowerInvariant(), out var v2) ? v2 : null);
             var pkValStr = pkVal?.ToString();
 
@@ -695,6 +745,239 @@ ELSE
         catch (Exception ex)
         {
             _logger.LogError("Failed to write local table {Table}: {Msg}", tableName, ex.Message);
+        }
+    }
+
+    public async Task<List<string>> GetAllTableNamesAsync()
+    {
+        if (_connFactory.IsConfigured)
+        {
+            try
+            {
+                using var conn = _connFactory.CreateConnection();
+                var query = @"
+                    SELECT TABLE_NAME 
+                    FROM INFORMATION_SCHEMA.TABLES 
+                    WHERE TABLE_TYPE = 'BASE TABLE' 
+                      AND TABLE_NAME NOT IN ('__EFMigrationsHistory', 'sysdiagrams')
+                    ORDER BY TABLE_NAME;";
+                var dbTables = (await conn.QueryAsync<string>(query)).ToList();
+                if (dbTables.Count > 0)
+                {
+                    var knownList = KnownTables.ToList();
+                    return dbTables
+                        .OrderBy(t =>
+                        {
+                            var idx = knownList.FindIndex(k => k.Equals(t, StringComparison.OrdinalIgnoreCase));
+                            return idx >= 0 ? idx : 999;
+                        })
+                        .ThenBy(t => t)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("SQL Server GetAllTableNamesAsync failed: {Message}", ex.Message);
+            }
+        }
+
+        var localTables = Directory.Exists(_dataDir)
+            ? Directory.GetFiles(_dataDir, "*.json")
+                .Select(Path.GetFileNameWithoutExtension)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Select(n => n!)
+                .Union(KnownTables, StringComparer.OrdinalIgnoreCase)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(t =>
+                {
+                    var knownList = KnownTables.ToList();
+                    var idx = knownList.FindIndex(k => k.Equals(t, StringComparison.OrdinalIgnoreCase));
+                    return idx >= 0 ? idx : 999;
+                })
+                .ThenBy(t => t)
+                .ToList()
+            : KnownTables.ToList();
+
+        return localTables;
+    }
+
+    public async Task<Dictionary<string, int>> GetTableRecordCountsAsync()
+    {
+        var tables = await GetAllTableNamesAsync();
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        if (_connFactory.IsConfigured)
+        {
+            try
+            {
+                using var conn = _connFactory.CreateConnection();
+                foreach (var tbl in tables)
+                {
+                    try
+                    {
+                        var c = await conn.ExecuteScalarAsync<int>($"SELECT COUNT(1) FROM [dbo].[{tbl}];");
+                        counts[tbl] = c;
+                    }
+                    catch
+                    {
+                        var rows = await GetTableAsync(tbl);
+                        counts[tbl] = rows.Count;
+                    }
+                }
+                return counts;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("GetTableRecordCountsAsync fallback to GetTableAsync: {Message}", ex.Message);
+            }
+        }
+
+        foreach (var tbl in tables)
+        {
+            var rows = await GetTableAsync(tbl);
+            counts[tbl] = rows.Count;
+        }
+
+        return counts;
+    }
+
+    public async Task<string> GenerateSqlInsertBackupAsync()
+    {
+        var tables = await GetAllTableNamesAsync();
+        var sb = new StringBuilder();
+
+        sb.AppendLine("-- ============================================================");
+        sb.AppendLine("-- SolarTrack System Database Backup (Full Data Export)");
+        sb.AppendLine($"-- Backup Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss} (Server Local)");
+        sb.AppendLine($"-- Total Tables Target: {tables.Count}");
+        sb.AppendLine("-- Format: Transact-SQL (T-SQL) INSERT INTO Scripts");
+        sb.AppendLine("-- ============================================================");
+        sb.AppendLine();
+        sb.AppendLine("SET NOCOUNT ON;");
+        sb.AppendLine("SET XACT_ABORT ON;");
+        sb.AppendLine();
+        sb.AppendLine("BEGIN TRANSACTION;");
+        sb.AppendLine();
+        sb.AppendLine("-- 1. Temporarily disable all foreign key constraints during restore");
+        sb.AppendLine("BEGIN TRY");
+        sb.AppendLine("    EXEC sp_MSforeachtable \"ALTER TABLE ? NOCHECK CONSTRAINT all\";");
+        sb.AppendLine("END TRY");
+        sb.AppendLine("BEGIN CATCH");
+        sb.AppendLine("    PRINT 'Notice: Constraint disable step skipped.';");
+        sb.AppendLine("END CATCH");
+        sb.AppendLine();
+
+        int totalInserts = 0;
+
+        foreach (var tableName in tables)
+        {
+            var rows = await GetTableAsync(tableName);
+            if (rows.Count == 0)
+            {
+                sb.AppendLine($"-- Table: [dbo].[{tableName}] (0 records - empty)");
+                sb.AppendLine();
+                continue;
+            }
+
+            sb.AppendLine("-- ------------------------------------------------------------");
+            sb.AppendLine($"-- Table: [dbo].[{tableName}] ({rows.Count} records)");
+            sb.AppendLine("-- ------------------------------------------------------------");
+            sb.AppendLine($"IF OBJECT_ID(N'[dbo].[{tableName}]', N'U') IS NOT NULL AND OBJECTPROPERTY(OBJECT_ID(N'[dbo].[{tableName}]'), 'TableHasIdentity') = 1");
+            sb.AppendLine($"    SET IDENTITY_INSERT [dbo].[{tableName}] ON;");
+            sb.AppendLine();
+
+            var columnNames = new List<string>();
+            foreach (var r in rows)
+            {
+                foreach (var k in r.Keys)
+                {
+                    if (!string.IsNullOrWhiteSpace(k) && !columnNames.Contains(k, StringComparer.OrdinalIgnoreCase))
+                    {
+                        columnNames.Add(k);
+                    }
+                }
+            }
+
+            if (columnNames.Count == 0)
+            {
+                sb.AppendLine();
+                continue;
+            }
+
+            var colListStr = string.Join(", ", columnNames.Select(c => $"[{c}]"));
+
+            foreach (var row in rows)
+            {
+                var valList = new List<string>(columnNames.Count);
+                foreach (var col in columnNames)
+                {
+                    row.TryGetValue(col, out var val);
+                    valList.Add(FormatSqlValue(val));
+                }
+
+                sb.AppendLine($"INSERT INTO [dbo].[{tableName}] ({colListStr}) VALUES ({string.Join(", ", valList)});");
+                totalInserts++;
+            }
+
+            sb.AppendLine();
+            sb.AppendLine($"IF OBJECT_ID(N'[dbo].[{tableName}]', N'U') IS NOT NULL AND OBJECTPROPERTY(OBJECT_ID(N'[dbo].[{tableName}]'), 'TableHasIdentity') = 1");
+            sb.AppendLine($"    SET IDENTITY_INSERT [dbo].[{tableName}] OFF;");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("-- 2. Re-enable all foreign key constraints");
+        sb.AppendLine("BEGIN TRY");
+        sb.AppendLine("    EXEC sp_MSforeachtable \"ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all\";");
+        sb.AppendLine("END TRY");
+        sb.AppendLine("BEGIN CATCH");
+        sb.AppendLine("    PRINT 'Notice: Constraint re-enable step skipped.';");
+        sb.AppendLine("END CATCH");
+        sb.AppendLine();
+        sb.AppendLine("COMMIT TRANSACTION;");
+        sb.AppendLine();
+        sb.AppendLine($"PRINT 'SolarTrack restore script finished successfully. Total records processed: {totalInserts}';");
+        sb.AppendLine("GO");
+
+        return sb.ToString();
+    }
+
+    private static string FormatSqlValue(object? val)
+    {
+        var unwrapped = UnwrapJsonElement(val);
+        if (unwrapped == null || unwrapped is DBNull)
+        {
+            return "NULL";
+        }
+
+        switch (unwrapped)
+        {
+            case bool b:
+                return b ? "1" : "0";
+
+            case byte or sbyte or short or ushort or int or uint or long or ulong:
+                return Convert.ToString(unwrapped, System.Globalization.CultureInfo.InvariantCulture)!;
+
+            case float f:
+                return f.ToString("G9", System.Globalization.CultureInfo.InvariantCulture);
+
+            case double d:
+                return d.ToString("G17", System.Globalization.CultureInfo.InvariantCulture);
+
+            case decimal m:
+                return m.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            case DateTime dt:
+                return $"'{dt:yyyy-MM-ddTHH:mm:ss.fff}'";
+
+            case DateTimeOffset dto:
+                return $"'{dto:yyyy-MM-ddTHH:mm:ss.fffzzz}'";
+
+            case string s:
+                return $"N'{s.Replace("'", "''")}'";
+
+            default:
+                var str = unwrapped.ToString() ?? "";
+                return $"N'{str.Replace("'", "''")}'";
         }
     }
 }
