@@ -43,6 +43,16 @@ export class SummaryTableComponent {
   statusEditDrafts: { [slNo: number]: { status: string; netMeterInput: string } } = {};
   savingStatusSlNos = signal<Set<number>>(new Set());
 
+  // Customer Cost column state
+  editingCostSlNo = signal<number | null>(null);
+  costEditDrafts: { [slNo: number]: number | string } = {};
+  savingCostSlNos = signal<Set<number>>(new Set());
+
+  // Pending Amount column state
+  editingPendingSlNo = signal<number | null>(null);
+  pendingEditDrafts: { [slNo: number]: number | string } = {};
+  savingPendingSlNos = signal<Set<number>>(new Set());
+
   readonly statusOptions: string[] = [
     'Login',
     'Agreement',
@@ -239,6 +249,122 @@ export class SummaryTableComponent {
     });
   }
 
+  // Cost Edit helpers
+  isCostEditing(slNo: number): boolean {
+    return this.editingCostSlNo() === slNo;
+  }
+
+  isSavingCost(slNo: number): boolean {
+    return this.savingCostSlNos().has(slNo);
+  }
+
+  startCostEdit(item: SummaryTableRow): void {
+    this.costEditDrafts[item.slNo] = item.fin.turnover;
+    this.editingCostSlNo.set(item.slNo);
+  }
+
+  cancelCostEdit(slNo: number): void {
+    delete this.costEditDrafts[slNo];
+    if (this.editingCostSlNo() === slNo) {
+      this.editingCostSlNo.set(null);
+    }
+  }
+
+  saveCostEdit(item: SummaryTableRow): void {
+    const slNo = item.slNo;
+    const rawVal = this.costEditDrafts[slNo];
+    const newCost = Number(rawVal);
+    if (isNaN(newCost) || newCost < 0) {
+      this.toastService.warning('Please enter a valid cost amount.');
+      return;
+    }
+
+    const currentSaving = new Set(this.savingCostSlNos());
+    currentSaving.add(slNo);
+    this.savingCostSlNos.set(currentSaving);
+
+    this.summaryService.saveCustomerCost(slNo, newCost).subscribe({
+      next: () => {
+        const saving = new Set(this.savingCostSlNos());
+        saving.delete(slNo);
+        this.savingCostSlNos.set(saving);
+
+        this.cancelCostEdit(slNo);
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${day}-${month}-${year}`;
+        this.toastService.success(`Customer Cost updated to ${this.fmtCurr(newCost)} with date (${dateStr}) successfully!`);
+        this.summaryService.loadAllData().subscribe();
+      },
+      error: (err) => {
+        const saving = new Set(this.savingCostSlNos());
+        saving.delete(slNo);
+        this.savingCostSlNos.set(saving);
+        this.toastService.error('Error updating customer cost: ' + (err.message || 'Server error'));
+      }
+    });
+  }
+
+  // Pending Edit helpers
+  isPendingEditing(slNo: number): boolean {
+    return this.editingPendingSlNo() === slNo;
+  }
+
+  isSavingPending(slNo: number): boolean {
+    return this.savingPendingSlNos().has(slNo);
+  }
+
+  startPendingEdit(item: SummaryTableRow): void {
+    this.pendingEditDrafts[item.slNo] = item.fin.unpaid;
+    this.editingPendingSlNo.set(item.slNo);
+  }
+
+  cancelPendingEdit(slNo: number): void {
+    delete this.pendingEditDrafts[slNo];
+    if (this.editingPendingSlNo() === slNo) {
+      this.editingPendingSlNo.set(null);
+    }
+  }
+
+  savePendingEdit(item: SummaryTableRow): void {
+    const slNo = item.slNo;
+    const rawVal = this.pendingEditDrafts[slNo];
+    const newPending = Number(rawVal);
+    if (isNaN(newPending) || newPending < 0) {
+      this.toastService.warning('Please enter a valid pending amount.');
+      return;
+    }
+
+    const currentSaving = new Set(this.savingPendingSlNos());
+    currentSaving.add(slNo);
+    this.savingPendingSlNos.set(currentSaving);
+
+    this.summaryService.updateCustomerPending(slNo, newPending).subscribe({
+      next: () => {
+        const saving = new Set(this.savingPendingSlNos());
+        saving.delete(slNo);
+        this.savingPendingSlNos.set(saving);
+
+        this.cancelPendingEdit(slNo);
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${day}-${month}-${year}`;
+        this.toastService.success(`Pending amount updated to ${this.fmtCurr(newPending)} with date (${dateStr}) successfully!`);
+        this.summaryService.loadAllData().subscribe();
+      },
+      error: (err) => {
+        const saving = new Set(this.savingPendingSlNos());
+        saving.delete(slNo);
+        this.savingPendingSlNos.set(saving);
+        this.toastService.error('Error updating pending amount: ' + (err.message || 'Server error'));
+      }
+    });
+  }
+
   openEditCustomer(row: InstallmentRow): void {
     if (!this.authService.isAdmin()) return;
     this.markedRowSlNo.set(row.SlNo);
@@ -378,6 +504,8 @@ export class SummaryTableComponent {
         if (r.BrokerName) lines.push(`   Partner: ${r.BrokerName}`);
         lines.push(`   Status: ${item.stageName}`);
 
+        if (this.isColumnVisible('customerCost')) lines.push(`   Customer Cost: ${this.fmtCurr(fin.turnover)}`);
+        if (this.isColumnVisible('pendingAmount')) lines.push(`   Pending Amount: ${this.fmtCurr(fin.unpaid)}`);
         if (this.isColumnVisible('payment')) {
           lines.push(`   Paid: ${this.fmtCurr(fin.paid)} | Unpaid: ${this.fmtCurr(fin.unpaid)} | Turnover: ${this.fmtCurr(fin.turnover)}`);
         }
@@ -402,6 +530,8 @@ export class SummaryTableComponent {
     lines.push('SUMMARY TOTALS');
     lines.push('==============================');
     lines.push(`Total Customers: ${tot.count}`);
+    if (this.isColumnVisible('customerCost')) lines.push(`Total Customer Cost: ${this.fmtCurr(tot.turnover)}`);
+    if (this.isColumnVisible('pendingAmount')) lines.push(`Total Pending Amount: ${this.fmtCurr(tot.unpaid)}`);
     if (this.isColumnVisible('payment')) {
       lines.push(`Paid: ${this.fmtCurr(tot.paid)}`);
       lines.push(`Unpaid: ${this.fmtCurr(tot.unpaid)}`);

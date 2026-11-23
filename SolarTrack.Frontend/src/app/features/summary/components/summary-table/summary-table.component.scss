@@ -422,6 +422,38 @@ tr.row-workflow-active .mw-workflow-btn {
   }
 }
 
+/* Customer Cost & Pending Amount Columns */
+.th-col-custcost, .td-col-custcost, .tfoot-col-custcost,
+.th-col-pending, .td-col-pending, .tfoot-col-pending {
+  min-width: 145px !important;
+  text-align: right !important;
+}
+
+.cost-input-group {
+  height: 28px;
+  width: 110px;
+
+  .input-group-text {
+    padding: 0 6px;
+    font-size: 0.75rem;
+    border-color: #cbd5e1;
+    color: #64748b;
+    background-color: #f8fafc;
+  }
+
+  input {
+    height: 28px !important;
+    font-size: 0.78rem !important;
+    border-color: #cbd5e1;
+    padding: 2px 6px;
+
+    &:focus {
+      border-color: var(--st-primary, #ff4500);
+      box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.15);
+    }
+  }
+}
+
 /* Actions Column */
 .th-col-actions, .td-col-actions, .tfoot-col-actions {
   width: 55px !important;

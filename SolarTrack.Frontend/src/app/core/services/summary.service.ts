@@ -37,7 +37,9 @@ export const DEFAULT_SUMMARY_COLUMNS: SummaryColumn[] = [
   { key: 'profit', label: 'Profit', visible: false },
   { key: 'pvmodule', label: 'PVModule Make', visible: false },
   { key: 'inverter', label: 'Inverterr Make', visible: false },
-  { key: 'statusEdit', label: 'StatusEdit', visible: false }
+  { key: 'statusEdit', label: 'StatusEdit', visible: false },
+  { key: 'customerCost', label: 'Customer Cost', visible: false },
+  { key: 'pendingAmount', label: 'Pending Amount', visible: false }
 ];
 
 @Injectable({
@@ -1096,11 +1098,61 @@ export class SummaryService {
     return this.saveStageProgress(slNo, patch);
   }
 
-  // Customer Cost update
+  // Customer Cost update with current date
   saveCustomerCost(slNo: number, cost: number): Observable<any> {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
+    const existing = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo));
+    let brokerNumber = existing?.BrokerNumber || '';
+    if (brokerNumber.includes('|cost_date:')) {
+      const idx = brokerNumber.indexOf('|cost_date:');
+      const nextPipe = brokerNumber.indexOf('|', idx + 1);
+      const after = nextPipe !== -1 ? brokerNumber.slice(nextPipe) : '';
+      brokerNumber = brokerNumber.slice(0, idx) + `|cost_date:${today}` + after;
+    } else {
+      brokerNumber = `${brokerNumber}|cost_date:${today}`;
+    }
+
     return this.updateCustomer(slNo, {
-      CommittedPrice: cost
+      CommittedPrice: cost,
+      SpecsUpdatedAt: today,
+      BrokerNumber: brokerNumber
     });
+  }
+
+  // Update Customer Pending directly (adjusts payment with current date)
+  updateCustomerPending(slNo: number, newPending: number): Observable<any> {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
+    const existing = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo));
+    const payMap = this.paymentsMap();
+    const currentPaid = payMap.get(Number(slNo)) || 0;
+    const currentTurnover = Number(existing?.CommittedPrice) || 0;
+
+    let targetPaid = 0;
+    let adjustCostObs$: Observable<any> | null = null;
+
+    if (currentTurnover >= newPending) {
+      targetPaid = currentTurnover - newPending;
+    } else {
+      const newTurnover = currentPaid + newPending;
+      adjustCostObs$ = this.saveCustomerCost(slNo, newTurnover);
+      targetPaid = currentPaid;
+    }
+
+    const pay$ = this.updateCustomerPaidTotal(slNo, targetPaid, today);
+    if (adjustCostObs$) {
+      return forkJoin([adjustCostObs$, pay$]);
+    }
+    return pay$;
   }
 
   // Add Quick Payment Transaction

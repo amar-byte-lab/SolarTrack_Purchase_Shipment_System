@@ -121,6 +121,8 @@
             </div>
           </th>
           <th *ngIf="isColumnVisible('statusEdit')" class="th-col-statusedit text-nowrap">STATUS EDIT</th>
+          <th *ngIf="isColumnVisible('customerCost')" class="th-col-custcost text-end text-nowrap">CUSTOMER COST</th>
+          <th *ngIf="isColumnVisible('pendingAmount')" class="th-col-pending text-end text-nowrap">PENDING AMOUNT</th>
           <th *ngIf="isColumnVisible('payment')" class="th-col-payment text-nowrap text-center">CUSTOMER PAYMENT</th>
           <th *ngIf="isColumnVisible('material')" class="th-col-material text-end text-nowrap">MATERIAL COST</th>
           <th *ngIf="isColumnVisible('delivery')" class="th-col-delivery text-end text-nowrap">DELIVERY COST</th>
@@ -216,14 +218,14 @@
                   <span class="fw-bold text-dark fs-8" [title]="item.name">{{ item.name }}</span>
                   <span class="badge fs-9 px-1.5 py-0.5" [ngClass]="item.stageClass">{{ item.stageName }}</span>
                   <!-- Workflow Icon right next to Status Badge -->
-                  <button 
+                  <!-- <button 
                     *ngIf="authService.isAdmin()"
                     type="button" 
                     class="btn btn-xs btn-outline-secondary p-0.5 border-0 text-primary d-inline-flex align-items-center justify-content-center mw-workflow-btn"
                     (click)="$event.stopPropagation(); openWorkflowModal(item.row, 'process')"
                     title="Open Workflow Process & Payment Details">
                     <app-icon name="workflow" [size]="13"></app-icon>
-                  </button>
+                  </button> -->
                 </div>
               </td>
 
@@ -286,6 +288,98 @@
                     (click)="cancelStatusEdit(item.slNo)" 
                     title="Cancel">
                     <app-icon name="x" [size]="13"></app-icon>
+                  </button>
+                </div>
+              </td>
+
+              <!-- Customer Cost Column -->
+              <td *ngIf="isColumnVisible('customerCost')" class="td-col-custcost text-end text-nowrap" (click)="$event.stopPropagation()">
+                <!-- View Mode -->
+                <div *ngIf="!isCostEditing(item.slNo)" class="d-inline-flex align-items-center justify-content-end gap-1.5 w-100">
+                  <span class="fw-semibold text-dark fs-8">{{ fmtCurr(item.fin.turnover) }}</span>
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-primary d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="startCostEdit(item)" 
+                    title="Edit Customer Cost">
+                    <app-icon name="edit" [size]="12"></app-icon>
+                  </button>
+                </div>
+
+                <!-- Edit Mode -->
+                <div *ngIf="isCostEditing(item.slNo)" class="d-inline-flex align-items-center justify-content-end gap-1">
+                  <div class="input-group input-group-sm cost-input-group">
+                    <span class="input-group-text bg-white px-1 py-0 fs-9 text-muted border-end-0">₹</span>
+                    <input 
+                      type="number" 
+                      class="form-control form-control-xs py-0 px-1.5 fs-8 font-monospace border-start-0 text-end" 
+                      [(ngModel)]="costEditDrafts[item.slNo]" 
+                      (keydown.enter)="saveCostEdit(item)"
+                      placeholder="Cost"
+                      style="width: 85px;">
+                  </div>
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-success d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="saveCostEdit(item)" 
+                    [disabled]="isSavingCost(item.slNo)" 
+                    title="Save Cost">
+                    <span *ngIf="isSavingCost(item.slNo)" class="spinner-border spinner-border-sm" role="status"></span>
+                    <app-icon *ngIf="!isSavingCost(item.slNo)" name="check" [size]="12"></app-icon>
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="cancelCostEdit(item.slNo)" 
+                    title="Cancel">
+                    <app-icon name="x" [size]="12"></app-icon>
+                  </button>
+                </div>
+              </td>
+
+              <!-- Pending Amount Column -->
+              <td *ngIf="isColumnVisible('pendingAmount')" class="td-col-pending text-end text-nowrap" (click)="$event.stopPropagation()">
+                <!-- View Mode (Autocalculated) -->
+                <div *ngIf="!isPendingEditing(item.slNo)" class="d-inline-flex align-items-center justify-content-end gap-1.5 w-100">
+                  <span class="fw-semibold fs-8" [ngClass]="item.fin.unpaid > 0 ? 'text-danger' : 'text-success'">
+                    {{ fmtCurr(item.fin.unpaid) }}
+                  </span>
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-primary d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="startPendingEdit(item)" 
+                    title="Edit Pending Amount">
+                    <app-icon name="edit" [size]="12"></app-icon>
+                  </button>
+                </div>
+
+                <!-- Edit Mode -->
+                <div *ngIf="isPendingEditing(item.slNo)" class="d-inline-flex align-items-center justify-content-end gap-1">
+                  <div class="input-group input-group-sm cost-input-group">
+                    <span class="input-group-text bg-white px-1 py-0 fs-9 text-muted border-end-0">₹</span>
+                    <input 
+                      type="number" 
+                      class="form-control form-control-xs py-0 px-1.5 fs-8 font-monospace border-start-0 text-end" 
+                      [(ngModel)]="pendingEditDrafts[item.slNo]" 
+                      (keydown.enter)="savePendingEdit(item)"
+                      placeholder="Pending"
+                      style="width: 85px;">
+                  </div>
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-success d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="savePendingEdit(item)" 
+                    [disabled]="isSavingPending(item.slNo)" 
+                    title="Save Pending">
+                    <span *ngIf="isSavingPending(item.slNo)" class="spinner-border spinner-border-sm" role="status"></span>
+                    <app-icon *ngIf="!isSavingPending(item.slNo)" name="check" [size]="12"></app-icon>
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="cancelPendingEdit(item.slNo)" 
+                    title="Cancel">
+                    <app-icon name="x" [size]="12"></app-icon>
                   </button>
                 </div>
               </td>
@@ -372,6 +466,12 @@
             </div>
           </td>
           <td *ngIf="isColumnVisible('statusEdit')" class="tfoot-col-statusedit text-center fs-8">-</td>
+          <td *ngIf="isColumnVisible('customerCost')" class="tfoot-col-custcost text-end fw-bold text-nowrap fs-8">
+            {{ fmtCurr(summaryService.totals().turnover) }}
+          </td>
+          <td *ngIf="isColumnVisible('pendingAmount')" class="tfoot-col-pending text-end fw-bold text-nowrap fs-8 text-danger">
+            {{ fmtCurr(summaryService.totals().unpaid) }}
+          </td>
           <td *ngIf="isColumnVisible('payment')" class="tfoot-col-payment text-center">
             <div class="d-flex flex-column align-items-center justify-content-center">
               <span class="text-success fw-bold fs-8">{{ fmtCurr(summaryService.totals().paid) }}</span>
