@@ -5,11 +5,18 @@ using SolarTrack.Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Read port from PORT env variable or configuration (default: 3000 to match original server)
-var portStr = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration["Server:Port"] ?? "3000";
-if (int.TryParse(portStr, out var port))
+// Read port from PORT env variable or configuration when not hosted in IIS
+var isIis = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_POOL_ID")) ||
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_PORT")) ||
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANCM_LAUNCH_RESULT"));
+
+if (!isIis)
 {
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+    var portStr = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration["Server:Port"] ?? "3000";
+    if (int.TryParse(portStr, out var port))
+    {
+        builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+    }
 }
 
 // Configure Request Limits (up to 100 MB for file uploads & batch imports)
@@ -105,15 +112,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
-// Serve static frontend files from SolarTrack.Frontend build directory
+// Serve static frontend files from wwwroot (production publish) or SolarTrack.Frontend build directory (dev)
 var baseDir = AppContext.BaseDirectory;
+var candidate0 = Path.Combine(baseDir, "wwwroot");
+var candidateWebRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
 var projectDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", ".."));
 var candidate1 = Path.Combine(projectDir, "SolarTrack.Frontend", "dist", "SolarTrack.Frontend", "browser");
 var candidate2 = Path.Combine(Directory.GetCurrentDirectory(), "SolarTrack.Frontend", "dist", "SolarTrack.Frontend", "browser");
 var candidate3 = Path.Combine(Directory.GetCurrentDirectory(), "..", "SolarTrack.Frontend", "dist", "SolarTrack.Frontend", "browser");
 
 string? frontendDir = null;
-if (Directory.Exists(candidate1)) frontendDir = candidate1;
+if (Directory.Exists(candidate0) && File.Exists(Path.Combine(candidate0, "index.html"))) frontendDir = candidate0;
+else if (Directory.Exists(candidateWebRoot) && File.Exists(Path.Combine(candidateWebRoot, "index.html"))) frontendDir = candidateWebRoot;
+else if (Directory.Exists(candidate1)) frontendDir = candidate1;
 else if (Directory.Exists(candidate2)) frontendDir = candidate2;
 else if (Directory.Exists(candidate3)) frontendDir = Path.GetFullPath(candidate3);
 
