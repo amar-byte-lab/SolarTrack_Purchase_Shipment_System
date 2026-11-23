@@ -75,12 +75,10 @@ jobs:
           echo "password=$PASS" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to MonsterASP via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ env.FTP_SERVER }}
-          username: ${{ env.FTP_USERNAME }}
-          password: ${{ steps.ftp_creds.outputs.password }}
-          local-dir: ./publish/
-          server-dir: ${{ env.FTP_SERVER_DIR }}
-          protocol: ftp
-          dangerous-clean-slate: false
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -e "set ftp:passive-mode true; set ftp:ssl-allow no; set net:timeout 60; set net:max-retries 5; mirror -R --verbose=1 ./publish/ /wwwroot/; quit" -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
+        env:
+          FTP_HOST: ${{ env.FTP_SERVER }}
+          FTP_USER: ${{ env.FTP_USERNAME }}
+          FTP_PASS: ${{ steps.ftp_creds.outputs.password }}
