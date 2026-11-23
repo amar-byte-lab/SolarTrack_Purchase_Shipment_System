@@ -203,9 +203,9 @@
                   (change)="toggleSelectAll()">
               </th>
               <th class="ps-2">Category</th>
-              <th class="text-end col-stock" style="width: 120px;">Stock</th>
+              <th class="text-end col-stock" style="width: 130px;">Stock</th>
               <th class="text-end col-rate d-none d-md-table-cell" style="width: 160px;">Rate</th>
-              <th class="text-center col-actions" style="width: 90px;">Actions</th>
+              <th class="text-center col-actions" style="width: 85px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -330,8 +330,15 @@
                       <td class="tree-item-cell">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                           <div class="tree-item-details">
-                            <div class="d-inline-flex align-items-center gap-2 flex-wrap">
+                            <div class="d-inline-flex align-items-center gap-1.5 flex-wrap">
                               <span class="fw-semibold text-dark">{{ item.ItemName }}</span>
+                              <button 
+                                type="button" 
+                                class="btn btn-action-icon text-secondary btn-item-details-edit" 
+                                (click)="openEditItem(item)" 
+                                title="Edit Item Details">
+                                <app-icon name="edit" [size]="13"></app-icon>
+                              </button>
                             </div>
                             @if (item.Description || item.Location) {
                               <div class="text-secondary fs-8 mt-0.5">
@@ -349,43 +356,95 @@
 
                       <!-- In-Hand Qty (Stock) -->
                       <td class="text-end text-nowrap">
-                        <span class="fw-bold font-monospace" [ngClass]="item.inHandQty <= item.MinThreshold ? (item.inHandQty <= 0 ? 'text-danger' : 'text-warning') : 'text-success'">
-                          {{ item.inHandQty | number }}
-                        </span>
-                        <span class="text-muted ms-1 fs-9">{{ item.Unit || 'Nos' }}</span>
+                        @if (isInlineEditing(item.ItemCode)) {
+                          <div class="d-inline-flex align-items-center gap-1 justify-content-end">
+                            <input 
+                              type="number" 
+                              class="form-control form-control-xs text-end font-monospace inline-stock-input" 
+                              [(ngModel)]="inlineDrafts[item.ItemCode].stock" 
+                              (keydown.enter)="saveInlineEdit(item)"
+                              (keydown.escape)="cancelInlineEdit(item.ItemCode)"
+                              [disabled]="isSavingInline(item.ItemCode)"
+                              placeholder="Qty" />
+                            <span class="text-muted fs-9">{{ item.Unit || 'Nos' }}</span>
+                          </div>
+                        } @else {
+                          <span class="fw-bold font-monospace" [ngClass]="item.inHandQty <= item.MinThreshold ? (item.inHandQty <= 0 ? 'text-danger' : 'text-warning') : 'text-success'">
+                            {{ item.inHandQty | number }}
+                          </span>
+                          <span class="text-muted ms-1 fs-9">{{ item.Unit || 'Nos' }}</span>
+                        }
                       </td>
 
                       <!-- Buying Rate with Rate History Button (Desktop only) -->
                       <td class="text-end font-monospace fs-8 d-none d-md-table-cell">
-                        <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
-                          <span class="fw-semibold text-dark">₹{{ item.BuyingPrice | number:'1.2-2' }}</span>
-                          <button 
-                            type="button" 
-                            class="btn btn-xs d-inline-flex align-items-center justify-content-center flex-shrink-0" 
-                            (click)="openPriceHistory(item)" 
-                            title="View Purchase Rate History & Trend">
-                            <app-icon name="trending-up" [size]="12"></app-icon>
-                          </button>
-                        </div>
+                        @if (isInlineEditing(item.ItemCode)) {
+                          <div class="d-inline-flex align-items-center gap-1 justify-content-end">
+                            <span class="text-muted fs-8">₹</span>
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              class="form-control form-control-xs text-end font-monospace inline-rate-input" 
+                              [(ngModel)]="inlineDrafts[item.ItemCode].rate" 
+                              (keydown.enter)="saveInlineEdit(item)"
+                              (keydown.escape)="cancelInlineEdit(item.ItemCode)"
+                              [disabled]="isSavingInline(item.ItemCode)"
+                              placeholder="Rate" />
+                          </div>
+                        } @else {
+                          <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
+                            <span class="fw-semibold text-dark">₹{{ item.BuyingPrice | number:'1.2-2' }}</span>
+                            <button 
+                              type="button" 
+                              class="btn btn-xs d-inline-flex align-items-center justify-content-center flex-shrink-0" 
+                              (click)="openPriceHistory(item)" 
+                              title="View Purchase Rate History & Trend">
+                              <app-icon name="trending-up" [size]="12"></app-icon>
+                            </button>
+                          </div>
+                        }
                       </td>
 
-                      <!-- Actions (Edit & Delete) -->
+                      <!-- Actions (Quick Edit Stock & Rate, Full Edit & Delete) -->
                       <td class="text-center text-nowrap">
                         <div class="d-inline-flex align-items-center gap-1">
-                          <button 
-                            type="button" 
-                            class="btn btn-action-icon text-secondary" 
-                            (click)="openEditItem(item)" 
-                            title="Edit Item Details">
-                            <app-icon name="edit" [size]="16"></app-icon>
-                          </button>
-                          <button 
-                            type="button" 
-                            class="btn btn-action-icon text-danger" 
-                            (click)="deleteItem(item)" 
-                            title="Delete Item">
-                            <app-icon name="trash" [size]="16"></app-icon>
-                          </button>
+                          @if (isInlineEditing(item.ItemCode)) {
+                            <button 
+                              type="button" 
+                              class="btn btn-action-icon text-success" 
+                              (click)="saveInlineEdit(item)" 
+                              [disabled]="isSavingInline(item.ItemCode)"
+                              title="Save Stock & Rate">
+                              @if (isSavingInline(item.ItemCode)) {
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 14px; height: 14px;"></span>
+                              } @else {
+                                <app-icon name="check" [size]="16"></app-icon>
+                              }
+                            </button>
+                            <button 
+                              type="button" 
+                              class="btn btn-action-icon text-muted" 
+                              (click)="cancelInlineEdit(item.ItemCode)" 
+                              [disabled]="isSavingInline(item.ItemCode)"
+                              title="Cancel">
+                              <app-icon name="x" [size]="16"></app-icon>
+                            </button>
+                          } @else {
+                            <button 
+                              type="button" 
+                              class="btn btn-action-icon text-primary" 
+                              (click)="startInlineEdit(item)" 
+                              title="Quick Update Stock & Rate">
+                              <app-icon name="edit-3" [size]="15"></app-icon>
+                            </button>
+                            <button 
+                              type="button" 
+                              class="btn btn-action-icon text-danger" 
+                              (click)="deleteItem(item)" 
+                              title="Delete Item">
+                              <app-icon name="trash" [size]="15"></app-icon>
+                            </button>
+                          }
                         </div>
                       </td>
 

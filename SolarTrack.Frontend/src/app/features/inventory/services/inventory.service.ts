@@ -680,6 +680,62 @@ export class InventoryService {
     );
   }
 
+  updateStockAndRate(itemCode: string, newStock: number, newRate: number): Observable<any> {
+    const currentItem = this.itemsWithStock().find(i => i.ItemCode.toLowerCase() === itemCode.toLowerCase());
+    const currentStock = currentItem?.inHandQty ?? 0;
+    const delta = Number((newStock - currentStock).toFixed(4));
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const requests: Observable<any>[] = [
+      this.http.post(
+        `/api/update?table=inventory_items&matchField=ItemCode&matchValue=${encodeURIComponent(itemCode)}`,
+        { BuyingPrice: newRate }
+      )
+    ];
+
+    if (delta > 0) {
+      const inwardId = 'INW_ADJ_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const inwardRow = {
+        InwardID: inwardId,
+        Date: todayStr,
+        Supplier: 'Stock Adjustment',
+        ItemCode: itemCode,
+        Quantity: delta,
+        UnitPrice: newRate,
+        GstRate: 0,
+        CostPerUnit: newRate,
+        TransportCost: 0,
+        ConsignmentTransportCost: 0,
+        TotalCost: Number((delta * newRate).toFixed(2)),
+        Location: currentItem?.Location || 'Main Godown',
+        Remarks: 'Inline Stock Adjustment',
+        CreatedAt: new Date().toISOString()
+      };
+      requests.push(this.http.post('/api/insert?table=inventory_inwards', inwardRow));
+    } else if (delta < 0) {
+      const dispatchQty = Math.abs(delta);
+      const dispatchId = 'DSP_ADJ_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const dispatchRow = {
+        DispatchID: dispatchId,
+        Date: todayStr,
+        ChallanNo: 'ADJ-' + Date.now().toString().slice(-6),
+        SiteName: 'Stock Adjustment',
+        ItemCode: itemCode,
+        Quantity: dispatchQty,
+        UnitBuyingPrice: newRate,
+        DispatchedCost: Number((dispatchQty * newRate).toFixed(2)),
+        TransportCost: 0,
+        Remarks: 'Inline Stock Adjustment',
+        CreatedAt: new Date().toISOString()
+      };
+      requests.push(this.http.post('/api/insert?table=inventory_dispatches', dispatchRow));
+    }
+
+    return forkJoin(requests).pipe(
+      switchMap(() => this.loadAllData())
+    );
+  }
+
   deleteItem(itemCode: string): Observable<any> {
     return this.http.post(
       `/api/delete?table=inventory_items&matchField=ItemCode&matchValue=${encodeURIComponent(itemCode)}`,
@@ -766,6 +822,64 @@ export class InventoryService {
           }
         });
       })
+    );
+  }
+
+  updateInwardRecord(itemCode: string, inwardId: string, patch: { date: string; supplier: string; qty: number; rate: number }): Observable<any> {
+    const totalCost = Number((patch.qty * patch.rate).toFixed(2));
+    const inwardPatch: any = {
+      Date: patch.date,
+      Supplier: patch.supplier,
+      Quantity: patch.qty,
+      UnitPrice: patch.rate,
+      CostPerUnit: patch.rate,
+      TotalCost: totalCost
+    };
+
+    return this.http.post(
+      `/api/update?table=inventory_inwards&matchField=InwardID&matchValue=${encodeURIComponent(inwardId)}`,
+      inwardPatch
+    ).pipe(
+      switchMap(() => {
+        // If this record is the latest by date, ensure item BuyingPrice matches
+        const itemInwards = this.rawInwards()
+          .filter(i => (i.ItemCode || '').toLowerCase() === itemCode.toLowerCase())
+          .sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
+        const isLatest = itemInwards.length === 0 || itemInwards[0].InwardID === inwardId || new Date(patch.date).getTime() >= new Date(itemInwards[0].Date).getTime();
+        if (isLatest && patch.rate > 0) {
+          return this.http.post(
+            `/api/update?table=inventory_items&matchField=ItemCode&matchValue=${encodeURIComponent(itemCode)}`,
+            { BuyingPrice: patch.rate }
+          );
+        }
+        return of(null);
+      }),
+      switchMap(() => this.loadAllData())
+    );
+  }
+
+  deleteInwardRecord(itemCode: string, inwardId: string): Observable<any> {
+    return this.http.post(
+      `/api/delete?table=inventory_inwards&matchField=InwardID&matchValue=${encodeURIComponent(inwardId)}`,
+      {}
+    ).pipe(
+      switchMap(() => {
+        // Find latest remaining inward for this item to sync BuyingPrice
+        const remaining = this.rawInwards()
+          .filter(i => (i.ItemCode || '').toLowerCase() === itemCode.toLowerCase() && i.InwardID !== inwardId)
+          .sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
+        if (remaining.length > 0) {
+          const latestRate = Number(remaining[0].CostPerUnit || remaining[0].UnitPrice) || 0;
+          if (latestRate > 0) {
+            return this.http.post(
+              `/api/update?table=inventory_items&matchField=ItemCode&matchValue=${encodeURIComponent(itemCode)}`,
+              { BuyingPrice: latestRate }
+            );
+          }
+        }
+        return of(null);
+      }),
+      switchMap(() => this.loadAllData())
     );
   }
 

@@ -1,7 +1,11 @@
-import { Component, EventEmitter, Input, Output, computed } from '@angular/core';
+import { Component, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { InventoryItemWithStock, InventoryInwardRow } from '../../models/inventory.model';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
+import { InventoryService } from '../../services/inventory.service';
+import { ToastService } from '../../../../shared/services/toast.service';
+import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 
 interface PricePoint {
   id: string;
@@ -18,7 +22,7 @@ interface PricePoint {
 @Component({
   selector: 'app-price-history-modal',
   standalone: true,
-  imports: [CommonModule, IconComponent],
+  imports: [CommonModule, FormsModule, IconComponent],
   templateUrl: './price-history-modal.component.html',
   styleUrls: ['./price-history-modal.component.scss']
 })
@@ -27,18 +31,41 @@ export class PriceHistoryModalComponent {
   @Input() inwards: InventoryInwardRow[] = [];
   @Output() close = new EventEmitter<void>();
 
-  readonly width = 760;
-  readonly height = 260;
+  private invService = inject(InventoryService);
+  private toastService = inject(ToastService);
+  private confirmDialogService = inject(ConfirmDialogService);
+
+  readonly width = 700;
+  readonly height = 250;
   readonly paddingLeft = 70;
   readonly paddingRight = 60;
   readonly paddingTop = 45;
-  readonly paddingBottom = 40;
+  readonly paddingBottom = 45;
+
+  editingId = signal<string | null>(null);
+  isSaving = signal<boolean>(false);
+  editDraft = {
+    id: '',
+    date: '',
+    supplier: '',
+    qty: 0,
+    rate: 0
+  };
+
+  currentItem = computed(() => {
+    if (!this.item) return null;
+    const code = (this.item.ItemCode || '').toLowerCase();
+    const live = this.invService.itemsWithStock().find(i => i.ItemCode.toLowerCase() === code);
+    return live || this.item;
+  });
 
   priceData = computed(() => {
-    if (!this.item) return { points: [], polyline: '', areaPolygon: '', gridLevels: [] };
+    const itm = this.currentItem();
+    if (!itm) return { points: [], polyline: '', areaPolygon: '', gridLevels: [], latestRate: 0 };
 
-    const itemCode = (this.item.ItemCode || '').toLowerCase();
-    const itemInwards = this.inwards
+    const itemCode = (itm.ItemCode || '').toLowerCase();
+    const allInwards = this.invService.rawInwards().length > 0 ? this.invService.rawInwards() : this.inwards;
+    const itemInwards = allInwards
       .filter(inw => (inw.ItemCode || '').toLowerCase() === itemCode)
       .sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime());
 
@@ -46,7 +73,7 @@ export class PriceHistoryModalComponent {
 
     if (itemInwards.length > 0) {
       rawPoints = itemInwards.map(inw => {
-        const rate = Number(inw.CostPerUnit) || Number(inw.UnitPrice) || Number(this.item?.BuyingPrice) || 0;
+        const rate = Number(inw.CostPerUnit) || Number(inw.UnitPrice) || Number(itm.BuyingPrice) || 0;
         const qty = Number(inw.Quantity) || 0;
         const total = Number(inw.TotalCost) || (rate * qty);
         return {
@@ -63,7 +90,7 @@ export class PriceHistoryModalComponent {
         id: 'BASE',
         date: new Date().toISOString().slice(0, 10),
         supplier: 'Catalog Base Rate (Initial)',
-        rate: Number(this.item.BuyingPrice) || 0,
+        rate: Number(itm.BuyingPrice) || 0,
         qty: 0,
         totalCost: 0
       }];
@@ -124,9 +151,102 @@ export class PriceHistoryModalComponent {
       points,
       polyline: pointsStr,
       areaPolygon,
-      gridLevels
+      gridLevels,
+      latestRate: rawPoints[rawPoints.length - 1]?.rate ?? 0
     };
   });
+
+  startEdit(pt: PricePoint): void {
+    this.editDraft = {
+      id: pt.id,
+      date: pt.date,
+      supplier: pt.supplier,
+      qty: pt.qty,
+      rate: pt.rate
+    };
+    this.editingId.set(pt.id);
+  }
+
+  cancelEdit(): void {
+    this.editingId.set(null);
+  }
+
+  saveEdit(): void {
+    const itm = this.currentItem();
+    if (!itm) return;
+    const draft = this.editDraft;
+    const rateNum = Number(draft.rate);
+    const qtyNum = Number(draft.qty);
+
+    if (isNaN(rateNum) || rateNum <= 0) {
+      this.toastService.warning('Please enter a valid rate.');
+      return;
+    }
+
+    this.isSaving.set(true);
+
+    if (draft.id === 'BASE') {
+      this.invService.updateItem(itm.ItemCode, { BuyingPrice: rateNum }).subscribe({
+        next: () => {
+          this.toastService.success('Catalog base rate updated.');
+          this.editingId.set(null);
+          this.isSaving.set(false);
+          this.invService.loadAllData().subscribe();
+        },
+        error: (err) => {
+          this.toastService.error('Failed to update rate: ' + (err?.message || 'Server error'));
+          this.isSaving.set(false);
+        }
+      });
+    } else {
+      this.invService.updateInwardRecord(itm.ItemCode, draft.id, {
+        date: draft.date,
+        supplier: draft.supplier.trim() || 'Supplier',
+        qty: isNaN(qtyNum) ? 0 : qtyNum,
+        rate: rateNum
+      }).subscribe({
+        next: () => {
+          this.toastService.success('Purchase record updated.');
+          this.editingId.set(null);
+          this.isSaving.set(false);
+        },
+        error: (err) => {
+          this.toastService.error('Failed to update record: ' + (err?.message || 'Server error'));
+          this.isSaving.set(false);
+        }
+      });
+    }
+  }
+
+  async deleteRecord(pt: PricePoint): Promise<void> {
+    const itm = this.currentItem();
+    if (!itm) return;
+
+    if (pt.id === 'BASE') {
+      this.toastService.info('Base catalog rate cannot be deleted. You can edit its rate.');
+      return;
+    }
+
+    const confirmed = await this.confirmDialogService.confirm({
+      title: 'Delete Purchase Record',
+      message: `Delete purchase record of ₹${pt.rate} from "${pt.supplier}" on ${this.formatDate(pt.date)}? Warehouse stock will be adjusted.`,
+      confirmText: 'Delete Record'
+    });
+
+    if (!confirmed) return;
+
+    this.isSaving.set(true);
+    this.invService.deleteInwardRecord(itm.ItemCode, pt.id).subscribe({
+      next: () => {
+        this.toastService.success('Purchase record deleted.');
+        this.isSaving.set(false);
+      },
+      error: (err) => {
+        this.toastService.error('Failed to delete record: ' + (err?.message || 'Server error'));
+        this.isSaving.set(false);
+      }
+    });
+  }
 
   formatDate(d: string): string {
     if (!d || d === 'CATALOG-INIT') return 'Catalog';

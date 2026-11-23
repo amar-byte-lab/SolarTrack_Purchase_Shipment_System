@@ -1,111 +1,288 @@
 <div class="modal-backdrop" (click)="close.emit()">
-  <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
-    <div class="modal-content border-0 shadow">
+  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content">
       
       <!-- Header -->
-      <div class="modal-header py-2.5 px-3 border-bottom bg-light d-flex justify-content-between align-items-center">
-        <div>
-          <h6 class="modal-title fw-bold text-dark m-0 d-flex align-items-center gap-2">
-            <app-icon name="trending-up" class="text-primary"></app-icon>
-            Equipment Rate History: <span class="text-primary">{{ item?.ItemName || item?.ItemCode }}</span>
+      <div class="modal-header py-2.5 px-3 border-bottom d-flex justify-content-between align-items-center">
+        <div class="pe-2">
+          <h6 class="modal-title fw-bold text-dark m-0 d-flex align-items-center gap-1.5 fs-6">
+            <span>Rate History: {{ currentItem()?.ItemName || currentItem()?.ItemCode }}</span>
           </h6>
-          <div class="text-secondary small mt-0.5" style="font-size:0.75rem;">
-            SKU: <span class="fw-semibold">{{ item?.ItemCode }}</span> • Unit: {{ item?.Unit || 'Nos' }}
-          </div>
         </div>
-        <button type="button" class="btn-close" (click)="close.emit()" aria-label="Close"></button>
+        <button type="button" class="btn-close flex-shrink-0" (click)="close.emit()" aria-label="Close"></button>
       </div>
 
       <!-- Body -->
       <div class="modal-body p-3">
-        <div class="border rounded p-3 bg-white mb-3">
-          <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-            <span class="small fw-bold text-secondary" style="font-size:0.82rem;">PRICE TREND GRAPH (PURCHASE TIMELINE)</span>
-            <span class="badge bg-light text-muted border font-monospace" style="font-size:0.72rem;">Cost / Unit (₹) vs Purchase Date</span>
+        <!-- SVG Price Trend Graph (Bold, High Contrast, Large Values) -->
+        @if (priceData().points.length > 0) {
+          <div class="graph-wrapper mb-3">
+            <svg viewBox="0 0 700 250" class="price-svg">
+              <defs>
+                <linearGradient id="phAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2563eb" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="#2563eb" stop-opacity="0.02"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Horizontal Grid Lines -->
+              @for (lvl of priceData().gridLevels; track lvl.y) {
+                <line x1="60" [attr.y1]="lvl.y" x2="665" [attr.y2]="lvl.y" stroke="#cbd5e1" stroke-dasharray="4,4" stroke-width="1.2"/>
+                <text x="54" [attr.y]="lvl.y + 4" text-anchor="end" font-size="11.5" font-weight="700" fill="#64748b" font-family="monospace">₹{{ lvl.val | number }}</text>
+              }
+
+              <!-- Area Fill & Polyline -->
+              @if (priceData().areaPolygon) {
+                <polygon [attr.points]="priceData().areaPolygon" fill="url(#phAreaGradient)"/>
+              }
+              @if (priceData().polyline) {
+                <polyline [attr.points]="priceData().polyline" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              }
+
+              <!-- Data Dots and Bold Value Badges -->
+              @for (pt of priceData().points; track pt.id; let i = $index) {
+                <g class="graph-point">
+                  <!-- Rate Value Badge (High Contrast Pill) -->
+                  <rect 
+                    [attr.x]="pt.x - 34" 
+                    [attr.y]="pt.y - 28" 
+                    width="68" 
+                    height="20" 
+                    rx="10" 
+                    fill="#1e293b" 
+                    stroke="#ffffff" 
+                    stroke-width="1.5" />
+                  <text 
+                    [attr.x]="pt.x" 
+                    [attr.y]="pt.y - 14" 
+                    text-anchor="middle" 
+                    font-size="12" 
+                    font-weight="800" 
+                    fill="#ffffff" 
+                    font-family="monospace">
+                    ₹{{ pt.rate | number:'1.0-2' }}
+                  </text>
+
+                  <!-- Dot Circle -->
+                  <circle 
+                    [attr.cx]="pt.x" 
+                    [attr.cy]="pt.y" 
+                    r="6" 
+                    [attr.fill]="pt.diff && pt.diff > 0 ? '#16a34a' : (pt.diff && pt.diff < 0 ? '#dc2626' : '#2563eb')" 
+                    stroke="#ffffff" 
+                    stroke-width="2.5"/>
+
+                  <!-- Date Label Below -->
+                  <text 
+                    [attr.x]="pt.x" 
+                    y="235" 
+                    text-anchor="middle" 
+                    font-size="11.5" 
+                    font-weight="700" 
+                    fill="#334155" 
+                    font-family="sans-serif">
+                    {{ formatDate(pt.date) }}
+                  </text>
+                </g>
+              }
+            </svg>
           </div>
+        } @else {
+          <div class="py-4 text-center text-muted small">No price data available</div>
+        }
 
-          <!-- SVG Price Trend Graph -->
-          @if (priceData().points.length > 0) {
-            <div class="svg-container" style="width: 100%; min-height: 260px; position: relative;">
-              <svg viewBox="0 0 760 260" class="price-svg">
-                <defs>
-                  <linearGradient id="phAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
-                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.01"/>
-                  </linearGradient>
-                </defs>
-
-                <!-- Horizontal Grid Lines -->
-                @for (lvl of priceData().gridLevels; track lvl.y) {
-                  <line x1="70" [attr.y1]="lvl.y" x2="700" [attr.y2]="lvl.y" stroke="#e2e8f0" stroke-dasharray="3,3" stroke-width="1"/>
-                  <text x="62" [attr.y]="lvl.y + 3" text-anchor="end" font-size="9" fill="#94a3b8" font-family="monospace">₹{{ lvl.val | number }}</text>
-                }
-
-                <!-- Area Fill & Polyline -->
-                @if (priceData().areaPolygon) {
-                  <polygon [attr.points]="priceData().areaPolygon" fill="url(#phAreaGradient)"/>
-                }
-                @if (priceData().polyline) {
-                  <polyline [attr.points]="priceData().polyline" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                }
-
-                <!-- Data Dots and Annotations -->
-                @for (pt of priceData().points; track pt.id; let i = $index) {
-                  <g class="graph-point">
-                    <!-- Delta indicator -->
-                    @if (pt.diff !== null && pt.diff > 0) {
-                      <text [attr.x]="pt.x" [attr.y]="pt.y - 25" text-anchor="middle" font-size="9" font-weight="700" fill="#16a34a" font-family="monospace">▲ +₹{{ pt.diff | number:'1.2-2' }}</text>
-                    } @else if (pt.diff !== null && pt.diff < 0) {
-                      <text [attr.x]="pt.x" [attr.y]="pt.y - 25" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626" font-family="monospace">▼ -₹{{ -pt.diff | number:'1.2-2' }}</text>
-                    } @else if (pt.diff !== null) {
-                      <text [attr.x]="pt.x" [attr.y]="pt.y - 25" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="monospace">= Same</text>
-                    } @else {
-                      <text [attr.x]="pt.x" [attr.y]="pt.y - 25" text-anchor="middle" font-size="8" fill="#94a3b8" font-family="sans-serif">(Initial)</text>
-                    }
-
-                    <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="4.5" [attr.fill]="pt.diff && pt.diff > 0 ? '#16a34a' : (pt.diff && pt.diff < 0 ? '#dc2626' : '#2563eb')" stroke="#ffffff" stroke-width="2"/>
-                    <text [attr.x]="pt.x" [attr.y]="pt.y - 10" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a" font-family="monospace">₹{{ pt.rate | number:'1.0-2' }}</text>
-                    <text [attr.x]="pt.x" [attr.y]="pt.y + 16" text-anchor="middle" font-size="8.5" font-weight="600" fill="#475569" font-family="sans-serif">{{ pt.qty > 0 ? ('Qty: ' + pt.qty) : 'Catalog Base' }}</text>
-                    <text [attr.x]="pt.x" y="248" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="sans-serif">{{ formatDate(pt.date) }}</text>
-                  </g>
-                }
-              </svg>
-            </div>
-          } @else {
-            <div class="p-4 text-center text-muted small">No price data available</div>
-          }
-        </div>
-
-        <!-- History Table -->
-        <div class="table-responsive border rounded" style="max-height: 200px;">
-          <table class="table table-sm table-hover mb-0" style="font-size: 0.82rem;">
-            <thead class="table-light">
-              <tr>
-                <th class="ps-2">Date</th>
-                <th>Supplier</th>
-                <th class="text-end">Purchased Qty</th>
-                <th class="text-end">Unit Rate (₹)</th>
-                <th class="text-end pe-2">Total (₹)</th>
+        <!-- Purchase History: Desktop Table -->
+        <div class="d-none d-sm-block">
+          <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.8rem;">
+            <thead>
+              <tr class="text-secondary border-bottom">
+                <th class="ps-1 py-1.5 fw-semibold" style="width: 120px;">Date</th>
+                <th class="py-1.5 fw-semibold">Supplier / Source</th>
+                <th class="text-end py-1.5 fw-semibold" style="width: 85px;">Qty</th>
+                <th class="text-end py-1.5 fw-semibold" style="width: 110px;">Rate (₹)</th>
+                <th class="text-end py-1.5 fw-semibold" style="width: 105px;">Total (₹)</th>
+                <th class="text-center py-1.5 fw-semibold" style="width: 80px;">Actions</th>
               </tr>
             </thead>
             <tbody>
               @for (pt of priceData().points; track pt.id) {
-                <tr>
-                  <td class="ps-2 font-monospace">{{ formatDate(pt.date) }}</td>
-                  <td>{{ pt.supplier }}</td>
-                  <td class="text-end font-monospace">{{ pt.qty }} {{ item?.Unit || 'Nos' }}</td>
-                  <td class="text-end fw-bold font-monospace text-primary">₹{{ pt.rate | number:'1.2-2' }}</td>
-                  <td class="text-end pe-2 font-monospace">₹{{ pt.totalCost | number:'1.2-2' }}</td>
-                </tr>
+                @if (editingId() === pt.id) {
+                  <!-- Inline Edit Row -->
+                  <tr class="table-warning">
+                    <td class="ps-1 py-1">
+                      <input 
+                        type="date" 
+                        class="form-control form-control-xs font-monospace" 
+                        [(ngModel)]="editDraft.date"
+                        [disabled]="pt.id === 'BASE'">
+                    </td>
+                    <td class="py-1">
+                      <input 
+                        type="text" 
+                        class="form-control form-control-xs" 
+                        [(ngModel)]="editDraft.supplier"
+                        [disabled]="pt.id === 'BASE'">
+                    </td>
+                    <td class="py-1">
+                      <input 
+                        type="number" 
+                        class="form-control form-control-xs text-end font-monospace" 
+                        [(ngModel)]="editDraft.qty"
+                        [disabled]="pt.id === 'BASE'">
+                    </td>
+                    <td class="py-1">
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        class="form-control form-control-xs text-end font-monospace fw-bold" 
+                        [(ngModel)]="editDraft.rate">
+                    </td>
+                    <td class="text-end font-monospace text-muted py-1">
+                      ₹{{ ((editDraft.qty || 0) * (editDraft.rate || 0)) | number:'1.2-2' }}
+                    </td>
+                    <td class="text-center py-1">
+                      <div class="d-inline-flex align-items-center gap-1">
+                        <button 
+                          type="button" 
+                          class="btn btn-action-icon text-success" 
+                          (click)="saveEdit()" 
+                          [disabled]="isSaving()"
+                          title="Save">
+                          @if (isSaving()) {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 12px; height: 12px;"></span>
+                          } @else {
+                            <app-icon name="check" [size]="15"></app-icon>
+                          }
+                        </button>
+                        <button 
+                          type="button" 
+                          class="btn btn-action-icon text-muted" 
+                          (click)="cancelEdit()" 
+                          [disabled]="isSaving()"
+                          title="Cancel">
+                          <app-icon name="x" [size]="15"></app-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                  <tr>
+                    <td class="ps-1 font-monospace text-muted">{{ formatDate(pt.date) }}</td>
+                    <td class="text-dark fw-medium">{{ pt.supplier }}</td>
+                    <td class="text-end font-monospace">{{ pt.qty > 0 ? pt.qty : '-' }} {{ pt.qty > 0 ? (currentItem()?.Unit || 'Nos') : '' }}</td>
+                    <td class="text-end fw-bold font-monospace text-primary">₹{{ pt.rate | number:'1.2-2' }}</td>
+                    <td class="text-end font-monospace text-muted">{{ pt.totalCost > 0 ? ('₹' + (pt.totalCost | number:'1.2-2')) : '-' }}</td>
+                    <td class="text-center text-nowrap">
+                      <div class="d-inline-flex align-items-center gap-1">
+                        <button 
+                          type="button" 
+                          class="btn btn-action-icon text-secondary" 
+                          (click)="startEdit(pt)" 
+                          title="Edit Record">
+                          <app-icon name="edit" [size]="14"></app-icon>
+                        </button>
+                        @if (pt.id !== 'BASE') {
+                          <button 
+                            type="button" 
+                            class="btn btn-action-icon text-danger" 
+                            (click)="deleteRecord(pt)" 
+                            title="Delete Record">
+                            <app-icon name="trash" [size]="14"></app-icon>
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
         </div>
+
+        <!-- Purchase History: Mobile List View (Clean & Responsive) -->
+        <div class="d-block d-sm-none">
+          <div class="text-secondary fw-semibold fs-9 text-uppercase mb-1">Purchase Records</div>
+          <div class="history-mobile-list">
+            @for (pt of priceData().points; track pt.id) {
+              @if (editingId() === pt.id) {
+                <div class="p-2 border rounded bg-warning-subtle mb-2">
+                  <div class="mb-1.5">
+                    <label class="form-label fs-9 text-muted mb-0.5">Supplier</label>
+                    <input type="text" class="form-control form-control-sm fs-8" [(ngModel)]="editDraft.supplier" [disabled]="pt.id === 'BASE'">
+                  </div>
+                  <div class="row g-1 mb-1.5">
+                    <div class="col-6">
+                      <label class="form-label fs-9 text-muted mb-0.5">Date</label>
+                      <input type="date" class="form-control form-control-sm font-monospace fs-8" [(ngModel)]="editDraft.date" [disabled]="pt.id === 'BASE'">
+                    </div>
+                    <div class="col-3">
+                      <label class="form-label fs-9 text-muted mb-0.5">Qty</label>
+                      <input type="number" class="form-control form-control-sm font-monospace text-end fs-8" [(ngModel)]="editDraft.qty" [disabled]="pt.id === 'BASE'">
+                    </div>
+                    <div class="col-3">
+                      <label class="form-label fs-9 text-muted mb-0.5">Rate (₹)</label>
+                      <input type="number" step="0.01" class="form-control form-control-sm font-monospace text-end fw-bold fs-8" [(ngModel)]="editDraft.rate">
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-end gap-1">
+                    <button type="button" class="btn btn-xs btn-outline-secondary px-2" (click)="cancelEdit()">Cancel</button>
+                    <button type="button" class="btn btn-xs btn-success px-2.5" (click)="saveEdit()" [disabled]="isSaving()">
+                      @if (isSaving()) {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 12px; height: 12px;"></span>
+                      } @else {
+                        Save
+                      }
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                  <div class="pe-2">
+                    <div class="fw-semibold text-dark fs-8">{{ pt.supplier }}</div>
+                    <div class="text-muted fs-9 font-monospace">
+                      {{ formatDate(pt.date) }}
+                      @if (pt.qty > 0) {
+                        <span> • {{ pt.qty }} {{ currentItem()?.Unit || 'Nos' }}</span>
+                      }
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="text-end flex-shrink-0">
+                      <div class="fw-bold font-monospace text-primary fs-8">₹{{ pt.rate | number:'1.2-2' }}</div>
+                      @if (pt.totalCost > 0) {
+                        <div class="text-muted font-monospace fs-9">₹{{ pt.totalCost | number:'1.0-0' }}</div>
+                      }
+                    </div>
+                    <div class="d-inline-flex align-items-center gap-0.5">
+                      <button 
+                        type="button" 
+                        class="btn btn-action-icon text-secondary" 
+                        (click)="startEdit(pt)" 
+                        title="Edit">
+                        <app-icon name="edit" [size]="14"></app-icon>
+                      </button>
+                      @if (pt.id !== 'BASE') {
+                        <button 
+                          type="button" 
+                          class="btn btn-action-icon text-danger" 
+                          (click)="deleteRecord(pt)" 
+                          title="Delete">
+                          <app-icon name="trash" [size]="14"></app-icon>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
       </div>
 
       <!-- Footer -->
-      <div class="modal-footer py-2 px-3 border-top bg-light">
-        <button type="button" class="btn btn-sm btn-secondary px-3" (click)="close.emit()">Close</button>
+      <div class="modal-footer py-2 px-3 border-top justify-content-end">
+        <button type="button" class="btn btn-sm btn-light border px-3" (click)="close.emit()">Close</button>
       </div>
 
     </div>

@@ -86,6 +86,11 @@ export class InventoryComponent implements OnInit {
   showPriceHistoryModal = signal(false);
   priceHistoryItem = signal<InventoryItemWithStock | null>(null);
 
+  // Inline edit state for Stock & Rate in the ledger table
+  editingItemCode = signal<string | null>(null);
+  inlineDrafts: { [itemCode: string]: { stock: number; rate: number } } = {};
+  savingInlineCodes = signal<Set<string>>(new Set());
+
   // Edit consignment state
   consignmentToEditInward = signal<GroupedInwardConsignment | null>(null);
   consignmentToEditDispatch = signal<GroupedDispatchConsignment | null>(null);
@@ -372,6 +377,75 @@ export class InventoryComponent implements OnInit {
     this.showItemModal.set(false);
     this.itemToEdit.set(null);
     this.invService.loadAllData().subscribe();
+  }
+
+  isInlineEditing(code: string): boolean {
+    return this.editingItemCode() === code;
+  }
+
+  isSavingInline(code: string): boolean {
+    return this.savingInlineCodes().has(code);
+  }
+
+  startInlineEdit(item: InventoryItemWithStock): void {
+    this.inlineDrafts[item.ItemCode] = {
+      stock: item.inHandQty,
+      rate: item.BuyingPrice
+    };
+    this.editingItemCode.set(item.ItemCode);
+  }
+
+  cancelInlineEdit(code: string): void {
+    if (this.editingItemCode() === code) {
+      delete this.inlineDrafts[code];
+      this.editingItemCode.set(null);
+    }
+  }
+
+  saveInlineEdit(item: InventoryItemWithStock): void {
+    const draft = this.inlineDrafts[item.ItemCode];
+    if (!draft) return;
+
+    const newStock = Number(draft.stock);
+    const newRate = Number(draft.rate);
+
+    if (isNaN(newStock) || newStock < 0) {
+      this.toastService.warning('Please enter a valid stock quantity.');
+      return;
+    }
+
+    if (isNaN(newRate) || newRate < 0) {
+      this.toastService.warning('Please enter a valid rate.');
+      return;
+    }
+
+    // Mark as saving
+    this.savingInlineCodes.update(set => {
+      const next = new Set(set);
+      next.add(item.ItemCode);
+      return next;
+    });
+
+    this.invService.updateStockAndRate(item.ItemCode, newStock, newRate).subscribe({
+      next: () => {
+        this.toastService.success(`Updated "${item.ItemName}" - Stock: ${newStock}, Rate: ₹${newRate}`);
+        delete this.inlineDrafts[item.ItemCode];
+        this.editingItemCode.set(null);
+        this.savingInlineCodes.update(set => {
+          const next = new Set(set);
+          next.delete(item.ItemCode);
+          return next;
+        });
+      },
+      error: (err) => {
+        this.toastService.error('Failed to update stock and rate: ' + (err?.message || 'Server error'));
+        this.savingInlineCodes.update(set => {
+          const next = new Set(set);
+          next.delete(item.ItemCode);
+          return next;
+        });
+      }
+    });
   }
 
   openStockIn(itemCode?: string): void {
