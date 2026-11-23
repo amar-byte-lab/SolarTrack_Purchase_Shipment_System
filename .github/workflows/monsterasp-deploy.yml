@@ -77,7 +77,7 @@ jobs:
       - name: Deploy to MonsterASP via FTP
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -e "set ftp:passive-mode true; set ftp:ssl-allow no; set net:timeout 60; set net:max-retries 5; mirror -R --verbose=1 ./publish/ /wwwroot/; quit" -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
+          lftp -e "set ftp:passive-mode true; set ftp:ssl-allow no; set ftp:use-site-chmod false; set mirror:set-permissions false; set net:timeout 60; set net:max-retries 5; mirror -R --no-perms --verbose=1 ./publish/ /wwwroot/; quit" -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
         env:
           FTP_HOST: ${{ env.FTP_SERVER }}
           FTP_USER: ${{ env.FTP_USERNAME }}
