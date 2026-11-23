@@ -15,6 +15,7 @@ yarn-error.log*
 .env.*
 *.env
 !.env.example
+deploy-to-monsterasp.ps1
 
 # ==========================================
 # .NET / C# Build Outputs & User Configs
@@ -44,6 +45,8 @@ SolarTrack.Backend/appsettings.Development.json
 # ==========================================
 dist/
 **/dist/
+publish_deploy/
+publish_test/
 .angular/
 **/.angular/
 .sass-cache/

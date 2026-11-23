@@ -6,13 +6,13 @@ using SolarTrack.Backend.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Read port from PORT env variable or configuration when not hosted in IIS
+var portStr = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration["Server:Port"] ?? "3000";
 var isIis = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_POOL_ID")) ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_PORT")) ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANCM_LAUNCH_RESULT"));
 
 if (!isIis)
 {
-    var portStr = Environment.GetEnvironmentVariable("PORT") ?? builder.Configuration["Server:Port"] ?? "3000";
     if (int.TryParse(portStr, out var port))
     {
         builder.WebHost.UseUrls($"http://0.0.0.0:{port}");

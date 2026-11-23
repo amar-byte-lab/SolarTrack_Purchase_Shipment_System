@@ -56,10 +56,10 @@ jobs:
       - name: Deploy to MonsterASP via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.MONSTERASP_FTP_SERVER }}
-          username: ${{ secrets.MONSTERASP_FTP_USERNAME }}
+          server: ${{ secrets.MONSTERASP_FTP_SERVER || 'site104851.siteasp.net' }}
+          username: ${{ secrets.MONSTERASP_FTP_USERNAME || 'site104851' }}
           password: ${{ secrets.MONSTERASP_FTP_PASSWORD }}
           local-dir: ./publish/
-          server-dir: ${{ secrets.MONSTERASP_SERVER_DIR || '/' }}
+          server-dir: ${{ secrets.MONSTERASP_SERVER_DIR || 'wwwroot/' }}
           protocol: ftp
           dangerous-clean-slate: false
