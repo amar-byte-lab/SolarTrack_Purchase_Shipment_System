@@ -481,74 +481,27 @@ export class SummaryTableComponent {
     }
 
     const lines: string[] = [];
-    lines.push('==============================');
-    lines.push('SOLAR WORK & PAYMENT SUMMARY');
-    lines.push(`Generated: ${new Date().toLocaleString('en-IN')}`);
-    lines.push(`Total Customers: ${filteredList.length}`);
-    lines.push('==============================\n');
-
     let serialNo = 1;
 
     groups.forEach(grp => {
-      if (grp.list.length === 0) return;
-      lines.push(`--- ${grp.name.toUpperCase()} (${grp.list.length}) ---`);
-
       grp.list.forEach(item => {
         const r = item.row;
-        const fin = item.fin;
+        const name = r.Name || 'Unnamed';
+        const status = item.stageName;
+        const pending = this.fmtCurr(item.fin.unpaid);
 
-        lines.push(`${serialNo}. ${r.Name || 'Unnamed'}`);
-        if (r.ConsumerNo) lines.push(`   Consumer No: ${r.ConsumerNo}`);
-        if (r.District) lines.push(`   District: ${r.District}`);
-        if (r.MobileNumber) lines.push(`   Mobile: ${r.MobileNumber}`);
-        if (r.BrokerName) lines.push(`   Partner: ${r.BrokerName}`);
-        lines.push(`   Status: ${item.stageName}`);
-
-        if (this.isColumnVisible('customerCost')) lines.push(`   Customer Cost: ${this.fmtCurr(fin.turnover)}`);
-        if (this.isColumnVisible('pendingAmount')) lines.push(`   Pending Amount: ${this.fmtCurr(fin.unpaid)}`);
-        if (this.isColumnVisible('payment')) {
-          lines.push(`   Paid: ${this.fmtCurr(fin.paid)} | Unpaid: ${this.fmtCurr(fin.unpaid)} | Turnover: ${this.fmtCurr(fin.turnover)}`);
-        }
-        if (this.isColumnVisible('material')) lines.push(`   Material Cost: ${this.fmtCurr(fin.material)}`);
-        if (this.isColumnVisible('delivery')) lines.push(`   Delivery Cost: ${this.fmtCurr(fin.delivery)}`);
-        if (this.isColumnVisible('meter')) lines.push(`   NetMeter Cost: ${this.fmtCurr(fin.meter)}`);
-        if (this.isColumnVisible('install')) lines.push(`   Installation Cost: ${this.fmtCurr(fin.install)}`);
-        if (this.isColumnVisible('gst')) lines.push(`   GST: ${this.fmtCurr(fin.gst)}`);
-        if (this.isColumnVisible('others')) lines.push(`   Others: ${this.fmtCurr(fin.others)}`);
-        if (this.isColumnVisible('profit')) lines.push(`   Profit: ${this.fmtCurr(fin.profit)}`);
-        if (this.isColumnVisible('pvmodule')) lines.push(`   PV Module: ${item.pvModuleMake}`);
-        if (this.isColumnVisible('inverter')) lines.push(`   Inverter: ${item.inverterMake}`);
-        if (fin.comment) lines.push(`   Note: ${fin.comment}`);
-
-        lines.push('');
+        lines.push(`${serialNo}. ${name} (${status}: ${pending})`);
         serialNo++;
       });
     });
 
     const tot = this.summaryService.totals();
-    lines.push('==============================');
-    lines.push('SUMMARY TOTALS');
-    lines.push('==============================');
-    lines.push(`Total Customers: ${tot.count}`);
-    if (this.isColumnVisible('customerCost')) lines.push(`Total Customer Cost: ${this.fmtCurr(tot.turnover)}`);
-    if (this.isColumnVisible('pendingAmount')) lines.push(`Total Pending Amount: ${this.fmtCurr(tot.unpaid)}`);
-    if (this.isColumnVisible('payment')) {
-      lines.push(`Paid: ${this.fmtCurr(tot.paid)}`);
-      lines.push(`Unpaid: ${this.fmtCurr(tot.unpaid)}`);
-      lines.push(`Turnover: ${this.fmtCurr(tot.turnover)}`);
-    }
-    if (this.isColumnVisible('material')) lines.push(`Total Material Cost: ${this.fmtCurr(tot.material)}`);
-    if (this.isColumnVisible('delivery')) lines.push(`Total Delivery Cost: ${this.fmtCurr(tot.delivery)}`);
-    if (this.isColumnVisible('meter')) lines.push(`Total NetMeter Cost: ${this.fmtCurr(tot.meter)}`);
-    if (this.isColumnVisible('install')) lines.push(`Total Installation Cost: ${this.fmtCurr(tot.install)}`);
-    if (this.isColumnVisible('gst')) lines.push(`Total GST: ${this.fmtCurr(tot.gst)}`);
-    if (this.isColumnVisible('others')) lines.push(`Total Others: ${this.fmtCurr(tot.others)}`);
-    if (this.isColumnVisible('profit')) lines.push(`Total Profit: ${this.fmtCurr(tot.profit)}`);
-    lines.push('==============================');
+    lines.push('');
+    lines.push(`Total Unpaid: ${this.fmtCurr(tot.unpaid)}`);
 
     const textToCopy = lines.join('\n');
     navigator.clipboard.writeText(textToCopy).then(() => {
-      this.toastService.show('Summary copied to clipboard (readable WhatsApp/Notepad format)!', 'success');
+      this.toastService.show('Customer summary copied to clipboard!', 'success');
     }).catch(() => {
       const ta = document.createElement('textarea');
       ta.value = textToCopy;
@@ -556,7 +509,7 @@ export class SummaryTableComponent {
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      this.toastService.show('Summary copied to clipboard!', 'success');
+      this.toastService.show('Customer summary copied to clipboard!', 'success');
     });
   }
 
