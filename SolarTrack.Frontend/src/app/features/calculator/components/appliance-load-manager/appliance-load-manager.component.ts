@@ -50,7 +50,39 @@ export class ApplianceLoadManagerComponent {
   });
 
   readonly backupAppliances = computed(() => {
-    return this.calc.appliances().filter(a => a.checked && Number(a.defaultQty) > 0 && a.isBackup !== false);
+    return this.calc.appliances().filter(a => {
+      if (a.isBackup === false) return false;
+      const bQty = a.backupQty !== undefined ? Number(a.backupQty) : Number(a.defaultQty || a.qty || 0);
+      return a.checked && bQty > 0;
+    });
+  });
+
+  readonly localBackupLoadW = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.isBackup !== false) {
+        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || 0);
+        if (bQty > 0) {
+          total += (Number(app.watts) || 0) * bQty;
+        }
+      }
+    }
+    return total;
+  });
+
+  readonly localBackupEnergyWh = computed(() => {
+    let total = 0;
+    const globalHours = this.calc.backupHours();
+    for (const app of this.localAppliances()) {
+      if (app.isBackup !== false) {
+        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || 0);
+        const bHours = app.backupHours !== undefined ? Number(app.backupHours) : globalHours;
+        if (bQty > 0) {
+          total += (Number(app.watts) || 0) * bQty * bHours;
+        }
+      }
+    }
+    return total;
   });
 
   readonly isBackupOnlyBasis = computed(() => {
@@ -242,7 +274,28 @@ export class ApplianceLoadManagerComponent {
   }
 
   closeBackupModal() {
-    this.calc.appliances.set(JSON.parse(JSON.stringify(this.localAppliances())));
+    this.showBackupModal.set(false);
+  }
+
+  applyBackupModal() {
+    const updated = this.localAppliances().map(app => {
+      const a = { ...app };
+      const bQty = a.backupQty !== undefined ? Number(a.backupQty) : (a.isBackup !== false ? Number(a.defaultQty || 0) : 0);
+      if (a.isBackup !== false && bQty > 0) {
+        a.isBackup = true;
+        a.checked = true;
+        if (!a.defaultQty || a.defaultQty < bQty) {
+          a.defaultQty = bQty;
+        }
+        a.backupQty = bQty;
+      } else {
+        a.isBackup = false;
+        a.backupQty = 0;
+      }
+      return a;
+    });
+    this.calc.appliances.set(JSON.parse(JSON.stringify(updated)));
+    this.localAppliances.set(JSON.parse(JSON.stringify(updated)));
     this.showBackupModal.set(false);
   }
 
@@ -438,8 +491,17 @@ export class ApplianceLoadManagerComponent {
   resetBackupDefaults() {
     const current = this.localAppliances();
     current.forEach(app => {
-      app.isBackup = ['led', 'fan', 'tv', 'fridge', 'comp', 'other'].includes(app.id);
-      app.backupQty = app.defaultQty;
+      const isDefaultBackup = ['led', 'fan', 'tv', 'fridge', 'comp', 'other'].includes(app.id);
+      app.isBackup = isDefaultBackup;
+      if (isDefaultBackup) {
+        if (!app.defaultQty || app.defaultQty <= 0) {
+          app.defaultQty = 1;
+        }
+        app.checked = true;
+        app.backupQty = app.defaultQty;
+      } else {
+        app.backupQty = 0;
+      }
       app.backupHours = this.calc.backupHours();
     });
     this.localAppliances.set([...current]);
@@ -466,13 +528,34 @@ export class ApplianceLoadManagerComponent {
   }
 
   toggleBackupAppCheck(app: ApplianceItem) {
-    app.isBackup = app.isBackup === false ? true : false;
+    const nextVal = app.isBackup === false ? true : false;
+    app.isBackup = nextVal;
+    if (nextVal) {
+      if (!app.defaultQty || app.defaultQty <= 0) {
+        app.defaultQty = 1;
+      }
+      if (!app.backupQty || app.backupQty <= 0) {
+        app.backupQty = app.defaultQty;
+      }
+      app.checked = true;
+    } else {
+      app.backupQty = 0;
+    }
     this.localAppliances.update(list => [...list]);
   }
 
   updateBackupQty(app: ApplianceItem, qty: any) {
-    const q = Math.max(0, Math.min(app.defaultQty, Number(qty) || 0));
+    const q = Math.max(0, Number(qty) || 0);
     app.backupQty = q;
+    if (q > 0) {
+      app.isBackup = true;
+      app.checked = true;
+      if (!app.defaultQty || app.defaultQty < q) {
+        app.defaultQty = q;
+      }
+    } else {
+      app.isBackup = false;
+    }
     this.localAppliances.update(list => [...list]);
   }
 

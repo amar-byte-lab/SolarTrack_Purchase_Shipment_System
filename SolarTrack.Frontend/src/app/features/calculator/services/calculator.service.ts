@@ -200,12 +200,12 @@ export class CalculatorService {
       connectedLoadW += totalConnectedAppWatts;
 
       const isBackup = app.isBackup !== undefined ? !!app.isBackup : true;
-      const backupQty = (app.backupQty !== undefined && Number(app.backupQty) > 0)
-        ? Math.min(qty, Number(app.backupQty))
-        : qty;
+      const backupQty = app.backupQty !== undefined
+        ? Math.max(0, Math.min(qty, Number(app.backupQty)))
+        : (isBackup ? qty : 0);
       const totalBackupAppWatts = runningWatts * backupQty;
 
-      if (isBackup) {
+      if (isBackup && backupQty > 0) {
         backupLoadW += totalBackupAppWatts;
       }
 
@@ -215,7 +215,7 @@ export class CalculatorService {
 
       const appBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : backupHours) || 4);
       const appBackupWh = totalBackupAppWatts * appBackupHours;
-      if (isBackup) {
+      if (isBackup && backupQty > 0) {
         backupApplianceDailyWh += appBackupWh;
       }
       estimatedDailyKwh += appDailyWh / 1000;

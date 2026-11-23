@@ -845,20 +845,17 @@ export class SizingPdfExportService {
     doc.setLineWidth(0.35);
     doc.roundedRect(marginX, footY, contentWidth, footH, 1.5, 1.5, 'FD');
 
-    // Left Column: Quality & Compliance Notes (Width: 130mm, strictly bounded)
+    // Left Column: Odia Summary for Non-Technical Customers (Width: 130mm, strictly bounded)
     const footNotesWidth = 130;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.2);
-    doc.setTextColor(3, 105, 161);
-    doc.text('Quality Assurance & Standards Compliance:', marginX + 3.5, footY + 5.2);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.4);
-    doc.setTextColor(71, 85, 105);
-    doc.text('- Tier-1 Mono PERC Half-Cut Modules with 25-Year Warranty (MNRE & ALMM Approved).', marginX + 3.5, footY + 9.8);
-    doc.text('- Grid-tie & net-metering compliant with state DISCOM & CEA regulations.', marginX + 3.5, footY + 14.0);
-    doc.text('- Engineered specifically based on actual appliance operating hours & daily demand.', marginX + 3.5, footY + 18.2);
-    doc.text(`- For technical assistance & installation, contact: ${companyPhone} | ${companyEmail}`, marginX + 3.5, footY + 22.4);
+    this.renderOdiaSummary(
+      doc,
+      marginX + 0.5,
+      footY + 0.5,
+      footNotesWidth,
+      footH - 1,
+      result,
+      companyPhone
+    );
 
     // Vertical Divider Line between Left Notes and Right Signature Box
     const footDividerX = marginX + footNotesWidth + 2;
@@ -944,5 +941,112 @@ export class SizingPdfExportService {
     doc.setLineWidth(0.3);
     doc.line(x + 0.4, y + 0.5, x + (w / 2), y + (h * 0.58));
     doc.line(x + w - 0.4, y + 0.5, x + (w / 2), y + (h * 0.58));
+  }
+
+  /**
+   * Renders the customer-friendly Odia summary onto an HTML5 canvas and adds it to the PDF.
+   * Dynamically adapts to systemType:
+   * 1. Solar Panel & Roof Area
+   * 2. Daily Electricity Requirement / Generation
+   * 3. Inverter Type & Rating
+   * 4. Battery Option (Only summary)
+   */
+  private renderOdiaSummary(
+    doc: jsPDF,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    result: FullSizingResult,
+    companyPhone: string
+  ): void {
+    try {
+      const canvas = document.createElement('canvas');
+      const scale = 8;
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const sysTypeKey = this.calc.systemType();
+      const solar = result.solar;
+      const solarKwp = solar ? `${solar.actualArrayKwp}` : '0';
+      const roofArea = solar ? `${solar.roofAreaSqFt}` : '0';
+      const dailyGen = solar ? `${solar.estDailyGenKwh}` : '0';
+      const dailyDemandKwh = (result.dailyDemandKwh || (result.totalApplianceDailyWh ? Math.round((result.totalApplianceDailyWh / 1000) * 100) / 100 : 0)).toFixed(2);
+      const backupEnergyKwh = (result.backupEnergyWh ? (result.backupEnergyWh / 1000).toFixed(2) : '0.00');
+
+      const inv = result.inverter;
+      const invKva = inv ? `${inv.kVA}` : '1.0';
+      const invKw = inv ? `${inv.kW}` : '1.0';
+
+      let headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ:';
+      let p1 = ''; // Panel & Roof Area
+      let p2 = ''; // Daily electricity requirement
+      let p3 = ''; // Inverter type & rating
+      let p4 = ''; // Battery option (summary only)
+
+      if (sysTypeKey === 'on-grid') {
+        headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (On-Grid Solar):';
+        p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
+        p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ଚାହିଦା ~${dailyDemandKwh} kWh ତୁଳନାରେ ପ୍ରତିଦିନ ~${dailyGen} ୟୁନିଟ୍ ସୋଲାର ବିଜୁଳି ତିଆରି ହେବ।`;
+        p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ଅନ୍-ଗ୍ରୀଡ୍ GTI (Grid-Tied) ଇନଭର୍ଟର ଆବଶ୍ୟକ।`;
+        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ଅନ୍-ଗ୍ରୀଡ୍ ସିଷ୍ଟମ୍ ରେ ବ୍ୟାଟେରୀ ଆବଶ୍ୟକ ନାହିଁ (ନେଟ୍-ମିଟରିଂ ଦ୍ୱାରା ସିଧାସଳଖ ଗ୍ରୀଡ୍ ସଞ୍ଚୟ)।`;
+      } else if (sysTypeKey === 'hybrid') {
+        headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Hybrid Solar):';
+        p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
+        p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ଚାହିଦା ~${dailyDemandKwh} kWh ପାଇଁ ପ୍ରତିଦିନ ~${dailyGen} ୟୁନିଟ୍ ସୋଲାର ବିଜୁଳି ଉତ୍ପାଦିତ ହେବ।`;
+        p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ହାଇବ୍ରିଡ୍ ବାଇ-ଡାଇରେକ୍ସନାଲ୍ ଇନଭର୍ଟର (Hybrid Inverter) ଆବଶ୍ୟକ।`;
+        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ଲିଥିୟମ୍ (LiFePO4), ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ କିମ୍ବା ଫ୍ଲାଟ୍ ପ୍ଲେଟ୍ ରୁ ଯେକୌଣସି ବ୍ୟାକଅପ୍ ବ୍ୟାଙ୍କ ଚୟନ କରିପାରିବେ।`;
+      } else if (sysTypeKey === 'off-grid') {
+        headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Off-Grid Solar):';
+        p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
+        p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ~${dailyDemandKwh} kWh ଘରୋଇ ଲୋଡ୍ ଓ ବ୍ୟାଟେରୀ ଚାର୍ଜିଂ ସମ୍ପୂର୍ଣ୍ଣ ସୋଲାର୍ ଦ୍ୱାରା ପରିଚାଳିତ ହେବ।`;
+        p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ସୋଲାର ପିସିୟୁ ଇନଭର୍ଟର (Solar PCU Inverter) ଆବଶ୍ୟକ।`;
+        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ୨୪ ଘଣ୍ଟିଆ ସ୍ୱାଧୀନ ବିଜୁଳି ପାଇଁ ଲିଥିୟମ୍ (LiFePO4) ବା ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବାଧ୍ୟତାମୂଳକ।`;
+      } else {
+        // without-solar
+        headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Home UPS Inverter):';
+        p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ସୋଲାର ପ୍ୟାନେଲ କିମ୍ବା ଛାତ ଜାଗା ଆବଶ୍ୟକ ନାହିଁ (ଘରୋଇ ବିଦ୍ୟୁତ ଗ୍ରୀଡ୍ ରୁ ଚାର୍ଜିଂ ହେବ)।`;
+        p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଜରୁରୀ ବିଦ୍ୟୁତ କଟିବା ସମୟରେ ବ୍ୟାକଅପ୍ ପାଇଁ ଦୈନିକ ~${backupEnergyKwh} kWh ବିଦ୍ୟୁତ ସଞ୍ଚୟ ଆବଶ୍ୟକ।`;
+        p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ହୋମ୍ ୟୁପିଏସ୍ / ପ୍ୟୋର୍ ସାଇନ୍ ୱେଭ୍ ଇନଭର୍ଟର ଆବଶ୍ୟକ।`;
+        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ନିରବଚ୍ଛିନ୍ନ ବ୍ୟାକଅପ୍ ପାଇଁ ଲିଥିୟମ୍ (LiFePO4) କିମ୍ବା ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ ବ୍ୟାଟେରୀ ବ୍ୟବସ୍ଥା।`;
+      }
+
+      // Header Title (Odia)
+      ctx.font = 'bold 22px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
+      ctx.fillStyle = '#0369a1';
+      ctx.textBaseline = 'top';
+      ctx.fillText(headerTitle, 10, 16);
+
+      // Bullet points (4 requested points)
+      ctx.font = '500 16px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
+      ctx.fillStyle = '#334155';
+
+      ctx.fillText(p1, 10, 56);
+      ctx.fillText(p2, 10, 96);
+      ctx.fillText(p3, 10, 136);
+
+      ctx.fillStyle = '#0f766e';
+      ctx.fillText(p4, 10, 176);
+
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', x, y, w, h);
+    } catch {
+      // Fallback in case of canvas issues
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.2);
+      doc.setTextColor(3, 105, 161);
+      doc.text('Key System Requirements & Summary:', x + 3, y + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.4);
+      doc.setTextColor(71, 85, 105);
+      doc.text('- Solar PV array & shadow-free roof area calculated for daily generation.', x + 3, y + 10);
+      doc.text('- Daily electricity requirement and consumption covered reliably.', x + 3, y + 14.5);
+      doc.text('- Inverter rating and topology selected for continuous load duty.', x + 3, y + 19);
+      doc.text('- Battery storage technology option provided based on backup autonomy.', x + 3, y + 23.5);
+    }
   }
 }

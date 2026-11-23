@@ -532,9 +532,9 @@
           <!-- Stats Row -->
           <div class="d-flex align-items-center justify-content-end mb-2 px-1">
             <div class="d-flex align-items-center gap-2 fs-8">
-              <span class="text-secondary">Load: <strong class="text-dark">{{ calc.result().backupLoadW }} W</strong></span>
+              <span class="text-secondary">Load: <strong class="text-dark">{{ localBackupLoadW() }} W</strong></span>
               <span class="text-muted">•</span>
-              <span class="text-secondary">Energy: <strong class="text-success">{{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh</strong></span>
+              <span class="text-secondary">Energy: <strong class="text-success">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
             </div>
           </div>
 
@@ -551,8 +551,7 @@
                 <tr>
                   <th style="width: 60px;" class="text-center p-1">🔋 Backup</th>
                   <th class="p-1 text-start">Appliance</th>
-                  <th style="width: 65px;" class="text-center p-1">Total Qty</th>
-                  <th style="width: 75px;" class="text-center p-1">Backup Qty</th>
+                  <th style="width: 80px;" class="text-center p-1">Backup Qty</th>
                   <th style="width: 75px;" class="text-center p-1">Unit Watt</th>
                   <th style="width: 75px;" class="text-center p-1">Backup Hr</th>
                   <th style="width: 85px;" class="text-end p-1 pe-2">Energy</th>
@@ -572,17 +571,14 @@
                       <span class="me-1">{{ app.icon || '⚡' }}</span>
                       <span class="fw-semibold fs-8 text-dark">{{ app.name }}</span>
                     </td>
-                    <td class="text-center p-1 fw-bold fs-8 text-secondary">
-                      {{ app.defaultQty }}
-                    </td>
                     <td class="text-center p-1">
                       <input 
                         type="number" 
                         min="0" 
-                        [max]="app.defaultQty" 
+                        max="99" 
                         class="form-control form-control-sm p-1 fs-8 text-center fw-bold text-success" 
                         style="height: 28px; width: 60px; margin: 0 auto;"
-                        [ngModel]="app.backupQty !== undefined ? app.backupQty : app.defaultQty"
+                        [ngModel]="app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)"
                         (ngModelChange)="updateBackupQty(app, $event)">
                     </td>
                     <td class="text-center p-1 fs-8 text-secondary">
@@ -600,7 +596,7 @@
                         (ngModelChange)="updateAppBackupHours(app, $event)">
                     </td>
                     <td class="text-end p-1 pe-2 fw-semibold fs-8 text-success">
-                      {{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : app.defaultQty) }} Wh
+                      {{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) }} Wh
                     </td>
                   </tr>
                 }
@@ -611,13 +607,13 @@
         </div>
         <div class="modal-footer bg-light d-flex justify-content-between align-items-center flex-nowrap py-2.5 px-3">
           <div class="fs-8 text-secondary text-nowrap">
-            Backup Load: <strong class="text-success fw-bold">{{ calc.result().backupLoadW }} W</strong> • Required Energy: <strong class="text-dark fw-bold">{{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh</strong>
+            Backup Load: <strong class="text-success fw-bold">{{ localBackupLoadW() }} W</strong> • Required Energy: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong>
           </div>
           <div class="modal-footer-action-group d-flex gap-2">
             <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-1.5 fs-8 text-nowrap" (click)="resetBackupDefaults()">
               ↺ Reset
             </button>
-            <button type="button" class="btn btn-sm btn-success fw-bold px-3.5 py-1.5 fs-8 text-nowrap" (click)="closeBackupModal()">
+            <button type="button" class="btn btn-sm btn-success fw-bold px-3.5 py-1.5 fs-8 text-nowrap" (click)="applyBackupModal()">
               Apply Backup
             </button>
           </div>
