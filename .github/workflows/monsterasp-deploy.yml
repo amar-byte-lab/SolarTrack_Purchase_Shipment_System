@@ -11,11 +11,16 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      FTP_SERVER: site104851.siteasp.net
+      FTP_USERNAME: site104851
+      FTP_SERVER_DIR: wwwroot/
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,35 +36,51 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
 
       - name: Publish .NET Backend & Bundle Frontend
         run: |
           dotnet publish SolarTrack.Backend/SolarTrack.Backend.csproj -c Release -o ./publish
 
-      - name: Inject MonsterASP Database Connection String
-        if: ${{ secrets.MONSTERASP_DB_CONNECTION != '' }}
+      - name: Inject Production Database Connection String
         run: |
           node -e "
             const fs = require('fs');
-            const file = './publish/appsettings.json';
+            const file = './publish/appsettings.Production.json';
+            const defaultConn = 'Server=db82007.public.databaseasp.net; Database=db82007; User Id=db82007; Password=g_6K=Bm7W9@z; Encrypt=True; TrustServerCertificate=True; MultipleActiveResultSets=True;';
+            const conn = process.env.DB_CONNECTION && process.env.DB_CONNECTION.trim() ? process.env.DB_CONNECTION : defaultConn;
+            let cfg = {};
             if (fs.existsSync(file)) {
-              const cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
-              cfg.ConnectionStrings = cfg.ConnectionStrings || {};
-              cfg.ConnectionStrings.DefaultConnection = process.env.DB_CONNECTION;
-              fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
-              console.log('Successfully injected MonsterASP MS SQL Connection String into appsettings.json');
+              try { cfg = JSON.parse(fs.readFileSync(file, 'utf8')); } catch(e) {}
             }
+            cfg.ConnectionStrings = cfg.ConnectionStrings || {};
+            cfg.ConnectionStrings.DefaultConnection = conn;
+            fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
+            console.log('Production connection string successfully configured in appsettings.Production.json');
           "
         env:
           DB_CONNECTION: ${{ secrets.MONSTERASP_DB_CONNECTION }}
 
+      - name: Resolve FTP Password
+        id: ftp_creds
+        run: |
+          PASS="${{ secrets.MONSTERASP_FTP_PASSWORD }}"
+          if [ -z "$PASS" ]; then
+            echo "Using default MonsterASP deployment credentials"
+            PASS="E@h4iQ8-G+m6"
+          else
+            echo "Using repository secret MONSTERASP_FTP_PASSWORD"
+          fi
+          echo "::add-mask::$PASS"
+          echo "password=$PASS" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to MonsterASP via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.MONSTERASP_FTP_SERVER || 'site104851.siteasp.net' }}
-          username: ${{ secrets.MONSTERASP_FTP_USERNAME || 'site104851' }}
-          password: ${{ secrets.MONSTERASP_FTP_PASSWORD }}
+          server: ${{ env.FTP_SERVER }}
+          username: ${{ env.FTP_USERNAME }}
+          password: ${{ steps.ftp_creds.outputs.password }}
           local-dir: ./publish/
-          server-dir: ${{ secrets.MONSTERASP_SERVER_DIR || 'wwwroot/' }}
+          server-dir: ${{ env.FTP_SERVER_DIR }}
           protocol: ftp
           dangerous-clean-slate: false
