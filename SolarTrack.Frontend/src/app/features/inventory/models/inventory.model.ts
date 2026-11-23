@@ -87,6 +87,7 @@ export interface CustomerAllocationEntry {
   deliveryCost: number;
   otherCost: number;
   remark: string;
+  description?: string;
   total: number;
 }
 

@@ -1,41 +1,79 @@
 <div class="customer-select-container position-relative" [class.is-open]="isOpen()">
 
-  <!-- Trigger Button -->
-  <button 
-    type="button" 
-    class="customer-select-trigger form-control form-control-sm text-start d-flex align-items-center justify-content-between p-1.5"
-    [class.active]="isOpen()"
-    [class.disabled]="disabled"
-    [disabled]="disabled"
-    (click)="toggleDropdown($event)">
-
-    <!-- Selected Customer Preview -->
-    <div class="trigger-content text-truncate d-flex align-items-center gap-1.5 flex-grow-1 min-w-0">
-      @if (selectedCustomer(); as cust) {
-        <span class="fw-semibold text-dark text-truncate fs-8" [title]="cust.Name">
-          {{ cust.Name }}
-        </span>
-        <span class="text-secondary fs-8 flex-shrink-0">
-          ({{ cust.District || 'No District' }})
-        </span>
-      } @else {
-        <span class="text-muted fs-8 d-inline-flex align-items-center gap-1">
-          <app-icon name="customer" [size]="13" class="text-secondary opacity-75"></app-icon>
-          <span>{{ placeholder }}</span>
-        </span>
-      }
+  @if (isManualMode()) {
+    <!-- Manual Text Input Mode -->
+    <div class="input-group input-group-sm">
+      <input 
+        type="text" 
+        class="form-control form-control-sm fs-8 py-1 shadow-none"
+        [placeholder]="placeholder"
+        [ngModel]="selectedName"
+        (ngModelChange)="onManualNameChange($event)"
+        autofocus>
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary py-0 px-2"
+        (click)="toggleManualMode($event)"
+        title="Switch to customer dropdown list">
+        <app-icon name="chevron-down" [size]="13"></app-icon>
+      </button>
     </div>
+  } @else {
+    <!-- Trigger Button -->
+    <div class="d-flex align-items-center gap-1">
+      <button 
+        type="button" 
+        class="customer-select-trigger form-control form-control-sm text-start d-flex align-items-center justify-content-between p-1.5 flex-grow-1 min-w-0"
+        [class.active]="isOpen()"
+        [class.disabled]="disabled"
+        [disabled]="disabled"
+        (click)="toggleDropdown($event)">
 
-    <!-- Dropdown Chevron -->
-    <app-icon 
-      [name]="isOpen() ? 'chevron-up' : 'chevron-down'" 
-      [size]="13" 
-      class="text-secondary flex-shrink-0 ms-1">
-    </app-icon>
-  </button>
+        <!-- Selected Customer Preview -->
+        <div class="trigger-content text-truncate d-flex align-items-center gap-1.5 flex-grow-1 min-w-0">
+          @if (selectedCustomer(); as cust) {
+            <span class="fw-semibold text-dark text-truncate fs-8" [title]="cust.Name">
+              {{ cust.Name }}
+            </span>
+            @if (cust.District) {
+              <span class="text-secondary fs-8 flex-shrink-0">
+                ({{ cust.District }})
+              </span>
+            }
+          } @else if (selectedNameSignal().trim()) {
+            <span class="fw-semibold text-dark text-truncate fs-8" [title]="selectedNameSignal()">
+              {{ selectedNameSignal() }}
+            </span>
+            <span class="badge bg-secondary-subtle text-secondary border fs-9 flex-shrink-0 py-0 px-1">Manual</span>
+          } @else {
+            <span class="text-muted fs-8 d-inline-flex align-items-center gap-1">
+              <app-icon name="user" [size]="13" class="text-secondary opacity-75"></app-icon>
+              <span>{{ placeholder }}</span>
+            </span>
+          }
+        </div>
+
+        <!-- Dropdown Chevron -->
+        <app-icon 
+          [name]="isOpen() ? 'chevron-up' : 'chevron-down'" 
+          [size]="13" 
+          class="text-secondary flex-shrink-0 ms-1">
+        </app-icon>
+      </button>
+
+      <!-- Quick Switch to Type Mode Button -->
+      <button 
+        type="button" 
+        class="btn btn-xs btn-outline-secondary py-1 px-1.5 flex-shrink-0"
+        (click)="toggleManualMode($event)"
+        title="Type customer name manually">
+        <app-icon name="edit" [size]="12"></app-icon>
+      </button>
+    </div>
+  }
 
   <!-- Dropdown Popover Menu -->
-  @if (isOpen()) {
+  @if (isOpen() && !isManualMode()) {
     <div class="customer-dropdown-menu shadow border rounded bg-white" (click)="$event.stopPropagation()">
       
       <!-- Search Bar -->
@@ -49,7 +87,8 @@
             class="form-control form-control-sm border-start-0 ps-0 fs-8 shadow-none" 
             [ngModel]="searchQuery()" 
             (ngModelChange)="searchQuery.set($event)"
-            placeholder="Search customer..." 
+            (keydown.enter)="onSearchEnter($event)"
+            placeholder="Search or type customer name..." 
             autofocus>
           @if (searchQuery()) {
             <button 
@@ -62,6 +101,22 @@
         </div>
       </div>
 
+      <!-- Quick "Use Custom Name" Action when typed query doesn't match -->
+      @if (searchQuery().trim() && !hasExactMatch()) {
+        <div class="p-1 border-bottom bg-primary-subtle bg-opacity-25">
+          <button 
+            type="button" 
+            class="btn btn-xs btn-primary w-100 py-1 px-2 fs-8 text-start d-flex align-items-center justify-content-between"
+            (click)="selectCustomName(searchQuery(), $event)">
+            <span class="text-truncate">
+              <app-icon name="plus" [size]="12" class="me-1"></app-icon>
+              Use "<strong>{{ searchQuery().trim() }}</strong>"
+            </span>
+            <span class="badge bg-white text-primary border fs-9">Custom</span>
+          </button>
+        </div>
+      }
+
       <!-- Customers List (Scrollable) -->
       <div class="customer-list-scroll p-1">
         @for (cust of filteredCustomers(); track cust.SlNo || cust.Name) {
@@ -72,7 +127,9 @@
             
             <div class="d-flex align-items-center gap-1.5 text-truncate min-w-0">
               <span class="fw-medium text-dark fs-8 text-truncate">{{ cust.Name }}</span>
-              <span class="text-secondary fs-8">({{ cust.District || 'No District' }})</span>
+              @if (cust.District) {
+                <span class="text-secondary fs-8">({{ cust.District }})</span>
+              }
             </div>
 
             @if (cust.Name === selectedName) {
@@ -83,9 +140,29 @@
           </div>
         } @empty {
           <div class="text-center py-3 text-muted fs-8">
-            No customers found matching "{{ searchQuery() }}"
+            <div class="mb-1.5">No customer found matching "{{ searchQuery() }}"</div>
+            @if (searchQuery().trim()) {
+              <button 
+                type="button" 
+                class="btn btn-xs btn-outline-primary py-1 px-2.5 fs-8"
+                (click)="selectCustomName(searchQuery(), $event)">
+                <app-icon name="plus" [size]="12" class="me-1"></app-icon>
+                <span>Use "{{ searchQuery().trim() }}"</span>
+              </button>
+            }
           </div>
         }
+      </div>
+
+      <!-- Footer action to switch to manual typing -->
+      <div class="p-1.5 border-top bg-light text-center">
+        <button 
+          type="button" 
+          class="btn btn-link btn-xs text-decoration-none text-secondary fs-9 p-0"
+          (click)="toggleManualMode($event)">
+          <app-icon name="edit" [size]="11" class="me-1"></app-icon>
+          <span>Type custom customer name manually</span>
+        </button>
       </div>
 
     </div>

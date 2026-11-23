@@ -131,7 +131,10 @@ export class SiteDispatchModalComponent implements OnChanges {
     }
 
     if (c.customerAllocations && c.customerAllocations.length > 0) {
-      this.customerAllocations = c.customerAllocations.map(ca => ({ ...ca }));
+      this.customerAllocations = c.customerAllocations.map(ca => ({
+        ...ca,
+        description: ca.description || ca.remark || ''
+      }));
     } else {
       this.customerAllocations = [];
     }
@@ -262,15 +265,15 @@ export class SiteDispatchModalComponent implements OnChanges {
   }
 
   addCustomerAllocation(): void {
-    const defaultCust = this.customersList.length > 0 ? this.customersList[0] : null;
     this.customerAllocations.push({
-      slNo: defaultCust?.SlNo,
-      customerName: defaultCust?.Name || '',
+      slNo: undefined,
+      customerName: '',
       setCost: 0,
       installCost: 0,
       deliveryCost: 0,
       otherCost: 0,
       remark: '',
+      description: '',
       total: 0
     });
     this.distributeDeliveryChargeToCustomers();
@@ -455,6 +458,12 @@ export class SiteDispatchModalComponent implements OnChanges {
       data: d.data
     }));
 
+    const customerAllocationsPayload = this.customerAllocations.map(ca => ({
+      ...ca,
+      description: (ca.description || '').trim(),
+      remark: (ca.description || ca.remark || '').trim()
+    }));
+
     const header = {
       siteName: this.siteName.trim(),
       date: this.date || new Date().toISOString().slice(0, 10),
@@ -467,7 +476,7 @@ export class SiteDispatchModalComponent implements OnChanges {
       extraDeliveryComment: '',
       remarks: this.remarks ? this.remarks.trim() : '',
       isOurProject: true,
-      customerAllocations: this.customerAllocations,
+      customerAllocations: customerAllocationsPayload,
       docName: docsPayload[0]?.name || undefined,
       docData: docsPayload[0]?.data || undefined,
       documents: docsPayload,

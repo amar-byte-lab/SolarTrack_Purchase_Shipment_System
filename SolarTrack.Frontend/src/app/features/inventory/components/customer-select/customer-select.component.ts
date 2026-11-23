@@ -40,7 +40,7 @@ export class CustomerSelectComponent {
     return this.selectedNameSignal();
   }
 
-  @Input() placeholder: string = '-- Select Customer --';
+  @Input() placeholder: string = 'Select Customer Name';
   @Input() disabled: boolean = false;
 
   @Output() selectedNameChange = new EventEmitter<string>();
@@ -49,12 +49,19 @@ export class CustomerSelectComponent {
   readonly customersSignal = signal<InstallmentRow[]>([]);
   readonly selectedNameSignal = signal<string>('');
   readonly isOpen = signal<boolean>(false);
+  readonly isManualMode = signal<boolean>(false);
   readonly searchQuery = signal<string>('');
 
   readonly selectedCustomer = computed(() => {
-    const name = this.selectedNameSignal();
+    const name = this.selectedNameSignal().trim().toLowerCase();
     if (!name) return null;
-    return this.customersSignal().find(c => c.Name === name) || null;
+    return this.customersSignal().find(c => (c.Name || '').trim().toLowerCase() === name) || null;
+  });
+
+  readonly hasExactMatch = computed(() => {
+    const q = this.searchQuery().trim().toLowerCase();
+    if (!q) return false;
+    return this.customersSignal().some(c => (c.Name || '').trim().toLowerCase() === q);
   });
 
   readonly filteredCustomers = computed(() => {
@@ -99,6 +106,45 @@ export class CustomerSelectComponent {
     this.selectedNameChange.emit(cName);
     this.customerSelected.emit(c);
     this.closeDropdown();
+  }
+
+  selectCustomName(name: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    const trimmed = (name || '').trim();
+    if (!trimmed) return;
+    this.selectedNameSignal.set(trimmed);
+    this.selectedNameChange.emit(trimmed);
+    this.closeDropdown();
+  }
+
+  onSearchEnter(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const q = this.searchQuery().trim();
+    if (!q) return;
+
+    const filtered = this.filteredCustomers();
+    if (filtered.length === 1) {
+      this.selectCustomer(filtered[0]);
+    } else {
+      this.selectCustomName(q);
+    }
+  }
+
+  toggleManualMode(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.isManualMode.update(v => !v);
+    this.closeDropdown();
+  }
+
+  onManualNameChange(val: string): void {
+    const trimmed = val || '';
+    this.selectedNameSignal.set(trimmed);
+    this.selectedNameChange.emit(trimmed);
+    const found = this.customersSignal().find(c => (c.Name || '').trim().toLowerCase() === trimmed.trim().toLowerCase());
+    if (found) {
+      this.customerSelected.emit(found);
+    }
   }
 
   clearSearch(event: Event): void {
