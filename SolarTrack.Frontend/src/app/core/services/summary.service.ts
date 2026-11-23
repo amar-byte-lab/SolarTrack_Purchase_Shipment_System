@@ -36,7 +36,8 @@ export const DEFAULT_SUMMARY_COLUMNS: SummaryColumn[] = [
   { key: 'others', label: 'Others', visible: false },
   { key: 'profit', label: 'Profit', visible: false },
   { key: 'pvmodule', label: 'PVModule Make', visible: false },
-  { key: 'inverter', label: 'Inverterr Make', visible: false }
+  { key: 'inverter', label: 'Inverterr Make', visible: false },
+  { key: 'statusEdit', label: 'StatusEdit', visible: false }
 ];
 
 @Injectable({
@@ -983,33 +984,31 @@ export class SummaryService {
     if (!existing) return of(null);
 
     let brokerNumber = existing.BrokerNumber || '';
-    if (brokerNumber) {
-      if (patch.NetMeterPayment !== undefined || patch.NetMeterPaid !== undefined) {
-        const expIdx = brokerNumber.indexOf('|expenses:');
-        if (expIdx !== -1) {
-          try {
-            const expEnd = brokerNumber.indexOf('|', expIdx + 1);
-            const expJson = expEnd !== -1 ? brokerNumber.slice(expIdx + 10, expEnd) : brokerNumber.slice(expIdx + 10);
-            const expObj = JSON.parse(expJson) || {};
-            if (patch.NetMeterPayment !== undefined) expObj.net_meter_payment = Number(patch.NetMeterPayment) || 0;
-            if (patch.NetMeterPaid !== undefined) expObj.net_meter_paid = Boolean(patch.NetMeterPaid);
-            const expNew = `|expenses:${JSON.stringify(expObj)}`;
-            brokerNumber = brokerNumber.slice(0, expIdx) + expNew + (expEnd !== -1 ? brokerNumber.slice(expEnd) : '');
-          } catch {}
-        }
-      }
-
-      let workObj: any = {};
-      const workIdx = brokerNumber.indexOf('|work:');
-      if (workIdx !== -1) {
+    if (patch.NetMeterPayment !== undefined || patch.NetMeterPaid !== undefined) {
+      const expIdx = brokerNumber.indexOf('|expenses:');
+      if (expIdx !== -1) {
         try {
-          workObj = JSON.parse(brokerNumber.slice(workIdx + 6)) || {};
+          const expEnd = brokerNumber.indexOf('|', expIdx + 1);
+          const expJson = expEnd !== -1 ? brokerNumber.slice(expIdx + 10, expEnd) : brokerNumber.slice(expIdx + 10);
+          const expObj = JSON.parse(expJson) || {};
+          if (patch.NetMeterPayment !== undefined) expObj.net_meter_payment = Number(patch.NetMeterPayment) || 0;
+          if (patch.NetMeterPaid !== undefined) expObj.net_meter_paid = Boolean(patch.NetMeterPaid);
+          const expNew = `|expenses:${JSON.stringify(expObj)}`;
+          brokerNumber = brokerNumber.slice(0, expIdx) + expNew + (expEnd !== -1 ? brokerNumber.slice(expEnd) : '');
         } catch {}
       }
-      Object.assign(workObj, patch);
-      const rest = workIdx !== -1 ? brokerNumber.slice(0, workIdx) : brokerNumber;
-      brokerNumber = `${rest}|work:${JSON.stringify(workObj)}`;
     }
+
+    let workObj: any = {};
+    const workIdx = brokerNumber.indexOf('|work:');
+    if (workIdx !== -1) {
+      try {
+        workObj = JSON.parse(brokerNumber.slice(workIdx + 6)) || {};
+      } catch {}
+    }
+    Object.assign(workObj, patch);
+    const rest = workIdx !== -1 ? brokerNumber.slice(0, workIdx) : brokerNumber;
+    brokerNumber = `${rest}|work:${JSON.stringify(workObj)}`;
 
     const payload: Partial<InstallmentRow> = {
       ...patch,
@@ -1026,6 +1025,75 @@ export class SummaryService {
       NetMeterPaid: isPaid,
       NetMeterDate: date
     });
+  }
+
+  // Update Workflow Status directly from StatusEdit column with current date
+  updateWorkflowStatus(slNo: number, newStatus: string, netMeterInput?: string | number): Observable<any> {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    const isNm = newStatus === 'Net Meter' || newStatus === 'NetMeter';
+
+    const stageKeys: (keyof InstallmentRow)[] = [
+      'LoginDate',
+      'AgreementDate',
+      'MaterialDispatchedDate',
+      'InstallationDate',
+      'NetMeterDate',
+      'InspectionDate',
+      'MeterConnectedDate',
+      'CommissioningDate'
+    ];
+
+    const stageNames = [
+      'Login',
+      'Agreement',
+      'Dispatched',
+      'Installation',
+      'NetMeter',
+      'Inspection',
+      'Connection',
+      'Subsidy'
+    ];
+
+    const normStatus = isNm ? 'NetMeter' : newStatus;
+    const targetIdx = stageNames.findIndex(s => s.toLowerCase() === normStatus.toLowerCase());
+
+    const patch: any = {
+      Status: newStatus
+    };
+
+    if (isNm) {
+      patch.NetMeterPaid = true;
+      patch.NetMeterDate = today;
+      if (netMeterInput !== undefined && netMeterInput !== null && String(netMeterInput).trim() !== '') {
+        const parsed = Number(netMeterInput);
+        if (!isNaN(parsed)) {
+          patch.NetMeterPayment = parsed;
+        }
+      }
+      // Clear stages after NetMeter
+      patch.InspectionDate = null;
+      patch.MeterConnectedDate = null;
+      patch.CommissioningDate = null;
+    } else if (targetIdx !== -1) {
+      const targetKey = stageKeys[targetIdx];
+      // Save current date on selected milestone stage
+      patch[targetKey] = today;
+
+      // Clear all stages after targetIdx
+      for (let i = targetIdx + 1; i < stageKeys.length; i++) {
+        const k = stageKeys[i];
+        patch[k] = null;
+        if (k === 'NetMeterDate') {
+          patch.NetMeterPaid = false;
+        }
+      }
+    }
+
+    return this.saveStageProgress(slNo, patch);
   }
 
   // Customer Cost update

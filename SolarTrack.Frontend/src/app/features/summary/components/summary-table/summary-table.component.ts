@@ -38,6 +38,22 @@ export class SummaryTableComponent {
   isExcludedMenuOpen = false;
   isColumnsMenuOpen = false;
 
+  // Status Edit column state
+  editingStatusSlNo = signal<number | null>(null);
+  statusEditDrafts: { [slNo: number]: { status: string; netMeterInput: string } } = {};
+  savingStatusSlNos = signal<Set<number>>(new Set());
+
+  readonly statusOptions: string[] = [
+    'Login',
+    'Agreement',
+    'Dispatched',
+    'Installation',
+    'Net Meter',
+    'Inspection',
+    'Connection',
+    'Subsidy'
+  ];
+
   // Customer Edit Modal State
   isEditModalOpen = false;
   selectedCustomerForEdit: InstallmentRow | null = null;
@@ -138,6 +154,89 @@ export class SummaryTableComponent {
   get visibleColumnsCount(): number {
     const actionsCount = this.authService.isAdmin() ? 1 : 0;
     return this.summaryService.columns().filter(c => c.visible).length + actionsCount;
+  }
+
+  // Status Edit column helpers
+  isStatusEditing(slNo: number): boolean {
+    return this.editingStatusSlNo() === slNo;
+  }
+
+  isSavingStatus(slNo: number): boolean {
+    return this.savingStatusSlNos().has(slNo);
+  }
+
+  getStatusDraftValue(item: SummaryTableRow): string {
+    const draft = this.statusEditDrafts[item.slNo];
+    if (draft) return draft.status;
+    const stage = item.stageName;
+    return (stage === 'NetMeter' || stage === 'Net Meter') ? 'Net Meter' : stage;
+  }
+
+  onStatusSelectChange(slNo: number, newStatus: string): void {
+    if (!this.statusEditDrafts[slNo]) {
+      this.statusEditDrafts[slNo] = { status: newStatus, netMeterInput: '' };
+    } else {
+      this.statusEditDrafts[slNo].status = newStatus;
+    }
+  }
+
+  isNetMeterSelected(slNo: number): boolean {
+    const st = this.statusEditDrafts[slNo]?.status;
+    return st === 'Net Meter' || st === 'NetMeter';
+  }
+
+  startStatusEdit(item: SummaryTableRow): void {
+    const rawVal = item.stageName;
+    const normalized = (rawVal === 'NetMeter' || rawVal === 'Net Meter') ? 'Net Meter' : rawVal;
+    const nmPayment = item.row.NetMeterPayment != null && (item.row.NetMeterPayment as any) !== '' 
+      ? String(item.row.NetMeterPayment) 
+      : (item.fin?.meter ? String(item.fin.meter) : '');
+
+    this.statusEditDrafts[item.slNo] = {
+      status: normalized,
+      netMeterInput: nmPayment
+    };
+    this.editingStatusSlNo.set(item.slNo);
+  }
+
+  cancelStatusEdit(slNo: number): void {
+    delete this.statusEditDrafts[slNo];
+    if (this.editingStatusSlNo() === slNo) {
+      this.editingStatusSlNo.set(null);
+    }
+  }
+
+  saveStatusEdit(item: SummaryTableRow): void {
+    const slNo = item.slNo;
+    const draft = this.statusEditDrafts[slNo];
+    if (!draft) return;
+
+    const currentSaving = new Set(this.savingStatusSlNos());
+    currentSaving.add(slNo);
+    this.savingStatusSlNos.set(currentSaving);
+
+    this.summaryService.updateWorkflowStatus(slNo, draft.status, draft.netMeterInput).subscribe({
+      next: () => {
+        const saving = new Set(this.savingStatusSlNos());
+        saving.delete(slNo);
+        this.savingStatusSlNos.set(saving);
+
+        this.cancelStatusEdit(slNo);
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${day}-${month}-${year}`;
+        this.toastService.success(`Status updated to "${draft.status}" with date (${dateStr}) successfully!`);
+        this.summaryService.loadAllData().subscribe();
+      },
+      error: (err) => {
+        const saving = new Set(this.savingStatusSlNos());
+        saving.delete(slNo);
+        this.savingStatusSlNos.set(saving);
+        this.toastService.error('Error updating status: ' + (err.message || 'Server error'));
+      }
+    });
   }
 
   openEditCustomer(row: InstallmentRow): void {

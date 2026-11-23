@@ -120,6 +120,7 @@
               <span class="fw-bold fs-8">CUSTOMER: STATUS</span>
             </div>
           </th>
+          <th *ngIf="isColumnVisible('statusEdit')" class="th-col-statusedit text-nowrap">STATUS EDIT</th>
           <th *ngIf="isColumnVisible('payment')" class="th-col-payment text-nowrap text-center">CUSTOMER PAYMENT</th>
           <th *ngIf="isColumnVisible('material')" class="th-col-material text-end text-nowrap">MATERIAL COST</th>
           <th *ngIf="isColumnVisible('delivery')" class="th-col-delivery text-end text-nowrap">DELIVERY COST</th>
@@ -226,6 +227,69 @@
                 </div>
               </td>
 
+              <!-- StatusEdit Column -->
+              <td *ngIf="isColumnVisible('statusEdit')" class="td-col-statusedit text-nowrap" (click)="$event.stopPropagation()">
+                <div class="d-flex align-items-center gap-1.5 status-edit-container">
+                  <!-- Dropdown with all statuses -->
+                  <select 
+                    class="form-select status-edit-select"
+                    [class.status-edit-active]="isStatusEditing(item.slNo)"
+                    [disabled]="!isStatusEditing(item.slNo)"
+                    [ngModel]="getStatusDraftValue(item)"
+                    (ngModelChange)="onStatusSelectChange(item.slNo, $event)"
+                    title="Select Status">
+                    <option *ngFor="let st of statusOptions" [value]="st">{{ st }}</option>
+                    <option *ngIf="!statusOptions.includes(item.stageName) && item.stageName !== 'NetMeter'" [value]="item.stageName">{{ item.stageName }}</option>
+                  </select>
+
+                  <!-- Net Meter Charges Input (Shown on side of dropdown when Net Meter is selected while editing) -->
+                  <div *ngIf="isStatusEditing(item.slNo) && isNetMeterSelected(item.slNo)" class="status-edit-netmeter-inline flex-shrink-0">
+                    <div class="input-group input-group-sm status-charges-group">
+                      <span class="input-group-text bg-white px-1.5 py-0 fs-9 text-muted border-end-0 fw-semibold">Charges</span>
+                      <input 
+                        type="text" 
+                        class="form-control py-0 px-1.5 fs-8 font-monospace border-start-0" 
+                        [(ngModel)]="statusEditDrafts[item.slNo].netMeterInput"
+                        (keydown.enter)="saveStatusEdit(item)"
+                        placeholder="0.00"
+                        title="Net Meter Charges">
+                    </div>
+                  </div>
+
+                  <!-- Edit Button (Icon Only - when not editing) -->
+                  <button 
+                    *ngIf="!isStatusEditing(item.slNo)" 
+                    type="button" 
+                    class="btn btn-xs btn-outline-primary d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="startStatusEdit(item)" 
+                    title="Edit Status">
+                    <app-icon name="edit" [size]="13"></app-icon>
+                  </button>
+
+                  <!-- Save Button (Icon Only - when editing) -->
+                  <button 
+                    *ngIf="isStatusEditing(item.slNo)" 
+                    type="button" 
+                    class="btn btn-xs btn-success d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="saveStatusEdit(item)" 
+                    [disabled]="isSavingStatus(item.slNo)" 
+                    title="Save Status">
+                    <span *ngIf="isSavingStatus(item.slNo)" class="spinner-border spinner-border-sm" role="status"></span>
+                    <app-icon *ngIf="!isSavingStatus(item.slNo)" name="check" [size]="13"></app-icon>
+                  </button>
+
+                  <!-- Cancel Button (Icon Only - when editing) -->
+                  <button 
+                    *ngIf="isStatusEditing(item.slNo)" 
+                    type="button" 
+                    class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center justify-content-center shadow-none flex-shrink-0 status-icon-btn" 
+                    (click)="cancelStatusEdit(item.slNo)" 
+                    title="Cancel">
+                    <app-icon name="x" [size]="13"></app-icon>
+                  </button>
+                </div>
+              </td>
+
               <!-- Payment (Two Lines: Paid in green, Unpaid in red - Aligned to Center) -->
               <td *ngIf="isColumnVisible('payment')" class="td-col-payment text-nowrap text-center">
                 <div class="d-flex flex-column align-items-center justify-content-center">
@@ -307,6 +371,7 @@
               <span class="text-muted fs-9 fw-normal">Turnover: {{ fmtCurr(summaryService.totals().turnover) }}</span>
             </div>
           </td>
+          <td *ngIf="isColumnVisible('statusEdit')" class="tfoot-col-statusedit text-center fs-8">-</td>
           <td *ngIf="isColumnVisible('payment')" class="tfoot-col-payment text-center">
             <div class="d-flex flex-column align-items-center justify-content-center">
               <span class="text-success fw-bold fs-8">{{ fmtCurr(summaryService.totals().paid) }}</span>

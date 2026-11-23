@@ -331,6 +331,97 @@ tr.row-workflow-active .mw-workflow-btn {
   min-width: 140px !important;
 }
 
+/* StatusEdit Column */
+.th-col-statusedit, .td-col-statusedit, .tfoot-col-statusedit {
+  min-width: 165px !important;
+}
+
+.status-edit-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-edit-select {
+  width: 120px !important;
+  min-width: 110px !important;
+  max-width: 135px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 26px !important;
+  padding: 0 24px 0 8px !important;
+  font-size: 0.81rem !important;
+  font-weight: 500 !important;
+  border-radius: 4px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  box-sizing: border-box;
+  vertical-align: middle;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    background-color: #f8fafc !important;
+    opacity: 1 !important;
+    cursor: default;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+  }
+
+  &.status-edit-active {
+    background-color: #ffffff !important;
+    border-color: var(--st-primary, #ff4500) !important;
+    color: #0f172a !important;
+    box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.15);
+  }
+}
+
+.status-icon-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  border-radius: 4px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.status-edit-netmeter-inline {
+  display: inline-flex;
+  align-items: center;
+
+  .status-charges-group {
+    height: 28px;
+    width: 135px;
+
+    .input-group-text {
+      padding: 0 6px;
+      font-size: 0.73rem;
+      border-color: #cbd5e1;
+      color: #64748b;
+      font-weight: 600;
+      background-color: #f8fafc;
+    }
+
+    input {
+      height: 28px !important;
+      font-size: 0.78rem !important;
+      border-color: #cbd5e1;
+      padding: 2px 6px;
+
+      &:focus {
+        border-color: var(--st-primary, #ff4500);
+        box-shadow: 0 0 0 2px rgba(255, 69, 0, 0.15);
+      }
+    }
+  }
+}
+
 /* Actions Column */
 .th-col-actions, .td-col-actions, .tfoot-col-actions {
   width: 55px !important;
