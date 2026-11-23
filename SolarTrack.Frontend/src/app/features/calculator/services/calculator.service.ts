@@ -408,61 +408,62 @@ export class CalculatorService {
       sanctionedLoadKw
     });
 
-    // 6. Battery Selection
+    // 6. Battery Selection (Compute all 3 chemistry options for comprehensive customer summary & sizing)
     let batteryResult: BatterySelectionResult | null = null;
     let batteryLithium: BatterySelectionResult | null = null;
     let batteryTubular: BatterySelectionResult | null = null;
     let batteryFlatPlate: BatterySelectionResult | null = null;
 
+    const activeBackW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 1000);
+    const chosenBatteryType = input.selectedBatteryType || 'lithium';
+    const effBatteryVoltage = inverterMatch.batteryVoltage > 0 ? inverterMatch.batteryVoltage : (activeBackW > 2000 ? 48 : (activeBackW > 1000 ? 24 : 12));
+
+    batteryLithium = this.selectBattery({
+      backupLoadW: activeBackW,
+      backupHours: effectiveBackupHours,
+      targetBackupEnergyWh,
+      energyCalculationBasis,
+      inverterBatteryVoltage: effBatteryVoltage,
+      inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
+      batteryType: 'lithium',
+      lithiumDoDPct: Number(params.lithiumDoDPct) || 90,
+      tubularDoDPct: Number(params.tubularDoDPct) || 75,
+      flatPlateDoDPct: Number(params.flatPlateDoDPct) || 65,
+      batteryList: this.db.getBatteries(),
+      peakSurgeW: requiredPeakSurgeW
+    });
+
+    batteryTubular = this.selectBattery({
+      backupLoadW: activeBackW,
+      backupHours: effectiveBackupHours,
+      targetBackupEnergyWh,
+      energyCalculationBasis,
+      inverterBatteryVoltage: effBatteryVoltage,
+      inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
+      batteryType: 'tubular',
+      lithiumDoDPct: Number(params.lithiumDoDPct) || 90,
+      tubularDoDPct: Number(params.tubularDoDPct) || 75,
+      flatPlateDoDPct: Number(params.flatPlateDoDPct) || 65,
+      batteryList: this.db.getBatteries(),
+      peakSurgeW: requiredPeakSurgeW
+    });
+
+    batteryFlatPlate = this.selectBattery({
+      backupLoadW: activeBackW,
+      backupHours: effectiveBackupHours,
+      targetBackupEnergyWh,
+      energyCalculationBasis,
+      inverterBatteryVoltage: effBatteryVoltage,
+      inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
+      batteryType: 'flat-plate',
+      lithiumDoDPct: Number(params.lithiumDoDPct) || 90,
+      tubularDoDPct: Number(params.tubularDoDPct) || 75,
+      flatPlateDoDPct: Number(params.flatPlateDoDPct) || 65,
+      batteryList: this.db.getBatteries(),
+      peakSurgeW: requiredPeakSurgeW
+    });
+
     if (sysMeta.requiresBattery) {
-      const activeBackW = backupLoadW > 0 ? backupLoadW : connectedLoadW;
-      const chosenBatteryType = input.selectedBatteryType || 'lithium';
-
-      batteryLithium = this.selectBattery({
-        backupLoadW: activeBackW,
-        backupHours: effectiveBackupHours,
-        targetBackupEnergyWh,
-        energyCalculationBasis,
-        inverterBatteryVoltage: inverterMatch.batteryVoltage,
-        inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
-        batteryType: 'lithium',
-        lithiumDoDPct: Number(params.lithiumDoDPct) || 90,
-        tubularDoDPct: Number(params.tubularDoDPct) || 75,
-        flatPlateDoDPct: Number(params.flatPlateDoDPct) || 65,
-        batteryList: this.db.getBatteries(),
-        peakSurgeW: requiredPeakSurgeW
-      });
-
-      batteryTubular = this.selectBattery({
-        backupLoadW: activeBackW,
-        backupHours: effectiveBackupHours,
-        targetBackupEnergyWh,
-        energyCalculationBasis,
-        inverterBatteryVoltage: inverterMatch.batteryVoltage,
-        inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
-        batteryType: 'tubular',
-        lithiumDoDPct: Number(params.lithiumDoDPct) || 90,
-        tubularDoDPct: Number(params.tubularDoDPct) || 75,
-        flatPlateDoDPct: Number(params.flatPlateDoDPct) || 65,
-        batteryList: this.db.getBatteries(),
-        peakSurgeW: requiredPeakSurgeW
-      });
-
-      batteryFlatPlate = this.selectBattery({
-        backupLoadW: activeBackW,
-        backupHours: effectiveBackupHours,
-        targetBackupEnergyWh,
-        energyCalculationBasis,
-        inverterBatteryVoltage: inverterMatch.batteryVoltage,
-        inverterEfficiencyPct: Number(params.inverterEfficiencyPct) || 90,
-        batteryType: 'flat-plate',
-        lithiumDoDPct: Number(params.lithiumDoDPct) || 90,
-        tubularDoDPct: Number(params.tubularDoDPct) || 75,
-        flatPlateDoDPct: Number(params.flatPlateDoDPct) || 65,
-        batteryList: this.db.getBatteries(),
-        peakSurgeW: requiredPeakSurgeW
-      });
-
       if (chosenBatteryType === 'tubular') {
         batteryResult = batteryTubular;
       } else if (chosenBatteryType === 'flat-plate') {

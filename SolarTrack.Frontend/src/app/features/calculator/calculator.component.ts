@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { CalculatorService } from './services/calculator.service';
+import { SizingPdfExportService } from './services/sizing-pdf-export.service';
 import { NavService } from '../../core/services/nav.service';
 import { SystemTypeSelectorComponent } from './components/system-type-selector/system-type-selector.component';
 import { ApplianceLoadManagerComponent } from './components/appliance-load-manager/appliance-load-manager.component';
@@ -14,6 +16,7 @@ import { SchematicViewerModalComponent } from './components/schematic-viewer-mod
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     SystemTypeSelectorComponent,
     ApplianceLoadManagerComponent,
     SizingResultsCardComponent,
@@ -27,6 +30,7 @@ import { SchematicViewerModalComponent } from './components/schematic-viewer-mod
 export class CalculatorComponent implements OnInit {
   readonly calc = inject(CalculatorService);
   private navService = inject(NavService);
+  private pdfExportService = inject(SizingPdfExportService);
 
   ngOnInit(): void {
     this.navService.setPageTitle('Calculator');
@@ -35,6 +39,13 @@ export class CalculatorComponent implements OnInit {
   readonly showSchematicModal = signal<boolean>(false);
   readonly showCatalogModal = signal<boolean>(false);
   readonly catalogInitialTab = signal<'inverters' | 'batteries' | 'panels'>('inverters');
+
+  // Customer proposal PDF export state
+  readonly showExportModal = signal<boolean>(false);
+  readonly customerName = signal<string>('Valued Solar Customer');
+  readonly customerPhone = signal<string>('');
+  readonly customerLocation = signal<string>('Odisha, India');
+  readonly isGeneratingPdf = signal<boolean>(false);
 
   readonly recommendationColClass = computed(() => {
     const hasSolar = this.calc.systemType() !== 'without-solar';
@@ -50,5 +61,36 @@ export class CalculatorComponent implements OnInit {
   openCatalog(tab: 'inverters' | 'batteries' | 'panels') {
     this.catalogInitialTab.set(tab);
     this.showCatalogModal.set(true);
+  }
+
+  openExportModal(): void {
+    this.showExportModal.set(true);
+  }
+
+  closeExportModal(): void {
+    this.showExportModal.set(false);
+  }
+
+  async downloadSummaryPdf(): Promise<void> {
+    this.isGeneratingPdf.set(true);
+    try {
+      await this.pdfExportService.generateCustomerSummaryPdf({
+        customerName: this.customerName(),
+        customerPhone: this.customerPhone(),
+        location: this.customerLocation()
+      });
+      this.closeExportModal();
+    } finally {
+      this.isGeneratingPdf.set(false);
+    }
+  }
+
+  async quickDirectDownload(): Promise<void> {
+    this.isGeneratingPdf.set(true);
+    try {
+      await this.pdfExportService.generateCustomerSummaryPdf();
+    } finally {
+      this.isGeneratingPdf.set(false);
+    }
   }
 }

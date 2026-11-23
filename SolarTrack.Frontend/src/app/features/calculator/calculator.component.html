@@ -1,5 +1,29 @@
 <div class="sizing-page-body">
   
+  <!-- TOP ACTION BAR: SIZING SUMMARY HEADER & EXPORT PDF BUTTON -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 p-3 bg-white border rounded-3 shadow-2xs">
+    <div class="d-flex align-items-center gap-2.5">
+      <div class="p-2 rounded-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <span class="fs-5">☀️</span>
+      </div>
+      <div>
+        <h5 class="fw-bold text-dark mb-0 fs-6">Sizing Calculator</h5>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button 
+        type="button" 
+        class="btn btn-warning btn-sm fw-bold px-3 py-1.5 rounded-2 d-inline-flex align-items-center gap-2 shadow-2xs text-dark"
+        (click)="quickDirectDownload()"
+        [disabled]="isGeneratingPdf()"
+        id="btnOpenExportProposalModal"
+        title="Download Customer Proposal Summary Pamphlet (1-Page PDF)">
+        <span *ngIf="!isGeneratingPdf()">📄 Export Customer Pamphlet (1-Page PDF)</span>
+        <span *ngIf="isGeneratingPdf()">⏳ Generating PDF...</span>
+      </button>
+    </div>
+  </div>
+
   <!-- MAIN INPUTS ROW: SYSTEM TYPE & APPLIANCES / LOAD IN SAME ROW -->
   <div class="row g-3 align-items-stretch mb-3">
     <!-- STEP 1: SYSTEM TYPE SELECTION -->
@@ -145,6 +169,98 @@
       [initialCategory]="catalogInitialTab()"
       (close)="showCatalogModal.set(false)">
     </app-product-catalog-modal>
+  }
+
+  <!-- EXPORT CUSTOMER PROPOSAL SUMMARY MODAL -->
+  @if (showExportModal()) {
+    <div class="modal fade show d-block" id="exportCustomerProposalModal" tabindex="-1" style="background: rgba(0,0,0,0.55); z-index: 1060;">
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 520px; width: 95%;">
+        <div class="modal-content shadow-lg border-0 rounded-3">
+          
+          <!-- Header -->
+          <div class="modal-header bg-light border-bottom py-2.5 px-3.5 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fs-5">📄</span>
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Export Customer Pamphlet (1-Page PDF)</h5>
+            </div>
+            <button type="button" class="btn-close" (click)="closeExportModal()" aria-label="Close"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body p-3.5">
+            <div class="mb-3">
+              <p class="text-secondary fs-8 mb-3">
+                Generate a clean, colorful, single-page pamphlet / flyer proposal for your customer with company logo, subtle background watermark, and complete technical specifications.
+              </p>
+
+              <div class="row g-2.5">
+                <div class="col-12">
+                  <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtPropCustName">Customer Name</label>
+                  <input 
+                    type="text" 
+                    id="txtPropCustName"
+                    class="form-control form-control-sm fs-8" 
+                    placeholder="e.g. Sri Rajesh Kumar Swain" 
+                    [ngModel]="customerName()" 
+                    (ngModelChange)="customerName.set($event)">
+                </div>
+
+                <div class="col-6">
+                  <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtPropCustPhone">Mobile / Phone (Optional)</label>
+                  <input 
+                    type="text" 
+                    id="txtPropCustPhone"
+                    class="form-control form-control-sm fs-8" 
+                    placeholder="e.g. 9876543210" 
+                    [ngModel]="customerPhone()" 
+                    (ngModelChange)="customerPhone.set($event)">
+                </div>
+
+                <div class="col-6">
+                  <label class="form-label fw-bold text-dark fs-8 mb-1" for="txtPropCustLoc">City / Location</label>
+                  <input 
+                    type="text" 
+                    id="txtPropCustLoc"
+                    class="form-control form-control-sm fs-8" 
+                    placeholder="e.g. Bhubaneswar, Odisha" 
+                    [ngModel]="customerLocation()" 
+                    (ngModelChange)="customerLocation.set($event)">
+                </div>
+              </div>
+            </div>
+
+            <!-- PDF Highlights Checklist Box -->
+            <div class="p-3 rounded-2 border bg-light fs-8 text-secondary">
+              <div class="fw-bold text-dark mb-1.5 fs-8">✅ Document Summary Inclusions:</div>
+              <ul class="list-unstyled mb-0 d-flex flex-column gap-1 ps-1 fs-9">
+                <li>• <strong>Company Watermark:</strong> Background branding watermark on every page</li>
+                <li>• <strong>System Type & Phase:</strong> {{ calc.SYSTEM_TYPE_MAP[calc.systemType()].label }} ({{ calc.connectionPhase() }})</li>
+                <li>• <strong>Sanctioned Load & Sizing:</strong> {{ calc.sanctionedLoadKw() }} kW Sanctioned Load • {{ calc.result().connectedLoadW }} W Connected Load</li>
+                <li>• <strong>Appliances Load Schedule:</strong> Standard power ratings & daily operating hours</li>
+                <li>• <strong>Solar & Inverter Specifications:</strong> Modules array & PCU / inverter engineering specs</li>
+                <li>• <strong>3 Battery Chemistry Options:</strong> Lithium LFP, Tall Tubular & Flat Plate compared</li>
+                <li class="text-danger fw-semibold">• <strong>Investment / Payback Analysis:</strong> Excluded as per customer requirements</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer bg-light border-top py-2.5 px-3.5 d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary btn-sm px-3 fs-8" (click)="closeExportModal()">
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-warning btn-sm fw-bold px-3.5 py-1.5 shadow-2xs text-dark d-inline-flex align-items-center gap-2"
+              [disabled]="isGeneratingPdf()"
+              (click)="downloadSummaryPdf()">
+              <span>📥 Download 1-Page Pamphlet PDF</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
   }
 
 </div>
