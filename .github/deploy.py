@@ -4,9 +4,9 @@ import sys
 import ftplib
 import time
 
-FTP_HOST = os.environ.get("FTP_HOST", "site104851.siteasp.net")
-FTP_USER = os.environ.get("FTP_USER", "site104851")
-FTP_PASS = os.environ.get("FTP_PASS", "")
+FTP_HOST = os.environ.get("FTP_HOST", "site110212.siteasp.net")
+FTP_USER = os.environ.get("FTP_USER", "site110212")
+FTP_PASS = os.environ.get("FTP_PASS", "5Wf=g@M78q+Y")
 LOCAL_DIR = os.environ.get("LOCAL_DIR", "./publish")
 REMOTE_DIR = os.environ.get("REMOTE_DIR", "/wwwroot")
 
@@ -35,6 +35,14 @@ def ensure_remote_dir(ftp, dir_path):
 
 def upload_directory(ftp, local_base, remote_base):
     ensure_remote_dir(ftp, remote_base)
+    # Remove default placeholder iisstart.htm if present
+    try:
+        ftp.cwd(remote_base)
+        ftp.delete("iisstart.htm")
+        print("Removed default MonsterASP placeholder: iisstart.htm")
+    except Exception:
+        pass
+
     uploaded = 0
     skipped = 0
 

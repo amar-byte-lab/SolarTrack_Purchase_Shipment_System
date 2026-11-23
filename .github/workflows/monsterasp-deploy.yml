@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FTP_SERVER: site104851.siteasp.net
-      FTP_USERNAME: site104851
+      FTP_SERVER: site110212.siteasp.net
+      FTP_USERNAME: site110212
       FTP_SERVER_DIR: wwwroot/
 
     steps:
@@ -67,7 +67,7 @@ jobs:
           PASS="${{ secrets.MONSTERASP_FTP_PASSWORD }}"
           if [ -z "$PASS" ]; then
             echo "Using default MonsterASP deployment credentials"
-            PASS="E@h4iQ8-G+m6"
+            PASS="5Wf=g@M78q+Y"
           else
             echo "Using repository secret MONSTERASP_FTP_PASSWORD"
           fi
