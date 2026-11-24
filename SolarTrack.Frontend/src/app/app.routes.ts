@@ -11,6 +11,7 @@ import { FilesComponent } from './features/files/files.component';
 import { DocumentComponent } from './features/document/document.component';
 import { InventoryComponent } from './features/inventory/inventory.component';
 import { CalculatorComponent } from './features/calculator/calculator.component';
+import { SizingCalculationComponent } from './features/sizing-calculation/sizing-calculation.component';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -28,6 +29,7 @@ export const routes: Routes = [
       { path: 'settings', component: SettingsComponent },
       { path: 'files', component: FilesComponent },
       { path: 'inventory', component: InventoryComponent },
+      { path: 'sizing-calculation', component: SizingCalculationComponent },
       { path: 'sizing-calc', component: CalculatorComponent },
       { path: 'calculator', component: CalculatorComponent },
       { path: 'document', component: DocumentComponent },

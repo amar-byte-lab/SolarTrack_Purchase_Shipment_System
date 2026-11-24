@@ -26,7 +26,7 @@ export class SidebarComponent {
       if (item.path === '/summary') return rule.summaryAccess;
       if (item.path === '/quotation') return rule.quotationAccess;
       if (item.path === '/document') return rule.documentAccess;
-      if (item.path === '/sizing-calc' || item.path === '/sld') return rule.calculatorAccess;
+      if (item.path === '/sizing-calculation' || item.path === '/sizing-calc' || item.path === '/sld') return rule.calculatorAccess;
       if (item.path === '/ledger') return rule.ledgerAccess;
       if (item.path === '/inventory') return rule.inventoryAccess;
       if (item.path === '/files') return rule.filesAccess;

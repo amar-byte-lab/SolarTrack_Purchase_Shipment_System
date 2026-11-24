@@ -11,7 +11,9 @@ import {
   BatterySelectionResult,
   SolarCalculationResult,
   TariffAndPaybackResult,
-  SystemValidation
+  SystemValidation,
+  BosChecklistResult,
+  BldcOptimizationTip
 } from '../models/calculator.model';
 
 @Injectable({
@@ -26,6 +28,19 @@ export class CalculatorService {
   readonly sanctionedLoadKw = signal<number>(3);
   readonly selectedBatteryType = signal<BatteryChemistry>('lithium');
   readonly backupHours = signal<number>(4);
+  readonly dayBackupHours = signal<number>(3); // Daytime (9 AM to 4 PM, max 7 hrs)
+  readonly nightBackupHours = signal<number>(8); // Nighttime (5 PM to 8 AM, max 15 hrs)
+
+  setDayBackupHours(hrs: number) {
+    const val = Math.max(0, Math.min(7, Number(hrs) || 0));
+    this.dayBackupHours.set(val);
+  }
+
+  setNightBackupHours(hrs: number) {
+    const val = Math.max(0, Math.min(15, Number(hrs) || 0));
+    this.nightBackupHours.set(val);
+  }
+
   readonly energyCalculationBasis = signal<SizingBasis>('monthly_units');
   readonly monthlyUnits = signal<number>(300);
   readonly appliances = signal<ApplianceItem[]>(JSON.parse(JSON.stringify(this.db.COMMON_APPLIANCES)));
@@ -74,6 +89,8 @@ export class CalculatorService {
       sanctionedLoadKw: this.sanctionedLoadKw(),
       selectedBatteryType: this.selectedBatteryType(),
       backupHours: this.backupHours(),
+      dayBackupHours: this.dayBackupHours(),
+      nightBackupHours: this.nightBackupHours(),
       energyCalculationBasis: this.energyCalculationBasis(),
       monthlyUnits: this.monthlyUnits(),
       appliances: this.appliances()
@@ -138,6 +155,8 @@ export class CalculatorService {
     sanctionedLoadKw: number;
     selectedBatteryType: BatteryChemistry;
     backupHours: number;
+    dayBackupHours?: number;
+    nightBackupHours?: number;
     energyCalculationBasis: SizingBasis;
     monthlyUnits: number;
     appliances: ApplianceItem[];
@@ -155,6 +174,8 @@ export class CalculatorService {
     // 1. Audit & Sanitize Appliance Inputs
     let connectedLoadW = 0;
     let backupLoadW = 0;
+    let dayBackupLoadW = 0;
+    let nightBackupLoadW = 0;
     let estimatedDailyKwh = 0;
     let totalApplianceDailyWh = 0;
     let backupApplianceDailyWh = 0;
@@ -228,19 +249,72 @@ export class CalculatorService {
 
       if (isBackup && backupQty > 0) {
         backupLoadW += totalBackupAppWatts;
+
+        const appId = (app.id || '').toLowerCase();
+        const appName = (app.name || '').toLowerCase();
+        const isDayOnly = appId.includes('pump') || appId.includes('motor') || appName.includes('pump') || 
+                          appId.includes('wm') || appName.includes('washing') || 
+                          appId.includes('geyser') || appName.includes('geyser');
+
+        dayBackupLoadW += totalBackupAppWatts;
+        if (!isDayOnly) {
+          nightBackupLoadW += totalBackupAppWatts;
+        }
       }
 
       const hours = Math.max(0.1, Number(app.hours !== undefined ? app.hours : app.defaultHours) || 4);
       const appDailyWh = (runningWatts * qty) * hours;
       totalApplianceDailyWh += appDailyWh;
 
-      const appBackupHours = Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : backupHours) || 4);
+      let appDayHours = app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : 0;
+      let appNightHours = app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : 0;
+      const hasSpecificDayNight = app.dayBackupHours !== undefined || app.nightBackupHours !== undefined;
+
+      const appBackupHours = hasSpecificDayNight
+        ? (appDayHours + appNightHours)
+        : Math.max(0.1, Number(app.backupHours !== undefined ? app.backupHours : backupHours) || 4);
+
       const appBackupWh = totalBackupAppWatts * appBackupHours;
       if (isBackup && backupQty > 0) {
         backupApplianceDailyWh += appBackupWh;
       }
       estimatedDailyKwh += appDailyWh / 1000;
     });
+
+    if (dayBackupLoadW === 0 && backupLoadW > 0) dayBackupLoadW = backupLoadW;
+    if (nightBackupLoadW === 0 && backupLoadW > 0) nightBackupLoadW = backupLoadW;
+
+    const isSolarWithBattery = sysTypeKey === 'off-grid' || sysTypeKey === 'hybrid';
+    const dayBackupHours = Math.max(0, Math.min(7, Number(input.dayBackupHours !== undefined ? input.dayBackupHours : this.dayBackupHours()) || 3));
+    const nightBackupHours = Math.max(0, Math.min(17, Number(input.nightBackupHours !== undefined ? input.nightBackupHours : this.nightBackupHours()) || 8));
+
+    // Calculate Day (9 AM–4 PM) and Night (4 PM–9 AM) energy:
+    let dayBackupEnergyWh = 0;
+    let nightBackupEnergyWh = 0;
+
+    let hasAnyCustomDayNight = false;
+    rawAppliances.forEach(app => {
+      if (app.checked && app.isBackup !== false) {
+        const qty = Math.max(0, Math.floor(Number(app.qty !== undefined ? app.qty : app.defaultQty) || 0));
+        const bQty = app.backupQty !== undefined ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0)) : qty;
+        if (bQty > 0 && (app.dayBackupHours !== undefined || app.nightBackupHours !== undefined)) {
+          hasAnyCustomDayNight = true;
+          const w = Math.max(0, Number(app.watts) || 0);
+          dayBackupEnergyWh += w * bQty * (app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : 0);
+          nightBackupEnergyWh += w * bQty * (app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : 0);
+        }
+      }
+    });
+
+    if (!hasAnyCustomDayNight) {
+      dayBackupEnergyWh = Math.round(dayBackupLoadW * dayBackupHours);
+      nightBackupEnergyWh = Math.round(nightBackupLoadW * nightBackupHours);
+    } else {
+      dayBackupEnergyWh = Math.round(dayBackupEnergyWh);
+      nightBackupEnergyWh = Math.round(nightBackupEnergyWh);
+    }
+
+    const dayNightSumWh = dayBackupEnergyWh + nightBackupEnergyWh;
 
     const maxMotorSurgeDeltaW = motorSurgeDeltas.length > 0 ? Math.max(...motorSurgeDeltas) : 0;
 
@@ -270,6 +344,9 @@ export class CalculatorService {
     if (userCustomBackup !== null && userCustomBackup > 0) {
       targetBackupEnergyWh = Math.round(userCustomBackup * 1000);
       effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
+    } else if (isSolarWithBattery && dayNightSumWh > 0) {
+      targetBackupEnergyWh = dayNightSumWh;
+      effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : (dayBackupHours + nightBackupHours);
     } else if (backupApplianceDailyWh > 0) {
       targetBackupEnergyWh = backupApplianceDailyWh;
       effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
@@ -330,13 +407,9 @@ export class CalculatorService {
         requiredContinuousW = Math.max(1000, Math.round(sanctionedLoadKw * 1000));
       }
     } else if (sysTypeKey === 'off-grid') {
-      // Off-Grid Solar PCU: Must supply running loads (+ safety margin) AND MPPT solar charger must support PV array
+      // Off-Grid Solar PCU: Sized to supply simultaneous running loads (+ 25% safety margin)
       const offGridRunningW = backupLoadW > 0 ? backupLoadW : 1000;
-      const loadDrivenW = Math.round(offGridRunningW * 1.25);
-      const solarDrivenW = solarResult && solarResult.actualArrayKwp > 0
-        ? Math.round((solarResult.actualArrayKwp / 1.25) * 1000)
-        : 0;
-      requiredContinuousW = Math.max(loadDrivenW, solarDrivenW);
+      requiredContinuousW = Math.round(offGridRunningW * 1.25);
     } else if (sysTypeKey === 'hybrid') {
       // Hybrid Inverter: Must support grid-tied solar export AND emergency backup load during power outage
       const backupRunningW = backupLoadW > 0 ? backupLoadW : 1000;
@@ -508,6 +581,187 @@ export class CalculatorService {
       }
     }
 
+    // 7. Electrical Engineering Calculations (Inverter, Solar Stringing, BOS, BLDC Tip)
+    inverterMatch.powerFactor = 0.8;
+    inverterMatch.continuousRunningW = connectedLoadW;
+    inverterMatch.inductiveSurgeW = maxMotorSurgeDeltaW;
+    if (maxMotorSurgeDeltaW > 0) {
+      inverterMatch.startingInrushNote = `Sized to absorb starting surge of ~${Math.round(connectedLoadW + maxMotorSurgeDeltaW)}W without tripping.`;
+    } else {
+      inverterMatch.startingInrushNote = `Continuous pure sine wave output with 1.5x overload margin.`;
+    }
+
+    if (solarResult && solarResult.actualArrayKwp > 0 && inverterMatch.batteryVoltage > 0) {
+      const pvWatts = solarResult.actualArrayKwp * 1000;
+      inverterMatch.mpptSolarChargerAmps = Math.min(120, Math.round(pvWatts / inverterMatch.batteryVoltage));
+    } else {
+      inverterMatch.mpptSolarChargerAmps = 0;
+    }
+
+    if (batteryResult && batteryResult.systemBankAh > 0) {
+      inverterMatch.gridChargerAmps = Math.min(80, Math.round(batteryResult.systemBankAh * 0.15));
+    } else {
+      inverterMatch.gridChargerAmps = 20;
+    }
+
+    // Solar Stringing Configuration & Generation Allocation
+    if (solarResult && solarResult.panelCount > 0) {
+      const is3Ph = connectionPhase === '3-Phase';
+      const effBusVolt = inverterMatch.batteryVoltage > 0 ? inverterMatch.batteryVoltage : 0;
+      let idealSeries = 4;
+
+      if (sysTypeKey === 'on-grid') {
+        if (is3Ph) {
+          idealSeries = solarResult.panelCount >= 16 ? Math.round(solarResult.panelCount / 2) : solarResult.panelCount;
+          if (idealSeries > 18) idealSeries = 18;
+          if (idealSeries < 6 && solarResult.panelCount >= 6) idealSeries = 6;
+        } else {
+          idealSeries = solarResult.panelCount >= 10 ? Math.round(solarResult.panelCount / 2) : solarResult.panelCount;
+          if (idealSeries > 12) idealSeries = 12;
+        }
+      } else {
+        if (effBusVolt >= 240) {
+          idealSeries = 6; // 6 * 41.5V = 249V (within 200V–450V MPPT)
+        } else if (effBusVolt >= 120) {
+          idealSeries = 4;
+        } else if (effBusVolt >= 96) {
+          idealSeries = 4; // 4 * 41.5V = 166V, Voc = 199V (< 250V MPPT)
+        } else if (effBusVolt >= 48) {
+          idealSeries = 2; // 2 * 41.5V = 83V, Voc = 100V (< 150V MPPT)
+        } else if (effBusVolt >= 24) {
+          idealSeries = 2;
+        } else {
+          idealSeries = 1;
+        }
+      }
+
+      let nSeries = Math.max(1, Math.min(idealSeries, solarResult.panelCount));
+      const totalP = solarResult.panelCount;
+
+      for (let s = Math.max(1, nSeries - 2); s <= Math.min(totalP, nSeries + 2); s++) {
+        if (totalP % s === 0) {
+          nSeries = s;
+          break;
+        }
+      }
+
+      const nParallel = Math.max(1, Math.round(totalP / nSeries));
+      solarResult.seriesModules = nSeries;
+      solarResult.parallelStrings = nParallel;
+      solarResult.stringConfigText = `${nSeries} in Series × ${nParallel} Parallel String${nParallel > 1 ? 's' : ''}`;
+      solarResult.stringVmp = Math.round(nSeries * 41.5);
+      solarResult.stringVoc = Math.round(nSeries * 49.8);
+      solarResult.stringImp = Math.round(nParallel * 13.25 * 10) / 10;
+
+      if (sysTypeKey === 'off-grid' || sysTypeKey === 'hybrid') {
+        const estRechargeKwh = backupEnergyKwh / 0.88;
+        solarResult.batteryRechargingKwh = Math.round(estRechargeKwh * 10) / 10;
+        solarResult.daytimeDirectKwh = Math.max(0, Math.round((dailyDemandKwh - backupEnergyKwh) * 10) / 10);
+      } else {
+        solarResult.daytimeDirectKwh = dailyDemandKwh;
+        solarResult.batteryRechargingKwh = 0;
+      }
+    }
+
+    // Protection & BOS Checklist
+    const is3Phase = connectionPhase === '3-Phase';
+    const invKw = inverterMatch.kW || 5;
+    const invVolt = inverterMatch.batteryVoltage || 0;
+    const nStrings = solarResult?.parallelStrings || 1;
+    const voc = solarResult?.stringVoc || 200;
+
+    const dcdbSpd = voc > 500
+      ? 'Type II 1000V DC SPD (In 20kA, Imax 40kA)'
+      : 'Type II 600V DC SPD (In 20kA, Imax 40kA)';
+
+    const acMcbRating = is3Phase
+      ? (invKw > 15 ? '63A 4-Pole 10kA' : (invKw > 10 ? '40A 4-Pole 10kA' : '32A 4-Pole 10kA'))
+      : (invKw > 5 ? '40A 2-Pole 10kA' : '32A 2-Pole 10kA');
+
+    const acSpdRating = is3Phase
+      ? 'Type II 4-Pole 415V AC SPD (In 20kA / Imax 40kA)'
+      : 'Type II 2-Pole 230V AC SPD (In 20kA / Imax 40kA)';
+
+    const bosChecklist: BosChecklistResult = {
+      dcdb: {
+        title: 'DC Distribution Box (DCDB)',
+        spdRating: dcdbSpd,
+        fuseRating: `${nStrings} × 15A/20A 1000V DC gPV Fuses with Din-rail Holders`,
+        inputs: nStrings,
+        description: `IP65 Polycarbonate UV Enclosure with ${nStrings} String Inputs, DC Isolator Switch & Class II SPD.`
+      },
+      acdb: {
+        title: 'AC Distribution Box (ACDB)',
+        mcbRating: `${acMcbRating} Class C MCB`,
+        spdRating: acSpdRating,
+        poles: is3Phase ? '4-Pole (3P + N)' : '2-Pole (1P + N)',
+        description: `Heavy-duty IP65 enclosure housing AC breaker isolation and secondary line surge suppressors.`
+      },
+      cables: {
+        solarDc: `${nStrings <= 2 ? '4' : '6'} sq.mm Tinned Copper Solar Cable (UV Resistant, EN 50618)`,
+        batteryDc: invVolt >= 120
+          ? '25 sq.mm Flexible Copper Battery Interconnects'
+          : (invVolt >= 48 ? '35 sq.mm Flexible Copper Battery Cable' : '50 sq.mm Double Insulated Copper Cable'),
+        acOutput: is3Phase
+          ? '6 sq.mm 4-Core Copper Armoured / Flexible Cable'
+          : '6–10 sq.mm 3-Core Heavy-Duty Copper Cable'
+      },
+      earthing: {
+        pitsCount: 3,
+        electrodeSpec: 'Copper-Bonded MS Chemical Earthing Rods (17.2mm dia × 3.0m length) with Carbon BFC Compound',
+        resistance: '< 5.0 Ohms (As per IS 3043 / IEEE 80 Standards)',
+        lightningArrester: 'Class-A Copper Multi-Point / ESE Lightning Arrester on highest rooftop elevation with 25×3mm GI down-conductor'
+      }
+    };
+
+    // BLDC Fan Cost-Saving Tip
+    let fanQty = 0;
+    let fanWatts = 0;
+    let fanHours = 0;
+    rawAppliances.forEach(app => {
+      const id = (app.id || '').toLowerCase();
+      const name = (app.name || '').toLowerCase();
+      if ((id.includes('fan') || name.includes('fan')) && app.checked !== false) {
+        const q = Number(app.qty !== undefined ? app.qty : app.defaultQty) || 0;
+        const w = Number(app.watts) || 75;
+        const h = Number(app.hours !== undefined ? app.hours : app.defaultHours) || 12;
+        if (q > 0 && w >= 50) {
+          fanQty += q;
+          fanWatts = w;
+          fanHours = Math.max(fanHours, h);
+        }
+      }
+    });
+
+    let bldcTip: BldcOptimizationTip | undefined;
+    if (fanQty > 0) {
+      const currentFanTotalWatts = fanQty * fanWatts;
+      const bldcTotalWatts = fanQty * 32;
+      const currentFanUnits = Math.round((currentFanTotalWatts * fanHours / 1000) * 10) / 10;
+      const bldcUnits = Math.round((bldcTotalWatts * fanHours / 1000) * 10) / 10;
+      const savedUnits = Math.round((currentFanUnits - bldcUnits) * 10) / 10;
+      const savingsMonthly = Math.round(savedUnits * 30);
+
+      const downsizedInverterKva = Math.max(3, Math.round(inverterMatch.kVA * 0.65));
+      const downsizedSolarKwp = solarResult ? Math.max(2, Math.round(solarResult.actualArrayKwp * 0.62 * 10) / 10) : 0;
+      const downsizedBatteryKwh = batteryResult ? Math.max(5, Math.round(batteryResult.totalInstalledKwh * 0.6 * 10) / 10) : 0;
+
+      bldcTip = {
+        isApplicable: savedUnits >= 1.5,
+        fanCount: fanQty,
+        currentFanLoadW: currentFanTotalWatts,
+        currentDailyUnits: currentFanUnits,
+        bldcDailyUnits: bldcUnits,
+        savingsDailyUnits: savedUnits,
+        savingsMonthlyUnits: savingsMonthly,
+        costReductionPct: 38,
+        downsizedInverterKva,
+        downsizedSolarKwp,
+        downsizedBatteryKwh,
+        tipSummary: `Replacing ${fanQty} normal ceiling fans (${fanWatts}W) with energy-efficient 32W BLDC fans saves ~${savedUnits} Units/day (${savingsMonthly} Units/month). This cuts total required system capacity by ~38%, drastically lowering investment cost!`
+      };
+    }
+
     // Warnings list
     const warnings: string[] = [];
     if (exceedsSinglePhase) {
@@ -549,7 +803,16 @@ export class CalculatorService {
       batteryFlatPlate,
       solar: solarResult,
       warnings,
-      estimatedDailyKwh: Math.round(estimatedDailyKwh * 100) / 100
+      estimatedDailyKwh: Math.round(estimatedDailyKwh * 100) / 100,
+      dayBackupHours,
+      nightBackupHours,
+      dayBackupLoadW,
+      nightBackupLoadW,
+      dayBackupEnergyWh,
+      nightBackupEnergyWh,
+      isSolarWithBattery,
+      bosChecklist,
+      bldcTip
     };
   }
 
@@ -786,13 +1049,15 @@ export class CalculatorService {
           if (systemVoltage === 12) return b.voltage <= 14;
           if (systemVoltage === 24) return b.voltage >= 20 && b.voltage <= 28;
           if (systemVoltage === 48) return b.voltage >= 40 && b.voltage <= 55;
+          if (systemVoltage === 96) return b.voltage >= 90 && b.voltage <= 105;
+          if (systemVoltage === 120) return b.voltage >= 115 && b.voltage <= 130;
           return b.voltage === systemVoltage;
         });
         const pool = voltMatch.length > 0 ? voltMatch : activeBatteries.filter(b => b.voltage <= systemVoltage);
         const sorted = [...pool].sort((a, b) => Math.abs(a.ah - requiredAh) - Math.abs(b.ah - requiredAh));
         selectedBat = sorted[0];
       } else {
-        const prefAh = requiredAh > 180 ? 200 : 150;
+        const prefAh = requiredAh > 220 ? 250 : (requiredAh > 175 ? 200 : 150);
         selectedBat = activeBatteries.find(b => b.ah === prefAh) || activeBatteries[0];
       }
     }
@@ -809,16 +1074,16 @@ export class CalculatorService {
     if (isLithium) {
       if (singleVolt >= (systemVoltage - 4)) {
         series = 1;
-        parallel = Math.max(1, Math.ceil(requiredAh / singleAh));
+        parallel = Math.max(1, Math.ceil((requiredAh - (singleAh * 0.15)) / singleAh));
       } else {
         series = Math.max(1, Math.round(systemVoltage / singleVolt));
-        parallel = Math.max(1, Math.ceil(requiredAh / singleAh));
+        parallel = Math.max(1, Math.ceil((requiredAh - (singleAh * 0.15)) / singleAh));
       }
       totalUnits = series * parallel;
       systemBankAh = singleAh * parallel;
     } else {
       series = Math.max(1, Math.round(systemVoltage / 12));
-      parallel = Math.max(1, Math.ceil(requiredAh / singleAh));
+      parallel = Math.max(1, Math.ceil((requiredAh - (singleAh * 0.15)) / singleAh));
       totalUnits = series * parallel;
       systemBankAh = singleAh * parallel;
     }
@@ -838,9 +1103,9 @@ export class CalculatorService {
       if (series === 1 && parallel === 1) {
         configText = `1 × 12V ${singleAh}Ah ${isTubular ? 'Tall Tubular' : 'Flat Plate'} Battery (12V System)`;
       } else if (parallel === 1) {
-        configText = `${series} × 12V ${singleAh}Ah Batteries in Series (${systemVoltage}V System)`;
+        configText = `${series} × 12V ${singleAh}Ah Batteries in Series (${systemVoltage}V System, ${totalInstalledKwh} kWh Bank)`;
       } else {
-        configText = `${totalUnits} × 12V ${singleAh}Ah Batteries (${series}S × ${parallel}P Bank, ${systemVoltage}V System)`;
+        configText = `${totalUnits} × 12V ${singleAh}Ah Batteries (${series}S × ${parallel}P Bank, ${systemVoltage}V System, ${totalInstalledKwh} kWh Bank)`;
       }
     }
 
@@ -1178,6 +1443,8 @@ export class CalculatorService {
     this.sanctionedLoadKw.set(3);
     this.selectedBatteryType.set('lithium');
     this.backupHours.set(4);
+    this.dayBackupHours.set(3);
+    this.nightBackupHours.set(8);
     this.energyCalculationBasis.set('monthly_units');
     this.monthlyUnits.set(300);
     this.enableCostRecovery.set(false);

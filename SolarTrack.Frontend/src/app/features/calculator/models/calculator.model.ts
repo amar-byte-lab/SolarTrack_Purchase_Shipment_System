@@ -20,6 +20,8 @@ export interface ApplianceItem {
   isBackup?: boolean;
   backupQty?: number;
   backupHours?: number;
+  dayBackupHours?: number;
+  nightBackupHours?: number;
   isHeavy?: boolean;
   ratedWatts?: number;
   acTon?: string;
@@ -108,6 +110,12 @@ export interface InverterSelectionResult {
   ipRating?: string;
   warranty?: number;
   notes?: string;
+  powerFactor?: number;
+  continuousRunningW?: number;
+  inductiveSurgeW?: number;
+  startingInrushNote?: string;
+  mpptSolarChargerAmps?: number;
+  gridChargerAmps?: number;
 }
 
 export interface BatterySelectionResult {
@@ -162,6 +170,14 @@ export interface SolarCalculationResult {
   estMonthlyGenUnits: number;
   estAnnualGenUnits: number;
   roofAreaSqFt: number;
+  seriesModules?: number;
+  parallelStrings?: number;
+  stringConfigText?: string;
+  stringVmp?: number;
+  stringVoc?: number;
+  stringImp?: number;
+  daytimeDirectKwh?: number;
+  batteryRechargingKwh?: number;
   lossBreakdown: {
     inverterLossPct: number;
     dcAcCableLossPct: number;
@@ -195,6 +211,49 @@ export interface TariffAndPaybackResult {
   slabs: TariffSlabBreakdown[];
 }
 
+export interface BosChecklistResult {
+  dcdb: {
+    title: string;
+    spdRating: string;
+    fuseRating: string;
+    inputs: number;
+    description: string;
+  };
+  acdb: {
+    title: string;
+    mcbRating: string;
+    spdRating: string;
+    poles: string;
+    description: string;
+  };
+  cables: {
+    solarDc: string;
+    batteryDc?: string;
+    acOutput: string;
+  };
+  earthing: {
+    pitsCount: number;
+    electrodeSpec: string;
+    resistance: string;
+    lightningArrester: string;
+  };
+}
+
+export interface BldcOptimizationTip {
+  isApplicable: boolean;
+  fanCount: number;
+  currentFanLoadW: number;
+  currentDailyUnits: number;
+  bldcDailyUnits: number;
+  savingsDailyUnits: number;
+  savingsMonthlyUnits: number;
+  costReductionPct: number;
+  downsizedInverterKva: number;
+  downsizedSolarKwp: number;
+  downsizedBatteryKwh: number;
+  tipSummary: string;
+}
+
 export interface FullSizingResult {
   systemType: SystemType;
   systemLabel: string;
@@ -226,4 +285,13 @@ export interface FullSizingResult {
   solar: SolarCalculationResult | null;
   warnings: string[];
   estimatedDailyKwh: number;
+  dayBackupHours?: number;
+  nightBackupHours?: number;
+  dayBackupLoadW?: number;
+  nightBackupLoadW?: number;
+  dayBackupEnergyWh?: number;
+  nightBackupEnergyWh?: number;
+  isSolarWithBattery?: boolean;
+  bosChecklist?: BosChecklistResult;
+  bldcTip?: BldcOptimizationTip;
 }

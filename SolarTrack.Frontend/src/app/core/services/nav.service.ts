@@ -24,6 +24,7 @@ export class NavService {
     { path: '/files', label: 'Upload File', icon: 'file' },
     { path: '/quotation', label: 'Quotation', icon: 'offer' },
     { path: '/document', label: 'Document', icon: 'agreement' },
+    { path: '/sizing-calculation', label: 'Sizing Calculation', icon: 'calculator' },
     { path: '/sizing-calc', label: 'Calculator', icon: 'calculator' },
     { path: '/ledger', label: 'Ledger', icon: 'wallet' },
     { path: '/settings', label: 'Settings', icon: 'gear' }
@@ -55,6 +56,8 @@ export class NavService {
       this.pageTitle.set('Quotation');
     } else if (path.startsWith('/document') || path.startsWith('/agreement')) {
       this.pageTitle.set('Document');
+    } else if (path.startsWith('/sizing-calculation')) {
+      this.pageTitle.set('Sizing Calculation');
     } else if (path.startsWith('/sizing-calc') || path.startsWith('/calculator')) {
       this.pageTitle.set('Calculator');
     } else if (path.startsWith('/ledger')) {

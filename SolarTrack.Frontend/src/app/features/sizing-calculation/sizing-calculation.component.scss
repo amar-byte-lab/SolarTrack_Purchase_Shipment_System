@@ -1,0 +1,85 @@
+.sizing-calc-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #0f172a;
+
+  .font-oriya {
+    font-family: 'Noto Sans Oriya', 'Inter', sans-serif !important;
+  }
+
+  .proposal-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-32deg);
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: rgba(14, 165, 233, 0.05);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1;
+    user-select: none;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .a4-sheet {
+    width: 210mm;
+    min-height: 296mm;
+    box-sizing: border-box;
+    background: #ffffff;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .a4-sheet-single {
+    width: 210mm;
+    height: 296mm;
+    max-height: 296mm;
+    box-sizing: border-box;
+    background: #ffffff;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 999px;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printContainerAng, #printContainerAng * {
+    visibility: visible;
+  }
+  #printContainerAng {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}

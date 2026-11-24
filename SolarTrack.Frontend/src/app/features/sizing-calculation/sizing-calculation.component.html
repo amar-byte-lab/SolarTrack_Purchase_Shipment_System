@@ -1,0 +1,1517 @@
+<div class="sizing-calc-container pb-5">
+  <!-- Top Header Strip & Live KPI Summary -->
+  <div class="bg-white/95 backdrop-blur-md border-b border-sky-100 rounded-2xl p-4 shadow-sm mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-sky-600 flex items-center justify-center text-white shadow-md shadow-amber-500/25 flex-shrink-0">
+          <i class="fa-solid fa-solar-panel text-2xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-black text-slate-900 text-lg md:text-xl tracking-tight m-0">Shri Trutiyadev Solar Enterprises</h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
+              <i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Engineering Sizing v2.5
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 flex items-center gap-2 mt-0.5 m-0">
+            <span class="font-oriya font-semibold text-slate-700">ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍</span>
+            <span>•</span>
+            <span><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>Badambadi, Cuttack, Odisha</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action Proposal Export Buttons -->
+      <div class="flex items-center flex-wrap gap-2">
+        <button (click)="openOdiaModal()" class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-sky-900 bg-sky-100 hover:bg-sky-200 border border-sky-300 transition shadow-sm">
+          <i class="fa-solid fa-file-pdf text-rose-600 mr-2 text-sm"></i>
+          <span class="font-oriya text-sm mr-1">୧-ପୃଷ୍ଠା ଓଡ଼ିଆ ପ୍ରସ୍ତାବନା</span> (1-Page Odia PDF)
+        </button>
+
+        <button (click)="openEngModal()" class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition shadow-sm">
+          <i class="fa-solid fa-file-lines text-amber-400 mr-2 text-sm"></i>
+          Technical English Proposal (PDF)
+        </button>
+
+        <button (click)="resetDefaults()" title="Reset to Defaults" class="p-2.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition">
+          <i class="fa-solid fa-rotate-right text-sm"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Live KPI Summary Strip -->
+    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between overflow-x-auto text-xs py-1 gap-4">
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-slate-400 font-medium">Architecture:</span>
+        <span class="font-bold text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-full border border-sky-200">{{ archName }}</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-slate-400 font-medium">Daily Energy:</span>
+        <span class="font-bold text-slate-900 font-mono">{{ audit().totalDailyKwh.toFixed(2) }} kWh</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-slate-400 font-medium">Inverter PCU:</span>
+        <span class="font-bold text-amber-600 font-mono">{{ inverter().sizedKva }} kVA</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-slate-400 font-medium">Solar Array:</span>
+        <span class="font-bold text-emerald-600 font-mono">{{ solar().installedKwp.toFixed(2) }} kWp</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-slate-400 font-medium">LiFePO4 Storage:</span>
+        <span class="font-bold text-indigo-700 font-mono">{{ battery().opt1DcKwh.toFixed(1) }} kWh</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- High Capacity Alert (> 200 kWh/day) -->
+  @if (audit().isHighCapacity) {
+    <div class="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl shadow-sm flex items-start gap-3">
+      <i class="fa-solid fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
+      <div>
+        <h4 class="font-bold text-amber-900 text-sm m-0">Commercial High-Capacity Notice (&gt; 200 kWh/day)</h4>
+        <p class="text-xs text-amber-800 mt-1 m-0 leading-relaxed">
+          The projected consumption exceeds 200 kWh/day. For commercial installations of this scale, Three-Phase 415V HT/LT distribution with high-voltage battery ESS racks (384V–480V DC) and dedicated transformer sanction are recommended.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- STEP 1: SYSTEM ARCHITECTURE SELECTOR -->
+  <section class="bg-white rounded-2xl p-6 shadow-sm border border-sky-100 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Step 1</span>
+        <h2 class="text-lg font-black text-slate-900 m-0">System Architecture Selector (4 Modes)</h2>
+      </div>
+      <div class="text-xs text-slate-500">
+        Choose from 4 standard solar & backup configurations
+      </div>
+    </div>
+
+    <!-- 4 Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Off-Grid Solar -->
+      <div (click)="setArchitecture('offgrid')" [ngClass]="architecture() === 'offgrid' ? 'border-sky-500 bg-sky-50/70 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'" class="cursor-pointer rounded-xl p-4 border-2 transition-all relative">
+        <div class="flex items-center justify-between mb-2">
+          <span class="w-9 h-9 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center text-lg font-bold">
+            <i class="fa-solid fa-solar-panel"></i>
+          </span>
+          <span [ngClass]="architecture() === 'offgrid' ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-300 text-transparent'" class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]">
+            <i class="fa-solid fa-check"></i>
+          </span>
+        </div>
+        <h3 class="font-bold text-slate-900 text-sm m-0">Off-Grid Solar</h3>
+        <p class="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
+          100% independent battery-backed solar system. Powers daytime load directly from solar PV and recharges battery bank.
+        </p>
+        <div class="mt-3 pt-2.5 border-t border-sky-100 flex items-center justify-between text-[11px] text-sky-800 font-semibold">
+          <span>Battery Backed</span>
+          <span class="bg-sky-100 px-1.5 py-0.5 rounded text-[10px]">Zero Bill</span>
+        </div>
+      </div>
+
+      <!-- Hybrid Solar -->
+      <div (click)="setArchitecture('hybrid')" [ngClass]="architecture() === 'hybrid' ? 'border-sky-500 bg-sky-50/70 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'" class="cursor-pointer rounded-xl p-4 border-2 transition-all relative">
+        <div class="flex items-center justify-between mb-2">
+          <span class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg font-bold">
+            <i class="fa-solid fa-arrows-split-up-and-left"></i>
+          </span>
+          <span [ngClass]="architecture() === 'hybrid' ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-300 text-transparent'" class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]">
+            <i class="fa-solid fa-check"></i>
+          </span>
+        </div>
+        <h3 class="font-bold text-slate-900 text-sm m-0">Hybrid Solar</h3>
+        <p class="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
+          Grid net-metering bill reduction + battery backup during power cuts. Exports excess solar generation to DISCOM.
+        </p>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-emerald-700 font-semibold">
+          <span>Grid + Battery</span>
+          <span class="bg-emerald-100 px-1.5 py-0.5 rounded text-[10px]">Net Meter</span>
+        </div>
+      </div>
+
+      <!-- On-Grid Solar -->
+      <div (click)="setArchitecture('ongrid')" [ngClass]="architecture() === 'ongrid' ? 'border-sky-500 bg-sky-50/70 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'" class="cursor-pointer rounded-xl p-4 border-2 transition-all relative">
+        <div class="flex items-center justify-between mb-2">
+          <span class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-lg font-bold">
+            <i class="fa-solid fa-network-wired"></i>
+          </span>
+          <span [ngClass]="architecture() === 'ongrid' ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-300 text-transparent'" class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]">
+            <i class="fa-solid fa-check"></i>
+          </span>
+        </div>
+        <h3 class="font-bold text-slate-900 text-sm m-0">On-Grid Solar</h3>
+        <p class="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
+          Pure grid-tied system without batteries. Cuts electricity bills by up to 90% via DISCOM net-metering.
+        </p>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-amber-700 font-semibold">
+          <span>No Battery</span>
+          <span class="bg-amber-100 px-1.5 py-0.5 rounded text-[10px]">Lowest CapEx</span>
+        </div>
+      </div>
+
+      <!-- Inverter-Battery Only -->
+      <div (click)="setArchitecture('nobattery')" [ngClass]="architecture() === 'nobattery' ? 'border-sky-500 bg-sky-50/70 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'" class="cursor-pointer rounded-xl p-4 border-2 transition-all relative">
+        <div class="flex items-center justify-between mb-2">
+          <span class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg font-bold">
+            <i class="fa-solid fa-car-battery"></i>
+          </span>
+          <span [ngClass]="architecture() === 'nobattery' ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-300 text-transparent'" class="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]">
+            <i class="fa-solid fa-check"></i>
+          </span>
+        </div>
+        <h3 class="font-bold text-slate-900 text-sm m-0">Inverter-Battery Only</h3>
+        <p class="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
+          Grid outage backup without solar PV. Charges from grid during normal supply, powers loads during blackouts.
+        </p>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-indigo-700 font-semibold">
+          <span>Grid Charging</span>
+          <span class="bg-indigo-100 px-1.5 py-0.5 rounded text-[10px]">Power Backup</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Architecture Sub-Toggles -->
+    <div class="mt-5 pt-4 border-t border-slate-100">
+      
+      <!-- Off-Grid Toggle: 100% Zero-Grid vs Emergency Grid/DG -->
+      @if (architecture() === 'offgrid') {
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-sky-50/70 p-3.5 rounded-xl border border-sky-200 text-xs">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-sky-600 text-base"></i>
+            <div>
+              <span class="font-bold text-slate-900">Off-Grid Autonomy Policy:</span>
+              <p class="text-slate-500 m-0">Configure whether emergency grid charging or generator backup is present.</p>
+            </div>
+          </div>
+          <div class="inline-flex p-1 bg-white rounded-lg border border-sky-200 shrink-0">
+            <button type="button" (click)="setZeroGrid(true)" [ngClass]="zeroGrid() ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-3 py-1.5 rounded-md font-bold text-xs transition border-0">
+              100% Zero-Grid [No Emergency Charging]
+            </button>
+            <button type="button" (click)="setZeroGrid(false)" [ngClass]="!zeroGrid() ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-3 py-1.5 rounded-md font-bold text-xs transition border-0">
+              Emergency Grid / DG Available
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Inverter Only / Hybrid: Grid Charging Window -->
+      @if (architecture() === 'nobattery' || architecture() === 'hybrid') {
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-200 text-xs">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-plug-circle-bolt text-indigo-600 text-base"></i>
+            <div>
+              <span class="font-bold text-slate-900">Grid Charging Window (hours between outages):</span>
+              <p class="text-slate-500 m-0">Available grid supply duration to recharge the battery bank.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <input type="range" min="3" max="14" step="0.5" [ngModel]="chargingWindow()" (ngModelChange)="updateChargingWindow($event)" class="w-32 accent-indigo-600">
+            <span class="font-mono font-bold text-indigo-900 bg-white px-2.5 py-1 rounded-md border border-indigo-200">{{ chargingWindow().toFixed(1) }} hrs</span>
+            <span class="text-slate-500 text-[11px]">(Required AC Charger: <span class="font-mono font-bold text-indigo-700">{{ battery().reqChargerAmps }} A</span>)</span>
+          </div>
+        </div>
+      }
+
+    </div>
+  </section>
+
+  <!-- STEP 2: SITE & DESIGN PARAMETERS -->
+  <section class="bg-white rounded-2xl p-6 shadow-sm border border-sky-100 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Step 2</span>
+        <h2 class="text-lg font-black text-slate-900 m-0">Site & Design Parameters</h2>
+      </div>
+      <div class="text-xs text-slate-500">
+        Geographic and electrical engineering parameters
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+      
+      <!-- Client / Project Name -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Client / Project Name</label>
+        <div class="relative">
+          <input type="text" [ngModel]="clientName()" (ngModelChange)="clientName.set($event)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:border-sky-500 font-medium">
+        </div>
+      </div>
+
+      <!-- Site Location -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Site Location</label>
+        <div class="relative">
+          <input type="text" [ngModel]="siteLocation()" (ngModelChange)="siteLocation.set($event)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:border-sky-500 font-medium">
+        </div>
+      </div>
+
+      <!-- Peak Sun Hours (PSH) -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="font-semibold text-slate-700 m-0">Peak Sun Hours (PSH)</label>
+          <span class="font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">{{ psh().toFixed(2) }} hrs/day</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="range" min="3.5" max="6.0" step="0.05" [ngModel]="psh()" (ngModelChange)="updatePSH($event)" class="w-full accent-sky-600">
+        </div>
+        <span class="text-[10px] text-slate-400">Default: 4.75 hrs/day (Odisha Annual Average, Range: 3.5–6.0)</span>
+      </div>
+
+      <!-- Supply Phase -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Supply Phase</label>
+        <select [ngModel]="supplyPhase()" (ngModelChange)="supplyPhase.set($event)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:border-sky-500 font-medium bg-white">
+          <option value="auto">Auto-Detect (Single or 3-Phase)</option>
+          <option value="single">Single-Phase 230V AC</option>
+          <option value="three">Three-Phase 415V AC</option>
+        </select>
+        <span class="text-[10px] text-sky-600 font-medium mt-0.5 block">Auto: Automatically switches to 3-Phase if &ge;15 kVA or 3P motor present</span>
+      </div>
+
+      <!-- Sanctioned Load (for On-Grid/Hybrid) -->
+      @if (architecture() === 'ongrid' || architecture() === 'hybrid') {
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Sanctioned Load (kW)</label>
+          <input type="number" min="1" max="250" step="0.5" [ngModel]="sanctionedLoad()" (ngModelChange)="sanctionedLoad.set($event)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:border-sky-500 font-medium font-mono">
+          <span class="text-[10px] text-slate-400">Contracted demand with DISCOM (TPCODL)</span>
+        </div>
+      }
+
+      <!-- Monthly Consumption Sync -->
+      @if (architecture() === 'ongrid' || architecture() === 'hybrid') {
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="font-semibold text-slate-700 m-0">Monthly Consumption</label>
+            <span class="text-[10px] text-slate-500 font-mono">₹6.00/unit avg</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="number" placeholder="Bill (INR)" [ngModel]="monthlyBill()" (ngModelChange)="syncUnitsFromBill($event)" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 font-mono text-xs">
+            <input type="number" placeholder="Units (kWh)" [ngModel]="monthlyUnits()" (ngModelChange)="syncBillFromUnits($event)" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 font-mono text-xs">
+          </div>
+        </div>
+      }
+
+      <!-- Preferred Solar Panel Rating -->
+      @if (architecture() !== 'nobattery') {
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Preferred Solar Panel Rating</label>
+          <select [ngModel]="panelWattage()" (ngModelChange)="panelWattage.set($event)" class="w-full py-2 px-3 rounded-xl border border-slate-200 focus:border-sky-500 font-medium bg-white">
+            <option [value]="550">550W Mono PERC Half-Cut</option>
+            <option [value]="580">580W TOPCon Bifacial (Recommended)</option>
+            <option [value]="600">600W+ Ultra High-Power Module</option>
+          </select>
+        </div>
+      }
+
+      <!-- Future Expansion Margin -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Future Expansion Margin</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" (click)="setMargin(0)" [ngClass]="expansionMargin() === 0 ? 'border-sky-400 bg-sky-50 text-sky-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'" class="py-2 rounded-xl font-bold border transition">0%</button>
+          <button type="button" (click)="setMargin(15)" [ngClass]="expansionMargin() === 15 ? 'border-sky-400 bg-sky-50 text-sky-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'" class="py-2 rounded-xl font-bold border transition">15%</button>
+          <button type="button" (click)="setMargin(20)" [ngClass]="expansionMargin() === 20 ? 'border-sky-400 bg-sky-50 text-sky-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'" class="py-2 rounded-xl font-bold border transition">20%</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- STEP 3: DYNAMIC APPLIANCE LOAD BUILDER -->
+  <section class="bg-white rounded-2xl p-6 shadow-sm border border-sky-100 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Step 3</span>
+        <h2 class="text-lg font-black text-slate-900 m-0">Dynamic Appliance Load Builder (Up to 200 kWh/day)</h2>
+        <p class="text-xs text-slate-500 m-0">Grouped into Daytime (Direct Solar) and Nighttime (Battery Backup) sections</p>
+      </div>
+
+      <!-- Quick Profiles -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-xs text-slate-400 mr-1">Presets:</span>
+        <button (click)="loadTemplate('residential_3bhk')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 transition">
+          🏠 3-BHK (~8 kWh)
+        </button>
+        <button (click)="loadTemplate('office_clinic')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 transition">
+          🏢 Office (~25 kWh)
+        </button>
+        <button (click)="loadTemplate('solar_pump')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 transition">
+          🌾 3P Pump (~45 kWh)
+        </button>
+        <button (click)="loadTemplate('commercial_mill')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 transition">
+          🏭 Mill (~120 kWh)
+        </button>
+        <button (click)="clearApplianceList()" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition">
+          Clear All
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick-Add Appliance Toolbar -->
+    <div class="mb-5 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+      <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center justify-between">
+        <span><i class="fa-solid fa-plus-circle text-sky-600 mr-1"></i> Quick-Add Common Appliances</span>
+        <span class="text-slate-400 font-normal">Click any appliance to append to appropriate time slot</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        <button (click)="quickAddAppliance('led')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          💡 LED Bulb (10W)
+        </button>
+        <button (click)="quickAddAppliance('fan_normal')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          🌀 Normal Fan (75W)
+        </button>
+        <button (click)="quickAddAppliance('fan_bldc')" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          ⚡ BLDC Fan (30W)
+        </button>
+        <button (click)="quickAddAppliance('desktop')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          🖥️ Desktop (200W)
+        </button>
+        <button (click)="quickAddAppliance('laptop')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          💻 Laptop (65W)
+        </button>
+        <button (click)="quickAddAppliance('tv')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          📺 TV / Wi-Fi (80W)
+        </button>
+        <button (click)="quickAddAppliance('fridge')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          🧊 Refrigerator (150W/450W)
+        </button>
+        <button (click)="quickAddAppliance('pump_1hp')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          💧 1 HP Pump (850W/2200W)
+        </button>
+        <button (click)="quickAddAppliance('pump_2hp')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          🌊 2 HP Pump (1600W/4200W)
+        </button>
+        <button (click)="quickAddAppliance('pump_3hp_3p')" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          ⚡ 3 HP 3P Pump (2400W/6000W)
+        </button>
+        <button (click)="quickAddAppliance('pump_5hp_3p')" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          ⚙️ 5 HP 3P Pump (3800W/9500W)
+        </button>
+        <button (click)="quickAddAppliance('ac_1_5t')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          ❄️ 1.5 Ton AC (1500W/2400W)
+        </button>
+        <button (click)="quickAddAppliance('ac_2t')" class="text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-medium transition shadow-sm">
+          ❄️ 2 Ton AC (2000W/3200W)
+        </button>
+        <button (click)="promptCustomAppliance()" class="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-lg font-bold transition shadow-sm">
+          + Custom Appliance
+        </button>
+      </div>
+    </div>
+
+    <!-- Clean Grouped Appliance Table (No Redundant Columns) -->
+    <div class="overflow-x-auto rounded-xl border border-slate-200">
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold uppercase tracking-wider text-[11px]">
+            <th class="py-2.5 px-3">Appliance Name</th>
+            <th class="py-2.5 px-2 text-center w-16">Qty</th>
+            <th class="py-2.5 px-2 text-right w-24">Rated W</th>
+            <th class="py-2.5 px-2 text-center w-20">Surge</th>
+            <th class="py-2.5 px-2 text-center w-28">Peak Surge W</th>
+            <th class="py-2.5 px-2 text-center w-24">Simultaneous?</th>
+            <th class="py-2.5 px-2 text-center w-28">Operating Hours</th>
+            <th class="py-2.5 px-3 text-right w-24">Daily Units (kWh)</th>
+            <th class="py-2.5 px-2 text-center w-12">Act</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          
+          <!-- SECTION 1: DAYTIME DIRECT SOLAR POWER -->
+          <tr class="bg-sky-100 border-y border-sky-200">
+            <td colspan="9" class="py-2.5 px-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-sky-500 text-white flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-sun"></i>
+                  </span>
+                  <span class="font-extrabold text-slate-950 text-xs tracking-wide">
+                    Daytime (9:00 AM – 4:00 PM) — Direct Solar Power
+                  </span>
+                  <span class="text-[10px] text-sky-800 font-semibold bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                    Direct PV Consumption • Max 7.0 hrs
+                  </span>
+                </div>
+                <button (click)="addApplianceToSlot('day')" class="text-[11px] font-bold text-sky-800 bg-white hover:bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-300 transition">
+                  + Add Daytime Load
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          @if (daytimeAppliances().length === 0) {
+            <tr>
+              <td colspan="9" class="py-3 px-3 text-center text-slate-400 italic">No daytime appliances added. Click "+ Add Daytime Load" or presets above.</td>
+            </tr>
+          } @else {
+            @for (app of daytimeAppliances(); track app.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-2.5 px-3">
+                  <span class="font-bold text-slate-900 block text-xs">{{ app.name }}</span>
+                  @if (app.is3Phase) {
+                    <span class="inline-block text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">3-Phase 415V</span>
+                  }
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="number" min="1" max="200" [ngModel]="app.qty" (ngModelChange)="updateApplianceField(app.id, 'qty', $event)" class="w-14 text-center py-1 px-1 rounded-lg border border-slate-200 font-mono text-xs font-semibold">
+                </td>
+                <td class="py-2 px-2 text-right">
+                  <input type="number" min="1" max="50000" step="5" [ngModel]="app.watt" (ngModelChange)="updateApplianceField(app.id, 'watt', $event)" class="w-20 text-right py-1 px-1.5 rounded-lg border border-slate-200 font-mono text-xs font-semibold">
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="number" min="1.0" max="4.0" step="0.1" [ngModel]="app.surgeMult" (ngModelChange)="updateApplianceField(app.id, 'surgeMult', $event)" class="w-16 text-center py-1 px-1 rounded-lg border border-slate-200 font-mono text-xs">
+                </td>
+                <td class="py-2 px-2 text-center font-mono font-bold text-slate-700">
+                  {{ (app.qty * app.watt * app.surgeMult).toFixed(0) }} W
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="checkbox" [ngModel]="app.simultaneous" (ngModelChange)="updateApplianceField(app.id, 'simultaneous', $event)" class="w-4 h-4 rounded text-sky-600 border-slate-300">
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="number" min="0" max="7" step="0.5" [ngModel]="app.hours" (ngModelChange)="updateApplianceField(app.id, 'hours', $event)" class="w-16 text-center py-1 px-1 rounded-lg border border-slate-200 font-mono text-xs font-bold text-sky-800">
+                </td>
+                <td class="py-2 px-3 text-right font-mono font-bold text-slate-900">
+                  {{ ((app.qty * app.watt * app.hours) / 1000).toFixed(2) }}
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <button (click)="removeAppliance(app.id)" title="Delete Row" class="text-slate-400 hover:text-rose-600 transition p-1 border-0 bg-transparent">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+
+          <!-- SECTION 2: NIGHTTIME 100% BATTERY POWER -->
+          <tr class="bg-indigo-100 border-y border-indigo-200">
+            <td colspan="9" class="py-2.5 px-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-moon"></i>
+                  </span>
+                  <span class="font-extrabold text-slate-950 text-xs tracking-wide">
+                    Nighttime (4:00 PM – 9:00 AM) — 100% Battery Power
+                  </span>
+                  <span class="text-[10px] text-indigo-800 font-semibold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                    {{ architecture() === 'hybrid' || architecture() === 'nobattery' ? 'Grid Blackout Backup' : 'Battery Discharged • Max 17.0 hrs' }}
+                  </span>
+                </div>
+                <button (click)="addApplianceToSlot('night')" class="text-[11px] font-bold text-indigo-800 bg-white hover:bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-300 transition">
+                  + Add Nighttime Load
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          @if (nighttimeAppliances().length === 0) {
+            <tr>
+              <td colspan="9" class="py-3 px-3 text-center text-slate-400 italic">No nighttime/backup appliances added. Click "+ Add Nighttime Load" or presets above.</td>
+            </tr>
+          } @else {
+            @for (app of nighttimeAppliances(); track app.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-2.5 px-3">
+                  <span class="font-bold text-slate-900 block text-xs">{{ app.name }}</span>
+                  @if (app.is3Phase) {
+                    <span class="inline-block text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">3-Phase 415V</span>
+                  }
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="number" min="1" max="200" [ngModel]="app.qty" (ngModelChange)="updateApplianceField(app.id, 'qty', $event)" class="w-14 text-center py-1 px-1 rounded-lg border border-slate-200 font-mono text-xs font-semibold">
+                </td>
+                <td class="py-2 px-2 text-right">
+                  <input type="number" min="1" max="50000" step="5" [ngModel]="app.watt" (ngModelChange)="updateApplianceField(app.id, 'watt', $event)" class="w-20 text-right py-1 px-1.5 rounded-lg border border-slate-200 font-mono text-xs font-semibold">
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="number" min="1.0" max="4.0" step="0.1" [ngModel]="app.surgeMult" (ngModelChange)="updateApplianceField(app.id, 'surgeMult', $event)" class="w-16 text-center py-1 px-1 rounded-lg border border-slate-200 font-mono text-xs">
+                </td>
+                <td class="py-2 px-2 text-center font-mono font-bold text-slate-700">
+                  {{ (app.qty * app.watt * app.surgeMult).toFixed(0) }} W
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="checkbox" [ngModel]="app.simultaneous" (ngModelChange)="updateApplianceField(app.id, 'simultaneous', $event)" class="w-4 h-4 rounded text-sky-600 border-slate-300">
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <input type="number" min="0" max="17" step="0.5" [ngModel]="app.hours" (ngModelChange)="updateApplianceField(app.id, 'hours', $event)" class="w-16 text-center py-1 px-1 rounded-lg border border-slate-200 font-mono text-xs font-bold text-indigo-800">
+                </td>
+                <td class="py-2 px-3 text-right font-mono font-bold text-slate-900">
+                  {{ ((app.qty * app.watt * app.hours) / 1000).toFixed(2) }}
+                </td>
+                <td class="py-2 px-2 text-center">
+                  <button (click)="removeAppliance(app.id)" title="Delete Row" class="text-slate-400 hover:text-rose-600 transition p-1 border-0 bg-transparent">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Energy Audit Summary Bar -->
+    <div class="mt-4 bg-sky-50/70 p-4 rounded-xl border border-sky-100 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+      <div class="p-2 bg-white rounded-lg border border-sky-100">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Daytime Direct Solar</span>
+        <span class="text-base font-extrabold text-sky-700 font-mono">{{ audit().dayKwh.toFixed(2) }}</span>
+        <span class="text-[10px] text-slate-500 block">kWh/day</span>
+      </div>
+      <div class="p-2 bg-white rounded-lg border border-sky-100">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Night / Backup Units</span>
+        <span class="text-base font-extrabold text-indigo-700 font-mono">{{ audit().nightKwh.toFixed(2) }}</span>
+        <span class="text-[10px] text-slate-500 block">kWh/day</span>
+      </div>
+      <div class="p-2 bg-white rounded-lg border border-sky-100">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Daily Units</span>
+        <span class="text-base font-extrabold text-slate-900 font-mono">{{ audit().totalDailyKwh.toFixed(2) }}</span>
+        <span class="text-[10px] text-slate-500 block">kWh/day</span>
+      </div>
+      <div class="p-2 bg-white rounded-lg border border-sky-100">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Continuous Load</span>
+        <span class="text-base font-extrabold text-emerald-700 font-mono">{{ audit().continuousW }}</span>
+        <span class="text-[10px] text-slate-500 block">Watts</span>
+      </div>
+      <div class="p-2 bg-white rounded-lg border border-sky-100 col-span-2 sm:col-span-1">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Peak Starting Surge</span>
+        <span class="text-base font-extrabold text-amber-700 font-mono">{{ audit().peakStartingSurgeW.toFixed(0) }}</span>
+        <span class="text-[10px] text-slate-500 block">Watts</span>
+      </div>
+    </div>
+
+    <!-- SMART OPTIMIZATION CALLOUT -->
+    <div class="mt-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 p-4 rounded-xl border border-emerald-200">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <i class="fa-solid fa-lightbulb text-xl"></i>
+        </div>
+        <div class="space-y-1.5 flex-1">
+          <h4 class="font-bold text-emerald-950 text-sm flex items-center gap-2 m-0">
+            <span>Smart Sizing Optimization & Cost Reductions</span>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold uppercase">Engineering Advisory</span>
+          </h4>
+          
+          <!-- BLDC Upgrade Insight -->
+          <div class="text-xs text-emerald-900 leading-relaxed">
+            @if (bldcInsight().hasFans) {
+              <i class="fa-solid fa-arrow-trend-up text-emerald-600 mr-1"></i>
+              <strong>BLDC Fan Energy & Battery Savings:</strong> Upgrading your <strong>{{ bldcInsight().count }} standard 75W ceiling fans</strong> to 30W BLDC fans saves <strong>{{ bldcInsight().dailyKwh }} kWh/day</strong> ({{ bldcInsight().annualUnits }} units/yr). This directly shrinks the required battery storage by <strong>{{ bldcInsight().savedBatteryKwh }} kWh</strong>, saving approx <strong>₹{{ bldcInsight().savedBatteryInr }}</strong> in upfront battery investment!
+            } @else {
+              <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i>
+              <strong>Energy-Efficient Ventilation:</strong> Your system is utilizing energy-efficient fans or low-draw ventilation, minimizing nighttime battery drain.
+            }
+          </div>
+
+          <!-- Heavy Water Pump Advisory -->
+          <div class="text-xs text-teal-900 leading-relaxed pt-1.5 border-t border-emerald-200/60">
+            <i class="fa-solid fa-clock text-teal-600 mr-1"></i>
+            <strong>Peak Solar Water Pumping Advisory:</strong> Schedule heavy water pumping (1 HP to 5 HP) between <strong>10:00 AM – 3:00 PM</strong>. Powering pumps directly from PV strings avoids heavy inverter cyclic stress on batteries and prolongs battery lifespan by up to <strong>2–3 years</strong>!
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 4: ENGINEERING SIZING RESULTS DASHBOARD -->
+  <section class="space-y-6">
+
+    <!-- Inverter & PV Array Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Inverter / MPPT PCU Card -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-sky-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-microchip"></i>
+            </div>
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Power Conversion</span>
+              <h3 class="text-base font-black text-slate-900 m-0">Inverter / MPPT PCU Sizing</h3>
+            </div>
+          </div>
+          <span class="bg-slate-100 text-slate-800 px-2.5 py-1 rounded-full text-xs font-bold border border-slate-200">
+            {{ inverter().isThreePhase ? 'Three-Phase 415V' : 'Single-Phase 230V' }}
+          </span>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Standard PCU Rating</span>
+            <span class="text-2xl font-black text-slate-900 font-mono">{{ inverter().sizedKva.toFixed(1) }}</span>
+            <span class="text-xs font-bold text-amber-600 ml-1">kVA</span>
+            <p class="text-[10px] text-slate-500 mt-1 m-0">Calculated: <span class="font-mono">{{ inverter().rawKva.toFixed(2) }} kVA</span></p>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">System DC Bus Voltage</span>
+            <span class="text-2xl font-black text-sky-700 font-mono">{{ inverter().dcVoltage }}V</span>
+            <span class="text-xs font-bold text-slate-600 ml-1">DC</span>
+            <p class="text-[10px] text-slate-500 mt-1 m-0">Bus: <span>{{ inverter().busArchitecture }}</span></p>
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-2 text-xs">
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">Rated Continuous Output:</span>
+            <span class="font-mono font-bold text-slate-900">{{ inverter().ratedWatts.toLocaleString() }} W (0.8 PF)</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">Surge Capacity (2x / 5 sec):</span>
+            <span class="font-mono font-bold text-slate-900">{{ inverter().surgeCapacityWatts.toLocaleString() }} W</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">Full Load AC Output Current:</span>
+            <span class="font-mono font-bold text-slate-900">{{ inverter().acOutputCurrent.toFixed(1) }} A</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">MPPT Operating Voltage Window:</span>
+            <span class="font-mono font-bold text-sky-700">{{ inverter().mpptRangeText }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Solar PV Array & Stringing Card -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-sky-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-sun"></i>
+            </div>
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Solar Generation</span>
+              <h3 class="text-base font-black text-slate-900 m-0">Solar PV Array & Stringing</h3>
+            </div>
+          </div>
+          <span class="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-200">
+            DC:AC {{ solar().dcAcRatio.toFixed(2) }}
+          </span>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Installed PV Capacity</span>
+            <span class="text-2xl font-black text-emerald-600 font-mono">{{ solar().installedKwp.toFixed(2) }}</span>
+            <span class="text-xs font-bold text-slate-600 ml-1">kWp</span>
+            <p class="text-[10px] text-slate-500 mt-1 m-0">Min Required: <span class="font-mono">{{ solar().requiredKwp.toFixed(2) }} kWp</span></p>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Solar Panels</span>
+            <span class="text-2xl font-black text-slate-900 font-mono">{{ solar().totalPanels }}</span>
+            <span class="text-xs font-bold text-slate-600 ml-1">Panels</span>
+            <p class="text-[10px] text-slate-500 mt-1 m-0"><span>{{ panelWattage() }}W TOPCon Bifacial</span></p>
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-2 text-xs">
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">MPPT String Configuration:</span>
+            <span class="font-mono font-bold text-slate-900">{{ solar().parallelStrings }} Strings × {{ solar().seriesPanels }} in Series</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">String Voc (Open Circuit Voltage):</span>
+            <span class="font-mono font-bold text-slate-900">{{ solar().stringVoc.toFixed(1) }} V (&lt; MPPT max)</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">String Vmp (Operating Voltage):</span>
+            <span class="font-mono font-bold text-slate-900">{{ solar().stringVmp.toFixed(1) }} V (Optimal MPPT)</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-100">
+            <span class="text-slate-500">Rooftop Area Required:</span>
+            <span class="font-mono font-bold text-slate-700">~{{ solar().solarAreaSqFt }} sq.ft</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MANDATORY 3 BATTERY BANK OPTIONS -->
+    @if (architecture() !== 'ongrid') {
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-sky-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Energy Storage Sizing</span>
+            <h3 class="text-lg font-black text-slate-900 m-0">3 Mandatory Battery Bank Engineering Options</h3>
+          </div>
+          <div class="text-xs text-slate-500 font-medium">
+            Backup Required: <span class="font-mono font-bold text-indigo-700">{{ battery().requiredAcBackupKwh.toFixed(2) }} kWh</span> AC Usable
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          <!-- Option 1: Premium LiFePO4 (Recommended) -->
+          <div class="rounded-2xl p-5 border-2 border-indigo-500 bg-gradient-to-b from-indigo-50/50 via-white to-white relative shadow-md flex flex-col justify-between">
+            <div class="absolute -top-3 right-4 bg-indigo-600 text-white text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full shadow-sm tracking-wider">
+              ⭐ Recommended Choice
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">1</span>
+                <div>
+                  <h4 class="font-extrabold text-slate-900 text-sm m-0">Premium LiFePO4</h4>
+                  <span class="text-[10px] text-indigo-600 font-semibold block">High Autonomy + Cloudy Reserve</span>
+                </div>
+              </div>
+
+              <div class="my-3 p-3 bg-white rounded-xl border border-indigo-100">
+                <div class="flex items-baseline justify-between">
+                  <span class="text-xs text-slate-500 font-medium">DC Storage:</span>
+                  <span class="text-xl font-black text-indigo-900 font-mono">{{ battery().opt1DcKwh.toFixed(1) }} kWh</span>
+                </div>
+                <div class="flex items-baseline justify-between mt-1">
+                  <span class="text-xs text-slate-500 font-medium">Usable AC Delivery:</span>
+                  <span class="text-xs font-bold text-emerald-600 font-mono">{{ battery().opt1TargetAc.toFixed(1) }} kWh</span>
+                </div>
+              </div>
+
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Pack Configuration:</span>
+                  <span class="font-bold text-slate-900 text-right">{{ battery().opt1ConfigText }}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Morning / Rainy Reserve:</span>
+                  <span class="font-bold text-indigo-700">35% – 45% High Autonomy</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Depth of Discharge (DoD):</span>
+                  <span class="font-mono font-bold text-slate-900">90% DoD</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Expected Lifespan:</span>
+                  <span class="font-bold text-emerald-700">8 – 10+ Years (3,500+ cycles)</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Maintenance:</span>
+                  <span class="font-bold text-emerald-600">Zero Maintenance (Sealed BMS)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+              <i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i>
+              Ideal for zero-grid independence; prevents low-battery shutdown on cloudy days.
+            </div>
+          </div>
+
+          <!-- Option 2: Standard LiFePO4 (Economy Lithium) -->
+          <div class="rounded-2xl p-5 border border-slate-200 bg-white relative shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center font-bold text-sm">2</span>
+                <div>
+                  <h4 class="font-extrabold text-slate-900 text-sm m-0">Standard LiFePO4</h4>
+                  <span class="text-[10px] text-sky-600 font-semibold block">Economy Lithium (15% Buffer)</span>
+                </div>
+              </div>
+
+              <div class="my-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div class="flex items-baseline justify-between">
+                  <span class="text-xs text-slate-500 font-medium">DC Storage:</span>
+                  <span class="text-xl font-black text-slate-800 font-mono">{{ battery().opt2DcKwh.toFixed(1) }} kWh</span>
+                </div>
+                <div class="flex items-baseline justify-between mt-1">
+                  <span class="text-xs text-slate-500 font-medium">Usable AC Delivery:</span>
+                  <span class="text-xs font-bold text-emerald-600 font-mono">{{ battery().opt2TargetAc.toFixed(1) }} kWh</span>
+                </div>
+              </div>
+
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Pack Configuration:</span>
+                  <span class="font-bold text-slate-900 text-right">{{ battery().opt2ConfigText }}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Safety Buffer:</span>
+                  <span class="font-bold text-slate-700">15% Standard Margin</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Depth of Discharge (DoD):</span>
+                  <span class="font-mono font-bold text-slate-900">90% DoD</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Expected Lifespan:</span>
+                  <span class="font-bold text-emerald-700">8 – 10+ Years</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Maintenance:</span>
+                  <span class="font-bold text-emerald-600">Zero Maintenance (Sealed BMS)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+              <i class="fa-solid fa-circle-check text-sky-500 mr-1"></i>
+              Ideal balance of upfront budget and long lithium lifespan for daily cycling.
+            </div>
+          </div>
+
+          <!-- Option 3: C10 Tall Tubular Lead-Acid -->
+          <div class="rounded-2xl p-5 border border-slate-200 bg-white relative shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">3</span>
+                <div>
+                  <h4 class="font-extrabold text-slate-900 text-sm m-0">C10 Tall Tubular Lead-Acid</h4>
+                  <span class="text-[10px] text-amber-600 font-semibold block">Lowest Upfront CapEx</span>
+                </div>
+              </div>
+
+              <div class="my-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div class="flex items-baseline justify-between">
+                  <span class="text-xs text-slate-500 font-medium">DC Storage:</span>
+                  <span class="text-xl font-black text-slate-800 font-mono">{{ battery().opt3DcKwh.toFixed(1) }} kWh</span>
+                </div>
+                <div class="flex items-baseline justify-between mt-1">
+                  <span class="text-xs text-slate-500 font-medium">Usable AC Delivery:</span>
+                  <span class="text-xs font-bold text-emerald-600 font-mono">{{ battery().opt3TargetAc.toFixed(1) }} kWh</span>
+                </div>
+              </div>
+
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Battery Configuration:</span>
+                  <span class="font-bold text-slate-900 text-right">{{ battery().opt3ConfigText }}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Total Physical Batteries:</span>
+                  <span class="font-mono font-bold text-amber-700">{{ battery().totalLeadAcidCount }} Batteries (12V {{ battery().batAhRating }}Ah)</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Depth of Discharge (DoD):</span>
+                  <span class="font-mono font-bold text-slate-900">70% DoD</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Expected Lifespan:</span>
+                  <span class="font-bold text-amber-700">3 – 5 Years (1,200 cycles)</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-100">
+                  <span class="text-slate-500">Maintenance:</span>
+                  <span class="font-bold text-rose-600">Periodic Distilled Water Top-up</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+              <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i>
+              Lowest initial capital, but requires water topping every 60–90 days and full replacement after ~4 years.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    }
+
+    <!-- DYNAMIC BOS & PROTECTION CHECKLIST -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-sky-100">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Electrical Engineering</span>
+            <h3 class="text-base font-black text-slate-900 m-0">Dynamic Balance of System (BOS) & Protection Checklist</h3>
+          </div>
+        </div>
+        <span class="text-xs text-slate-400 font-mono">IS/IEC 60364 & MNRE Standards</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+        
+        <!-- DC Protection -->
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-1.5 m-0">
+            <i class="fa-solid fa-bolt text-amber-500"></i> DC Distribution (DCDB)
+          </h4>
+          <ul class="space-y-1.5 text-slate-600 p-0 m-0 list-none mt-2">
+            <li class="flex justify-between">
+              <span>DC SPD:</span>
+              <span class="font-bold text-slate-800">{{ bos().bosDcSpd }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span>DC Fuses:</span>
+              <span class="font-bold text-slate-800">{{ bos().bosDcFuse }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span>DC Isolator:</span>
+              <span class="font-bold text-slate-800">1000V 4P Rotary Switch</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- AC Protection -->
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-1.5 m-0">
+            <i class="fa-solid fa-power-off text-sky-500"></i> AC Distribution (ACDB)
+          </h4>
+          <ul class="space-y-1.5 text-slate-600 p-0 m-0 list-none mt-2">
+            <li class="flex justify-between">
+              <span>AC SPD:</span>
+              <span class="font-bold text-slate-800">{{ bos().bosAcSpd }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span>AC Breaker:</span>
+              <span class="font-bold text-slate-800">{{ bos().bosAcMcb }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span>AC RCD/RCCB:</span>
+              <span class="font-bold text-slate-800">30mA High Sensitivity</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Cable Sizing -->
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-1.5 m-0">
+            <i class="fa-solid fa-bezier-curve text-emerald-500"></i> Copper Cable Schedule
+          </h4>
+          <ul class="space-y-1.5 text-slate-600 p-0 m-0 list-none mt-2">
+            <li class="flex justify-between">
+              <span>Solar PV Cable:</span>
+              <span class="font-bold text-slate-800">{{ bos().bosPvCable }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span>Battery DC Cable:</span>
+              <span class="font-bold text-slate-800">{{ bos().bosBatCable }}</span>
+            </li>
+            <li class="flex justify-between">
+              <span>AC Output Cable:</span>
+              <span class="font-bold text-slate-800">{{ bos().bosAcCable }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Earthing & LA -->
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-900 mb-2 flex items-center gap-1.5 m-0">
+            <i class="fa-solid fa-earth-americas text-indigo-500"></i> Earthing & Lightning
+          </h4>
+          <ul class="space-y-1.5 text-slate-600 p-0 m-0 list-none mt-2">
+            <li class="flex justify-between">
+              <span>Pit 1 (DC Side):</span>
+              <span class="font-bold text-slate-800">Chemical Earthing Pit</span>
+            </li>
+            <li class="flex justify-between">
+              <span>Pit 2 (AC Side):</span>
+              <span class="font-bold text-slate-800">Chemical Inverter Pit</span>
+            </li>
+            <li class="flex justify-between">
+              <span>Pit 3 (Lightning):</span>
+              <span class="font-bold text-slate-800">Class-1 LA Dedicated Pit</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: 1-PAGE ODIA CUSTOMER PROPOSAL PREVIEW & EXPORT -->
+  <!-- ============================================================== -->
+  @if (showOdiaModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-2 sm:p-4">
+      <div class="bg-slate-100 rounded-2xl w-full max-w-[220mm] shadow-2xl flex flex-col max-h-[96vh] overflow-hidden">
+        
+        <!-- Modal Header Bar -->
+        <div class="bg-white px-5 py-3 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-file-pdf text-rose-500 text-lg"></i>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm font-oriya m-0">୧-ପୃଷ୍ଠା ଓଡ଼ିଆ ଗ୍ରାହକ ସୂଚନା ପତ୍ର (1-Page Odia Proposal)</h3>
+              <p class="text-[11px] text-slate-400 m-0">Strict Single-Page A4 Non-Technical Handout (Noto Sans Oriya)</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button (click)="downloadOdiaPdf()" [disabled]="isGeneratingPdf()" class="inline-flex items-center px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition shadow-sm border-0">
+              <i class="fa-solid fa-download mr-1.5"></i> Download PDF
+            </button>
+            <button (click)="printOdiaPdf()" class="inline-flex items-center px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition shadow-sm border-0">
+              <i class="fa-solid fa-print mr-1.5"></i> Print A4
+            </button>
+            <button (click)="closeOdiaModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition border-0 bg-transparent">
+              <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Preview Body -->
+        <div class="p-3 sm:p-5 overflow-y-auto flex justify-center bg-slate-200/80">
+          
+          <!-- THE STRICT 1-PAGE A4 ODIA SHEET -->
+          <div id="odiaSheetModal" class="a4-sheet-single shadow-xl font-oriya text-slate-900 p-6 flex flex-col justify-between">
+            
+            <!-- Diagonal Watermark -->
+            <div class="proposal-watermark select-none">
+              SHRI TRUTIYADEV SOLAR ENTERPRISES<br>
+              <span class="font-oriya text-3xl font-bold opacity-80">ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର</span>
+            </div>
+
+            <!-- Document Header -->
+            <div class="relative z-10 border-b-2 border-sky-600 pb-2.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-sky-600 text-white flex items-center justify-center text-2xl shadow-sm shrink-0">
+                    <i class="fa-solid fa-sun"></i>
+                  </div>
+                  <div>
+                    <h1 class="text-lg font-black text-slate-950 tracking-tight leading-tight m-0">ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍</h1>
+                    <p class="text-[11px] font-bold text-sky-800 font-sans tracking-wide m-0">SHRI TRUTIYADEV SOLAR ENTERPRISES</p>
+                    <p class="text-[10px] text-slate-500 m-0">ସୌରଶକ୍ତି, ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ଓ ଶକ୍ତି ସମାଧାନ ପ୍ରତିଷ୍ଠାନ • ବାଦାମବାଡ଼ି, କଟକ, ଓଡ଼ିଶା</p>
+                  </div>
+                </div>
+
+                <div class="text-right text-[10px] text-slate-600 leading-tight">
+                  <span class="inline-block bg-sky-100 text-sky-900 font-bold px-2 py-0.5 rounded text-[10px] mb-1">ଗ୍ରାହକ ପ୍ରସ୍ତାବନା</span>
+                  <p class="m-0">ତାରିଖ: <span class="font-mono font-bold">{{ todayFormatted }}</span></p>
+                  <p class="m-0">କ୍ରମାଙ୍କ: <span class="font-mono font-bold">STS/2026/894</span></p>
+                  <p class="m-0">ମୋବାଇଲ୍: <span class="font-mono font-semibold">+91 94370 XXXXX</span></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 1: Customer & Site Details Banner -->
+            <div class="relative z-10 bg-sky-50 rounded-lg p-2.5 border border-sky-200 text-[11px] grid grid-cols-3 gap-2">
+              <div>
+                <span class="text-slate-500 block text-[10px]">ଗ୍ରାହକଙ୍କ ନାମ:</span>
+                <span class="font-bold text-slate-900">{{ clientName() }}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block text-[10px]">ପ୍ରକଳ୍ପ ସ୍ଥାନ:</span>
+                <span class="font-bold text-slate-900">{{ siteLocation() }}</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block text-[10px]">ସିଷ୍ଟମ୍ ପ୍ରକାର:</span>
+                <span class="font-bold text-sky-800">{{ archNameOdia }}</span>
+              </div>
+            </div>
+
+            <!-- Section 2: Daily Electricity Consumption Summary -->
+            <div class="relative z-10">
+              <h2 class="text-xs font-bold text-slate-950 uppercase tracking-wider mb-1 flex items-center gap-1.5 border-l-3 border-amber-500 pl-2 m-0">
+                <i class="fa-solid fa-bolt text-amber-500 text-[11px]"></i> ୧. ଦୈନିକ ବିଦ୍ୟୁତ ଖର୍ଚ୍ଚ ବିବରଣୀ (Daily Load Audit)
+              </h2>
+              <div class="grid grid-cols-4 gap-2 text-center text-[10.5px]">
+                <div class="bg-white p-1.5 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-500 block">ଦିନ ବେଳା ସୋଲାର୍</span>
+                  <span class="font-black text-sky-700 font-mono text-sm">{{ audit().dayKwh.toFixed(2) }}</span> ୟୁନିଟ୍
+                </div>
+                <div class="bg-white p-1.5 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-500 block">ରାତି / ବ୍ୟାକଅପ୍</span>
+                  <span class="font-black text-indigo-700 font-mono text-sm">{{ audit().nightKwh.toFixed(2) }}</span> ୟୁନିଟ୍
+                </div>
+                <div class="bg-white p-1.5 rounded-lg border border-slate-200 bg-sky-50/40">
+                  <span class="text-[9.5px] text-slate-500 block">ମୋଟ ଦୈନିକ ଖର୍ଚ୍ଚ</span>
+                  <span class="font-black text-slate-950 font-mono text-sm">{{ audit().totalDailyKwh.toFixed(2) }}</span> ୟୁନିଟ୍
+                </div>
+                <div class="bg-white p-1.5 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-500 block">ଏକକାଳୀନ ପିକ୍ ଲୋଡ୍</span>
+                  <span class="font-black text-amber-700 font-mono text-sm">{{ (audit().continuousW / 1000).toFixed(2) }}</span> kW
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Recommended Solar & Inverter Capacity -->
+            <div class="relative z-10">
+              <h2 class="text-xs font-bold text-slate-950 uppercase tracking-wider mb-1 flex items-center gap-1.5 border-l-3 border-sky-600 pl-2 m-0">
+                <i class="fa-solid fa-solar-panel text-sky-600 text-[11px]"></i> ୨. ସୁପାରିଶ କରାଯାଇଥିବା ସୋଲାର୍ ଓ ଇନଭର୍ଟର ସିଷ୍ଟମ୍
+              </h2>
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-sky-50 p-2 rounded-lg border border-sky-100 flex items-center justify-between">
+                  <div>
+                    <span class="text-[10px] text-slate-500 block font-sans">Solar Inverter / PCU</span>
+                    <span class="font-bold text-slate-900">ଇନଭର୍ଟର କ୍ଷମତା:</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-sm font-black text-amber-700 font-mono">{{ inverter().sizedKva }} kVA</span>
+                    <span class="text-[9.5px] text-slate-600 block">{{ inverter().isThreePhase ? '3-Phase 415V' : 'Single-Phase 230V' }} ({{ inverter().dcVoltage }}V DC)</span>
+                  </div>
+                </div>
+
+                <div class="bg-emerald-50 p-2 rounded-lg border border-emerald-100 flex items-center justify-between">
+                  <div>
+                    <span class="text-[10px] text-slate-500 block font-sans">Solar PV Array</span>
+                    <span class="font-bold text-slate-900">ସୋଲାର ପ୍ୟାନେଲ୍:</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-sm font-black text-emerald-700 font-mono">{{ solar().installedKwp.toFixed(2) }} kWp</span>
+                    <span class="text-[9.5px] text-slate-600 block">{{ solar().totalPanels }} ଟି {{ panelWattage() }}W TOPCon</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 4: 3 Battery Bank Options Comparison Table -->
+            <div class="relative z-10">
+              <h2 class="text-xs font-bold text-slate-950 uppercase tracking-wider mb-1 flex items-center justify-between border-l-3 border-indigo-600 pl-2 m-0">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-car-battery text-indigo-600 text-[11px]"></i> ୩. ତିନୋଟି ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ବିକଳ୍ପ (ମନୋନୀତ କରନ୍ତୁ)
+                </span>
+                <span class="text-[9.5px] text-slate-500 font-normal font-sans">Required Backup: <span class="font-mono font-bold">{{ battery().requiredAcBackupKwh.toFixed(1) }} kWh</span></span>
+              </h2>
+
+              <div class="overflow-hidden rounded-lg border border-slate-200 text-[10px]">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                      <th class="p-1.5">ବିକଳ୍ପ ନାମ</th>
+                      <th class="p-1.5 text-center">ବ୍ୟାଟେରୀ ସାଇଜ୍</th>
+                      <th class="p-1.5 text-center">ବ୍ୟବହାରଯୋଗ୍ୟ ୟୁନିଟ୍</th>
+                      <th class="p-1.5 text-center">ଆୟୁଷ (Lifespan)</th>
+                      <th class="p-1.5">ବିଶେଷତା ଓ ସୁବିଧା</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr class="bg-indigo-50/40">
+                      <td class="p-1.5 font-bold text-indigo-950">⭐ ବିକଳ୍ପ ୧: ପ୍ରିମିୟମ୍ ଲିଥିୟମ୍ (LiFePO4)</td>
+                      <td class="p-1.5 text-center font-mono font-bold text-slate-900">{{ battery().opt1DcKwh.toFixed(1) }} kWh</td>
+                      <td class="p-1.5 text-center font-mono font-bold text-emerald-700">{{ battery().opt1TargetAc.toFixed(1) }} ୟୁନିଟ୍</td>
+                      <td class="p-1.5 text-center font-bold text-indigo-700">୮ ରୁ ୧୦+ ବର୍ଷ</td>
+                      <td class="p-1.5 text-slate-600 text-[9.5px]">୩୫% ସକାଳ/ବର୍ଷା ଦିନିଆ ରିଜର୍ଭ, ଜିରୋ ରକ୍ଷଣାବେକ୍ଷଣ (ସର୍ବୋତ୍ତମ)</td>
+                    </tr>
+                    <tr>
+                      <td class="p-1.5 font-bold text-slate-800">ବିକଳ୍ପ ୨: ଷ୍ଟାଣ୍ଡାର୍ଡ ଲିଥିୟମ୍ (LiFePO4)</td>
+                      <td class="p-1.5 text-center font-mono font-bold text-slate-900">{{ battery().opt2DcKwh.toFixed(1) }} kWh</td>
+                      <td class="p-1.5 text-center font-mono font-bold text-emerald-700">{{ battery().opt2TargetAc.toFixed(1) }} ୟୁନିଟ୍</td>
+                      <td class="p-1.5 text-center font-bold text-slate-700">୮ ରୁ ୧୦ ବର୍ଷ</td>
+                      <td class="p-1.5 text-slate-600 text-[9.5px]">୧୫% ସୁରକ୍ଷା ବଫର୍, ସନ୍ତୁଳିତ ଖର୍ଚ୍ଚ ଏବଂ ଲମ୍ବା ଆୟୁ</td>
+                    </tr>
+                    <tr>
+                      <td class="p-1.5 font-bold text-slate-800">ବିକଳ୍ପ ୩: ସୋଲାର୍ ଟ୍ୟୁବୁଲାର୍ ବ୍ୟାଟେରୀ (C10)</td>
+                      <td class="p-1.5 text-center font-mono font-bold text-slate-900">{{ battery().opt3ConfigText }}</td>
+                      <td class="p-1.5 text-center font-mono font-bold text-emerald-700">{{ battery().opt3TargetAc.toFixed(1) }} ୟୁନିଟ୍</td>
+                      <td class="p-1.5 text-center font-bold text-amber-700">୩ ରୁ ୫ ବର୍ଷ</td>
+                      <td class="p-1.5 text-slate-600 text-[9.5px]">କମ୍ ପ୍ରାରମ୍ଭିକ ଖର୍ଚ୍ଚ, ନିୟମିତ ପାଣି ଦେବା ଆବଶ୍ୟକ</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Section 5: Smart Optimization Tips -->
+            <div class="relative z-10 bg-emerald-50 rounded-lg p-2.5 border border-emerald-200 text-[10.5px]">
+              <h3 class="font-bold text-emerald-950 flex items-center gap-1.5 mb-1 m-0">
+                <i class="fa-solid fa-lightbulb text-emerald-600"></i> ଗ୍ରାହକଙ୍କ ପାଇଁ ବିଶେଷ ସଞ୍ଚୟ ପରାମର୍ଶ (Smart Energy Tips)
+              </h3>
+              <div class="space-y-1 text-emerald-900 leading-tight">
+                <p class="m-0">
+                  @if (bldcInsight().hasFans) {
+                    • <strong>BLDC ପଙ୍ଖା ସଞ୍ଚୟ:</strong> ଆପଣଙ୍କ ଘରେ/ସଂସ୍ଥାରେ {{ bldcInsight().count }} ଟି ସାଧାରଣ ୭୫ ୱାଟ୍ ପଙ୍ଖା ବଦଳରେ ୩୦ ୱାଟ୍ BLDC ପଙ୍ଖା ଲଗାଇଲେ ଦିନକୁ ପ୍ରାୟ <strong>{{ bldcInsight().dailyKwh }} ୟୁନିଟ୍ ବିଦ୍ୟୁତ ସଞ୍ଚୟ</strong> ହେବ ଏବଂ ବ୍ୟାଟେରୀ କ୍ରୟ ଖର୍ଚ୍ଚ କମିଯିବ।
+                  } @else {
+                    • <strong>ଉପକରଣ ଦକ୍ଷତା:</strong> ଆପଣ ଉଚ୍ଚ କାର୍ଯ୍ୟକ୍ଷମ ବିଦ୍ୟୁତ ଉପକରଣ ବ୍ୟବହାର କରୁଛନ୍ତି, ଯାହା ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ଅବଧିକୁ ବୃଦ୍ଧି କରେ।
+                  }
+                </p>
+                <p class="m-0">
+                  • <strong>ପାଣି ମୋଟର ଚଳାଇବା ସମୟ:</strong> ପାଣି ମୋଟର ଓ ଭାରୀ ଉପକରଣ ଦିନ ୧୦:୦୦ ରୁ ଅପରାହ୍ନ ୩:୦୦ ମଧ୍ୟରେ ଚଳାନ୍ତୁ। ଏହା ଦ୍ୱାରା ବ୍ୟାଟେରୀ ବ୍ୟବହାର ନହୋଇ ସିଧାସଳଖ ସୂର୍ଯ୍ୟ କିରଣରୁ ବିଦ୍ୟୁତ ମିଳିବ ଏବଂ ବ୍ୟାଟେରୀ ଲମ୍ବା ଦିନ ପର୍ଯ୍ୟନ୍ତ ଭଲ ରହିବ।
+                </p>
+              </div>
+            </div>
+
+            <!-- Section 6: Quality Standard & Customer Signoff Footer -->
+            <div class="relative z-10 pt-2 border-t border-slate-200 text-[10px] text-slate-600">
+              <div class="grid grid-cols-2 gap-4 items-end mb-2">
+                <div>
+                  <p class="font-bold text-slate-900 mb-0.5 m-0">ଗ୍ରାହକଙ୍କ ସମ୍ମତି ସ୍ୱାକ୍ଷର:</p>
+                  <div class="h-8 border-b border-dashed border-slate-400"></div>
+                  <p class="text-[9px] text-slate-400 mt-0.5 m-0">ନାମ / ସ୍ୱାକ୍ଷର / ତାରିଖ</p>
+                </div>
+
+                <div class="text-right">
+                  <p class="font-bold text-slate-950 m-0">ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍ ତରଫରୁ</p>
+                  <div class="h-8 flex items-end justify-end">
+                    <span class="font-bold text-sky-800 font-sans text-[11px] border-b border-slate-400 pb-0.5">Authorized Signatory</span>
+                  </div>
+                  <p class="text-[9px] text-slate-400 mt-0.5 m-0">Technical & Execution Head</p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-[9px] text-slate-400 pt-1 border-t border-slate-100">
+                <span>Shri Trutiyadev Solar Enterprises • Badambadi, Cuttack • Phone: +91 94370 XXXXX</span>
+                <span>ISO 9001:2015 & MNRE Guidelines Compliant</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- MODAL: TECHNICAL ENGLISH PROPOSAL PREVIEW & EXPORT -->
+  <!-- ============================================================== -->
+  @if (showEngModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-2 sm:p-4">
+      <div class="bg-slate-100 rounded-2xl w-full max-w-[220mm] shadow-2xl flex flex-col max-h-[96vh] overflow-hidden">
+        
+        <!-- Modal Header Bar -->
+        <div class="bg-white px-5 py-3 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-file-lines text-sky-600 text-lg"></i>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm m-0">Technical Engineering Proposal (Engineering & BOS Sheet)</h3>
+              <p class="text-[11px] text-slate-400 m-0">Comprehensive Electrical Engineering Specifications & Load Schedule</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button (click)="downloadEngPdf()" [disabled]="isGeneratingPdf()" class="inline-flex items-center px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition shadow-sm border-0">
+              <i class="fa-solid fa-download mr-1.5"></i> Download PDF
+            </button>
+            <button (click)="printEngPdf()" class="inline-flex items-center px-3.5 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition shadow-sm border-0">
+              <i class="fa-solid fa-print mr-1.5"></i> Print A4
+            </button>
+            <button (click)="closeEngModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition border-0 bg-transparent">
+              <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Preview Body -->
+        <div class="p-3 sm:p-5 overflow-y-auto flex justify-center bg-slate-200/80">
+          
+          <!-- THE A4 TECHNICAL ENGINEERING SHEET -->
+          <div id="engSheetModal" class="a4-sheet shadow-xl text-slate-900 p-6 flex flex-col justify-between space-y-4">
+            
+            <!-- Diagonal Watermark -->
+            <div class="proposal-watermark select-none">
+              SHRI TRUTIYADEV SOLAR ENTERPRISES<br>
+              <span class="text-3xl font-bold opacity-75">ENGINEERING PROPOSAL & BOS</span>
+            </div>
+
+            <!-- Document Header -->
+            <div class="relative z-10 border-b-2 border-slate-900 pb-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-600 to-slate-900 text-white flex items-center justify-center text-2xl shadow-sm shrink-0">
+                    <i class="fa-solid fa-solar-panel"></i>
+                  </div>
+                  <div>
+                    <h1 class="text-base font-black text-slate-950 tracking-tight m-0">Shri Trutiyadev Solar Enterprises</h1>
+                    <p class="text-[11px] font-bold text-sky-700 uppercase tracking-wider font-mono m-0">SOLAR PHOTOVOLTAIC & ENERGY STORAGE ENGINEERING SHEET</p>
+                    <p class="text-[10px] text-slate-500 m-0">Badambadi, Cuttack, Odisha - 753012 • MNRE Channel Partner & System Integrator</p>
+                  </div>
+                </div>
+
+                <div class="text-right text-[10px] text-slate-600 leading-tight font-mono">
+                  <p class="m-0">DOC ID: <span class="font-bold text-slate-900">STS-ENG-2026-081</span></p>
+                  <p class="m-0">DATE: <span>{{ todayFormatted }}</span></p>
+                  <p class="m-0">PSH: <span>{{ psh().toFixed(2) }} hrs/day</span></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 1: Project & Electrical Parameters -->
+            <div class="relative z-10 bg-slate-50 rounded-xl p-3 border border-slate-200 grid grid-cols-4 gap-2 text-[11px]">
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Client / Project</span>
+                <span class="font-bold text-slate-900">{{ clientName() }}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Site Location</span>
+                <span class="font-bold text-slate-900">{{ siteLocation() }}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">System Topology</span>
+                <span class="font-bold text-sky-700">{{ archName }}{{ zeroGrid() ? ' (100% Zero-Grid)' : '' }}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Supply Phase / Voltage</span>
+                <span class="font-bold text-slate-800">{{ inverter().isThreePhase ? 'Three-Phase 415V' : 'Single-Phase 230V' }} AC</span>
+              </div>
+            </div>
+
+            <!-- Section 2: Energy & Surge Load Audit -->
+            <div class="relative z-10">
+              <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5 border-l-3 border-amber-500 pl-2 m-0">
+                <i class="fa-solid fa-chart-pie text-amber-500"></i> 1. Comprehensive Energy & Surge Load Audit
+              </h2>
+              <div class="grid grid-cols-5 gap-2 text-center text-[10.5px]">
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-400 block uppercase font-bold">Daytime Solar Load</span>
+                  <span class="font-mono font-bold text-sky-700 text-xs">{{ audit().dayKwh.toFixed(2) }}</span> kWh/day
+                </div>
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-400 block uppercase font-bold">Night / Backup Load</span>
+                  <span class="font-mono font-bold text-indigo-700 text-xs">{{ audit().nightKwh.toFixed(2) }}</span> kWh/day
+                </div>
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-400 block uppercase font-bold">Total Daily Consumption</span>
+                  <span class="font-mono font-bold text-slate-900 text-xs">{{ audit().totalDailyKwh.toFixed(2) }}</span> kWh/day
+                </div>
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-400 block uppercase font-bold">Continuous Running</span>
+                  <span class="font-mono font-bold text-emerald-700 text-xs">{{ audit().continuousW }}</span> Watts
+                </div>
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <span class="text-[9.5px] text-slate-400 block uppercase font-bold">Peak Inrush Surge</span>
+                  <span class="font-mono font-bold text-amber-700 text-xs">{{ audit().peakStartingSurgeW.toFixed(0) }}</span> Watts
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Inverter / PCU & Solar PV Specifications -->
+            <div class="relative z-10 grid grid-cols-2 gap-3">
+              
+              <!-- Inverter Spec Box -->
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1.5">
+                <h3 class="font-bold text-slate-900 text-xs flex items-center justify-between pb-1 border-b border-slate-200 m-0">
+                  <span><i class="fa-solid fa-microchip text-amber-500 mr-1"></i> Inverter / MPPT PCU Specification</span>
+                  <span class="font-mono font-bold text-amber-700">{{ inverter().sizedKva }} kVA</span>
+                </h3>
+                <div class="flex justify-between"><span class="text-slate-500">Continuous Output:</span><span class="font-mono font-bold">{{ inverter().ratedWatts.toLocaleString() }} W @ 0.8 PF</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Peak Surge Capacity:</span><span class="font-mono font-bold">{{ inverter().surgeCapacityWatts.toLocaleString() }} W (200% / 5s)</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">System DC Bus Voltage:</span><span class="font-mono font-bold">{{ inverter().dcVoltage }}V DC ({{ inverter().busArchitecture }})</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">AC Output Current:</span><span class="font-mono font-bold">{{ inverter().acOutputCurrent.toFixed(1) }} A</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">MPPT Voltage Range:</span><span class="font-mono font-bold text-sky-700">{{ inverter().mpptRangeText }}</span></div>
+              </div>
+
+              <!-- Solar Array Spec Box -->
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1.5">
+                <h3 class="font-bold text-slate-900 text-xs flex items-center justify-between pb-1 border-b border-slate-200 m-0">
+                  <span><i class="fa-solid fa-sun text-emerald-500 mr-1"></i> Solar PV Array Engineering</span>
+                  <span class="font-mono font-bold text-emerald-700">{{ solar().installedKwp.toFixed(2) }} kWp</span>
+                </h3>
+                <div class="flex justify-between"><span class="text-slate-500">Installed PV Capacity:</span><span class="font-mono font-bold">{{ solar().installedKwp.toFixed(2) }} kWp (Req: {{ solar().requiredKwp.toFixed(2) }} kWp)</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">PV Module Rating:</span><span class="font-mono font-bold">{{ solar().totalPanels }} × {{ panelWattage() }}W TOPCon</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">MPPT String Topology:</span><span class="font-mono font-bold">{{ solar().parallelStrings }} Strings × {{ solar().seriesPanels }} in Series</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">String Voc / Vmp:</span><span class="font-mono font-bold">Voc: {{ solar().stringVoc.toFixed(1) }}V | Vmp: {{ solar().stringVmp.toFixed(1) }}V</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">DC:AC Overload Ratio:</span><span class="font-mono font-bold text-emerald-600">{{ solar().dcAcRatio.toFixed(2) }} (Optimal)</span></div>
+              </div>
+
+            </div>
+
+            <!-- Section 4: 3-Option Battery Bank Detailed Matrix -->
+            <div class="relative z-10">
+              <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 flex items-center justify-between border-l-3 border-indigo-600 pl-2 m-0">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-car-battery text-indigo-600"></i> 2. Battery Storage Engineering Matrix (Options 1–3)
+                </span>
+                <span class="text-[9.5px] text-slate-400 font-mono">Inverter Eff: 90% | Nominal DC Storage</span>
+              </h2>
+
+              <div class="overflow-hidden rounded-xl border border-slate-200 text-[10px]">
+                <table class="w-full text-left border-collapse font-sans">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                      <th class="p-2">Option Tier</th>
+                      <th class="p-2">Chemistry</th>
+                      <th class="p-2 text-center">DoD</th>
+                      <th class="p-2 text-center">DC Storage</th>
+                      <th class="p-2 text-center">Usable AC</th>
+                      <th class="p-2">Bank Physical Configuration</th>
+                      <th class="p-2 text-center">Lifespan</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 font-mono">
+                    <tr class="bg-indigo-50/30">
+                      <td class="p-2 font-bold font-sans text-indigo-950">Option 1: Premium LiFePO4</td>
+                      <td class="p-2 font-sans">Lithium Iron Phosphate</td>
+                      <td class="p-2 text-center">90%</td>
+                      <td class="p-2 text-center font-bold text-slate-900">{{ battery().opt1DcKwh.toFixed(1) }} kWh</td>
+                      <td class="p-2 text-center font-bold text-emerald-700">{{ battery().opt1TargetAc.toFixed(1) }} kWh</td>
+                      <td class="p-2 font-sans font-bold text-indigo-900">{{ battery().opt1ConfigText }}</td>
+                      <td class="p-2 text-center font-sans font-bold text-emerald-700">8–10+ Yrs (3500+ cyc)</td>
+                    </tr>
+                    <tr>
+                      <td class="p-2 font-bold font-sans text-slate-800">Option 2: Standard LiFePO4</td>
+                      <td class="p-2 font-sans">Lithium Iron Phosphate</td>
+                      <td class="p-2 text-center">90%</td>
+                      <td class="p-2 text-center font-bold text-slate-900">{{ battery().opt2DcKwh.toFixed(1) }} kWh</td>
+                      <td class="p-2 text-center font-bold text-emerald-700">{{ battery().opt2TargetAc.toFixed(1) }} kWh</td>
+                      <td class="p-2 font-sans font-bold text-slate-800">{{ battery().opt2ConfigText }}</td>
+                      <td class="p-2 text-center font-sans font-bold text-slate-700">8–10 Yrs</td>
+                    </tr>
+                    <tr>
+                      <td class="p-2 font-bold font-sans text-slate-800">Option 3: C10 Tall Tubular</td>
+                      <td class="p-2 font-sans">Lead-Acid C10 Solar</td>
+                      <td class="p-2 text-center">70%</td>
+                      <td class="p-2 text-center font-bold text-slate-900">{{ battery().opt3DcKwh.toFixed(1) }} kWh</td>
+                      <td class="p-2 text-center font-bold text-emerald-700">{{ battery().opt3TargetAc.toFixed(1) }} kWh</td>
+                      <td class="p-2 font-sans font-bold text-amber-800">{{ battery().opt3ConfigText }}</td>
+                      <td class="p-2 text-center font-sans font-bold text-amber-700">3–5 Yrs (1200 cyc)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Section 5: Balance of Systems (BOS) & Protection Schedule -->
+            <div class="relative z-10">
+              <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5 border-l-3 border-emerald-600 pl-2 m-0">
+                <i class="fa-solid fa-list-check text-emerald-600"></i> 3. Balance of System (BOS) & Electrical Protection Schedule
+              </h2>
+
+              <div class="grid grid-cols-4 gap-2 text-[10.5px]">
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <span class="font-bold text-slate-900 block text-[10px] uppercase">DC Protection</span>
+                  <p class="m-0">SPD: <span class="font-mono font-bold">{{ bos().bosDcSpd }}</span></p>
+                  <p class="m-0">Fuses: <span class="font-mono font-bold">{{ bos().bosDcFuse }}</span></p>
+                  <p class="m-0">Isolator: <span class="font-bold">1000V DC Switch</span></p>
+                </div>
+
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <span class="font-bold text-slate-900 block text-[10px] uppercase">AC Protection</span>
+                  <p class="m-0">SPD: <span class="font-mono font-bold">{{ bos().bosAcSpd }}</span></p>
+                  <p class="m-0">MCB: <span class="font-mono font-bold">{{ bos().bosAcMcb }}</span></p>
+                  <p class="m-0">RCCB: <span class="font-bold">30mA Earth Leak</span></p>
+                </div>
+
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <span class="font-bold text-slate-900 block text-[10px] uppercase">Cable Schedule</span>
+                  <p class="m-0">Solar: <span class="font-mono font-bold">{{ bos().bosPvCable }}</span></p>
+                  <p class="m-0">Battery: <span class="font-mono font-bold">{{ bos().bosBatCable }}</span></p>
+                  <p class="m-0">AC Main: <span class="font-mono font-bold">{{ bos().bosAcCable }}</span></p>
+                </div>
+
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <span class="font-bold text-slate-900 block text-[10px] uppercase">Earthing Pits</span>
+                  <p class="m-0">Pit 1: <span class="font-bold">Solar Array DC</span></p>
+                  <p class="m-0">Pit 2: <span class="font-bold">ACDB & Inverter</span></p>
+                  <p class="m-0">Pit 3: <span class="font-bold">Dedicated LA Pit</span></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 6: Engineering Verification & Sign-off -->
+            <div class="relative z-10 pt-2 border-t border-slate-200 text-[10px] text-slate-500">
+              <div class="grid grid-cols-2 gap-4 items-end mb-2">
+                <div>
+                  <p class="font-bold text-slate-900 mb-0.5 m-0">Engineering Verification & Sign-off:</p>
+                  <p class="text-[9.5px] text-slate-500 m-0">Calculated strictly as per IEC 61215/61730, IS 732, and CEA Technical Standards for Solar Power Projects.</p>
+                </div>
+                <div class="text-right">
+                  <p class="font-bold text-slate-950 m-0">For Shri Trutiyadev Solar Enterprises</p>
+                  <div class="h-6 flex items-end justify-end">
+                    <span class="font-mono font-bold text-slate-800 border-b border-slate-400 pb-0.5">CHIEF ENGINEER / SOLAR EPC</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-[9px] text-slate-400 pt-1 border-t border-slate-100 font-mono">
+                <span>SHRI TRUTIYADEV SOLAR ENTERPRISES • CUTTACK, ODISHA</span>
+                <span>ENGINEERING CALCULATOR V2.5 • CONFIDENTIAL</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- HIDDEN CONTAINER FOR BROWSER NATIVE PRINT -->
+  <div id="printContainerAng" class="hidden"></div>
+</div>

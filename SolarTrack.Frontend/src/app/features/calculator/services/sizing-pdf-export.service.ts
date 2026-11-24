@@ -591,15 +591,15 @@ export class SizingPdfExportService {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.8);
       doc.setTextColor(71, 85, 105);
-      let sY = curY + 24.0;
-      doc.text(`- Module Technology: Tier-1 Mono PERC Half-Cut High Efficiency`, rightX + 4, sY); sY += 4.6;
-      doc.text(`- Daily Expected Generation: ~${solar.estDailyGenKwh} Units (kWh) / Day`, rightX + 4, sY); sY += 4.6;
-      doc.text(`- Monthly Expected Generation: ~${solar.estMonthlyGenUnits} Units / Month`, rightX + 4, sY); sY += 4.6;
-      doc.text(`- Annual Expected Generation: ~${solar.estAnnualGenUnits} Units / Year`, rightX + 4, sY); sY += 4.6;
-      // Full words: Square Feet (NO "sq.ft" abbreviation)
-      doc.text(`- Shadow-Free Roof Area Required: ~${solar.roofAreaSqFt} Square Feet`, rightX + 4, sY); sY += 4.6;
-      // Full words: Limit & Equivalent (NO "Cap" abbreviation)
-      doc.text(`- Sanctioned Load Permissible Limit: ${solar.sanctionedLoadKw} kW AC Equivalent`, rightX + 4, sY); sY += 4.6;
+      let sY = curY + 23.5;
+      doc.text(`- Module Technology: Tier-1 Mono PERC / TOPCon Half-Cut High Efficiency`, rightX + 4, sY); sY += 4.3;
+      if (solar.stringConfigText) {
+        doc.text(`- String Configuration: ${solar.stringConfigText} (Vmp ~${solar.stringVmp || 166}V)`, rightX + 4, sY); sY += 4.3;
+      }
+      doc.text(`- Daily Expected Generation: ~${solar.estDailyGenKwh} Units (kWh) / Day`, rightX + 4, sY); sY += 4.3;
+      doc.text(`- Monthly Expected Generation: ~${solar.estMonthlyGenUnits} Units / Month`, rightX + 4, sY); sY += 4.3;
+      doc.text(`- Shadow-Free Roof Area Required: ~${solar.roofAreaSqFt} Square Feet`, rightX + 4, sY); sY += 4.3;
+      doc.text(`- Sanctioned Load Permissible Limit: ${solar.sanctionedLoadKw} kW AC Equivalent`, rightX + 4, sY); sY += 4.3;
 
       doc.setFillColor(254, 243, 199);
       doc.roundedRect(rightX + 3.5, sY - 1.5, rightColW - 7, 5, 1, 1, 'F');
@@ -648,12 +648,15 @@ export class SizingPdfExportService {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.8);
     doc.setTextColor(71, 85, 105);
-    let iY = invCardY + 24.0;
-    doc.text(`- Output Phase & Voltage: ${inv.phase || result.connectionPhase}`, rightX + 4, iY); iY += 4.6;
-    doc.text(`- Max Continuous AC Output: ${inv.continuousOutput || (inv.kW * 1000)} Watts`, rightX + 4, iY); iY += 4.6;
+    let iY = invCardY + 23.5;
+    doc.text(`- Output Phase & Power Factor: ${inv.phase || result.connectionPhase} (0.8 PF True Sine Wave)`, rightX + 4, iY); iY += 4.3;
+    doc.text(`- Max Continuous AC Output: ${inv.continuousOutput || (inv.kW * 1000)} Watts`, rightX + 4, iY); iY += 4.3;
+    if (inv.inductiveSurgeW) {
+      doc.text(`- Inrush Surge Handled: ~${(inv.continuousRunningW || 0) + (inv.inductiveSurgeW || 0)}W (Motor Safe)`, rightX + 4, iY); iY += 4.3;
+    }
     const busVoltStr = inv.batteryVoltage > 0 ? `${inv.batteryVoltage}V DC System Bus` : 'High Voltage MPPT (Grid-tied)';
-    doc.text(`- DC System Bus Voltage: ${busVoltStr}`, rightX + 4, iY); iY += 4.6;
-    doc.text(`- Inverter Brand / Model: ${inv.brand || 'Tier-1 Standard'} ${inv.model}`, rightX + 4, iY); iY += 4.6;
+    doc.text(`- DC System Bus Voltage: ${busVoltStr}`, rightX + 4, iY); iY += 4.3;
+    doc.text(`- Inverter Model: ${inv.brand || 'Tier-1 Standard'} ${inv.model}`, rightX + 4, iY); iY += 4.3;
     const mpptStr = inv.mpptVoltageRange ? `MPPT Range: ${inv.mpptVoltageRange}` : 'Pure Sine Wave Output (50 Hz)';
     doc.text(`- AC Output Waveform: ${mpptStr}`, rightX + 4, iY); iY += 4.6;
 
@@ -725,7 +728,10 @@ export class SizingPdfExportService {
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(6, 95, 70);
-    doc.text(`- Autonomy: ~${bLithium?.actualBackupHours || 4} Hours`, o1X + 3, ly); ly += 4.5;
+    const litAutonomy = result.isSolarWithBattery
+      ? `Autonomy: Day ~${result.dayBackupHours || 3}h | Night ~${result.nightBackupHours || 8}h`
+      : `Autonomy: ~${bLithium?.actualBackupHours || 4} Hours Backup`;
+    doc.text(`- ${litAutonomy}`, o1X + 3, ly); ly += 4.5;
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 41, 59);
@@ -780,7 +786,10 @@ export class SizingPdfExportService {
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(55, 48, 163);
-    doc.text(`- Autonomy: ~${bTubular?.actualBackupHours || 3.5} Hours`, o2X + 3, ty); ty += 4.5;
+    const tubAutonomy = result.isSolarWithBattery
+      ? `Autonomy: Day ~${result.dayBackupHours || 3}h | Night ~${result.nightBackupHours || 8}h`
+      : `Autonomy: ~${bTubular?.actualBackupHours || 3.5} Hours Backup`;
+    doc.text(`- ${tubAutonomy}`, o2X + 3, ty); ty += 4.5;
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 41, 59);
@@ -835,7 +844,10 @@ export class SizingPdfExportService {
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
-    doc.text(`- Autonomy: ~${bFlatPlate?.actualBackupHours || 2.5} Hours`, o3X + 3, fpy); fpy += 4.5;
+    const fpAutonomy = result.isSolarWithBattery
+      ? `Autonomy: Day ~${result.dayBackupHours || 3}h | Night ~${result.nightBackupHours || 8}h`
+      : `Autonomy: ~${bFlatPlate?.actualBackupHours || 2.5} Hours Backup`;
+    doc.text(`- ${fpAutonomy}`, o3X + 3, fpy); fpy += 4.5;
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 41, 59);
@@ -900,7 +912,9 @@ export class SizingPdfExportService {
     doc.setTextColor(100, 116, 139);
     doc.text(companyName, sigBoxX + (sigBoxW / 2), footY + 25.8, { align: 'center' });
 
-    // Save and download EXACTLY 1 PAGE PDF: File name: System_Proposal_<SystemType>.pdf
+    // Page 2: Dedicated Comprehensive Odia Customer Proposal & Advisory Guide
+    this.renderCustomerOdiaAdvisoryPage(doc, result, custInfo, companyName, companyPhone, companyEmail, logoImg);
+
     const rawSysLabel = this.calc.SYSTEM_TYPE_MAP[this.calc.systemType()]?.label || result.systemLabel || 'Solar';
     const cleanSysType = rawSysLabel.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
     const fileName = `System_Proposal_${cleanSysType}.pdf`;
@@ -1029,10 +1043,10 @@ export class SizingPdfExportService {
       const fpKwh = bFlatPlate?.totalInstalledKwh || 3.6;
       const fpHours = bFlatPlate?.actualBackupHours || 3;
 
-      const batTitle = '• ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବିକଳ୍ପ (ସମସ୍ତ ୩ ଟି ଟେକ୍ନୋଲୋଜି):';
-      const batLithiumText = `  1. ଲିଥିୟମ୍ (LiFePO4): ${litUnits} ୟୁନିଟ୍ (${litV}V ${litAh}Ah, ${litKwh} kWh) — ~${litHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ୧୦-୧୨ ବର୍ଷ ଆୟୁଷ, ୦% ମେଣ୍ଟେନାନ୍ସ`;
-      const batTubularText = `  2. ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ (C10): ${tubUnits} ଟି ୧୨V ${tubAh}Ah (${tubV}V ବ୍ୟାଙ୍କ, ${tubKwh} kWh) — ~${tubHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ୪-୫ ବର୍ଷ ଆୟୁଷ`;
-      const batFlatPlateText = `  3. ଫ୍ଲାଟ୍ ପ୍ଲେଟ୍: ${fpUnits} ଟି ୧୨V (${fpV}V ${fpAh}Ah ବ୍ୟାଙ୍କ, ${fpKwh} kWh) — ~${fpHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ବଜେଟ୍ ଫ୍ରେଣ୍ଡଲି`;
+      const batTitle = '• ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବିକଳ୍ପ (Day 9am–4pm Solar & Night 4pm–9am Backup):';
+      const batLithiumText = `  1. ଲିଥିୟମ୍ (LiFePO4): ${litUnits} ୟୁନିଟ୍ (${litV}V ${litAh}Ah, ${litKwh} kWh) — ଦିନ (9AM–4PM) ସୋଲାର୍, ରାତି (4PM–9AM) ~${litHours}h ବ୍ୟାକଅପ୍, ୧୦-୧୨ ବର୍ଷ life`;
+      const batTubularText = `  2. ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ (C10): ${tubUnits} ଟି ୧୨V ${tubAh}Ah (${tubV}V ବ୍ୟାଙ୍କ, ${tubKwh} kWh) — ଦିନ ସୋଲାର୍, ରାତି (4PM–9AM) ~${tubHours}h ବ୍ୟାକଅପ୍, ୪-୫ ବର୍ଷ life`;
+      const batFlatPlateText = `  3. ଫ୍ଲାଟ୍ ପ୍ଲେଟ୍: ${fpUnits} ଟି ୧୨V (${fpV}V ${fpAh}Ah ବ୍ୟାଙ୍କ, ${fpKwh} kWh) — ଦିନ ସୋଲାର୍, ରାତି (4PM–9AM) ~${fpHours}h ବ୍ୟାକଅପ୍, ବଜେଟ୍ ପସନ୍ଦ`;
 
       if (sysTypeKey === 'on-grid') {
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (On-Grid Solar):';
@@ -1041,14 +1055,22 @@ export class SizingPdfExportService {
         p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ଅନ୍-ଗ୍ରୀଡ୍ GTI (Grid-Tied) ଇନଭର୍ଟର ଆବଶ୍ୟକ।`;
         p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ: ଅନ୍-ଗ୍ରୀଡ୍ ସିଷ୍ଟମ୍ ରେ ବ୍ୟାଟେରୀ ଆବଶ୍ୟକ ନାହିଁ (ନେଟ୍-ମିଟରିଂ ଦ୍ୱାରା ସିଧାସଳଖ ଗ୍ରୀଡ୍ ସଞ୍ଚୟ)।`;
       } else if (sysTypeKey === 'hybrid') {
+        const dHrs = result.dayBackupHours || 3;
+        const nHrs = result.nightBackupHours || 8;
+        const dKwh = ((result.dayBackupEnergyWh || 0) / 1000).toFixed(1);
+        const nKwh = ((result.nightBackupEnergyWh || 0) / 1000).toFixed(1);
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Hybrid Solar):';
         p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
-        p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ଚାହିଦା ~${dailyDemandKwh} kWh ପାଇଁ ପ୍ରତିଦିନ ~${dailyGen} ୟୁନିଟ୍ ସୋଲାର ବିଜୁଳି ଉତ୍ପାଦିତ ହେବ।`;
+        p2 = `• ଦୈନିକ ବିଜୁଳି ଓ ବ୍ୟାକଅପ୍: ଦିନ (9AM–4PM) ସୋଲାର୍ + ~${dHrs}h (${dKwh}U) | ରାତି (4PM–9AM) ବ୍ୟାଟେରୀ ~${nHrs}h (${nKwh}U)`;
         p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ହାଇବ୍ରିଡ୍ ବାଇ-ଡାଇରେକ୍ସନାଲ୍ ଇନଭର୍ଟର (Hybrid Inverter) ଆବଶ୍ୟକ।`;
       } else if (sysTypeKey === 'off-grid') {
+        const dHrs = result.dayBackupHours || 3;
+        const nHrs = result.nightBackupHours || 8;
+        const dKwh = ((result.dayBackupEnergyWh || 0) / 1000).toFixed(1);
+        const nKwh = ((result.nightBackupEnergyWh || 0) / 1000).toFixed(1);
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Off-Grid Solar):';
         p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
-        p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ~${dailyDemandKwh} kWh ଘରୋଇ ଲୋଡ୍ ଓ ବ୍ୟାଟେରୀ ଚାର୍ଜିଂ ସମ୍ପୂର୍ଣ୍ଣ ସୋଲାର୍ ଦ୍ୱାରା ପରିଚାଳିତ ହେବ।`;
+        p2 = `• ଦୈନିକ ବିଜୁଳି ଓ ବ୍ୟାକଅପ୍: ଦିନ (9AM–4PM) ସୋଲାର୍ + ~${dHrs}h (${dKwh}U) | ରାତି (4PM–9AM) ବ୍ୟାଟେରୀ ~${nHrs}h (${nKwh}U)`;
         p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ସୋଲାର ପିସିୟୁ ଇନଭର୍ଟର (Solar PCU Inverter) ଆବଶ୍ୟକ।`;
       } else {
         // without-solar
@@ -1107,5 +1129,651 @@ export class SizingPdfExportService {
       doc.text('- Inverter rating and topology selected for continuous load duty.', x + 3, y + 19);
       doc.text('- Battery storage technology option provided based on backup autonomy.', x + 3, y + 23.5);
     }
+  }
+
+  /**
+   * Page 2: Dedicated Comprehensive Odia Customer Proposal & Advisory Guide
+   * Aligned for non-technical customers with exact breakdown:
+   * 1. Daily Load & Unit Calculation (Standard Indian wattage)
+   * 2. Recommended Configuration (Inverter surge proofing, Solar Panels Kana Pain?, Battery Option A & B)
+   * 3. Important Cost-Saving Tip (BLDC Fans / Smart Advice)
+   */
+  private renderCustomerOdiaAdvisoryPage(
+    doc: jsPDF,
+    result: FullSizingResult,
+    custInfo?: CustomerProposalInfo,
+    companyName: string = 'SolarTrack Technologies',
+    companyPhone: string = '+91 94370 00000',
+    companyEmail: string = 'support@solartrack.in',
+    logoImg?: HTMLImageElement | null
+  ): void {
+    try {
+      doc.addPage();
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginX = 8;
+      const contentWidth = 194;
+      const contentHeight = 285;
+      const headerY = 6;
+
+      // ==========================================
+      // PAGE 2: SKY WITH CLOUDS BACKGROUND (Identical to Page 1)
+      // ==========================================
+      const stepH = 2.5;
+      for (let y = 0; y < pageHeight; y += stepH) {
+        const t = y / pageHeight; // 0 (top) to 1 (bottom)
+        let r = 172 + (248 - 172) * Math.pow(t, 0.7);
+        let g = 218 + (252 - 218) * Math.pow(t, 0.7);
+        let b = 251 + (255 - 251) * Math.pow(t, 0.7);
+        doc.setFillColor(Math.round(r), Math.round(g), Math.round(b));
+        doc.rect(0, y, pageWidth, stepH + 0.2, 'F');
+      }
+
+      // Draw soft, fluffy clouds in the background (Identical positions to Page 1)
+      this.drawFluffyCloud(doc, 45, 18, 1.4);
+      this.drawFluffyCloud(doc, 175, 25, 1.2);
+      this.drawFluffyCloud(doc, 20, 115, 1.1);
+      this.drawFluffyCloud(doc, 190, 135, 1.3);
+      this.drawFluffyCloud(doc, 50, 220, 1.5);
+      this.drawFluffyCloud(doc, 165, 240, 1.2);
+
+      // Subtle Company Name Watermark
+      doc.saveGraphicsState();
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(26);
+      doc.setTextColor(195, 224, 248);
+      doc.text(companyName.toUpperCase(), pageWidth / 2, 98, {
+        align: 'center',
+        angle: 30
+      });
+      doc.text(companyName.toUpperCase(), pageWidth / 2, 202, {
+        align: 'center',
+        angle: 30
+      });
+      doc.restoreGraphicsState();
+
+      // ==========================================
+      // HIGH-RESOLUTION CANVAS FOR CRISP VECTOR-LIKE ODIA TEXT
+      // 305 DPI Print Quality (776 x 1140 logical units @ 3x scale)
+      // ==========================================
+      const canvas = document.createElement('canvas');
+      const logicalW = 776; // 194mm * 4
+      const logicalH = 1140; // 285mm * 4
+      const dpr = 3; // 305 DPI high resolution
+      canvas.width = Math.round(logicalW * dpr);
+      canvas.height = Math.round(logicalH * dpr);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.scale(dpr, dpr);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.textBaseline = 'top';
+
+      // Keep canvas transparent so the underlying sky gradient and clouds show through!
+      ctx.clearRect(0, 0, logicalW, logicalH);
+
+      const sysTypeKey = this.calc.systemType();
+      const allAppliances = this.calc.appliances();
+      const activeApps = allAppliances.filter(a => a.checked && (a.qty !== undefined ? a.qty > 0 : a.defaultQty > 0));
+      const displayApps = activeApps.length > 0 ? activeApps : allAppliances.filter(a => a.checked);
+
+      let totalWatts = 0;
+      let totalDailyWh = 0;
+      displayApps.forEach(a => {
+        const q = a.qty !== undefined ? a.qty : a.defaultQty;
+        const h = a.hours !== undefined ? a.hours : a.defaultHours;
+        const w = a.watts || 0;
+        totalWatts += w * q;
+        totalDailyWh += w * q * h;
+      });
+
+      const displayTotalWatts = result.connectedLoadW > 0 ? result.connectedLoadW : totalWatts;
+      const displayTotalDailyWh = result.totalApplianceDailyWh > 0 ? result.totalApplianceDailyWh : totalDailyWh;
+      const displayTotalKw = (displayTotalWatts / 1000).toFixed(1);
+      const displayDailyUnits = (displayTotalDailyWh / 1000).toFixed(1);
+
+      // Motor Surge Detection
+      let motorOrPump = displayApps.find(a => {
+        const id = (a.id || '').toLowerCase();
+        const n = (a.name || '').toLowerCase();
+        return id.includes('pump') || id.includes('motor') || n.includes('pump') || n.includes('motor');
+      });
+      if (!motorOrPump) {
+        motorOrPump = displayApps.find(a => {
+          const id = (a.id || '').toLowerCase();
+          const n = (a.name || '').toLowerCase();
+          return id.includes('ac') || n.includes('air conditioner');
+        });
+      }
+
+      const surgeDeltaW = (result.requiredPeakSurgeW && result.requiredPeakSurgeW > displayTotalWatts)
+        ? (result.requiredPeakSurgeW - displayTotalWatts)
+        : (motorOrPump ? (motorOrPump.watts * 2.5) : 0);
+      const peakSurgeW = result.requiredPeakSurgeW || (displayTotalWatts + surgeDeltaW);
+      const peakSurgeMinKw = (peakSurgeW / 1000).toFixed(1);
+      const peakSurgeMaxKw = ((peakSurgeW * 1.08) / 1000).toFixed(1);
+
+      // Inverter Details
+      const inv = result.inverter;
+      const invKva = inv?.kVA || 7.5;
+      const invKw = inv?.kW || 6.0;
+      const invVolt = inv?.batteryVoltage || 96;
+      const invOutputW = inv?.continuousOutput || (invKw * 1000);
+
+      // Solar Details
+      const solar = result.solar;
+      const actualKwp = solar?.actualArrayKwp || 8.8;
+      const panelCount = solar?.panelCount || 16;
+      const panelWatts = solar?.panelWatts || 550;
+      const solarMinKw = (actualKwp * 0.95).toFixed(1);
+      const solarMaxKw = (actualKwp * 1.08).toFixed(1);
+      const targetGenNeeded = (Number(displayDailyUnits) / 0.82).toFixed(1);
+
+      // Battery Details
+      const bLithium = result.batteryLithium || result.battery;
+      const bTubular = result.batteryTubular;
+      const bFlatPlate = result.batteryFlatPlate;
+
+      const tubUnits = bTubular?.totalUnits || 8;
+      const tubAh = bTubular?.singleBatteryAh || 200;
+      const tubVolt = bTubular?.systemVoltage || invVolt;
+      const tubKwh = bTubular?.totalInstalledKwh || 19.2;
+      const tubUsable = bTubular?.usableKwh || 14.4;
+
+      const litUnits = bLithium?.totalUnits || 1;
+      const litVolt = bLithium?.systemVoltage || invVolt;
+      const litAh = bLithium?.systemBankAh || 200;
+      const litKwh = bLithium?.totalInstalledKwh || 19.2;
+      const litUsable = bLithium?.usableKwh || 17.3;
+
+      const fpUnits = bFlatPlate?.totalUnits || 8;
+      const fpVolt = bFlatPlate?.systemVoltage || invVolt;
+      const fpAh = bFlatPlate?.singleBatteryAh || 150;
+      const fpKwh = bFlatPlate?.totalInstalledKwh || 14.4;
+      const fpUsable = bFlatPlate?.usableKwh || 9.4;
+
+      // Day load (full simultaneous) and Night load (lights & fans)
+      const dayLoadWatts = Math.max(100, displayTotalWatts);
+      const nightLoadWatts = Math.max(100, Math.round(displayTotalWatts * 0.65));
+
+      const tubDayHours = Math.round(((tubUsable * 1000 * 0.9) / dayLoadWatts) * 10) / 10;
+      const tubNightHours = Math.round(((tubUsable * 1000 * 0.9) / nightLoadWatts) * 10) / 10;
+
+      const litDayHours = Math.round(((litUsable * 1000 * 0.9) / dayLoadWatts) * 10) / 10;
+      const litNightHours = Math.round(((litUsable * 1000 * 0.9) / nightLoadWatts) * 10) / 10;
+
+      const fpDayHours = Math.round(((fpUsable * 1000 * 0.9) / dayLoadWatts) * 10) / 10;
+      const fpNightHours = Math.round(((fpUsable * 1000 * 0.9) / nightLoadWatts) * 10) / 10;
+
+      // BLDC Fan Smart Tip
+      const fanApp = displayApps.find(a => {
+        const id = (a.id || '').toLowerCase();
+        const n = (a.name || '').toLowerCase();
+        return id.includes('fan') || n.includes('fan');
+      });
+
+      let fanQty = 0;
+      let fanWatts = 75;
+      let fanHours = 12;
+      let fanDailyKwh = 0;
+      let fanPct = 0;
+      let bldcTotalWatts = 0;
+      let bldcDailyKwh = 0;
+      let newDailyUnits = Number(displayDailyUnits);
+
+      if (fanApp) {
+        fanQty = fanApp.qty !== undefined ? fanApp.qty : fanApp.defaultQty;
+        fanWatts = fanApp.watts || 75;
+        fanHours = fanApp.hours !== undefined ? fanApp.hours : fanApp.defaultHours || 12;
+        const fanTotalW = fanWatts * fanQty;
+        fanDailyKwh = (fanTotalW * fanHours) / 1000;
+        fanPct = Number(displayDailyUnits) > 0 ? Math.round((fanDailyKwh / Number(displayDailyUnits)) * 100) : 0;
+        bldcTotalWatts = 32 * fanQty;
+        bldcDailyKwh = (bldcTotalWatts * fanHours) / 1000;
+        newDailyUnits = Math.max(1, Math.round((Number(displayDailyUnits) - (fanDailyKwh - bldcDailyKwh)) * 10) / 10);
+      }
+
+      const tableX = 0;
+      const tableW = logicalW;
+
+      // ==========================================
+      // 1. FLOATING HEADER CARD (Matches Page 1 Header Style)
+      // ==========================================
+      const headH = 76;
+      this.drawCanvasRoundedRect(ctx, tableX, 0, tableW, headH, 6, '#ffffff', '#bae6fd', 1.2);
+      this.drawCanvasRoundedTopStripe(ctx, tableX, 0, tableW, 6, 6, '#f59e0b');
+
+      // Logo container
+      const logoBoxX = tableX + 12;
+      const logoBoxY = 12;
+      const logoBoxSize = 52;
+      this.drawCanvasRoundedRect(ctx, logoBoxX, logoBoxY, logoBoxSize, logoBoxSize, 4, '#f8fafc', '#e2e8f0', 1);
+
+      if (logoImg) {
+        try {
+          ctx.drawImage(logoImg, logoBoxX + 2, logoBoxY + 2, logoBoxSize - 4, logoBoxSize - 4);
+        } catch {
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillText('☀️', logoBoxX + 12, logoBoxY + 14);
+        }
+      } else {
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText('☀️', logoBoxX + 12, logoBoxY + 14);
+      }
+
+      // Title & Subtitle in Deep Navy / Sky Blue
+      const titleX = logoBoxX + logoBoxSize + 14;
+      ctx.font = 'bold 17px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0369a1';
+      ctx.fillText('SolarTrack • ଗ୍ରାହକ ସହାୟକ ପରାମର୍ଶ ଓ ସରଳ ସାରାଂଶ', titleX, 16);
+
+      ctx.font = '11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText(`ସିଷ୍ଟମ୍ ପ୍ରକାର: ${result.systemLabel}   •   ପ୍ରସ୍ତୁତ ତାରିଖ: ${new Date().toLocaleDateString('en-IN')}`, titleX, 42);
+
+      // Customer Info Pill on Right
+      const pillW = 246;
+      const pillH = 48;
+      const pillX = tableW - pillW - 12;
+      const pillY = 14;
+      this.drawCanvasRoundedRect(ctx, pillX, pillY, pillW, pillH, 5, '#f0f9ff', '#38bdf8', 1);
+
+      ctx.font = 'bold 11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0284c7';
+      ctx.fillText(`ଗ୍ରାହକ: ${custInfo?.customerName || 'ସମ୍ମାନିତ ଗ୍ରାହକ'}`, pillX + 10, pillY + 8);
+
+      ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(`ଯୋଗାଯୋଗ: ${custInfo?.customerPhone || companyPhone}`, pillX + 10, pillY + 26);
+
+      // ==========================================
+      // 2. SECTION 1: APPLIANCE LOAD BREAKDOWN
+      // ==========================================
+      let curY = headH + 16;
+      ctx.font = 'bold 14px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0369a1';
+      ctx.fillText('୧. ଦୈନିକ ଲୋଡ୍ ଓ ୟୁନିଟ୍ (kWh) ହିସାବ (Standard Indian Appliance Wattage):', tableX + 4, curY);
+      curY += 22;
+
+      // Table Header Card
+      const headBarH = 26;
+      this.drawCanvasRoundedRect(ctx, tableX, curY, tableW, headBarH, 4, '#f0f9ff', '#bae6fd', 1);
+
+      ctx.font = 'bold 11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0369a1';
+      ctx.fillText('ଉପକରଣ (Appliance)', tableX + 12, curY + 6);
+      ctx.fillText('ପରିମାଣ', tableX + 240, curY + 6);
+      ctx.fillText('ୱାଟେଜ୍ (Approx.)', tableX + 310, curY + 6);
+      ctx.fillText('ମୋଟ ଲୋଡ୍ (W)', tableX + 440, curY + 6);
+      ctx.fillText('ସମୟ', tableX + 560, curY + 6);
+      ctx.fillText('ଦୈନିକ ୟୁନିଟ୍ (kWh)', tableX + 645, curY + 6);
+      curY += headBarH;
+
+      // Table Rows
+      const rowH = 22;
+      const clampedApps = displayApps.slice(0, 7);
+      clampedApps.forEach((app, idx) => {
+        const q = app.qty !== undefined ? app.qty : app.defaultQty;
+        const h = app.hours !== undefined ? app.hours : app.defaultHours;
+        const w = app.watts || 0;
+        const rW = w * q;
+        const rKwh = (rW * h) / 1000;
+        const bg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+        ctx.fillStyle = bg;
+        ctx.fillRect(tableX, curY, tableW, rowH);
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(tableX, curY, tableW, rowH);
+
+        ctx.font = '500 11px "Nirmala UI", "Kalinga", sans-serif';
+        ctx.fillStyle = '#0f172a';
+        const odiaName = this.getOdiaApplianceName(app.name, app.id);
+        ctx.fillText(odiaName, tableX + 12, curY + 4);
+
+        ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+        ctx.fillStyle = '#475569';
+        ctx.fillText(`${q}`, tableX + 252, curY + 4);
+
+        const isPumpOrAc = (app.id || '').toLowerCase().includes('pump') || (app.name || '').toLowerCase().includes('pump');
+        const wText = isPumpOrAc ? `${w} W (Surge: ~${w * 2.5}W)` : `${w} W`;
+        ctx.fillText(wText, tableX + 310, curY + 4);
+
+        ctx.font = 'bold 10.5px "Nirmala UI", "Kalinga", sans-serif';
+        ctx.fillStyle = '#b45309';
+        ctx.fillText(`${rW} W`, tableX + 445, curY + 4);
+
+        ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+        ctx.fillStyle = '#0f766e';
+        ctx.fillText(`${h} hrs`, tableX + 565, curY + 4);
+
+        ctx.font = 'bold 11px "Nirmala UI", "Kalinga", sans-serif';
+        ctx.fillStyle = '#0369a1';
+        ctx.fillText(`${rKwh.toFixed(1)} Units`, tableX + 655, curY + 4);
+
+        curY += rowH;
+      });
+
+      // Total Row
+      const totRowH = 26;
+      this.drawCanvasRoundedRect(ctx, tableX, curY, tableW, totRowH, 4, '#e0f2fe', '#7dd3fc', 1);
+      ctx.font = 'bold 11.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0c4a6e';
+      ctx.fillText('TOTAL (ମୋଟ)', tableX + 12, curY + 6);
+      ctx.fillText('——', tableX + 252, curY + 6);
+      ctx.fillText('——', tableX + 335, curY + 6);
+      ctx.fillText(`${displayTotalWatts} W (~${displayTotalKw} kW)`, tableX + 435, curY + 6);
+      ctx.fillText('—', tableX + 570, curY + 6);
+      ctx.fillText(`${displayDailyUnits} Units / day`, tableX + 645, curY + 6);
+      curY += totRowH + 10;
+
+      // Peak Surge & Day/Night Sizing Callout Box
+      const reqDayHrs = result.dayBackupHours || 3;
+      const reqNightHrs = result.nightBackupHours || 8;
+      const dLoadW = result.dayBackupLoadW || displayTotalWatts;
+      const nLoadW = result.nightBackupLoadW || Math.round(displayTotalWatts * 0.65);
+      const dEnergyKwh = ((result.dayBackupEnergyWh || (dLoadW * reqDayHrs)) / 1000).toFixed(1);
+      const nEnergyKwh = ((result.nightBackupEnergyWh || (nLoadW * reqNightHrs)) / 1000).toFixed(1);
+      const totBatKwh = (result.backupEnergyWh / 1000).toFixed(1);
+
+      const surgeBoxH = 58;
+      this.drawCanvasRoundedRect(ctx, tableX, curY, tableW, surgeBoxH, 5, '#fffbeb', '#fcd34d', 1);
+      ctx.font = 'bold 11.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#b45309';
+      ctx.fillText('⚡ ଲୋଡ୍ ଓ ସୋଲାର୍ ବ୍ୟାକଅପ୍ ଆବଶ୍ୟକତା (Day: 9am–4pm & Night: 4pm–9am Sizing):', tableX + 12, curY + 6);
+
+      ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#78350f';
+      const surgeL1 = `• ଦିନ ବେଳେ (9 AM - 4 PM): ପମ୍ପ ଓ ସବୁ ଲୋଡ୍ (${dLoadW}W) ଖରା ଥିଲେ ସୋଲାର୍ ରୁ ଚାଲିବ; ମେଘୁଆ ପାଇଁ ${reqDayHrs}h ବ୍ୟାକଅପ୍ (${dEnergyKwh} kWh) ସଂରକ୍ଷିତ।`;
+      const surgeL2 = `• ରାତି ବେଳେ (4 PM - 9 AM): ପମ୍ପ ବନ୍ଦ, ଲାଇଟ୍ ଓ ଫ୍ୟାନ୍ (${nLoadW}W) ପାଇଁ ${reqNightHrs}h ବ୍ୟାକଅପ୍ (${nEnergyKwh} kWh) ସମ୍ପୂର୍ଣ୍ଣ ବ୍ୟାଟେରୀରୁ ମିଳିବ।`;
+      const surgeL3 = `• ମୋଟ ବ୍ୟାଟେରୀ ଆବଶ୍ୟକତା: ~${totBatKwh} Units / day (ଦିନ ${dEnergyKwh} U + ରାତି ${nEnergyKwh} U) । ୧ HP ପମ୍ପ starting surge ~${peakSurgeMinKw}-${peakSurgeMaxKw} kW।`;
+      ctx.fillText(surgeL1, tableX + 12, curY + 23);
+      ctx.fillText(surgeL2, tableX + 12, curY + 39);
+      ctx.fillText(surgeL3, tableX + 12, curY + 55);
+      curY += surgeBoxH + 16;
+
+      // ==========================================
+      // 3. SECTION 2: RECOMMENDED CONFIGURATION
+      // ==========================================
+      ctx.font = 'bold 14px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0369a1';
+      ctx.fillText('୨. ସୁପାରିଶିତ ଅଫ୍-ଗ୍ରୀଡ୍ ସୋଲାର କନଫିଗରେସନ୍ (Recommended Configuration):', tableX + 4, curY);
+      curY += 22;
+
+      // 1. Inverter Box
+      const invBoxH = 68;
+      this.drawCanvasRoundedRect(ctx, tableX, curY, tableW, invBoxH, 5, '#ffffff', '#bae6fd', 1);
+      ctx.font = 'bold 12px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0284c7';
+      ctx.fillText(`1. Off-Grid Solar Inverter (MPPT PCU): ${invKva} kVA / ${invVolt}V Pure Sine Wave MPPT PCU`, tableX + 12, curY + 8);
+
+      ctx.font = '11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#334155';
+      const invLine1 = `— ଏହା ~${invOutputW} W ପର୍ଯ୍ୟନ୍ତ continuous load ସମ୍ଭାଳି ପାରିବ ଓ ୧ HP ପମ୍ପ ର starting surge ରେ trip ହେବ ନାହିଁ।`;
+      const invLine2 = `(Note: ଯଦି ସବୁ load ଏକାଠି ଚଳାଇ future expansion ଚାହୁଁଛନ୍ତି, ତେବେ ପରବର୍ତ୍ତୀ ଉଚ୍ଚ କ୍ଷମତାର PCU ସବୁଠୁ safe option)।`;
+      ctx.fillText(invLine1, tableX + 12, curY + 27);
+      ctx.fillText(invLine2, tableX + 12, curY + 45);
+      curY += invBoxH + 10;
+
+      // 2. Solar Panels Box
+      const solBoxH = 82;
+      this.drawCanvasRoundedRect(ctx, tableX, curY, tableW, solBoxH, 5, '#fffbeb', '#fcd34d', 1);
+      ctx.font = 'bold 12px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#b45309';
+      ctx.fillText(`2. Solar Panels: ${solarMinKw} kW ରୁ ${solarMaxKw} kW (${panelCount} ଟି ${panelWatts}W Mono PERC / TOPCon Half-Cut = ${actualKwp} kWp)`, tableX + 12, curY + 8);
+
+      ctx.font = '11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#78350f';
+      const solLine1 = `କାହିଁକି ଏତିକି ଦରକାର: ଦିନ ଲୋଡ୍ + ରାତି ବ୍ୟାକଅପ୍ (${nEnergyKwh} U) ପାଇଁ ବ୍ୟାଟେରୀ ଫୁଲ୍ ଚାର୍ଜିଂ ଲସ୍ (~20%) ମିଶି ଦିନକୁ ~${targetGenNeeded} units solar generation ଦରକାର।`;
+      const solLine2 = `ହାରାହାରି ୧ kW panel ଦିନକୁ ୪–୪.୫ units generate କରୁଥିବାରୁ ~${actualKwp} kW panel ଦରକାର ହେବ।`;
+      const solLine3 = `(${invKva} kVA / ${invVolt}V inverter କିଣିବା ବେଳକୁ ତାର Max PV Input capacity ଯାଞ୍ଚ କରିବେ — ସାଧାରଣତଃ ଏହି PCU ଉପଯୁକ୍ତ PV panel support କରେ)।`;
+      ctx.fillText(solLine1, tableX + 12, curY + 27);
+      ctx.fillText(solLine2, tableX + 12, curY + 44);
+      ctx.fillText(solLine3, tableX + 12, curY + 61);
+      curY += solBoxH + 10;
+
+      // 3. Battery Storage Box
+      const batBoxH = 224;
+      this.drawCanvasRoundedRect(ctx, tableX, curY, tableW, batBoxH, 5, '#ffffff', '#bae6fd', 1);
+      ctx.font = 'bold 12px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0369a1';
+      ctx.fillText('3. Battery Bank (Storage) — ସମସ୍ତ ୩ ଟି ଟେକ୍ନୋଲୋଜି ବିକଳ୍ପ ଓ Day/Night ବ୍ୟାକଅପ୍ ସମୟ:', tableX + 12, curY + 8);
+
+      // Option A: Tall Tubular
+      ctx.font = 'bold 11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fillText(`Option A (Lead-Acid C10 Solar Tubular): ${tubUnits} × 12V ${tubAh}Ah (${tubVolt}V ସିରିଜ୍, ${tubKwh} kWh)`, tableX + 12, curY + 28);
+      ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#334155';
+      const tubDesc1 = `• ଦିନ ବେଳେ (9 AM - 4 PM): ଖରା ଥିଲେ ସୋଲାର୍ ରୁ ୭ ଘଣ୍ଟା ଚାଲିବ + ମେଘୁଆ ପାଗରେ ବ୍ୟାଟେରୀରୁ ~${tubDayHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍।`;
+      const tubDesc2 = `• ରାତି ବେଳେ (4 PM - 9 AM): ରାତି ୪ ରୁ ସକାଳ ୯ ଭିତରେ ବ୍ୟାଟେରୀରୁ ~${tubNightHours} ଘଣ୍ଟା (ସକାଳ ଯାଏଁ) ନିରବଚ୍ଛିନ୍ନ ବ୍ୟାକଅପ୍।`;
+      ctx.fillText(tubDesc1, tableX + 12, curY + 44);
+      ctx.fillText(tubDesc2, tableX + 12, curY + 59);
+
+      // Divider Line
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(tableX + 12, curY + 76);
+      ctx.lineTo(tableX + tableW - 12, curY + 76);
+      ctx.stroke();
+
+      // Option B: Lithium
+      ctx.font = 'bold 11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#065f46';
+      ctx.fillText(`Option B (Lithium / LiFePO4 Battery): ${litUnits} ୟୁନିଟ୍ ${litVolt}V ${litAh}Ah LiFePO4 (~${litKwh} kWh, ~${litUsable} kWh usable)`, tableX + 12, curY + 84);
+      ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#065f46';
+      const litDesc1 = `• ଦିନ ବେଳେ (9 AM - 4 PM): ଡାଇରେକ୍ଟ ସୋଲାର୍ + ମେଘୁଆ ପାଗରେ ~${litDayHours} ଘଣ୍ଟା (୨-୩ ଘଣ୍ଟାରେ ଫାଷ୍ଟ ଚାର୍ଜିଂ, ୧୦-୧୨ ବର୍ଷ life)।`;
+      const litDesc2 = `• ରାତି ବେଳେ (4 PM - 9 AM): ରାତି ୪ ରୁ ସକାଳ ୯ ପର୍ଯ୍ୟନ୍ତ ~${litNightHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍ (୯୦% DoD, ୦% ମେଣ୍ଟେନାନ୍ସ)।`;
+      ctx.fillText(litDesc1, tableX + 12, curY + 100);
+      ctx.fillText(litDesc2, tableX + 12, curY + 115);
+
+      // Divider Line
+      ctx.beginPath();
+      ctx.moveTo(tableX + 12, curY + 132);
+      ctx.lineTo(tableX + tableW - 12, curY + 132);
+      ctx.stroke();
+
+      // Option C: Flat Plate
+      ctx.font = 'bold 11px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(`Option C (Flat Plate Lead-Acid Battery): ${fpUnits} × 12V ${fpAh}Ah Flat Plate (${fpVolt}V ବ୍ୟାଙ୍କ, ${fpKwh} kWh, ~${fpUsable} kWh usable)`, tableX + 12, curY + 140);
+      ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#475569';
+      const fpDesc1 = `• ଦିନ ବେଳେ (9 AM - 4 PM): ଡାଇରେକ୍ଟ ସୋଲାର୍ + ମେଘୁଆ ପାଗରେ ~${fpDayHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍।`;
+      const fpDesc2 = `• ରାତି ବେଳେ (4 PM - 9 AM): ରାତି ୪ ରୁ ସକାଳ ୯ ଭିତରେ ~${fpNightHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍ (ବଜେଟ୍ ଫ୍ରେଣ୍ଡଲି ପସନ୍ଦ)।`;
+      ctx.fillText(fpDesc1, tableX + 12, curY + 156);
+      ctx.fillText(fpDesc2, tableX + 12, curY + 171);
+
+      curY += batBoxH + 12;
+
+      // ==========================================
+      // 4. SECTION 3: COST-SAVING TIP (BLDC FANS)
+      // ==========================================
+      const tipBoxH = 106;
+      this.drawCanvasRoundedRect(ctx, tableX, curY, tableW, tipBoxH, 6, '#ecfdf5', '#059669', 1.5);
+      ctx.font = 'bold 12px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#065f46';
+      ctx.fillText('💡 Important Cost-Saving Tip (BLDC Fans / ମୂଲ୍ୟବାନ ବିଜୁଳି ଓ ଖର୍ଚ୍ଚ ସଞ୍ଚୟ ପରାମର୍ଶ):', tableX + 12, curY + 8);
+
+      ctx.font = '10.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#047857';
+      if (fanApp && fanQty > 0) {
+        const fanTotalW = fanWatts * fanQty;
+        const tipL1 = `• ଆପଣଙ୍କ total daily unit (${displayDailyUnits} units) ଭିତରେ କେବଳ ${fanQty} ଟି ceiling fan (${fanWatts}W) ପ୍ରାୟ ${fanDailyKwh.toFixed(1)} units (${fanPct}%) ଖର୍ଚ୍ଚ କରୁଛି।`;
+        const tipL2 = `• ଯଦି normal fan ବଦଳରେ 30W–35W BLDC Fans use କରିବେ, fan load ${fanTotalW}W ରୁ ~${bldcTotalWatts}W କୁ କମିଯିବ ଓ consumption ${displayDailyUnits} units ରୁ ~${newDailyUnits} units କୁ ଖସି ଆସିବ।`;
+        const tipL3 = `• ସେଥିରେ କେବଳ ଛୋଟ Inverter + କମ୍ Solar Panel + କମ୍ Battery ରେ ପୂରା system ଚାଲିଯିବ, ଯାହା ଆପଣଙ୍କ system cost କୁ ୩୫%–୪୦% କମାଇ ଦେବ।`;
+        ctx.fillText(tipL1, tableX + 12, curY + 28);
+        ctx.fillText(tipL2, tableX + 12, curY + 47);
+        ctx.fillText(tipL3, tableX + 12, curY + 66);
+      } else {
+        const tipL1 = `• ଉଚ୍ଚ ବିଦ୍ୟୁତ ଖର୍ଚ୍ଚ କରୁଥିବା ଉପକରଣ (ଯଥା: ମୋଟର/ପମ୍ପ ଓ ଏସି) ରେ 5-Star Inverter ଟେକ୍ନୋଲୋଜି ବ୍ୟବହାର କରିବା ଉଚିତ୍।`;
+        const tipL2 = `• ଏହାଦ୍ୱାରା ଦୈନିକ ବିଦ୍ୟୁତ ଚାହିଦା ୩୦% ରୁ ୪୦% କମିଯିବ ଏବଂ କମ୍ କ୍ଷମତାର ସୋଲାର ପ୍ୟାନେଲ ଓ ବ୍ୟାଟେରୀରେ ପୂରା ଘର ଚାଲିପାରିବ।`;
+        ctx.fillText(tipL1, tableX + 12, curY + 30);
+        ctx.fillText(tipL2, tableX + 12, curY + 52);
+      }
+
+      // ==========================================
+      // 5. FOOTER CARD (Matches Page 1 Footer Style)
+      // ==========================================
+      const footY = 1070;
+      const footH = 62;
+      this.drawCanvasRoundedRect(ctx, tableX, footY, tableW, footH, 6, '#ffffff', '#bae6fd', 1.2);
+
+      ctx.font = 'bold 11.5px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#0369a1';
+      ctx.textAlign = 'center';
+      ctx.fillText(`SolarTrack Odisha Renewable Energy Solutions   •   ସହାୟତା ଫୋନ୍: ${companyPhone}   •   Email: ${companyEmail}`, tableW / 2, footY + 14);
+
+      ctx.font = '10px "Nirmala UI", "Kalinga", sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('MNRE / OERC ଷ୍ଟାଣ୍ଡାର୍ଡ ଅନୁଯାୟୀ ଏହି ବୈଷୟିକ ରିପୋର୍ଟ ପ୍ରସ୍ତୁତ କରାଯାଇଛି। କୌଣସି ପ୍ରଶ୍ନ ପାଇଁ ଆମ ଟେକ୍ନିକାଲ୍ ଟିମ୍ ସହ ଯୋଗାଯୋଗ କରନ୍ତୁ।', tableW / 2, footY + 36);
+      ctx.textAlign = 'left';
+
+      // Attach high-definition canvas onto the page
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', marginX, headerY, contentWidth, contentHeight);
+    } catch (err) {
+      console.warn('Could not generate Page 2 Odia Customer Advisory Report:', err);
+    }
+  }
+
+  /**
+   * Helper to map standard appliance names to friendly Odia titles
+   */
+  private getOdiaApplianceName(name: string, id: string = ''): string {
+    const n = (name || '').toLowerCase();
+    const i = (id || '').toLowerCase();
+    if (i.includes('light') || i.includes('bulb') || i.includes('led') || n.includes('bulb') || n.includes('led') || n.includes('light')) {
+      return 'LED ବଲ୍ବ (LED Bulb)';
+    }
+    if (i.includes('fan') || n.includes('fan')) {
+      return 'ସିଲିଂ ଫ୍ୟାନ୍ (Ceiling Fan)';
+    }
+    if (i.includes('pump') || i.includes('motor') || n.includes('pump') || n.includes('motor')) {
+      return '୧ HP ୱାଟର ପମ୍ପ (Water Pump)';
+    }
+    if (i.includes('comp') || i.includes('laptop') || i.includes('pc') || n.includes('computer') || n.includes('laptop')) {
+      return 'କମ୍ପ୍ୟୁଟର (Computer / Laptop)';
+    }
+    if (i.includes('fridge') || n.includes('fridge') || n.includes('refrigerator')) {
+      return 'ରେଫ୍ରିଜରେଟର (Refrigerator)';
+    }
+    if (i.includes('tv') || n.includes('tv') || n.includes('television')) {
+      return 'ଟିଭି (LED TV)';
+    }
+    if (i.includes('wm') || n.includes('washing')) {
+      return 'ୱାଶିଂ ମେସିନ୍ (Washing Machine)';
+    }
+    if (i.includes('ac') || n.includes('air conditioner') || n.includes('cooler')) {
+      return 'ଏସି (Air Conditioner AC)';
+    }
+    if (i.includes('geyser') || n.includes('geyser') || n.includes('heater')) {
+      return 'ଗିଜର / ହିଟର (Geyser)';
+    }
+    if (i.includes('iron') || n.includes('iron')) {
+      return 'ଇସ୍ତ୍ରୀ (Electric Iron)';
+    }
+    if (i.includes('induction') || n.includes('cooker')) {
+      return 'ଇଣ୍ଡକସନ୍ ଚୁଲା (Induction Cooker)';
+    }
+    return name;
+  }
+
+  /**
+   * Helper to draw rounded rectangles on HTML5 canvas
+   */
+  private drawCanvasRoundedRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number,
+    fillColor?: string,
+    strokeColor?: string,
+    lineWidth: number = 1
+  ): void {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    if (fillColor) {
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+    }
+    if (strokeColor) {
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+  }
+
+  /**
+   * Helper to draw a top accent stripe with rounded top corners on HTML5 canvas
+   */
+  private drawCanvasRoundedTopStripe(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number,
+    fillColor: string
+  ): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height);
+    ctx.lineTo(x, y + height);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /**
+   * Helper to wrap text cleanly inside canvas cards
+   */
+  private drawCanvasWrappedText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number
+  ): number {
+    const words = text.split(' ');
+    let line = '';
+    let curY = y;
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && n > 0) {
+        ctx.fillText(line.trim(), x, curY);
+        line = words[n] + ' ';
+        curY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line.trim(), x, curY);
+    return curY + lineHeight;
   }
 }

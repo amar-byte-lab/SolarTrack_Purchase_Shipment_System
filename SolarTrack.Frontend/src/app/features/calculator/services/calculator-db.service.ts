@@ -105,12 +105,15 @@ export class CalculatorDbService {
 
     // Solar PCU (Off-Grid)
     { id: 'inv-4', brand: 'Microtek', model: 'Solar PCU 1235 (1kVA 12V)', type: 'PCU', kVA: 1.0, kW: 0.8, phase: '1-Phase', batteryVoltage: 12, continuousOutput: 800, surgeOutput: 1600, maxPvInput: 1000, active: true },
-    { id: 'inv-5', brand: 'Luminous', model: 'Solarverter PRO 2kVA 24V', type: 'PCU', kVA: 2.0, kW: 1.6, phase: '1-Phase', batteryVoltage: 24, continuousOutput: 1600, surgeOutput: 3200, maxPvInput: 2000, active: true },
-    { id: 'inv-6', brand: 'Livguard', model: 'Solar PCU 3.5kVA 48V MPPT', type: 'PCU', kVA: 3.5, kW: 3.0, phase: '1-Phase', batteryVoltage: 48, continuousOutput: 3000, surgeOutput: 6000, maxPvInput: 3600, active: true },
-    { id: 'inv-7', brand: 'Microtek', model: 'Solar PCU 5kVA 48V MPPT', type: 'PCU', kVA: 5.0, kW: 4.5, phase: '1-Phase', batteryVoltage: 48, continuousOutput: 4500, surgeOutput: 9000, maxPvInput: 5000, active: true },
-    { id: 'inv-7b', brand: 'Statcon Energiaa', model: 'SE-PCU 7.5kVA 96V', type: 'PCU', kVA: 7.5, kW: 6.0, phase: '1-Phase', batteryVoltage: 96, continuousOutput: 6000, surgeOutput: 12000, maxPvInput: 7500, active: true },
-    { id: 'inv-8', brand: 'Statcon Energiaa', model: 'SE-PCU 10kVA 120V 3-Phase', type: 'PCU', kVA: 10.0, kW: 8.5, phase: '3-Phase', batteryVoltage: 120, continuousOutput: 8500, surgeOutput: 17000, maxPvInput: 10000, active: true },
-    { id: 'inv-8b', brand: 'Statcon Energiaa', model: 'SE-PCU 15kVA 240V 3-Phase', type: 'PCU', kVA: 15.0, kW: 12.5, phase: '3-Phase', batteryVoltage: 240, continuousOutput: 12500, surgeOutput: 25000, maxPvInput: 15000, active: true },
+    { id: 'inv-5', brand: 'Luminous', model: 'Solarverter PRO 2kVA 24V', type: 'PCU', kVA: 2.0, kW: 1.6, phase: '1-Phase', batteryVoltage: 24, continuousOutput: 1600, surgeOutput: 3200, maxPvInput: 2200, active: true },
+    { id: 'inv-6', brand: 'Livguard', model: 'Solar PCU 3.5kVA 48V MPPT', type: 'PCU', kVA: 3.5, kW: 3.0, phase: '1-Phase', batteryVoltage: 48, continuousOutput: 3000, surgeOutput: 6000, maxPvInput: 4200, active: true },
+    { id: 'inv-7', brand: 'Microtek / UTL', model: 'Solar PCU 5kVA 48V MPPT', type: 'PCU', kVA: 5.0, kW: 4.5, phase: '1-Phase', batteryVoltage: 48, continuousOutput: 4500, surgeOutput: 9000, maxPvInput: 6500, active: true },
+    { id: 'inv-7b', brand: 'Statcon Energiaa', model: 'SE-PCU 7.5kVA 96V', type: 'PCU', kVA: 7.5, kW: 6.0, phase: '1-Phase', batteryVoltage: 96, continuousOutput: 6000, surgeOutput: 12000, maxPvInput: 9600, active: true },
+    { id: 'inv-7c', brand: 'Statcon Energiaa', model: 'SE-PCU 7.5kVA 96V 3-Phase', type: 'PCU', kVA: 7.5, kW: 6.0, phase: '3-Phase', batteryVoltage: 96, continuousOutput: 6000, surgeOutput: 12000, maxPvInput: 9600, active: true },
+    { id: 'inv-8', brand: 'Statcon Energiaa', model: 'SE-PCU 10kVA 120V 3-Phase', type: 'PCU', kVA: 10.0, kW: 8.5, phase: '3-Phase', batteryVoltage: 120, continuousOutput: 8500, surgeOutput: 17000, maxPvInput: 12500, active: true },
+    { id: 'inv-8b', brand: 'Statcon Energiaa', model: 'SE-PCU 15kVA 240V 3-Phase', type: 'PCU', kVA: 15.0, kW: 12.5, phase: '3-Phase', batteryVoltage: 240, continuousOutput: 12500, surgeOutput: 25000, maxPvInput: 18000, active: true },
+    { id: 'inv-8c', brand: 'Statcon Energiaa', model: 'SE-PCU 20kVA 240V 3-Phase', type: 'PCU', kVA: 20.0, kW: 17.0, phase: '3-Phase', batteryVoltage: 240, continuousOutput: 17000, surgeOutput: 34000, maxPvInput: 25000, active: true },
+    { id: 'inv-8d', brand: 'Statcon Energiaa', model: 'SE-PCU 30kVA 360V 3-Phase', type: 'PCU', kVA: 30.0, kW: 25.0, phase: '3-Phase', batteryVoltage: 360, continuousOutput: 25000, surgeOutput: 50000, maxPvInput: 36000, active: true },
 
     // On-Grid GTI
     { id: 'inv-9', brand: 'Solis', model: 'S6-GR1P1K 1kW GTI', type: 'GTI', kVA: 1.0, kW: 1.0, phase: '1-Phase', batteryVoltage: 0, continuousOutput: 1000, surgeOutput: 1000, maxPvInput: 1500, mpptVoltageRange: '50V - 500V', active: true },
@@ -136,17 +139,24 @@ export class CalculatorDbService {
     // Tall Tubular
     { id: 'bat-1', brand: 'Exide', model: '6LMS150Ah Solar Tubular', type: 'Tall Tubular', chemistry: 'Tubular', voltage: 12, ah: 150, kWh: 1.8, active: true },
     { id: 'bat-2', brand: 'Luminous', model: 'LPT12200H 200Ah Solar Tubular', type: 'Tall Tubular', chemistry: 'Tubular', voltage: 12, ah: 200, kWh: 2.4, active: true },
+    { id: 'bat-2b', brand: 'Livguard', model: 'IT2500TT 250Ah Solar Tubular', type: 'Tall Tubular', chemistry: 'Tubular', voltage: 12, ah: 250, kWh: 3.0, active: true },
     { id: 'bat-3', brand: 'Livguard', model: 'IT2260TT 220Ah Solar Tubular', type: 'Tall Tubular', chemistry: 'Tubular', voltage: 12, ah: 220, kWh: 2.64, active: true },
     
     // Flat Plate
     { id: 'bat-fp-1', brand: 'Exide', model: 'InstaBrite IB1000 100Ah Flat Plate', type: 'Flat Plate', chemistry: 'Flat Plate', voltage: 12, ah: 100, kWh: 1.2, active: true },
     { id: 'bat-fp-2', brand: 'Luminous', model: 'EcoCharge 150Ah Flat Plate', type: 'Flat Plate', chemistry: 'Flat Plate', voltage: 12, ah: 150, kWh: 1.8, active: true },
+    { id: 'bat-fp-3', brand: 'Livguard', model: 'SuperCharge 200Ah Flat Plate', type: 'Flat Plate', chemistry: 'Flat Plate', voltage: 12, ah: 200, kWh: 2.4, active: true },
 
     // Lithium LiFePO4
     { id: 'bat-li-1', brand: 'Livguard / Tata', model: 'LFP-12100 12.8V 100Ah Pack', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 12.8, ah: 100, kWh: 1.28, active: true },
     { id: 'bat-li-2', brand: 'Livguard / Tata', model: 'LFP-24100 25.6V 100Ah Pack', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 25.6, ah: 100, kWh: 2.56, active: true },
     { id: 'bat-li-3', brand: 'Growatt / Pylontech', model: 'LFP-48100 51.2V 100Ah Wall-Mount (5.12kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 51.2, ah: 100, kWh: 5.12, active: true },
-    { id: 'bat-li-4', brand: 'Deye / Pylontech', model: 'LFP-48200 51.2V 200Ah Rack (10.24kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 51.2, ah: 200, kWh: 10.24, active: true }
+    { id: 'bat-li-4', brand: 'Deye / Pylontech', model: 'LFP-48200 51.2V 200Ah Rack (10.24kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 51.2, ah: 200, kWh: 10.24, active: true },
+    { id: 'bat-li-5', brand: 'Livguard / Statcon', model: 'LFP-96100 96V 100Ah Rack (9.6kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 96, ah: 100, kWh: 9.6, active: true },
+    { id: 'bat-li-6', brand: 'Livguard / Statcon', model: 'LFP-96200 96V 200Ah Rack (19.2kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 96, ah: 200, kWh: 19.2, active: true },
+    { id: 'bat-li-7', brand: 'Livguard / Statcon', model: 'LFP-120200 120V 200Ah Rack (24.0kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 120, ah: 200, kWh: 24.0, active: true },
+    { id: 'bat-li-8', brand: 'Statcon / Pylontech', model: 'LFP-240200 240V 200Ah ESS (48.0kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 240, ah: 200, kWh: 48.0, active: true },
+    { id: 'bat-li-9', brand: 'Statcon / Pylontech', model: 'LFP-360200 360V 200Ah ESS (72.0kWh)', type: 'Lithium LFP', chemistry: 'LiFePO4', voltage: 360, ah: 200, kWh: 72.0, active: true }
   ];
 
   getParams() {

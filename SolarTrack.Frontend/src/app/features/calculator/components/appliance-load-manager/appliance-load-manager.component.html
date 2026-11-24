@@ -59,9 +59,10 @@
                 <input 
                   type="number" 
                   min="0" 
+                  max="6000"
                   class="form-control fw-semibold fs-8 px-2" 
                   id="txtMonthlyUnits" 
-                  placeholder="e.g. 300" 
+                  placeholder="e.g. 3000 (up to 100 U/day)" 
                   [ngModel]="calc.monthlyUnits()"
                   (ngModelChange)="calc.setMonthlyUnits($event)"
                   style="height: 38px;">
@@ -132,7 +133,9 @@
                     <input 
                       type="number" 
                       min="0.1" 
+                      max="150"
                       step="0.1" 
+                      placeholder="e.g. 30.0 (up to 100)"
                       class="form-control form-control-sm text-center fw-bold fs-7 text-primary" 
                       id="txtApplianceDailyDemandEditable" 
                       [ngModel]="effectiveEnergyKwh()"
@@ -155,7 +158,7 @@
         <div id="wrapBasisBackupDurationInputs" class="pt-2 mt-1">
           <div class="row g-2 align-items-stretch">
             <!-- Left: Selected Appliances List & Configure Button -->
-            <div class="col-md-7 col-12">
+            <div class="col-md-6 col-12">
               <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-1.5">
@@ -185,37 +188,112 @@
               </div>
             </div>
 
-            <!-- Right: Editable Backup Energy -->
-            <div class="col-md-5 col-12">
-              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center justify-content-between mb-1">
-                    <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtBackupEnergyEditable">Daily Backup Energy</label>
-                    @if (calc.customBackupEnergyKwh() !== null) {
-                      <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
-                        (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated appliance sum">
-                        Reset ↺
-                      </button>
-                    }
+            <!-- Right: When Solar is installed (Offgrid): Show Day (9 AM - 4 PM) & Night (5 PM - 8 AM) Backup Inputs -->
+            @if (calc.systemType() === 'off-grid') {
+              <div class="col-md-6 col-12">
+                <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                  <div>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <span class="fw-bold text-dark fs-8">Backup Duration (Day & Night)</span>
+                      @if (calc.customBackupEnergyKwh() !== null) {
+                        <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
+                          (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated Day + Night sum">
+                          Reset ↺
+                        </button>
+                      }
+                    </div>
+
+                    <div class="row g-1.5 align-items-start">
+                      <!-- ☀️ Day Backup (9 AM - 4 PM) -->
+                      <div class="col-6">
+                        <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Day Backup (9 AM - 4 PM)">
+                          ☀️ Day (9am–4pm)
+                        </label>
+                        <div class="input-group input-group-sm shadow-2xs">
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="7" 
+                            step="0.5" 
+                            class="form-control form-control-sm text-center fw-bold fs-8 text-primary px-1" 
+                            id="txtDayBackupHours"
+                            [ngModel]="calc.dayBackupHours()"
+                            (ngModelChange)="calc.setDayBackupHours($event)"
+                            style="height: 30px;">
+                          <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
+                        </div>
+                        <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
+                          {{ ((calc.result().dayBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().dayBackupLoadW || calc.result().backupLoadW }}W)
+                        </small>
+                      </div>
+
+                      <!-- 🌙 Night Backup (4 PM - 9 AM) -->
+                      <div class="col-6">
+                        <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Night Backup (4 PM - 9 AM)">
+                          🌙 Night (4pm–9am)
+                        </label>
+                        <div class="input-group input-group-sm shadow-2xs">
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="17" 
+                            step="0.5" 
+                            class="form-control form-control-sm text-center fw-bold fs-8 text-primary px-1" 
+                            id="txtNightBackupHours"
+                            [ngModel]="calc.nightBackupHours()"
+                            (ngModelChange)="calc.setNightBackupHours($event)"
+                            style="height: 30px;">
+                          <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
+                        </div>
+                        <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
+                          {{ ((calc.result().nightBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().nightBackupLoadW || calc.result().backupLoadW }}W)
+                        </small>
+                      </div>
+                    </div>
                   </div>
-                  <div class="input-group shadow-2xs mt-1">
-                    <input 
-                      type="number" 
-                      min="0.1" 
-                      step="0.1" 
-                      class="form-control form-control-sm text-center fw-bold fs-7 text-primary" 
-                      id="txtBackupEnergyEditable" 
-                      [ngModel]="effectiveEnergyKwh()"
-                      (ngModelChange)="onEnergyInputChange($event)"
-                      style="height: 38px;">
-                    <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">kWh / day</span>
+
+                  <!-- Total Daily Backup Energy summary -->
+                  <div class="d-flex align-items-center justify-content-between mt-1.5 pt-1 border-top">
+                    <span class="text-secondary fs-9 fw-semibold">Total Required Storage:</span>
+                    <strong class="text-primary fs-8">{{ ((calc.result().backupEnergyWh || 0) / 1000).toFixed(2) }} kWh / day</strong>
                   </div>
                 </div>
-                <small class="text-muted fs-9 mt-1.5 d-block">
-                  Auto: <strong>{{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh</strong> (editable)
-                </small>
               </div>
-            </div>
+            } @else {
+              <!-- For Without-Solar: Standard Backup Energy -->
+              <div class="col-md-6 col-12">
+                <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                  <div>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtBackupEnergyEditable">Daily Backup Energy</label>
+                      @if (calc.customBackupEnergyKwh() !== null) {
+                        <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
+                          (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated appliance sum">
+                          Reset ↺
+                        </button>
+                      }
+                    </div>
+                    <div class="input-group shadow-2xs mt-1">
+                      <input 
+                        type="number" 
+                        min="0.1" 
+                        max="150"
+                        step="0.1" 
+                        placeholder="e.g. 23.4 (up to 100)"
+                        class="form-control form-control-sm text-center fw-bold fs-7 text-primary" 
+                        id="txtBackupEnergyEditable" 
+                        [ngModel]="effectiveEnergyKwh()"
+                        (ngModelChange)="onEnergyInputChange($event)"
+                        style="height: 38px;">
+                      <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">kWh / day</span>
+                    </div>
+                  </div>
+                  <small class="text-muted fs-9 mt-1.5 d-block">
+                    Auto: <strong>{{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh</strong> (editable)
+                  </small>
+                </div>
+              </div>
+            }
           </div>
         </div>
       }
@@ -225,7 +303,7 @@
         <div id="wrapHybridBackupSection" class="pt-2 mt-2 border-top">
           <div class="row g-2 align-items-stretch">
             <!-- Left: Selected Backup Appliances & Configure Button -->
-            <div class="col-md-7 col-12">
+            <div class="col-md-6 col-12">
               <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-1.5">
@@ -255,12 +333,12 @@
               </div>
             </div>
 
-            <!-- Right: Editable Backup Energy -->
-            <div class="col-md-5 col-12">
+            <!-- Right: Hybrid Day & Night Backup Inputs -->
+            <div class="col-md-6 col-12">
               <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-1">
-                    <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtHybridBackupEnergyEditable">Backup Energy</label>
+                    <span class="fw-bold text-dark fs-8">Backup Duration (Day & Night)</span>
                     @if (calc.customBackupEnergyKwh() !== null) {
                       <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
                         (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated backup sum">
@@ -268,22 +346,59 @@
                       </button>
                     }
                   </div>
-                  <div class="input-group shadow-2xs mt-1">
-                    <input 
-                      type="number" 
-                      min="0.1" 
-                      step="0.1" 
-                      class="form-control form-control-sm text-center fw-bold fs-7 text-success" 
-                      id="txtHybridBackupEnergyEditable" 
-                      [ngModel]="effectiveHybridBackupEnergyKwh()"
-                      (ngModelChange)="onHybridBackupEnergyInputChange($event)"
-                      style="height: 38px;">
-                    <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">kWh</span>
+
+                  <div class="row g-1.5 align-items-start">
+                    <!-- ☀️ Day Backup (9 AM - 4 PM) -->
+                    <div class="col-6">
+                      <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Day Backup (9 AM - 4 PM)">
+                        ☀️ Day (9am–4pm)
+                      </label>
+                      <div class="input-group input-group-sm shadow-2xs">
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="7" 
+                          step="0.5" 
+                          class="form-control form-control-sm text-center fw-bold fs-8 text-success px-1" 
+                          [ngModel]="calc.dayBackupHours()"
+                          (ngModelChange)="calc.setDayBackupHours($event)"
+                          style="height: 30px;">
+                        <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
+                      </div>
+                      <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
+                        {{ ((calc.result().dayBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().dayBackupLoadW || calc.result().backupLoadW }}W)
+                      </small>
+                    </div>
+
+                    <!-- 🌙 Night Backup (4 PM - 9 AM) -->
+                    <div class="col-6">
+                      <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Night Backup (4 PM - 9 AM)">
+                        🌙 Night (4pm–9am)
+                      </label>
+                      <div class="input-group input-group-sm shadow-2xs">
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="17" 
+                          step="0.5" 
+                          class="form-control form-control-sm text-center fw-bold fs-8 text-success px-1" 
+                          [ngModel]="calc.nightBackupHours()"
+                          (ngModelChange)="calc.setNightBackupHours($event)"
+                          style="height: 30px;">
+                        <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
+                      </div>
+                      <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
+                        {{ ((calc.result().nightBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().nightBackupLoadW || calc.result().backupLoadW }}W)
+                      </small>
+                    </div>
                   </div>
                 </div>
-                <small class="text-muted fs-9 mt-1.5 d-block">
-                  Auto: <strong>{{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh</strong> (editable)
-                </small>
+
+                <!-- Total Hybrid Backup Energy -->
+                <div class="d-flex align-items-center justify-content-between mt-1.5 pt-1 border-top">
+                  <span class="text-secondary fs-9 fw-semibold">Total Required Storage:</span>
+                  <strong class="text-success fs-8">{{ ((calc.result().backupEnergyWh || 0) / 1000).toFixed(2) }} kWh / day</strong>
+                </div>
               </div>
             </div>
           </div>
@@ -628,13 +743,14 @@
             <table class="table table-hover align-middle mb-0 backup-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 60px;" class="text-center p-1">🔋 Backup</th>
+                  <th style="width: 50px;" class="text-center p-1">🔋 Backup</th>
                   <th class="p-1 text-start">Appliance</th>
-                  <th style="width: 80px;" class="text-center p-1">Backup Qty</th>
-                  <th style="width: 75px;" class="text-center p-1">Unit Watt</th>
-                  <th style="width: 75px;" class="text-center p-1">Backup Hr</th>
-                  <th style="width: 85px;" class="text-end p-1 pe-2">Energy</th>
-                  <th style="width: 75px;" class="text-center p-1">Specs</th>
+                  <th style="width: 70px;" class="text-center p-1">Backup Qty</th>
+                  <th style="width: 65px;" class="text-center p-1">Unit Watt</th>
+                  <th style="width: 82px;" class="text-center p-1" title="Daytime Backup Hours (9:00 AM – 4:00 PM, Max 7 hrs)">☀️ 9am–4pm</th>
+                  <th style="width: 82px;" class="text-center p-1" title="Nighttime Backup Hours (4:00 PM – 9:00 AM, Max 17 hrs)">🌙 4pm–9am</th>
+                  <th style="width: 80px;" class="text-end p-1 pe-2">Energy</th>
+                  <th style="width: 65px;" class="text-center p-1">Specs</th>
                 </tr>
               </thead>
               <tbody>
@@ -667,16 +783,29 @@
                     <td class="text-center p-1">
                       <input 
                         type="number" 
-                        min="0.5" 
-                        max="24" 
+                        min="0" 
+                        max="7" 
                         step="0.5" 
-                        class="form-control form-control-sm p-1 fs-8 text-center fw-bold" 
-                        style="height: 28px; width: 60px; margin: 0 auto;"
-                        [ngModel]="app.backupHours !== undefined ? app.backupHours : calc.backupHours()"
-                        (ngModelChange)="updateAppBackupHours(app, $event)">
+                        class="form-control form-control-sm p-1 fs-8 text-center fw-bold text-primary" 
+                        style="height: 28px; width: 55px; margin: 0 auto;"
+                        title="Daytime Backup Hours (9:00 AM – 4:00 PM, max 7 hrs)"
+                        [ngModel]="app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)"
+                        (ngModelChange)="updateAppDayBackupHours(app, $event)">
+                    </td>
+                    <td class="text-center p-1">
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="17" 
+                        step="0.5" 
+                        class="form-control form-control-sm p-1 fs-8 text-center fw-bold text-dark" 
+                        style="height: 28px; width: 55px; margin: 0 auto;"
+                        title="Nighttime Backup Hours (4:00 PM – 9:00 AM, max 17 hrs)"
+                        [ngModel]="app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app)"
+                        (ngModelChange)="updateAppNightBackupHours(app, $event)">
                     </td>
                     <td class="text-end p-1 pe-2 fw-semibold fs-8 text-success">
-                      {{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) }} Wh
+                      {{ app.watts * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) * ((app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)) + (app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app))) }} Wh
                     </td>
                     <td class="p-1 text-center">
                       <button 
@@ -693,7 +822,7 @@
                   </tr>
                   @if (expandedAppId() === app.id) {
                     <tr class="table-light">
-                      <td colspan="7" class="p-2.5 pt-1 pb-3">
+                      <td colspan="8" class="p-2.5 pt-1 pb-3">
                         <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
                       </td>
                     </tr>
@@ -729,18 +858,18 @@
                       <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust ⚙️' }}</span>
                     </button>
                     <span class="badge bg-success-subtle text-success border border-success-subtle fs-9 px-1.5 py-0.5">
-                      {{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) }} Wh
+                      {{ app.watts * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) * ((app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)) + (app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app))) }} Wh
                     </span>
                   </div>
                 </div>
-                <div class="row g-1.5 align-items-center">
-                  <div class="col-4">
+                <div class="row g-1.5 align-items-center mb-1.5">
+                  <div class="col-6">
                     <label class="form-label fs-9 text-secondary mb-0.5 d-block">Unit Watt</label>
                     <div class="p-1 bg-light border rounded text-center fs-8 fw-semibold text-dark" style="height: 31px; line-height: 22px;">
                       {{ app.watts }} W
                     </div>
                   </div>
-                  <div class="col-4">
+                  <div class="col-6">
                     <label class="form-label fs-9 text-secondary mb-0.5 d-block">Backup Qty</label>
                     <div class="input-group input-group-sm">
                       <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="decrementBackupQty(app)">-</button>
@@ -754,17 +883,33 @@
                       <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="incrementBackupQty(app)">+</button>
                     </div>
                   </div>
-                  <div class="col-4">
-                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Backup Hr</label>
+                </div>
+                <div class="row g-1.5 align-items-center">
+                  <div class="col-6">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block text-truncate" title="Daytime Backup (9:00 AM – 4:00 PM)">☀️ 9am–4pm (Day)</label>
                     <div class="input-group input-group-sm">
                       <input 
                         type="number" 
-                        min="0.5" 
-                        max="24" 
+                        min="0" 
+                        max="7" 
                         step="0.5" 
-                        class="form-control text-center px-1 fs-8 fw-bold" 
-                        [ngModel]="app.backupHours !== undefined ? app.backupHours : calc.backupHours()" 
-                        (ngModelChange)="updateAppBackupHours(app, $event)">
+                        class="form-control text-center px-1 fs-8 fw-bold text-primary" 
+                        [ngModel]="app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)" 
+                        (ngModelChange)="updateAppDayBackupHours(app, $event)">
+                      <span class="input-group-text px-1 fs-9">h</span>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block text-truncate" title="Nighttime Backup (4:00 PM – 9:00 AM)">🌙 4pm–9am (Night)</label>
+                    <div class="input-group input-group-sm">
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="17" 
+                        step="0.5" 
+                        class="form-control text-center px-1 fs-8 fw-bold text-dark" 
+                        [ngModel]="app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app)" 
+                        (ngModelChange)="updateAppNightBackupHours(app, $event)">
                       <span class="input-group-text px-1 fs-9">h</span>
                     </div>
                   </div>
@@ -782,9 +927,17 @@
 
         <!-- Sticky Responsive Modal Footer -->
         <div class="modal-footer bg-light border-top p-2.5 px-3">
-          <div class="w-100 d-flex justify-content-between align-items-center mb-2 fs-8 flex-wrap gap-1">
+          <div class="w-100 d-flex justify-content-between align-items-center mb-2 fs-8 flex-wrap gap-2">
             <span class="text-secondary">Backup Load: <strong class="text-success fw-bold">{{ localBackupLoadW() }} W</strong></span>
-            <span class="text-secondary">Required Energy: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
+            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-1.5 py-0.5">
+                ☀️ 9am–4pm: {{ (localDayBackupEnergyWh() / 1000).toFixed(2) }} kWh
+              </span>
+              <span class="badge bg-dark-subtle text-dark border border-secondary-subtle fs-9 px-1.5 py-0.5">
+                🌙 4pm–9am: {{ (localNightBackupEnergyWh() / 1000).toFixed(2) }} kWh
+              </span>
+              <span class="text-secondary ms-1">Total: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
+            </div>
           </div>
           <div class="w-100 d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-3 fs-8 fw-semibold flex-fill" (click)="resetBackupDefaults()">
