@@ -79,7 +79,7 @@ export class SizingCalculationComponent implements OnInit {
   readonly sanctionedLoad = signal<number>(10.0);
   readonly monthlyBill = signal<number>(6000);
   readonly monthlyUnits = signal<number>(1000);
-  readonly panelWattage = signal<number>(580);
+  readonly panelWattage = signal<number>(550); // Always fixed to 550Wp
   readonly expansionMargin = signal<number>(15);
   readonly backupHours = signal<number>(4.0);
 
