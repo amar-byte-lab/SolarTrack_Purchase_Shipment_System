@@ -5,15 +5,6 @@
       <div>
         <h6 class="fw-bold text-dark mb-0 fs-6">Appliances & Load</h6>
       </div>
-      <div>
-        <button 
-          type="button" 
-          class="btn btn-outline-primary btn-sm fs-8 py-1 px-2.5 rounded-2 d-inline-flex align-items-center gap-1.5 shadow-2xs fw-semibold" 
-          (click)="openStandardLoadModal()" 
-          title="Standard Load per Unit Calculator">
-          <span>🧮 Standard Load</span>
-        </button>
-      </div>
     </div>
 
     <!-- Sizing Calculation Basis -->
@@ -304,38 +295,33 @@
 <!-- ================= MODAL 1: APPLIANCES CONFIGURATION MODAL ================= -->
 @if (showApplianceModal()) {
   <div class="modal fade show d-block" id="applianceConfigModal" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1055;">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable responsive-load-modal">
       <div class="modal-content shadow-lg border-0 rounded-3">
-        <div class="modal-header bg-light border-bottom py-2 px-2.5 d-flex align-items-center justify-content-between">
+        <!-- Modal Header -->
+        <div class="modal-header bg-light border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2 min-w-0">
             <span class="fs-5 flex-shrink-0">🏠</span>
             <div class="min-w-0">
               <h5 class="modal-title fw-bold text-dark fs-6 mb-0 text-truncate">Appliances & Load</h5>
             </div>
           </div>
-          <div class="modal-header-actions flex-shrink-0 ms-2 d-flex align-items-center gap-1.5">
-            <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 fs-8" (click)="resetAppliances()" title="Reset appliances to default">
-              ↺ Reset
-            </button>
-            <button type="button" class="btn btn-primary btn-sm py-1 px-3 fs-8 fw-semibold" (click)="closeApplianceModal()" title="Save and apply">
-              Apply
-            </button>
-            <button type="button" class="btn-close" (click)="closeApplianceModal()" aria-label="Close"></button>
-          </div>
+          <button type="button" class="btn-close" (click)="closeApplianceModal()" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-2 p-md-3">
+
+        <div class="modal-body p-2.5 p-md-3">
           
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 px-1">
-            <h6 class="fw-bold text-dark mb-0 fs-7">Appliances List & Usage Hours</h6>
+          <!-- Live Metrics Banner -->
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5 p-2 bg-light rounded-2 border">
+            <span class="fw-bold text-dark fs-8">Configured Total Load:</span>
             <div class="d-flex align-items-center gap-2 fs-8">
-              <span class="text-secondary">Load: <strong class="text-dark">{{ calc.result().connectedLoadW }} W</strong></span>
+              <span class="text-secondary">Load: <strong class="text-dark fw-bold">{{ localConnectedLoadW() }} W</strong></span>
               <span class="text-muted">•</span>
-              <span class="text-secondary">Daily: <strong class="text-primary">{{ (calc.result().totalApplianceDailyWh / 1000).toFixed(2) }} kWh/day</strong></span>
+              <span class="text-secondary">Daily: <strong class="text-primary fw-bold">{{ (localDailyDemandWh() / 1000).toFixed(2) }} kWh/day</strong></span>
             </div>
           </div>
 
-          <!-- Appliance Configuration Table -->
-          <div class="table-responsive border rounded-3 mb-2.5" style="max-height: 480px; overflow-y: auto;">
+          <!-- DESKTOP TABLE VIEW (Visible on >= md screens) -->
+          <div class="d-none d-md-block table-responsive border rounded-3 mb-2.5" style="max-height: 440px; overflow-y: auto;">
             <table class="table table-hover align-middle mb-0 appliance-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
@@ -344,6 +330,7 @@
                   <th class="p-1 text-start" style="width: 70px;">Qty</th>
                   <th class="p-1 text-start" style="width: 80px;">Watt</th>
                   <th class="p-1 text-start" style="width: 100px;">Daily Time</th>
+                  <th class="p-1 text-center" style="width: 75px;">Specs</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,7 +380,26 @@
                         <span class="text-muted fs-9">h</span>
                       </div>
                     </td>
+                    <td class="p-1 text-center">
+                      <button 
+                        type="button" 
+                        class="btn btn-outline-primary btn-sm py-0.5 px-1.5 fs-9 rounded-1 d-inline-flex align-items-center gap-1"
+                        [class.btn-primary]="expandedAppId() === app.id"
+                        [class.text-white]="expandedAppId() === app.id"
+                        (click)="toggleAccordion(app)"
+                        [title]="'Adjust ' + app.name + ' specifications'">
+                        <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust' }}</span>
+                        <span class="fs-9">{{ expandedAppId() === app.id ? '▲' : '⚙️' }}</span>
+                      </button>
+                    </td>
                   </tr>
+                  @if (expandedAppId() === app.id) {
+                    <tr class="table-light">
+                      <td colspan="6" class="p-2.5 pt-1 pb-3">
+                        <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
+                      </td>
+                    </tr>
+                  }
                 }
               </tbody>
               <tfoot class="table-light border-top sticky-bottom" style="z-index: 2;">
@@ -445,69 +451,136 @@
                       </button>
                     </div>
                   </td>
+                  <td class="p-1 text-center"></td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
-          <!-- Heavy Load AC Details -->
-          <div class="p-2.5 bg-light rounded-3 border mt-2.5">
-            <h6 class="fw-bold text-primary fs-7 mb-2">❄️ Air Conditioner (AC) Heavy Load Details</h6>
-            <div class="row g-2">
-              <div class="col-6 col-md-4">
-                <label class="form-label fs-8 text-secondary mb-1">AC Tonnage</label>
-                <select 
-                  class="form-select form-select-sm" 
-                  [ngModel]="calc.acConfig().ton"
-                  (ngModelChange)="onAcTonChange($event)">
-                  <option value="0.5">0.5 Ton (600 W)</option>
-                  <option value="1">1.0 Ton (1200 W)</option>
-                  <option value="1.5">1.5 Ton (1800 W)</option>
-                  <option value="2">2.0 Ton (2400 W)</option>
-                </select>
+          <!-- MOBILE CARDS VIEW (Visible on mobile < md screens) -->
+          <div class="d-md-none mobile-appliances-list mb-2.5" style="max-height: calc(100dvh - 280px); overflow-y: auto;">
+            @for (app of localAppliances(); track app.id) {
+              <div class="mobile-app-card p-2.5 mb-2 rounded-3 border bg-white shadow-2xs" [class.border-primary]="app.checked" [class.bg-light]="!app.checked">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                  <label class="d-flex align-items-center gap-2 min-w-0 cursor-pointer mb-0">
+                    <input 
+                      type="checkbox" 
+                      class="form-check-input mt-0 flex-shrink-0 cursor-pointer" 
+                      [checked]="app.checked" 
+                      (change)="toggleAppCheck(app)">
+                    <span class="fs-6">{{ app.icon || '⚡' }}</span>
+                    <span class="fw-bold fs-8 text-dark text-truncate">{{ app.name }}</span>
+                  </label>
+                  <div class="d-flex align-items-center gap-1.5">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-primary btn-sm py-0.5 px-2 fs-9 rounded-pill d-inline-flex align-items-center gap-1"
+                      [class.btn-primary]="expandedAppId() === app.id"
+                      [class.text-white]="expandedAppId() === app.id"
+                      (click)="toggleAccordion(app)">
+                      <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust ⚙️' }}</span>
+                    </button>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-1.5 py-0.5">
+                      {{ (app.watts * (app.defaultQty || 0) * (app.defaultHours || 1)) }} Wh/d
+                    </span>
+                  </div>
+                </div>
+                <div class="row g-1.5 align-items-center">
+                  <div class="col-4">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Qty</label>
+                    <div class="input-group input-group-sm">
+                      <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="decrementAppQty(app)">-</button>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="99" 
+                        class="form-control text-center p-0 fs-8 fw-bold" 
+                        [ngModel]="app.defaultQty" 
+                        (ngModelChange)="updateAppQty(app, $event)">
+                      <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="incrementAppQty(app)">+</button>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Watts</label>
+                    <div class="input-group input-group-sm">
+                      <input 
+                        type="number" 
+                        min="1" 
+                        class="form-control text-center px-1 fs-8 fw-semibold" 
+                        [ngModel]="app.watts" 
+                        (ngModelChange)="updateAppWatt(app, $event)">
+                      <span class="input-group-text px-1 fs-9">W</span>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Daily Hr</label>
+                    <div class="input-group input-group-sm">
+                      <input 
+                        type="number" 
+                        min="0.1" 
+                        max="24" 
+                        step="0.5" 
+                        class="form-control text-center px-1 fs-8" 
+                        [ngModel]="app.defaultHours" 
+                        (ngModelChange)="updateAppHours(app, $event)">
+                      <span class="input-group-text px-1 fs-9">h</span>
+                    </div>
+                  </div>
+                </div>
+                @if (expandedAppId() === app.id) {
+                  <div class="mt-2.5 pt-2 border-top">
+                    <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
+                  </div>
+                }
               </div>
-              <div class="col-6 col-md-4">
-                <label class="form-label fs-8 text-secondary mb-1">Technology</label>
-                <select 
-                  class="form-select form-select-sm" 
-                  [ngModel]="calc.acConfig().acType"
-                  (ngModelChange)="onAcTypeChange($event)">
-                  <option value="inverter">Inverter AC (1.5x Surge)</option>
-                  <option value="non-inverter">Non-Inverter AC (3.0x Surge)</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-4">
-                <label class="form-label fs-8 text-secondary mb-1">Actual AC Watts (Optional)</label>
-                <input 
-                  type="number" 
-                  class="form-control form-control-sm" 
-                  placeholder="e.g. 1450" 
-                  [ngModel]="calc.acConfig().actualWatts || ''"
-                  (ngModelChange)="onAcWattsChange($event)">
-              </div>
-            </div>
-          </div>
+            }
 
-          <!-- Heavy Load Water Pump Details -->
-          <div class="p-2.5 bg-light rounded-3 border mt-2.5">
-            <h6 class="fw-bold text-primary fs-7 mb-2">🚰 Water Pump Heavy Load Details</h6>
-            <div class="row g-2">
-              <div class="col-12">
-                <label class="form-label fs-8 text-secondary mb-1">Pump Motor Rating (HP)</label>
-                <select 
-                  class="form-select form-select-sm" 
-                  [ngModel]="calc.pumpConfig().pumpHp"
-                  (ngModelChange)="onPumpHpChange($event)">
-                  <option value="0.5">0.5 HP (373 W)</option>
-                  <option value="1">1.0 HP (746 W)</option>
-                  <option value="1.5">1.5 HP (1119 W)</option>
-                  <option value="2">2.0 HP (1492 W)</option>
-                </select>
+            <!-- Mobile Add Custom Appliance Card -->
+            <div class="mobile-add-custom-card p-2.5 rounded-3 border border-dashed bg-light mb-2">
+              <div class="fw-bold fs-8 text-primary mb-1.5">➕ Add Custom Appliance</div>
+              <div class="row g-1.5">
+                <div class="col-12">
+                  <input type="text" class="form-control form-control-sm fs-8" placeholder="Appliance Name (e.g. Microwave)" [(ngModel)]="newAppName">
+                </div>
+                <div class="col-4">
+                  <label class="form-label fs-9 text-secondary mb-0.5">Qty</label>
+                  <input type="number" min="1" class="form-control form-control-sm text-center fs-8" [(ngModel)]="newAppQty">
+                </div>
+                <div class="col-4">
+                  <label class="form-label fs-9 text-secondary mb-0.5">Watts</label>
+                  <input type="number" min="1" class="form-control form-control-sm text-center fs-8" [(ngModel)]="newAppWatts">
+                </div>
+                <div class="col-4">
+                  <label class="form-label fs-9 text-secondary mb-0.5">Hours</label>
+                  <input type="number" min="0.5" max="24" step="0.5" class="form-control form-control-sm text-center fs-8" [(ngModel)]="newAppHours">
+                </div>
+                <div class="col-12 mt-1.5">
+                  <button type="button" class="btn btn-primary btn-sm w-100 fs-8 fw-bold py-1.5" (click)="addCustomAppliance()">
+                    + Add to Appliances
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
         </div>
+
+        <!-- Sticky Responsive Modal Footer -->
+        <div class="modal-footer bg-light border-top p-2.5 px-3">
+          <div class="w-100 d-flex justify-content-between align-items-center mb-2 fs-8 flex-wrap gap-1">
+            <span class="text-secondary">Load: <strong class="text-dark">{{ localConnectedLoadW() }} W</strong></span>
+            <span class="text-secondary">Daily Demand: <strong class="text-primary">{{ (localDailyDemandWh() / 1000).toFixed(2) }} kWh/day</strong></span>
+          </div>
+          <div class="w-100 d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-3 fs-8 fw-semibold flex-fill" (click)="resetAppliances()">
+              ↺ Reset
+            </button>
+            <button type="button" class="btn btn-primary btn-sm py-1.5 px-3 fs-8 fw-bold flex-fill shadow-2xs" (click)="applyApplianceModal()">
+              ✓ Apply Appliances
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -516,8 +589,9 @@
 <!-- ================= MODAL 2: BACKUP LOAD CONFIGURATION MODAL ================= -->
 @if (showBackupModal()) {
   <div class="modal fade show d-block" id="backupLoadModal" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1055;">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable responsive-load-modal">
       <div class="modal-content shadow-lg border-0 rounded-3">
+        <!-- Modal Header -->
         <div class="modal-header bg-light border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2 min-w-0">
             <span class="fs-5 flex-shrink-0">🔋</span>
@@ -527,25 +601,27 @@
           </div>
           <button type="button" class="btn-close" (click)="closeBackupModal()" aria-label="Close"></button>
         </div>
+
         <div class="modal-body p-2.5 p-md-3">
           
+          <!-- Advisory note about heavy loads -->
+          <div class="alert alert-info py-2 px-2.5 mb-2.5 d-flex align-items-center gap-2 fs-8 border-0 bg-info-subtle text-info-emphasis rounded-2">
+            <span class="fs-7 flex-shrink-0">💡</span>
+            <span>Select appliances needed during power outages. Heavy loads (AC, Pump, Geyser) require very large battery capacity.</span>
+          </div>
+
           <!-- Stats Row -->
-          <div class="d-flex align-items-center justify-content-end mb-2 px-1">
+          <div class="d-flex align-items-center justify-content-between mb-2 px-1 bg-light p-2 rounded-2 border">
+            <span class="fw-bold text-dark fs-8">Selected Backup:</span>
             <div class="d-flex align-items-center gap-2 fs-8">
-              <span class="text-secondary">Load: <strong class="text-dark">{{ localBackupLoadW() }} W</strong></span>
+              <span class="text-secondary">Load: <strong class="text-success fw-bold">{{ localBackupLoadW() }} W</strong></span>
               <span class="text-muted">•</span>
-              <span class="text-secondary">Energy: <strong class="text-success">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
+              <span class="text-secondary">Energy: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
             </div>
           </div>
 
-          <!-- Advisory note about heavy loads -->
-          <div class="alert alert-info py-1.5 px-2.5 mb-2.5 d-flex align-items-center gap-2 fs-8 border-0 bg-info-subtle text-info-emphasis rounded-2">
-            <span class="fs-7">💡</span>
-            <span>Heavy appliances (AC, Pump, Geyser) require very large inverter & battery capacity. Keeping essential loads (Lights, Fans, Refrigerator, WiFi) gives optimal battery backup duration.</span>
-          </div>
-
-          <!-- Backup Configuration Table -->
-          <div class="table-responsive border rounded-3 mb-2.5" style="max-height: 450px; overflow-y: auto;">
+          <!-- DESKTOP BACKUP TABLE (Visible on >= md screens) -->
+          <div class="d-none d-md-block table-responsive border rounded-3 mb-2.5" style="max-height: 420px; overflow-y: auto;">
             <table class="table table-hover align-middle mb-0 backup-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
@@ -555,6 +631,7 @@
                   <th style="width: 75px;" class="text-center p-1">Unit Watt</th>
                   <th style="width: 75px;" class="text-center p-1">Backup Hr</th>
                   <th style="width: 85px;" class="text-end p-1 pe-2">Energy</th>
+                  <th style="width: 75px;" class="text-center p-1">Specs</th>
                 </tr>
               </thead>
               <tbody>
@@ -564,7 +641,7 @@
                       <input 
                         type="checkbox" 
                         class="form-check-input mt-0 cursor-pointer" 
-                        [checked]="app.isBackup !== false"
+                        [checked]="app.isBackup !== false && (app.backupQty !== undefined ? app.backupQty > 0 : (app.defaultQty || 0) > 0)"
                         (change)="toggleBackupAppCheck(app)">
                     </td>
                     <td class="p-1 text-start">
@@ -598,442 +675,471 @@
                     <td class="text-end p-1 pe-2 fw-semibold fs-8 text-success">
                       {{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) }} Wh
                     </td>
+                    <td class="p-1 text-center">
+                      <button 
+                        type="button" 
+                        class="btn btn-outline-success btn-sm py-0.5 px-1.5 fs-9 rounded-1 d-inline-flex align-items-center gap-1"
+                        [class.btn-success]="expandedAppId() === app.id"
+                        [class.text-white]="expandedAppId() === app.id"
+                        (click)="toggleAccordion(app)"
+                        [title]="'Adjust ' + app.name + ' specifications'">
+                        <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust' }}</span>
+                        <span class="fs-9">{{ expandedAppId() === app.id ? '▲' : '⚙️' }}</span>
+                      </button>
+                    </td>
                   </tr>
+                  @if (expandedAppId() === app.id) {
+                    <tr class="table-light">
+                      <td colspan="7" class="p-2.5 pt-1 pb-3">
+                        <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
+                      </td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>
           </div>
 
-        </div>
-        <div class="modal-footer bg-light d-flex justify-content-between align-items-center flex-nowrap py-2.5 px-3">
-          <div class="fs-8 text-secondary text-nowrap">
-            Backup Load: <strong class="text-success fw-bold">{{ localBackupLoadW() }} W</strong> • Required Energy: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong>
-          </div>
-          <div class="modal-footer-action-group d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-1.5 fs-8 text-nowrap" (click)="resetBackupDefaults()">
-              ↺ Reset
-            </button>
-            <button type="button" class="btn btn-sm btn-success fw-bold px-3.5 py-1.5 fs-8 text-nowrap" (click)="applyBackupModal()">
-              Apply Backup
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-}
-
-<!-- Standard appliance load picker -->
-@if (showStandardMasterModal()) {
-  <div class="modal fade show d-block" id="standardLoadModal" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1055;">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable simple-load-modal" style="max-width: 580px; width: 95%;">
-      <div class="modal-content shadow-lg border-0 rounded-3">
-        
-        <!-- Modal Header -->
-        <div class="modal-header bg-light border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Typical appliance power</h5>
-          </div>
-          <button type="button" class="btn-close" (click)="closeStandardMasterModal()" aria-label="Close"></button>
-        </div>
-
-        <div class="modal-body p-3">
-          <!-- Accordion list (only one section open at a time) -->
-          <div class="simple-load-accordion">
+          <!-- MOBILE BACKUP CARDS VIEW (Visible on mobile < md screens) -->
+          <div class="d-md-none mobile-backup-list mb-2.5" style="max-height: calc(100dvh - 280px); overflow-y: auto;">
             @for (app of localAppliances(); track app.id) {
-              <div class="simple-load-accordion-item" [class.is-expanded]="expandedAppId() === app.id">
-                
-                <!-- Accordion Header Row -->
-                <div class="simple-load-row" 
-                     [class.active-row]="expandedAppId() === app.id"
-                     (click)="toggleAccordion(app)">
-                  <span class="simple-load-icon">{{ app.icon || '⚡' }}</span>
-                  <div class="simple-load-name">
-                    <strong>{{ app.name }}</strong>
-                  </div>
-                  <label class="simple-watt-input" (click)="$event.stopPropagation()">
-                    <input type="number" 
-                           min="1" 
-                           [attr.aria-label]="app.name + ' watts per appliance'" 
-                           [ngModel]="app.watts" 
-                           (ngModelChange)="updateStdWatt(app, $event)">
-                    <span>W</span>
+              <div class="mobile-backup-card p-2.5 mb-2 rounded-3 border bg-white shadow-2xs" 
+                [class.border-success]="app.isBackup !== false && (app.backupQty !== undefined ? app.backupQty > 0 : (app.defaultQty || 0) > 0)" 
+                [class.bg-light]="app.isBackup === false || (app.backupQty !== undefined ? app.backupQty <= 0 : (app.defaultQty || 0) <= 0)">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                  <label class="d-flex align-items-center gap-2 min-w-0 cursor-pointer mb-0">
+                    <input 
+                      type="checkbox" 
+                      class="form-check-input mt-0 flex-shrink-0 cursor-pointer" 
+                      [checked]="app.isBackup !== false && (app.backupQty !== undefined ? app.backupQty > 0 : (app.defaultQty || 0) > 0)" 
+                      (change)="toggleBackupAppCheck(app)">
+                    <span class="fs-6">{{ app.icon || '⚡' }}</span>
+                    <span class="fw-bold fs-8 text-dark text-truncate">{{ app.name }}</span>
                   </label>
-                  <button type="button" 
-                          class="simple-edit-link d-inline-flex align-items-center gap-1" 
-                          [class.is-active]="expandedAppId() === app.id"
-                          (click)="toggleAccordion(app); $event.stopPropagation()" 
-                          [attr.aria-label]="'Adjust ' + app.name + ' estimate'"
-                          [attr.aria-expanded]="expandedAppId() === app.id">
-                    <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust' }}</span>
-                    <svg class="chevron-icon" [class.rotated]="expandedAppId() === app.id" width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                      <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-                    </svg>
-                  </button>
+                  <div class="d-flex align-items-center gap-1.5">
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-success btn-sm py-0.5 px-2 fs-9 rounded-pill d-inline-flex align-items-center gap-1"
+                      [class.btn-success]="expandedAppId() === app.id"
+                      [class.text-white]="expandedAppId() === app.id"
+                      (click)="toggleAccordion(app)">
+                      <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust ⚙️' }}</span>
+                    </button>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle fs-9 px-1.5 py-0.5">
+                      {{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) }} Wh
+                    </span>
+                  </div>
                 </div>
-
-                <!-- Accordion Body: Pure power spec parameters (hours removed as hours belong to demand calculation) -->
-                @if (expandedAppId() === app.id) {
-                  <div class="accordion-specs-panel">
-                    
-                    <!-- TV -->
-                    @if (currentCategory() === 'tv') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Screen Size</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['screenSize']" (ngModelChange)="onCalcParamChange('screenSize', $event)">
-                            <option value="32">32"</option>
-                            <option value="43">43"</option>
-                            <option value="50">50"</option>
-                            <option value="55">55"</option>
-                            <option value="65">65"</option>
-                            <option value="75">75"</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Screen Type</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['displayType']" (ngModelChange)="onCalcParamChange('displayType', $event)">
-                            <option value="led">LED</option>
-                            <option value="qled">QLED</option>
-                            <option value="oled">OLED</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Resolution</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['resolution']" (ngModelChange)="onCalcParamChange('resolution', $event)">
-                            <option value="hd">HD</option>
-                            <option value="fhd">Full HD</option>
-                            <option value="4k">4K UHD</option>
-                            <option value="8k">8K UHD</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Brightness</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['brightness']" (ngModelChange)="onCalcParamChange('brightness', $event)">
-                            <option value="low">Eco</option>
-                            <option value="standard">Standard</option>
-                            <option value="high">High</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- REFRIGERATOR -->
-                    @if (currentCategory() === 'fridge') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Capacity</label>
-                          <div class="input-group input-group-sm">
-                            <input type="number" min="50" max="850" class="form-control" [ngModel]="specParams['capacityL']" (ngModelChange)="onCalcParamChange('capacityL', $event)">
-                            <span class="input-group-text fs-8">L</span>
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Door Type</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['doorType']" (ngModelChange)="onCalcParamChange('doorType', $event)">
-                            <option value="single">Single Door</option>
-                            <option value="double">Double Door</option>
-                            <option value="sideBySide">Side-by-Side</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Star Rating</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['starRating']" (ngModelChange)="onCalcParamChange('starRating', $event)">
-                            <option value="1">1 Star</option>
-                            <option value="2">2 Star</option>
-                            <option value="3">3 Star</option>
-                            <option value="4">4 Star</option>
-                            <option value="5">5 Star</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Compressor</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['compressorType']" (ngModelChange)="onCalcParamChange('compressorType', $event)">
-                            <option value="inverter">Inverter</option>
-                            <option value="nonInverter">Fixed Speed</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- COMPUTER / LAPTOP -->
-                    @if (currentCategory() === 'comp') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Device Type</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['deviceType']" (ngModelChange)="onCalcParamChange('deviceType', $event)">
-                            <option value="laptop">Laptop</option>
-                            <option value="desktop">Desktop PC</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">GPU</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['gpuType']" (ngModelChange)="onCalcParamChange('gpuType', $event)">
-                            <option value="integrated">Integrated GPU</option>
-                            <option value="dedicatedMid">Mid Dedicated GPU</option>
-                            <option value="dedicatedHigh">High-End GPU</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">External Monitors</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['monitorCount']" (ngModelChange)="onCalcParamChange('monitorCount', $event)">
-                            <option value="0">None</option>
-                            <option value="1">1 Monitor</option>
-                            <option value="2">2 Monitors</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Workload</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['intensity']" (ngModelChange)="onCalcParamChange('intensity', $event)">
-                            <option value="light">Light</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="heavy">Heavy</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- WASHING MACHINE -->
-                    @if (currentCategory() === 'wm') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Machine Type</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['wmType']" (ngModelChange)="onCalcParamChange('wmType', $event)">
-                            <option value="topLoad">Top Load</option>
-                            <option value="semi">Semi-Automatic</option>
-                            <option value="frontLoad">Front Load</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Capacity</label>
-                          <div class="input-group input-group-sm">
-                            <input type="number" min="5" max="12" step="0.5" class="form-control" [ngModel]="specParams['capacityKg']" (ngModelChange)="onCalcParamChange('capacityKg', $event)">
-                            <span class="input-group-text fs-8">kg</span>
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Water Heater</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['waterHeater']" (ngModelChange)="onCalcParamChange('waterHeater', $event)">
-                            <option value="disabled">Cold Wash</option>
-                            <option value="enabled">Hot Wash</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Wash Program</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['program']" (ngModelChange)="onCalcParamChange('program', $event)">
-                            <option value="quick">Quick Wash</option>
-                            <option value="normal">Normal</option>
-                            <option value="heavy">Heavy Duty</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- GEYSER -->
-                    @if (currentCategory() === 'geyser') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Element Rating</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['ratedWatts']" (ngModelChange)="onCalcParamChange('ratedWatts', $event)">
-                            <option value="1000">1000 W</option>
-                            <option value="1500">1500 W</option>
-                            <option value="2000">2000 W</option>
-                            <option value="3000">3000 W</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Tank Capacity</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['capacityL']" (ngModelChange)="onCalcParamChange('capacityL', $event)">
-                            <option value="10">10 L</option>
-                            <option value="15">15 L</option>
-                            <option value="25">25 L</option>
-                            <option value="35">35 L</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- IRON -->
-                    @if (currentCategory() === 'iron') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Type</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['ironType']" (ngModelChange)="onCalcParamChange('ironType', $event)">
-                            <option value="dry">Dry Iron</option>
-                            <option value="steam">Steam Iron</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Thermostat Setting</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['thermostatDuty']" (ngModelChange)="onCalcParamChange('thermostatDuty', $event)">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- INDUCTION COOKER -->
-                    @if (currentCategory() === 'induction') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Max Watts</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['ratedWatts']" (ngModelChange)="onCalcParamChange('ratedWatts', $event)">
-                            <option value="1200">1200 W</option>
-                            <option value="1600">1600 W</option>
-                            <option value="1800">1800 W</option>
-                            <option value="2000">2000 W</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Power Level</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['powerLevel']" (ngModelChange)="onCalcParamChange('powerLevel', $event)">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="mixed">Mixed</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- AC -->
-                    @if (currentCategory() === 'ac') {
-                      <div class="row g-2">
-                        <div class="col-4">
-                          <label class="form-label fs-8 text-secondary mb-1">Capacity</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['ton']" (ngModelChange)="onCalcParamChange('ton', $event)">
-                            <option value="0.5">0.5 Ton</option>
-                            <option value="1">1.0 Ton</option>
-                            <option value="1.5">1.5 Ton</option>
-                            <option value="2">2.0 Ton</option>
-                          </select>
-                        </div>
-                        <div class="col-4">
-                          <label class="form-label fs-8 text-secondary mb-1">Technology</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['technology']" (ngModelChange)="onCalcParamChange('technology', $event)">
-                            <option value="inverter">Inverter AC</option>
-                            <option value="nonInverter">Non-Inverter</option>
-                          </select>
-                        </div>
-                        <div class="col-4">
-                          <label class="form-label fs-8 text-secondary mb-1">Star Rating</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['starRating']" (ngModelChange)="onCalcParamChange('starRating', $event)">
-                            <option value="1-2">1–2 Star</option>
-                            <option value="3">3 Star</option>
-                            <option value="5">5 Star</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- WATER PUMP -->
-                    @if (currentCategory() === 'pump') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Motor Rating</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['motorHp']" (ngModelChange)="onCalcParamChange('motorHp', $event)">
-                            <option value="0.5">0.5 HP</option>
-                            <option value="0.75">0.75 HP</option>
-                            <option value="1">1.0 HP</option>
-                            <option value="1.5">1.5 HP</option>
-                            <option value="2">2.0 HP</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Pump Type</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['pumpType']" (ngModelChange)="onCalcParamChange('pumpType', $event)">
-                            <option value="monoblock">Monoblock</option>
-                            <option value="submersible">Submersible</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- LED LIGHT -->
-                    @if (currentCategory() === 'led') {
-                      <div class="row g-2">
-                        <div class="col-12">
-                          <label class="form-label fs-8 text-secondary mb-1">Bulb Watts</label>
-                          <div class="input-group input-group-sm">
-                            <input type="number" min="1" max="100" class="form-control" [ngModel]="specParams['bulbWatts']" (ngModelChange)="onCalcParamChange('bulbWatts', $event)">
-                            <span class="input-group-text fs-8">W</span>
-                          </div>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- FAN -->
-                    @if (currentCategory() === 'fan') {
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Type</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['fanType']" (ngModelChange)="onCalcParamChange('fanType', $event)">
-                            <option value="induction">Induction</option>
-                            <option value="bldc">BLDC</option>
-                          </select>
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label fs-8 text-secondary mb-1">Speed</label>
-                          <select class="form-select form-select-sm" [ngModel]="specParams['speed']" (ngModelChange)="onCalcParamChange('speed', $event)">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                          </select>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- OTHER APPLIANCE -->
-                    @if (currentCategory() === 'other') {
-                      <div class="row g-2">
-                        <div class="col-12">
-                          <label class="form-label fs-8 text-secondary mb-1">Rated Watts</label>
-                          <div class="input-group input-group-sm">
-                            <input type="number" min="1" max="15000" class="form-control" [ngModel]="specParams['ratedWatts']" (ngModelChange)="onCalcParamChange('ratedWatts', $event)">
-                            <span class="input-group-text fs-8">W</span>
-                          </div>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- Action row with generous padding above and estimated power -->
-                    <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top">
-                      <div class="fs-8 text-secondary">
-                        Estimated Power: <strong class="text-dark fs-7">{{ childSpecsResult()?.averageWatts }} W</strong>
-                      </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 fs-8" (click)="closeSpecsAccordion()">Cancel</button>
-                        <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8 fw-semibold" (click)="applyChildSpecsCalculation()">Apply</button>
-                      </div>
+                <div class="row g-1.5 align-items-center">
+                  <div class="col-4">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Unit Watt</label>
+                    <div class="p-1 bg-light border rounded text-center fs-8 fw-semibold text-dark" style="height: 31px; line-height: 22px;">
+                      {{ app.watts }} W
                     </div>
-
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Backup Qty</label>
+                    <div class="input-group input-group-sm">
+                      <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="decrementBackupQty(app)">-</button>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="99" 
+                        class="form-control text-center p-0 fs-8 fw-bold text-success" 
+                        [ngModel]="app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)" 
+                        (ngModelChange)="updateBackupQty(app, $event)">
+                      <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="incrementBackupQty(app)">+</button>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Backup Hr</label>
+                    <div class="input-group input-group-sm">
+                      <input 
+                        type="number" 
+                        min="0.5" 
+                        max="24" 
+                        step="0.5" 
+                        class="form-control text-center px-1 fs-8 fw-bold" 
+                        [ngModel]="app.backupHours !== undefined ? app.backupHours : calc.backupHours()" 
+                        (ngModelChange)="updateAppBackupHours(app, $event)">
+                      <span class="input-group-text px-1 fs-9">h</span>
+                    </div>
+                  </div>
+                </div>
+                @if (expandedAppId() === app.id) {
+                  <div class="mt-2.5 pt-2 border-top">
+                    <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
                   </div>
                 }
-
               </div>
             }
           </div>
+
         </div>
 
-        <!-- Modal Footer -->
-        <div class="modal-footer bg-light d-flex justify-content-between align-items-center py-2 px-3">
-          <button 
-            type="button" 
-            class="btn btn-sm btn-outline-secondary fs-8 fw-semibold py-1.5 px-3 rounded-2" 
-            (click)="resetStandardDefaults()">
-            ↺ Use typical values
-          </button>
-          <button 
-            type="button" 
-            class="btn btn-sm btn-primary fs-8 fw-semibold px-4 py-1.5 rounded-2 shadow-2xs" 
-            (click)="closeStandardMasterModal()">
-            Done
-          </button>
+        <!-- Sticky Responsive Modal Footer -->
+        <div class="modal-footer bg-light border-top p-2.5 px-3">
+          <div class="w-100 d-flex justify-content-between align-items-center mb-2 fs-8 flex-wrap gap-1">
+            <span class="text-secondary">Backup Load: <strong class="text-success fw-bold">{{ localBackupLoadW() }} W</strong></span>
+            <span class="text-secondary">Required Energy: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
+          </div>
+          <div class="w-100 d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-3 fs-8 fw-semibold flex-fill" (click)="resetBackupDefaults()">
+              ↺ Reset
+            </button>
+            <button type="button" class="btn btn-success btn-sm py-1.5 px-3 fs-8 fw-bold flex-fill shadow-2xs" (click)="applyBackupModal()">
+              ✓ Apply Backup
+            </button>
+          </div>
         </div>
 
       </div>
     </div>
   </div>
 }
+
+<!-- ================= REUSABLE SPECS ACCORDION TEMPLATE ================= -->
+<ng-template #specsAccordionPanel let-app>
+  <div class="accordion-specs-panel p-2.5 bg-light rounded-2 border-0">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span class="fw-bold text-dark fs-8">⚙️ {{ app.name }} Specifications</span>
+      <span class="text-secondary fs-9">Adjust model parameters</span>
+    </div>
+
+    <!-- TV -->
+    @if (currentCategory() === 'tv') {
+      <div class="row g-2">
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Screen Size</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['screenSize']" (ngModelChange)="onCalcParamChange('screenSize', $event)">
+            <option value="32">32"</option>
+            <option value="43">43"</option>
+            <option value="50">50"</option>
+            <option value="55">55"</option>
+            <option value="65">65"</option>
+            <option value="75">75"</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Screen Type</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['displayType']" (ngModelChange)="onCalcParamChange('displayType', $event)">
+            <option value="led">LED</option>
+            <option value="qled">QLED</option>
+            <option value="oled">OLED</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Resolution</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['resolution']" (ngModelChange)="onCalcParamChange('resolution', $event)">
+            <option value="hd">HD</option>
+            <option value="fhd">Full HD</option>
+            <option value="4k">4K UHD</option>
+            <option value="8k">8K UHD</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Brightness</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['brightness']" (ngModelChange)="onCalcParamChange('brightness', $event)">
+            <option value="low">Eco</option>
+            <option value="standard">Standard</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- REFRIGERATOR -->
+    @if (currentCategory() === 'fridge') {
+      <div class="row g-2">
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Capacity</label>
+          <div class="input-group input-group-sm">
+            <input type="number" min="50" max="850" class="form-control fs-8" [ngModel]="specParams['capacityL']" (ngModelChange)="onCalcParamChange('capacityL', $event)">
+            <span class="input-group-text fs-9">L</span>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Door Type</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['doorType']" (ngModelChange)="onCalcParamChange('doorType', $event)">
+            <option value="single">Single Door</option>
+            <option value="double">Double Door</option>
+            <option value="sideBySide">Side-by-Side</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Star Rating</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['starRating']" (ngModelChange)="onCalcParamChange('starRating', $event)">
+            <option value="1">1 Star</option>
+            <option value="2">2 Star</option>
+            <option value="3">3 Star</option>
+            <option value="4">4 Star</option>
+            <option value="5">5 Star</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Compressor</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['compressorType']" (ngModelChange)="onCalcParamChange('compressorType', $event)">
+            <option value="inverter">Inverter</option>
+            <option value="nonInverter">Fixed Speed</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- COMPUTER / LAPTOP -->
+    @if (currentCategory() === 'comp') {
+      <div class="row g-2">
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Device Type</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['deviceType']" (ngModelChange)="onCalcParamChange('deviceType', $event)">
+            <option value="laptop">Laptop</option>
+            <option value="desktop">Desktop PC</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">GPU</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['gpuType']" (ngModelChange)="onCalcParamChange('gpuType', $event)">
+            <option value="integrated">Integrated GPU</option>
+            <option value="dedicatedMid">Mid Dedicated GPU</option>
+            <option value="dedicatedHigh">High-End GPU</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Monitors</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['monitorCount']" (ngModelChange)="onCalcParamChange('monitorCount', $event)">
+            <option value="0">None</option>
+            <option value="1">1 Monitor</option>
+            <option value="2">2 Monitors</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Workload</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['intensity']" (ngModelChange)="onCalcParamChange('intensity', $event)">
+            <option value="light">Light</option>
+            <option value="moderate">Moderate</option>
+            <option value="heavy">Heavy</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- WASHING MACHINE -->
+    @if (currentCategory() === 'wm') {
+      <div class="row g-2">
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Type</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['wmType']" (ngModelChange)="onCalcParamChange('wmType', $event)">
+            <option value="topLoad">Top Load</option>
+            <option value="semi">Semi-Automatic</option>
+            <option value="frontLoad">Front Load</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Capacity</label>
+          <div class="input-group input-group-sm">
+            <input type="number" min="5" max="12" step="0.5" class="form-control fs-8" [ngModel]="specParams['capacityKg']" (ngModelChange)="onCalcParamChange('capacityKg', $event)">
+            <span class="input-group-text fs-9">kg</span>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Water Heater</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['waterHeater']" (ngModelChange)="onCalcParamChange('waterHeater', $event)">
+            <option value="disabled">Cold Wash</option>
+            <option value="enabled">Hot Wash</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label fs-9 text-secondary mb-1">Program</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['program']" (ngModelChange)="onCalcParamChange('program', $event)">
+            <option value="quick">Quick Wash</option>
+            <option value="normal">Normal</option>
+            <option value="heavy">Heavy Duty</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- GEYSER -->
+    @if (currentCategory() === 'geyser') {
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Element Rating</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['ratedWatts']" (ngModelChange)="onCalcParamChange('ratedWatts', $event)">
+            <option value="1000">1000 W</option>
+            <option value="1500">1500 W</option>
+            <option value="2000">2000 W</option>
+            <option value="3000">3000 W</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Tank Capacity</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['capacityL']" (ngModelChange)="onCalcParamChange('capacityL', $event)">
+            <option value="10">10 L</option>
+            <option value="15">15 L</option>
+            <option value="25">25 L</option>
+            <option value="35">35 L</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- IRON -->
+    @if (currentCategory() === 'iron') {
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Iron Type</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['ironType']" (ngModelChange)="onCalcParamChange('ironType', $event)">
+            <option value="dry">Dry Iron (1000W)</option>
+            <option value="steam">Steam Iron (1600W)</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Thermostat Setting</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['thermostatDuty']" (ngModelChange)="onCalcParamChange('thermostatDuty', $event)">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- INDUCTION COOKER -->
+    @if (currentCategory() === 'induction') {
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Max Watts</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['ratedWatts']" (ngModelChange)="onCalcParamChange('ratedWatts', $event)">
+            <option value="1200">1200 W</option>
+            <option value="1600">1600 W</option>
+            <option value="1800">1800 W</option>
+            <option value="2000">2000 W</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Power Level</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['powerLevel']" (ngModelChange)="onCalcParamChange('powerLevel', $event)">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- AC -->
+    @if (currentCategory() === 'ac') {
+      <div class="row g-2">
+        <div class="col-4">
+          <label class="form-label fs-9 text-secondary mb-1">Capacity</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['ton']" (ngModelChange)="onCalcParamChange('ton', $event)">
+            <option value="0.5">0.5 Ton</option>
+            <option value="1">1.0 Ton</option>
+            <option value="1.5">1.5 Ton</option>
+            <option value="2">2.0 Ton</option>
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label fs-9 text-secondary mb-1">Technology</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['technology']" (ngModelChange)="onCalcParamChange('technology', $event)">
+            <option value="inverter">Inverter AC</option>
+            <option value="nonInverter">Non-Inverter</option>
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label fs-9 text-secondary mb-1">Star Rating</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['starRating']" (ngModelChange)="onCalcParamChange('starRating', $event)">
+            <option value="1-2">1–2 Star</option>
+            <option value="3">3 Star</option>
+            <option value="5">5 Star</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- WATER PUMP -->
+    @if (currentCategory() === 'pump') {
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Motor Rating</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['motorHp']" (ngModelChange)="onCalcParamChange('motorHp', $event)">
+            <option value="0.5">0.5 HP (373 W)</option>
+            <option value="0.75">0.75 HP (560 W)</option>
+            <option value="1">1.0 HP (746 W)</option>
+            <option value="1.5">1.5 HP (1119 W)</option>
+            <option value="2">2.0 HP (1492 W)</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Pump Type</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['pumpType']" (ngModelChange)="onCalcParamChange('pumpType', $event)">
+            <option value="monoblock">Monoblock</option>
+            <option value="submersible">Submersible</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- LED LIGHT -->
+    @if (currentCategory() === 'led') {
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label fs-9 text-secondary mb-1">Bulb Watts</label>
+          <div class="input-group input-group-sm">
+            <input type="number" min="1" max="100" class="form-control fs-8" [ngModel]="specParams['bulbWatts']" (ngModelChange)="onCalcParamChange('bulbWatts', $event)">
+            <span class="input-group-text fs-9">W</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- FAN -->
+    @if (currentCategory() === 'fan') {
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Fan Motor</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['fanType']" (ngModelChange)="onCalcParamChange('fanType', $event)">
+            <option value="induction">Standard Induction (70-75W)</option>
+            <option value="bldc">BLDC Energy Saver (28-35W)</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <label class="form-label fs-9 text-secondary mb-1">Speed</label>
+          <select class="form-select form-select-sm fs-8" [ngModel]="specParams['speed']" (ngModelChange)="onCalcParamChange('speed', $event)">
+            <option value="low">Low Speed</option>
+            <option value="medium">Medium Speed</option>
+            <option value="high">High Speed</option>
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- OTHER -->
+    @if (currentCategory() === 'other') {
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label fs-9 text-secondary mb-1">Rated Watts</label>
+          <div class="input-group input-group-sm">
+            <input type="number" min="1" max="15000" class="form-control fs-8" [ngModel]="specParams['ratedWatts']" (ngModelChange)="onCalcParamChange('ratedWatts', $event)">
+            <span class="input-group-text fs-9">W</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Bottom Action Bar -->
+    <div class="d-flex align-items-center justify-content-between pt-2.5 mt-2.5 border-top flex-wrap gap-2">
+      <div class="fs-8 text-secondary">
+        Calculated Power: <strong class="text-primary fs-7">{{ childSpecsResult()?.averageWatts || app.watts }} W</strong>
+        @if (childSpecsResult()?.ratedWatts && childSpecsResult()!.ratedWatts > (childSpecsResult()?.averageWatts || 0)) {
+          <span class="text-muted ms-1 fs-9">(Peak: {{ childSpecsResult()?.ratedWatts }} W)</span>
+        }
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2.5 fs-8" (click)="closeSpecsAccordion()">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8 fw-semibold" (click)="applyChildSpecsCalculation()">✓ Apply Power</button>
+      </div>
+    </div>
+  </div>
+</ng-template>

@@ -332,7 +332,7 @@ export class CalculatorService {
       exceedsSanctionedLoad = solarResult !== null && solarResult.actualArrayKwp > sanctionedLoadKw;
     } else if (sysTypeKey === 'off-grid') {
       exceedsSinglePhase = isSinglePhase && rawRequiredKw > SINGLE_PHASE_MAX_LIMIT_KW;
-      exceedsSanctionedLoad = rawRequiredKw > sanctionedLoadKw;
+      exceedsSanctionedLoad = false; // Off-grid is autonomous and has no grid sanctioned load!
     } else {
       exceedsSinglePhase = isSinglePhase && rawRequiredKw > SINGLE_PHASE_MAX_LIMIT_KW;
       exceedsSanctionedLoad = rawRequiredKw > sanctionedLoadKw;

@@ -5,13 +5,13 @@
       <div>
         <h6 class="fw-bold text-dark mb-0 fs-6">Select System Type</h6>
       </div>
-      <button 
+      <!-- <button 
         type="button" 
         class="btn btn-sm btn-outline-primary fw-bold px-3 py-1 fs-8 rounded-pill d-flex align-items-center gap-1.5 shadow-2xs text-decoration-none" 
         (click)="openSchematic.emit()"
         title="Open Full Page Single Line Diagram & Circuit Schematic">
         <span>⚡ Detailed SLD Diagram</span>
-      </button>
+      </button> -->
     </div>
 
     <!-- Custom Rich Dropdown Trigger & Menu -->
@@ -126,10 +126,10 @@
 
     <!-- Grid Supply Phase & Sanctioned Load (Side-by-Side) -->
     <div class="row g-2.5 mb-0" id="secGridPhaseAndLoad">
-      <!-- 1. Grid Supply Phase -->
-      <div class="col-6">
+      <!-- 1. Grid Supply Phase / Inverter Output Phase -->
+      <div [class]="calc.systemType() === 'off-grid' ? 'col-12 col-sm-6' : 'col-6'">
         <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSupplyPhase">
-          Grid Supply Phase
+          {{ calc.systemType() === 'off-grid' ? 'Inverter AC Output Phase' : 'Grid Supply Phase' }}
         </label>
         <div class="input-group shadow-2xs">
           <select 
@@ -144,33 +144,47 @@
         </div>
       </div>
 
-      <!-- 2. Customer Sanctioned Load -->
-      <div class="col-6">
-        <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSanctionedLoad">
-          Sanctioned Load
-        </label>
-        <div class="input-group shadow-2xs">
-          <select 
-            class="form-select fw-semibold fs-8" 
-            id="selSanctionedLoad" 
-            [ngModel]="calc.sanctionedLoadKw()"
-            (ngModelChange)="onSanctionedLoadChange($event)"
-            style="height: 38px;">
-            <option [value]="1">1 kW (₹20/mo)</option>
-            <option [value]="2">2 kW (₹40/mo)</option>
-            <option [value]="3">3 kW (₹60/mo)</option>
-            <option [value]="4">4 kW (₹80/mo)</option>
-            <option [value]="5">5 kW (₹100/mo) — 1-Phase Max</option>
-            <option [value]="6">6 kW (₹120/mo) — 3-Phase</option>
-            <option [value]="7">7 kW (₹140/mo) — 3-Phase</option>
-            <option [value]="8">8 kW (₹160/mo) — 3-Phase</option>
-            <option [value]="10">10 kW (₹200/mo) — 3-Phase</option>
-            <option [value]="12">12 kW (₹240/mo) — 3-Phase</option>
-            <option [value]="15">15 kW (₹300/mo) — 3-Phase</option>
-            <option [value]="20">20 kW (₹400/mo) — 3-Phase</option>
-          </select>
+      <!-- 2. Customer Sanctioned Load (Hidden for Autonomous Off-Grid) -->
+      @if (calc.systemType() !== 'off-grid') {
+        <div class="col-6">
+          <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block" for="selSanctionedLoad">
+            Sanctioned Load
+          </label>
+          <div class="input-group shadow-2xs">
+            <select 
+              class="form-select fw-semibold fs-8" 
+              id="selSanctionedLoad" 
+              [ngModel]="calc.sanctionedLoadKw()"
+              (ngModelChange)="onSanctionedLoadChange($event)"
+              style="height: 38px;">
+              <option [value]="1">1 kW (₹20/mo)</option>
+              <option [value]="2">2 kW (₹40/mo)</option>
+              <option [value]="3">3 kW (₹60/mo)</option>
+              <option [value]="4">4 kW (₹80/mo)</option>
+              <option [value]="5">5 kW (₹100/mo) — 1-Phase Max</option>
+              <option [value]="6">6 kW (₹120/mo) — 3-Phase</option>
+              <option [value]="7">7 kW (₹140/mo) — 3-Phase</option>
+              <option [value]="8">8 kW (₹160/mo) — 3-Phase</option>
+              <option [value]="10">10 kW (₹200/mo) — 3-Phase</option>
+              <option [value]="12">12 kW (₹240/mo) — 3-Phase</option>
+              <option [value]="15">15 kW (₹300/mo) — 3-Phase</option>
+              <option [value]="20">20 kW (₹400/mo) — 3-Phase</option>
+            </select>
+          </div>
         </div>
-      </div>
+      } @else {
+        <!-- Off-Grid Badge / Notice in place of Sanctioned Load -->
+        <div class="col-12 col-sm-6">
+          <label class="form-label fw-bold text-dark fs-8 mb-1.5 text-truncate d-block">
+            Grid Connection
+          </label>
+          <div class="p-2 bg-light rounded-2 border d-flex align-items-center justify-content-center text-center shadow-2xs" style="height: 38px;">
+            <span class="text-success fw-bold fs-8 text-truncate">
+              ⚡ Autonomous Off-Grid (No Grid Meter / Sanctioned Load)
+            </span>
+          </div>
+        </div>
+      }
     </div>
 
   </div>

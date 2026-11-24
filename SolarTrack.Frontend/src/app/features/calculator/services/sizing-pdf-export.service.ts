@@ -416,8 +416,8 @@ export class SizingPdfExportService {
 
     // Appliance Rows
     const allAppliances = this.calc.appliances();
-    const activeApps = allAppliances.filter(a => a.checked || (a.qty !== undefined ? a.qty > 0 : a.defaultQty > 0));
-    const displayApps = activeApps.length > 0 ? activeApps : allAppliances;
+    const activeApps = allAppliances.filter(a => a.checked && (a.qty !== undefined ? a.qty > 0 : a.defaultQty > 0));
+    const displayApps = activeApps.length > 0 ? activeApps : allAppliances.filter(a => a.checked);
     const clampedApps = displayApps.slice(0, 10);
 
     let totalWatts = 0;
@@ -448,7 +448,12 @@ export class SizingPdfExportService {
       doc.line(leftX, tableY + rowH, leftX + leftColW, tableY + rowH);
 
       const cleanName = app.name.replace(/[^\x20-\x7E]/g, '').trim();
-      const specText = this.getApplianceSpecification(app);
+      let specText = this.getApplianceSpecification(app);
+      if (app.isBackup !== false && (app.backupQty !== undefined ? app.backupQty > 0 : (app.defaultQty > 0))) {
+        const bQty = app.backupQty !== undefined ? app.backupQty : app.defaultQty;
+        const bHr = app.backupHours !== undefined ? app.backupHours : result.backupHours;
+        specText = `[Backup: ${bQty}x, ${bHr}h] ${specText}`;
+      }
 
       let rX = leftX;
 
@@ -503,13 +508,17 @@ export class SizingPdfExportService {
     doc.setFontSize(6.7);
     doc.setTextColor(15, 23, 42);
 
+    // Use full accurate totals from result or active apps
+    const displayTotalWatts = result.connectedLoadW || totalWatts;
+    const displayTotalDailyWh = result.totalApplianceDailyWh || totalDailyWh;
+
     let ftX = leftX;
     doc.text('TOTAL', ftX + 1.2, tableY + 3.7); ftX += tColName + tColWatt;
     doc.text(`${totalQty}`, ftX + 2.2, tableY + 3.7); ftX += tColQty;
     doc.setTextColor(217, 119, 6);
-    doc.text(`${totalWatts} W`, ftX + 0.8, tableY + 3.7); ftX += tColTotalW + tColHours;
+    doc.text(`${displayTotalWatts} W`, ftX + 0.8, tableY + 3.7); ftX += tColTotalW + tColHours;
     doc.setTextColor(16, 185, 129);
-    doc.text(`${(totalDailyWh / 1000).toFixed(2)} kWh`, ftX + 0.5, tableY + 3.7);
+    doc.text(`${(displayTotalDailyWh / 1000).toFixed(2)} kWh`, ftX + 0.5, tableY + 3.7);
 
     tableY += 6.5;
 
@@ -529,13 +538,22 @@ export class SizingPdfExportService {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.3);
       doc.setTextColor(71, 85, 105);
-      doc.text(`- Connected Appliances: ${clampedApps.length} categories (${totalQty} units total)`, leftX + 2.5, tableY + 8.0);
-      doc.text(`- Simultaneous Peak Load: ${totalWatts} Watts (${(totalWatts / 1000).toFixed(2)} Kilowatts)`, leftX + 2.5, tableY + 11.8);
-      doc.text(`- Daily Energy Consumption: ~${(totalDailyWh / 1000).toFixed(2)} kWh / Day`, leftX + 2.5, tableY + 15.6);
-      doc.text(`- Estimated Monthly Consumption: ~${Math.round((totalDailyWh / 1000) * 30)} Units / Month`, leftX + 2.5, tableY + 19.4);
-      doc.text(`- Standard Load Basis: BEE Star ratings, modulated duty & rated runtime`, leftX + 2.5, tableY + 23.2);
-      if (result.backupLoadW > 0 && noteCardH > 27) {
-        doc.text(`- Critical Backup Load: ${result.backupLoadW} Watts (~${result.backupHours} Hours runtime)`, leftX + 2.5, tableY + 27.0);
+      let noteY = tableY + 8.0;
+      doc.text(`- Connected Appliances: ${displayApps.length} categories (${totalQty} units total)`, leftX + 2.5, noteY); noteY += 3.8;
+      doc.text(`- Simultaneous Connected Load: ${displayTotalWatts} Watts (${(displayTotalWatts / 1000).toFixed(2)} kW)`, leftX + 2.5, noteY); noteY += 3.8;
+      if (result.backupLoadW > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(5, 150, 105);
+        doc.text(`- Critical Backup Load: ${result.backupLoadW} Watts (~${result.backupHours} Hours runtime)`, leftX + 2.5, noteY); noteY += 3.8;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(71, 85, 105);
+      }
+      doc.text(`- Daily Energy Consumption: ~${(displayTotalDailyWh / 1000).toFixed(2)} kWh / Day`, leftX + 2.5, noteY); noteY += 3.8;
+      if (noteCardH >= (noteY - tableY + 3.0)) {
+        doc.text(`- Estimated Monthly Demand: ~${Math.round((displayTotalDailyWh / 1000) * 30)} Units / Month`, leftX + 2.5, noteY); noteY += 3.8;
+      }
+      if (result.backupEnergyWh > 0 && noteCardH >= (noteY - tableY + 3.0)) {
+        doc.text(`- Required Battery Energy: ~${(result.backupEnergyWh / 1000).toFixed(2)} kWh`, leftX + 2.5, noteY);
       }
     }
 
@@ -986,51 +1004,90 @@ export class SizingPdfExportService {
       let p1 = ''; // Panel & Roof Area
       let p2 = ''; // Daily electricity requirement
       let p3 = ''; // Inverter type & rating
-      let p4 = ''; // Battery option (summary only)
+      let p4 = ''; // Battery option (for on-grid)
+
+      const bLithium = result.batteryLithium || result.battery;
+      const bTubular = result.batteryTubular;
+      const bFlatPlate = result.batteryFlatPlate;
+
+      const litAh = bLithium?.systemBankAh || 100;
+      const litV = bLithium?.systemVoltage || 48;
+      const litKwh = bLithium?.totalInstalledKwh || 4.8;
+      const litUnits = bLithium?.totalUnits || 1;
+      const litHours = bLithium?.actualBackupHours || 4;
+
+      const tubAh = bTubular?.singleBatteryAh || 150;
+      const tubV = bTubular?.systemVoltage || 48;
+      const tubUnits = bTubular?.totalUnits || 4;
+      const tubKwh = bTubular?.totalInstalledKwh || 7.2;
+      const tubHours = bTubular?.actualBackupHours || 4;
+
+      const fpAh = bFlatPlate?.singleBatteryAh || 150;
+      const fpV = bFlatPlate?.systemVoltage || 48;
+      const fpUnits = bFlatPlate?.totalUnits || 4;
+      const fpHours = bFlatPlate?.actualBackupHours || 3;
+
+      const batTitle = '• ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବିକଳ୍ପ (ସମସ୍ତ ୩ ଟି ଟେକ୍ନୋଲୋଜି):';
+      const batLithiumText = `  1. ଲିଥିୟମ୍ (LiFePO4): ${litUnits} ୟୁନିଟ୍ (${litV}V ${litAh}Ah, ${litKwh} kWh) — ~${litHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ୧୦-୧୨ ବର୍ଷ ଆୟୁଷ, ୦% ମେଣ୍ଟେନାନ୍ସ`;
+      const batTubularText = `  2. ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ (C10): ${tubUnits} ଟି ୧୨V ${tubAh}Ah (${tubV}V ବ୍ୟାଙ୍କ, ${tubKwh} kWh) — ~${tubHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ୪-୫ ବର୍ଷ ଆୟୁଷ`;
+      const batFlatPlateText = `  3. ଫ୍ଲାଟ୍ ପ୍ଲେଟ୍: ${fpUnits} ଟି ୧୨V ${fpAh}Ah (${fpV}V ବ୍ୟାଙ୍କ) — ~${fpHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ବଜେଟ୍ ଫ୍ରେଣ୍ଡଲି`;
 
       if (sysTypeKey === 'on-grid') {
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (On-Grid Solar):';
         p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
         p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ଚାହିଦା ~${dailyDemandKwh} kWh ତୁଳନାରେ ପ୍ରତିଦିନ ~${dailyGen} ୟୁନିଟ୍ ସୋଲାର ବିଜୁଳି ତିଆରି ହେବ।`;
         p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ଅନ୍-ଗ୍ରୀଡ୍ GTI (Grid-Tied) ଇନଭର୍ଟର ଆବଶ୍ୟକ।`;
-        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ଅନ୍-ଗ୍ରୀଡ୍ ସିଷ୍ଟମ୍ ରେ ବ୍ୟାଟେରୀ ଆବଶ୍ୟକ ନାହିଁ (ନେଟ୍-ମିଟରିଂ ଦ୍ୱାରା ସିଧାସଳଖ ଗ୍ରୀଡ୍ ସଞ୍ଚୟ)।`;
+        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ: ଅନ୍-ଗ୍ରୀଡ୍ ସିଷ୍ଟମ୍ ରେ ବ୍ୟାଟେରୀ ଆବଶ୍ୟକ ନାହିଁ (ନେଟ୍-ମିଟରିଂ ଦ୍ୱାରା ସିଧାସଳଖ ଗ୍ରୀଡ୍ ସଞ୍ଚୟ)।`;
       } else if (sysTypeKey === 'hybrid') {
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Hybrid Solar):';
         p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
         p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ଚାହିଦା ~${dailyDemandKwh} kWh ପାଇଁ ପ୍ରତିଦିନ ~${dailyGen} ୟୁନିଟ୍ ସୋଲାର ବିଜୁଳି ଉତ୍ପାଦିତ ହେବ।`;
         p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ହାଇବ୍ରିଡ୍ ବାଇ-ଡାଇରେକ୍ସନାଲ୍ ଇନଭର୍ଟର (Hybrid Inverter) ଆବଶ୍ୟକ।`;
-        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ଲିଥିୟମ୍ (LiFePO4), ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ କିମ୍ବା ଫ୍ଲାଟ୍ ପ୍ଲେଟ୍ ରୁ ଯେକୌଣସି ବ୍ୟାକଅପ୍ ବ୍ୟାଙ୍କ ଚୟନ କରିପାରିବେ।`;
       } else if (sysTypeKey === 'off-grid') {
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Off-Grid Solar):';
         p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ~${solarKwp} kWp ପ୍ୟାନେଲ ପାଇଁ ପ୍ରାୟ ${roofArea} ବର୍ଗଫୁଟ ଛାଇମୁକ୍ତ ଛାତ ଜାଗା ଆବଶ୍ୟକ।`;
         p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଦୈନିକ ~${dailyDemandKwh} kWh ଘରୋଇ ଲୋଡ୍ ଓ ବ୍ୟାଟେରୀ ଚାର୍ଜିଂ ସମ୍ପୂର୍ଣ୍ଣ ସୋଲାର୍ ଦ୍ୱାରା ପରିଚାଳିତ ହେବ।`;
         p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ସୋଲାର ପିସିୟୁ ଇନଭର୍ଟର (Solar PCU Inverter) ଆବଶ୍ୟକ।`;
-        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ୨୪ ଘଣ୍ଟିଆ ସ୍ୱାଧୀନ ବିଜୁଳି ପାଇଁ ଲିଥିୟମ୍ (LiFePO4) ବା ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବାଧ୍ୟତାମୂଳକ।`;
       } else {
         // without-solar
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (Home UPS Inverter):';
         p1 = `• ସୋଲାର ପ୍ୟାନେଲ ଓ ଛାତ: ସୋଲାର ପ୍ୟାନେଲ କିମ୍ବା ଛାତ ଜାଗା ଆବଶ୍ୟକ ନାହିଁ (ଘରୋଇ ବିଦ୍ୟୁତ ଗ୍ରୀଡ୍ ରୁ ଚାର୍ଜିଂ ହେବ)।`;
         p2 = `• ଦୈନିକ ବିଜୁଳି ଆବଶ୍ୟକତା: ଜରୁରୀ ବିଦ୍ୟୁତ କଟିବା ସମୟରେ ବ୍ୟାକଅପ୍ ପାଇଁ ଦୈନିକ ~${backupEnergyKwh} kWh ବିଦ୍ୟୁତ ସଞ୍ଚୟ ଆବଶ୍ୟକ।`;
         p3 = `• ଇନଭର୍ଟର ଆବଶ୍ୟକତା: ${invKva} kVA (${invKw} kW) ହୋମ୍ ୟୁପିଏସ୍ / ପ୍ୟୋର୍ ସାଇନ୍ ୱେଭ୍ ଇନଭର୍ଟର ଆବଶ୍ୟକ।`;
-        p4 = `• ବ୍ୟାଟେରୀ ବିକଳ୍ପ (ସାରାଂଶ): ନିରବଚ୍ଛିନ୍ନ ବ୍ୟାକଅପ୍ ପାଇଁ ଲିଥିୟମ୍ (LiFePO4) କିମ୍ବା ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ ବ୍ୟାଟେରୀ ବ୍ୟବସ୍ଥା।`;
       }
 
       // Header Title (Odia)
-      ctx.font = 'bold 22px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
+      ctx.font = 'bold 20px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
       ctx.fillStyle = '#0369a1';
       ctx.textBaseline = 'top';
-      ctx.fillText(headerTitle, 10, 16);
+      ctx.fillText(headerTitle, 10, 8);
 
-      // Bullet points (4 requested points)
-      ctx.font = '500 16px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
+      // Bullet points
+      ctx.font = '500 14px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
       ctx.fillStyle = '#334155';
 
-      ctx.fillText(p1, 10, 56);
-      ctx.fillText(p2, 10, 96);
-      ctx.fillText(p3, 10, 136);
+      ctx.fillText(p1, 10, 36);
+      ctx.fillText(p2, 10, 62);
+      ctx.fillText(p3, 10, 88);
 
-      ctx.fillStyle = '#0f766e';
-      ctx.fillText(p4, 10, 176);
+      if (sysTypeKey === 'on-grid') {
+        ctx.fillStyle = '#0f766e';
+        ctx.fillText(p4, 10, 116);
+      } else {
+        ctx.font = 'bold 14px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
+        ctx.fillStyle = '#0f766e';
+        ctx.fillText(batTitle, 10, 114);
+
+        ctx.font = '500 13px "Nirmala UI", "Kalinga", "Noto Sans Oriya", sans-serif';
+        ctx.fillStyle = '#065f46';
+        ctx.fillText(batLithiumText, 10, 138);
+
+        ctx.fillStyle = '#3730a3';
+        ctx.fillText(batTubularText, 10, 162);
+
+        ctx.fillStyle = '#475569';
+        ctx.fillText(batFlatPlateText, 10, 186);
+      }
 
       const imgData = canvas.toDataURL('image/png');
       doc.addImage(imgData, 'PNG', x, y, w, h);

@@ -61,7 +61,7 @@ export class ApplianceLoadManagerComponent {
     let total = 0;
     for (const app of this.localAppliances()) {
       if (app.isBackup !== false) {
-        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || 0);
+        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || app.qty || 0);
         if (bQty > 0) {
           total += (Number(app.watts) || 0) * bQty;
         }
@@ -75,11 +75,36 @@ export class ApplianceLoadManagerComponent {
     const globalHours = this.calc.backupHours();
     for (const app of this.localAppliances()) {
       if (app.isBackup !== false) {
-        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || 0);
+        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || app.qty || 0);
         const bHours = app.backupHours !== undefined ? Number(app.backupHours) : globalHours;
         if (bQty > 0) {
           total += (Number(app.watts) || 0) * bQty * bHours;
         }
+      }
+    }
+    return total;
+  });
+
+  readonly localConnectedLoadW = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked) {
+        const q = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const w = Number(app.watts) || 0;
+        total += w * q;
+      }
+    }
+    return total;
+  });
+
+  readonly localDailyDemandWh = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked) {
+        const q = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const w = Number(app.watts) || 0;
+        const h = Math.max(0.1, Number(app.defaultHours !== undefined ? app.defaultHours : app.hours) || 1);
+        total += w * q * h;
       }
     }
     return total;
@@ -259,36 +284,33 @@ export class ApplianceLoadManagerComponent {
   // Open / Close Appliance Config Modal
   openApplianceModal(targetAppId?: string) {
     this.localAppliances.set(JSON.parse(JSON.stringify(this.calc.appliances())));
+    this.expandedAppId.set(null);
+    this.currentSpecsApp.set(null);
     this.showApplianceModal.set(true);
+    if (targetAppId) {
+      const target = this.localAppliances().find(a => a.id === targetAppId);
+      if (target) {
+        this.openSpecsForApp(target);
+      }
+    }
   }
 
   closeApplianceModal() {
-    this.calc.appliances.set(JSON.parse(JSON.stringify(this.localAppliances())));
+    this.closeSpecsAccordion();
     this.showApplianceModal.set(false);
   }
 
-  // Open / Close Backup Modal
-  openBackupModal(targetAppId?: string) {
-    this.localAppliances.set(JSON.parse(JSON.stringify(this.calc.appliances())));
-    this.showBackupModal.set(true);
-  }
-
-  closeBackupModal() {
-    this.showBackupModal.set(false);
-  }
-
-  applyBackupModal() {
+  applyApplianceModal() {
     const updated = this.localAppliances().map(app => {
       const a = { ...app };
-      const bQty = a.backupQty !== undefined ? Number(a.backupQty) : (a.isBackup !== false ? Number(a.defaultQty || 0) : 0);
-      if (a.isBackup !== false && bQty > 0) {
-        a.isBackup = true;
-        a.checked = true;
-        if (!a.defaultQty || a.defaultQty < bQty) {
-          a.defaultQty = bQty;
-        }
-        a.backupQty = bQty;
-      } else {
+      const q = Math.max(0, Number(a.defaultQty !== undefined ? a.defaultQty : a.qty) || 0);
+      a.defaultQty = q;
+      a.qty = q;
+      a.defaultHours = Math.max(0.1, Number(a.defaultHours !== undefined ? a.defaultHours : a.hours) || 1);
+      a.hours = a.defaultHours;
+      a.watts = Math.max(1, Number(a.watts) || 1);
+      a.checked = q > 0;
+      if (q === 0) {
         a.isBackup = false;
         a.backupQty = 0;
       }
@@ -296,21 +318,70 @@ export class ApplianceLoadManagerComponent {
     });
     this.calc.appliances.set(JSON.parse(JSON.stringify(updated)));
     this.localAppliances.set(JSON.parse(JSON.stringify(updated)));
-    this.showBackupModal.set(false);
+
+    // Ensure energyCalculationBasis reflects appliance load on on-grid & hybrid
+    if (this.calc.systemType() !== 'off-grid' && this.calc.systemType() !== 'without-solar') {
+      this.calc.setEnergyBasis('appliance_load');
+    }
+    this.closeSpecsAccordion();
+    this.showApplianceModal.set(false);
   }
 
-  // Open / Close Standard Load Master Modal (Screenshot 1)
-  openStandardLoadModal() {
+  // Open / Close Backup Modal
+  openBackupModal(targetAppId?: string) {
     this.localAppliances.set(JSON.parse(JSON.stringify(this.calc.appliances())));
     this.expandedAppId.set(null);
     this.currentSpecsApp.set(null);
-    this.showStandardMasterModal.set(true);
+    this.showBackupModal.set(true);
+    if (targetAppId) {
+      const target = this.localAppliances().find(a => a.id === targetAppId);
+      if (target) {
+        this.openSpecsForApp(target);
+      }
+    }
+  }
+
+  closeBackupModal() {
+    this.closeSpecsAccordion();
+    this.showBackupModal.set(false);
+  }
+
+  applyBackupModal() {
+    const updated = this.localAppliances().map(app => {
+      const a = { ...app };
+      const bQty = a.backupQty !== undefined ? Number(a.backupQty) : (a.isBackup !== false ? Number(a.defaultQty || a.qty || 0) : 0);
+      const bHours = a.backupHours !== undefined ? Number(a.backupHours) : this.calc.backupHours();
+      a.backupHours = bHours;
+      if (a.isBackup !== false && bQty > 0) {
+        a.isBackup = true;
+        a.checked = true;
+        if (!a.defaultQty || a.defaultQty < bQty) {
+          a.defaultQty = bQty;
+        }
+        a.qty = a.defaultQty;
+        a.backupQty = bQty;
+      } else {
+        a.isBackup = false;
+        a.backupQty = 0;
+      }
+      a.defaultHours = Math.max(0.1, Number(a.defaultHours !== undefined ? a.defaultHours : a.hours) || 1);
+      a.hours = a.defaultHours;
+      a.watts = Math.max(1, Number(a.watts) || 1);
+      return a;
+    });
+    this.calc.appliances.set(JSON.parse(JSON.stringify(updated)));
+    this.localAppliances.set(JSON.parse(JSON.stringify(updated)));
+    this.closeSpecsAccordion();
+    this.showBackupModal.set(false);
+  }
+
+  // Open / Close Standard Load Master Modal (Redirects to Appliance Modal)
+  openStandardLoadModal() {
+    this.openApplianceModal();
   }
 
   closeStandardMasterModal() {
-    this.calc.appliances.set(JSON.parse(JSON.stringify(this.localAppliances())));
-    this.expandedAppId.set(null);
-    this.currentSpecsApp.set(null);
+    this.closeSpecsAccordion();
     this.showStandardMasterModal.set(false);
   }
 
@@ -509,21 +580,55 @@ export class ApplianceLoadManagerComponent {
 
   toggleAppCheck(app: ApplianceItem) {
     app.checked = !app.checked;
+    if (app.checked) {
+      const curQ = Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0;
+      if (curQ <= 0) {
+        const def = app.initialQty && app.initialQty > 0 ? app.initialQty : 1;
+        app.defaultQty = def;
+        app.qty = def;
+      }
+    } else {
+      app.isBackup = false;
+      app.backupQty = 0;
+    }
     this.localAppliances.update(list => [...list]);
   }
 
   updateAppQty(app: ApplianceItem, qty: any) {
-    app.defaultQty = Math.max(0, Number(qty) || 0);
+    const q = Math.max(0, Number(qty) || 0);
+    app.defaultQty = q;
+    app.qty = q;
+    if (q > 0) {
+      app.checked = true;
+    } else {
+      app.checked = false;
+      app.isBackup = false;
+      app.backupQty = 0;
+    }
     this.localAppliances.update(list => [...list]);
   }
 
+  incrementAppQty(app: ApplianceItem) {
+    const cur = Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0;
+    this.updateAppQty(app, cur + 1);
+  }
+
+  decrementAppQty(app: ApplianceItem) {
+    const cur = Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0;
+    this.updateAppQty(app, Math.max(0, cur - 1));
+  }
+
   updateAppWatt(app: ApplianceItem, w: any) {
-    app.watts = Math.max(1, Number(w) || 1);
+    const val = Math.max(1, Number(w) || 1);
+    app.watts = val;
+    app.ratedWatts = val;
     this.localAppliances.update(list => [...list]);
   }
 
   updateAppHours(app: ApplianceItem, h: any) {
-    app.defaultHours = Math.max(0.1, Number(h) || 1);
+    const val = Math.max(0.1, Number(h) || 1);
+    app.defaultHours = val;
+    app.hours = val;
     this.localAppliances.update(list => [...list]);
   }
 
@@ -531,12 +636,12 @@ export class ApplianceLoadManagerComponent {
     const nextVal = app.isBackup === false ? true : false;
     app.isBackup = nextVal;
     if (nextVal) {
-      if (!app.defaultQty || app.defaultQty <= 0) {
-        app.defaultQty = 1;
-      }
-      if (!app.backupQty || app.backupQty <= 0) {
-        app.backupQty = app.defaultQty;
-      }
+      const q = (app.backupQty && app.backupQty > 0)
+        ? app.backupQty
+        : ((app.defaultQty && app.defaultQty > 0) ? app.defaultQty : (app.initialQty || 1));
+      app.backupQty = q;
+      app.defaultQty = Math.max(app.defaultQty || 0, q);
+      app.qty = app.defaultQty;
       app.checked = true;
     } else {
       app.backupQty = 0;
@@ -552,11 +657,22 @@ export class ApplianceLoadManagerComponent {
       app.checked = true;
       if (!app.defaultQty || app.defaultQty < q) {
         app.defaultQty = q;
+        app.qty = q;
       }
     } else {
       app.isBackup = false;
     }
     this.localAppliances.update(list => [...list]);
+  }
+
+  incrementBackupQty(app: ApplianceItem) {
+    const cur = app.backupQty !== undefined ? Number(app.backupQty) : ((app.isBackup !== false && app.defaultQty) ? Number(app.defaultQty) : 0);
+    this.updateBackupQty(app, cur + 1);
+  }
+
+  decrementBackupQty(app: ApplianceItem) {
+    const cur = app.backupQty !== undefined ? Number(app.backupQty) : ((app.isBackup !== false && app.defaultQty) ? Number(app.defaultQty) : 0);
+    this.updateBackupQty(app, Math.max(0, cur - 1));
   }
 
   updateAppBackupHours(app: ApplianceItem, h: any) {
@@ -567,15 +683,21 @@ export class ApplianceLoadManagerComponent {
   addCustomAppliance() {
     if (!this.newAppName.trim()) return;
     const newId = 'custom_' + Date.now();
+    const qty = Math.max(1, Number(this.newAppQty) || 1);
+    const watts = Math.max(1, Number(this.newAppWatts) || 100);
+    const hours = Math.max(0.5, Number(this.newAppHours) || 4);
     const newApp: ApplianceItem = {
       id: newId,
       name: this.newAppName.trim(),
-      watts: Number(this.newAppWatts) || 100,
-      defaultQty: Number(this.newAppQty) || 1,
-      defaultHours: Number(this.newAppHours) || 4,
+      watts: watts,
+      ratedWatts: watts,
+      defaultQty: qty,
+      qty: qty,
+      defaultHours: hours,
+      hours: hours,
       checked: true,
       isBackup: true,
-      backupQty: Number(this.newAppQty) || 1,
+      backupQty: qty,
       backupHours: this.calc.backupHours(),
       icon: '⚡'
     };
