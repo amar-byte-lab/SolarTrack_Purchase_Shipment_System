@@ -1091,9 +1091,105 @@ export class SizingCalculationComponent implements OnInit {
     }
   }
 
-  // Modals for PDF proposals
+  // Direct PDF proposals (Direct download, zero modal popup)
+  readonly dayAppliances = computed(() => this.appliances().filter(a => a.slot === 'day'));
+  readonly nightAppliances = computed(() => this.appliances().filter(a => a.slot === 'night'));
+
+  toOdiaNum(val: number | string | undefined | null): string {
+    if (val === undefined || val === null) return '';
+    const odiaDigits = ['୦', '୧', '୨', '୩', '୪', '୫', '୬', '୭', '୮', '୯'];
+    return val.toString().replace(/\d/g, d => odiaDigits[parseInt(d, 10)]);
+  }
+
+  getApplianceOdiaName(name: string): string {
+    const n = (name || '').toLowerCase();
+    if (n.includes('bldc')) return 'BLDC ସିଲିଂ ପଙ୍ଖା (BLDC Ceiling Fan)';
+    if (n.includes('fan') || n.includes('ପଙ୍ଖା')) return 'ସିଲିଂ ପଙ୍ଖା (Ceiling Fan)';
+    if (n.includes('led') || n.includes('bulb') || n.includes('ବଲବ୍')) return 'ଏଲ.ଇ.ଡି. ବଲବ୍ (LED Bulb)';
+    if (n.includes('desktop') || n.includes('computer')) return 'ଡେସ୍କଟପ୍ କମ୍ପ୍ୟୁଟର (Desktop PC)';
+    if (n.includes('laptop')) return 'ଲାପଟପ୍ (Laptop)';
+    if (n.includes('tv') || n.includes('wi-fi') || n.includes('wifi')) return 'ଟିଭି / ୱାଇ-ଫାଇ (TV / Wi-Fi)';
+    if (n.includes('refrigerator') || n.includes('fridge')) return 'ରେଫ୍ରିଜରେଟର (Refrigerator)';
+    if (n.includes('pump') || n.includes('ପମ୍ପ') || n.includes('motor')) {
+      if (n.includes('1 hp') || n.includes('1hp')) return '୧ HP ପାଣି ପମ୍ପ (Water Pump)';
+      if (n.includes('2 hp') || n.includes('2hp')) return '୨ HP ପାଣି ପମ୍ପ (Water Pump)';
+      if (n.includes('3 hp') || n.includes('3hp')) return '୩ HP ୩-ଫେଜ୍ ପମ୍ପ (Water Pump)';
+      if (n.includes('5 hp') || n.includes('5hp')) return '୫ HP ୩-ଫେଜ୍ ପମ୍ପ (Water Pump)';
+      return 'ପାଣି ପମ୍ପ (Water Pump)';
+    }
+    if (n.includes('ac') || n.includes('air conditioner')) {
+      if (n.includes('1.5')) return '୧.୫ ଟନ୍ ଏସି (1.5 Ton AC)';
+      if (n.includes('2')) return '୨.୦ ଟନ୍ ଏସି (2 Ton AC)';
+      return 'ଏୟାର କଣ୍ଡିସନର (Inverter AC)';
+    }
+    return name;
+  }
+
+  architectureHeadingOdia(): string {
+    switch (this.architecture()) {
+      case 'offgrid': return 'ସମ୍ପୂର୍ଣ୍ଣ ଅଫ୍-ଗ୍ରିଡ୍ ସୋଲାର ପାୱାର ସିଷ୍ଟମ୍ ପ୍ରସ୍ତାବନା';
+      case 'hybrid': return 'ହାଇବ୍ରିଡ୍ ସୋଲାର ପାୱାର ସିଷ୍ଟମ୍ ପ୍ରସ୍ତାବନା';
+      case 'ongrid': return 'ଅନ୍-ଗ୍ରିଡ୍ ନେଟ୍-ମିଟରିଂ ସୋଲାର ସିଷ୍ଟମ୍ ପ୍ରସ୍ତାବନା';
+      case 'nobattery': return 'ଇନଭର୍ଟର ଓ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ସିଷ୍ଟମ୍ ପ୍ରସ୍ତାବନା';
+    }
+  }
+
+  architectureDescOdia(): string {
+    switch (this.architecture()) {
+      case 'offgrid': return 'ବିନା କରେଣ୍ଟ (Zero-Grid) ୧୦୦% ସୋଲାର ଓ ବ୍ୟାଟେରୀ ଚାଳିତ';
+      case 'hybrid': return 'ଗ୍ରିଡ୍ ସଂଯୁକ୍ତ + ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ହାଇବ୍ରିଡ୍ ସିଷ୍ଟମ୍';
+      case 'ongrid': return 'ପ୍ୟୁଅର୍ ଅନ୍-ଗ୍ରିଡ୍ ନେଟ୍-ମିଟରିଂ (ବିଲ୍ ଶୂନ୍ୟ ସିଷ୍ଟମ୍)';
+      case 'nobattery': return 'ଗ୍ରିଡ୍ ଚାର୍ଜିଂ ଇନଭର୍ଟର ଓ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍';
+    }
+  }
+
+  downloadProposalPdf(): void {
+    this.isGeneratingPdf.set(true);
+    const element = document.getElementById('proposalPdfDoc');
+    const host = document.getElementById('pdfOffscreenHost');
+
+    if (!element || typeof html2pdf === 'undefined') {
+      this.printProposalPdf();
+      this.isGeneratingPdf.set(false);
+      return;
+    }
+
+    if (host) {
+      host.style.left = '0px';
+      host.style.top = '0px';
+    }
+
+    const opt = {
+      margin: 0,
+      filename: `Shri_Trutiyadev_Solar_Proposal_${Date.now()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollX: 0, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      this.isGeneratingPdf.set(false);
+      if (host) host.style.left = '-9999px';
+    }).catch((err: any) => {
+      console.error(err);
+      this.isGeneratingPdf.set(false);
+      if (host) host.style.left = '-9999px';
+      this.printProposalPdf();
+    });
+  }
+
+  printProposalPdf(): void {
+    const sheet = document.getElementById('proposalPdfDoc');
+    const container = document.getElementById('printContainerAng');
+    if (sheet && container) {
+      container.innerHTML = sheet.outerHTML;
+      window.print();
+    }
+  }
+
   openOdiaModal(): void {
-    this.showOdiaModal.set(true);
+    this.downloadProposalPdf();
   }
 
   closeOdiaModal(): void {
@@ -1101,7 +1197,7 @@ export class SizingCalculationComponent implements OnInit {
   }
 
   openEngModal(): void {
-    this.showEngModal.set(true);
+    this.downloadProposalPdf();
   }
 
   closeEngModal(): void {
@@ -1109,72 +1205,18 @@ export class SizingCalculationComponent implements OnInit {
   }
 
   downloadOdiaPdf(): void {
-    this.isGeneratingPdf.set(true);
-    const element = document.getElementById('odiaSheetModal');
-    if (!element || typeof html2pdf === 'undefined') {
-      this.printOdiaPdf();
-      this.isGeneratingPdf.set(false);
-      return;
-    }
-
-    const opt = {
-      margin: [0, 0, 0, 0],
-      filename: `Shri_Trutiyadev_Solar_1Page_Odia_Proposal_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-      this.isGeneratingPdf.set(false);
-    }).catch((err: any) => {
-      console.error(err);
-      this.isGeneratingPdf.set(false);
-      this.printOdiaPdf();
-    });
+    this.downloadProposalPdf();
   }
 
   printOdiaPdf(): void {
-    const sheet = document.getElementById('odiaSheetModal');
-    const container = document.getElementById('printContainerAng');
-    if (sheet && container) {
-      container.innerHTML = sheet.outerHTML;
-      window.print();
-    }
+    this.printProposalPdf();
   }
 
   downloadEngPdf(): void {
-    this.isGeneratingPdf.set(true);
-    const element = document.getElementById('engSheetModal');
-    if (!element || typeof html2pdf === 'undefined') {
-      this.printEngPdf();
-      this.isGeneratingPdf.set(false);
-      return;
-    }
-
-    const opt = {
-      margin: [0, 0, 0, 0],
-      filename: `Shri_Trutiyadev_Solar_Technical_Engineering_Proposal_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-      this.isGeneratingPdf.set(false);
-    }).catch((err: any) => {
-      console.error(err);
-      this.isGeneratingPdf.set(false);
-      this.printEngPdf();
-    });
+    this.downloadProposalPdf();
   }
 
   printEngPdf(): void {
-    const sheet = document.getElementById('engSheetModal');
-    const container = document.getElementById('printContainerAng');
-    if (sheet && container) {
-      container.innerHTML = sheet.outerHTML;
-      window.print();
-    }
+    this.printProposalPdf();
   }
 }

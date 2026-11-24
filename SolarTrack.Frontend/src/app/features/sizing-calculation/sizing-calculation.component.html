@@ -1,48 +1,18 @@
 <div class="sizing-calc-container py-3 px-2 sm:px-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-6">
 
   <!-- ============================================================== -->
-  <!-- TOP HEADER & BRANDING BAR (MOBILE RESPONSIVE) -->
+  <!-- ACTION BUTTON: SINGLE EXPORT PROPOSAL BUTTON                   -->
   <!-- ============================================================== -->
-  <header class="bg-gradient-to-r from-sky-950 via-sky-900 to-navy-950 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-sky-800/50 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-xl sm:text-2xl shadow-md font-black flex-shrink-0">
-        <i class="fa-solid fa-solar-panel"></i>
-      </div>
-      <div>
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-[10px] font-black tracking-wider uppercase bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/30">
-            Solar Engineering Sizing
-          </span>
-          <span class="text-[10px] text-sky-200 font-medium">Up to 200 kWh/day</span>
-        </div>
-        <h1 class="text-lg sm:text-2xl font-black tracking-tight text-white m-0 leading-tight">
-          Shri Trutiyadev Solar Enterprises
-        </h1>
-        <p class="text-[10px] sm:text-xs text-sky-200/90 m-0">
-          ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍ • Cuttack, Odisha
-        </p>
-      </div>
-    </div>
-
-    <!-- Quick Proposal Action Buttons -->
-    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 pt-1 sm:pt-0">
-      <button 
-        type="button"
-        (click)="openOdiaModal()" 
-        class="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 active:scale-95 transition shadow-sm border-0 cursor-pointer">
-        <i class="fa-solid fa-file-pdf text-rose-600"></i>
-        <span>1-Page Odia Proposal</span>
-      </button>
-
-      <button 
-        type="button"
-        (click)="openEngModal()" 
-        class="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 active:scale-95 transition shadow-sm border-0 cursor-pointer">
-        <i class="fa-solid fa-file-invoice text-sky-200"></i>
-        <span>Technical Sheet</span>
-      </button>
-    </div>
-  </header>
+  <div class="flex items-center justify-end gap-2.5 pt-1 pb-1">
+    <button 
+      type="button"
+      (click)="downloadProposalPdf()" 
+      [disabled]="isGeneratingPdf()"
+      class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-sky-700 hover:bg-sky-600 active:scale-95 transition shadow-sm border border-sky-600/40 cursor-pointer disabled:opacity-60 flex-1 sm:flex-initial">
+      <i class="fa-solid fa-file-pdf text-amber-300 text-sm sm:text-base"></i>
+      <span>{{ isGeneratingPdf() ? 'ପ୍ରସ୍ତାବନା PDF ତିଆରି ହେଉଛି...' : 'ପ୍ରସ୍ତାବନା PDF ଡାଉନଲୋଡ୍ କରନ୍ତୁ' }}</span>
+    </button>
+  </div>
 
   <!-- ============================================================== -->
   <!-- STEP 1: SYSTEM ARCHITECTURE SELECTOR (4 MODES) -->
@@ -996,22 +966,14 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-1.5">
-      <button 
-        type="button" 
-        (click)="openOdiaModal()" 
-        class="px-2.5 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-bold text-[10px] flex items-center gap-1 border-0 cursor-pointer shadow-xs active:scale-95">
-        <i class="fa-solid fa-file-pdf text-rose-600"></i>
-        <span>ଓଡ଼ିଆ</span>
-      </button>
-      <button 
-        type="button" 
-        (click)="openEngModal()" 
-        class="px-2.5 py-1.5 rounded-lg bg-sky-600 text-white font-bold text-[10px] flex items-center gap-1 border-0 cursor-pointer shadow-xs active:scale-95">
-        <i class="fa-solid fa-file-invoice text-sky-200"></i>
-        <span>Sheet</span>
-      </button>
-    </div>
+    <button 
+      type="button" 
+      (click)="downloadProposalPdf()" 
+      [disabled]="isGeneratingPdf()"
+      class="px-3 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1.5 border-0 cursor-pointer shadow-xs active:scale-95 disabled:opacity-60">
+      <i class="fa-solid fa-file-pdf text-rose-600"></i>
+      <span>{{ isGeneratingPdf() ? '...' : 'ପ୍ରସ୍ତାବନା PDF' }}</span>
+    </button>
   </div>
 
   <!-- ============================================================== -->
@@ -1321,319 +1283,256 @@
   }
 
   <!-- ============================================================== -->
-  <!-- MODAL: 1-PAGE ODIA CUSTOMER PROPOSAL PREVIEW & EXPORT -->
+  <!-- OFF-SCREEN RENDERING HOST FOR 2-PAGE ODIA PROPOSAL PDF        -->
   <!-- ============================================================== -->
-  @if (showOdiaModal()) {
-    <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-2 sm:p-4">
-      <div class="bg-slate-100 rounded-2xl w-full max-w-[220mm] shadow-2xl flex flex-col max-h-[96vh] overflow-hidden my-auto">
+  <div id="pdfOffscreenHost" style="position: fixed; left: -9999px; top: 0; width: 210mm; z-index: -9999; pointer-events: none; overflow: hidden;" aria-hidden="true">
+    
+    <div id="proposalPdfDoc" class="proposal-doc">
+      
+      <!-- PAGE 1 OF 2 -->
+      <div class="proposal-page page-1">
         
-        <!-- Modal Header Bar -->
-        <div class="bg-white px-4 py-2.5 sm:px-5 sm:py-3 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs">
-              <i class="fa-solid fa-file-pdf"></i>
-            </span>
-            <span class="font-bold text-xs text-slate-800">1-Page Odia Proposal (ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର)</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button (click)="downloadOdiaPdf()" [disabled]="isGeneratingPdf()" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition border-0 cursor-pointer">
-              <i class="fa-solid fa-download"></i>
-              <span>{{ isGeneratingPdf() ? 'Saving...' : 'Download PDF' }}</span>
-            </button>
-            <button (click)="closeOdiaModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition border-0 bg-transparent cursor-pointer">
-              <i class="fa-solid fa-xmark text-sm"></i>
-            </button>
-          </div>
+        <!-- Watermark Pattern -->
+        <div class="proposal-watermark-pattern">
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
         </div>
 
-        <!-- Scrollable A4 Preview Frame -->
-        <div class="overflow-y-auto p-2 sm:p-4 flex justify-center bg-slate-200/80">
-          <div id="odiaSheetModal" class="a4-sheet-single shadow-xl font-oriya text-slate-900 p-6 flex flex-col justify-between">
-            <div class="proposal-watermark">SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
-            
-            <!-- Header -->
-            <div class="border-b-2 border-sky-600 pb-3 flex justify-between items-center relative z-10">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-2xl font-black shadow-sm">
-                  <i class="fa-solid fa-sun"></i>
-                </div>
-                <div>
-                  <h1 class="text-xl font-black text-slate-950 m-0">ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍</h1>
-                  <p class="text-[11px] text-sky-800 font-bold m-0">Shri Trutiyadev Solar Enterprises • ବିଶ୍ୱସନୀୟ ସୋଲାର ଓ ବ୍ୟାଟେରୀ ସମାଧାନ</p>
-                </div>
-              </div>
-              <div class="text-right text-[11px]">
-                <div class="font-bold text-slate-900">ଗ୍ରାହକ ପ୍ରସ୍ତାବନା (Customer Proposal)</div>
-                <div class="text-slate-500 font-mono">{{ clientName() }}</div>
-                <div class="text-slate-500">{{ siteLocation() }}</div>
-              </div>
+        <div class="proposal-content">
+          <!-- Main Brand & System Title -->
+          <div class="mb-3">
+            <h1 class="doc-brand-title">ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍ (Shri Trutiyadev Solar Enterprises)</h1>
+            <h2 class="doc-main-heading">{{ architectureHeadingOdia() }}</h2>
+            <div class="doc-meta-bar">
+              ବ୍ୟବସ୍ଥା: {{ architectureDescOdia() }} | ଦୈନିକ ମୋଟ୍ ଖର୍ଚ୍ଚ: ପ୍ରାୟ {{ toOdiaNum(Math.round(audit().totalDailyKwh)) }} ୟୁନିଟ୍ (Units)
             </div>
+          </div>
 
-            <!-- System Overview Card -->
-            <div class="grid grid-cols-4 gap-2 text-center text-xs relative z-10 my-1">
-              <div class="p-2 bg-sky-50 rounded-lg border border-sky-200">
-                <span class="text-[10px] text-slate-600 block">ଦୈନିକ ବିଜୁଳି ଖର୍ଚ୍ଚ</span>
-                <span class="font-mono font-bold text-sky-900 text-sm">{{ audit().totalDailyKwh.toFixed(1) }} Unit/ଦିନ</span>
-              </div>
-              <div class="p-2 bg-sky-50 rounded-lg border border-sky-200">
-                <span class="text-[10px] text-slate-600 block">ସୋଲାର ଇନଭର୍ଟର</span>
-                <span class="font-mono font-bold text-sky-900 text-sm">{{ inverter().sizedKva }} kVA ({{ inverter().isThreePhase ? '3-Phase' : '1-Phase' }})</span>
-              </div>
-              <div class="p-2 bg-amber-50 rounded-lg border border-amber-200">
-                <span class="text-[10px] text-amber-800 block">ସୋଲାର ପ୍ୟାନେଲ</span>
-                <span class="font-mono font-bold text-amber-900 text-sm">{{ solar().actualInstalledKwp.toFixed(2) }} kWp</span>
-              </div>
-              <div class="p-2 bg-emerald-50 rounded-lg border border-emerald-200">
-                <span class="text-[10px] text-emerald-800 block">ବ୍ୟାଟେରୀ କ୍ଷମତା</span>
-                <span class="font-mono font-bold text-emerald-900 text-sm">{{ batteryOptions()?.opt1?.ahRating || 150 }}Ah @ {{ inverter().dcVoltage }}V</span>
-              </div>
-            </div>
+          <!-- Section 1: Daily Energy Audit (Day & Night) -->
+          <div class="mb-3.5">
+            <h3 class="section-title">୧. ଆପଣଙ୍କ ଦୈନିକ ବିଜୁଳି ବ୍ୟବହାର (ଦିନ ଓ ରାତି ହିସାବ)</h3>
+            <p class="section-desc">
+              ଏହି ସିଷ୍ଟମରେ ସରକାରୀ କରେଣ୍ଟ (Grid) ନଥିଲେ ମଧ୍ୟ ଦିନ ବେଳା ସୋଲାରରୁ ସିଧାସଳଖ ସବୁ ଉପକରଣ ଚାଲିବ ଏବଂ ରାତି ବେଳା ବ୍ୟାଟେରୀରୁ ନିରବଚ୍ଛିନ୍ନ ବିଜୁଳି ମିଳିବ।
+            </p>
 
-            <!-- Odia Appliance Load Table -->
-            <div class="relative z-10 my-1">
-              <div class="font-bold text-xs text-sky-950 mb-1 flex justify-between">
-                <span>ସଂଯୁକ୍ତ ଉପକରଣ ଓ ବିଜୁଳି ତାଲିକା (Appliance Schedule)</span>
-                <span class="text-[10px] text-slate-500">Daytime Direct + Nighttime Battery Backup</span>
-              </div>
-              <table class="w-full text-left text-[10px] border border-slate-200">
-                <thead class="bg-slate-100 text-slate-800">
+            <table class="p-table">
+              <thead>
+                <tr>
+                  <th style="width: 44%;">ବିଜୁଳି ଉପକରଣ ଓ ସଂଖ୍ୟା</th>
+                  <th style="width: 18%;">ଗୋଟିଏର ପାୱାର</th>
+                  <th style="width: 18%;">ଚାଲିବା ସମୟ</th>
+                  <th style="width: 20%; text-align: right;">ଦୈନିକ ୟୁନିଟ୍ (Units)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Daytime Subheading -->
+                <tr class="group-header-row">
+                  <td colspan="4">
+                    ଦିନ ବେଳା (ସକାଳ ୯:୦୦ – ଅପରାହ୍ନ ୪:୦୦) — ସିଧାସଳଖ ସୋଲାର ପାୱାରରୁ ଚାଲିବ
+                  </td>
+                </tr>
+
+                @for (app of dayAppliances(); track app.id) {
                   <tr>
-                    <th class="py-1 px-2 border-b">ଉପକରଣର ନାମ</th>
-                    <th class="py-1 px-1 text-center border-b">ସଂଖ୍ୟା (Qty)</th>
-                    <th class="py-1 px-1 text-right border-b">ୱାଟ (Watts)</th>
-                    <th class="py-1 px-1 text-center border-b">ଚାଲିବା ସମୟ</th>
-                    <th class="py-1 px-2 text-right border-b">ଦୈନିକ ୟୁନିଟ୍</th>
+                    <td>{{ getApplianceOdiaName(app.name) }} — {{ toOdiaNum(app.qty) }}ଟି</td>
+                    <td>{{ toOdiaNum(app.watt) }} ୱାଟ୍ (W)</td>
+                    <td>{{ toOdiaNum(app.hours) }} ଘଣ୍ଟା</td>
+                    <td style="text-align: right; font-weight: 700;">{{ toOdiaNum(((app.qty * app.watt * app.hours) / 1000).toFixed(2)) }} ୟୁନିଟ୍</td>
                   </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  @for (app of appliances(); track app.id) {
-                    <tr>
-                      <td class="py-1 px-2 font-medium">{{ app.name }}</td>
-                      <td class="py-1 px-1 text-center font-mono">{{ app.qty }}</td>
-                      <td class="py-1 px-1 text-right font-mono">{{ app.watt }}W</td>
-                      <td class="py-1 px-1 text-center font-mono">{{ app.hours }} ଘଣ୍ଟା ({{ app.slot === 'day' ? 'ଦିନ' : 'ରାତି' }})</td>
-                      <td class="py-1 px-2 text-right font-mono font-bold">{{ ((app.qty * app.watt * app.hours) / 1000).toFixed(2) }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
+                }
 
-            <!-- Odia 3 Battery Options Section -->
-            @if (batteryOptions(); as b) {
-              <div class="relative z-10 my-1">
-                <div class="font-bold text-xs text-sky-950 mb-1">୩ଟି ବ୍ୟାଟେରୀ ବିକଳ୍ପ (3 Battery Bank Options)</div>
-                <div class="grid grid-cols-3 gap-2 text-[10px]">
-                  
-                  <div class="p-2 rounded border border-emerald-500 bg-emerald-50/50">
-                    <span class="font-bold text-emerald-900 block text-[11px]">ବିକଳ୍ପ ୧: ପ୍ରିମିୟମ LiFePO4 (ସର୍ବୋତ୍ତମ)</span>
-                    <span class="block text-slate-700 mt-0.5">କ୍ଷମତା: <strong>{{ b.opt1.ahRating }}Ah @ {{ b.opt1.voltage }}V</strong> ({{ b.opt1.dcStorageKwh.toFixed(1) }} kWh)</span>
-                    <span class="block text-slate-700">ଆୟୁଷ: <strong>୮ ରୁ ୧୦+ ବର୍ଷ</strong></span>
-                    <span class="block text-emerald-800 font-bold mt-0.5">ସକାଳ ରିଜର୍ଭ: ୪୫% ଅଟୋନୋମି</span>
-                  </div>
+                <!-- Daytime Subtotal -->
+                <tr class="subtotal-row">
+                  <td colspan="3" style="font-weight: 700;">ଦିନ ବେଳାର ମୋଟ ବିଜୁଳି ଖର୍ଚ୍ଚ (ସୋଲାରରୁ ସିଧାସଳଖ)</td>
+                  <td style="text-align: right; font-weight: 800;">{{ toOdiaNum(audit().dayKwh.toFixed(2)) }} ୟୁନିଟ୍</td>
+                </tr>
 
-                  <div class="p-2 rounded border border-sky-300 bg-sky-50/50">
-                    <span class="font-bold text-sky-900 block text-[11px]">ବିକଳ୍ପ ୨: ଷ୍ଟାଣ୍ଡାର୍ଡ LiFePO4</span>
-                    <span class="block text-slate-700 mt-0.5">କ୍ଷମତା: <strong>{{ b.opt2.ahRating }}Ah @ {{ b.opt2.voltage }}V</strong> ({{ b.opt2.dcStorageKwh.toFixed(1) }} kWh)</span>
-                    <span class="block text-slate-700">ଆୟୁଷ: <strong>୮ ରୁ ୧୦ ବର୍ଷ</strong></span>
-                    <span class="block text-slate-600 mt-0.5">୧୫% ସେଫ୍ଟି ବଫର ସହିତ</span>
-                  </div>
+                <!-- Nighttime Subheading -->
+                <tr class="group-header-row">
+                  <td colspan="4">
+                    ରାତି ବେଳା (ଅପରାହ୍ନ ୪:୦୦ – ସକାଳ ୯:୦୦) — ସମ୍ପୂର୍ଣ୍ଣ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ରୁ ଚାଲିବ
+                  </td>
+                </tr>
 
-                  <div class="p-2 rounded border border-slate-300 bg-slate-50">
-                    <span class="font-bold text-slate-900 block text-[11px]">ବିକଳ୍ପ ୩: C10 ସୋଲାର ଟଲ୍ ଟ୍ୟୁବୁଲାର</span>
-                    <span class="block text-slate-700 mt-0.5">ବ୍ୟାଟେରୀ ସଂଖ୍ୟା: <strong>{{ b.opt3.totalUnits }} ଟି (12V)</strong></span>
-                    <span class="block text-slate-700">ଆୟୁଷ: <strong>୩ ରୁ ୫ ବର୍ଷ</strong></span>
-                    <span class="block text-slate-600 mt-0.5">ଲେଡ୍-ଏସିଡ୍ ବ୍ୟାଙ୍କ</span>
-                  </div>
+                @for (app of nightAppliances(); track app.id) {
+                  <tr>
+                    <td>{{ getApplianceOdiaName(app.name) }} — {{ toOdiaNum(app.qty) }}ଟି</td>
+                    <td>{{ toOdiaNum(app.watt) }} ୱାଟ୍ (W)</td>
+                    <td>{{ toOdiaNum(app.hours) }} ଘଣ୍ଟା</td>
+                    <td style="text-align: right; font-weight: 700;">{{ toOdiaNum(((app.qty * app.watt * app.hours) / 1000).toFixed(2)) }} ୟୁନିଟ୍</td>
+                  </tr>
+                }
 
-                </div>
-              </div>
-            }
+                <!-- Nighttime Subtotal -->
+                <tr class="subtotal-row">
+                  <td colspan="3" style="font-weight: 700;">ରାତି ବେଳାର ମୋଟ ବିଜୁଳି ଖର୍ଚ୍ଚ (ବ୍ୟାଟେରୀରୁ)</td>
+                  <td style="text-align: right; font-weight: 800;">{{ toOdiaNum(audit().nightKwh.toFixed(2)) }} ୟୁନିଟ୍</td>
+                </tr>
 
-            <!-- Odia BOS & Cabling Specification -->
-            <div class="relative z-10 my-1 bg-slate-50 p-2 rounded border border-slate-200 text-[10px]">
-              <div class="font-bold text-sky-950 mb-0.5">ସୁରକ୍ଷା ଓ କେବଲ୍ ବିବରଣୀ (BOS & Cabling):</div>
-              <div class="grid grid-cols-2 gap-1 text-slate-800">
-                <div>• ଡିସି କେବଲ୍ (DC): <strong>{{ bos().dcPvCable }} / ବ୍ୟାଟେରୀ: {{ bos().battCable }}</strong></div>
-                <div>• ଏସି କେବଲ୍ (AC Output): <strong>{{ bos().acCable }}</strong></div>
-                <div class="col-span-2">• ଆର୍ଥିଙ୍ଗ୍ କେବଲ୍ (Earthing Conductor): <strong>{{ bos().earthingCable }} ({{ bos().earthing }})</strong></div>
-              </div>
-            </div>
+                <!-- Grand Total -->
+                <tr class="grand-total-row">
+                  <td colspan="3">ସର୍ବମୋଟ୍ ଦୈନିକ ବିଜୁଳି ଖର୍ଚ୍ଚ (୨୪ ଘଣ୍ଟା)</td>
+                  <td style="text-align: right;">{{ toOdiaNum(audit().totalDailyKwh.toFixed(2)) }} ୟୁନିଟ୍ (ପ୍ରାୟ {{ toOdiaNum(Math.round(audit().totalDailyKwh)) }} ୟୁନିଟ୍)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-            <!-- Odia Practical Tips & Footer -->
-            <div class="border-t border-slate-200 pt-2 text-[10px] text-slate-700 relative z-10 flex justify-between items-center">
-              <div>
-                <strong>ମନେରଖନ୍ତୁ:</strong> ପାଣି ମୋଟର ୧୦:୦୦ AM ରୁ ୩:୦୦ PM ମଧ୍ୟରେ ଚଳାଇବା ଦ୍ୱାରା ବ୍ୟାଟେରୀ ଦୀର୍ଘସ୍ଥାୟୀ ରହିଥାଏ।
-              </div>
-              <div class="text-right text-sky-800 font-bold">
-                ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍ • କଟକ, ଓଡ଼ିଶା
-              </div>
-            </div>
+          <!-- Section 2: Recommended Solar System Details (Starts on Page 1) -->
+          <div>
+            <h3 class="section-title">୨. ଆପଣଙ୍କ ପାଇଁ ଉପଯୁକ୍ତ ସୋଲାର ସିଷ୍ଟମ୍ ବିବରଣୀ</h3>
+            <p class="section-desc">
+              ଜରୁରୀକାଳୀନ ଚାର୍ଜିଂ ପାଇଁ ବାହାର କରେଣ୍ଟ ନଥିବାରୁ, ଦିନର ଲୋଡ୍ ଚଳାଇବା ଓ ରାତି ପାଇଁ ପର୍ଯ୍ୟାପ୍ତ ଚାର୍ଜ ରଖିବା ନିମନ୍ତେ ନିମ୍ନଲିଖିତ ସିଷ୍ଟମ୍ ସୁପାରିଶ କରାଯାଉଛି:
+            </p>
 
+            <table class="p-table">
+              <thead>
+                <tr>
+                  <th style="width: 17%;">ମୁଖ୍ୟ ଉପକରଣ</th>
+                  <th style="width: 25%;">କ୍ଷମତା ଓ ବିବରଣୀ</th>
+                  <th style="width: 58%;">ଏହା ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିବ?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Inverter -->
+                <tr>
+                  <td style="font-weight: 700; color: #004d66;">
+                    ୧. ସୋଲାର ଇନଭର୍ଟର<br>
+                    <span style="font-size: 9.5px; font-weight: normal; color: #475569;">
+                      ({{ architecture() === 'nobattery' ? 'Inverter' : architecture() === 'hybrid' ? 'Hybrid PCU' : architecture() === 'ongrid' ? 'On-Grid GTI' : 'Off-Grid PCU' }})
+                    </span>
+                  </td>
+                  <td style="font-weight: 700;">
+                    {{ inverter().sizedKva }} kVA / {{ inverter().dcVoltage }}V<br>
+                    <span style="font-size: 9.5px; font-weight: normal; color: #475569;">
+                      ({{ inverter().isThreePhase ? 'Three-Phase 415V' : 'Pure Sine Wave' }})
+                    </span>
+                  </td>
+                  <td>
+                    ଦିନ ବେଳା ସମସ୍ତ ପଙ୍ଖା, ବଲବ୍ ଓ ଅନ୍ୟାନ୍ୟ ଉପକରଣ ଚାଲୁଥିବା ସମୟରେ ପାଣି ପମ୍ପ ବା ମୋଟର ଅନ୍ ହେଲେ ମଧ୍ୟ ଇନଭର୍ଟର ବିନା କୌଣସି ଟ୍ରିପ୍ରେ ଆରାମରେ ଚଳାଇବ।
+                  </td>
+                </tr>
+
+                <!-- Solar Panels -->
+                <tr>
+                  <td style="font-weight: 700; color: #004d66;">
+                    ୨. ସୋଲାର ପ୍ୟାନେଲ୍<br>
+                    <span style="font-size: 9.5px; font-weight: normal; color: #475569;">(Solar Panels)</span>
+                  </td>
+                  <td style="font-weight: 700;">
+                    {{ (solar().actualInstalledKwp * 0.95).toFixed(2) }} kW ରୁ {{ (solar().actualInstalledKwp * 1.05).toFixed(2) }} kW<br>
+                    <span style="font-size: 9.5px; font-weight: normal; color: #475569;">
+                      ({{ toOdiaNum(solar().totalPanels) }} ଟି &times; {{ toOdiaNum(solar().panelW) }} ୱାଟ୍ ପ୍ୟାନେଲ୍)
+                    </span>
+                  </td>
+                  <td>
+                    ଦିନ ବେଳାର {{ toOdiaNum(audit().dayKwh.toFixed(2)) }} ୟୁନିଟ୍ ଲୋଡ୍ ଚଳାଇବା ସହିତ ରାତି ପାଇଁ ବ୍ୟାଟେରୀକୁ ପ୍ରତିଦିନ ସମ୍ପୂର୍ଣ୍ଣ ଫୁଲ୍ ଚାର୍ଜ କରିବ।
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-      </div>
-    </div>
-  }
+        <!-- Page 1 Footer -->
+        <div class="page-footer">
+          <div>ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍ (Shri Trutiyadev Solar Enterprises)</div>
+          <div>Page 1 of 2</div>
+        </div>
 
-  <!-- ============================================================== -->
-  <!-- MODAL: TECHNICAL ENGINEERING PROPOSAL PREVIEW & EXPORT -->
-  <!-- ============================================================== -->
-  @if (showEngModal()) {
-    <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-2 sm:p-4">
-      <div class="bg-slate-100 rounded-2xl w-full max-w-[220mm] shadow-2xl flex flex-col max-h-[96vh] overflow-hidden my-auto">
+      </div>
+
+      <!-- HTML2PDF PAGE BREAK -->
+      <div class="html2pdf__page-break"></div>
+
+      <!-- PAGE 2 OF 2 -->
+      <div class="proposal-page page-2">
         
-        <!-- Modal Header Bar -->
-        <div class="bg-white px-4 py-2.5 sm:px-5 sm:py-3 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs">
-              <i class="fa-solid fa-file-invoice"></i>
-            </span>
-            <span class="font-bold text-xs text-slate-800">Technical Engineering & BOS Sheet (English)</span>
+        <!-- Watermark Pattern -->
+        <div class="proposal-watermark-pattern">
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+          <div class="watermark-row">SHRI TRUTIYADEV SOLAR ENTERPRISES &bull; SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
+        </div>
+
+        <div class="proposal-content">
+          <!-- Section 2 Continuation Table -->
+          <div class="mb-4">
+            <table class="p-table">
+              <thead>
+                <tr>
+                  <th style="width: 17%;">ମୁଖ୍ୟ ଉପକରଣ</th>
+                  <th style="width: 25%;">କ୍ଷମତା ଓ ବିବରଣୀ</th>
+                  <th style="width: 58%;">ଏହା ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିବ?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Battery Storage -->
+                <tr>
+                  <td style="font-weight: 700; color: #004d66;">
+                    ୩. ଲିଥିୟମ୍ ବ୍ୟାଟେରୀ<br>
+                    <span style="font-size: 9.5px; font-weight: normal; color: #475569;">(LiFePO4 Battery)</span>
+                  </td>
+                  <td style="font-weight: 700;">
+                    {{ inverter().dcVoltage }}V {{ batteryOptions()?.opt1?.ahRating || 150 }}Ah ଲିଥିୟମ୍ ବ୍ୟାଟେରୀ<br>
+                    <span style="font-size: 9.5px; font-weight: normal; color: #475569;">
+                      (ପ୍ରାୟ {{ toOdiaNum(batteryOptions()?.opt1?.usableKwh?.toFixed(1) || 12) }} ୟୁନିଟ୍ ବ୍ୟବହାରଯୋଗ୍ୟ)
+                    </span>
+                  </td>
+                  <td>
+                    ରାତିର {{ toOdiaNum(audit().nightKwh.toFixed(2)) }} ୟୁନିଟ୍ ଖର୍ଚ୍ଚ ପରେ ବି ସକାଳକୁ ପ୍ରାୟ ୩୫–୪୦% ({{ toOdiaNum(((batteryOptions()?.opt1?.usableKwh || 12) * 0.38).toFixed(1)) }} ରୁ {{ toOdiaNum(((batteryOptions()?.opt1?.usableKwh || 12) * 0.42).toFixed(1)) }} ୟୁନିଟ୍) ଚାର୍ଜ ବଞ୍ଚିକି ରହିବ, ଯାହା ବାଦଲିଆ ପାଗରେ ବ୍ୟାକଅପ୍ ଦେବ ଓ ବ୍ୟାଟେରୀ ୧୦+ ବର୍ଷ ଚାଲିବ। (ବର୍ଷା ଦିନେ ଅଧିକ ବ୍ୟାକଅପ୍ ପାଇଁ {{ inverter().dcVoltage }}V {{ (batteryOptions()?.opt1?.ahRating || 150) + 50 }}Ah ବ୍ୟାଟେରୀ ନେଇପାରିବେ)।
+                  </td>
+                </tr>
+
+                <!-- Safety & Earthing -->
+                <tr>
+                  <td style="font-weight: 700; color: #004d66;">
+                    ୪. ସୁରକ୍ଷା ଓ ଫିଟିଂସ୍<br>
+                    <span style="font-size: 9.5px; font-weight: normal; color: #475569;">(Safety &amp; Earthing)</span>
+                  </td>
+                  <td style="font-weight: 700;">
+                    ACDB, DCDB, ୩ଟି ଆର୍ଥିଂ ଓ ଲାଇଟନିଂ ଆରେଷ୍ଟର
+                  </td>
+                  <td>
+                    ବଜ୍ରପାତ ଓ ସର୍ଟ-ସର୍କିଟ୍ରୁ ସୋଲାର ପ୍ୟାନେଲ୍, ଇନଭର୍ଟର ଏବଂ ଘରର ସମସ୍ତ ବିଜୁଳି ଉପକରଣକୁ ସମ୍ପୂର୍ଣ୍ଣ ସୁରକ୍ଷିତ ରଖିବ। ({{ bos().acCable }} ଏସି କେବଲ୍, {{ bos().dcPvCable }} ଡିସି କେବଲ୍ ଓ {{ bos().earthingCable }} ଆର୍ଥିଂ କଣ୍ଡକ୍ଟର ସହିତ)।
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="flex items-center gap-2">
-            <button (click)="downloadEngPdf()" [disabled]="isGeneratingPdf()" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition border-0 cursor-pointer">
-              <i class="fa-solid fa-download"></i>
-              <span>{{ isGeneratingPdf() ? 'Saving...' : 'Download PDF' }}</span>
-            </button>
-            <button (click)="closeEngModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition border-0 bg-transparent cursor-pointer">
-              <i class="fa-solid fa-xmark text-sm"></i>
-            </button>
+
+          <!-- Customer Advice Box -->
+          <div class="advice-box">
+            <h4>ଗ୍ରାହକଙ୍କ ପାଇଁ ୨ଟି ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ପରାମର୍ଶ:</h4>
+            <p>
+              &bull; <strong>ପାଣି ପମ୍ପ ଚଳାଇବା ସମୟ:</strong> ରାତିର ପାଣି ପମ୍ପକୁ ସନ୍ଧ୍ୟା ୫:୦୦ ରୁ ୬:୦୦ ଟା କିମ୍ବା ଦିନ ସମୟରେ ଚଳାଇଲେ ବ୍ୟାଟେରୀ ଉପରେ ଚାପ କମ୍ ପଡ଼ିବ ଓ ବ୍ୟାକଅପ୍ ଅଧିକ ସମୟ ରହିବ।
+            </p>
+            <p>
+              &bull; <strong>ବିଜୁଳି ସଞ୍ଚୟ ଉପାୟ (BLDC ପଙ୍ଖା):</strong> ସାଧାରଣ ୭୫ ୱାଟ ପଙ୍ଖା ବଦଳରେ ୩୦ ୱାଟ BLDC ପଙ୍ଖା ଲଗାଇଲେ ଦିନକୁ ବହୁତ ୟୁନିଟ୍ ବିଜୁଳି ବଞ୍ଚିବ ଏବଂ ବାଦଲିଆ ପାଗରେ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ଆହୁରି ବଢ଼ିଯିବ।
+            </p>
           </div>
         </div>
 
-        <!-- Scrollable A4 Preview Frame -->
-        <div class="overflow-y-auto p-2 sm:p-4 flex justify-center bg-slate-200/80">
-          <div id="engSheetModal" class="a4-sheet shadow-xl text-slate-900 p-6 flex flex-col justify-between space-y-4">
-            <div class="proposal-watermark">SHRI TRUTIYADEV SOLAR ENTERPRISES</div>
-            
-            <!-- Header -->
-            <div class="border-b-2 border-slate-900 pb-3 flex justify-between items-center relative z-10">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-sky-900 text-amber-400 flex items-center justify-center text-2xl font-black shadow-sm">
-                  <i class="fa-solid fa-bolt"></i>
-                </div>
-                <div>
-                  <h1 class="text-xl font-black text-slate-950 m-0">SHRI TRUTIYADEV SOLAR ENTERPRISES</h1>
-                  <p class="text-[11px] text-sky-700 font-bold m-0">Engineering Design & System Balance of Plant Specification</p>
-                </div>
-              </div>
-              <div class="text-right text-[11px]">
-                <div class="font-bold text-slate-900 font-mono">PROJECT REF: STS-{{ Date.now().toString().slice(-6) }}</div>
-                <div class="text-slate-500 font-mono">{{ clientName() }}</div>
-                <div class="text-slate-500">{{ siteLocation() }}</div>
-              </div>
-            </div>
-
-            <!-- Engineering Design Parameters Summary -->
-            <div class="grid grid-cols-4 gap-2 text-center text-xs relative z-10">
-              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                <span class="text-[10px] text-slate-500 block">Total Daily Energy</span>
-                <span class="font-mono font-bold text-slate-900 text-sm">{{ audit().totalDailyKwh.toFixed(2) }} kWh</span>
-              </div>
-              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                <span class="text-[10px] text-slate-500 block">Continuous Load</span>
-                <span class="font-mono font-bold text-slate-900 text-sm">{{ audit().continuousW.toLocaleString() }} W</span>
-              </div>
-              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                <span class="text-[10px] text-slate-500 block">Peak Starting Surge</span>
-                <span class="font-mono font-bold text-amber-700 text-sm">{{ audit().peakStartingSurgeW.toLocaleString() }} W</span>
-              </div>
-              <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                <span class="text-[10px] text-slate-500 block">PSH Insolation</span>
-                <span class="font-mono font-bold text-sky-800 text-sm">{{ psh() }} hrs/day</span>
-              </div>
-            </div>
-
-            <!-- Inverter & PV Array Specs -->
-            <div class="grid grid-cols-2 gap-3 text-xs relative z-10">
-              <div class="p-3 bg-sky-50/60 rounded-xl border border-sky-200 space-y-1.5">
-                <div class="font-bold text-sky-950 text-xs border-b border-sky-200 pb-1">INVERTER / MPPT PCU SPECIFICATION</div>
-                <div class="flex justify-between"><span>Rated Capacity:</span><strong class="font-mono">{{ inverter().sizedKva }} kVA ({{ (inverter().ratedWatts / 1000).toFixed(1) }} kW)</strong></div>
-                <div class="flex justify-between"><span>Supply Topology:</span><strong>{{ inverter().isThreePhase ? 'Three-Phase 415V AC' : 'Single-Phase 230V AC' }}</strong></div>
-                <div class="flex justify-between"><span>DC System Bus:</span><strong class="font-mono">{{ inverter().dcVoltage }}V DC ({{ inverter().busArchitecture }})</strong></div>
-                <div class="flex justify-between"><span>AC Output Current:</span><strong class="font-mono">{{ inverter().acOutputCurrent.toFixed(1) }} Amps</strong></div>
-                <div class="flex justify-between"><span>MPPT Window:</span><strong class="font-mono text-[11px]">{{ inverter().mpptRangeText }}</strong></div>
-              </div>
-
-              <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200 space-y-1.5">
-                <div class="font-bold text-amber-950 text-xs border-b border-amber-200 pb-1">SOLAR PV ARRAY SPECIFICATION</div>
-                <div class="flex justify-between"><span>Installed Array:</span><strong class="font-mono">{{ solar().actualInstalledKwp.toFixed(2) }} kWp</strong></div>
-                <div class="flex justify-between"><span>Module Count & Type:</span><strong>{{ solar().totalPanels }} Nos × {{ solar().panelW }}W TOPCon</strong></div>
-                <div class="flex justify-between"><span>Array Stringing:</span><strong class="font-mono">{{ solar().seriesPanels }} Series × {{ solar().parallelStrings }} Strings</strong></div>
-                <div class="flex justify-between"><span>Est. Voc & Isc:</span><strong class="font-mono">~{{ solar().estVoc.toFixed(0) }}V DC / {{ solar().estIsc.toFixed(1) }}A</strong></div>
-                <div class="flex justify-between"><span>Required Shadow-Free Area:</span><strong>~{{ solar().roofAreaSqFt }} sq.ft</strong></div>
-              </div>
-            </div>
-
-            <!-- Mandatory 3 Battery Options Matrix -->
-            @if (batteryOptions(); as b) {
-              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs relative z-10 space-y-2">
-                <div class="font-bold text-slate-900 border-b border-slate-200 pb-1">BATTERY STORAGE ENGINEERING MATRIX (DoD & EFFICIENCY SIZED)</div>
-                <table class="w-full text-left text-[11px] border border-slate-200 bg-white">
-                  <thead class="bg-slate-100 text-slate-800">
-                    <tr>
-                      <th class="py-1 px-2 border-b">Parameter</th>
-                      <th class="py-1 px-2 border-b text-emerald-800">Option 1 (Premium LiFePO4)</th>
-                      <th class="py-1 px-2 border-b text-sky-800">Option 2 (Standard LiFePO4)</th>
-                      <th class="py-1 px-2 border-b text-slate-800">Option 3 (C10 Tall Tubular)</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    <tr>
-                      <td class="py-1 px-2 font-medium">Gross DC Storage</td>
-                      <td class="py-1 px-2 font-mono font-bold">{{ b.opt1.dcStorageKwh.toFixed(1) }} kWh</td>
-                      <td class="py-1 px-2 font-mono font-bold">{{ b.opt2.dcStorageKwh.toFixed(1) }} kWh</td>
-                      <td class="py-1 px-2 font-mono font-bold">{{ b.opt3.dcStorageKwh.toFixed(1) }} kWh</td>
-                    </tr>
-                    <tr>
-                      <td class="py-1 px-2 font-medium">Usable AC Output</td>
-                      <td class="py-1 px-2 font-mono font-bold">{{ b.opt1.usableKwh.toFixed(1) }} kWh</td>
-                      <td class="py-1 px-2 font-mono font-bold">{{ b.opt2.usableKwh.toFixed(1) }} kWh</td>
-                      <td class="py-1 px-2 font-mono font-bold">{{ b.opt3.usableKwh.toFixed(1) }} kWh</td>
-                    </tr>
-                    <tr>
-                      <td class="py-1 px-2 font-medium">Design Configuration</td>
-                      <td class="py-1 px-2">{{ b.opt1.configuration }}</td>
-                      <td class="py-1 px-2">{{ b.opt2.configuration }}</td>
-                      <td class="py-1 px-2">{{ b.opt3.configuration }}</td>
-                    </tr>
-                    <tr>
-                      <td class="py-1 px-2 font-medium">Lifespan & Warranty</td>
-                      <td class="py-1 px-2">{{ b.opt1.lifespan }}</td>
-                      <td class="py-1 px-2">{{ b.opt2.lifespan }}</td>
-                      <td class="py-1 px-2">{{ b.opt3.lifespan }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            }
-
-            <!-- BOS Schedule -->
-            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs relative z-10 space-y-1">
-              <div class="font-bold text-slate-900 border-b border-slate-200 pb-1">BALANCE OF SYSTEM (BOS) SCHEDULE</div>
-              <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                <div>• DC Protection: <strong>{{ bos().dcdbSpd }} + {{ bos().stringFuse }}</strong></div>
-                <div>• AC Protection: <strong>{{ bos().acdbSpd }} + {{ bos().acBreaker }}</strong></div>
-                <div>• DC PV & Battery Cabling: <strong>{{ bos().dcPvCable }} (PV) / {{ bos().battCable }} (Batt)</strong></div>
-                <div>• AC Output Cabling: <strong>{{ bos().acCable }} (Inverter to ACDB/Panel)</strong></div>
-                <div class="col-span-2">• Earthing System & Conductor: <strong>{{ bos().earthingCable }} ({{ bos().earthing }})</strong></div>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="border-t border-slate-200 pt-2 text-[10px] text-slate-500 relative z-10 flex justify-between items-center">
-              <span>Engineering Calculations verified as per IS/IEC 62548, IEEE 929 & MNRE Solar PV BOS Standards.</span>
-              <span class="font-bold text-slate-700">Shri Trutiyadev Solar Enterprises</span>
-            </div>
-
-          </div>
+        <!-- Page 2 Footer -->
+        <div class="page-footer">
+          <div>ଶ୍ରୀ ତୃତୀୟଦେବ ସୋଲାର ଏଣ୍ଟରପ୍ରାଇଜେସ୍ (Shri Trutiyadev Solar Enterprises)</div>
+          <div>Page 2 of 2</div>
         </div>
 
       </div>
+
     </div>
-  }
+
+  </div>
 
   <!-- Hidden Container for Native Printing -->
   <div id="printContainerAng" class="hidden"></div>
