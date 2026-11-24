@@ -15,23 +15,25 @@
   </div>
 
   <!-- ============================================================== -->
-  <!-- STEP 1 & STEP 2: SYSTEM ARCHITECTURE & SITE PARAMETERS        -->
+  <!-- STEP 1: SYSTEM ARCHITECTURE & PARAMETERS                       -->
   <!-- ============================================================== -->
   <section class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-sky-100">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
       
-      <!-- STEP 1: SYSTEM ARCHITECTURE (Left Column) -->
-      <div class="lg:col-span-4 xl:col-span-4 flex flex-col justify-start lg:sticky lg:top-4 self-start">
-        <div class="flex items-center justify-between mb-3">
-          <div>
-            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-sky-600">Step 1</span>
-            <h2 class="text-base sm:text-lg font-black text-slate-900 m-0">System Architecture</h2>
+      <!-- LEFT COLUMN: STEP 1 CARD & STEP 2 CARD -->
+      <div class="lg:col-span-4 xl:col-span-4 flex flex-col gap-5">
+        
+        <!-- STEP 1: SYSTEM ARCHITECTURE & PARAMETERS -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-sky-600">Step 1</span>
+              <h2 class="text-base sm:text-lg font-black text-slate-900 m-0">System Architecture</h2>
+            </div>
           </div>
-          <span class="text-[11px] text-slate-400 lg:hidden">Select mode</span>
-        </div>
 
-        <!-- Unified Single Architecture Card with Integrated Dropdown (As One, No Separate) -->
-        <div class="w-full max-w-[340px] rounded-2xl p-4 bg-sky-50/70 border-2 border-sky-200/90 shadow-xs flex flex-col justify-between">
+          <!-- Unified Single Architecture Card with Integrated Dropdown (As One, No Separate) -->
+          <div class="w-full max-w-[340px] sm:max-w-[360px] rounded-2xl p-4 bg-sky-50/70 border-2 border-sky-200/90 shadow-xs flex flex-col justify-between">
           
           <!-- Integrated Dropdown Selector -->
           <div class="mb-3">
@@ -167,7 +169,6 @@
             <div>
               <div class="flex items-center justify-between mb-1">
                 <label class="block font-bold text-slate-800 text-[10.5px]">Expansion Margin</label>
-                <span class="font-mono font-bold text-sky-900 bg-white px-1.5 py-0.2 rounded border border-sky-200 text-[10.5px]">{{ expansionMargin() }}%</span>
               </div>
               <div class="grid grid-cols-3 gap-1.5">
                 <button type="button" (click)="expansionMargin.set(0)" [class]="expansionMargin() === 0 ? 'py-1 rounded-lg font-bold border border-sky-500 bg-white text-sky-900 shadow-2xs text-xs' : 'py-1 rounded-lg font-medium border border-slate-300/80 text-slate-600 hover:bg-white text-xs'">0%</button>
@@ -179,78 +180,113 @@
 
           </div>
 
+          </div>
         </div>
+
+        <!-- STEP 2: LOAD BUILDER & QUICK-ADD (Same card style!) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-sky-600">Step 2</span>
+              <h2 class="text-base sm:text-lg font-black text-slate-900 m-0">Appliance Quick-Add</h2>
+            </div>
+          </div>
+
+          <!-- Step 2 Card (Exact same style as Step 1 card) -->
+          <div class="w-full max-w-[340px] sm:max-w-[360px] rounded-2xl p-4 bg-sky-50/70 border-2 border-sky-200/90 shadow-xs flex flex-col gap-3">
+            
+            <!-- Quick Templates -->
+            <div>
+              <label class="block font-bold text-slate-700 text-[10.5px] mb-1.5">Load Templates</label>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button (click)="loadTemplate('residential_3bhk')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
+                  🏠 3-BHK Home
+                </button>
+                <button (click)="loadTemplate('office_clinic')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
+                  🏢 Office / Clinic
+                </button>
+                <button (click)="loadTemplate('solar_pump')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
+                  🌾 3P Pump
+                </button>
+                <button (click)="loadTemplate('commercial_mill')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
+                  🏭 Mill / Agrico
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick-Add Common Appliances Toolbar with EDIT Buttons -->
+            <div class="pt-2 border-t border-sky-200/80">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block font-bold text-slate-700 text-[10.5px]">Quick-Add Appliances</label>
+                <span class="text-[9.5px] text-slate-500">Click to add</span>
+              </div>
+
+              <div class="flex flex-wrap gap-1.5 max-h-[190px] overflow-y-auto pr-0.5 no-scrollbar">
+                @for (p of presetList(); track p.key) {
+                  <div class="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-2xs hover:border-sky-300 transition overflow-hidden">
+                    <!-- Direct Quick Add Button -->
+                    <button 
+                      type="button"
+                      (click)="quickAddPreset(p.key)" 
+                      [title]="'Add ' + p.name"
+                      class="px-2 py-1 text-xs font-semibold text-slate-800 hover:text-sky-700 hover:bg-sky-50/60 border-0 bg-transparent transition flex items-center gap-1 cursor-pointer">
+                      <span>{{ p.icon }}</span>
+                      <span class="text-[11px]">{{ p.shortLabel }}</span>
+                    </button>
+
+                    <!-- Edit / Adjust Specs Button (Opens Power Adjust Popup) -->
+                    <button 
+                      type="button"
+                      (click)="openAdjustModalForPreset(p.key)" 
+                      [title]="'Adjust ' + p.name + ' rating & power'"
+                      class="px-1.5 py-1 text-sky-600 hover:text-sky-800 bg-slate-50 hover:bg-sky-100/70 border-0 border-l border-slate-200 transition cursor-pointer flex items-center">
+                      <i class="fa-solid fa-sliders text-[9px]"></i>
+                    </button>
+                  </div>
+                }
+
+                <!-- Add Custom Appliance Button -->
+                <button 
+                  type="button"
+                  (click)="openModalForSlot('day', 'custom')" 
+                  class="inline-flex items-center gap-1 text-[11px] bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-2xs border-0 cursor-pointer">
+                  <i class="fa-solid fa-plus text-[9px]"></i>
+                  <span>Custom</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Energy Audit Mini Badges -->
+            <div class="pt-2 border-t border-sky-200/80 grid grid-cols-3 gap-1.5 text-center text-xs">
+              <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+                <span class="text-[9px] text-slate-400 block font-semibold uppercase">Daily</span>
+                <span class="font-mono font-bold text-sky-900 text-xs">{{ audit().totalDailyKwh.toFixed(1) }}</span>
+                <span class="text-[8.5px] text-slate-400 block">kWh</span>
+              </div>
+              <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+                <span class="text-[9px] text-slate-400 block font-semibold uppercase">Peak W</span>
+                <span class="font-mono font-bold text-emerald-700 text-xs">{{ audit().continuousW }}</span>
+                <span class="text-[8.5px] text-slate-400 block">Watts</span>
+              </div>
+              <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+                <span class="text-[9px] text-slate-400 block font-semibold uppercase">Surge W</span>
+                <span class="font-mono font-bold text-amber-700 text-xs">{{ audit().peakStartingSurgeW }}</span>
+                <span class="text-[8.5px] text-slate-400 block">Watts</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
-      <!-- RIGHT COLUMN: APPLIANCE LOAD & SCHEDULE (Previously Step 3, now Step 2) -->
+      <!-- RIGHT COLUMN: APPLIANCES SCHEDULE TABLE (Separated, on the right side) -->
       <div class="lg:col-span-8 xl:col-span-8 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-start">
         
-        <!-- Step Header & Horizontal Scrollable Templates -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
-          <div>
-            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-sky-600">Step 2</span>
-            <h2 class="text-base sm:text-lg font-black text-slate-900 m-0">Appliance Load & Schedule</h2>
-          </div>
+        <div class="flex items-center justify-between gap-2.5 mb-3">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-sky-600">Appliance Schedule</span>
 
-      <!-- Quick Templates (Swipeable on Mobile) -->
-      <div class="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
-        <span class="text-[11px] text-slate-400 font-semibold whitespace-nowrap hidden sm:inline">Templates:</span>
-        <button (click)="loadTemplate('residential_3bhk')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 whitespace-nowrap transition cursor-pointer">
-          🏠 3-BHK
-        </button>
-        <button (click)="loadTemplate('office_clinic')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 whitespace-nowrap transition cursor-pointer">
-          🏢 Office
-        </button>
-        <button (click)="loadTemplate('solar_pump')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 whitespace-nowrap transition cursor-pointer">
-          🌾 3P Pump
-        </button>
-        <button (click)="loadTemplate('commercial_mill')" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 whitespace-nowrap transition cursor-pointer">
-          🏭 Mill
-        </button>
-        <button (click)="clearApplianceList()" class="text-xs font-semibold px-2 py-1 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 whitespace-nowrap transition cursor-pointer">
-          Clear
-        </button>
-      </div>
-    </div>
-
-    <!-- Quick-Add Common Appliances Toolbar with EDIT Buttons -->
-    <div class="mb-4 bg-sky-50/50 p-3 sm:p-4 rounded-xl border border-sky-100">
-
-      <div class="flex flex-wrap gap-1.5 sm:gap-2">
-        @for (p of presetList(); track p.key) {
-          <div class="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-2xs hover:border-sky-300 transition overflow-hidden">
-            <!-- Direct Quick Add Button -->
-            <button 
-              type="button"
-              (click)="quickAddPreset(p.key)" 
-              [title]="'Add ' + p.name"
-              class="px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-semibold text-slate-800 hover:text-sky-700 hover:bg-sky-50/60 border-0 bg-transparent transition flex items-center gap-1 cursor-pointer">
-              <span>{{ p.icon }}</span>
-              <span class="text-[11px] sm:text-xs">{{ p.shortLabel }}</span>
-            </button>
-
-            <!-- Edit / Adjust Specs Button (Opens Power Adjust Popup) -->
-            <button 
-              type="button"
-              (click)="openAdjustModalForPreset(p.key)" 
-              [title]="'Adjust ' + p.name + ' rating & power'"
-              class="px-1.5 py-1 sm:px-2 sm:py-1.5 text-sky-600 hover:text-sky-800 bg-slate-50 hover:bg-sky-100/70 border-0 border-l border-slate-200 transition cursor-pointer flex items-center gap-0.5">
-              <i class="fa-solid fa-sliders text-[9px] sm:text-[10px]"></i>
-              <span class="text-[9px] sm:text-[10px] font-bold hidden xs:inline">Edit</span>
-            </button>
-          </div>
-        }
-
-        <!-- Add Custom Appliance Button -->
-        <button 
-          type="button"
-          (click)="openModalForSlot('day', 'custom')" 
-          class="inline-flex items-center gap-1 text-[11px] sm:text-xs bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg font-bold transition shadow-2xs border-0 cursor-pointer">
-          <i class="fa-solid fa-plus text-[10px]"></i>
-          <span>Custom</span>
-        </button>
-      </div>
-    </div>
+        </div>
 
     <!-- ============================================================== -->
     <!-- DESKTOP VIEW: FULL 9-COLUMN GROUPED TABLE (hidden on mobile) -->
@@ -650,11 +686,12 @@
     </div>
 
       </div>
+
     </div>
   </section>
 
   <!-- ============================================================== -->
-  <!-- STEP 4: ENGINEERING SIZING RESULTS DASHBOARD -->
+  <!-- STEP 3: ENGINEERING SIZING RESULTS DASHBOARD                   -->
   <!-- ============================================================== -->
   <section class="space-y-4 sm:space-y-6">
 
