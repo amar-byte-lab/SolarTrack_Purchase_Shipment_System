@@ -75,8 +75,6 @@ export class SizingCalculationComponent implements OnInit {
   readonly zeroGrid = signal<boolean>(true);
   readonly chargingWindow = signal<number>(6.0);
   readonly psh = signal<number>(4.75);
-  readonly supplyPhase = signal<'auto' | 'single' | 'three'>('auto');
-  readonly sanctionedLoad = signal<number>(10.0);
   readonly monthlyBill = signal<number>(6000);
   readonly monthlyUnits = signal<number>(1000);
   readonly panelWattage = signal<number>(550); // Always fixed to 550Wp
@@ -417,15 +415,11 @@ export class SizingCalculationComponent implements OnInit {
 
     const sizedKva = this.standardKvaRatings.find(r => r >= rawKva) || 100;
 
-    let isThreePhase = false;
-    const sp = this.supplyPhase();
-    if (sp === 'three') {
-      isThreePhase = true;
-    } else if (sp === 'single') {
-      isThreePhase = false;
-    } else {
-      isThreePhase = a.has3PhaseAppliance || sizedKva >= 15;
-    }
+    // Auto-calculated Supply Phase: 3-Phase if 3P appliance, continuous load >5kW, inverter >= 10kVA, or solar demand >5kW
+    const isThreePhase = a.has3PhaseAppliance || 
+                         a.continuousW > 5000 || 
+                         sizedKva >= 10 || 
+                         (this.monthlyUnits() > 500 && (this.architecture() === 'ongrid' || this.architecture() === 'hybrid'));
 
     let dcVoltage = 48;
     let busArchitecture = "Low Voltage Rack";
@@ -481,6 +475,11 @@ export class SizingCalculationComponent implements OnInit {
     };
   });
 
+  // Auto-calculated Supply Phase ('single' | 'three') set from electrical load & grid standards
+  readonly supplyPhase = computed<'single' | 'three'>(() => {
+    return this.inverter().isThreePhase ? 'three' : 'single';
+  });
+
   // Solar PV Array Sizing
   readonly solar = computed(() => {
     const a = this.audit();
@@ -533,6 +532,32 @@ export class SizingCalculationComponent implements OnInit {
       estIsc,
       roofAreaSqFt
     };
+  });
+
+  // Auto-calculated Sanctioned Load (kW) based on DISCOM net-metering & system sizing rules
+  readonly sanctionedLoad = computed<number>(() => {
+    const units = this.monthlyUnits();
+    const solarKwp = this.solar().actualInstalledKwp;
+    const continuousKw = this.audit().continuousW / 1000;
+    const arch = this.architecture();
+
+    if (arch === 'ongrid') {
+      // In On-Grid: Rule-of-thumb is ~100 units/month per kW sanction.
+      // Additionally, under DISCOM net-metering regulations, solar capacity cannot exceed sanctioned load.
+      const fromUnits = Math.round((units / 100) * 10) / 10;
+      const fromSolar = Math.ceil(solarKwp);
+      return Math.max(fromUnits, fromSolar, 1.0);
+    } else if (arch === 'hybrid') {
+      // In Hybrid: Must cover continuous appliance running load, solar array export, inverter rating, or monthly units
+      const fromUnits = units > 0 ? Math.round((units / 100) * 10) / 10 : 0;
+      const fromLoad = Math.ceil(continuousKw * 1.15);
+      const fromSolar = Math.ceil(solarKwp);
+      const fromInverter = Math.ceil(this.inverter().sizedKva);
+      return Math.max(fromUnits, fromLoad, fromSolar, fromInverter, 1.0);
+    } else {
+      const fromLoad = Math.ceil(continuousKw * 1.15);
+      return Math.max(fromLoad, 1.0);
+    }
   });
 
   // 3 Battery Bank Options (Accounting for DoD & 90% Inverter Efficiency)
