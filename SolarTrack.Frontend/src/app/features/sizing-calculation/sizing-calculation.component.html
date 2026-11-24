@@ -1,14 +1,15 @@
 <div class="sizing-calc-container py-3 px-2 sm:px-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-6">
 
   <!-- ============================================================== -->
-  <!-- ACTION BUTTON: SINGLE EXPORT PROPOSAL BUTTON                   -->
+  <!-- ACTION BUTTON: SINGLE EXPORT PROPOSAL BUTTON (Desktop only)    -->
+  <!-- Hidden on mobile screen since bottom sticky bar has PDF button -->
   <!-- ============================================================== -->
-  <div class="flex items-center justify-end gap-2.5 pt-1 pb-1">
+  <div class="hidden sm:flex items-center justify-end gap-2.5 pt-1 pb-1">
     <button 
       type="button"
       (click)="downloadProposalPdf()" 
       [disabled]="isGeneratingPdf()"
-      class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-sky-700 hover:bg-sky-600 active:scale-95 transition shadow-sm border border-sky-600/40 cursor-pointer disabled:opacity-60 flex-1 sm:flex-initial">
+      class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-sky-700 hover:bg-sky-600 active:scale-95 transition shadow-sm border border-sky-600/40 cursor-pointer disabled:opacity-60 sm:flex-initial">
       <i class="fa-solid fa-file-pdf text-amber-300 text-sm sm:text-base"></i>
       <span>{{ isGeneratingPdf() ? 'ପ୍ରସ୍ତାବନା PDF ତିଆରି ହେଉଛି...' : 'ପ୍ରସ୍ତାବନା PDF ଡାଉନଲୋଡ୍ କରନ୍ତୁ' }}</span>
     </button>
@@ -152,7 +153,6 @@
             <div>
               <div class="flex items-center justify-between mb-1">
                 <label class="block font-bold text-slate-800 text-[10.5px]">Supply Phase</label>
-                <span class="text-[9px] font-bold text-sky-700 bg-sky-100 px-1 py-0.2 rounded">Auto</span>
               </div>
               <div class="flex items-center gap-1.5 py-1 px-2.5 rounded-lg border border-slate-300 bg-white shadow-2xs">
                 <span class="w-2 h-2 rounded-full" [class]="supplyPhase() === 'three' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
@@ -833,14 +833,156 @@
     @if (batteryOptions(); as b) {
       <div class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-sky-100">
         <div class="mb-3 sm:mb-4">
-          <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-sky-600">Storage Sizing</span>
-          <h3 class="font-black text-slate-900 text-sm sm:text-base m-0">
-            3 Battery Bank Options (Autonomy: {{ b.backupKwh.toFixed(2) }} AC kWh)
-          </h3>
+          <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-sky-600">Storage Sizing: {{ b.backupKwh.toFixed(2) }} AC kWh</span>
           <p class="text-[11px] sm:text-xs text-slate-500 m-0">Sized with 90% Inverter Efficiency & Depth of Discharge</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+        <!-- ============================================================== -->
+        <!-- MOBILE VIEW: STORAGE SIZING DROPDOWN & SINGLE EXACT CARD (lg:hidden) -->
+        <!-- ============================================================== -->
+        <div class="block lg:hidden space-y-3">
+          <!-- Dropdown Selector for Mobile Only -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Select Battery Option
+            </label>
+            <div class="relative">
+              <select 
+                [ngModel]="mobileBatteryOption()" 
+                (ngModelChange)="mobileBatteryOption.set($event)"
+                class="w-full bg-white hover:bg-slate-50 border-2 border-sky-300 focus:border-sky-500 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer shadow-xs appearance-none pr-9">
+                <option value="opt1">Option 1: Premium LiFePO4 (Highest Autonomy)</option>
+                <option value="opt2">Option 2: Standard LiFePO4 (Economy Lithium)</option>
+                <option value="opt3">Option 3: C10 Tall Tubular Lead-Acid (Budget Upfront)</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-sky-700">
+                <i class="fa-solid fa-chevron-down text-xs"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exact Height & Width Card Display on Mobile -->
+          @switch (mobileBatteryOption()) {
+            @case ('opt1') {
+              <!-- OPTION 1: Premium LiFePO4 (Recommended) -->
+              <div class="w-full min-h-[300px] rounded-xl border-2 border-emerald-500 bg-emerald-50/40 p-4 sm:p-5 relative flex flex-col justify-between shadow-xs">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded">
+                      Highest Autonomy
+                    </span>
+                    <span class="text-xs font-black text-emerald-800">Option 1</span>
+                  </div>
+                  <h4 class="font-bold text-slate-900 text-xs sm:text-sm mb-1">{{ b.opt1.title }}</h4>
+                  <p class="text-[11px] text-slate-600 mb-2">45% morning reserve for Zero-Grid cloudy day reliability.</p>
+
+                  <div class="space-y-1.5 text-xs border-t border-emerald-200 pt-2.5">
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Gross DC:</span>
+                      <span class="font-mono font-bold text-slate-900">{{ b.opt1.dcStorageKwh.toFixed(1) }} kWh</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Usable AC:</span>
+                      <span class="font-mono font-bold text-emerald-800">{{ b.opt1.usableKwh.toFixed(1) }} kWh</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Pack:</span>
+                      <span class="font-semibold text-slate-900 text-right">{{ b.opt1.configuration }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Lifespan:</span>
+                      <span class="font-bold text-slate-900">{{ b.opt1.lifespan }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-emerald-200 text-center">
+                  <span class="text-xs font-bold text-emerald-800">✅ 45% Autonomy Morning Reserve</span>
+                </div>
+              </div>
+            }
+
+            @case ('opt2') {
+              <!-- OPTION 2: Standard LiFePO4 -->
+              <div class="w-full min-h-[300px] rounded-xl border border-sky-300 bg-sky-50/30 p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-sky-800 px-2 py-0.5 rounded">
+                      Economy Lithium
+                    </span>
+                    <span class="text-xs font-bold text-slate-500">Option 2</span>
+                  </div>
+                  <h4 class="font-bold text-slate-900 text-xs sm:text-sm mb-1">{{ b.opt2.title }}</h4>
+                  <p class="text-[11px] text-slate-600 mb-2">Standard 15% safety buffer for cost-effective lithium storage.</p>
+
+                  <div class="space-y-1.5 text-xs border-t border-sky-200 pt-2.5">
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Gross DC:</span>
+                      <span class="font-mono font-bold text-slate-900">{{ b.opt2.dcStorageKwh.toFixed(1) }} kWh</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Usable AC:</span>
+                      <span class="font-mono font-bold text-sky-900">{{ b.opt2.usableKwh.toFixed(1) }} kWh</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Pack:</span>
+                      <span class="font-semibold text-slate-900 text-right">{{ b.opt2.configuration }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Lifespan:</span>
+                      <span class="font-bold text-slate-900">{{ b.opt2.lifespan }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-sky-200 text-center">
+                  <span class="text-xs font-medium text-slate-600">15% Safety Buffer</span>
+                </div>
+              </div>
+            }
+
+            @case ('opt3') {
+              <!-- OPTION 3: C10 Tall Tubular Lead-Acid -->
+              <div class="w-full min-h-[300px] rounded-xl border border-slate-300 bg-slate-50/50 p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-800 px-2 py-0.5 rounded">
+                      Budget Upfront
+                    </span>
+                    <span class="text-xs font-bold text-slate-500">Option 3</span>
+                  </div>
+                  <h4 class="font-bold text-slate-900 text-xs sm:text-sm mb-1">{{ b.opt3.title }}</h4>
+                  <p class="text-[11px] text-slate-600 mb-2">Heavy duty solar tubular lead-acid bank (70% DoD limit).</p>
+
+                  <div class="space-y-1.5 text-xs border-t border-slate-200 pt-2.5">
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Gross DC:</span>
+                      <span class="font-mono font-bold text-slate-900">{{ b.opt3.dcStorageKwh.toFixed(1) }} kWh</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Usable AC:</span>
+                      <span class="font-mono font-bold text-slate-800">{{ b.opt3.usableKwh.toFixed(1) }} kWh</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Total:</span>
+                      <span class="font-bold text-slate-900">{{ b.opt3.totalUnits }} Batteries</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-500">Model:</span>
+                      <span class="font-semibold text-slate-900 text-right">{{ b.opt3.configuration }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-slate-200 text-center">
+                  <span class="text-xs font-medium text-slate-600">Lifespan: {{ b.opt3.lifespan }}</span>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- DESKTOP VIEW: ALL 3 CARDS SIDE-BY-SIDE (hidden lg:grid)         -->
+        <!-- ============================================================== -->
+        <div class="hidden lg:grid lg:grid-cols-3 gap-3 sm:gap-4">
           
           <!-- OPTION 1: Premium LiFePO4 (Recommended) -->
           <div class="rounded-xl border-2 border-emerald-500 bg-emerald-50/40 p-4 sm:p-5 relative flex flex-col justify-between">
