@@ -3,7 +3,7 @@
   <!-- TOP ACTION BAR: SIZING SUMMARY HEADER & EXPORT PDF BUTTON -->
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 p-3 bg-white border rounded-3 shadow-2xs">
     <div class="d-flex align-items-center gap-2.5">
-      <div class="p-2 rounded-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+      <div class="p-2 rounded-2 text-warning d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
         <span class="fs-5">☀️</span>
       </div>
       <div>
@@ -18,7 +18,7 @@
         [disabled]="isGeneratingPdf()"
         id="btnOpenExportProposalModal"
         title="Download Customer Proposal Summary Pamphlet (1-Page PDF)">
-        <span *ngIf="!isGeneratingPdf()">📄 Export Customer Pamphlet (1-Page PDF)</span>
+        <span *ngIf="!isGeneratingPdf()">📄 Export</span>
         <span *ngIf="isGeneratingPdf()">⏳ Generating PDF...</span>
       </button>
     </div>
@@ -181,7 +181,7 @@
           <div class="modal-header bg-light border-bottom py-2.5 px-3.5 d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-2">
               <span class="fs-5">📄</span>
-              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Export Customer Pamphlet (1-Page PDF)</h5>
+              <h5 class="modal-title fw-bold text-dark fs-6 mb-0">Export</h5>
             </div>
             <button type="button" class="btn-close" (click)="closeExportModal()" aria-label="Close"></button>
           </div>

@@ -52,7 +52,8 @@ export class ApplianceLoadManagerComponent {
   readonly backupAppliances = computed(() => {
     return this.calc.appliances().filter(a => {
       if (a.isBackup === false) return false;
-      const bQty = a.backupQty !== undefined ? Number(a.backupQty) : Number(a.defaultQty || a.qty || 0);
+      const qty = Math.max(0, Number(a.defaultQty !== undefined ? a.defaultQty : a.qty) || 0);
+      const bQty = Math.min(qty, Math.max(0, a.backupQty !== undefined ? Number(a.backupQty) || 0 : qty));
       return a.checked && bQty > 0;
     });
   });
@@ -60,8 +61,9 @@ export class ApplianceLoadManagerComponent {
   readonly localBackupLoadW = computed(() => {
     let total = 0;
     for (const app of this.localAppliances()) {
-      if (app.isBackup !== false) {
-        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || app.qty || 0);
+      if (app.checked && app.isBackup !== false) {
+        const qty = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const bQty = Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
         if (bQty > 0) {
           total += (Number(app.watts) || 0) * bQty;
         }
@@ -74,8 +76,9 @@ export class ApplianceLoadManagerComponent {
     let total = 0;
     const globalHours = this.calc.backupHours();
     for (const app of this.localAppliances()) {
-      if (app.isBackup !== false) {
-        const bQty = app.backupQty !== undefined ? Number(app.backupQty) : Number(app.defaultQty || app.qty || 0);
+      if (app.checked && app.isBackup !== false) {
+        const qty = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const bQty = Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
         const bHours = app.backupHours !== undefined ? Number(app.backupHours) : globalHours;
         if (bQty > 0) {
           total += (Number(app.watts) || 0) * bQty * bHours;
@@ -115,10 +118,46 @@ export class ApplianceLoadManagerComponent {
     return sys === 'off-grid' || sys === 'without-solar';
   });
 
+  readonly isOffGridOrNoSolar = computed(() => {
+    const sys = this.calc.systemType();
+    return sys === 'off-grid' || sys === 'without-solar';
+  });
+
+  readonly effectiveEnergyKwh = computed(() => {
+    if (this.isOffGridOrNoSolar()) {
+      const custom = this.calc.customBackupEnergyKwh();
+      if (custom !== null && custom > 0) return custom;
+      return Math.round((this.calc.result().backupEnergyWh / 1000) * 100) / 100;
+    } else {
+      const custom = this.calc.customDailyDemandKwh();
+      if (custom !== null && custom > 0) return custom;
+      return Math.round((this.calc.result().totalApplianceDailyWh / 1000) * 100) / 100;
+    }
+  });
+
+  readonly effectiveHybridBackupEnergyKwh = computed(() => {
+    const custom = this.calc.customBackupEnergyKwh();
+    if (custom !== null && custom > 0) return custom;
+    return Math.round((this.calc.result().backupEnergyWh / 1000) * 100) / 100;
+  });
+
+  onEnergyInputChange(val: any) {
+    const num = Number(val);
+    if (this.isOffGridOrNoSolar()) {
+      this.calc.setCustomBackupEnergy(val !== null && val !== '' && !isNaN(num) && num > 0 ? num : null);
+    } else {
+      this.calc.setCustomDailyDemand(val !== null && val !== '' && !isNaN(num) && num > 0 ? num : null);
+    }
+  }
+
+  onHybridBackupEnergyInputChange(val: any) {
+    const num = Number(val);
+    this.calc.setCustomBackupEnergy(val !== null && val !== '' && !isNaN(num) && num > 0 ? num : null);
+  }
+
   readonly sizingBasisTitle = computed(() => {
     const sys = this.calc.systemType();
-    if (sys === 'off-grid') return 'Backup Duration (Off-Grid Solar & Battery)';
-    if (sys === 'without-solar') return 'Backup Duration (Home UPS Inverter & Battery)';
+    if (sys === 'off-grid' || sys === 'without-solar') return 'Configured Appliances & Backup Energy';
     if (sys === 'hybrid') return 'Solar Sizing Basis (Monthly Units / Load)';
     return 'Sizing Calculation Basis';
   });
@@ -318,6 +357,7 @@ export class ApplianceLoadManagerComponent {
     });
     this.calc.appliances.set(JSON.parse(JSON.stringify(updated)));
     this.localAppliances.set(JSON.parse(JSON.stringify(updated)));
+    this.calc.resetCustomEnergy();
 
     // Ensure energyCalculationBasis reflects appliance load on on-grid & hybrid
     if (this.calc.systemType() !== 'off-grid' && this.calc.systemType() !== 'without-solar') {
@@ -371,6 +411,7 @@ export class ApplianceLoadManagerComponent {
     });
     this.calc.appliances.set(JSON.parse(JSON.stringify(updated)));
     this.localAppliances.set(JSON.parse(JSON.stringify(updated)));
+    this.calc.resetCustomEnergy();
     this.closeSpecsAccordion();
     this.showBackupModal.set(false);
   }
@@ -439,7 +480,7 @@ export class ApplianceLoadManagerComponent {
     const app = this.currentSpecsApp();
     if (!res || !app) return;
 
-    this.localAppliances.update(list => list.map(a => {
+    const updated = this.localAppliances().map(a => {
       if (a.id === app.id) {
         return {
           ...a,
@@ -452,7 +493,9 @@ export class ApplianceLoadManagerComponent {
         };
       }
       return a;
-    }));
+    });
+    this.localAppliances.set(updated);
+    this.calc.appliances.set(JSON.parse(JSON.stringify(updated)));
 
     // If AC or Pump, update heavy load configs too
     if (app.id === 'ac') {

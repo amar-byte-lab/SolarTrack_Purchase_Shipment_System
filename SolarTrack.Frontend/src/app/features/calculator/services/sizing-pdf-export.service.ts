@@ -359,7 +359,7 @@ export class SizingPdfExportService {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.2);
     doc.setTextColor(16, 185, 129);
-    const dailyKwhStr = (result.totalApplianceDailyWh ? (result.totalApplianceDailyWh / 1000).toFixed(2) : (result.dailyDemandKwh || 0).toFixed(2));
+    const dailyKwhStr = (result.dailyDemandKwh || 0).toFixed(3);
     doc.text(`${result.connectedLoadW} Watts | ~${dailyKwhStr} kWh / Day`, s3X + 4, curY + 9.2);
 
     // ==========================================
@@ -449,8 +449,9 @@ export class SizingPdfExportService {
 
       const cleanName = app.name.replace(/[^\x20-\x7E]/g, '').trim();
       let specText = this.getApplianceSpecification(app);
-      if (app.isBackup !== false && (app.backupQty !== undefined ? app.backupQty > 0 : (app.defaultQty > 0))) {
-        const bQty = app.backupQty !== undefined ? app.backupQty : app.defaultQty;
+      const connectedQty = Math.max(0, Number(app.qty !== undefined ? app.qty : app.defaultQty) || 0);
+      const bQty = Math.min(connectedQty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : (app.isBackup !== false ? Number(app.defaultQty) || 0 : 0)));
+      if (app.checked && app.isBackup !== false && bQty > 0) {
         const bHr = app.backupHours !== undefined ? app.backupHours : result.backupHours;
         specText = `[Backup: ${bQty}x, ${bHr}h] ${specText}`;
       }
@@ -993,7 +994,7 @@ export class SizingPdfExportService {
       const solarKwp = solar ? `${solar.actualArrayKwp}` : '0';
       const roofArea = solar ? `${solar.roofAreaSqFt}` : '0';
       const dailyGen = solar ? `${solar.estDailyGenKwh}` : '0';
-      const dailyDemandKwh = (result.dailyDemandKwh || (result.totalApplianceDailyWh ? Math.round((result.totalApplianceDailyWh / 1000) * 100) / 100 : 0)).toFixed(2);
+      const dailyDemandKwh = (result.dailyDemandKwh || 0).toFixed(3);
       const backupEnergyKwh = (result.backupEnergyWh ? (result.backupEnergyWh / 1000).toFixed(2) : '0.00');
 
       const inv = result.inverter;
@@ -1016,21 +1017,22 @@ export class SizingPdfExportService {
       const litUnits = bLithium?.totalUnits || 1;
       const litHours = bLithium?.actualBackupHours || 4;
 
-      const tubAh = bTubular?.singleBatteryAh || 150;
+      const tubAh = bTubular?.systemBankAh || 150;
       const tubV = bTubular?.systemVoltage || 48;
       const tubUnits = bTubular?.totalUnits || 4;
       const tubKwh = bTubular?.totalInstalledKwh || 7.2;
       const tubHours = bTubular?.actualBackupHours || 4;
 
-      const fpAh = bFlatPlate?.singleBatteryAh || 150;
+      const fpAh = bFlatPlate?.systemBankAh || 150;
       const fpV = bFlatPlate?.systemVoltage || 48;
       const fpUnits = bFlatPlate?.totalUnits || 4;
+      const fpKwh = bFlatPlate?.totalInstalledKwh || 3.6;
       const fpHours = bFlatPlate?.actualBackupHours || 3;
 
       const batTitle = '• ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ ବିକଳ୍ପ (ସମସ୍ତ ୩ ଟି ଟେକ୍ନୋଲୋଜି):';
       const batLithiumText = `  1. ଲିଥିୟମ୍ (LiFePO4): ${litUnits} ୟୁନିଟ୍ (${litV}V ${litAh}Ah, ${litKwh} kWh) — ~${litHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ୧୦-୧୨ ବର୍ଷ ଆୟୁଷ, ୦% ମେଣ୍ଟେନାନ୍ସ`;
       const batTubularText = `  2. ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ (C10): ${tubUnits} ଟି ୧୨V ${tubAh}Ah (${tubV}V ବ୍ୟାଙ୍କ, ${tubKwh} kWh) — ~${tubHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ୪-୫ ବର୍ଷ ଆୟୁଷ`;
-      const batFlatPlateText = `  3. ଫ୍ଲାଟ୍ ପ୍ଲେଟ୍: ${fpUnits} ଟି ୧୨V ${fpAh}Ah (${fpV}V ବ୍ୟାଙ୍କ) — ~${fpHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ବଜେଟ୍ ଫ୍ରେଣ୍ଡଲି`;
+      const batFlatPlateText = `  3. ଫ୍ଲାଟ୍ ପ୍ଲେଟ୍: ${fpUnits} ଟି ୧୨V (${fpV}V ${fpAh}Ah ବ୍ୟାଙ୍କ, ${fpKwh} kWh) — ~${fpHours} ଘଣ୍ଟା ବ୍ୟାକଅପ୍, ବଜେଟ୍ ଫ୍ରେଣ୍ଡଲି`;
 
       if (sysTypeKey === 'on-grid') {
         headerTitle = 'ସିଷ୍ଟମ୍ ମୁଖ୍ୟ ଆବଶ୍ୟକତା ଓ ସାରାଂଶ (On-Grid Solar):';

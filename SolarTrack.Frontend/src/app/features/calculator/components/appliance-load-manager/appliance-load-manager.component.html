@@ -15,11 +15,11 @@
         </label>
       </div>
 
-      <!-- 3-Way Radio Group for Energy Sizing Basis -->
-      <div class="btn-group w-100 shadow-2xs sizing-basis-options" role="group" id="grpEnergyBasisRadios" aria-label="Choose how to size your solar system">
-        
-        <!-- 1. Monthly Units (Visible on On-Grid & Hybrid) -->
-        @if (calc.systemType() === 'on-grid' || calc.systemType() === 'hybrid') {
+      <!-- 2-Way Radio Group for Energy Sizing Basis (Only on On-Grid & Hybrid) -->
+      @if (calc.systemType() === 'on-grid' || calc.systemType() === 'hybrid') {
+        <div class="btn-group w-100 shadow-2xs sizing-basis-options" role="group" id="grpEnergyBasisRadios" aria-label="Choose how to size your solar system">
+          
+          <!-- 1. Monthly Units (Visible on On-Grid & Hybrid) -->
           <input 
             type="radio" 
             class="btn-check" 
@@ -32,37 +32,22 @@
             <span class="basis-radio-mark" aria-hidden="true">{{ calc.energyCalculationBasis() === 'monthly_units' ? '✓' : '' }}</span>
             <span><strong>Monthly Units</strong></span>
           </label>
-        }
 
-        <!-- 2. Appliances Load (Always available) -->
-        <input 
-          type="radio" 
-          class="btn-check" 
-          name="radEnergyBasis" 
-          id="radBasisApplianceLoad" 
-          value="appliance_load" 
-          [checked]="calc.energyCalculationBasis() === 'appliance_load' || isBackupOnlyBasis()"
-          (change)="calc.setEnergyBasis('appliance_load')">
-        <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold sizing-basis-option" [class.selected]="calc.energyCalculationBasis() === 'appliance_load' || isBackupOnlyBasis()" for="radBasisApplianceLoad" id="lblRadBasisApplianceLoad">
-          <span class="basis-radio-mark" aria-hidden="true">{{ calc.energyCalculationBasis() === 'appliance_load' || isBackupOnlyBasis() ? '✓' : '' }}</span>
-          <span><strong>Appliances Load</strong></span>
-        </label>
-
-        <!-- 3. Backup Duration -->
-        @if (calc.systemType() === 'off-grid' || calc.systemType() === 'without-solar') {
+          <!-- 2. Appliances Load (Always available on On-Grid & Hybrid) -->
           <input 
             type="radio" 
             class="btn-check" 
             name="radEnergyBasis" 
-            id="radBasisBackupDuration" 
-            value="backup_duration" 
-            [checked]="calc.energyCalculationBasis() === 'backup_duration'"
-            (change)="calc.setEnergyBasis('backup_duration')">
-          <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold" for="radBasisBackupDuration" id="lblRadBasisBackupDuration">
-            Backup Duration
+            id="radBasisApplianceLoad" 
+            value="appliance_load" 
+            [checked]="calc.energyCalculationBasis() === 'appliance_load'"
+            (change)="calc.setEnergyBasis('appliance_load')">
+          <label class="btn btn-outline-primary btn-sm fs-8 py-1.5 fw-semibold sizing-basis-option" [class.selected]="calc.energyCalculationBasis() === 'appliance_load'" for="radBasisApplianceLoad" id="lblRadBasisApplianceLoad">
+            <span class="basis-radio-mark" aria-hidden="true">{{ calc.energyCalculationBasis() === 'appliance_load' ? '✓' : '' }}</span>
+            <span><strong>Appliances Load</strong></span>
           </label>
-        }
-      </div>
+        </div>
+      }
 
       <!-- Dynamic Sub-panel for Monthly Units -->
       @if ((calc.systemType() === 'on-grid' || calc.systemType() === 'hybrid') && calc.energyCalculationBasis() === 'monthly_units') {
@@ -95,123 +80,141 @@
         </div>
       }
 
-      <!-- Dynamic Sub-panel for Configured Appliances Load -->
+      <!-- Dynamic Sub-panel for Configured Appliances Load (On-Grid & Hybrid) -->
       @if (calc.energyCalculationBasis() === 'appliance_load' && calc.systemType() !== 'off-grid' && calc.systemType() !== 'without-solar') {
         <div id="wrapBasisApplianceLoadInputs" class="pt-2 mt-1">
-          <div class="row g-2 align-items-center">
-            <div class="col-6">
-              <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block">Appliances Load</label>
-              <div 
-                class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center cursor-pointer" 
-                style="height: 38px; cursor: pointer;" 
-                (click)="openApplianceModal()" 
-                title="Click to view & configure appliances load">
-                <strong class="text-dark fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblApplianceBasisConnectedLoad">
-                  {{ calc.result().connectedLoadW }} W ({{ (calc.result().connectedLoadW / 1000).toFixed(2) }} kW)
-                </strong>
-                <span class="ms-1 text-primary fs-8">✎</span>
+          <div class="row g-2 align-items-stretch">
+            <!-- Left: Selected Appliances List & Configure Button -->
+            <div class="col-md-7 col-12">
+              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-1.5">
+                    <span class="fw-bold text-dark fs-8">Selected Appliances</span>
+                    <button type="button" class="btn btn-outline-primary btn-xs py-0.5 px-2 rounded-pill fs-9 fw-semibold" (click)="openApplianceModal()">
+                      ✎ Configure ({{ calc.result().connectedLoadW }} W)
+                    </button>
+                  </div>
+                  <div class="d-flex flex-wrap align-items-center gap-1" id="applianceLoadListContainer">
+                    @for (app of checkedAppliances(); track app.id) {
+                      <span class="badge bg-white text-dark border py-1 px-1.5 fs-9 fw-normal cursor-pointer shadow-2xs" 
+                        (click)="openApplianceModal(app.id)" 
+                        title="Click to edit {{ app.name }} ({{ app.watts }}W × {{ app.defaultQty }})">
+                        <span class="me-1">{{ app.icon || '⚡' }}</span>
+                        <span class="fw-semibold">{{ app.name }}</span>
+                        <span class="text-muted ms-1">×{{ app.defaultQty }}</span>
+                        <span class="text-primary fw-semibold ms-1">({{ app.watts * app.defaultHours * app.defaultQty }} Wh)</span>
+                      </span>
+                    }
+                    @if (checkedAppliances().length === 0) {
+                      <span class="text-muted fs-8 fst-italic cursor-pointer py-1" (click)="openApplianceModal()">
+                        No appliances configured. Click <strong>✎ Configure</strong> to select.
+                      </span>
+                    }
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Daily Demand</label>
-              <div class="p-1.5 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
-                <strong class="text-primary fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblApplianceBasisDailyDemand">
-                  {{ (calc.result().totalApplianceDailyWh / 1000).toFixed(2) }} kWh / day
-                </strong>
+
+            <!-- Right: Editable Daily Demand -->
+            <div class="col-md-5 col-12">
+              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-1">
+                    <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtApplianceDailyDemandEditable">Daily Demand</label>
+                    @if (calc.customDailyDemandKwh() !== null) {
+                      <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
+                        (click)="calc.setCustomDailyDemand(null)" title="Reset to calculated appliance sum">
+                        Reset ↺
+                      </button>
+                    }
+                  </div>
+                  <div class="input-group shadow-2xs mt-1">
+                    <input 
+                      type="number" 
+                      min="0.1" 
+                      step="0.1" 
+                      class="form-control form-control-sm text-center fw-bold fs-7 text-primary" 
+                      id="txtApplianceDailyDemandEditable" 
+                      [ngModel]="effectiveEnergyKwh()"
+                      (ngModelChange)="onEnergyInputChange($event)"
+                      style="height: 38px;">
+                    <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">kWh / day</span>
+                  </div>
+                </div>
+                <small class="text-muted fs-9 mt-1.5 d-block">
+                  Auto: <strong>{{ (calc.result().totalApplianceDailyWh / 1000).toFixed(2) }} kWh</strong> (editable)
+                </small>
               </div>
-            </div>
-          </div>
-          <!-- Appliances load equipment list chips -->
-          <div class="mt-2 text-secondary fs-8" id="applianceLoadListContainer">
-            <div class="d-flex flex-wrap align-items-center">
-              @for (app of checkedAppliances(); track app.id; let last = $last) {
-                <span class="app-load-clickable-item d-inline-flex align-items-center py-0.5 cursor-pointer" 
-                  (click)="openApplianceModal(app.id)" 
-                  title="Click to edit {{ app.name }} ({{ app.watts }}W × {{ app.defaultQty }})">
-                  <span class="text-secondary me-1">{{ app.icon || '⚡' }}</span>
-                  <span class="fw-semibold text-dark fs-8">{{ app.name }}</span>
-                  <span class="text-muted fs-8 ms-1">×{{ app.defaultQty }}</span>
-                  <span class="text-primary fw-semibold fs-8 ms-1">({{ app.watts * app.defaultHours * app.defaultQty }} Wh)</span>
-                </span>
-                @if (!last) {
-                  <span class="text-muted opacity-50 mx-1.5">•</span>
-                }
-              }
-              @if (checkedAppliances().length === 0) {
-                <span class="text-muted fs-8 fst-italic cursor-pointer" (click)="openApplianceModal()">
-                  No appliances configured. Click here to select appliances.
-                </span>
-              }
             </div>
           </div>
         </div>
       }
 
-      <!-- Dynamic Sub-panel for Standalone Backup Duration (Offgrid & Without-Solar) -->
+      <!-- Dynamic Sub-panel for Standalone Backup Energy (Offgrid & Without-Solar) -->
       @if (calc.systemType() === 'off-grid' || calc.systemType() === 'without-solar') {
         <div id="wrapBasisBackupDurationInputs" class="pt-2 mt-1">
-          <div class="row g-1.5 g-md-2 align-items-center">
-            <div class="col-4">
-              <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtBackupHours">
-                Backup Duration
-              </label>
-              <div class="input-group shadow-2xs">
-                <input 
-                  type="number" 
-                  min="0.5" 
-                  max="24" 
-                  step="0.5" 
-                  class="form-control form-control-sm text-center fw-bold fs-8 px-1" 
-                  id="txtBackupHours" 
-                  [ngModel]="calc.backupHours()"
-                  (ngModelChange)="calc.setBackupHours($event)"
-                  style="height: 38px;">
-                <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">hr</span>
+          <div class="row g-2 align-items-stretch">
+            <!-- Left: Selected Appliances List & Configure Button -->
+            <div class="col-md-7 col-12">
+              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-1.5">
+                    <span class="fw-bold text-dark fs-8">Selected Appliances</span>
+                    <button type="button" class="btn btn-outline-primary btn-xs py-0.5 px-2 rounded-pill fs-9 fw-semibold" (click)="openBackupModal()">
+                      ✎ Configure ({{ calc.result().backupLoadW }} W)
+                    </button>
+                  </div>
+                  <div class="d-flex flex-wrap align-items-center gap-1" id="standaloneBackupLoadListContainer">
+                    @for (app of backupAppliances(); track app.id) {
+                      <span class="badge bg-white text-dark border py-1 px-1.5 fs-9 fw-normal cursor-pointer shadow-2xs" 
+                        (click)="openBackupModal(app.id)" 
+                        title="Click to edit {{ app.name }} backup">
+                        <span class="me-1">{{ app.icon || '⚡' }}</span>
+                        <span class="fw-semibold">{{ app.name }}</span>
+                        <span class="text-muted ms-1">×{{ app.backupQty !== undefined ? app.backupQty : app.defaultQty }}</span>
+                        <span class="text-primary fw-semibold ms-1">({{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : app.defaultQty) }} Wh)</span>
+                      </span>
+                    }
+                    @if (backupAppliances().length === 0) {
+                      <span class="text-muted fs-8 fst-italic cursor-pointer py-1" (click)="openBackupModal()">
+                        No backup loads configured. Click <strong>✎ Configure</strong> to select.
+                      </span>
+                    }
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="col-4">
-              <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Backup Load</label>
-              <div 
-                class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center cursor-pointer" 
-                style="height: 38px; cursor: pointer;" 
-                (click)="openBackupModal()" 
-                title="Click to view & configure backup appliances">
-                <strong class="text-success fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblBackupBasisConnectedLoad">
-                  {{ calc.result().backupLoadW }} W
-                </strong>
-                <span class="ms-1 text-success fs-9">✎</span>
+
+            <!-- Right: Editable Backup Energy -->
+            <div class="col-md-5 col-12">
+              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-1">
+                    <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtBackupEnergyEditable">Daily Backup Energy</label>
+                    @if (calc.customBackupEnergyKwh() !== null) {
+                      <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
+                        (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated appliance sum">
+                        Reset ↺
+                      </button>
+                    }
+                  </div>
+                  <div class="input-group shadow-2xs mt-1">
+                    <input 
+                      type="number" 
+                      min="0.1" 
+                      step="0.1" 
+                      class="form-control form-control-sm text-center fw-bold fs-7 text-primary" 
+                      id="txtBackupEnergyEditable" 
+                      [ngModel]="effectiveEnergyKwh()"
+                      (ngModelChange)="onEnergyInputChange($event)"
+                      style="height: 38px;">
+                    <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">kWh / day</span>
+                  </div>
+                </div>
+                <small class="text-muted fs-9 mt-1.5 d-block">
+                  Auto: <strong>{{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh</strong> (editable)
+                </small>
               </div>
-            </div>
-            <div class="col-4">
-              <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Backup Energy</label>
-              <div class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
-                <strong class="text-primary fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblBackupBasisDailyDemand">
-                  {{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh
-                </strong>
-              </div>
-            </div>
-          </div>
-          <!-- Backup Load equipment list -->
-          <div class="mt-2 text-secondary fs-8" id="standaloneBackupLoadListContainer">
-            <div class="d-flex flex-wrap align-items-center">
-              @for (app of backupAppliances(); track app.id; let last = $last) {
-                <span class="app-backup-clickable-item d-inline-flex align-items-center py-0.5 cursor-pointer" 
-                  (click)="openBackupModal(app.id)" 
-                  title="Click to edit {{ app.name }} backup">
-                  <span class="text-success me-1">{{ app.icon || '⚡' }}</span>
-                  <span class="fw-semibold text-dark fs-8">{{ app.name }}</span>
-                  <span class="text-muted fs-8 ms-1">×{{ app.backupQty !== undefined ? app.backupQty : app.defaultQty }}</span>
-                  <span class="text-success fw-semibold fs-8 ms-1">({{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : app.defaultQty) }} Wh)</span>
-                </span>
-                @if (!last) {
-                  <span class="text-muted opacity-50 mx-1.5">•</span>
-                }
-              }
-              @if (backupAppliances().length === 0) {
-                <span class="text-muted fs-8 fst-italic cursor-pointer" (click)="openBackupModal()">
-                  No backup loads configured. Click here to select backup appliances.
-                </span>
-              }
             </div>
           </div>
         </div>
@@ -220,68 +223,68 @@
       <!-- Dynamic Sub-panel for Hybrid: Backup section ALWAYS visible below Monthly Units/Appliances Load -->
       @if (calc.systemType() === 'hybrid') {
         <div id="wrapHybridBackupSection" class="pt-2 mt-2 border-top">
-          <div class="row g-1.5 g-md-2 align-items-center">
-            <div class="col-4">
-              <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block" for="txtHybridBackupHours">
-                Backup Hours
-              </label>
-              <div class="input-group shadow-2xs">
-                <input 
-                  type="number" 
-                  min="0.5" 
-                  max="24" 
-                  step="0.5" 
-                  class="form-control form-control-sm text-center fw-bold fs-8 px-1" 
-                  id="txtHybridBackupHours" 
-                  [ngModel]="calc.backupHours()"
-                  (ngModelChange)="calc.setBackupHours($event)"
-                  style="height: 38px;">
-                <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">hr</span>
+          <div class="row g-2 align-items-stretch">
+            <!-- Left: Selected Backup Appliances & Configure Button -->
+            <div class="col-md-7 col-12">
+              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-1.5">
+                    <span class="fw-bold text-dark fs-8">Emergency Backup Appliances</span>
+                    <button type="button" class="btn btn-outline-success btn-xs py-0.5 px-2 rounded-pill fs-9 fw-semibold" (click)="openBackupModal()">
+                      ✎ Configure ({{ calc.result().backupLoadW }} W)
+                    </button>
+                  </div>
+                  <div class="d-flex flex-wrap align-items-center gap-1" id="hybridBackupLoadListContainer">
+                    @for (app of backupAppliances(); track app.id) {
+                      <span class="badge bg-white text-dark border py-1 px-1.5 fs-9 fw-normal cursor-pointer shadow-2xs" 
+                        (click)="openBackupModal(app.id)" 
+                        title="Click to edit {{ app.name }} backup">
+                        <span class="text-success me-1">{{ app.icon || '⚡' }}</span>
+                        <span class="fw-semibold">{{ app.name }}</span>
+                        <span class="text-muted ms-1">×{{ app.backupQty !== undefined ? app.backupQty : app.defaultQty }}</span>
+                        <span class="text-success fw-semibold ms-1">({{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : app.defaultQty) }} Wh)</span>
+                      </span>
+                    }
+                    @if (backupAppliances().length === 0) {
+                      <span class="text-muted fs-8 fst-italic cursor-pointer py-1" (click)="openBackupModal()">
+                        No backup loads configured. Click <strong>✎ Configure</strong> to select.
+                      </span>
+                    }
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="col-4">
-              <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Backup Load</label>
-              <div 
-                class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center cursor-pointer" 
-                style="height: 38px; cursor: pointer;" 
-                (click)="openBackupModal()" 
-                title="Click to view & configure backup appliances">
-                <strong class="text-success fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblHybridBackupLoad">
-                  {{ calc.result().backupLoadW }} W
-                </strong>
-                <span class="ms-1 text-success fs-9">✎</span>
+
+            <!-- Right: Editable Backup Energy -->
+            <div class="col-md-5 col-12">
+              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-center justify-content-between mb-1">
+                    <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtHybridBackupEnergyEditable">Backup Energy</label>
+                    @if (calc.customBackupEnergyKwh() !== null) {
+                      <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
+                        (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated backup sum">
+                        Reset ↺
+                      </button>
+                    }
+                  </div>
+                  <div class="input-group shadow-2xs mt-1">
+                    <input 
+                      type="number" 
+                      min="0.1" 
+                      step="0.1" 
+                      class="form-control form-control-sm text-center fw-bold fs-7 text-success" 
+                      id="txtHybridBackupEnergyEditable" 
+                      [ngModel]="effectiveHybridBackupEnergyKwh()"
+                      (ngModelChange)="onHybridBackupEnergyInputChange($event)"
+                      style="height: 38px;">
+                    <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">kWh</span>
+                  </div>
+                </div>
+                <small class="text-muted fs-9 mt-1.5 d-block">
+                  Auto: <strong>{{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh</strong> (editable)
+                </small>
               </div>
-            </div>
-            <div class="col-4">
-              <label class="form-label fw-semibold text-secondary fs-8 mb-1 text-truncate d-block">Backup Energy</label>
-              <div class="p-1 bg-white rounded-2 border shadow-2xs d-flex align-items-center justify-content-center text-center" style="height: 38px;">
-                <strong class="text-success fw-bold text-truncate" style="font-size: clamp(0.72rem, 2.8vw, 0.85rem);" id="lblHybridBackupEnergy">
-                  {{ (calc.result().backupEnergyWh / 1000).toFixed(2) }} kWh
-                </strong>
-              </div>
-            </div>
-          </div>
-          <!-- Hybrid Backup Load chips -->
-          <div class="mt-2 text-secondary fs-8" id="hybridBackupLoadListContainer">
-            <div class="d-flex flex-wrap align-items-center">
-              @for (app of backupAppliances(); track app.id; let last = $last) {
-                <span class="app-backup-clickable-item d-inline-flex align-items-center py-0.5 cursor-pointer" 
-                  (click)="openBackupModal(app.id)" 
-                  title="Click to edit {{ app.name }} backup">
-                  <span class="text-success me-1">{{ app.icon || '⚡' }}</span>
-                  <span class="fw-semibold text-dark fs-8">{{ app.name }}</span>
-                  <span class="text-muted fs-8 ms-1">×{{ app.backupQty !== undefined ? app.backupQty : app.defaultQty }}</span>
-                  <span class="text-success fw-semibold fs-8 ms-1">({{ app.watts * (app.backupHours || calc.backupHours()) * (app.backupQty !== undefined ? app.backupQty : app.defaultQty) }} Wh)</span>
-                </span>
-                @if (!last) {
-                  <span class="text-muted opacity-50 mx-1.5">•</span>
-                }
-              }
-              @if (backupAppliances().length === 0) {
-                <span class="text-muted fs-8 fst-italic cursor-pointer" (click)="openBackupModal()">
-                  No backup loads configured. Click here to select backup appliances.
-                </span>
-              }
             </div>
           </div>
         </div>

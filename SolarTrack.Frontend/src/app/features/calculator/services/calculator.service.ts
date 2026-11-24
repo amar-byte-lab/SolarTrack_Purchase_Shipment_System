@@ -30,6 +30,25 @@ export class CalculatorService {
   readonly monthlyUnits = signal<number>(300);
   readonly appliances = signal<ApplianceItem[]>(JSON.parse(JSON.stringify(this.db.COMMON_APPLIANCES)));
 
+  // Custom user-edited energy overrides (kWh/day)
+  readonly customBackupEnergyKwh = signal<number | null>(null);
+  readonly customDailyDemandKwh = signal<number | null>(null);
+
+  setCustomBackupEnergy(val: number | null) {
+    const num = val !== null && !isNaN(Number(val)) && Number(val) > 0 ? Number(val) : null;
+    this.customBackupEnergyKwh.set(num);
+  }
+
+  setCustomDailyDemand(val: number | null) {
+    const num = val !== null && !isNaN(Number(val)) && Number(val) > 0 ? Number(val) : null;
+    this.customDailyDemandKwh.set(num);
+  }
+
+  resetCustomEnergy() {
+    this.customBackupEnergyKwh.set(null);
+    this.customDailyDemandKwh.set(null);
+  }
+
   // Heavy load configs
   readonly acConfig = signal({
     ton: '1.5',
@@ -165,11 +184,12 @@ export class CalculatorService {
           ? (Number(params.acInverterSurgeFactor) || 1.5)
           : (Number(params.acNonInverterSurgeFactor) || 3.0);
 
-        const singleMotorSurgeDelta = Math.round(watts * (surgeMultiplier - 1));
         const isBackupApp = app.isBackup !== undefined ? !!app.isBackup : true;
-        const affectsInverterSurge = (sysTypeKey !== 'on-grid') && (sysTypeKey === 'off-grid' ? true : isBackupApp);
+        const surgeQty = app.backupQty !== undefined ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0)) : (isBackupApp ? qty : 0);
+        const affectsInverterSurge = (sysTypeKey === 'off-grid' ? qty > 0 : sysTypeKey !== 'on-grid' && surgeQty > 0);
         if (affectsInverterSurge) {
-          motorSurgeDeltas.push(singleMotorSurgeDelta);
+          const surgeCount = sysTypeKey === 'off-grid' ? qty : surgeQty;
+          motorSurgeDeltas.push(Math.round(watts * (surgeMultiplier - 1) * surgeCount));
           acWarnings.push(`AC motor inrush surge (${acType === 'inverter' ? 'Inverter AC' : 'Non-Inverter AC'}, ${surgeMultiplier}x) factored into inverter peak rating.`);
         }
       }
@@ -182,11 +202,12 @@ export class CalculatorService {
           watts = hpWattsMap[pumpHp] || 746;
         }
         const surgeMultiplier = Number(params.pumpSurgeFactor) || 3.5;
-        const singleMotorSurgeDelta = Math.round(watts * (surgeMultiplier - 1));
         const isBackupApp = app.isBackup !== undefined ? !!app.isBackup : true;
-        const affectsInverterSurge = (sysTypeKey !== 'on-grid') && (sysTypeKey === 'off-grid' ? true : isBackupApp);
+        const surgeQty = app.backupQty !== undefined ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0)) : (isBackupApp ? qty : 0);
+        const affectsInverterSurge = (sysTypeKey === 'off-grid' ? qty > 0 : sysTypeKey !== 'on-grid' && surgeQty > 0);
         if (affectsInverterSurge) {
-          motorSurgeDeltas.push(singleMotorSurgeDelta);
+          const surgeCount = sysTypeKey === 'off-grid' ? qty : surgeQty;
+          motorSurgeDeltas.push(Math.round(watts * (surgeMultiplier - 1) * surgeCount));
           pumpWarnings.push(`Pump motor starting surge (${surgeMultiplier}x) factored into inverter peak rating.`);
         }
       }
@@ -201,7 +222,7 @@ export class CalculatorService {
 
       const isBackup = app.isBackup !== undefined ? !!app.isBackup : true;
       const backupQty = app.backupQty !== undefined
-        ? Math.max(0, Math.min(qty, Number(app.backupQty)))
+        ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0))
         : (isBackup ? qty : 0);
       const totalBackupAppWatts = runningWatts * backupQty;
 
@@ -229,7 +250,7 @@ export class CalculatorService {
     const isSinglePhase = connectionPhase === '1-Phase';
     const SINGLE_PHASE_MAX_LIMIT_KW = 5.0;
 
-    const activeBackupW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 0);
+    const activeBackupW = backupLoadW;
     let targetBackupEnergyWh = 0;
     let effectiveBackupHours = backupHours;
 
@@ -238,12 +259,18 @@ export class CalculatorService {
 
     let dailyDemandKwh = 0;
     if (isMonthlyUnitsBasis) {
-      dailyDemandKwh = dailyDemandFromMonthlyUnits > 0 ? dailyDemandFromMonthlyUnits : (estimatedDailyKwh || 10);
+      dailyDemandKwh = dailyDemandFromMonthlyUnits > 0 ? dailyDemandFromMonthlyUnits : (estimatedDailyKwh || 0);
     } else {
-      dailyDemandKwh = estimatedDailyKwh > 0 ? estimatedDailyKwh : (dailyDemandFromMonthlyUnits || 10);
+      dailyDemandKwh = estimatedDailyKwh > 0 ? estimatedDailyKwh : (dailyDemandFromMonthlyUnits || 0);
     }
 
-    if (backupApplianceDailyWh > 0) {
+    const userCustomDaily = this.customDailyDemandKwh();
+    const userCustomBackup = this.customBackupEnergyKwh();
+
+    if (userCustomBackup !== null && userCustomBackup > 0) {
+      targetBackupEnergyWh = Math.round(userCustomBackup * 1000);
+      effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
+    } else if (backupApplianceDailyWh > 0) {
       targetBackupEnergyWh = backupApplianceDailyWh;
       effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
     } else if (activeBackupW > 0) {
@@ -254,13 +281,20 @@ export class CalculatorService {
       effectiveBackupHours = backupHours;
     }
 
-    if (isMonthlyUnitsBasis && sysTypeKey === 'off-grid' && backupApplianceDailyWh <= 0) {
+    if (isMonthlyUnitsBasis && sysTypeKey === 'off-grid' && backupApplianceDailyWh <= 0 && userCustomBackup === null) {
       targetBackupEnergyWh = Math.round(dailyDemandKwh * 1000 * (17 / 24));
       effectiveBackupHours = 17;
     }
 
-    const backupEnergyKwh = Math.round((targetBackupEnergyWh / 1000) * 100) / 100;
-    const estBatteryRechargeKwh = targetBackupEnergyWh / (0.88 * 1000);
+    const backupEnergyKwh = targetBackupEnergyWh / 1000;
+
+    if (userCustomDaily !== null && userCustomDaily > 0) {
+      dailyDemandKwh = userCustomDaily;
+    } else if (sysTypeKey === 'off-grid' && userCustomBackup !== null) {
+      dailyDemandKwh = Math.max(dailyDemandKwh, userCustomBackup);
+    }
+
+    const estBatteryRechargeKwh = targetBackupEnergyWh / (((Number(params.batteryChargingEffPct) || 88) / 100) * 1000);
 
     let solarResult: SolarCalculationResult | null = null;
     if (sysMeta.requiresSolar && sysTypeKey !== 'without-solar') {
@@ -270,6 +304,7 @@ export class CalculatorService {
         dailyDemandKwh,
         monthlyUnits: monthlyUnitsVal,
         dailyUsageKwh: dailyDemandKwh,
+        batteryBackupKwh: backupEnergyKwh,
         batteryRechargeKwh: estBatteryRechargeKwh,
         peakSunHours: Number(params.peakSunHours) || 5.0,
         pvSystemEfficiencyPct: Number(params.pvSystemEfficiencyPct) || 78,
@@ -296,7 +331,7 @@ export class CalculatorService {
       }
     } else if (sysTypeKey === 'off-grid') {
       // Off-Grid Solar PCU: Must supply running loads (+ safety margin) AND MPPT solar charger must support PV array
-      const offGridRunningW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 1000);
+      const offGridRunningW = backupLoadW > 0 ? backupLoadW : 1000;
       const loadDrivenW = Math.round(offGridRunningW * 1.25);
       const solarDrivenW = solarResult && solarResult.actualArrayKwp > 0
         ? Math.round((solarResult.actualArrayKwp / 1.25) * 1000)
@@ -304,7 +339,7 @@ export class CalculatorService {
       requiredContinuousW = Math.max(loadDrivenW, solarDrivenW);
     } else if (sysTypeKey === 'hybrid') {
       // Hybrid Inverter: Must support grid-tied solar export AND emergency backup load during power outage
-      const backupRunningW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 1000);
+      const backupRunningW = backupLoadW > 0 ? backupLoadW : 1000;
       const backupDrivenW = Math.round(backupRunningW * 1.25);
       const solarDrivenW = solarResult && solarResult.actualArrayKwp > 0
         ? Math.round((solarResult.actualArrayKwp / 1.15) * 1000)
@@ -312,13 +347,13 @@ export class CalculatorService {
       requiredContinuousW = Math.max(backupDrivenW, solarDrivenW);
     } else {
       // Without-solar (Home UPS): Sized strictly on backup appliances load with safety margin
-      const upsLoadW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 500);
+      const upsLoadW = backupLoadW > 0 ? backupLoadW : 500;
       requiredContinuousW = Math.round(upsLoadW * 1.25);
     }
 
     const requiredPeakSurgeW = (sysTypeKey === 'on-grid')
       ? requiredContinuousW // GTI does not handle motor starting inrush; grid absorbs it
-      : Math.max(Math.round(requiredContinuousW * 1.5), Math.round((sysTypeKey === 'off-grid' ? (backupLoadW || connectedLoadW) : backupLoadW) + maxMotorSurgeDeltaW));
+      : Math.max(Math.round(requiredContinuousW * 1.5), Math.round((sysTypeKey === 'off-grid' ? (connectedLoadW + maxMotorSurgeDeltaW) : (backupLoadW + maxMotorSurgeDeltaW))));
 
     // 4. Validate Single-Phase Limit & Sanctioned Load
     const rawRequiredKw = Math.round((requiredContinuousW / 1000) * 10) / 10;
@@ -414,7 +449,7 @@ export class CalculatorService {
     let batteryTubular: BatterySelectionResult | null = null;
     let batteryFlatPlate: BatterySelectionResult | null = null;
 
-    const activeBackW = backupLoadW > 0 ? backupLoadW : (connectedLoadW > 0 ? connectedLoadW : 1000);
+    const activeBackW = backupLoadW;
     const chosenBatteryType = input.selectedBatteryType || 'lithium';
     const effBatteryVoltage = inverterMatch.batteryVoltage > 0 ? inverterMatch.batteryVoltage : (activeBackW > 2000 ? 48 : (activeBackW > 1000 ? 24 : 12));
 
@@ -496,8 +531,8 @@ export class CalculatorService {
       requestedBackupHours: backupHours,
       energyCalculationBasis,
       dailyEnergyWh: Math.round(dailyDemandKwh * 1000),
-      dailyEnergyKwh: Math.round(dailyDemandKwh * 100) / 100,
-      dailyDemandKwh: Math.round(dailyDemandKwh * 100) / 100,
+      dailyEnergyKwh: Math.round(dailyDemandKwh * 1000) / 1000,
+      dailyDemandKwh: Math.round(dailyDemandKwh * 1000) / 1000,
       backupEnergyWh: Math.round(targetBackupEnergyWh),
       backupEnergyKwh: backupEnergyKwh,
       totalApplianceDailyWh: Math.round(totalApplianceDailyWh),
@@ -712,15 +747,15 @@ export class CalculatorService {
 
     if (targetBackupEnergyWh && targetBackupEnergyWh > 0) {
       backupEnergyWh = Math.round(targetBackupEnergyWh);
-      backupEnergyKwh = Math.round((backupEnergyWh / 1000) * 100) / 100;
+      backupEnergyKwh = backupEnergyWh / 1000;
       targetHours = Math.round((backupEnergyWh / (loadKw * 1000)) * 10) / 10;
     } else {
-      backupEnergyKwh = Math.round((loadKw * targetHours) * 100) / 100;
+      backupEnergyKwh = loadKw * targetHours;
       backupEnergyWh = Math.round(backupEnergyKwh * 1000);
     }
 
-    const requiredBatteryKwh = Math.round((backupEnergyKwh / (eff * dod)) * 100) / 100;
-    const requiredBatteryWh = Math.round(requiredBatteryKwh * 1000);
+    const requiredBatteryKwh = backupEnergyKwh / (eff * dod);
+    const requiredBatteryWh = Math.ceil(requiredBatteryKwh * 1000);
 
     let systemVoltage = inverterBatteryVoltage;
     if (!systemVoltage || systemVoltage === 0) {
@@ -854,6 +889,7 @@ export class CalculatorService {
     dailyDemandKwh: number;
     monthlyUnits: number;
     dailyUsageKwh: number;
+    batteryBackupKwh?: number;
     batteryRechargeKwh?: number;
     peakSunHours: number;
     pvSystemEfficiencyPct: number;
@@ -876,27 +912,31 @@ export class CalculatorService {
 
     let totalSolarDailyTargetKwh = dailyDemand;
     if (opts.systemType === 'off-grid') {
-      const daytimeDirectKwh = dailyDemand * 0.35;
-      const bRechargeKwh = dailyDemand * 0.65 / 0.88;
-      totalSolarDailyTargetKwh = daytimeDirectKwh + bRechargeKwh;
-    } else if (opts.systemType === 'hybrid') {
-      const daytimeDirectKwh = dailyDemand * 0.35;
-      const bRechargeKwh = dailyDemand * 0.65 / 0.88;
-      totalSolarDailyTargetKwh = daytimeDirectKwh + bRechargeKwh;
+      const chargeEff = (Number(this.db.getParams().batteryChargingEffPct) || 88) / 100;
+      // In Off-Grid, total solar target must meet daytime direct usage + battery recharge energy.
+      // Crucial: avoid adding full dailyDemand to full rechargeKwh (which would double-count energy)!
+      const backupKwh = (opts.batteryBackupKwh !== undefined && opts.batteryBackupKwh > 0)
+        ? opts.batteryBackupKwh
+        : (opts.batteryRechargeKwh ? opts.batteryRechargeKwh * chargeEff : dailyDemand);
+      const daytimeKwh = Math.max(0, dailyDemand - backupKwh);
+      const rechargeKwh = backupKwh / chargeEff;
+      totalSolarDailyTargetKwh = Math.round((daytimeKwh + rechargeKwh) * 1000) / 1000;
     }
 
     const sunHours = Math.max(1, Number(opts.peakSunHours) || 5.0);
-    const prEff = (opts.pvSystemEfficiencyPct || 78) / 100;
+    const lossPct = [opts.inverterLossPct, opts.dcAcCableLossPct, opts.tempLossPct, opts.soilingLossPct, opts.shadingOrientationLossPct]
+      .map((loss, i) => Math.max(0, Math.min(100, Number(loss) || [4, 2, 7, 4, 3][i])));
+    const prEff = lossPct.reduce((eff, loss) => eff * (1 - loss / 100), 1);
     const effectivePrPct = Math.round(prEff * 100);
     const totalLossPct = Math.round((1 - prEff) * 100);
 
     const requiredSolarKwp = totalSolarDailyTargetKwh / (sunHours * prEff);
     const panelWatts = 550;
-    const sanctionedCapKwp = Number(opts.sanctionedLoadKw) > 0 ? Number(opts.sanctionedLoadKw) : requiredSolarKwp;
+    const sanctionedCapKwp = opts.systemType === 'off-grid' || !(Number(opts.sanctionedLoadKw) > 0) ? requiredSolarKwp : Number(opts.sanctionedLoadKw);
     const panelCount = Math.max(1, Math.ceil((Math.min(requiredSolarKwp, sanctionedCapKwp) * 1000) / panelWatts));
     const actualArrayKwp = Math.round(((panelCount * panelWatts) / 1000) * 100) / 100;
 
-    const estDailyGenKwh = Math.round((actualArrayKwp * sunHours * prEff) * 100) / 100;
+    const estDailyGenKwh = Math.round((actualArrayKwp * sunHours * prEff) * 1000) / 1000;
     const estMonthlyGenUnits = Math.round(estDailyGenKwh * 30);
     const estAnnualGenUnits = Math.round(estDailyGenKwh * 365);
     const roofAreaSqFt = Math.round(actualArrayKwp * 100);
@@ -909,7 +949,7 @@ export class CalculatorService {
     const permissibleArrayKwp = Math.round(((permissiblePanelCount * panelWatts) / 1000) * 100) / 100;
 
     return {
-      dailyDemandKwh: Math.round(dailyDemand * 100) / 100,
+      dailyDemandKwh: Math.round(dailyDemand * 1000) / 1000,
       monthlyUnits: Math.round(dailyDemand * 30),
       requiredSolarKwp: Math.round(requiredSolarKwp * 100) / 100,
       actualArrayKwp,
@@ -927,11 +967,11 @@ export class CalculatorService {
       estAnnualGenUnits,
       roofAreaSqFt,
       lossBreakdown: {
-        inverterLossPct: opts.inverterLossPct || 4,
-        dcAcCableLossPct: opts.dcAcCableLossPct || 2,
-        tempLossPct: opts.tempLossPct || 7,
-        soilingLossPct: opts.soilingLossPct || 4,
-        shadingOrientationLossPct: opts.shadingOrientationLossPct || 3
+        inverterLossPct: lossPct[0],
+        dcAcCableLossPct: lossPct[1],
+        tempLossPct: lossPct[2],
+        soilingLossPct: lossPct[3],
+        shadingOrientationLossPct: lossPct[4]
       }
     };
   }
@@ -1078,7 +1118,7 @@ export class CalculatorService {
   }
 
   setMonthlyUnits(units: number) {
-    this.monthlyUnits.set(Number(units) || 300);
+    this.monthlyUnits.set(Math.max(0, Number(units) || 0));
   }
 
   setDiscom(discomId: string) {
