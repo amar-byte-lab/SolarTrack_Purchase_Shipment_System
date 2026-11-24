@@ -18,7 +18,7 @@
 
     <div class="mw-toolbar-actions d-flex align-items-center gap-2 flex-wrap ms-auto">
       <!-- Partner Multi-select Dropdown -->
-      <div class="dropdown position-relative" style="min-width: 140px; max-width: 200px;">
+      <div class="dropdown position-relative sum-partner-dropdown-container" style="min-width: 140px; max-width: 200px;">
         <button 
           class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2 shadow-none" 
           type="button" 
@@ -26,9 +26,8 @@
           {{ partnerDropdownLabel }}
         </button>
         <div 
-          class="dropdown-menu p-3 shadow-sm border" 
-          [class.show]="isPartnerMenuOpen"
-          style="max-height: 250px; overflow-y: auto; min-width: 220px; font-size: 0.82rem; position: absolute; right: 0; z-index: 1050;">
+          class="dropdown-menu sum-partner-dropdown-menu p-3 shadow-sm border" 
+          [class.show]="isPartnerMenuOpen">
           <!-- (No Partner) filter -->
           <div class="form-check mb-1">
             <input 

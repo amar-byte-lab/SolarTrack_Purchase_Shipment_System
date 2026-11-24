@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SummaryService } from '../../../../core/services/summary.service';
@@ -37,6 +37,23 @@ export class SummaryTableComponent {
   // UI Dropdown states
   isExcludedMenuOpen = false;
   isColumnsMenuOpen = false;
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.sum-columns-dropdown-container')) {
+      this.isColumnsMenuOpen = false;
+    }
+    if (!target.closest('.sum-excluded-dropdown-container')) {
+      this.isExcludedMenuOpen = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.isColumnsMenuOpen = false;
+    this.isExcludedMenuOpen = false;
+  }
 
   // Status Edit column state
   editingStatusSlNo = signal<number | null>(null);

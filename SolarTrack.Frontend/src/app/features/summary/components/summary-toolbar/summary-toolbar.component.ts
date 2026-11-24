@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
@@ -25,6 +25,19 @@ export class SummaryToolbarComponent {
   }
 
   closePartnerDropdown(): void {
+    this.isPartnerMenuOpen = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.sum-partner-dropdown-container')) {
+      this.isPartnerMenuOpen = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
     this.isPartnerMenuOpen = false;
   }
 

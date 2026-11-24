@@ -194,6 +194,28 @@
   }
 }
 
+.sum-partner-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: auto;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 0.82rem;
+  z-index: 1050;
+  background-color: #ffffff;
+
+  @media (max-width: 768px) {
+    left: 0 !important;
+    right: auto !important;
+    min-width: 200px !important;
+    max-width: calc(100vw - 28px) !important;
+  }
+}
+
 @media (max-width: 768px) {
   .mw-summary-filter-toolbar {
     margin-top: 4px !important;

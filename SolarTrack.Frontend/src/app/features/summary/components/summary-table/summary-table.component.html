@@ -1,6 +1,6 @@
 <!-- Table Top Action Bar -->
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-1 mb-2 flex-shrink-0">
-  <div class="d-flex align-items-center gap-2">   
+<div class="mw-table-top-actions d-flex justify-content-between align-items-center flex-wrap gap-2 px-1 mb-2 flex-shrink-0">
+  <div class="d-flex align-items-center gap-2" *ngIf="selectedSlNos().size > 0 || (summaryService.excludedRows().length > 0 && !rolePermissionService.isSummaryDefaultViewOnly())">   
     <!-- Exclude from Summary Button (shown when checkbox selected and not default view) -->
     <button 
       *ngIf="selectedSlNos().size > 0 && !rolePermissionService.isSummaryDefaultViewOnly()"
@@ -13,7 +13,7 @@
     </button>
 
     <!-- Excluded Dropdown Button (shown if any customer is excluded and not default view) -->
-    <div *ngIf="summaryService.excludedRows().length > 0 && !rolePermissionService.isSummaryDefaultViewOnly()" class="dropdown position-relative">
+    <div *ngIf="summaryService.excludedRows().length > 0 && !rolePermissionService.isSummaryDefaultViewOnly()" class="dropdown position-relative sum-excluded-dropdown-container">
       <button 
         type="button" 
         class="btn btn-sm btn-outline-danger dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-sm" 
@@ -23,9 +23,8 @@
         <span>Excluded (<strong>{{ summaryService.excludedRows().length }}</strong>)</span>
       </button>
       <div 
-        class="dropdown-menu p-2 shadow-lg border" 
-        [class.show]="isExcludedMenuOpen"
-        style="min-width: 290px; max-width: 380px; max-height: 380px; overflow-y: auto; font-size: 0.82rem; z-index: 1070; position: absolute; left: 0;">
+        class="dropdown-menu sum-excluded-dropdown-menu p-2 shadow-lg border" 
+        [class.show]="isExcludedMenuOpen">
         <div class="d-flex justify-content-between align-items-center mb-2 pb-1.5 border-bottom px-1">
           <span class="fw-bold text-dark fs-8">Excluded Customers ({{ summaryService.excludedRows().length }})</span>
           <button 
@@ -57,9 +56,9 @@
   </div>
 
   <!-- Separate Select Columns Dropdown & Standalone Copy Button -->
-  <div class="d-flex align-items-center gap-2">
+  <div class="d-flex align-items-center gap-2 ms-0 ms-md-auto">
     <!-- Select Columns Dropdown Button -->
-    <div class="dropdown position-relative" *ngIf="authService.isAdmin() && !rolePermissionService.isSummaryDefaultViewOnly()">
+    <div class="dropdown position-relative sum-columns-dropdown-container" *ngIf="authService.isAdmin() && !rolePermissionService.isSummaryDefaultViewOnly()">
       <button 
         class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 bg-white shadow-none fs-8" 
         type="button" 
@@ -68,9 +67,8 @@
         <span>Select Columns</span>
       </button>
       <div 
-        class="dropdown-menu dropdown-menu-end p-3 shadow-lg border" 
-        [class.show]="isColumnsMenuOpen"
-        style="min-width: 250px; max-height: 440px; overflow-y: auto; font-size: 0.82rem; position: absolute; right: 0; z-index: 1060;">
+        class="dropdown-menu sum-columns-dropdown-menu p-3 shadow-lg border" 
+        [class.show]="isColumnsMenuOpen">
         <div class="mb-2 pb-1 border-bottom">
           <span class="fw-bold text-dark fs-8">Columns to Include</span>
         </div>

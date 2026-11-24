@@ -490,7 +490,53 @@ tr.row-workflow-active .mw-workflow-btn {
   }
 }
 
+.sum-columns-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: auto;
+  min-width: 250px;
+  max-width: 320px;
+  max-height: 440px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 0.82rem;
+  z-index: 1060;
+  background-color: #ffffff;
+
+  @media (max-width: 768px) {
+    left: 0 !important;
+    right: auto !important;
+    min-width: 220px !important;
+    max-width: calc(100vw - 28px) !important;
+  }
+}
+
+.sum-excluded-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: auto;
+  min-width: 260px;
+  max-width: 380px;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 0.82rem;
+  z-index: 1070;
+  background-color: #ffffff;
+
+  @media (max-width: 768px) {
+    min-width: 220px !important;
+    max-width: calc(100vw - 28px) !important;
+  }
+}
+
 @media (max-width: 768px) {
+  .mw-table-top-actions {
+    justify-content: flex-start !important;
+  }
+
   .summary-table-card {
     border-radius: 12px !important;
   }
