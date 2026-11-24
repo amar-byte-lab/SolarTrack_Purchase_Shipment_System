@@ -89,6 +89,7 @@ export class SizingCalculationComponent implements OnInit {
   readonly showOdiaModal = signal<boolean>(false);
   readonly showEngModal = signal<boolean>(false);
   readonly isGeneratingPdf = signal<boolean>(false);
+  readonly mobileSlotTab = signal<'day' | 'night'>('day');
 
   // Appliance List Signal
   readonly appliances = signal<ApplianceItem[]>([]);
