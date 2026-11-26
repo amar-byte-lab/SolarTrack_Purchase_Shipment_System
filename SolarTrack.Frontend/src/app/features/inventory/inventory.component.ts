@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal, HostListener } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService } from './services/inventory.service';
@@ -68,8 +68,22 @@ export class InventoryComponent implements OnInit {
     }
   }
 
-  // Collapsed categories state in ledger
-  collapsedCategories = signal<Set<string>>(new Set<string>());
+  // Open category state in ledger (accordion behavior: only one category open at a time)
+  openCategory = signal<string | null>(null);
+  private initialCategorySet = false;
+
+  constructor() {
+    effect(() => {
+      const groups = this.categorizedItems();
+      const current = this.openCategory();
+      if (!this.initialCategorySet && groups.length > 0) {
+        this.openCategory.set(groups[0].category);
+        this.initialCategorySet = true;
+      } else if (current && groups.length > 0 && !groups.some(g => g.category === current)) {
+        this.openCategory.set(groups[0].category);
+      }
+    }, { allowSignalWrites: true });
+  }
 
   // Expanded consignments state (dispatch/inward)
   expandedConsignments = signal<Set<string>>(new Set<string>());
@@ -202,20 +216,22 @@ export class InventoryComponent implements OnInit {
 
   setCategory(category: string): void {
     this.selectedCategory.set(category);
+    if (category !== 'all') {
+      this.openCategory.set(category);
+    }
   }
 
-  // --- Category Collapsing ---
+  // --- Category Collapsing (Accordion: only one category open at a time) ---
   toggleCategoryCollapse(cat: string): void {
-    this.collapsedCategories.update(set => {
-      const next = new Set(set);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      return next;
-    });
+    if (this.openCategory() === cat) {
+      this.openCategory.set(null);
+    } else {
+      this.openCategory.set(cat);
+    }
   }
 
   isCategoryCollapsed(cat: string): boolean {
-    return this.collapsedCategories().has(cat);
+    return this.openCategory() !== cat;
   }
 
   // --- Consignment Accordion ---
@@ -311,6 +327,7 @@ export class InventoryComponent implements OnInit {
       this.toastService.success(`Category "${name}" created successfully.`);
       this.isAddingCategory.set(false);
       this.newCategoryInput.set('');
+      this.openCategory.set(name);
     } else {
       this.toastService.warning(`Category "${name}" already exists or is invalid.`);
     }
@@ -336,6 +353,9 @@ export class InventoryComponent implements OnInit {
     if (success) {
       this.toastService.success(`Category renamed to "${newName}".`);
       this.editingCategoryName.set(null);
+      if (this.openCategory() === oldName) {
+        this.openCategory.set(newName);
+      }
     } else {
       this.toastService.warning(`Cannot rename category. Name already exists.`);
     }
@@ -362,6 +382,7 @@ export class InventoryComponent implements OnInit {
     this.itemToEdit.set(null);
     if (category) {
       this.defaultCategoryForItem.set(category);
+      this.openCategory.set(category);
     } else {
       this.defaultCategoryForItem.set('Panels');
     }

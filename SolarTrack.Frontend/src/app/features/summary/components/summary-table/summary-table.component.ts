@@ -512,23 +512,59 @@ export class SummaryTableComponent {
       return;
     }
 
+    const TABLE_COLUMN_ORDER = [
+      'customer',
+      'statusEdit',
+      'customerCost',
+      'pendingAmount',
+      'payment',
+      'material',
+      'delivery',
+      'meter',
+      'install',
+      'gst',
+      'others',
+      'profit',
+      'pvmodule',
+      'inverter'
+    ];
+
+    const allCols = this.summaryService.columns();
+    const visibleCols = TABLE_COLUMN_ORDER
+      .map(key => allCols.find(c => c.key === key))
+      .filter((c): c is (typeof allCols)[0] => !!c && c.visible);
+
+    if (visibleCols.length === 0) {
+      this.toastService.show('No visible columns to copy. Please select columns first.', 'warning');
+      return;
+    }
+
     const lines: string[] = [];
+
+    // Header line with visible column labels
+    const headerRow = ['#', ...visibleCols.map(c => c.label)].join('\t');
+    lines.push(headerRow);
+
+    const activeGroups = groups.filter(grp => grp.list.length > 0);
+    const hasMultipleGroups = activeGroups.length > 1;
     let serialNo = 1;
 
-    groups.forEach(grp => {
-      grp.list.forEach(item => {
-        const r = item.row;
-        const name = r.Name || 'Unnamed';
-        const status = item.stageName;
-        const pending = this.fmtCurr(item.fin.unpaid);
+    activeGroups.forEach(grp => {
+      if (hasMultipleGroups) {
+        lines.push(`--- ${grp.name} (${grp.list.length}) ---`);
+      }
 
-        lines.push(`${serialNo}. ${name} (${status}: ${pending})`);
+      grp.list.forEach(item => {
+        const rowVals = visibleCols.map(c => this.getColumnValue(item, c.key));
+        lines.push([`${serialNo}`, ...rowVals].join('\t'));
         serialNo++;
       });
     });
 
+    // Totals summary
     const tot = this.summaryService.totals();
     lines.push('');
+    lines.push(`Total Paid: ${this.fmtCurr(tot.paid)}`);
     lines.push(`Total Unpaid: ${this.fmtCurr(tot.unpaid)}`);
 
     const textToCopy = lines.join('\n');
@@ -543,6 +579,43 @@ export class SummaryTableComponent {
       document.body.removeChild(ta);
       this.toastService.show('Customer summary copied to clipboard!', 'success');
     });
+  }
+
+  private getColumnValue(item: SummaryTableRow, key: string): string {
+    switch (key) {
+      case 'customer':
+        return `${item.name || 'Unnamed'} (${item.stageName || 'N/A'})`;
+      case 'statusEdit':
+        return this.getStatusDraftValue(item) || item.stageName || '';
+      case 'customerCost':
+        return this.fmtCurr(item.fin.turnover);
+      case 'pendingAmount':
+        return this.fmtCurr(item.fin.unpaid);
+      case 'payment':
+        return item.fin.unpaid > 0
+          ? `${this.fmtCurr(item.fin.paid)} (Unpaid: ${this.fmtCurr(item.fin.unpaid)})`
+          : this.fmtCurr(item.fin.paid);
+      case 'material':
+        return this.fmtCurr(item.fin.material);
+      case 'delivery':
+        return this.fmtCurr(item.fin.delivery);
+      case 'meter':
+        return this.fmtCurr(item.fin.meter);
+      case 'install':
+        return this.fmtCurr(item.fin.install);
+      case 'gst':
+        return this.fmtCurr(item.fin.gst);
+      case 'others':
+        return this.fmtCurr(item.fin.others);
+      case 'profit':
+        return this.fmtCurr(item.fin.profit);
+      case 'pvmodule':
+        return item.pvModuleMake || '—';
+      case 'inverter':
+        return item.inverterMake || '—';
+      default:
+        return '';
+    }
   }
 
   fmtCurr(n: number): string {
