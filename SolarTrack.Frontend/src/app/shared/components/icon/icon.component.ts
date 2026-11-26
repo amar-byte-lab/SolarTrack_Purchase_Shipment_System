@@ -21,6 +21,16 @@ import { CommonModule } from '@angular/common';
         <ng-container *ngSwitchCase="'summary'">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
         </ng-container>
+        <!-- history / clock -->
+        <ng-container *ngSwitchCase="'history'">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+          <path d="M12 7v5l4 2"/>
+        </ng-container>
+        <ng-container *ngSwitchCase="'clock'">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </ng-container>
         <!-- briefcase / manage-work -->
         <ng-container *ngSwitchCase="'briefcase'">
           <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>

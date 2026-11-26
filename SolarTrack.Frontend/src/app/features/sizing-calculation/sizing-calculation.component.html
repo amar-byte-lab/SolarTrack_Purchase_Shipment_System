@@ -1538,7 +1538,7 @@
                   <tr>
                     <td>{{ getApplianceOdiaName(app.name) }} — {{ toOdiaNum(app.qty) }}ଟି</td>
                     <td>{{ toOdiaNum(app.watt) }} ୱାଟ୍ (W)</td>
-                    <td>{{ toOdiaNum(app.hours) }} ଘଣ୍ଟା</td>
+                    <td>{{ toOdiaNum(app.hours) }} ଘଣ୍ଟା{{ app.hours === 0.5 ? ' (୩୦ ମିନିଟ୍)' : '' }}</td>
                     <td style="text-align: right; font-weight: 700;">{{ toOdiaNum(((app.qty * app.watt * app.hours) / 1000).toFixed(2)) }} ୟୁନିଟ୍</td>
                   </tr>
                 }
@@ -1552,7 +1552,7 @@
                 <!-- Nighttime Subheading -->
                 <tr class="group-header-row">
                   <td colspan="4">
-                    ରାତି ବେଳା (ଅପରାହ୍ନ ୪:୦୦ – ସକାଳ ୯:୦୦) — ସମ୍ପୂର୍ଣ୍ଣ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ରୁ ଚାଲିବ
+                    ରାତି ବେଳା (ଅପରାହ୍ନ ୪:୦୦ – ସକାଳ ୯:୦୦) — ସମ୍ପୂର୍ଣ୍ଣ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍‌ରୁ ଚାଲିବ
                   </td>
                 </tr>
 
@@ -1560,7 +1560,7 @@
                   <tr>
                     <td>{{ getApplianceOdiaName(app.name) }} — {{ toOdiaNum(app.qty) }}ଟି</td>
                     <td>{{ toOdiaNum(app.watt) }} ୱାଟ୍ (W)</td>
-                    <td>{{ toOdiaNum(app.hours) }} ଘଣ୍ଟା</td>
+                    <td>{{ toOdiaNum(app.hours) }} ଘଣ୍ଟା{{ app.hours === 0.5 ? ' (୩୦ ମିନିଟ୍)' : '' }}</td>
                     <td style="text-align: right; font-weight: 700;">{{ toOdiaNum(((app.qty * app.watt * app.hours) / 1000).toFixed(2)) }} ୟୁନିଟ୍</td>
                   </tr>
                 }
@@ -1584,7 +1584,7 @@
           <div>
             <h3 class="section-title">୨. ଆପଣଙ୍କ ପାଇଁ ଉପଯୁକ୍ତ ସୋଲାର ସିଷ୍ଟମ୍ ବିବରଣୀ</h3>
             <p class="section-desc">
-              ଜରୁରୀକାଳୀନ ଚାର୍ଜିଂ ପାଇଁ ବାହାର କରେଣ୍ଟ ନଥିବାରୁ, ଦିନର ଲୋଡ୍ ଚଳାଇବା ଓ ରାତି ପାଇଁ ପର୍ଯ୍ୟାପ୍ତ ଚାର୍ଜ ରଖିବା ନିମନ୍ତେ ନିମ୍ନଲିଖିତ ସିଷ୍ଟମ୍ ସୁପାରିଶ କରାଯାଉଛି:
+              ଜରୁରୀକାଳୀନ ଚାର୍ଜିଂ ପାଇଁ ବାହାର କରେଣ୍ଟ ନଥିବାରୁ, ଦିନର ଲୋଡ୍ ଚଲାଇବା ଓ ରାତି ପାଇଁ ପର୍ଯ୍ୟାପ୍ତ ଚାର୍ଜ ରଖିବା ନିମନ୍ତେ ନିମ୍ନଲିଖିତ ସିଷ୍ଟମ୍ ସୁପାରିଶ କରାଯାଉଛି:
             </p>
 
             <table class="p-table">
@@ -1611,7 +1611,7 @@
                     </span>
                   </td>
                   <td>
-                    ଦିନ ବେଳା ସମସ୍ତ ପଙ୍ଖା, ବଲବ୍ ଓ ଅନ୍ୟାନ୍ୟ ଉପକରଣ ଚାଲୁଥିବା ସମୟରେ ପାଣି ପମ୍ପ ବା ମୋଟର ଅନ୍ ହେଲେ ମଧ୍ୟ ଇନଭର୍ଟର ବିନା କୌଣସି ଟ୍ରିପ୍ରେ ଆରାମରେ ଚଳାଇବ।
+                    {{ inverterHelpTextOdia() }}
                   </td>
                 </tr>
 
@@ -1624,11 +1624,11 @@
                   <td style="font-weight: 700;">
                     {{ (solar().actualInstalledKwp * 0.95).toFixed(2) }} kW ରୁ {{ (solar().actualInstalledKwp * 1.05).toFixed(2) }} kW<br>
                     <span style="font-size: 9.5px; font-weight: normal; color: #475569;">
-                      ({{ toOdiaNum(solar().totalPanels) }} ଟି &times; {{ toOdiaNum(solar().panelW) }} ୱାଟ୍ ପ୍ୟାନେଲ୍)
+                      ({{ toOdiaNum(solar().totalPanels) }} ବା {{ toOdiaNum(solar().totalPanels + 1) }}ଟି &times; {{ toOdiaNum(solar().panelW) }} ୱାଟ୍ ପ୍ୟାନେଲ୍)
                     </span>
                   </td>
                   <td>
-                    ଦିନ ବେଳାର {{ toOdiaNum(audit().dayKwh.toFixed(2)) }} ୟୁନିଟ୍ ଲୋଡ୍ ଚଳାଇବା ସହିତ ରାତି ପାଇଁ ବ୍ୟାଟେରୀକୁ ପ୍ରତିଦିନ ସମ୍ପୂର୍ଣ୍ଣ ଫୁଲ୍ ଚାର୍ଜ କରିବ।
+                    ଦିନ ବେଳାର {{ toOdiaNum(audit().dayKwh.toFixed(2)) }} ୟୁନିଟ୍ ଲୋଡ୍ ଚଲାଇବା ସହିତ ରାତି ପାଇଁ ବ୍ୟାଟେରୀକୁ ପ୍ରତିଦିନ ସମ୍ପୂର୍ଣ୍ଣ ଫୁଲ୍ ଚାର୍ଜ କରିବ ।
                   </td>
                 </tr>
               </tbody>
@@ -1680,13 +1680,13 @@
                     <span style="font-size: 9.5px; font-weight: normal; color: #475569;">(LiFePO4 Battery)</span>
                   </td>
                   <td style="font-weight: 700;">
-                    {{ inverter().dcVoltage }}V {{ batteryOptions()?.opt1?.ahRating || 150 }}Ah ଲିଥିୟମ୍ ବ୍ୟାଟେରୀ<br>
+                    {{ inverter().dcVoltage }}V {{ batteryOptions()?.opt1?.ahRating || 200 }}Ah ଲିଥିୟମ୍ ବ୍ୟାଟେରୀ<br>
                     <span style="font-size: 9.5px; font-weight: normal; color: #475569;">
-                      (ପ୍ରାୟ {{ toOdiaNum(batteryOptions()?.opt1?.usableKwh?.toFixed(1) || 12) }} ୟୁନିଟ୍ ବ୍ୟବହାରଯୋଗ୍ୟ)
+                      (ପ୍ରାୟ {{ toOdiaNum(batteryOptions()?.opt1?.usableKwh?.toFixed(1) || 16.5) }} ୟୁନିଟ୍ ବ୍ୟବହାରଯୋଗ୍ୟ)
                     </span>
                   </td>
-                  <td>
-                    ରାତିର {{ toOdiaNum(audit().nightKwh.toFixed(2)) }} ୟୁନିଟ୍ ଖର୍ଚ୍ଚ ପରେ ବି ସକାଳକୁ ପ୍ରାୟ ୩୫–୪୦% ({{ toOdiaNum(((batteryOptions()?.opt1?.usableKwh || 12) * 0.38).toFixed(1)) }} ରୁ {{ toOdiaNum(((batteryOptions()?.opt1?.usableKwh || 12) * 0.42).toFixed(1)) }} ୟୁନିଟ୍) ଚାର୍ଜ ବଞ୍ଚିକି ରହିବ, ଯାହା ବାଦଲିଆ ପାଗରେ ବ୍ୟାକଅପ୍ ଦେବ ଓ ବ୍ୟାଟେରୀ ୧୦+ ବର୍ଷ ଚାଲିବ। (ବର୍ଷା ଦିନେ ଅଧିକ ବ୍ୟାକଅପ୍ ପାଇଁ {{ inverter().dcVoltage }}V {{ (batteryOptions()?.opt1?.ahRating || 150) + 50 }}Ah ବ୍ୟାଟେରୀ ନେଇପାରିବେ)।
+                  <td style="white-space: pre-line;">
+                    {{ batteryHelpTextOdia() }}
                   </td>
                 </tr>
 
@@ -1700,7 +1700,7 @@
                     ACDB, DCDB, ୩ଟି ଆର୍ଥିଂ ଓ ଲାଇଟନିଂ ଆରେଷ୍ଟର
                   </td>
                   <td>
-                    ବଜ୍ରପାତ ଓ ସର୍ଟ-ସର୍କିଟ୍ରୁ ସୋଲାର ପ୍ୟାନେଲ୍, ଇନଭର୍ଟର ଏବଂ ଘରର ସମସ୍ତ ବିଜୁଳି ଉପକରଣକୁ ସମ୍ପୂର୍ଣ୍ଣ ସୁରକ୍ଷିତ ରଖିବ। ({{ bos().acCable }} ଏସି କେବଲ୍, {{ bos().dcPvCable }} ଡିସି କେବଲ୍ ଓ {{ bos().earthingCable }} ଆର୍ଥିଂ କଣ୍ଡକ୍ଟର ସହିତ)।
+                    ବଜ୍ରପାତ ଓ ସର୍ଟ-ସର୍କିଟ୍‌ରୁ ସୋଲାର ପ୍ୟାନେଲ୍, ଇନଭର୍ଟର ଏବଂ ଘରର ସମସ୍ତ ବିଜୁଳି ଉପକରଣକୁ ସମ୍ପୂର୍ଣ୍ଣ ସୁରକ୍ଷିତ ରଖିବ ।
                   </td>
                 </tr>
               </tbody>
@@ -1711,10 +1711,10 @@
           <div class="advice-box">
             <h4>ଗ୍ରାହକଙ୍କ ପାଇଁ ୨ଟି ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ପରାମର୍ଶ:</h4>
             <p>
-              &bull; <strong>ପାଣି ପମ୍ପ ଚଳାଇବା ସମୟ:</strong> ରାତିର ପାଣି ପମ୍ପକୁ ସନ୍ଧ୍ୟା ୫:୦୦ ରୁ ୬:୦୦ ଟା କିମ୍ବା ଦିନ ସମୟରେ ଚଳାଇଲେ ବ୍ୟାଟେରୀ ଉପରେ ଚାପ କମ୍ ପଡ଼ିବ ଓ ବ୍ୟାକଅପ୍ ଅଧିକ ସମୟ ରହିବ।
+              &bull; <strong>ପାଣି ପମ୍ପ ଚଲାଇବା ସମୟ:</strong> ରାତିର ୩୦ ମିନିଟ୍ (୦.୫ ଘଣ୍ଟା) ପାଣି ପମ୍ପକୁ ସନ୍ଧ୍ୟା ୫:୦୦ ରୁ ୬:୦୦ ଟା ମଧ୍ୟରେ ଚଲାଇଲେ ବ୍ୟାଟେରୀ ଉପରେ ଚାପ କମ୍ ପଡ଼ିବ ଓ ବ୍ୟାକଅପ୍ ଅଧିକ ସମୟ ରହିବ ।
             </p>
             <p>
-              &bull; <strong>ବିଜୁଳି ସଞ୍ଚୟ ଉପାୟ (BLDC ପଙ୍ଖା):</strong> ସାଧାରଣ ୭୫ ୱାଟ ପଙ୍ଖା ବଦଳରେ ୩୦ ୱାଟ BLDC ପଙ୍ଖା ଲଗାଇଲେ ଦିନକୁ ବହୁତ ୟୁନିଟ୍ ବିଜୁଳି ବଞ୍ଚିବ ଏବଂ ବାଦଲିଆ ପାଗରେ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ଆହୁରି ବଢ଼ିଯିବ।
+              &bull; <strong>ବିଜୁଳି ସଞ୍ଚୟ ଉପାୟ (BLDC ପଙ୍ଖା):</strong> ସାଧାରଣ ୭୫ ୱାଟ୍ ପଙ୍ଖା ବଦଳରେ ୩୦ ୱାଟ୍ BLDC ପଙ୍ଖା ଲଗାଇଲେ ଦିନକୁ ପ୍ରାୟ ୯ ୟୁନିଟ୍ ବିଜୁଳି ବଞ୍ଚିବ ଏବଂ ବାଦଲିଆ ପାଗରେ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ଆହୁରି ବଢ଼ିଯିବ ।
             </p>
           </div>
         </div>

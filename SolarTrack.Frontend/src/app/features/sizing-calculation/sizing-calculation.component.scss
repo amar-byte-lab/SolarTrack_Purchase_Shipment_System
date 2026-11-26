@@ -60,18 +60,18 @@
   /* 2-Page Odia Proposal Document Styles (Exact User Spec) */
   .proposal-doc {
     width: 210mm;
-    background: #e8f4f8;
+    background: #eaf5fa;
     font-family: 'Noto Sans Oriya', 'Inter', sans-serif;
     color: #004d66;
 
     .proposal-page {
       width: 210mm;
-      height: 296.5mm;
-      min-height: 296.5mm;
-      max-height: 296.5mm;
+      height: 296mm;
+      min-height: 296mm;
+      max-height: 296mm;
       box-sizing: border-box;
       padding: 12mm 15mm 10mm 15mm;
-      background: #e8f4f8;
+      background: #eaf5fa;
       position: relative;
       overflow: hidden;
       display: flex;
@@ -81,7 +81,7 @@
 
     .proposal-watermark-pattern {
       position: absolute;
-      inset: -40%;
+      inset: -35%;
       display: flex;
       flex-direction: column;
       justify-content: space-around;
@@ -89,7 +89,7 @@
       pointer-events: none;
       z-index: 0;
       user-select: none;
-      opacity: 0.08;
+      opacity: 0.12;
 
       .watermark-row {
         white-space: nowrap;
@@ -97,7 +97,7 @@
         font-weight: 900;
         letter-spacing: 0.16em;
         color: #0284c7;
-        padding: 26px 0;
+        padding: 28px 0;
       }
     }
 
@@ -107,7 +107,7 @@
     }
 
     .doc-brand-title {
-      font-size: 18px;
+      font-size: 16.5px;
       font-weight: 900;
       color: #005073;
       margin: 0;
@@ -117,7 +117,7 @@
     .doc-main-heading {
       font-size: 21px;
       font-weight: 900;
-      color: #006687;
+      color: #005b82;
       margin: 4px 0 2px 0;
       line-height: 1.25;
     }
@@ -147,12 +147,12 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 10.5px;
-      line-height: 1.3;
+      line-height: 1.35;
       background: #ffffff;
       border: 1.5px solid #007399;
 
       th {
-        background-color: #007399;
+        background-color: #006d9e;
         color: #ffffff;
         font-weight: 700;
         padding: 5px 8px;
@@ -168,9 +168,9 @@
       }
 
       .group-header-row td {
-        background-color: #d1eff7;
-        color: #00506b;
-        font-weight: 700;
+        background-color: #cce9f7;
+        color: #004b6b;
+        font-weight: 800;
         font-size: 10.5px;
         padding: 4.5px 8px;
         border: 1px solid #a3d9eb;
@@ -179,39 +179,40 @@
       .subtotal-row td {
         background-color: #e4f5fa;
         color: #004d66;
-        font-weight: 700;
+        font-weight: 800;
         padding: 4.5px 8px;
         border: 1px solid #a3d9eb;
       }
 
       .grand-total-row td {
-        background-color: #007399;
-        color: #ffffff;
+        background-color: #9bd6f2 !important;
+        color: #004d66 !important;
         font-weight: 800;
         font-size: 11px;
         padding: 5px 8px;
-        border: 1px solid #005d7a;
+        border: 1px solid #7dc7ec;
       }
     }
 
     .advice-box {
       background: #ffffff;
-      border: 1.5px solid #007399;
-      padding: 9px 12px;
-      margin-top: 10px;
+      border: 1.5px solid #0080b0;
+      border-radius: 4px;
+      padding: 10px 14px;
+      margin-top: 12px;
 
       h4 {
         color: #005073;
         font-size: 11.5px;
         font-weight: 800;
-        margin: 0 0 5px 0;
+        margin: 0 0 6px 0;
       }
 
       p {
         font-size: 10px;
         color: #0f172a;
-        line-height: 1.45;
-        margin: 4px 0;
+        line-height: 1.5;
+        margin: 5px 0;
       }
     }
 

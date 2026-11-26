@@ -8,13 +8,14 @@ import { RolePermissionService } from '../../../../core/services/role-permission
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { CustomerModalComponent } from '../../../../shared/components/customer-modal/customer-modal.component';
 import { WorkflowModalComponent } from '../../../../shared/components/workflow-modal/workflow-modal.component';
+import { CustomerHistoryModalComponent } from '../../../../shared/components/customer-history-modal/customer-history-modal.component';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
 import { InstallmentRow, SummaryTableRow, SummaryGroup } from '../../../../core/models/summary.model';
 
 @Component({
   selector: 'app-summary-table',
   standalone: true,
-  imports: [CommonModule, FormsModule, CustomerModalComponent, WorkflowModalComponent, IconComponent],
+  imports: [CommonModule, FormsModule, CustomerModalComponent, WorkflowModalComponent, CustomerHistoryModalComponent, IconComponent],
   templateUrl: './summary-table.component.html',
   styleUrls: ['./summary-table.component.scss']
 })
@@ -89,6 +90,20 @@ export class SummaryTableComponent {
   isWorkflowModalOpen = false;
   selectedCustomerForWorkflow: InstallmentRow | null = null;
   workflowModalTab: 'process' | 'payment' = 'process';
+
+  // Customer Status & Payment History Modal State
+  isHistoryModalOpen = false;
+  selectedRowForHistory: SummaryTableRow | null = null;
+
+  openCustomerHistory(item: SummaryTableRow): void {
+    this.selectedRowForHistory = item;
+    this.isHistoryModalOpen = true;
+  }
+
+  closeCustomerHistory(): void {
+    this.isHistoryModalOpen = false;
+    this.selectedRowForHistory = null;
+  }
 
   // Collapse / Expand helpers - Accordion behavior (only one section open at a time)
   toggleGroupCollapse(groupName: string): void {

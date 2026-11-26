@@ -106,7 +106,7 @@
     <table class="table table-sm table-manage-work-summary" id="workSummaryTable">
       <thead class="table-light">
         <tr>
-          <th *ngIf="isColumnVisible('customer')" class="th-col-customer text-nowrap">
+          <!-- <th *ngIf="isColumnVisible('customer')" class="th-col-customer text-nowrap">
             <div class="d-flex align-items-center gap-2">
               <input 
                 *ngIf="!rolePermissionService.isSummaryDefaultViewOnly()"
@@ -117,7 +117,7 @@
                 title="Select / Deselect all visible customers">
               <span class="fw-bold fs-8">CUSTOMER: STATUS</span>
             </div>
-          </th>
+          </th> -->
           <th *ngIf="isColumnVisible('statusEdit')" class="th-col-statusedit text-nowrap">STATUS EDIT</th>
           <th *ngIf="isColumnVisible('customerCost')" class="th-col-custcost text-end text-nowrap">CUSTOMER COST</th>
           <th *ngIf="isColumnVisible('pendingAmount')" class="th-col-pending text-end text-nowrap">PENDING AMOUNT</th>
@@ -435,7 +435,7 @@
                 <span class="badge bg-light text-dark border fs-9 fw-normal">{{ item.inverterMake }}</span>
               </td>
 
-              <!-- Actions (Edit or Popup View) -->
+              <!-- Actions (Edit or Popup View, Status & Payment History) -->
               <td *ngIf="authService.isAdmin()" class="td-col-actions text-center text-nowrap">
                 <div class="d-inline-flex align-items-center gap-1">
                   <!-- Customer Action Button -->
@@ -446,6 +446,15 @@
                     (click)="$event.stopPropagation(); openEditCustomer(item.row)" 
                     [title]="rolePermissionService.isSummaryActionPopup() ? 'View Customer Record (Popup View)' : 'Edit Customer Record'">
                     <app-icon [name]="rolePermissionService.isSummaryActionPopup() ? 'eye' : 'edit'" [size]="12"></app-icon>
+                  </button>
+
+                  <!-- Status & Payment History Button -->
+                  <button 
+                    type="button" 
+                    class="btn btn-xs btn-outline-secondary p-1 lh-1 sum-history-btn"
+                    (click)="$event.stopPropagation(); openCustomerHistory(item)" 
+                    title="View Status & Payment History (Popup)">
+                    <app-icon name="history" [size]="12" [strokeWidth]="2.2"></app-icon>
                   </button>
                 </div>
               </td>
@@ -523,3 +532,10 @@
   (close)="closeWorkflowModal()"
   (updated)="onWorkflowModalUpdated()">
 </app-workflow-modal>
+
+<!-- Customer Status & Payment History Modal Popup -->
+<app-customer-history-modal
+  [isOpen]="isHistoryModalOpen"
+  [summaryRow]="selectedRowForHistory"
+  (close)="closeCustomerHistory()">
+</app-customer-history-modal>

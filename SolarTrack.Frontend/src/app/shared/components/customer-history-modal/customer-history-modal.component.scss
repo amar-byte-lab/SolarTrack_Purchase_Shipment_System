@@ -1,0 +1,111 @@
+.ch-dialog {
+  max-width: 780px;
+  width: 95%;
+  margin: 1.75rem auto;
+}
+
+.ch-card-box {
+  border-radius: 12px;
+}
+
+.ch-header-icon {
+  width: 36px;
+  height: 36px;
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
+.letter-spacing-tight {
+  letter-spacing: -0.01em;
+}
+
+.ch-stat-box {
+  min-height: 52px;
+}
+
+.ch-tabs-bar .nav-link {
+  color: #64748b;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    color: #1e293b;
+    border-color: #e2e8f0 #e2e8f0 transparent;
+  }
+
+  &.active {
+    color: #4f46e5;
+    background: #fff;
+    border-color: #e2e8f0 #e2e8f0 #fff;
+    border-bottom: 2px solid #4f46e5;
+  }
+}
+
+.ch-modal-body {
+  max-height: calc(85vh - 200px);
+  min-height: 320px;
+}
+
+/* Timeline vertical line */
+.ch-timeline-wrap::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 14px;
+  width: 2px;
+  background-color: #e2e8f0;
+  z-index: 0;
+}
+
+.ch-timeline-item {
+  z-index: 1;
+
+  &:last-child {
+    padding-bottom: 0 !important;
+  }
+}
+
+.ch-timeline-dot {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  z-index: 2;
+  box-shadow: 0 0 0 3px #f8fafc;
+}
+
+.bg-purple {
+  background-color: #8b5cf6 !important;
+}
+
+.bg-purple-subtle {
+  background-color: #f3e8ff !important;
+}
+
+.text-purple {
+  color: #7c3aed !important;
+}
+
+.ch-stage-num-circle {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+
+.ch-stage-item {
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.fs-7 {
+  font-size: 0.95rem;
+}
+
+.fs-8 {
+  font-size: 0.8125rem;
+}
+
+.fs-9 {
+  font-size: 0.725rem;
+}

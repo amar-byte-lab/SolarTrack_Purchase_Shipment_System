@@ -1080,15 +1080,13 @@ export class SizingCalculationComponent implements OnInit {
   loadTemplate(tpl: string): void {
     if (tpl === 'residential_3bhk') {
       this.appliances.set([
-        { id: 'd1', slot: 'day', name: 'LED Bulbs (10W)', category: 'led', specLabel: '10W LED', qty: 6, watt: 10, surgeMult: 1.0, simultaneous: true, hours: 4 },
-        { id: 'd2', slot: 'day', name: 'Normal Ceiling Fan (75W)', category: 'fan', specLabel: 'Induction 75W', qty: 3, watt: 75, surgeMult: 1.2, simultaneous: true, hours: 6 },
-        { id: 'd3', slot: 'day', name: '1 HP Water Pump (850W)', category: 'pump', specLabel: '1 HP Monoblock', qty: 1, watt: 850, surgeMult: 2.59, simultaneous: true, hours: 1.5 },
-        { id: 'd4', slot: 'day', name: 'Refrigerator (150W, 450W surge)', category: 'fridge', specLabel: '240L Double Door', qty: 1, watt: 150, surgeMult: 3.0, simultaneous: true, hours: 7 },
-        { id: 'd5', slot: 'day', name: 'TV / Wi-Fi (80W)', category: 'tv', specLabel: '43" LED TV', qty: 1, watt: 80, surgeMult: 1.0, simultaneous: true, hours: 4 },
-        { id: 'n1', slot: 'night', name: 'LED Bulbs (10W)', category: 'led', specLabel: '10W LED', qty: 10, watt: 10, surgeMult: 1.0, simultaneous: true, hours: 6 },
-        { id: 'n2', slot: 'night', name: 'Normal Ceiling Fan (75W)', category: 'fan', specLabel: 'Induction 75W', qty: 4, watt: 75, surgeMult: 1.2, simultaneous: true, hours: 8 },
-        { id: 'n3', slot: 'night', name: 'Refrigerator (150W, 450W surge)', category: 'fridge', specLabel: '240L Double Door', qty: 1, watt: 150, surgeMult: 3.0, simultaneous: true, hours: 15 },
-        { id: 'n4', slot: 'night', name: '1.5 Ton Inverter AC', category: 'ac', specLabel: '1.5T Inverter', qty: 1, watt: 1500, surgeMult: 1.6, simultaneous: true, hours: 5 }
+        { id: 'd1', slot: 'day', name: 'Ceiling Fan (75W)', category: 'fan', specLabel: 'Induction 75W', qty: 15, watt: 75, surgeMult: 1.2, simultaneous: true, hours: 7 },
+        { id: 'd2', slot: 'day', name: 'LED Bulb (10W)', category: 'led', specLabel: '10W LED', qty: 20, watt: 10, surgeMult: 1.0, simultaneous: true, hours: 7 },
+        { id: 'd3', slot: 'day', name: 'Desktop PC (200W)', category: 'comp', specLabel: 'Desktop Computer', qty: 2, watt: 200, surgeMult: 1.2, simultaneous: true, hours: 7 },
+        { id: 'd4', slot: 'day', name: '1 HP Water Pump (850W)', category: 'pump', specLabel: '1 HP Monoblock Pump', qty: 1, watt: 850, surgeMult: 2.59, simultaneous: true, hours: 1.5 },
+        { id: 'n1', slot: 'night', name: 'Ceiling Fan (75W)', category: 'fan', specLabel: 'Induction 75W', qty: 6, watt: 75, surgeMult: 1.2, simultaneous: true, hours: 17 },
+        { id: 'n2', slot: 'night', name: 'LED Bulb (10W)', category: 'led', specLabel: '10W LED', qty: 20, watt: 10, surgeMult: 1.0, simultaneous: true, hours: 12 },
+        { id: 'n3', slot: 'night', name: '1 HP Water Pump (850W)', category: 'pump', specLabel: '1 HP Monoblock Pump', qty: 1, watt: 850, surgeMult: 2.59, simultaneous: true, hours: 0.5 }
       ]);
     } else if (tpl === 'office_clinic') {
       this.appliances.set([
@@ -1168,6 +1166,39 @@ export class SizingCalculationComponent implements OnInit {
       case 'ongrid': return 'ପ୍ୟୁଅର୍ ଅନ୍-ଗ୍ରିଡ୍ ନେଟ୍-ମିଟରିଂ (ବିଲ୍ ଶୂନ୍ୟ ସିଷ୍ଟମ୍)';
       case 'nobattery': return 'ଗ୍ରିଡ୍ ଚାର୍ଜିଂ ଇନଭର୍ଟର ଓ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍';
     }
+  }
+
+  inverterHelpTextOdia(): string {
+    const dayApps = this.dayAppliances();
+    const fans = dayApps.find(a => a.category === 'fan');
+    const leds = dayApps.find(a => a.category === 'led');
+    const comps = dayApps.find(a => a.category === 'comp');
+    const pump = dayApps.find(a => a.category === 'pump');
+
+    const parts: string[] = [];
+    if (fans) parts.push(`${this.toOdiaNum(fans.qty)}ଟି ପଙ୍ଖା`);
+    if (leds) parts.push(`${this.toOdiaNum(leds.qty)}ଟି ବଲବ୍`);
+    if (comps) parts.push(`${this.toOdiaNum(comps.qty)}ଟି ଡେସ୍କଟପ୍`);
+
+    const loadsStr = parts.length > 0 ? parts.join(', ') : 'ସମସ୍ତ ଲୋଡ୍';
+    if (pump) {
+      const pName = (pump.name.includes('1') || pump.watt <= 1000) ? '୧ HP ପାଣି ପମ୍ପ' : (pump.name.includes('2') ? '୨ HP ପାଣି ପମ୍ପ' : 'ପାଣି ପମ୍ପ');
+      return `ଦିନ ବେଳା ${loadsStr} ଚାଲୁଥିବା ସମୟରେ ${pName} ଅନ୍ ହେଲେ ମଧ୍ୟ ଇନଭର୍ଟର ବିନା କୌଣସି ଟ୍ରିପ୍‌ରେ ଆରାମରେ ଚଲାଇବ ।`;
+    }
+    return `ଦିନ ବେଳା ${loadsStr} ଏକାସାଙ୍ଗରେ ଚାଲୁଥିବା ସମୟରେ ମଧ୍ୟ ଇନଭର୍ଟର ବିନା କୌଣସି ଟ୍ରିପ୍‌ରେ ଆରାମରେ ଚଲାଇବ ।`;
+  }
+
+  batteryHelpTextOdia(): string {
+    const nightUnits = this.audit().nightKwh;
+    const opt1 = this.batteryOptions()?.opt1;
+    const usable = opt1?.usableKwh || 16.5;
+    const reserveMin = (usable * 0.35).toFixed(1);
+    const reserveMax = (usable * 0.40).toFixed(1);
+    const dcVolt = this.inverter().dcVoltage;
+    const ah = opt1?.ahRating || 200;
+    const upgradeAh = ah + 50;
+
+    return `ରାତିର ${this.toOdiaNum(nightUnits.toFixed(2))} ୟୁନିଟ୍ ଖର୍ଚ୍ଚ ପରେ ବି ସକାଳକୁ ପ୍ରାୟ ୩୫–୪୦% (${this.toOdiaNum(reserveMin)} ରୁ ${this.toOdiaNum(reserveMax)} ୟୁନିଟ୍) ଚାର୍ଜ ବଞ୍ଚିକି ରହିବ, ଯାହା ବାଦଲିଆ ପାଗରେ ବ୍ୟାକଅପ୍ ଦେବ ଓ ବ୍ୟାଟେରୀ ୧୦+ ବର୍ଷ ଚାଲିବ । (ବର୍ଷା ଦିନେ ଅଧିକ ବ୍ୟାକଅପ୍ ପାଇଁ ${dcVolt}V ${upgradeAh}Ah ବ୍ୟାଟେରୀ ନେଇପାରିବେ) ।`;
   }
 
   downloadProposalPdf(): void {

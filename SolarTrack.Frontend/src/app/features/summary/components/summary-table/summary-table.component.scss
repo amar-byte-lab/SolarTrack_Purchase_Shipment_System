@@ -456,8 +456,8 @@ tr.row-workflow-active .mw-workflow-btn {
 
 /* Actions Column */
 .th-col-actions, .td-col-actions, .tfoot-col-actions {
-  width: 55px !important;
-  min-width: 55px !important;
+  width: 72px !important;
+  min-width: 72px !important;
   text-align: center !important;
 }
 
@@ -473,6 +473,18 @@ tr.row-workflow-active .mw-workflow-btn {
 
   &:hover {
     transform: scale(1.08);
+  }
+}
+
+.sum-history-btn {
+  color: #7c3aed !important;
+  border-color: #ddd6fe !important;
+  background-color: #f5f3ff;
+
+  &:hover {
+    color: #fff !important;
+    background-color: #7c3aed !important;
+    border-color: #7c3aed !important;
   }
 }
 

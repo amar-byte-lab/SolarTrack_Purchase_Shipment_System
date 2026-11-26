@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin, Observable, map, of, catchError } from 'rxjs';
+import { forkJoin, Observable, map, of, catchError, throwError } from 'rxjs';
 import { 
   InstallmentRow, 
   InstallmentTxnRow, 
@@ -843,11 +843,17 @@ export class SummaryService {
       logs: this.http.get<any>('/api/activity-logs').pipe(map(r => r?.value || r?.data || r || []), catchError(() => of([])))
     }).pipe(
       map(res => {
-        const hydrated = (res.installments || []).map((r: InstallmentRow) => {
+        const hydrated = (res.installments || []).map((r: InstallmentRow, idx: number) => {
+          // Guarantee SlNo is a positive integer even if missing in raw data
+          const sl = (r.SlNo != null && !isNaN(Number(r.SlNo)) && Number(r.SlNo) > 0) ? Number(r.SlNo) : (idx + 1);
+          r = { ...r, SlNo: sl };
+
           if (r.BrokerNumber && r.BrokerNumber.includes('|work:')) {
             try {
               const workIdx = r.BrokerNumber.indexOf('|work:');
-              const workObj = JSON.parse(r.BrokerNumber.slice(workIdx + 6));
+              const workEnd = r.BrokerNumber.indexOf('|', workIdx + 1);
+              const workStr = workEnd !== -1 ? r.BrokerNumber.slice(workIdx + 6, workEnd) : r.BrokerNumber.slice(workIdx + 6);
+              const workObj = JSON.parse(workStr);
               return {
                 ...r,
                 SubDivision: r.SubDivision || workObj.SubDivision || '',
@@ -982,8 +988,13 @@ export class SummaryService {
 
   // Workflow Stage Progress Operation
   saveStageProgress(slNo: number, patch: Partial<InstallmentRow>): Observable<any> {
-    const existing = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo));
-    if (!existing) return of(null);
+    let existing = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo));
+    if (!existing) {
+      existing = this.rawInstallmentsSignal().find(r => String(r.SlNo) === String(slNo));
+    }
+    if (!existing) {
+      return throwError(() => new Error(`Customer with SlNo ${slNo} not found in loaded data.`));
+    }
 
     let brokerNumber = existing.BrokerNumber || '';
     if (patch.NetMeterPayment !== undefined || patch.NetMeterPaid !== undefined) {
@@ -1003,19 +1014,37 @@ export class SummaryService {
 
     let workObj: any = {};
     const workIdx = brokerNumber.indexOf('|work:');
+    let workEnd = -1;
     if (workIdx !== -1) {
+      workEnd = brokerNumber.indexOf('|', workIdx + 1);
+      const workJson = workEnd !== -1 ? brokerNumber.slice(workIdx + 6, workEnd) : brokerNumber.slice(workIdx + 6);
       try {
-        workObj = JSON.parse(brokerNumber.slice(workIdx + 6)) || {};
+        workObj = JSON.parse(workJson) || {};
       } catch {}
     }
     Object.assign(workObj, patch);
-    const rest = workIdx !== -1 ? brokerNumber.slice(0, workIdx) : brokerNumber;
-    brokerNumber = `${rest}|work:${JSON.stringify(workObj)}`;
+    const workNew = `|work:${JSON.stringify(workObj)}`;
+    if (workIdx !== -1) {
+      const before = brokerNumber.slice(0, workIdx);
+      const after = workEnd !== -1 ? brokerNumber.slice(workEnd) : '';
+      brokerNumber = before + workNew + after;
+    } else {
+      brokerNumber = `${brokerNumber}${workNew}`;
+    }
 
     const payload: Partial<InstallmentRow> = {
       ...patch,
       BrokerNumber: brokerNumber
     };
+
+    // Optimistically update local rawInstallmentsSignal item so UI updates immediately
+    const updatedRaw = this.rawInstallmentsSignal().map(r => {
+      if (Number(r.SlNo) === Number(slNo) || String(r.SlNo) === String(slNo)) {
+        return { ...r, ...payload };
+      }
+      return r;
+    });
+    this.rawInstallmentsSignal.set(updatedRaw);
 
     return this.http.post(`/api/update?table=installments&matchField=SlNo&matchValue=${slNo}`, payload);
   }
@@ -1067,6 +1096,8 @@ export class SummaryService {
       Status: newStatus
     };
 
+    const existing = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo) || String(r.SlNo) === String(slNo));
+
     if (isNm) {
       patch.NetMeterPaid = true;
       patch.NetMeterDate = today;
@@ -1075,6 +1106,10 @@ export class SummaryService {
         if (!isNaN(parsed)) {
           patch.NetMeterPayment = parsed;
         }
+      }
+      // Ensure LoginDate has a date if not already set
+      if (existing && !existing.LoginDate) {
+        patch.LoginDate = today;
       }
       // Clear stages after NetMeter
       patch.InspectionDate = null;
@@ -1085,6 +1120,11 @@ export class SummaryService {
       // Save current date on selected milestone stage
       patch[targetKey] = today;
 
+      // Ensure LoginDate has a date if not set
+      if (existing && !existing.LoginDate && targetIdx > 0) {
+        patch.LoginDate = today;
+      }
+
       // Clear all stages after targetIdx
       for (let i = targetIdx + 1; i < stageKeys.length; i++) {
         const k = stageKeys[i];
@@ -1094,6 +1134,33 @@ export class SummaryService {
         }
       }
     }
+
+    // Also post activity log so the status change shows up in History
+    const custName = existing?.Name || `Customer #${slNo}`;
+    const consumerNo = existing?.ConsumerNo || '';
+    const currentUser = this.authService.currentUser()?.username || 'Admin';
+    const oldStatus = existing?.Status || 'Login';
+
+    const logItem = {
+      id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      timestamp: new Date().toISOString(),
+      date: today,
+      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+      page: 'Summary',
+      table: 'installments',
+      action: 'UPDATE',
+      user: currentUser,
+      userRole: this.authService.currentUser()?.role || 'Admin',
+      recordId: slNo,
+      customerName: custName,
+      consumerNo: consumerNo,
+      changes: [
+        { field: 'Status', oldVal: oldStatus, newVal: newStatus }
+      ]
+    };
+
+    // Post log asynchronously, don't block
+    this.http.post('/api/activity-logs', logItem).subscribe({ error: () => {} });
 
     return this.saveStageProgress(slNo, patch);
   }

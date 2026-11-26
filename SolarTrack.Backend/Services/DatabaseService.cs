@@ -320,7 +320,16 @@ ELSE
 
                 if (setClauses.Count > 0)
                 {
-                    dynParams.Add("matchVal", matchVal);
+                    if (string.Equals(tableName, "installments", StringComparison.OrdinalIgnoreCase) && 
+                        string.Equals(matchField, "SlNo", StringComparison.OrdinalIgnoreCase) && 
+                        long.TryParse(matchVal?.ToString(), out var slLong))
+                    {
+                        dynParams.Add("matchVal", slLong);
+                    }
+                    else
+                    {
+                        dynParams.Add("matchVal", matchVal);
+                    }
                     var sql = $"UPDATE [dbo].[{tableName}] SET {string.Join(", ", setClauses)} WHERE [{matchField}] = @matchVal";
                     await conn.ExecuteAsync(sql, dynParams);
                     return;
@@ -340,6 +349,12 @@ ELSE
             var val = r.TryGetValue(matchField, out var v) ? v?.ToString() : null;
             return string.Equals(val, matchValStr, StringComparison.OrdinalIgnoreCase);
         });
+
+        if (target == null && string.Equals(tableName, "installments", StringComparison.OrdinalIgnoreCase) && int.TryParse(matchValStr, out var targetSl) && targetSl > 0 && targetSl <= localRows.Count)
+        {
+            target = localRows[targetSl - 1];
+            target["SlNo"] = targetSl;
+        }
 
         if (target != null)
         {

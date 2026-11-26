@@ -1,0 +1,138 @@
+<div *ngIf="isOpen" class="modal-backdrop fade show" (click)="onClose()"></div>
+
+<div 
+  *ngIf="isOpen" 
+  class="modal d-block" 
+  tabindex="-1" 
+  role="dialog" 
+  aria-modal="true" 
+  (click)="onBackdropClick($event)">
+  <div class="modal-dialog modal-dialog-centered modal-lg ch-dialog">
+    <div class="modal-content ch-card-box bg-white shadow-lg overflow-hidden border-0" (click)="$event.stopPropagation()">
+
+      <!-- 1. Modal Header -->
+      <div class="modal-header px-3.5 py-2.5 bg-light border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2.5">
+          <div class="ch-header-icon d-flex align-items-center justify-content-center rounded-2 bg-purple-subtle text-purple">
+            <app-icon name="history" [size]="18" [strokeWidth]="2.2"></app-icon>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <h6 class="modal-title mb-0 fw-bold text-dark text-uppercase fs-7 letter-spacing-tight">
+                {{ customerName }}
+              </h6>
+              <span class="badge fs-9 px-2 py-0.5 rounded-pill" [ngClass]="stageClass">
+                {{ currentStage }}
+              </span>
+            </div>
+            <div class="text-muted fs-9 d-flex align-items-center gap-2 mt-0.5 flex-wrap">
+              <span><strong>Consumer No:</strong> {{ consumerNo }}</span>
+              <span class="text-secondary">•</span>
+              <span><strong>Phone:</strong> {{ mobile }}</span>
+              <span class="text-secondary">•</span>
+              <span><strong>District:</strong> {{ district }}</span>
+            </div>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          class="btn-close fs-9" 
+          aria-label="Close" 
+          (click)="onClose()">
+        </button>
+      </div>
+
+      <!-- Combined Timeline Header & Sorter -->
+      <div class="px-3.5 py-2 bg-white border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <span class="fw-bold fs-8 text-dark text-uppercase d-inline-flex align-items-center gap-1.5">
+            <app-icon name="activity" [size]="14"></app-icon>
+            <span>Combined Timeline</span>
+          </span>
+        </div>
+
+        <!-- Sort Toggle Button -->
+        <button 
+          type="button" 
+          class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2 shadow-none fs-9" 
+          (click)="toggleSort()"
+          [title]="sortOrder === 'desc' ? 'Showing Newest First - Click for Oldest First' : 'Showing Oldest First - Click for Newest First'">
+          <app-icon [name]="sortOrder === 'desc' ? 'chevron-down' : 'chevron-up'" [size]="12"></app-icon>
+          <span>{{ sortOrder === 'desc' ? 'Newest First' : 'Oldest First' }}</span>
+        </button>
+      </div>
+
+      <!-- 4. Modal Body: ONLY Combined Timeline -->
+      <div class="modal-body p-3.5 bg-light-subtle ch-modal-body overflow-auto">
+        <div *ngIf="combinedTimeline.length === 0" class="text-center py-5 text-muted fs-8">
+          <app-icon name="info" [size]="26" class="text-secondary mb-2 d-block mx-auto"></app-icon>
+          No status or payment history recorded yet for this customer.
+        </div>
+
+        <div *ngIf="combinedTimeline.length > 0" class="ch-timeline-wrap position-relative">
+          <div *ngFor="let ev of combinedTimeline" class="ch-timeline-item d-flex gap-2.5 pb-2.5 position-relative">
+            <!-- Timeline Marker Icon -->
+            <div 
+              class="ch-timeline-dot d-flex align-items-center justify-content-center flex-shrink-0 rounded-circle text-white shadow-xs"
+              [ngClass]="{
+                'bg-success': ev.type === 'payment',
+                'bg-primary': ev.type === 'milestone',
+                'bg-purple': ev.type === 'status',
+                'bg-secondary': ev.type === 'info'
+              }">
+              <app-icon [name]="ev.icon" [size]="12" [strokeWidth]="2.2"></app-icon>
+            </div>
+
+            <!-- Timeline Content Card -->
+            <div class="ch-timeline-card flex-grow-1 p-2.5 rounded-2 bg-white border shadow-xs">
+              <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+                <div>
+                  <span class="badge rounded-pill fs-9 py-0.5 px-2 me-1.5 fw-semibold" [ngClass]="ev.badgeClass">
+                    {{ ev.badgeText }}
+                  </span>
+                  <strong class="fs-8 text-dark">{{ ev.title }}</strong>
+                </div>
+                <!-- Date & Time (Highlighted and clear) -->
+                <div class="text-end flex-shrink-0">
+                  <span class="badge bg-light text-dark border font-monospace fs-8 px-2 py-0.5">
+                    📅 {{ formatDisplayDate(ev.date) }}
+                  </span>
+                  <span *ngIf="ev.time" class="text-muted fs-9 ms-1.5 font-monospace">
+                    ⏰ {{ ev.time }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Description / Extra details -->
+              <div *ngIf="ev.description" class="fs-8 text-secondary mt-1 ps-0.5">
+                {{ ev.description }}
+              </div>
+
+              <!-- Footer / Performed by -->
+              <div class="d-flex align-items-center justify-content-between mt-1.5 pt-1 border-top border-light-subtle fs-9 text-muted">
+                <span><strong>Updated by:</strong> {{ ev.user || 'Admin' }}</span>
+                <span *ngIf="ev.amount" class="text-success fw-bold font-monospace">
+                  +{{ fmtCurr(ev.amount) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Modal Footer -->
+      <div class="modal-footer px-3 py-2 bg-light border-top d-flex align-items-center justify-content-between">
+        <div class="fs-9 text-muted">
+          <!-- Showing Status & Payment history for <strong>{{ customerName }}</strong> -->
+        </div>
+        <button 
+          type="button" 
+          class="btn btn-sm btn-secondary px-3 py-1 fs-8" 
+          (click)="onClose()">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
