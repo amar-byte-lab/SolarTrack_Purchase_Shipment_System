@@ -85,8 +85,8 @@
       @if (calc.energyCalculationBasis() === 'appliance_load' && calc.systemType() !== 'off-grid' && calc.systemType() !== 'without-solar') {
         <div id="wrapBasisApplianceLoadInputs" class="pt-2 mt-1">
           <div class="row g-2 align-items-stretch">
-            <!-- Left: Selected Appliances List & Configure Button -->
-            <div class="col-md-7 col-12">
+            <!-- Selected Appliances List & Configure Button (Full Width) -->
+            <div class="col-12">
               <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-1.5">
@@ -115,40 +115,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Right: Editable Daily Demand -->
-            <div class="col-md-5 col-12">
-              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center justify-content-between mb-1">
-                    <label class="form-label fw-bold text-dark fs-8 mb-0" for="txtApplianceDailyDemandEditable">Daily Demand</label>
-                    @if (calc.customDailyDemandKwh() !== null) {
-                      <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
-                        (click)="calc.setCustomDailyDemand(null)" title="Reset to calculated appliance sum">
-                        Reset ↺
-                      </button>
-                    }
-                  </div>
-                  <div class="input-group shadow-2xs mt-1">
-                    <input 
-                      type="number" 
-                      min="0.1" 
-                      max="150"
-                      step="0.1" 
-                      placeholder="e.g. 30.0 (up to 100)"
-                      class="form-control form-control-sm text-center fw-bold fs-7 text-primary" 
-                      id="txtApplianceDailyDemandEditable" 
-                      [ngModel]="effectiveEnergyKwh()"
-                      (ngModelChange)="onEnergyInputChange($event)"
-                      style="height: 38px;">
-                    <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1.5">kWh / day</span>
-                  </div>
-                </div>
-                <small class="text-muted fs-9 mt-1.5 d-block">
-                  Auto: <strong>{{ (calc.result().totalApplianceDailyWh / 1000).toFixed(2) }} kWh</strong> (editable)
-                </small>
-              </div>
-            </div>
           </div>
         </div>
       }
@@ -157,8 +123,8 @@
       @if (calc.systemType() === 'off-grid' || calc.systemType() === 'without-solar') {
         <div id="wrapBasisBackupDurationInputs" class="pt-2 mt-1">
           <div class="row g-2 align-items-stretch">
-            <!-- Left: Selected Appliances List & Configure Button -->
-            <div class="col-md-6 col-12">
+            <!-- Selected Appliances List & Configure Button -->
+            <div [class]="calc.systemType() === 'off-grid' ? 'col-12' : 'col-md-6 col-12'">
               <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-1.5">
@@ -188,78 +154,7 @@
               </div>
             </div>
 
-            <!-- Right: When Solar is installed (Offgrid): Show Day (9 AM - 4 PM) & Night (5 PM - 8 AM) Backup Inputs -->
-            @if (calc.systemType() === 'off-grid') {
-              <div class="col-md-6 col-12">
-                <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
-                  <div>
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                      <span class="fw-bold text-dark fs-8">Backup Duration (Day & Night)</span>
-                      @if (calc.customBackupEnergyKwh() !== null) {
-                        <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
-                          (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated Day + Night sum">
-                          Reset ↺
-                        </button>
-                      }
-                    </div>
-
-                    <div class="row g-1.5 align-items-start">
-                      <!-- ☀️ Day Backup (9 AM - 4 PM) -->
-                      <div class="col-6">
-                        <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Day Backup (9 AM - 4 PM)">
-                          ☀️ Day (9am–4pm)
-                        </label>
-                        <div class="input-group input-group-sm shadow-2xs">
-                          <input 
-                            type="number" 
-                            min="0" 
-                            max="7" 
-                            step="0.5" 
-                            class="form-control form-control-sm text-center fw-bold fs-8 text-primary px-1" 
-                            id="txtDayBackupHours"
-                            [ngModel]="calc.dayBackupHours()"
-                            (ngModelChange)="calc.setDayBackupHours($event)"
-                            style="height: 30px;">
-                          <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
-                        </div>
-                        <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
-                          {{ ((calc.result().dayBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().dayBackupLoadW || calc.result().backupLoadW }}W)
-                        </small>
-                      </div>
-
-                      <!-- 🌙 Night Backup (4 PM - 9 AM) -->
-                      <div class="col-6">
-                        <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Night Backup (4 PM - 9 AM)">
-                          🌙 Night (4pm–9am)
-                        </label>
-                        <div class="input-group input-group-sm shadow-2xs">
-                          <input 
-                            type="number" 
-                            min="0" 
-                            max="17" 
-                            step="0.5" 
-                            class="form-control form-control-sm text-center fw-bold fs-8 text-primary px-1" 
-                            id="txtNightBackupHours"
-                            [ngModel]="calc.nightBackupHours()"
-                            (ngModelChange)="calc.setNightBackupHours($event)"
-                            style="height: 30px;">
-                          <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
-                        </div>
-                        <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
-                          {{ ((calc.result().nightBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().nightBackupLoadW || calc.result().backupLoadW }}W)
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Total Daily Backup Energy summary -->
-                  <div class="d-flex align-items-center justify-content-between mt-1.5 pt-1 border-top">
-                    <span class="text-secondary fs-9 fw-semibold">Total Required Storage:</span>
-                    <strong class="text-primary fs-8">{{ ((calc.result().backupEnergyWh || 0) / 1000).toFixed(2) }} kWh / day</strong>
-                  </div>
-                </div>
-              </div>
-            } @else {
+            @if (calc.systemType() === 'without-solar') {
               <!-- For Without-Solar: Standard Backup Energy -->
               <div class="col-md-6 col-12">
                 <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
@@ -302,8 +197,8 @@
       @if (calc.systemType() === 'hybrid') {
         <div id="wrapHybridBackupSection" class="pt-2 mt-2 border-top">
           <div class="row g-2 align-items-stretch">
-            <!-- Left: Selected Backup Appliances & Configure Button -->
-            <div class="col-md-6 col-12">
+            <!-- Selected Backup Appliances & Configure Button (Full Width) -->
+            <div class="col-12">
               <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
                 <div>
                   <div class="d-flex align-items-center justify-content-between mb-1.5">
@@ -329,75 +224,6 @@
                       </span>
                     }
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right: Hybrid Day & Night Backup Inputs -->
-            <div class="col-md-6 col-12">
-              <div class="p-2 bg-light rounded-2 border h-100 d-flex flex-column justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center justify-content-between mb-1">
-                    <span class="fw-bold text-dark fs-8">Backup Duration (Day & Night)</span>
-                    @if (calc.customBackupEnergyKwh() !== null) {
-                      <button type="button" class="btn btn-link p-0 text-warning text-decoration-none fs-9 fw-semibold" 
-                        (click)="calc.setCustomBackupEnergy(null)" title="Reset to calculated backup sum">
-                        Reset ↺
-                      </button>
-                    }
-                  </div>
-
-                  <div class="row g-1.5 align-items-start">
-                    <!-- ☀️ Day Backup (9 AM - 4 PM) -->
-                    <div class="col-6">
-                      <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Day Backup (9 AM - 4 PM)">
-                        ☀️ Day (9am–4pm)
-                      </label>
-                      <div class="input-group input-group-sm shadow-2xs">
-                        <input 
-                          type="number" 
-                          min="0" 
-                          max="7" 
-                          step="0.5" 
-                          class="form-control form-control-sm text-center fw-bold fs-8 text-success px-1" 
-                          [ngModel]="calc.dayBackupHours()"
-                          (ngModelChange)="calc.setDayBackupHours($event)"
-                          style="height: 30px;">
-                        <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
-                      </div>
-                      <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
-                        {{ ((calc.result().dayBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().dayBackupLoadW || calc.result().backupLoadW }}W)
-                      </small>
-                    </div>
-
-                    <!-- 🌙 Night Backup (4 PM - 9 AM) -->
-                    <div class="col-6">
-                      <label class="form-label text-muted fs-9 mb-0.5 fw-semibold d-block text-truncate" title="Night Backup (4 PM - 9 AM)">
-                        🌙 Night (4pm–9am)
-                      </label>
-                      <div class="input-group input-group-sm shadow-2xs">
-                        <input 
-                          type="number" 
-                          min="0" 
-                          max="17" 
-                          step="0.5" 
-                          class="form-control form-control-sm text-center fw-bold fs-8 text-success px-1" 
-                          [ngModel]="calc.nightBackupHours()"
-                          (ngModelChange)="calc.setNightBackupHours($event)"
-                          style="height: 30px;">
-                        <span class="input-group-text bg-white fw-semibold text-secondary fs-9 px-1">hrs</span>
-                      </div>
-                      <small class="text-muted fs-9 mt-0.5 d-block text-truncate">
-                        {{ ((calc.result().nightBackupEnergyWh || 0) / 1000).toFixed(1) }} kWh ({{ calc.result().nightBackupLoadW || calc.result().backupLoadW }}W)
-                      </small>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Total Hybrid Backup Energy -->
-                <div class="d-flex align-items-center justify-content-between mt-1.5 pt-1 border-top">
-                  <span class="text-secondary fs-9 fw-semibold">Total Required Storage:</span>
-                  <strong class="text-success fs-8">{{ ((calc.result().backupEnergyWh || 0) / 1000).toFixed(2) }} kWh / day</strong>
                 </div>
               </div>
             </div>
@@ -430,11 +256,24 @@
           
           <!-- Live Metrics Banner -->
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2.5 p-2 bg-light rounded-2 border">
-            <span class="fw-bold text-dark fs-8">Configured Total Load:</span>
-            <div class="d-flex align-items-center gap-2 fs-8">
-              <span class="text-secondary">Load: <strong class="text-dark fw-bold">{{ localConnectedLoadW() }} W</strong></span>
-              <span class="text-muted">•</span>
-              <span class="text-secondary">Daily: <strong class="text-primary fw-bold">{{ (localDailyDemandWh() / 1000).toFixed(2) }} kWh/day</strong></span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-dark fs-8">Connected Load:</span>
+              <span class="badge bg-primary text-white fw-bold fs-8 px-2 py-1">
+                {{ formatWatts(localConnectedLoadW()) }}
+              </span>
+            </div>
+            <div class="d-flex align-items-center gap-2 fs-8 flex-wrap">
+              @if (calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') {
+                <span class="badge bg-sky-subtle text-sky-900 border border-sky-300 py-1 px-2 fs-9">
+                  ☀️ Day: <strong>{{ formatWatts(localDayConnectedLoadW()) }}</strong> ({{ (localDayConnectedEnergyWh() / 1000).toFixed(2) }} kWh)
+                </span>
+                <span class="badge bg-indigo-subtle text-indigo-900 border border-indigo-300 py-1 px-2 fs-9">
+                  🌙 Night: <strong>{{ formatWatts(localNightConnectedLoadW()) }}</strong> ({{ (localNightConnectedEnergyWh() / 1000).toFixed(2) }} kWh)
+                </span>
+              }
+              <span class="text-secondary">
+                Daily Total: <strong class="text-primary fw-bold">{{ (localDailyDemandWh() / 1000).toFixed(2) }} kWh/day</strong>
+              </span>
             </div>
           </div>
 
@@ -445,10 +284,15 @@
                 <tr>
                   <th class="text-center p-1" style="width: 28px;" title="Select Appliance"></th>
                   <th class="p-1 text-start">Appliance</th>
-                  <th class="p-1 text-start" style="width: 70px;">Qty</th>
-                  <th class="p-1 text-start" style="width: 80px;">Watt</th>
-                  <th class="p-1 text-start" style="width: 100px;">Daily Time</th>
-                  <th class="p-1 text-center" style="width: 75px;">Specs</th>
+                  <th class="p-1 text-center" style="width: 60px;">Qty</th>
+                  <th class="p-1 text-center" style="width: 70px;">Unit Watt</th>
+                  @if (calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') {
+                    <th class="p-1 text-center" style="width: 80px;" title="Day: 9am–4pm (max 7h)">☀️ 9am–4pm</th>
+                    <th class="p-1 text-center" style="width: 80px;" title="Night: 4pm–9am (max 17h)">🌙 4pm–9am</th>
+                  } @else {
+                    <th class="p-1 text-center" style="width: 85px;">Daily Time</th>
+                  }
+                  <th class="p-1 text-center" style="width: 65px;">Specs</th>
                 </tr>
               </thead>
               <tbody>
@@ -465,39 +309,64 @@
                       <span class="me-1">{{ app.icon || '⚡' }}</span>
                       <span class="fw-semibold fs-8 text-dark">{{ app.name }}</span>
                     </td>
-                    <td class="p-1 text-start">
+                    <td class="p-1 text-center">
                       <input 
                         type="number" 
                         min="0" 
                         max="50" 
                         class="form-control form-control-sm p-1 fs-8 text-center fw-bold" 
-                        style="height: 28px; width: 60px;"
+                        style="height: 28px; width: 55px; margin: 0 auto;"
                         [ngModel]="app.defaultQty"
                         (ngModelChange)="updateAppQty(app, $event)">
                     </td>
-                    <td class="p-1 text-start">
-                      <input 
-                        type="number" 
-                        min="1" 
-                        class="form-control form-control-sm p-1 fs-8 text-center fw-semibold" 
-                        style="height: 28px; width: 70px;"
-                        [ngModel]="app.watts"
-                        (ngModelChange)="updateAppWatt(app, $event)">
+                    <td class="p-1 text-center fs-8 text-secondary">
+                      {{ app.watts }} W
                     </td>
-                    <td class="p-1 text-start">
-                      <div class="d-flex align-items-center gap-1">
-                        <input 
-                          type="number" 
-                          min="0.1" 
-                          max="24" 
-                          step="0.5" 
-                          class="form-control form-control-sm p-1 fs-8 text-center" 
-                          style="height: 28px; width: 60px;"
-                          [ngModel]="app.defaultHours"
-                          (ngModelChange)="updateAppHours(app, $event)">
-                        <span class="text-muted fs-9">h</span>
-                      </div>
-                    </td>
+                    @if (calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') {
+                      <td class="p-1 text-center">
+                        <div class="d-flex align-items-center justify-content-center gap-1">
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="7" 
+                            step="0.5" 
+                            class="form-control form-control-sm p-1 fs-8 text-center fw-bold text-primary" 
+                            style="height: 28px; width: 50px; margin: 0 auto;"
+                            title="Daytime Running Hours (9:00 AM – 4:00 PM, Max 7 hrs)"
+                            [ngModel]="app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)"
+                            (ngModelChange)="updateAppDayBackupHours(app, $event)">
+                        </div>
+                      </td>
+                      <td class="p-1 text-center">
+                        <div class="d-flex align-items-center justify-content-center gap-1">
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="17" 
+                            step="0.5" 
+                            class="form-control form-control-sm p-1 fs-8 text-center fw-bold text-dark" 
+                            style="height: 28px; width: 50px; margin: 0 auto;"
+                            title="Nighttime Running Hours (4:00 PM – 9:00 AM, Max 17 hrs)"
+                            [ngModel]="app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app)"
+                            (ngModelChange)="updateAppNightBackupHours(app, $event)">
+                        </div>
+                      </td>
+                    } @else {
+                      <td class="p-1 text-center">
+                        <div class="d-flex align-items-center justify-content-center gap-1">
+                          <input 
+                            type="number" 
+                            min="0.1" 
+                            max="24" 
+                            step="0.5" 
+                            class="form-control form-control-sm p-1 fs-8 text-center" 
+                            style="height: 28px; width: 55px; margin: 0 auto;"
+                            [ngModel]="app.defaultHours"
+                            (ngModelChange)="updateAppHours(app, $event)">
+                          <span class="text-muted fs-9">h</span>
+                        </div>
+                      </td>
+                    }
                     <td class="p-1 text-center">
                       <button 
                         type="button" 
@@ -513,7 +382,7 @@
                   </tr>
                   @if (expandedAppId() === app.id) {
                     <tr class="table-light">
-                      <td colspan="6" class="p-2.5 pt-1 pb-3">
+                      <td [attr.colspan]="(calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') ? 7 : 6" class="p-2.5 pt-1 pb-3">
                         <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
                       </td>
                     </tr>
@@ -533,43 +402,60 @@
                       [(ngModel)]="newAppName" 
                       style="height: 28px; width: 100%;">
                   </td>
-                  <td class="p-1 text-start">
+                  <td class="p-1 text-center">
                     <input 
                       type="number" 
                       min="1" 
                       class="form-control form-control-sm p-1 fs-8 text-center" 
                       [(ngModel)]="newAppQty" 
-                      style="height: 28px; width: 60px;">
+                      style="height: 28px; width: 55px; margin: 0 auto;">
                   </td>
-                  <td class="p-1 text-start">
+                  <td class="p-1 text-center">
                     <input 
                       type="number" 
                       min="1" 
                       class="form-control form-control-sm p-1 fs-8 text-center" 
                       placeholder="Watts" 
                       [(ngModel)]="newAppWatts" 
-                      style="height: 28px; width: 70px;">
+                      style="height: 28px; width: 65px; margin: 0 auto;">
                   </td>
-                  <td class="p-1 text-start">
-                    <div class="d-flex align-items-center gap-1">
-                      <input 
-                        type="number" 
-                        min="0.5" 
-                        max="24" 
-                        step="0.5" 
-                        class="form-control form-control-sm p-1 fs-8 text-center" 
-                        [(ngModel)]="newAppHours" 
-                        style="height: 28px; width: 60px;">
-                      <button 
-                        type="button" 
-                        class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center flex-shrink-0 shadow-2xs" 
-                        style="width: 24px; height: 24px; font-size: 1rem; font-weight: bold; line-height: 1;" 
-                        (click)="addCustomAppliance()">
-                        +
-                      </button>
-                    </div>
+                  @if (calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') {
+                    <td class="p-1 text-center" colspan="2">
+                      <div class="d-flex align-items-center justify-content-center gap-1">
+                        <input 
+                          type="number" 
+                          min="0.5" 
+                          max="24" 
+                          step="0.5" 
+                          class="form-control form-control-sm p-1 fs-8 text-center" 
+                          placeholder="Hrs"
+                          [(ngModel)]="newAppHours" 
+                          style="height: 28px; width: 60px;">
+                      </div>
+                    </td>
+                  } @else {
+                    <td class="p-1 text-center">
+                      <div class="d-flex align-items-center justify-content-center gap-1">
+                        <input 
+                          type="number" 
+                          min="0.5" 
+                          max="24" 
+                          step="0.5" 
+                          class="form-control form-control-sm p-1 fs-8 text-center" 
+                          [(ngModel)]="newAppHours" 
+                          style="height: 28px; width: 55px; margin: 0 auto;">
+                      </div>
+                    </td>
+                  }
+                  <td class="p-1 text-center">
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center shadow-2xs" 
+                      style="width: 26px; height: 26px; font-size: 1rem; font-weight: bold; line-height: 1;" 
+                      (click)="addCustomAppliance()">
+                      +
+                    </button>
                   </td>
-                  <td class="p-1 text-center"></td>
                 </tr>
               </tfoot>
             </table>
@@ -598,13 +484,10 @@
                       (click)="toggleAccordion(app)">
                       <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust ⚙️' }}</span>
                     </button>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-1.5 py-0.5">
-                      {{ (app.watts * (app.defaultQty || 0) * (app.defaultHours || 1)) }} Wh/d
-                    </span>
                   </div>
                 </div>
-                <div class="row g-1.5 align-items-center">
-                  <div class="col-4">
+                <div class="row g-1.5 align-items-center mb-1.5">
+                  <div class="col-6">
                     <label class="form-label fs-9 text-secondary mb-0.5 d-block">Qty</label>
                     <div class="input-group input-group-sm">
                       <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="decrementAppQty(app)">-</button>
@@ -618,8 +501,8 @@
                       <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="incrementAppQty(app)">+</button>
                     </div>
                   </div>
-                  <div class="col-4">
-                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Watts</label>
+                  <div class="col-6">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Unit Watt</label>
                     <div class="input-group input-group-sm">
                       <input 
                         type="number" 
@@ -630,21 +513,56 @@
                       <span class="input-group-text px-1 fs-9">W</span>
                     </div>
                   </div>
-                  <div class="col-4">
-                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Daily Hr</label>
-                    <div class="input-group input-group-sm">
-                      <input 
-                        type="number" 
-                        min="0.1" 
-                        max="24" 
-                        step="0.5" 
-                        class="form-control text-center px-1 fs-8" 
-                        [ngModel]="app.defaultHours" 
-                        (ngModelChange)="updateAppHours(app, $event)">
-                      <span class="input-group-text px-1 fs-9">h</span>
+                </div>
+                @if (calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') {
+                  <div class="row g-1.5 align-items-center">
+                    <div class="col-6">
+                      <label class="form-label fs-9 text-secondary mb-0.5 d-block text-truncate">☀️ 9am–4pm (Day)</label>
+                      <div class="input-group input-group-sm">
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="7" 
+                          step="0.5" 
+                          class="form-control text-center px-1 fs-8 fw-bold text-primary" 
+                          [ngModel]="app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)" 
+                          (ngModelChange)="updateAppDayBackupHours(app, $event)">
+                        <span class="input-group-text px-1 fs-9">h</span>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label fs-9 text-secondary mb-0.5 d-block text-truncate">🌙 4pm–9am (Night)</label>
+                      <div class="input-group input-group-sm">
+                        <input 
+                          type="number" 
+                          min="0" 
+                          max="17" 
+                          step="0.5" 
+                          class="form-control text-center px-1 fs-8 fw-bold text-dark" 
+                          [ngModel]="app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app)" 
+                          (ngModelChange)="updateAppNightBackupHours(app, $event)">
+                        <span class="input-group-text px-1 fs-9">h</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                } @else {
+                  <div class="row g-1.5 align-items-center">
+                    <div class="col-12">
+                      <label class="form-label fs-9 text-secondary mb-0.5 d-block">Daily Operating Hours</label>
+                      <div class="input-group input-group-sm">
+                        <input 
+                          type="number" 
+                          min="0.1" 
+                          max="24" 
+                          step="0.5" 
+                          class="form-control text-center px-1 fs-8" 
+                          [ngModel]="app.defaultHours" 
+                          (ngModelChange)="updateAppHours(app, $event)">
+                        <span class="input-group-text px-1 fs-9">h</span>
+                      </div>
+                    </div>
+                  </div>
+                }
                 @if (expandedAppId() === app.id) {
                   <div class="mt-2.5 pt-2 border-top">
                     <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
@@ -684,16 +602,16 @@
         </div>
 
         <!-- Sticky Responsive Modal Footer -->
-        <div class="modal-footer bg-light border-top p-2.5 px-3">
-          <div class="w-100 d-flex justify-content-between align-items-center mb-2 fs-8 flex-wrap gap-1">
-            <span class="text-secondary">Load: <strong class="text-dark">{{ localConnectedLoadW() }} W</strong></span>
-            <span class="text-secondary">Daily Demand: <strong class="text-primary">{{ (localDailyDemandWh() / 1000).toFixed(2) }} kWh/day</strong></span>
+        <div class="modal-footer bg-light border-top p-2.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="text-secondary fs-8">
+            Total Connected: <strong class="text-dark fw-bold">{{ formatWatts(localConnectedLoadW()) }}</strong>
+            <span class="text-muted ms-1">({{ (localDailyDemandWh() / 1000).toFixed(2) }} kWh/day)</span>
           </div>
-          <div class="w-100 d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-3 fs-8 fw-semibold flex-fill" (click)="resetAppliances()">
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-3 fs-8 fw-semibold" (click)="resetAppliances()">
               ↺ Reset
             </button>
-            <button type="button" class="btn btn-primary btn-sm py-1.5 px-3 fs-8 fw-bold flex-fill shadow-2xs" (click)="applyApplianceModal()">
+            <button type="button" class="btn btn-primary btn-sm py-1.5 px-3 fs-8 fw-bold shadow-2xs" (click)="applyApplianceModal()">
               ✓ Apply Appliances
             </button>
           </div>
@@ -722,19 +640,26 @@
 
         <div class="modal-body p-2.5 p-md-3">
           
-          <!-- Advisory note about heavy loads -->
-          <div class="alert alert-info py-2 px-2.5 mb-2.5 d-flex align-items-center gap-2 fs-8 border-0 bg-info-subtle text-info-emphasis rounded-2">
-            <span class="fs-7 flex-shrink-0">💡</span>
-            <span>Select appliances needed during power outages. Heavy loads (AC, Pump, Geyser) require very large battery capacity.</span>
-          </div>
-
           <!-- Stats Row -->
-          <div class="d-flex align-items-center justify-content-between mb-2 px-1 bg-light p-2 rounded-2 border">
-            <span class="fw-bold text-dark fs-8">Selected Backup:</span>
-            <div class="d-flex align-items-center gap-2 fs-8">
-              <span class="text-secondary">Load: <strong class="text-success fw-bold">{{ localBackupLoadW() }} W</strong></span>
-              <span class="text-muted">•</span>
-              <span class="text-secondary">Energy: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 p-2 bg-light rounded-2 border">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-dark fs-8">Backup Load:</span>
+              <span class="badge bg-success text-white fw-bold fs-8 px-2 py-1">
+                {{ formatWatts(localBackupLoadW()) }}
+              </span>
+            </div>
+            <div class="d-flex align-items-center gap-2 fs-8 flex-wrap">
+              @if (calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') {
+                <span class="badge bg-sky-subtle text-sky-900 border border-sky-300 py-1 px-2 fs-9">
+                  ☀️ Day: <strong>{{ formatWatts(localDayBackupLoadW()) }}</strong> ({{ (localDayBackupEnergyWh() / 1000).toFixed(2) }} kWh)
+                </span>
+                <span class="badge bg-indigo-subtle text-indigo-900 border border-indigo-300 py-1 px-2 fs-9">
+                  🌙 Night: <strong>{{ formatWatts(localNightBackupLoadW()) }}</strong> ({{ (localNightBackupEnergyWh() / 1000).toFixed(2) }} kWh)
+                </span>
+              }
+              <span class="text-secondary">
+                Total Energy: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong>
+              </span>
             </div>
           </div>
 
@@ -743,13 +668,12 @@
             <table class="table table-hover align-middle mb-0 backup-config-table">
               <thead class="table-light border-bottom sticky-top text-muted fs-9 fw-bold text-uppercase" style="letter-spacing: 0.2px; z-index: 2;">
                 <tr>
-                  <th style="width: 50px;" class="text-center p-1">🔋 Backup</th>
+                  <th style="width: 50px;" class="text-center p-1">Backup</th>
                   <th class="p-1 text-start">Appliance</th>
                   <th style="width: 70px;" class="text-center p-1">Backup Qty</th>
                   <th style="width: 65px;" class="text-center p-1">Unit Watt</th>
-                  <th style="width: 82px;" class="text-center p-1" title="Daytime Backup Hours (9:00 AM – 4:00 PM, Max 7 hrs)">☀️ 9am–4pm</th>
-                  <th style="width: 82px;" class="text-center p-1" title="Nighttime Backup Hours (4:00 PM – 9:00 AM, Max 17 hrs)">🌙 4pm–9am</th>
-                  <th style="width: 80px;" class="text-end p-1 pe-2">Energy</th>
+                  <th style="width: 82px;" class="text-center p-1" title="Day: 9am–4pm (max 7h)">☀️ 9am–4pm</th>
+                  <th style="width: 82px;" class="text-center p-1" title="Night: 4pm–9am (max 17h)">🌙 4pm–9am</th>
                   <th style="width: 65px;" class="text-center p-1">Specs</th>
                 </tr>
               </thead>
@@ -760,7 +684,7 @@
                       <input 
                         type="checkbox" 
                         class="form-check-input mt-0 cursor-pointer" 
-                        [checked]="app.isBackup !== false && (app.backupQty !== undefined ? app.backupQty > 0 : (app.defaultQty || 0) > 0)"
+                        [checked]="app.isBackup !== false && (app.backupQty !== undefined ? app.backupQty > 0 : (app.defaultQty || 0) > 0)" 
                         (change)="toggleBackupAppCheck(app)">
                     </td>
                     <td class="p-1 text-start">
@@ -804,9 +728,6 @@
                         [ngModel]="app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app)"
                         (ngModelChange)="updateAppNightBackupHours(app, $event)">
                     </td>
-                    <td class="text-end p-1 pe-2 fw-semibold fs-8 text-success">
-                      {{ app.watts * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) * ((app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)) + (app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app))) }} Wh
-                    </td>
                     <td class="p-1 text-center">
                       <button 
                         type="button" 
@@ -822,7 +743,7 @@
                   </tr>
                   @if (expandedAppId() === app.id) {
                     <tr class="table-light">
-                      <td colspan="8" class="p-2.5 pt-1 pb-3">
+                      <td colspan="7" class="p-2.5 pt-1 pb-3">
                         <ng-container *ngTemplateOutlet="specsAccordionPanel; context: { $implicit: app }"></ng-container>
                       </td>
                     </tr>
@@ -857,18 +778,9 @@
                       (click)="toggleAccordion(app)">
                       <span>{{ expandedAppId() === app.id ? 'Close' : 'Adjust ⚙️' }}</span>
                     </button>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle fs-9 px-1.5 py-0.5">
-                      {{ app.watts * (app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)) * ((app.dayBackupHours !== undefined ? app.dayBackupHours : getAppDefaultDayHours(app)) + (app.nightBackupHours !== undefined ? app.nightBackupHours : getAppDefaultNightHours(app))) }} Wh
-                    </span>
                   </div>
                 </div>
                 <div class="row g-1.5 align-items-center mb-1.5">
-                  <div class="col-6">
-                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Unit Watt</label>
-                    <div class="p-1 bg-light border rounded text-center fs-8 fw-semibold text-dark" style="height: 31px; line-height: 22px;">
-                      {{ app.watts }} W
-                    </div>
-                  </div>
                   <div class="col-6">
                     <label class="form-label fs-9 text-secondary mb-0.5 d-block">Backup Qty</label>
                     <div class="input-group input-group-sm">
@@ -881,6 +793,12 @@
                         [ngModel]="app.backupQty !== undefined ? app.backupQty : (app.isBackup !== false ? (app.defaultQty || 0) : 0)" 
                         (ngModelChange)="updateBackupQty(app, $event)">
                       <button type="button" class="btn btn-outline-secondary px-1.5 py-0 fs-8" (click)="incrementBackupQty(app)">+</button>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fs-9 text-secondary mb-0.5 d-block">Unit Watt</label>
+                    <div class="p-1 bg-light border rounded text-center fs-8 fw-semibold text-dark" style="height: 31px; line-height: 22px;">
+                      {{ app.watts }} W
                     </div>
                   </div>
                 </div>
@@ -926,24 +844,16 @@
         </div>
 
         <!-- Sticky Responsive Modal Footer -->
-        <div class="modal-footer bg-light border-top p-2.5 px-3">
-          <div class="w-100 d-flex justify-content-between align-items-center mb-2 fs-8 flex-wrap gap-2">
-            <span class="text-secondary">Backup Load: <strong class="text-success fw-bold">{{ localBackupLoadW() }} W</strong></span>
-            <div class="d-flex align-items-center gap-1.5 flex-wrap">
-              <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-1.5 py-0.5">
-                ☀️ 9am–4pm: {{ (localDayBackupEnergyWh() / 1000).toFixed(2) }} kWh
-              </span>
-              <span class="badge bg-dark-subtle text-dark border border-secondary-subtle fs-9 px-1.5 py-0.5">
-                🌙 4pm–9am: {{ (localNightBackupEnergyWh() / 1000).toFixed(2) }} kWh
-              </span>
-              <span class="text-secondary ms-1">Total: <strong class="text-dark fw-bold">{{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh</strong></span>
-            </div>
+        <div class="modal-footer bg-light border-top p-2.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="text-secondary fs-8">
+            Total Backup: <strong class="text-success fw-bold">{{ formatWatts(localBackupLoadW()) }}</strong>
+            <span class="text-muted ms-1">({{ (localBackupEnergyWh() / 1000).toFixed(2) }} kWh)</span>
           </div>
-          <div class="w-100 d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-3 fs-8 fw-semibold flex-fill" (click)="resetBackupDefaults()">
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm py-1.5 px-3 fs-8 fw-semibold" (click)="resetBackupDefaults()">
               ↺ Reset
             </button>
-            <button type="button" class="btn btn-success btn-sm py-1.5 px-3 fs-8 fw-bold flex-fill shadow-2xs" (click)="applyBackupModal()">
+            <button type="button" class="btn btn-success btn-sm py-1.5 px-3 fs-8 fw-bold shadow-2xs" (click)="applyBackupModal()">
               ✓ Apply Backup
             </button>
           </div>
@@ -959,7 +869,6 @@
   <div class="accordion-specs-panel p-2.5 bg-light rounded-2 border-0">
     <div class="d-flex align-items-center justify-content-between mb-2">
       <span class="fw-bold text-dark fs-8">⚙️ {{ app.name }} Specifications</span>
-      <span class="text-secondary fs-9">Adjust model parameters</span>
     </div>
 
     <!-- TV -->

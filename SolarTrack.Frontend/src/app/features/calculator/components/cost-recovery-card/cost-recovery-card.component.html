@@ -50,9 +50,18 @@
 
             <!-- 2. Total Estimated Investment (₹) -->
             <div class="col-md-4 col-6" id="wrapRecoverySpend">
-              <label class="form-label fw-bold text-dark fs-8 mb-1 text-truncate d-block" for="txtRecoverySpend">
-                Estimated Investment (₹)
-              </label>
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <label class="form-label fw-bold text-dark fs-8 mb-0 text-truncate" for="txtRecoverySpend">
+                  Estimated Investment (₹)
+                </label>
+                <button 
+                  type="button" 
+                  class="btn btn-xs btn-outline-primary py-0 px-1.5 fs-9 fw-bold rounded-pill"
+                  (click)="calc.applyEstimatedCostToRecovery()"
+                  title="Auto-fill benchmark capital cost based on calculated solar kWp, inverter kVA, and battery storage">
+                  Auto: ₹{{ (calc.estimatedSystemCost() / 1000).toFixed(0) }}k
+                </button>
+              </div>
               <div class="input-group shadow-2xs">
                 <input 
                   type="number" 
@@ -64,6 +73,11 @@
                   (ngModelChange)="calc.setRecoverySpend($event)"
                   style="height: 38px;">
               </div>
+              @if (calc.result().costEstimation) {
+                <div class="text-muted fs-9 mt-1 text-truncate" title="Solar: ₹{{ calc.result().costEstimation?.solarCost }} | PCU: ₹{{ calc.result().costEstimation?.inverterCost }} | Battery: ₹{{ calc.result().costEstimation?.batteryCost }} | BOS: ₹{{ calc.result().costEstimation?.bosCost }}">
+                  Benchmark: ~₹{{ calc.result().costEstimation?.totalCost?.toLocaleString('en-IN') }} (System Sizing)
+                </div>
+              }
             </div>
 
             <!-- 3. Payment / Financing -->

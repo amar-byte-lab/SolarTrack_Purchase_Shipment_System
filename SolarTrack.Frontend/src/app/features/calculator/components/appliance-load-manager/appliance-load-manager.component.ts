@@ -128,6 +128,36 @@ export class ApplianceLoadManagerComponent {
     return this.localDayBackupEnergyWh() + this.localNightBackupEnergyWh();
   });
 
+  readonly localDayBackupLoadW = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked && app.isBackup !== false) {
+        const qty = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const bQty = Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
+        const dayH = app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : this.getAppDefaultDayHours(app);
+        if (bQty > 0 && dayH > 0) {
+          total += (Number(app.watts) || 0) * bQty;
+        }
+      }
+    }
+    return total;
+  });
+
+  readonly localNightBackupLoadW = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked && app.isBackup !== false) {
+        const qty = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const bQty = Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
+        const nightH = app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : this.getAppDefaultNightHours(app);
+        if (bQty > 0 && nightH > 0) {
+          total += (Number(app.watts) || 0) * bQty;
+        }
+      }
+    }
+    return total;
+  });
+
   readonly localConnectedLoadW = computed(() => {
     let total = 0;
     for (const app of this.localAppliances()) {
@@ -139,6 +169,74 @@ export class ApplianceLoadManagerComponent {
     }
     return total;
   });
+
+  readonly localDayConnectedLoadW = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked) {
+        const q = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const w = Number(app.watts) || 0;
+        const dayH = app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : this.getAppDefaultDayHours(app);
+        if (q > 0 && dayH > 0) {
+          total += w * q;
+        }
+      }
+    }
+    return total;
+  });
+
+  readonly localNightConnectedLoadW = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked) {
+        const q = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const w = Number(app.watts) || 0;
+        const nightH = app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : this.getAppDefaultNightHours(app);
+        if (q > 0 && nightH > 0) {
+          total += w * q;
+        }
+      }
+    }
+    return total;
+  });
+
+  readonly localDayConnectedEnergyWh = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked) {
+        const q = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const w = Number(app.watts) || 0;
+        const dayH = app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : this.getAppDefaultDayHours(app);
+        if (q > 0) {
+          total += w * q * dayH;
+        }
+      }
+    }
+    return total;
+  });
+
+  readonly localNightConnectedEnergyWh = computed(() => {
+    let total = 0;
+    for (const app of this.localAppliances()) {
+      if (app.checked) {
+        const q = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
+        const w = Number(app.watts) || 0;
+        const nightH = app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : this.getAppDefaultNightHours(app);
+        if (q > 0) {
+          total += w * q * nightH;
+        }
+      }
+    }
+    return total;
+  });
+
+  formatWatts(w: number | undefined | null): string {
+    const val = Math.round(Number(w) || 0);
+    if (val >= 1000) {
+      return (val / 1000).toFixed(2) + ' kW';
+    }
+    return val + ' W';
+  }
 
   readonly localDailyDemandWh = computed(() => {
     let total = 0;
@@ -198,7 +296,7 @@ export class ApplianceLoadManagerComponent {
   readonly sizingBasisTitle = computed(() => {
     const sys = this.calc.systemType();
     if (sys === 'off-grid' || sys === 'without-solar') return 'Configured Appliances & Backup Energy';
-    if (sys === 'hybrid') return 'Solar Sizing Basis (Monthly Units / Load)';
+    if (sys === 'hybrid') return 'Solar Sizing Basis';
     return 'Sizing Calculation Basis';
   });
 
@@ -385,8 +483,17 @@ export class ApplianceLoadManagerComponent {
       const q = Math.max(0, Number(a.defaultQty !== undefined ? a.defaultQty : a.qty) || 0);
       a.defaultQty = q;
       a.qty = q;
-      a.defaultHours = Math.max(0.1, Number(a.defaultHours !== undefined ? a.defaultHours : a.hours) || 1);
-      a.hours = a.defaultHours;
+      const dayH = a.dayBackupHours !== undefined ? Number(a.dayBackupHours) : this.getAppDefaultDayHours(a);
+      const nightH = a.nightBackupHours !== undefined ? Number(a.nightBackupHours) : this.getAppDefaultNightHours(a);
+      a.dayBackupHours = dayH;
+      a.nightBackupHours = nightH;
+      if (this.calc.systemType() === 'off-grid' || this.calc.systemType() === 'hybrid') {
+        a.defaultHours = dayH + nightH;
+        a.hours = a.defaultHours;
+      } else {
+        a.defaultHours = Math.max(0.1, Number(a.defaultHours !== undefined ? a.defaultHours : a.hours) || 1);
+        a.hours = a.defaultHours;
+      }
       a.watts = Math.max(1, Number(a.watts) || 1);
       a.checked = q > 0;
       if (q === 0) {
@@ -768,13 +875,21 @@ export class ApplianceLoadManagerComponent {
 
   updateAppDayBackupHours(app: ApplianceItem, h: any) {
     app.dayBackupHours = Math.max(0, Math.min(7, Number(h) || 0));
-    app.backupHours = (app.dayBackupHours || 0) + (app.nightBackupHours !== undefined ? app.nightBackupHours : this.getAppDefaultNightHours(app));
+    const nightH = app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : this.getAppDefaultNightHours(app);
+    app.nightBackupHours = nightH;
+    app.backupHours = (app.dayBackupHours || 0) + nightH;
+    app.defaultHours = app.backupHours;
+    app.hours = app.backupHours;
     this.localAppliances.update(list => [...list]);
   }
 
   updateAppNightBackupHours(app: ApplianceItem, h: any) {
     app.nightBackupHours = Math.max(0, Math.min(17, Number(h) || 0));
-    app.backupHours = (app.dayBackupHours !== undefined ? app.dayBackupHours : this.getAppDefaultDayHours(app)) + (app.nightBackupHours || 0);
+    const dayH = app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : this.getAppDefaultDayHours(app);
+    app.dayBackupHours = dayH;
+    app.backupHours = dayH + (app.nightBackupHours || 0);
+    app.defaultHours = app.backupHours;
+    app.hours = app.backupHours;
     this.localAppliances.update(list => [...list]);
   }
 

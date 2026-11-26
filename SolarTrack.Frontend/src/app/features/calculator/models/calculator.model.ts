@@ -247,11 +247,36 @@ export interface BldcOptimizationTip {
   bldcDailyUnits: number;
   savingsDailyUnits: number;
   savingsMonthlyUnits: number;
+  savingsMonthlyCost?: number;
   costReductionPct: number;
   downsizedInverterKva: number;
   downsizedSolarKwp: number;
   downsizedBatteryKwh: number;
   tipSummary: string;
+}
+
+export interface OperatingAdvisory {
+  isApplicable: boolean;
+  title: string;
+  message: string;
+  pumpTip?: string;
+  hasPumpOrMotor: boolean;
+}
+
+export interface BatteryReserveAdvisory {
+  isApplicable: boolean;
+  title: string;
+  message: string;
+  morningReservePct: number;
+  estimatedReserveKwh: number;
+}
+
+export interface SystemCostEstimation {
+  solarCost: number;
+  inverterCost: number;
+  batteryCost: number;
+  bosCost: number;
+  totalCost: number;
 }
 
 export interface FullSizingResult {
@@ -294,4 +319,7 @@ export interface FullSizingResult {
   isSolarWithBattery?: boolean;
   bosChecklist?: BosChecklistResult;
   bldcTip?: BldcOptimizationTip;
+  operatingAdvisory?: OperatingAdvisory;
+  batteryReserveAdvisory?: BatteryReserveAdvisory;
+  costEstimation?: SystemCostEstimation;
 }

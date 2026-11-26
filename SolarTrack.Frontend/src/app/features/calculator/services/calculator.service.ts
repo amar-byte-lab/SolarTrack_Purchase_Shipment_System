@@ -13,7 +13,10 @@ import {
   TariffAndPaybackResult,
   SystemValidation,
   BosChecklistResult,
-  BldcOptimizationTip
+  BldcOptimizationTip,
+  OperatingAdvisory,
+  BatteryReserveAdvisory,
+  SystemCostEstimation
 } from '../models/calculator.model';
 
 @Injectable({
@@ -95,6 +98,11 @@ export class CalculatorService {
       monthlyUnits: this.monthlyUnits(),
       appliances: this.appliances()
     });
+  });
+
+  // Dynamic system capital cost estimation following sizing-calculation benchmark
+  readonly estimatedSystemCost = computed<number>(() => {
+    return this.result().costEstimation?.totalCost || 150000;
   });
 
   // Computed tariff & payback result
@@ -746,6 +754,8 @@ export class CalculatorService {
       const downsizedSolarKwp = solarResult ? Math.max(2, Math.round(solarResult.actualArrayKwp * 0.62 * 10) / 10) : 0;
       const downsizedBatteryKwh = batteryResult ? Math.max(5, Math.round(batteryResult.totalInstalledKwh * 0.6 * 10) / 10) : 0;
 
+      const savingsMonthlyCost = Math.round(savingsMonthly * 6.5);
+
       bldcTip = {
         isApplicable: savedUnits >= 1.5,
         fanCount: fanQty,
@@ -754,13 +764,78 @@ export class CalculatorService {
         bldcDailyUnits: bldcUnits,
         savingsDailyUnits: savedUnits,
         savingsMonthlyUnits: savingsMonthly,
+        savingsMonthlyCost,
         costReductionPct: 38,
         downsizedInverterKva,
         downsizedSolarKwp,
         downsizedBatteryKwh,
-        tipSummary: `Replacing ${fanQty} normal ceiling fans (${fanWatts}W) with energy-efficient 32W BLDC fans saves ~${savedUnits} Units/day (${savingsMonthly} Units/month). This cuts total required system capacity by ~38%, drastically lowering investment cost!`
+        tipSummary: `Replacing ${fanQty} normal ceiling fans (${fanWatts}W) with energy-efficient 32W BLDC fans saves ~${savedUnits} Units/day (${savingsMonthly} Units/month, ~₹${savingsMonthlyCost.toLocaleString('en-IN')}/mo). This cuts required system capacity by ~38%, drastically lowering investment cost!`
       };
     }
+
+    // Operating Advisory for heavy motor/pump loads (Daylight utilization & evening scheduling)
+    const hasPumpOrMotor = (rawAppliances || []).some((a: ApplianceItem) => {
+      if (!a.checked) return false;
+      const n = (a.name || '').toLowerCase();
+      const id = (a.id || '').toLowerCase();
+      return n.includes('pump') || n.includes('motor') || id.includes('pump') || id.includes('motor') || (a.ratedWatts !== undefined && a.ratedWatts >= 750);
+    });
+
+    const operatingAdvisory: OperatingAdvisory = {
+      isApplicable: sysTypeKey !== 'without-solar' || hasPumpOrMotor,
+      title: 'Operating Advisory: Daylight Load Optimization',
+      message: 'Run heavy inductive pumps and appliances during peak sunlight hours (10:00 AM – 3:00 PM) to maximize direct solar PV generation and preserve battery bank lifespan.',
+      pumpTip: 'For evening pumping, schedule 30–45 minutes between 5:00 PM – 6:00 PM before nightfall to prevent deep battery cycle drain.',
+      hasPumpOrMotor
+    };
+
+    // Battery Morning Reserve Strategy
+    let batteryReserveAdvisory: BatteryReserveAdvisory | undefined;
+    if (batteryResult && sysMeta.requiresBattery && batteryResult.totalInstalledKwh > 0) {
+      const reservePct = chosenBatteryType === 'lithium' ? 40 : 25;
+      const reserveKwh = Math.round((batteryResult.totalInstalledKwh * (reservePct / 100)) * 10) / 10;
+      batteryReserveAdvisory = {
+        isApplicable: true,
+        title: 'Battery Morning Reserve & Longevity Strategy',
+        message: `Sized with a ~${reservePct}% morning safety reserve (~${reserveKwh} kWh) so the battery bank avoids deep depletion before sunrise, delivering uninterrupted power during consecutive rainy/cloudy days and ensuring 10+ years operational lifespan.`,
+        morningReservePct: reservePct,
+        estimatedReserveKwh: reserveKwh
+      };
+    }
+
+    // System Capital Cost Benchmark Estimation
+    let solarCost = 0;
+    if (solarResult && solarResult.actualArrayKwp > 0) {
+      solarCost = Math.round(solarResult.actualArrayKwp * 44000);
+    }
+
+    let inverterCost = 0;
+    if (inverterMatch && inverterMatch.kVA > 0) {
+      inverterCost = Math.round(inverterMatch.kVA * 9000);
+    }
+
+    let batteryCost = 0;
+    if (batteryResult && batteryResult.totalInstalledKwh > 0) {
+      if (chosenBatteryType === 'lithium') {
+        batteryCost = Math.round(batteryResult.totalInstalledKwh * 21000);
+      } else if (chosenBatteryType === 'tubular') {
+        batteryCost = (batteryResult.totalUnits || 0) * 15500;
+      } else {
+        batteryCost = (batteryResult.totalUnits || 0) * 11000;
+      }
+    }
+
+    const bosCost = sysTypeKey === 'without-solar' ? 8000 : 25000;
+    let totalCost = solarCost + inverterCost + batteryCost + bosCost;
+    totalCost = Math.round(totalCost / 500) * 500;
+
+    const costEstimation: SystemCostEstimation = {
+      solarCost,
+      inverterCost,
+      batteryCost,
+      bosCost,
+      totalCost
+    };
 
     // Warnings list
     const warnings: string[] = [];
@@ -812,7 +887,10 @@ export class CalculatorService {
       nightBackupEnergyWh,
       isSolarWithBattery,
       bosChecklist,
-      bldcTip
+      bldcTip,
+      operatingAdvisory,
+      batteryReserveAdvisory,
+      costEstimation
     };
   }
 
@@ -1402,8 +1480,21 @@ export class CalculatorService {
     this.customInterest.set(Number(interest) || 0);
   }
 
+  applyEstimatedCostToRecovery() {
+    const cost = this.estimatedSystemCost();
+    if (cost > 0) {
+      this.recoverySpend.set(cost);
+    }
+  }
+
   toggleCostRecovery(enabled: boolean) {
     this.enableCostRecovery.set(enabled);
+    if (enabled && this.recoverySpend() === 150000) {
+      const est = this.estimatedSystemCost();
+      if (est > 0) {
+        this.recoverySpend.set(est);
+      }
+    }
   }
 
   // Actions for single-phase & load validation buttons

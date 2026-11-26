@@ -141,31 +141,23 @@
             
             <!-- Supply Phase -->
             <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="block font-bold text-slate-800 text-[10.5px]">Supply Phase</label>
-              </div>
+              <label class="block font-bold text-slate-800 text-[10.5px] mb-1">Supply Phase</label>
               <div class="flex items-center gap-1.5 py-1 px-2.5 rounded-lg border border-slate-300 bg-white shadow-2xs">
                 <span class="w-2 h-2 rounded-full" [class]="supplyPhase() === 'three' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
                 <span class="font-bold text-slate-800 text-xs">
                   {{ supplyPhase() === 'three' ? 'Three-Phase 415V AC' : 'Single-Phase 230V AC' }}
                 </span>
               </div>
-              <span class="text-[9.5px] text-slate-500 block mt-0.5">
-                {{ supplyPhase() === 'three' ? '⚡ Auto-set to 3P (&ge;10 kVA, >5kW or 3P motor)' : '✓ Single-Phase standard (loads up to 5 kW)' }}
-              </span>
             </div>
 
             <!-- Future Expansion Margin -->
             <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="block font-bold text-slate-800 text-[10.5px]">Expansion Margin</label>
-              </div>
+              <label class="block font-bold text-slate-800 text-[10.5px] mb-1">Expansion Margin</label>
               <div class="grid grid-cols-3 gap-1.5">
                 <button type="button" (click)="expansionMargin.set(0)" [class]="expansionMargin() === 0 ? 'py-1 rounded-lg font-bold border border-sky-500 bg-white text-sky-900 shadow-2xs text-xs' : 'py-1 rounded-lg font-medium border border-slate-300/80 text-slate-600 hover:bg-white text-xs'">0%</button>
                 <button type="button" (click)="expansionMargin.set(15)" [class]="expansionMargin() === 15 ? 'py-1 rounded-lg font-bold border border-sky-500 bg-white text-sky-900 shadow-2xs text-xs' : 'py-1 rounded-lg font-medium border border-slate-300/80 text-slate-600 hover:bg-white text-xs'">15%</button>
                 <button type="button" (click)="expansionMargin.set(20)" [class]="expansionMargin() === 20 ? 'py-1 rounded-lg font-bold border border-sky-500 bg-white text-sky-900 shadow-2xs text-xs' : 'py-1 rounded-lg font-medium border border-slate-300/80 text-slate-600 hover:bg-white text-xs'">20%</button>
               </div>
-              <span class="text-[9.5px] text-slate-500 block mt-0.5">Inverter & Battery safety buffer</span>
             </div>
 
           </div>
@@ -173,7 +165,7 @@
           </div>
         </div>
 
-        <!-- STEP 2: LOAD BUILDER & QUICK-ADD (Hidden on mobile screen) -->
+        <!-- STEP 2: QUICK-ADD APPLIANCES (Hidden on mobile screen) -->
         <div class="hidden md:block">
           <div class="flex items-center justify-between mb-2">
             <div>
@@ -182,87 +174,45 @@
             </div>
           </div>
 
-          <!-- Step 2 Card (Exact same style as Step 1 card) -->
-          <div class="w-full max-w-[340px] sm:max-w-[360px] rounded-2xl p-4 bg-sky-50/70 border-2 border-sky-200/90 shadow-xs flex flex-col gap-3">
+          <!-- Step 2 Card -->
+          <div class="w-full max-w-[340px] sm:max-w-[360px] rounded-2xl p-3.5 bg-sky-50/70 border-2 border-sky-200/90 shadow-xs flex flex-col gap-2">
             
-            <!-- Quick Templates -->
-            <div>
-              <label class="block font-bold text-slate-700 text-[10.5px] mb-1.5">Load Templates</label>
-              <div class="grid grid-cols-2 gap-1.5">
-                <button (click)="loadTemplate('residential_3bhk')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
-                  🏠 3-BHK Home
-                </button>
-                <button (click)="loadTemplate('office_clinic')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
-                  🏢 Office / Clinic
-                </button>
-                <button (click)="loadTemplate('solar_pump')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
-                  🌾 3P Pump
-                </button>
-                <button (click)="loadTemplate('commercial_mill')" class="text-xs font-semibold px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 text-slate-700 border border-slate-200/90 shadow-2xs transition text-left cursor-pointer truncate">
-                  🏭 Mill / Agrico
-                </button>
-              </div>
+            <div class="flex items-center justify-between mb-0.5">
+              <label class="block font-bold text-slate-700 text-[10.5px]">Appliances (Click to add)</label>
             </div>
 
-            <!-- Quick-Add Common Appliances Toolbar with EDIT Buttons -->
-            <div class="pt-2 border-t border-sky-200/80">
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block font-bold text-slate-700 text-[10.5px]">Quick-Add Appliances</label>
-                <span class="text-[9.5px] text-slate-500">Click to add</span>
-              </div>
+            <div class="flex flex-wrap gap-1.5 max-h-[280px] overflow-y-auto pr-0.5 no-scrollbar">
+              @for (p of presetList(); track p.key) {
+                <div class="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-2xs hover:border-sky-300 transition overflow-hidden">
+                  <!-- Direct Quick Add Button -->
+                  <button 
+                    type="button"
+                    (click)="quickAddPreset(p.key)" 
+                    [title]="'Add ' + p.name"
+                    class="px-2 py-1 text-xs font-semibold text-slate-800 hover:text-sky-700 hover:bg-sky-50/60 border-0 bg-transparent transition flex items-center gap-1 cursor-pointer">
+                    <span>{{ p.icon }}</span>
+                    <span class="text-[11px]">{{ p.shortLabel }}</span>
+                  </button>
 
-              <div class="flex flex-wrap gap-1.5 max-h-[190px] overflow-y-auto pr-0.5 no-scrollbar">
-                @for (p of presetList(); track p.key) {
-                  <div class="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-2xs hover:border-sky-300 transition overflow-hidden">
-                    <!-- Direct Quick Add Button -->
-                    <button 
-                      type="button"
-                      (click)="quickAddPreset(p.key)" 
-                      [title]="'Add ' + p.name"
-                      class="px-2 py-1 text-xs font-semibold text-slate-800 hover:text-sky-700 hover:bg-sky-50/60 border-0 bg-transparent transition flex items-center gap-1 cursor-pointer">
-                      <span>{{ p.icon }}</span>
-                      <span class="text-[11px]">{{ p.shortLabel }}</span>
-                    </button>
+                  <!-- Edit / Adjust Specs Button (Opens Power Adjust Popup) -->
+                  <button 
+                    type="button"
+                    (click)="openAdjustModalForPreset(p.key)" 
+                    [title]="'Adjust ' + p.name + ' rating & power'"
+                    class="px-1.5 py-1 text-sky-600 hover:text-sky-800 bg-slate-50 hover:bg-sky-100/70 border-0 border-l border-slate-200 transition cursor-pointer flex items-center">
+                    <i class="fa-solid fa-sliders text-[9px]"></i>
+                  </button>
+                </div>
+              }
 
-                    <!-- Edit / Adjust Specs Button (Opens Power Adjust Popup) -->
-                    <button 
-                      type="button"
-                      (click)="openAdjustModalForPreset(p.key)" 
-                      [title]="'Adjust ' + p.name + ' rating & power'"
-                      class="px-1.5 py-1 text-sky-600 hover:text-sky-800 bg-slate-50 hover:bg-sky-100/70 border-0 border-l border-slate-200 transition cursor-pointer flex items-center">
-                      <i class="fa-solid fa-sliders text-[9px]"></i>
-                    </button>
-                  </div>
-                }
-
-                <!-- Add Custom Appliance Button -->
-                <button 
-                  type="button"
-                  (click)="openModalForSlot('day', 'custom')" 
-                  class="inline-flex items-center gap-1 text-[11px] bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-2xs border-0 cursor-pointer">
-                  <i class="fa-solid fa-plus text-[9px]"></i>
-                  <span>Custom</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Energy Audit Mini Badges -->
-            <div class="pt-2 border-t border-sky-200/80 grid grid-cols-3 gap-1.5 text-center text-xs">
-              <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
-                <span class="text-[9px] text-slate-400 block font-semibold uppercase">Daily</span>
-                <span class="font-mono font-bold text-sky-900 text-xs">{{ audit().totalDailyKwh.toFixed(1) }}</span>
-                <span class="text-[8.5px] text-slate-400 block">kWh</span>
-              </div>
-              <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
-                <span class="text-[9px] text-slate-400 block font-semibold uppercase">Peak W</span>
-                <span class="font-mono font-bold text-emerald-700 text-xs">{{ audit().continuousW }}</span>
-                <span class="text-[8.5px] text-slate-400 block">Watts</span>
-              </div>
-              <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
-                <span class="text-[9px] text-slate-400 block font-semibold uppercase">Surge W</span>
-                <span class="font-mono font-bold text-amber-700 text-xs">{{ audit().peakStartingSurgeW }}</span>
-                <span class="text-[8.5px] text-slate-400 block">Watts</span>
-              </div>
+              <!-- Add Custom Appliance Button -->
+              <button 
+                type="button"
+                (click)="openModalForSlot('day', 'custom')" 
+                class="inline-flex items-center gap-1 text-[11px] bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1 rounded-lg font-bold transition shadow-2xs border-0 cursor-pointer">
+                <i class="fa-solid fa-plus text-[9px]"></i>
+                <span>Custom</span>
+              </button>
             </div>
 
           </div>
@@ -689,28 +639,6 @@
         <span class="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 block">Starting Surge</span>
         <span class="text-sm sm:text-base font-extrabold text-amber-700 font-mono">{{ audit().peakStartingSurgeW.toLocaleString() }}</span>
         <span class="text-[9px] sm:text-[10px] text-slate-500 block">Watts</span>
-      </div>
-    </div>
-
-    <!-- Optimization Callouts -->
-    <div class="mt-3 space-y-2">
-      @if (audit().countNormalFans > 0) {
-        <div class="p-2.5 sm:p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-start gap-2 text-xs text-emerald-900">
-          <i class="fa-solid fa-bolt text-emerald-600 mt-0.5 text-sm flex-shrink-0"></i>
-          <div>
-            <strong class="font-bold">BLDC Energy Opportunity:</strong>
-            Upgrading {{ audit().countNormalFans }} standard fans to 30W BLDC saves 
-            <strong>{{ audit().normalFanDailyKwh.toFixed(2) }} kWh/day</strong> (~₹{{ Math.round(audit().normalFanDailyKwh * 30 * 6.5).toLocaleString() }}/month).
-          </div>
-        </div>
-      }
-
-      <div class="p-2.5 sm:p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-2 text-xs text-amber-900">
-        <i class="fa-solid fa-sun text-amber-600 mt-0.5 text-sm flex-shrink-0"></i>
-        <div>
-          <strong class="font-bold">Operating Advisory:</strong>
-          Run heavy inductive pumps during peak sunlight hours (10 AM – 3 PM) to maximize direct PV utilization and preserve battery life.
-        </div>
       </div>
     </div>
 

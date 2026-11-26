@@ -374,7 +374,7 @@
               ⚡ Fan Load Drops: <strong>{{ calc.result().bldcTip?.currentFanLoadW }}W ➔ {{ (calc.result().bldcTip?.fanCount || 0) * 32 }}W</strong>
             </span>
             <span class="badge bg-white text-dark border border-warning-subtle py-1 px-2 fs-9">
-              📉 Daily Savings: <strong>{{ calc.result().bldcTip?.savingsDailyUnits }} Units/day</strong> ({{ calc.result().bldcTip?.savingsMonthlyUnits }} U/mo)
+              📉 Daily Savings: <strong>{{ calc.result().bldcTip?.savingsDailyUnits }} Units/day</strong> ({{ calc.result().bldcTip?.savingsMonthlyUnits }} U/mo • ~₹{{ calc.result().bldcTip?.savingsMonthlyCost?.toLocaleString('en-IN') }}/mo)
             </span>
             <span class="badge bg-white text-primary border border-warning-subtle py-1 px-2 fs-9">
               🔌 Downsized PCU: <strong>~{{ calc.result().bldcTip?.downsizedInverterKva }} kVA</strong>
@@ -390,6 +390,51 @@
               </span>
             }
           </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- OPERATING ADVISORY: DAYLIGHT RUNNING & WATER PUMP SCHEDULE (Follows Sizing-Calculation page) -->
+  @if (calc.result().operatingAdvisory?.isApplicable) {
+    <div class="alert alert-info border border-info-subtle shadow-2xs rounded-3 p-3 mt-2.5 mb-2" id="boxOperatingAdvisory">
+      <div class="d-flex align-items-start gap-2.5">
+        <span class="fs-4 flex-shrink-0">☀️</span>
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
+            <span class="fw-bold text-dark fs-7">{{ calc.result().operatingAdvisory?.title }}</span>
+            <span class="badge bg-info-subtle text-info border border-info-subtle fw-semibold fs-9 py-0.5 px-2 rounded-pill">
+              Direct PV Utilization
+            </span>
+          </div>
+          <p class="fs-8 text-dark mb-1 leading-relaxed">
+            {{ calc.result().operatingAdvisory?.message }}
+          </p>
+          @if (calc.result().operatingAdvisory?.pumpTip) {
+            <div class="fs-8 text-secondary pt-1 border-top border-info-subtle mt-1">
+              💧 <strong>Water Pump Advisory:</strong> {{ calc.result().operatingAdvisory?.pumpTip }}
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- BATTERY MORNING RESERVE STRATEGY (Follows Sizing-Calculation page) -->
+  @if (calc.result().batteryReserveAdvisory?.isApplicable) {
+    <div class="alert alert-success border border-success-subtle shadow-2xs rounded-3 p-3 mt-2 mb-2" id="boxBatteryReserveStrategy">
+      <div class="d-flex align-items-start gap-2.5">
+        <span class="fs-4 flex-shrink-0">🛡️</span>
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
+            <span class="fw-bold text-dark fs-7">{{ calc.result().batteryReserveAdvisory?.title }}</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold fs-9 py-0.5 px-2 rounded-pill">
+              ~{{ calc.result().batteryReserveAdvisory?.morningReservePct }}% Morning Reserve
+            </span>
+          </div>
+          <p class="fs-8 text-dark mb-0 leading-relaxed">
+            {{ calc.result().batteryReserveAdvisory?.message }}
+          </p>
         </div>
       </div>
     </div>
