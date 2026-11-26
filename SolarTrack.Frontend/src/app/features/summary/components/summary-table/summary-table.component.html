@@ -106,7 +106,7 @@
     <table class="table table-sm table-manage-work-summary" id="workSummaryTable">
       <thead class="table-light">
         <tr>
-          <!-- <th *ngIf="isColumnVisible('customer')" class="th-col-customer text-nowrap">
+          <th *ngIf="isColumnVisible('customer')" class="th-col-customer text-nowrap">
             <div class="d-flex align-items-center gap-2">
               <input 
                 *ngIf="!rolePermissionService.isSummaryDefaultViewOnly()"
@@ -117,7 +117,7 @@
                 title="Select / Deselect all visible customers">
               <span class="fw-bold fs-8">CUSTOMER: STATUS</span>
             </div>
-          </th> -->
+          </th>
           <th *ngIf="isColumnVisible('statusEdit')" class="th-col-statusedit text-nowrap">STATUS EDIT</th>
           <th *ngIf="isColumnVisible('customerCost')" class="th-col-custcost text-end text-nowrap">CUSTOMER COST</th>
           <th *ngIf="isColumnVisible('pendingAmount')" class="th-col-pending text-end text-nowrap">PENDING AMOUNT</th>
