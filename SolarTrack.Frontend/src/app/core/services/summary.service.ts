@@ -28,6 +28,7 @@ import { RolePermissionService } from './role-permission.service';
 export const DEFAULT_SUMMARY_COLUMNS: SummaryColumn[] = [
   { key: 'customer', label: 'Customer: Status', visible: true },
   { key: 'payment', label: 'Customer Payment', visible: true },
+  { key: 'delayedLogin', label: 'Delayed from Login Date', visible: false },
   { key: 'material', label: 'Material Cost', visible: false },
   { key: 'delivery', label: 'Delivery Cost', visible: false },
   { key: 'meter', label: 'NetMeter Cost', visible: false },
@@ -886,13 +887,14 @@ export class SummaryService {
 
   // Column management
   toggleColumn(key: string, visible: boolean): void {
+    if (key === 'customer') return; // Customer column is permanently visible
     this.columns.update(cols => 
       cols.map(c => c.key === key ? { ...c, visible } : c)
     );
   }
 
   setAllColumns(visible: boolean): void {
-    this.columns.update(cols => cols.map(c => ({ ...c, visible })));
+    this.columns.update(cols => cols.map(c => c.key === 'customer' ? { ...c, visible: true } : { ...c, visible }));
   }
 
   resetDefaultColumns(): void {

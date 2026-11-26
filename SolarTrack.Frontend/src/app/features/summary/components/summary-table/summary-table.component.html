@@ -73,17 +73,19 @@
           <span class="fw-bold text-dark fs-8">Columns to Include</span>
         </div>
         <div class="d-flex flex-column gap-1.5">
-          <div *ngFor="let c of summaryService.columns()" class="form-check mb-1">
-            <input 
-              class="form-check-input cursor-pointer" 
-              type="checkbox" 
-              [id]="'col_' + c.key"
-              [checked]="c.visible"
-              (change)="toggleColumn(c.key, $any($event.target).checked)">
-            <label class="form-check-label fs-8 cursor-pointer" [for]="'col_' + c.key">
-              {{ c.label }}
-            </label>
-          </div>
+          <ng-container *ngFor="let c of summaryService.columns()">
+            <div *ngIf="c.key !== 'customer'" class="form-check mb-1">
+              <input 
+                class="form-check-input cursor-pointer" 
+                type="checkbox" 
+                [id]="'col_' + c.key"
+                [checked]="c.visible"
+                (change)="toggleColumn(c.key, $any($event.target).checked)">
+              <label class="form-check-label fs-8 cursor-pointer" [for]="'col_' + c.key">
+                {{ c.label }}
+              </label>
+            </div>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -118,6 +120,7 @@
               <span class="fw-bold fs-8">CUSTOMER: STATUS</span>
             </div>
           </th>
+          <th *ngIf="isColumnVisible('delayedLogin')" class="th-col-delayed-login text-nowrap text-center">DELAYED FROM LOGIN DATE</th>
           <th *ngIf="isColumnVisible('statusEdit')" class="th-col-statusedit text-nowrap">STATUS EDIT</th>
           <th *ngIf="isColumnVisible('customerCost')" class="th-col-custcost text-end text-nowrap">CUSTOMER COST</th>
           <th *ngIf="isColumnVisible('pendingAmount')" class="th-col-pending text-end text-nowrap">PENDING AMOUNT</th>
@@ -225,6 +228,17 @@
                     <app-icon name="workflow" [size]="13"></app-icon>
                   </button> -->
                 </div>
+              </td>
+
+              <!-- Delayed from Login Date Column -->
+              <td *ngIf="isColumnVisible('delayedLogin')" class="td-col-delayed-login text-nowrap text-center fs-8">
+                <div *ngIf="getDelayInfo(item) as d; else noDelay" class="d-inline-flex align-items-center gap-1.5">
+                  <span class="text-muted fs-9">{{ d.dateStr }}</span>
+                  <span class="badge erp-delay-badge" [ngClass]="'delay-' + d.colorType">{{ d.text }}</span>
+                </div>
+                <ng-template #noDelay>
+                  <span class="text-muted fs-9">—</span>
+                </ng-template>
               </td>
 
               <!-- StatusEdit Column -->
@@ -472,6 +486,7 @@
               <span class="text-muted fs-9 fw-normal">Turnover: {{ fmtCurr(summaryService.totals().turnover) }}</span>
             </div>
           </td>
+          <td *ngIf="isColumnVisible('delayedLogin')" class="tfoot-col-delayed-login text-center fs-8">-</td>
           <td *ngIf="isColumnVisible('statusEdit')" class="tfoot-col-statusedit text-center fs-8">-</td>
           <td *ngIf="isColumnVisible('customerCost')" class="tfoot-col-custcost text-end fw-bold text-nowrap fs-8">
             {{ fmtCurr(summaryService.totals().turnover) }}

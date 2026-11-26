@@ -331,6 +331,36 @@ tr.row-workflow-active .mw-workflow-btn {
   min-width: 140px !important;
 }
 
+/* Delayed from Login Date Column */
+.th-col-delayed-login, .td-col-delayed-login, .tfoot-col-delayed-login {
+  min-width: 175px !important;
+  text-align: center !important;
+}
+
+.erp-delay-badge {
+  font-size: 0.68rem;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  font-family: var(--st-font-mono, monospace);
+  font-weight: 600;
+
+  &.delay-red {
+    background-color: #fee2e2 !important;
+    color: #dc2626 !important;
+    border: 1px solid #fca5a5 !important;
+  }
+  &.delay-yellow {
+    background-color: #fef3c7 !important;
+    color: #b45309 !important;
+    border: 1px solid #fcd34d !important;
+  }
+  &.delay-normal {
+    background-color: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1px solid #bae6fd !important;
+  }
+}
+
 /* StatusEdit Column */
 .th-col-statusedit, .td-col-statusedit, .tfoot-col-statusedit {
   min-width: 165px !important;

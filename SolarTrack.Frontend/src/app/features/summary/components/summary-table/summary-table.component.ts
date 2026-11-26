@@ -189,6 +189,7 @@ export class SummaryTableComponent {
   }
 
   isColumnVisible(key: string): boolean {
+    if (key === 'customer') return true;
     const col = this.summaryService.columns().find(c => c.key === key);
     return col?.visible ?? true;
   }
@@ -514,6 +515,7 @@ export class SummaryTableComponent {
 
     const TABLE_COLUMN_ORDER = [
       'customer',
+      'delayedLogin',
       'statusEdit',
       'customerCost',
       'pendingAmount',
@@ -585,6 +587,10 @@ export class SummaryTableComponent {
     switch (key) {
       case 'customer':
         return `${item.name || 'Unnamed'} (${item.stageName || 'N/A'})`;
+      case 'delayedLogin':
+        const delay = this.getDelayInfo(item);
+        if (!delay) return '—';
+        return `${delay.dateStr} (${delay.text})`;
       case 'statusEdit':
         return this.getStatusDraftValue(item) || item.stageName || '';
       case 'customerCost':
@@ -623,5 +629,72 @@ export class SummaryTableComponent {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  parseDate(dStr?: string | null): Date | null {
+    if (!dStr) return null;
+    const str = String(dStr).trim();
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      const parts = str.substring(0, 10).split('-');
+      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    }
+    const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (m) {
+      return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    }
+    const dt = new Date(str);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  formatDisplayDate(dt: Date): string {
+    const day = String(dt.getDate()).padStart(2, '0');
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const year = dt.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  getDelayInfo(item: SummaryTableRow): { text: string; colorType: 'red' | 'yellow' | 'normal'; totalDays: number; dateStr: string } | null {
+    const rawDate = item.row?.LoginDate || item.row?.CreatedAt;
+    if (!rawDate) return null;
+    const d = this.parseDate(rawDate);
+    if (!d) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+
+    const diffMs = today.getTime() - d.getTime();
+    const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (totalDays < 0) return { totalDays, text: '0D', colorType: 'normal', dateStr: this.formatDisplayDate(d) };
+
+    let y = today.getFullYear() - d.getFullYear();
+    let m = today.getMonth() - d.getMonth();
+    let day = today.getDate() - d.getDate();
+
+    if (day < 0) {
+      m -= 1;
+      const prevMonthDays = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+      day += prevMonthDays;
+    }
+    if (m < 0) {
+      y -= 1;
+      m += 12;
+    }
+
+    const parts: string[] = [];
+    if (y > 0) parts.push(`${y}Y`);
+    if (m > 0) parts.push(`${m}M`);
+    if (day > 0 || parts.length === 0) parts.push(`${day}D`);
+
+    const text = parts.join(' ');
+    let colorType: 'red' | 'yellow' | 'normal' = 'normal';
+    if (totalDays > 90) {
+      colorType = 'red';
+    } else if (totalDays > 60) {
+      colorType = 'yellow';
+    }
+
+    return { totalDays, text, colorType, dateStr: this.formatDisplayDate(d) };
   }
 }

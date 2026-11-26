@@ -136,16 +136,6 @@
             }
           </div>
 
-          <!-- Peak Sun Hours (PSH) Slider (Brought inside System Architecture Dropdown Card) -->
-          <div class="mt-3 pt-2.5 border-t border-sky-200/80">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-bold text-slate-800 m-0 cursor-pointer">Peak Sun Hours (PSH)</label>
-              <span class="font-mono font-bold text-sky-900 bg-white px-2 py-0.5 rounded border border-sky-300 text-xs shadow-2xs">{{ psh() }}h</span>
-            </div>
-            <input type="range" min="3.5" max="6.0" step="0.05" [ngModel]="psh()" (ngModelChange)="psh.set($event)" class="w-full accent-sky-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer">
-            <span class="text-[10px] text-slate-500 block mt-0.5">Odisha Annual Average: 4.75 hrs/day</span>
-          </div>
-
           <!-- Supply Phase (Auto) & Expansion Margin (Inside Step 1 Card) -->
           <div class="mt-3 pt-2.5 border-t border-sky-200/80 space-y-2.5">
             
