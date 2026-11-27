@@ -290,6 +290,7 @@
             <th class="th-delivery text-end" style="width: 68px; min-width: 64px;" title="Delivery Cost">Delivery</th>
             <th class="th-others text-end" style="width: 64px; min-width: 60px;">Others</th>
             <th class="th-desc text-nowrap" style="min-width: 140px;">Descriptions</th>
+            <th class="th-total text-end text-nowrap" style="min-width: 95px; width: 105px;" title="Total Cost = System Cost + GST@5% + Install Cost + Net Meter + Delivery + Others">Total</th>
             <th class="th-actions text-center" style="width: 42px; min-width: 42px;">Save</th>
           </tr>
         </thead>
@@ -297,7 +298,7 @@
         <tbody>
           <!-- Empty State -->
           <tr *ngIf="filteredRows().length === 0">
-            <td colspan="15" class="text-center py-5">
+            <td colspan="16" class="text-center py-5">
               <div class="empty-state-box text-center py-4">
                 <div class="fs-1 mb-2">📋</div>
                 <h5 class="fw-bold text-dark mb-1">No Customers Found</h5>
@@ -441,6 +442,11 @@
                 placeholder="Add note..." />
             </td>
 
+            <!-- Total Column (System Cost + GST@5% + Install Cost + Net Meter + Delivery + Others) -->
+            <td class="td-total text-end font-mono fs-8 fw-bold text-dark">
+              ₹{{ getRowTotalCost(r) | number:'1.0-0' }}
+            </td>
+
             <!-- Action (Icon Only, reduced column width) -->
             <td class="text-center" (click)="$event.stopPropagation()" style="width: 42px;">
               <button 
@@ -457,42 +463,6 @@
             </td>
           </tr>
         </tbody>
-
-        <!-- Sticky Totals Footer -->
-        <tfoot *ngIf="filteredRows().length > 0" class="table-totals-footer">
-          <tr class="fw-bold">
-            <td colspan="5" class="text-end text-uppercase fs-8 font-mono pe-3">
-              Total ({{ totals().count }} Customers):
-            </td>
-            <td class="text-end font-mono fs-8 text-dark">
-              ₹{{ totals().asking | number:'1.0-0' }}
-            </td>
-            <td class="text-end font-mono fs-8 text-info-emphasis">
-              ₹{{ totals().billing | number:'1.0-0' }}
-            </td>
-            <td class="text-end font-mono fs-8 text-warning-emphasis">
-              ₹{{ totals().system | number:'1.0-0' }}
-            </td>
-            <td class="text-end font-mono fs-8 text-dark fw-bold">
-              ₹{{ totals().gst5 | number:'1.0-0' }}
-            </td>
-            <td class="text-end font-mono fs-8">
-              ₹{{ totals().install | number:'1.0-0' }}
-            </td>
-            <td class="text-end font-mono fs-8">
-              ₹{{ totals().meter | number:'1.0-0' }}
-            </td>
-            <td class="text-end font-mono fs-8">
-              ₹{{ totals().delivery | number:'1.0-0' }}
-            </td>
-            <td class="text-end font-mono fs-8">
-              ₹{{ totals().others | number:'1.0-0' }}
-            </td>
-            <td colspan="2" class="text-muted fs-9 fst-italic">
-              Net Cost: ₹{{ totals().totalExpense | number:'1.0-0' }}
-            </td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   </div>

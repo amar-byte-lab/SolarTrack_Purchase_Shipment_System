@@ -250,6 +250,16 @@ export class CostAnalysisComponent implements OnInit {
     return Math.round(billing * 0.05);
   }
 
+  // Row Total Cost (System Cost + GST@5% + Install Cost + Net Meter + Delivery + Others)
+  getRowTotalCost(r: EditableCostRow): number {
+    return (Number(r.systemCost) || 0) +
+           this.getGst5(r) +
+           (Number(r.installCost) || 0) +
+           (Number(r.meterCost) || 0) +
+           (Number(r.deliveryCost) || 0) +
+           (Number(r.otherCost) || 0);
+  }
+
   // Get or initialize editable row from store
   private getOrCreateEditableRow(r: SummaryTableRow): EditableCostRow {
     let item = this.editableStore.get(r.slNo);
@@ -836,7 +846,8 @@ export class CostAnalysisComponent implements OnInit {
       'Net Meter Cost': Number(r.meterCost) || 0,
       'Delivery Cost': Number(r.deliveryCost) || 0,
       'Others': Number(r.otherCost) || 0,
-      'Descriptions': r.description || ''
+      'Descriptions': r.description || '',
+      'Total': this.getRowTotalCost(r)
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -866,7 +877,8 @@ export class CostAnalysisComponent implements OnInit {
       'Net Meter Cost',
       'Delivery Cost',
       'Others',
-      'Descriptions'
+      'Descriptions',
+      'Total'
     ];
 
     const lines = [headers.join('\t')];
@@ -883,7 +895,8 @@ export class CostAnalysisComponent implements OnInit {
         r.meterCost || 0,
         r.deliveryCost || 0,
         r.otherCost || 0,
-        `"${(r.description || '').replace(/"/g, '""')}"`
+        `"${(r.description || '').replace(/"/g, '""')}"`,
+        this.getRowTotalCost(r)
       ].join('\t'));
     });
 
