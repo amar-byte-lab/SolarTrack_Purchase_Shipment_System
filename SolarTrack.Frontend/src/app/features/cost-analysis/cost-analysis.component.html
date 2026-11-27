@@ -1,11 +1,11 @@
-<div class="cost-analysis-container p-3 p-md-4">
+<div class="cost-analysis-container p-2 p-sm-3 p-md-4">
 
   <!-- Filters & Actions Toolbar Card -->
-  <div class="st-card filter-toolbar-card mb-3 p-3">
-    <!-- Row 1: Search Box & Actions (Partner, Reset, Save All, Refresh, Copy, Export) -->
+  <div class="st-card filter-toolbar-card mb-2 mb-md-3 p-2.5 p-md-3">
+    <!-- Row 1: Search Box & Actions (Partner, Reset, Save All, Refresh, Copy, Export, Note) -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-      <!-- Search Box -->
-      <div class="search-input-wrapper flex-grow-1" style="max-width: 480px; min-width: 240px;">
+      <!-- Search Box (Full width on mobile, max 480px on desktop) -->
+      <div class="search-input-wrapper flex-grow-1">
         <div class="input-group input-group-sm">
           <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
             <app-icon name="search" [size]="14"></app-icon>
@@ -27,16 +27,16 @@
         </div>
       </div>
 
-      <!-- Right Controls: Partner Dropdown & Action Buttons -->
-      <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+      <!-- Right Controls: Partner Dropdown & Action Buttons (One row on mobile) -->
+      <div class="toolbar-actions d-flex align-items-center gap-1.5 ms-auto flex-nowrap">
         <!-- Partner Multiselect Dropdown -->
         <div class="dropdown position-relative partner-dropdown-container">
           <button 
             type="button"
-            class="btn btn-sm btn-outline-secondary dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2.5 shadow-none d-inline-flex align-items-center gap-1.5"
+            class="btn btn-sm btn-outline-secondary dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2 px-sm-2.5 shadow-none d-inline-flex align-items-center gap-1 w-100"
             (click)="togglePartnerDropdown()">
-            <app-icon name="customer" [size]="13"></app-icon>
-            <span>Partner: <strong>{{ partnerDropdownLabel }}</strong></span>
+            <app-icon name="customer" [size]="13" class="flex-shrink-0"></app-icon>
+            <span class="text-truncate">Partner: <strong>{{ partnerDropdownLabel }}</strong></span>
           </button>
           
           <div 
@@ -84,7 +84,7 @@
         <button 
           *ngIf="dirtyRowsCount() > 0"
           type="button" 
-          class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-8 shadow-sm"
+          class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-8 shadow-sm flex-shrink-0"
           (click)="saveAllDirty()"
           title="Save all modified customer records">
           <app-icon name="check" [size]="13"></app-icon>
@@ -95,7 +95,7 @@
         <button 
           *ngIf="searchQuery() || selectedPartners().length > 0 || selectedDistrict() !== 'ALL' || selectedStage() !== 'ALL' || sortField() !== null"
           type="button" 
-          class="btn btn-sm btn-link text-danger text-decoration-none py-1 px-1.5 fs-8 d-inline-flex align-items-center gap-1"
+          class="btn btn-sm btn-link text-danger text-decoration-none py-1 px-1.5 fs-8 d-inline-flex align-items-center gap-1 flex-shrink-0"
           (click)="clearAllFilters()"
           title="Reset all active filters and sorting">
           <app-icon name="rotate-ccw" [size]="12"></app-icon>
@@ -105,25 +105,7 @@
         <!-- Quick Table Actions -->
         <button 
           type="button" 
-          class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2 fs-8 shadow-none"
-          (click)="refreshData()"
-          title="Refresh customer data">
-          <app-icon name="refresh" [size]="13"></app-icon>
-          <span>Refresh</span>
-        </button>
-
-        <button 
-          type="button" 
-          class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2 fs-8 shadow-none"
-          (click)="copyTableData()"
-          title="Copy table to clipboard">
-          <app-icon name="copy" [size]="13"></app-icon>
-          <span>Copy</span>
-        </button>
-
-        <button 
-          type="button" 
-          class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-8 shadow-none"
+          class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-8 shadow-none flex-shrink-0"
           (click)="exportToExcel()"
           title="Download Excel spreadsheet">
           <app-icon name="download" [size]="13"></app-icon>
@@ -133,7 +115,7 @@
         <!-- Google Note Button (Side of Excel Button) -->
         <button 
           type="button" 
-          class="btn btn-sm btn-outline-warning text-dark border-warning-subtle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-none note-btn position-relative"
+          class="btn btn-sm btn-outline-warning text-dark border-warning-subtle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-none note-btn position-relative flex-shrink-0"
           (click)="openNotesModal()"
           title="Open Google Note (Database Saved)">
           <app-icon name="edit-3" [size]="13"></app-icon>
@@ -175,7 +157,7 @@
 
   <!-- Table Top Action Bar (Exclusion Controls & Count) -->
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 px-1">
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
       <!-- Exclude Selected Button -->
       <button 
         *ngIf="selectedSlNos().size > 0"
@@ -232,6 +214,11 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Mobile Horizontal Scroll Indicator -->
+    <div class="d-flex d-lg-none align-items-center gap-1 text-muted fs-9 ms-auto user-select-none">
+      <span class="badge bg-light text-secondary border">↔ Scroll table</span>
     </div>
   </div>
 
@@ -317,7 +304,7 @@
             [class.row-dirty]="r.isDirty">
             
             <!-- Checkbox -->
-            <td class="text-center" (click)="$event.stopPropagation()">
+            <td class="td-chk text-center" (click)="$event.stopPropagation()">
               <input 
                 type="checkbox" 
                 class="form-check-input cursor-pointer" 
@@ -326,10 +313,10 @@
             </td>
 
             <!-- Index -->
-            <td class="text-center text-muted font-mono fs-8">{{ idx + 1 }}</td>
+            <td class="td-num text-center text-muted font-mono fs-8">{{ idx + 1 }}</td>
 
             <!-- Customer Name (Compact Width) -->
-            <td class="td-customer" style="max-width: 145px;">
+            <td class="td-customer">
               <span class="customer-name fw-bold text-dark fs-8 text-truncate" [title]="r.name">
                 {{ r.name }}
               </span>
