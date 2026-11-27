@@ -129,6 +129,17 @@
           <app-icon name="download" [size]="13"></app-icon>
           <span>Excel</span>
         </button>
+
+        <!-- Google Note Button (Side of Excel Button) -->
+        <button 
+          type="button" 
+          class="btn btn-sm btn-outline-warning text-dark border-warning-subtle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-none note-btn position-relative"
+          (click)="openNotesModal()"
+          title="Open Google Note (Database Saved)">
+          <app-icon name="edit-3" [size]="13"></app-icon>
+          <span>Note</span>
+          <span *ngIf="hasNoteContent()" class="note-indicator-badge" title="Has saved notes"></span>
+        </button>
       </div>
     </div>
 
@@ -512,5 +523,90 @@
     <option value="HAVELLS">
     <option value="POLYCAB">
   </datalist>
+
+  <!-- Google Note Popup Modal (Opens directly in edit mode, Save & Reset buttons only) -->
+  <div *ngIf="isNoteModalOpen()" class="google-note-overlay" (click)="closeNotesModal()">
+    <div class="google-note-modal" (click)="$event.stopPropagation()">
+      <!-- Decorative Note Top Accent Bar -->
+      <div class="note-accent-bar"></div>
+
+      <!-- Note Header -->
+      <div class="note-header d-flex align-items-center justify-content-between px-3 pt-3 pb-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="note-icon-bubble">
+            <app-icon name="edit-3" [size]="14"></app-icon>
+          </div>
+          <span class="fs-8 fw-bold text-dark text-uppercase tracking-wider">Note</span>
+          <span *ngIf="isNoteDirty()" class="badge bg-warning-subtle text-warning-emphasis border border-warning fs-9 px-1.5 py-0.5 rounded-pill">
+            Unsaved Edits
+          </span>
+          <span *ngIf="!isNoteDirty() && noteExistsInDb()" class="badge bg-success-subtle text-success-emphasis border border-success fs-9 px-1.5 py-0.5 rounded-pill">
+            Saved
+          </span>
+        </div>
+        <button 
+          type="button" 
+          class="btn-close-note" 
+          (click)="closeNotesModal()" 
+          title="Close Note (Esc)">
+          ✕
+        </button>
+      </div>
+
+      <!-- Note Body: Open in Edit Mode directly -->
+      <div class="note-body px-3 py-2">
+        <!-- Title Input -->
+        <input 
+          type="text" 
+          class="form-control note-title-input mb-1" 
+          [ngModel]="currentNoteTitle()" 
+          (ngModelChange)="currentNoteTitle.set($event)" 
+          placeholder="Title" 
+          aria-label="Note Title" />
+
+        <!-- Content Textarea -->
+        <textarea 
+          class="form-control note-content-textarea" 
+          [ngModel]="currentNoteContent()" 
+          (ngModelChange)="currentNoteContent.set($event)" 
+          rows="10" 
+          placeholder="Take a note..." 
+          aria-label="Note Content"></textarea>
+      </div>
+
+      <!-- Note Footer: Only Save & Reset Buttons -->
+      <div class="note-footer d-flex align-items-center justify-content-between px-3 py-2.5 border-top">
+        <div class="note-timestamp fs-9 text-muted text-truncate me-2">
+          <span *ngIf="noteLastUpdated()">Last saved: {{ noteLastUpdated() | date:'short' }}</span>
+          <span *ngIf="!noteLastUpdated()">Not yet saved to database</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          <!-- Reset Button: Undoes current modified edits back to saved database state -->
+          <button 
+            type="button" 
+            class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-8"
+            (click)="resetNote()"
+            [disabled]="!isNoteDirty()"
+            title="Undo current modifications (Restore saved note)">
+            <app-icon name="rotate-ccw" [size]="12"></app-icon>
+            <span>Reset</span>
+          </button>
+
+          <!-- Save Button: Persists note to database -->
+          <button 
+            type="button" 
+            class="btn btn-sm btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1.5 py-1 px-3 fs-8 shadow-sm"
+            (click)="saveNote()"
+            [disabled]="isNoteSaving()"
+            title="Save note to database">
+            <span *ngIf="isNoteSaving()" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <app-icon *ngIf="!isNoteSaving()" name="check" [size]="13" [strokeWidth]="2.5"></app-icon>
+            <span>Save</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div>

@@ -60,6 +60,30 @@ export class CostAnalysisComponent implements OnInit {
   sortField = signal<'panel' | 'inverter' | null>(null);
   sortDirection = signal<'asc' | 'desc'>('asc');
 
+  // Google Note Modal State & Signals
+  isNoteModalOpen = signal<boolean>(false);
+  isNoteSaving = signal<boolean>(false);
+  isNoteLoading = signal<boolean>(false);
+  noteExistsInDb = signal<boolean>(false);
+
+  // Note Content State
+  savedNoteTitle = signal<string>('Cost Analysis Notes');
+  savedNoteContent = signal<string>('');
+  currentNoteTitle = signal<string>('Cost Analysis Notes');
+  currentNoteContent = signal<string>('');
+  noteLastUpdated = signal<string>('');
+
+  // Dirty state: checks if current input differs from saved database state
+  isNoteDirty = computed<boolean>(() => {
+    return this.currentNoteTitle() !== this.savedNoteTitle() ||
+           this.currentNoteContent() !== this.savedNoteContent();
+  });
+
+  // Indicator for button badge
+  hasNoteContent = computed<boolean>(() => {
+    return !!(this.savedNoteContent()?.trim() || (this.savedNoteTitle() && this.savedNoteTitle() !== 'Cost Analysis Notes'));
+  });
+
   // Multi-select dropdown state
   isPartnerMenuOpen = signal<boolean>(false);
   isExcludedMenuOpen = signal<boolean>(false);
@@ -80,6 +104,7 @@ export class CostAnalysisComponent implements OnInit {
     }
 
     this.navService.setPageTitle('Cost Analysis');
+    this.loadNotes();
     if (this.summaryService.baseRows().length === 0) {
       this.summaryService.loadAllData().subscribe({
         next: () => {},
@@ -103,6 +128,9 @@ export class CostAnalysisComponent implements OnInit {
   onEscape(): void {
     this.isPartnerMenuOpen.set(false);
     this.isExcludedMenuOpen.set(false);
+    if (this.isNoteModalOpen()) {
+      this.closeNotesModal();
+    }
   }
 
   // District list with counts for filtered active set
@@ -479,6 +507,109 @@ export class CostAnalysisComponent implements OnInit {
     this.selectedStage.set('ALL');
     this.sortField.set(null);
     this.sortDirection.set('asc');
+  }
+
+  // Google Note handlers
+  loadNotes(): void {
+    this.isNoteLoading.set(true);
+    this.http.get<any[]>('/api/get?table=work_notes').subscribe({
+      next: (rows) => {
+        this.isNoteLoading.set(false);
+        const note = rows?.find(r => r.NoteID === 'cost_analysis_note');
+        if (note) {
+          this.noteExistsInDb.set(true);
+          const title = note.NoteTitle || 'Cost Analysis Notes';
+          const content = note.CommonNote || '';
+          this.savedNoteTitle.set(title);
+          this.savedNoteContent.set(content);
+          this.currentNoteTitle.set(title);
+          this.currentNoteContent.set(content);
+          this.noteLastUpdated.set(note.UpdatedAt || note.CreatedAt || '');
+        } else {
+          this.noteExistsInDb.set(false);
+          this.savedNoteTitle.set('Cost Analysis Notes');
+          this.savedNoteContent.set('');
+          this.currentNoteTitle.set('Cost Analysis Notes');
+          this.currentNoteContent.set('');
+          this.noteLastUpdated.set('');
+        }
+      },
+      error: (err) => {
+        this.isNoteLoading.set(false);
+        console.error('Failed to load notes:', err);
+      }
+    });
+  }
+
+  openNotesModal(): void {
+    // Open in edit mode with current saved values
+    this.currentNoteTitle.set(this.savedNoteTitle());
+    this.currentNoteContent.set(this.savedNoteContent());
+    this.isNoteModalOpen.set(true);
+  }
+
+  closeNotesModal(): void {
+    this.isNoteModalOpen.set(false);
+  }
+
+  resetNote(): void {
+    // Reset currently modified edits back to saved database state
+    this.currentNoteTitle.set(this.savedNoteTitle());
+    this.currentNoteContent.set(this.savedNoteContent());
+    this.toastService.info('Modifications undone. Restored saved note.');
+  }
+
+  saveNote(): void {
+    const title = this.currentNoteTitle().trim() || 'Cost Analysis Notes';
+    const content = this.currentNoteContent();
+    const now = new Date().toISOString();
+
+    this.isNoteSaving.set(true);
+
+    if (this.noteExistsInDb()) {
+      const payload = {
+        NoteTitle: title,
+        CommonNote: content,
+        UpdatedAt: now
+      };
+      this.http.post('/api/update?table=work_notes&matchField=NoteID&matchValue=cost_analysis_note', payload).subscribe({
+        next: () => {
+          this.isNoteSaving.set(false);
+          this.savedNoteTitle.set(title);
+          this.savedNoteContent.set(content);
+          this.noteLastUpdated.set(now);
+          this.toastService.success('Note saved to database successfully!');
+        },
+        error: (err) => {
+          this.isNoteSaving.set(false);
+          console.error('Failed to update note:', err);
+          this.toastService.error('Failed to save note. Please try again.');
+        }
+      });
+    } else {
+      const payload = {
+        NoteID: 'cost_analysis_note',
+        NoteTitle: title,
+        CommonNote: content,
+        CreatedAt: now,
+        UpdatedAt: now
+      };
+      this.http.post('/api/insert?table=work_notes', payload).subscribe({
+        next: () => {
+          this.isNoteSaving.set(false);
+          this.noteExistsInDb.set(true);
+          this.savedNoteTitle.set(title);
+          this.savedNoteContent.set(content);
+          this.noteLastUpdated.set(now);
+          this.toastService.success('Note saved to database successfully!');
+        },
+        error: (err) => {
+          this.isNoteSaving.set(false);
+          console.error('Failed to insert note:', err);
+          this.toastService.error('Failed to save note. Please try again.');
+        }
+      });
+    }
   }
 
   // Row selection & Exclusion handlers
