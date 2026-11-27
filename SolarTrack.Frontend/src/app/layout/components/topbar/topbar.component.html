@@ -1,13 +1,13 @@
 <header class="topbar">
   <div class="w-100 d-flex align-items-center justify-content-between gap-2">
-    <!-- Mobile Toggle & Page Title (Visible only when nav panel is hidden on Mobile) -->
+    <!-- Menu Toggle & Page Title (Visible on all screens, collapsible sidebar) -->
     <div class="d-flex align-items-center gap-2">
       <button 
-        class="btn btn-sm btn-outline-secondary px-2 py-1 flex-shrink-0 btn-menu-toggle shadow-none" 
-        (click)="navService.toggleMobileSidebar()" 
-        title="Toggle Menu">
+        type="button"
+        class="btn btn-sm btn-outline-secondary px-2.5 py-1 flex-shrink-0 btn-menu-toggle shadow-none" 
+        (click)="navService.toggleSidebar()" 
+        title="Toggle Navigation Menu">
         <span>☰</span>
-        <span class="d-none d-sm-inline ms-1 fw-semibold">Menu</span>
       </button>
       <h1 class="topbar-title">{{ navService.pageTitle() }}</h1>
     </div>

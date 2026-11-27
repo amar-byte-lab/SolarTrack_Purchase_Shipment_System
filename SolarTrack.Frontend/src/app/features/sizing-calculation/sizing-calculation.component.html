@@ -648,6 +648,187 @@
   </section>
 
   <!-- ============================================================== -->
+  <!-- AI SOLAR EXPERT ADVISOR (Free AI LLM in Pure Odia)             -->
+  <!-- ============================================================== -->
+  <section id="aiAdvisorSection" class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-indigo-100 overflow-hidden relative">
+    
+    <!-- Header Bar -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 via-sky-600 to-indigo-700 text-white flex items-center justify-center text-lg shadow-sm flex-shrink-0">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="font-black text-slate-900 text-base sm:text-lg m-0">AI ସୋଲାର ଇଞ୍ଜିନିୟର ପରାମର୍ଶ</h3>
+            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <i class="fa-solid fa-bolt text-[9px] text-emerald-600"></i> Free AI LLM
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 m-0 mt-0.5">Step 1 ଓ Step 2 ର ଲୋଡ୍ ତଥ୍ୟ ଆଧାରରେ କୃତ୍ରିମ ବୁଦ୍ଧିମତା (AI) ଦ୍ୱାରା ପ୍ରସ୍ତୁତ ବୈଷୟିକ ପରାମର୍ଶ</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        @if (aiResponse()) {
+          <button 
+            type="button" 
+            (click)="copyAiResponse()"
+            class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid" [class.fa-check]="aiCopied()" [class.fa-copy]="!aiCopied()" [class.text-emerald-600]="aiCopied()"></i>
+            <span>{{ aiCopied() ? 'କପି ହୋଇଗଲା!' : 'କପି କରନ୍ତୁ' }}</span>
+          </button>
+        }
+
+        <button 
+          type="button" 
+          (click)="askAiAdvisor()"
+          [disabled]="isAiLoading()"
+          class="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-600 via-indigo-600 to-sky-700 hover:from-sky-700 hover:to-indigo-700 text-white font-black text-xs shadow-xs hover:shadow-md transition flex items-center gap-2 border-0 cursor-pointer disabled:opacity-50">
+          @if (isAiLoading()) {
+            <i class="fa-solid fa-spinner fa-spin text-amber-300"></i>
+            <span>AI ବିଶ୍ଳେଷଣ କରୁଛି...</span>
+          } @else {
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+            <span>{{ aiResponse() ? 'ପୁନର୍ବାର ବିଶ୍ଳେଷଣ (Re-Analyze)' : 'AI କୁ ପଚାରନ୍ତୁ (Ask AI Expert)' }}</span>
+          }
+        </button>
+
+        @if (aiResponse()) {
+          <button 
+            type="button"
+            (click)="isAiExpanded.set(!isAiExpanded())"
+            [title]="isAiExpanded() ? 'Collapse' : 'Expand'"
+            class="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs transition cursor-pointer">
+            <i class="fa-solid" [class.fa-chevron-up]="isAiExpanded()" [class.fa-chevron-down]="!isAiExpanded()"></i>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- AI Body Content -->
+    <div class="pt-4">
+
+      @if (isAiLoading()) {
+        <!-- Loading Pulse Card -->
+        <div class="p-6 sm:p-8 bg-sky-50/70 rounded-2xl border-2 border-sky-200 text-center space-y-3">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white text-2xl shadow-md animate-bounce">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <div>
+            <h4 class="font-extrabold text-sm sm:text-base text-slate-900 m-0">AI ମଡେଲ୍ Step 1 ଓ Step 2 ର ତଥ୍ୟ ବିଶ୍ଳେଷଣ କରୁଛି...</h4>
+            <p class="text-xs text-slate-500 m-0 mt-1">ସୋଲାର ଇଞ୍ଜିନିୟରିଂ ସାଇଜିଂ, ସର୍ଜ୍ ପାୱାର ଓ ଲୋଡ୍ ମ୍ୟାନେଜମେଣ୍ଟ ହିସାବ କରାଯାଉଛି। କିଛି ସେକେଣ୍ଡ ଅପେକ୍ଷା କରନ୍ତୁ।</p>
+          </div>
+          <div class="w-48 h-1.5 bg-sky-200 rounded-full mx-auto overflow-hidden">
+            <div class="h-full bg-indigo-600 rounded-full animate-pulse w-3/4"></div>
+          </div>
+        </div>
+      } @else if (aiError()) {
+        <!-- Error Alert -->
+        <div class="p-4 bg-rose-50 rounded-xl border border-rose-200 text-rose-900 flex items-start justify-between gap-3 text-xs">
+          <div class="flex items-start gap-2.5">
+            <i class="fa-solid fa-circle-exclamation text-rose-600 text-base mt-0.5"></i>
+            <div>
+              <strong class="font-bold block text-sm">AI ବିଶ୍ଳେଷଣରେ ସମସ୍ୟା ହେଲା</strong>
+              <span>{{ aiError() }}</span>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            (click)="askAiAdvisor()"
+            class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs border-0 cursor-pointer transition shadow-2xs flex-shrink-0">
+            ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ
+          </button>
+        </div>
+      } @else if (aiResponse()) {
+        <!-- Result Display Card -->
+        @if (isAiExpanded()) {
+          <div class="bg-gradient-to-br from-slate-50 via-sky-50/30 to-indigo-50/20 p-4 sm:p-6 rounded-2xl border border-sky-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between text-xs text-sky-800 pb-2 border-b border-sky-100">
+              <span class="font-bold flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                ବରିଷ୍ଠ ସୋଲାର ଇଞ୍ଜିନିୟରଙ୍କ ସମୀକ୍ଷା ଫଳାଫଳ (Pure Odia Analysis):
+              </span>
+              <span class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200 flex items-center gap-1">
+                <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i> AI Output Verified
+              </span>
+            </div>
+
+            <!-- AI Sizing Highlights Strip -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 pb-1">
+              <div class="p-3 bg-white/90 rounded-xl border border-sky-200 shadow-2xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[9px] uppercase font-bold text-sky-700 block">AI Inverter Rating</span>
+                  <i class="fa-solid fa-microchip text-sky-600 text-xs"></i>
+                </div>
+                <span class="text-sm sm:text-base font-extrabold text-slate-900 font-mono block mt-0.5">{{ inverter().sizedKva }} kVA</span>
+                <span class="text-[10px] text-slate-500 block">{{ inverter().dcVoltage }}V DC • {{ inverter().isThreePhase ? '3-Phase' : '1-Phase' }}</span>
+              </div>
+
+              @if (architecture() !== 'nobattery') {
+                <div class="p-3 bg-white/90 rounded-xl border border-amber-200 shadow-2xs">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[9px] uppercase font-bold text-amber-700 block">AI Solar PV Capacity</span>
+                    <i class="fa-solid fa-solar-panel text-amber-600 text-xs"></i>
+                  </div>
+                  <span class="text-sm sm:text-base font-extrabold text-slate-900 font-mono block mt-0.5">{{ solar().actualInstalledKwp.toFixed(2) }} kWp</span>
+                  <span class="text-[10px] text-slate-500 block">{{ solar().totalPanels }} Nos × {{ solar().panelW }}W Mono-PERC</span>
+                </div>
+              }
+
+              @if (batteryOptions(); as b) {
+                <div class="p-3 bg-white/90 rounded-xl border border-emerald-200 shadow-2xs" [class.sm:col-span-2]="architecture() === 'nobattery'">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[9px] uppercase font-bold text-emerald-700 block">AI Battery Storage</span>
+                    <i class="fa-solid fa-car-battery text-emerald-600 text-xs"></i>
+                  </div>
+                  <span class="text-sm sm:text-base font-extrabold text-slate-900 font-mono block mt-0.5">{{ b.opt1.ahRating }}Ah @ {{ inverter().dcVoltage }}V</span>
+                  <span class="text-[10px] text-slate-500 block">~{{ b.opt1.usableKwh.toFixed(1) }} kWh Usable (LiFePO4 Recommended)</span>
+                </div>
+              }
+            </div>
+
+            <!-- Formatted Output Container -->
+            <div class="text-slate-800 text-xs sm:text-sm leading-relaxed" [innerHTML]="formatMarkdown(aiResponse()!)">
+            </div>
+
+            <div class="pt-3 border-t border-sky-100 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+              <span>* ଏହି ପରାମର୍ଶ Step 1 ର ସିଷ୍ଟମ୍ କ୍ଷମତା ଓ Step 2 ର ସଂଯୁକ୍ତ ଉପକରଣ ତାଲିକା ଉପରେ ଆଧାରିତ।</span>
+              <button (click)="copyAiResponse()" class="font-bold text-sky-700 hover:text-sky-900 border-0 bg-transparent cursor-pointer p-0 flex items-center gap-1">
+                <i class="fa-regular fa-copy"></i>
+                <span>ଉତ୍ତର କପି କରନ୍ତୁ</span>
+              </button>
+            </div>
+          </div>
+        }
+      } @else {
+        <!-- Idle State Banner -->
+        <div class="p-5 sm:p-6 bg-gradient-to-r from-sky-50 via-indigo-50/40 to-white rounded-2xl border border-sky-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-white text-indigo-600 flex items-center justify-center text-xl shadow-xs border border-indigo-100 flex-shrink-0">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+              <h4 class="font-black text-slate-900 text-sm sm:text-base m-0">ସୋଲାର ଲୋଡ୍ ଓ ସାଇଜିଂ ଉପରେ AI ମତାମତ ନିଅନ୍ତୁ</h4>
+              <p class="text-xs text-slate-500 m-0 mt-0.5">ଆପଣ ଦେଇଥିବା Step 1 ଓ Step 2 ତଥ୍ୟକୁ Free AI LLM ପରୀକ୍ଷା କରି ସଠିକ୍ ଓଡ଼ିଆ ଭାଷାରେ ଇଞ୍ଜିନିୟରିଂ ପରାମର୍ଶ ଦେବ।</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            (click)="askAiAdvisor()"
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 via-indigo-600 to-sky-700 hover:from-sky-700 hover:to-indigo-700 text-white font-black text-xs shadow-sm hover:shadow-md transition flex items-center gap-2 border-0 cursor-pointer flex-shrink-0">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+            <span>AI କୁ ପଚାରନ୍ତୁ (Ask AI Expert)</span>
+          </button>
+        </div>
+      }
+
+    </div>
+
+  </section>
+
+  <!-- ============================================================== -->
   <!-- STEP 3: ENGINEERING SIZING RESULTS DASHBOARD                   -->
   <!-- ============================================================== -->
   <section class="space-y-4 sm:space-y-6">

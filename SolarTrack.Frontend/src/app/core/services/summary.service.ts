@@ -988,6 +988,17 @@ export class SummaryService {
       .sort((a, b) => new Date(a.TxnDate).getTime() - new Date(b.TxnDate).getTime());
   }
 
+  // Patch in-memory raw installment row to trigger computed signal recomputation
+  patchRawInstallment(slNo: number, patch: Partial<InstallmentRow>): void {
+    const updated = this.rawInstallmentsSignal().map(r => {
+      if (Number(r.SlNo) === Number(slNo) || String(r.SlNo) === String(slNo)) {
+        return { ...r, ...patch };
+      }
+      return r;
+    });
+    this.rawInstallmentsSignal.set(updated);
+  }
+
   // Workflow Stage Progress Operation
   saveStageProgress(slNo: number, patch: Partial<InstallmentRow>): Observable<any> {
     let existing = this.rawInstallmentsSignal().find(r => Number(r.SlNo) === Number(slNo));
@@ -1484,6 +1495,7 @@ export class SummaryService {
       turnover,
       unpaid,
       material,
+      billing,
       install,
       meter,
       delivery,

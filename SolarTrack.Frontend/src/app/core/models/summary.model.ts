@@ -129,6 +129,7 @@ export interface SummaryFinancials {
   turnover: number;
   unpaid: number;
   material: number;
+  billing: number;
   install: number;
   meter: number;
   delivery: number;

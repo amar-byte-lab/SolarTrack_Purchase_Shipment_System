@@ -64,6 +64,8 @@ public class DatabaseService : IDatabaseService
         ["inventory_dispatches"] = "DispatchID"
     };
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, HashSet<string>> _columnsCache = new(StringComparer.OrdinalIgnoreCase);
+
     public DatabaseService(
         IDapperConnectionFactory connFactory,
         SolarTrackDbContext dbContext,
@@ -303,6 +305,7 @@ ELSE
             try
             {
                 using var conn = _connFactory.CreateConnection();
+                var validColumns = await GetTableColumnsAsync(conn, tableName);
                 var setClauses = new List<string>();
                 var dynParams = new DynamicParameters();
                 int idx = 0;
@@ -311,6 +314,8 @@ ELSE
                     if (string.Equals(kvp.Key, matchField, StringComparison.OrdinalIgnoreCase))
                         continue;
                     if (PrimaryKeys.TryGetValue(tableName, out var pkCol) && string.Equals(kvp.Key, pkCol, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (validColumns.Count > 0 && !validColumns.Contains(kvp.Key))
                         continue;
 
                     setClauses.Add($"[{kvp.Key}] = @p{idx}");
@@ -681,6 +686,28 @@ ELSE
     {
         await DeleteRowAsync("borrower_txns", "BorrowerID", borrowerId);
         await DeleteRowAsync("borrowers", "BorrowerID", borrowerId);
+    }
+
+    private static async Task<HashSet<string>> GetTableColumnsAsync(System.Data.IDbConnection conn, string tableName)
+    {
+        if (_columnsCache.TryGetValue(tableName, out var cached))
+            return cached;
+
+        try
+        {
+            var cols = await conn.QueryAsync<string>(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @Table",
+                new { Table = tableName });
+            var set = new HashSet<string>(cols, StringComparer.OrdinalIgnoreCase);
+            if (set.Count > 0)
+            {
+                _columnsCache[tableName] = set;
+                return set;
+            }
+        }
+        catch { }
+
+        return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 
     // --- Sanitization & Helpers ---

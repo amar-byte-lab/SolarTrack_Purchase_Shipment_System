@@ -1,0 +1,516 @@
+<div class="cost-analysis-container p-3 p-md-4">
+
+  <!-- Filters & Actions Toolbar Card -->
+  <div class="st-card filter-toolbar-card mb-3 p-3">
+    <!-- Row 1: Search Box & Actions (Partner, Reset, Save All, Refresh, Copy, Export) -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+      <!-- Search Box -->
+      <div class="search-input-wrapper flex-grow-1" style="max-width: 480px; min-width: 240px;">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white border-end-0 text-muted ps-2.5 pe-2">
+            <app-icon name="search" [size]="14"></app-icon>
+          </span>
+          <input 
+            type="text" 
+            class="form-control border-start-0 ps-1 bg-white fs-8" 
+            [ngModel]="searchQuery()" 
+            (ngModelChange)="onSearchChange($event)"
+            placeholder="Search customer, panel, inverter, partner..." />
+          <button 
+            *ngIf="searchQuery()" 
+            type="button" 
+            class="btn btn-white border-start-0 text-muted pe-2" 
+            (click)="clearSearch()" 
+            title="Clear search">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Controls: Partner Dropdown & Action Buttons -->
+      <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+        <!-- Partner Multiselect Dropdown -->
+        <div class="dropdown position-relative partner-dropdown-container">
+          <button 
+            type="button"
+            class="btn btn-sm btn-outline-secondary dropdown-toggle text-start text-truncate bg-white fs-8 py-1 px-2.5 shadow-none d-inline-flex align-items-center gap-1.5"
+            (click)="togglePartnerDropdown()">
+            <app-icon name="customer" [size]="13"></app-icon>
+            <span>Partner: <strong>{{ partnerDropdownLabel }}</strong></span>
+          </button>
+          
+          <div 
+            class="dropdown-menu partner-dropdown-menu p-2.5 shadow-lg border" 
+            [class.show]="isPartnerMenuOpen()">
+            <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+              <span class="fw-bold fs-8 text-dark">Filter by Partner</span>
+              <div class="d-flex gap-1">
+                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none fs-9" (click)="selectAllPartners()">Select All</button>
+                <span class="text-muted fs-9">|</span>
+                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none fs-9 text-danger" (click)="clearPartners()">Clear</button>
+              </div>
+            </div>
+
+            <!-- (No Partner) filter -->
+            <div class="form-check py-1">
+              <input 
+                class="form-check-input cursor-pointer" 
+                type="checkbox" 
+                id="cost_chk_nopartner"
+                [checked]="isPartnerSelected('(No Partner)')"
+                (change)="togglePartner('(No Partner)')">
+              <label class="form-check-label fs-8 cursor-pointer text-muted fst-italic" for="cost_chk_nopartner">
+                (No Partner)
+              </label>
+            </div>
+
+            <div class="partner-list-scrollable">
+              <div *ngFor="let p of summaryService.partnerList()" class="form-check py-1">
+                <input 
+                  class="form-check-input cursor-pointer" 
+                  type="checkbox" 
+                  [id]="'cost_partner_' + p"
+                  [checked]="isPartnerSelected(p)"
+                  (change)="togglePartner(p)">
+                <label class="form-check-label fs-8 cursor-pointer text-truncate" [for]="'cost_partner_' + p">
+                  {{ p }}
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save All Changes Button (Visible when rows are modified) -->
+        <button 
+          *ngIf="dirtyRowsCount() > 0"
+          type="button" 
+          class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-8 shadow-sm"
+          (click)="saveAllDirty()"
+          title="Save all modified customer records">
+          <app-icon name="check" [size]="13"></app-icon>
+          <span>Save All (<strong>{{ dirtyRowsCount() }}</strong>)</span>
+        </button>
+
+        <!-- Clear All Filters Button -->
+        <button 
+          *ngIf="searchQuery() || selectedPartners().length > 0 || selectedDistrict() !== 'ALL' || selectedStage() !== 'ALL' || sortField() !== null"
+          type="button" 
+          class="btn btn-sm btn-link text-danger text-decoration-none py-1 px-1.5 fs-8 d-inline-flex align-items-center gap-1"
+          (click)="clearAllFilters()"
+          title="Reset all active filters and sorting">
+          <app-icon name="rotate-ccw" [size]="12"></app-icon>
+          <span>Reset</span>
+        </button>
+
+        <!-- Quick Table Actions -->
+        <button 
+          type="button" 
+          class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2 fs-8 shadow-none"
+          (click)="refreshData()"
+          title="Refresh customer data">
+          <app-icon name="refresh" [size]="13"></app-icon>
+          <span>Refresh</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2 fs-8 shadow-none"
+          (click)="copyTableData()"
+          title="Copy table to clipboard">
+          <app-icon name="copy" [size]="13"></app-icon>
+          <span>Copy</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-8 shadow-none"
+          (click)="exportToExcel()"
+          title="Download Excel spreadsheet">
+          <app-icon name="download" [size]="13"></app-icon>
+          <span>Excel</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Row 2: District Filter Chips Strip -->
+    <div class="district-chips-strip d-flex align-items-center gap-1.5 overflow-auto pt-1">
+      <span class="text-secondary fs-9 fw-semibold text-uppercase me-1 flex-shrink-0">District:</span>
+      <button 
+        *ngFor="let item of districtList()"
+        type="button" 
+        class="district-chip"
+        [class.active]="selectedDistrict() === item.district"
+        (click)="selectDistrict(item.district)">
+        <span>{{ item.district === 'ALL' ? 'All Districts' : item.district }}</span>
+        <span class="badge-count">{{ item.count }}</span>
+      </button>
+    </div>
+
+    <!-- Row 3: Workflow Stage Filter Chips Strip -->
+    <div class="stage-chips-strip d-flex align-items-center gap-1.5 overflow-auto pt-1 mt-1 border-top">
+      <span class="text-secondary fs-9 fw-semibold text-uppercase me-1 flex-shrink-0">Stage:</span>
+      <button 
+        *ngFor="let item of stageList()"
+        type="button" 
+        class="stage-chip"
+        [class.active]="selectedStage() === item.stage"
+        (click)="selectStage(item.stage)"
+        [title]="item.stage === 'ALL' ? 'Show all stages' : 'Filter by Stage ' + item.num + ': ' + item.name">
+        <span>{{ item.stage === 'ALL' ? 'All Stages' : (item.num + '. ' + item.name) }}</span>
+        <span class="badge-count">{{ item.count }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Top Action Bar (Exclusion Controls & Count) -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 px-1">
+    <div class="d-flex align-items-center gap-2">
+      <!-- Exclude Selected Button -->
+      <button 
+        *ngIf="selectedSlNos().size > 0"
+        type="button" 
+        class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1.5 py-1 px-2.5 shadow-sm fs-8"
+        (click)="excludeSelected()"
+        title="Exclude selected customers from cost table">
+        <app-icon name="ban" [size]="13" [strokeWidth]="2"></app-icon>
+        <span>Exclude Selected (<strong>{{ selectedSlNos().size }}</strong>)</span>
+      </button>
+
+      <!-- Excluded Dropdown Button -->
+      <div *ngIf="excludedCustomers().length > 0" class="dropdown position-relative excluded-dropdown-container">
+        <button 
+          type="button" 
+          class="btn btn-sm btn-outline-danger dropdown-toggle d-inline-flex align-items-center gap-1.5 py-1 px-2.5 fs-8 shadow-sm"
+          (click)="isExcludedMenuOpen.update(v => !v)"
+          title="View and restore excluded customers">
+          <app-icon name="ban" [size]="13" [strokeWidth]="2"></app-icon>
+          <span>Excluded Customers (<strong>{{ excludedCustomers().length }}</strong>)</span>
+        </button>
+
+        <div 
+          class="dropdown-menu excluded-dropdown-menu p-2 shadow-lg border" 
+          [class.show]="isExcludedMenuOpen()">
+          <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom px-1">
+            <span class="fw-bold text-dark fs-8">Excluded Customers ({{ excludedCustomers().length }})</span>
+            <button 
+              type="button" 
+              class="btn btn-link btn-xs p-0 text-decoration-none text-danger fs-8 fw-semibold d-inline-flex align-items-center gap-1"
+              (click)="restoreAllExcluded()"
+              title="Restore all excluded customers">
+              <app-icon name="rotate-ccw" [size]="12"></app-icon>
+              <span>Restore All</span>
+            </button>
+          </div>
+
+          <div class="excluded-customers-scrollable d-flex flex-column gap-1">
+            <div 
+              *ngFor="let ex of excludedCustomers()" 
+              class="d-flex justify-content-between align-items-center py-1.5 px-2 border rounded bg-white excluded-row-item">
+              <div class="text-truncate me-2">
+                <div class="fw-semibold text-dark fs-8 text-truncate" [title]="ex.name">{{ ex.name }}</div>
+              </div>
+              <button 
+                type="button" 
+                class="btn btn-xs btn-outline-success d-inline-flex align-items-center gap-1 py-0.5 px-2 fs-9 fw-semibold flex-shrink-0"
+                (click)="restoreRow(ex.slNo)"
+                title="Restore {{ ex.name }}">
+                <app-icon name="rotate-ccw" [size]="11" [strokeWidth]="2"></app-icon>
+                <span>Restore</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Cost Analysis Data Table Card (Always Open in Edit Mode) -->
+  <div class="st-card table-card overflow-hidden">
+    <div class="table-responsive cost-table-wrapper">
+      <table class="table table-hover align-middle mb-0 cost-table">
+        <thead class="table-header">
+          <tr>
+            <!-- Checkbox for exclusion -->
+            <th class="th-chk text-center" style="width: 38px;">
+              <input 
+                type="checkbox" 
+                class="form-check-input cursor-pointer" 
+                [checked]="isAllSelected()"
+                [indeterminate]="isPartiallySelected()"
+                (change)="toggleSelectAll()"
+                title="Select all customers for exclusion" />
+            </th>
+            <th class="th-num text-center" style="width: 38px;">#</th>
+            <th class="th-customer text-nowrap" style="min-width: 125px; max-width: 145px; width: 135px;">Customer Name</th>
+            <th class="th-panel text-nowrap sortable-th" 
+                style="min-width: 110px; width: 120px;"
+                (click)="toggleSort('panel')"
+                [attr.aria-sort]="sortField() === 'panel' ? (sortDirection() === 'asc' ? 'ascending' : 'descending') : 'none'"
+                title="Click to sort by Panel Name">
+              <div class="d-inline-flex align-items-center justify-content-between w-100">
+                <span>Panel Name</span>
+                <span class="sort-icon-box" [class.active]="sortField() === 'panel'">
+                  <app-icon *ngIf="sortField() === 'panel' && sortDirection() === 'asc'" name="chevron-up" [size]="12" [strokeWidth]="2.5"></app-icon>
+                  <app-icon *ngIf="sortField() === 'panel' && sortDirection() === 'desc'" name="chevron-down" [size]="12" [strokeWidth]="2.5"></app-icon>
+                  <span *ngIf="sortField() !== 'panel'" class="sort-neutral text-muted">↕</span>
+                </span>
+              </div>
+            </th>
+            <th class="th-inverter text-nowrap sortable-th" 
+                style="min-width: 110px; width: 120px;"
+                (click)="toggleSort('inverter')"
+                [attr.aria-sort]="sortField() === 'inverter' ? (sortDirection() === 'asc' ? 'ascending' : 'descending') : 'none'"
+                title="Click to sort by Inverter Name">
+              <div class="d-inline-flex align-items-center justify-content-between w-100">
+                <span>Inverter Name</span>
+                <span class="sort-icon-box" [class.active]="sortField() === 'inverter'">
+                  <app-icon *ngIf="sortField() === 'inverter' && sortDirection() === 'asc'" name="chevron-up" [size]="12" [strokeWidth]="2.5"></app-icon>
+                  <app-icon *ngIf="sortField() === 'inverter' && sortDirection() === 'desc'" name="chevron-down" [size]="12" [strokeWidth]="2.5"></app-icon>
+                  <span *ngIf="sortField() !== 'inverter'" class="sort-neutral text-muted">↕</span>
+                </span>
+              </div>
+            </th>
+            <th class="th-asking text-end text-nowrap" style="min-width: 95px; width: 105px;">Asking Price</th>
+            <th class="th-billing text-end text-nowrap" style="min-width: 95px; width: 105px;">Billing Price</th>
+            <th class="th-system text-end text-nowrap" style="min-width: 95px; width: 105px;">System Cost</th>
+            <th class="th-gst text-end" style="width: 66px; min-width: 62px;">GST@5%</th>
+            <th class="th-install text-end" style="width: 72px; min-width: 68px;" title="Installation Cost">Install Cost</th>
+            <th class="th-meter text-end" style="width: 70px; min-width: 66px;" title="Net Meter Cost">Net Meter</th>
+            <th class="th-delivery text-end" style="width: 68px; min-width: 64px;" title="Delivery Cost">Delivery</th>
+            <th class="th-others text-end" style="width: 64px; min-width: 60px;">Others</th>
+            <th class="th-desc text-nowrap" style="min-width: 140px;">Descriptions</th>
+            <th class="th-actions text-center" style="width: 42px; min-width: 42px;">Save</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <!-- Empty State -->
+          <tr *ngIf="filteredRows().length === 0">
+            <td colspan="15" class="text-center py-5">
+              <div class="empty-state-box text-center py-4">
+                <div class="fs-1 mb-2">📋</div>
+                <h5 class="fw-bold text-dark mb-1">No Customers Found</h5>
+                <p class="text-muted fs-8 mb-3">No customer records match your active search, partner, or district filters.</p>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="clearAllFilters()">
+                  Reset All Filters
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Data Rows (All in Edit Mode) -->
+          <tr 
+            *ngFor="let r of filteredRows(); let idx = index; trackBy: trackBySlNo" 
+            [class.row-selected]="isRowSelected(r.slNo)"
+            [class.row-dirty]="r.isDirty">
+            
+            <!-- Checkbox -->
+            <td class="text-center" (click)="$event.stopPropagation()">
+              <input 
+                type="checkbox" 
+                class="form-check-input cursor-pointer" 
+                [checked]="isRowSelected(r.slNo)"
+                (change)="toggleSelectRow(r.slNo)" />
+            </td>
+
+            <!-- Index -->
+            <td class="text-center text-muted font-mono fs-8">{{ idx + 1 }}</td>
+
+            <!-- Customer Name (Compact Width) -->
+            <td class="td-customer" style="max-width: 145px;">
+              <span class="customer-name fw-bold text-dark fs-8 text-truncate" [title]="r.name">
+                {{ r.name }}
+              </span>
+            </td>
+
+            <!-- Panel Name (Editable Input) -->
+            <td class="td-panel">
+              <input 
+                type="text" 
+                class="form-control form-control-sm table-input brand-input" 
+                [(ngModel)]="r.pvModuleMake" 
+                (ngModelChange)="markDirty(r)" 
+                list="panelBrandsList"
+                placeholder="Panel Make" />
+            </td>
+
+            <!-- Inverter Name (Editable Input) -->
+            <td class="td-inverter">
+              <input 
+                type="text" 
+                class="form-control form-control-sm table-input brand-input font-mono" 
+                [(ngModel)]="r.inverterMake" 
+                (ngModelChange)="markDirty(r)" 
+                list="inverterBrandsList"
+                placeholder="Inverter Make" />
+            </td>
+
+            <!-- Asking Price (Editable Input) -->
+            <td class="td-asking text-end">
+              <input 
+                type="number" 
+                class="form-control form-control-sm table-input number-input" 
+                [(ngModel)]="r.askingPrice" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="0" />
+            </td>
+
+            <!-- Billing Price (Editable Input - Updates GST@5% dynamically) -->
+            <td class="td-billing text-end">
+              <input 
+                type="number" 
+                class="form-control form-control-sm table-input number-input" 
+                [(ngModel)]="r.billingPrice" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="0" />
+            </td>
+
+            <!-- System Cost (Editable Input) -->
+            <td class="td-system text-end">
+              <input 
+                type="number" 
+                class="form-control form-control-sm table-input number-input" 
+                [(ngModel)]="r.systemCost" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="0" />
+            </td>
+
+            <!-- GST@5% (Plain Text, strictly upon Billing price, compact width) -->
+            <td class="td-gst text-end font-mono fs-8 fw-semibold text-dark" style="max-width: 66px;">
+              {{ r.billingPrice ? ('₹' + (getGst5(r) | number:'1.0-0')) : '₹0' }}
+            </td>
+
+            <!-- Installation Cost (Editable Input - Compact 4-digit width) -->
+            <td class="td-install text-end">
+              <input 
+                type="number" 
+                class="form-control form-control-sm table-input short-number-input" 
+                [(ngModel)]="r.installCost" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="0" />
+            </td>
+
+            <!-- Net Meter Cost (Editable Input - Compact 4-digit width) -->
+            <td class="td-meter text-end">
+              <input 
+                type="number" 
+                class="form-control form-control-sm table-input short-number-input" 
+                [(ngModel)]="r.meterCost" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="0" />
+            </td>
+
+            <!-- Delivery Cost (Editable Input - Compact 4-digit width) -->
+            <td class="td-delivery text-end">
+              <input 
+                type="number" 
+                class="form-control form-control-sm table-input short-number-input" 
+                [(ngModel)]="r.deliveryCost" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="0" />
+            </td>
+
+            <!-- Others (Editable Input - Compact 4-digit width) -->
+            <td class="td-others text-end">
+              <input 
+                type="number" 
+                class="form-control form-control-sm table-input short-number-input" 
+                [(ngModel)]="r.otherCost" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="0" />
+            </td>
+
+            <!-- Descriptions (Editable Input) -->
+            <td class="td-desc">
+              <input 
+                type="text" 
+                class="form-control form-control-sm table-input desc-input" 
+                [(ngModel)]="r.description" 
+                (ngModelChange)="markDirty(r)" 
+                placeholder="Add note..." />
+            </td>
+
+            <!-- Action (Icon Only, reduced column width) -->
+            <td class="text-center" (click)="$event.stopPropagation()" style="width: 42px;">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-save-icon shadow-none"
+                [class.btn-primary]="r.isDirty"
+                [class.btn-outline-secondary]="!r.isDirty"
+                (click)="saveRow(r)"
+                [disabled]="r.isSaving"
+                title="Save changes for {{ r.name }}">
+                <span *ngIf="r.isSaving" class="spinner-border spinner-border-sm" role="status" style="width: 12px; height: 12px;"></span>
+                <app-icon *ngIf="!r.isSaving" name="check" [size]="13"></app-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Sticky Totals Footer -->
+        <tfoot *ngIf="filteredRows().length > 0" class="table-totals-footer">
+          <tr class="fw-bold">
+            <td colspan="5" class="text-end text-uppercase fs-8 font-mono pe-3">
+              Total ({{ totals().count }} Customers):
+            </td>
+            <td class="text-end font-mono fs-8 text-dark">
+              ₹{{ totals().asking | number:'1.0-0' }}
+            </td>
+            <td class="text-end font-mono fs-8 text-info-emphasis">
+              ₹{{ totals().billing | number:'1.0-0' }}
+            </td>
+            <td class="text-end font-mono fs-8 text-warning-emphasis">
+              ₹{{ totals().system | number:'1.0-0' }}
+            </td>
+            <td class="text-end font-mono fs-8 text-dark fw-bold">
+              ₹{{ totals().gst5 | number:'1.0-0' }}
+            </td>
+            <td class="text-end font-mono fs-8">
+              ₹{{ totals().install | number:'1.0-0' }}
+            </td>
+            <td class="text-end font-mono fs-8">
+              ₹{{ totals().meter | number:'1.0-0' }}
+            </td>
+            <td class="text-end font-mono fs-8">
+              ₹{{ totals().delivery | number:'1.0-0' }}
+            </td>
+            <td class="text-end font-mono fs-8">
+              ₹{{ totals().others | number:'1.0-0' }}
+            </td>
+            <td colspan="2" class="text-muted fs-9 fst-italic">
+              Net Cost: ₹{{ totals().totalExpense | number:'1.0-0' }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Datalists for Quick Brand Autocomplete -->
+  <datalist id="panelBrandsList">
+    <option value="ADANI">
+    <option value="WAAREE">
+    <option value="SUNORA">
+    <option value="UTL/EASTMAN">
+    <option value="VIKRAM">
+    <option value="GOLDI">
+    <option value="TATA POWER SOLAR">
+    <option value="LUMINOUS">
+    <option value="RENEW">
+    <option value="PREMIER ENERGIES">
+  </datalist>
+
+  <datalist id="inverterBrandsList">
+    <option value="SUNORA">
+    <option value="UTL">
+    <option value="EASTMAN">
+    <option value="WAAREE">
+    <option value="GROWATT">
+    <option value="DEYE">
+    <option value="SOLIS">
+    <option value="LUMINOUS">
+    <option value="HAVELLS">
+    <option value="POLYCAB">
+  </datalist>
+
+</div>

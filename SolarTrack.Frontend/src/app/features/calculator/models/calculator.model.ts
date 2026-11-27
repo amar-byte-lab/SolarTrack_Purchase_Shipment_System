@@ -269,6 +269,9 @@ export interface BatteryReserveAdvisory {
   message: string;
   morningReservePct: number;
   estimatedReserveKwh: number;
+  nightDischargeKwh?: number;
+  odiaMessage?: string;
+  upgradeText?: string;
 }
 
 export interface SystemCostEstimation {

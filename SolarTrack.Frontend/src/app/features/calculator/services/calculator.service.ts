@@ -34,6 +34,44 @@ export class CalculatorService {
   readonly dayBackupHours = signal<number>(3); // Daytime (9 AM to 4 PM, max 7 hrs)
   readonly nightBackupHours = signal<number>(8); // Nighttime (5 PM to 8 AM, max 15 hrs)
 
+  toOdiaNum(val: number | string | undefined | null): string {
+    if (val === undefined || val === null) return '';
+    const odiaDigits = ['୦', '୧', '୨', '୩', '୪', '୫', '୬', '୭', '୮', '୯'];
+    return val.toString().replace(/\d/g, d => odiaDigits[parseInt(d, 10)]);
+  }
+
+  getAppDefaultDayHours(app: ApplianceItem): number {
+    if (app.dayBackupHours !== undefined) return Number(app.dayBackupHours);
+    const id = (app.id || '').toLowerCase();
+    const name = (app.name || '').toLowerCase();
+    if (id.includes('pump') || name.includes('pump')) return 1;
+    if (id.includes('geyser') || name.includes('geyser')) return 1;
+    if (id.includes('wm') || name.includes('washing')) return 1;
+    if (id.includes('iron') || name.includes('iron')) return 0.5;
+    if (id.includes('laptop') || id.includes('comp') || name.includes('laptop') || name.includes('computer')) return 6;
+    if (id.includes('bulb') || id.includes('led') || name.includes('bulb') || name.includes('light')) return 3;
+    if (id.includes('fan') || name.includes('fan')) return 5;
+    if (id.includes('tv') || name.includes('tv')) return 4;
+    if (id.includes('fridge') || name.includes('refrigerator')) return 7;
+    return Math.min(7, Math.max(0, Number(app.defaultHours) || this.dayBackupHours()));
+  }
+
+  getAppDefaultNightHours(app: ApplianceItem): number {
+    if (app.nightBackupHours !== undefined) return Number(app.nightBackupHours);
+    const id = (app.id || '').toLowerCase();
+    const name = (app.name || '').toLowerCase();
+    if (id.includes('pump') || name.includes('pump')) return 0;
+    if (id.includes('geyser') || name.includes('geyser')) return 0;
+    if (id.includes('wm') || name.includes('washing')) return 0;
+    if (id.includes('iron') || name.includes('iron')) return 0;
+    if (id.includes('laptop') || id.includes('comp') || name.includes('laptop') || name.includes('computer')) return 2;
+    if (id.includes('bulb') || id.includes('led') || name.includes('bulb') || name.includes('light')) return 6;
+    if (id.includes('fan') || name.includes('fan')) return 8;
+    if (id.includes('tv') || name.includes('tv')) return 5;
+    if (id.includes('fridge') || name.includes('refrigerator')) return 17;
+    return Math.min(17, Math.max(0, Number(app.backupHours) || this.nightBackupHours()));
+  }
+
   setDayBackupHours(hrs: number) {
     const val = Math.max(0, Math.min(7, Number(hrs) || 0));
     this.dayBackupHours.set(val);
@@ -249,10 +287,11 @@ export class CalculatorService {
       const totalConnectedAppWatts = ratedWatts * qty;
       connectedLoadW += totalConnectedAppWatts;
 
-      const isBackup = app.isBackup !== undefined ? !!app.isBackup : true;
-      const backupQty = app.backupQty !== undefined
-        ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0))
-        : (isBackup ? qty : 0);
+      const isOffGrid = sysTypeKey === 'off-grid';
+      const isBackup = isOffGrid ? true : (app.isBackup !== undefined ? !!app.isBackup : true);
+      const backupQty = isOffGrid
+        ? qty
+        : (app.backupQty !== undefined ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0)) : (isBackup ? qty : 0));
       const totalBackupAppWatts = runningWatts * backupQty;
 
       if (isBackup && backupQty > 0) {
@@ -300,28 +339,26 @@ export class CalculatorService {
     let dayBackupEnergyWh = 0;
     let nightBackupEnergyWh = 0;
 
-    let hasAnyCustomDayNight = false;
     rawAppliances.forEach(app => {
-      if (app.checked && app.isBackup !== false) {
+      const isOffGrid = sysTypeKey === 'off-grid';
+      const isBackupApplicable = isOffGrid || app.isBackup !== false;
+      if (app.checked && isBackupApplicable) {
         const qty = Math.max(0, Math.floor(Number(app.qty !== undefined ? app.qty : app.defaultQty) || 0));
-        const bQty = app.backupQty !== undefined ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0)) : qty;
-        if (bQty > 0 && (app.dayBackupHours !== undefined || app.nightBackupHours !== undefined)) {
-          hasAnyCustomDayNight = true;
+        const bQty = isOffGrid
+          ? qty
+          : (app.backupQty !== undefined ? Math.max(0, Math.min(qty, Number(app.backupQty) || 0)) : (app.isBackup !== false ? qty : 0));
+        if (bQty > 0) {
           const w = Math.max(0, Number(app.watts) || 0);
-          dayBackupEnergyWh += w * bQty * (app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : 0);
-          nightBackupEnergyWh += w * bQty * (app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : 0);
+          const dHrs = app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : this.getAppDefaultDayHours(app);
+          const nHrs = app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : this.getAppDefaultNightHours(app);
+          dayBackupEnergyWh += w * bQty * dHrs;
+          nightBackupEnergyWh += w * bQty * nHrs;
         }
       }
     });
 
-    if (!hasAnyCustomDayNight) {
-      dayBackupEnergyWh = Math.round(dayBackupLoadW * dayBackupHours);
-      nightBackupEnergyWh = Math.round(nightBackupLoadW * nightBackupHours);
-    } else {
-      dayBackupEnergyWh = Math.round(dayBackupEnergyWh);
-      nightBackupEnergyWh = Math.round(nightBackupEnergyWh);
-    }
-
+    dayBackupEnergyWh = Math.round(dayBackupEnergyWh);
+    nightBackupEnergyWh = Math.round(nightBackupEnergyWh);
     const dayNightSumWh = dayBackupEnergyWh + nightBackupEnergyWh;
 
     const maxMotorSurgeDeltaW = motorSurgeDeltas.length > 0 ? Math.max(...motorSurgeDeltas) : 0;
@@ -352,9 +389,20 @@ export class CalculatorService {
     if (userCustomBackup !== null && userCustomBackup > 0) {
       targetBackupEnergyWh = Math.round(userCustomBackup * 1000);
       effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
-    } else if (isSolarWithBattery && dayNightSumWh > 0) {
-      targetBackupEnergyWh = dayNightSumWh;
-      effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : (dayBackupHours + nightBackupHours);
+    } else if (sysTypeKey === 'off-grid') {
+      // In Off-Grid:
+      // Daytime load (dayBackupEnergyWh) is powered directly by solar PV during 9am–4pm (0 battery drain).
+      // Battery bank is sized to supply Nighttime load (nightBackupEnergyWh, 4pm–9am)
+      // plus ~45% Morning Reserve buffer so 35%–40% charge remains at sunrise for cloudy days & 10+ yr life!
+      const baseNightWh = nightBackupEnergyWh > 0 ? nightBackupEnergyWh : (dayNightSumWh > 0 ? Math.round(dayNightSumWh * 0.65) : backupApplianceDailyWh);
+      targetBackupEnergyWh = Math.round(baseNightWh * 1.45);
+      effectiveBackupHours = nightBackupLoadW > 0 ? Math.round((baseNightWh / nightBackupLoadW) * 10) / 10 : 17;
+    } else if (sysTypeKey === 'hybrid') {
+      // In Hybrid:
+      // Daytime load runs on PV/grid. Battery supplies night load or outage backup with 25% safety buffer.
+      const baseNightWh = nightBackupEnergyWh > 0 ? nightBackupEnergyWh : (backupLoadW * backupHours);
+      targetBackupEnergyWh = Math.round(baseNightWh * 1.25);
+      effectiveBackupHours = backupLoadW > 0 ? Math.round((baseNightWh / backupLoadW) * 10) / 10 : backupHours;
     } else if (backupApplianceDailyWh > 0) {
       targetBackupEnergyWh = backupApplianceDailyWh;
       effectiveBackupHours = backupLoadW > 0 ? Math.round((targetBackupEnergyWh / backupLoadW) * 10) / 10 : backupHours;
@@ -367,7 +415,8 @@ export class CalculatorService {
     }
 
     if (isMonthlyUnitsBasis && sysTypeKey === 'off-grid' && backupApplianceDailyWh <= 0 && userCustomBackup === null) {
-      targetBackupEnergyWh = Math.round(dailyDemandKwh * 1000 * (17 / 24));
+      const baseNightWh = Math.round(dailyDemandKwh * 1000 * (17 / 24));
+      targetBackupEnergyWh = Math.round(baseNightWh * 1.45);
       effectiveBackupHours = 17;
     }
 
@@ -379,7 +428,16 @@ export class CalculatorService {
       dailyDemandKwh = Math.max(dailyDemandKwh, userCustomBackup);
     }
 
-    const estBatteryRechargeKwh = targetBackupEnergyWh / (((Number(params.batteryChargingEffPct) || 88) / 100) * 1000);
+    // Solar PV Sizing (Daytime Direct Load + Battery Night Recharge):
+    const chargeEff = ((Number(params.batteryChargingEffPct) || 88) / 100);
+    // In Off-Grid & Hybrid, battery is only drained by Night consumption (nightBackupEnergyWh) each day:
+    const dailyBatteryDischargeKwh = (sysTypeKey === 'off-grid' || sysTypeKey === 'hybrid')
+      ? (nightBackupEnergyWh / 1000)
+      : (targetBackupEnergyWh / 1000);
+    const estBatteryRechargeKwh = dailyBatteryDischargeKwh / chargeEff;
+    const daytimeDirectKwh = (sysTypeKey === 'off-grid' || sysTypeKey === 'hybrid')
+      ? (dayBackupEnergyWh / 1000)
+      : Math.max(0, dailyDemandKwh - (targetBackupEnergyWh / 1000));
 
     let solarResult: SolarCalculationResult | null = null;
     if (sysMeta.requiresSolar && sysTypeKey !== 'without-solar') {
@@ -391,6 +449,8 @@ export class CalculatorService {
         dailyUsageKwh: dailyDemandKwh,
         batteryBackupKwh: backupEnergyKwh,
         batteryRechargeKwh: estBatteryRechargeKwh,
+        daytimeDirectKwh,
+        nightBackupKwh: dailyBatteryDischargeKwh,
         peakSunHours: Number(params.peakSunHours) || 5.0,
         pvSystemEfficiencyPct: Number(params.pvSystemEfficiencyPct) || 78,
         inverterLossPct: Number(params.inverterLossPct) || 4,
@@ -794,12 +854,24 @@ export class CalculatorService {
     if (batteryResult && sysMeta.requiresBattery && batteryResult.totalInstalledKwh > 0) {
       const reservePct = chosenBatteryType === 'lithium' ? 40 : 25;
       const reserveKwh = Math.round((batteryResult.totalInstalledKwh * (reservePct / 100)) * 10) / 10;
+      const nightUnits = Math.round(dailyBatteryDischargeKwh * 100) / 100;
+      const reserveMin = (nightUnits * 0.35).toFixed(1);
+      const reserveMax = (nightUnits * 0.40).toFixed(1);
+      const dcVolt = batteryResult.systemVoltage || 48;
+      const ah = batteryResult.systemBankAh || 150;
+      const upgradeAh = ah <= 150 ? 250 : Math.round(ah * 1.5);
+      const odiaMsg = `ରାତିର ${this.toOdiaNum(nightUnits.toFixed(2))} ୟୁନିଟ୍ ଖର୍ଚ୍ଚ ପରେ ବି ସକାଳକୁ ପ୍ରାୟ ୩୫–୪୦% (${this.toOdiaNum(reserveMin)} ରୁ ${this.toOdiaNum(reserveMax)} ୟୁନିଟ୍) ଚାର୍ଜ ବଞ୍ଚିକି ରହିବ, ଯାହା ବାଦଲିଆ ପାଗରେ ବ୍ୟାକଅପ୍ ଦେବ ଓ ବ୍ୟାଟେରୀ ୧୦+ ବର୍ଷ ଚାଲିବ । (ବର୍ଷା ଦିନେ ଅଧିକ ବ୍ୟାକଅପ୍ ପାଇଁ ${dcVolt}V ${upgradeAh}Ah ବ୍ୟାଟେରୀ ନେଇପାରିବେ) ।`;
+      const upgradeTxt = `For extended rainy-season backup autonomy, consider upgrading to a ${dcVolt}V ${upgradeAh}Ah battery bank.`;
+
       batteryReserveAdvisory = {
         isApplicable: true,
         title: 'Battery Morning Reserve & Longevity Strategy',
         message: `Sized with a ~${reservePct}% morning safety reserve (~${reserveKwh} kWh) so the battery bank avoids deep depletion before sunrise, delivering uninterrupted power during consecutive rainy/cloudy days and ensuring 10+ years operational lifespan.`,
         morningReservePct: reservePct,
-        estimatedReserveKwh: reserveKwh
+        estimatedReserveKwh: reserveKwh,
+        nightDischargeKwh: nightUnits,
+        odiaMessage: odiaMsg,
+        upgradeText: upgradeTxt
       };
     }
 
@@ -1234,6 +1306,8 @@ export class CalculatorService {
     dailyUsageKwh: number;
     batteryBackupKwh?: number;
     batteryRechargeKwh?: number;
+    daytimeDirectKwh?: number;
+    nightBackupKwh?: number;
     peakSunHours: number;
     pvSystemEfficiencyPct: number;
     inverterLossPct: number;
@@ -1254,15 +1328,23 @@ export class CalculatorService {
     }
 
     let totalSolarDailyTargetKwh = dailyDemand;
-    if (opts.systemType === 'off-grid') {
+    let daytimeDirectKwh = opts.daytimeDirectKwh;
+    let batteryRechargingKwh = opts.batteryRechargeKwh;
+
+    if (opts.systemType === 'off-grid' || opts.systemType === 'hybrid') {
       const chargeEff = (Number(this.db.getParams().batteryChargingEffPct) || 88) / 100;
-      // In Off-Grid, total solar target must meet daytime direct usage + battery recharge energy.
-      // Crucial: avoid adding full dailyDemand to full rechargeKwh (which would double-count energy)!
-      const backupKwh = (opts.batteryBackupKwh !== undefined && opts.batteryBackupKwh > 0)
-        ? opts.batteryBackupKwh
-        : (opts.batteryRechargeKwh ? opts.batteryRechargeKwh * chargeEff : dailyDemand);
-      const daytimeKwh = Math.max(0, dailyDemand - backupKwh);
-      const rechargeKwh = backupKwh / chargeEff;
+      // In Off-Grid & Hybrid, total solar PV target = daytime direct consumption + battery night recharge
+      const daytimeKwh = opts.daytimeDirectKwh !== undefined && opts.daytimeDirectKwh >= 0
+        ? opts.daytimeDirectKwh
+        : Math.max(0, dailyDemand - (opts.batteryBackupKwh || 0));
+
+      const nightKwh = opts.nightBackupKwh !== undefined && opts.nightBackupKwh > 0
+        ? opts.nightBackupKwh
+        : (opts.batteryBackupKwh ? opts.batteryBackupKwh / 1.45 : dailyDemand * 0.65);
+
+      const rechargeKwh = nightKwh / chargeEff;
+      daytimeDirectKwh = Math.round(daytimeKwh * 100) / 100;
+      batteryRechargingKwh = Math.round(rechargeKwh * 100) / 100;
       totalSolarDailyTargetKwh = Math.round((daytimeKwh + rechargeKwh) * 1000) / 1000;
     }
 
@@ -1309,6 +1391,8 @@ export class CalculatorService {
       estMonthlyGenUnits,
       estAnnualGenUnits,
       roofAreaSqFt,
+      daytimeDirectKwh,
+      batteryRechargingKwh,
       lossBreakdown: {
         inverterLossPct: lossPct[0],
         dcAcCableLossPct: lossPct[1],

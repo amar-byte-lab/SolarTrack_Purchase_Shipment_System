@@ -231,6 +231,48 @@
         </div>
       }
 
+      <!-- Day & Night Energy Requirement Summary Strip (Off-Grid & Hybrid) -->
+      @if (calc.systemType() === 'off-grid' || calc.systemType() === 'hybrid') {
+        <div class="mt-2.5 p-2.5 rounded-3 bg-white border shadow-2xs" id="boxDayNightEnergySummary">
+          <div class="d-flex align-items-center justify-content-between mb-1.5 flex-wrap gap-1">
+            <span class="fw-bold text-dark fs-8">⚡ Day & Night Energy Requirement:</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-9 px-2 py-0.5 rounded-pill">
+              Total: {{ (((calc.result().dayBackupEnergyWh || 0) + (calc.result().nightBackupEnergyWh || 0)) / 1000).toFixed(2) }} kWh / day
+            </span>
+          </div>
+          <div class="row g-2 text-center">
+            <!-- Day Demand -->
+            <div class="col-6">
+              <div class="p-2 rounded-2 bg-warning-subtle border border-warning-subtle h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="text-muted fs-9 fw-semibold mb-0.5">☀️ Day Demand (9am–4pm)</div>
+                  <div class="fs-7 fw-bold text-dark">
+                    {{ ((calc.result().dayBackupEnergyWh || 0) / 1000).toFixed(2) }} <span class="fs-9 fw-normal text-muted">kWh</span>
+                  </div>
+                </div>
+                <div class="fs-9 text-success fw-medium mt-1">
+                  Direct Solar PV (0 Battery Drain)
+                </div>
+              </div>
+            </div>
+            <!-- Night Demand -->
+            <div class="col-6">
+              <div class="p-2 rounded-2 bg-primary-subtle border border-primary-subtle h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="text-muted fs-9 fw-semibold mb-0.5">🌙 Night Demand (4pm–9am)</div>
+                  <div class="fs-7 fw-bold text-dark">
+                    {{ ((calc.result().nightBackupEnergyWh || 0) / 1000).toFixed(2) }} <span class="fs-9 fw-normal text-muted">kWh</span>
+                  </div>
+                </div>
+                <div class="fs-9 text-primary fw-medium mt-1">
+                  Battery Bank: <strong>{{ ((calc.result().targetBackupEnergyWh || 0) / 1000).toFixed(2) }} kWh</strong> (~40% Reserve)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
     </div>
 
   </div>

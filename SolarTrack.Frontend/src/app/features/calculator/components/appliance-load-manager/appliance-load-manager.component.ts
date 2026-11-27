@@ -96,10 +96,14 @@ export class ApplianceLoadManagerComponent {
 
   readonly localDayBackupEnergyWh = computed(() => {
     let total = 0;
+    const isOffGrid = this.calc.systemType() === 'off-grid';
     for (const app of this.localAppliances()) {
-      if (app.checked && app.isBackup !== false) {
+      const isEligible = isOffGrid || app.isBackup !== false;
+      if (app.checked && isEligible) {
         const qty = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
-        const bQty = Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
+        const bQty = isOffGrid
+          ? qty
+          : Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
         const dayH = app.dayBackupHours !== undefined ? Number(app.dayBackupHours) : this.getAppDefaultDayHours(app);
         if (bQty > 0) {
           total += (Number(app.watts) || 0) * bQty * dayH;
@@ -111,10 +115,14 @@ export class ApplianceLoadManagerComponent {
 
   readonly localNightBackupEnergyWh = computed(() => {
     let total = 0;
+    const isOffGrid = this.calc.systemType() === 'off-grid';
     for (const app of this.localAppliances()) {
-      if (app.checked && app.isBackup !== false) {
+      const isEligible = isOffGrid || app.isBackup !== false;
+      if (app.checked && isEligible) {
         const qty = Math.max(0, Number(app.defaultQty !== undefined ? app.defaultQty : app.qty) || 0);
-        const bQty = Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
+        const bQty = isOffGrid
+          ? qty
+          : Math.min(qty, Math.max(0, app.backupQty !== undefined ? Number(app.backupQty) || 0 : qty));
         const nightH = app.nightBackupHours !== undefined ? Number(app.nightBackupHours) : this.getAppDefaultNightHours(app);
         if (bQty > 0) {
           total += (Number(app.watts) || 0) * bQty * nightH;

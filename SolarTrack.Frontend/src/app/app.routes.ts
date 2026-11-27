@@ -12,7 +12,9 @@ import { DocumentComponent } from './features/document/document.component';
 import { InventoryComponent } from './features/inventory/inventory.component';
 import { CalculatorComponent } from './features/calculator/calculator.component';
 import { SizingCalculationComponent } from './features/sizing-calculation/sizing-calculation.component';
+import { CostAnalysisComponent } from './features/cost-analysis/cost-analysis.component';
 import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -23,6 +25,8 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'summary', component: SummaryComponent },
+      { path: 'cost-analysis', component: CostAnalysisComponent, canActivate: [adminGuard] },
+      { path: 'customer-cost', redirectTo: 'cost-analysis' },
       { path: 'quotation', component: QuotationComponent },
       { path: 'ledger', component: LedgerComponent },
       { path: 'reports', component: ReportsComponent },

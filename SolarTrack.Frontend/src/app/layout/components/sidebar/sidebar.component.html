@@ -1,4 +1,4 @@
-<aside id="sidebar" [class.open]="navService.isMobileSidebarOpen()">
+<aside id="sidebar" [class.open]="navService.isSidebarOpen()">
   <!-- Brand Header -->
   <div class="brand">
     <div class="d-flex align-items-center gap-2 overflow-hidden" title="Shri Trutiyadev Solar Enterprises">
@@ -9,10 +9,11 @@
       </div>
     </div>
     <button 
-      class="btn text-secondary p-0 d-md-none border-0 fs-5 flex-shrink-0" 
-      (click)="navService.closeMobileSidebar()" 
+      type="button"
+      class="btn text-secondary p-0 border-0 fs-5 flex-shrink-0 btn-sidebar-close" 
+      (click)="navService.closeSidebar()" 
       title="Close Menu" 
-      style="line-height: 1; opacity: 0.85; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+      style="line-height: 1; opacity: 0.85; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
       ✕
     </button>
   </div>

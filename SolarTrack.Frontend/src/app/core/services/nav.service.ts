@@ -15,11 +15,13 @@ export interface NavItem {
 export class NavService {
   private router = inject(Router);
 
+  isSidebarOpen = signal<boolean>(typeof window !== 'undefined' ? window.innerWidth > 900 : true);
   isMobileSidebarOpen = signal<boolean>(false);
   pageTitle = signal<string>('Solar Track ERP');
 
   readonly navItems: NavItem[] = [
     { path: '/summary', label: 'Summary', icon: 'summary' },
+    { path: '/cost-analysis', label: 'Cost Analysis', icon: 'table', roles: ['admin', 'superadmin'] },
     { path: '/inventory', label: 'Inventory', icon: 'boxes' },
     { path: '/files', label: 'Upload File', icon: 'file' },
     { path: '/quotation', label: 'Quotation', icon: 'offer' },
@@ -48,6 +50,8 @@ export class NavService {
     const path = url.split('?')[0].split('#')[0];
     if (path.startsWith('/summary')) {
       this.pageTitle.set('Summary');
+    } else if (path.startsWith('/cost-analysis') || path.startsWith('/customer-cost')) {
+      this.pageTitle.set('Cost Analysis');
     } else if (path.startsWith('/inventory')) {
       this.pageTitle.set('Inventory');
     } else if (path.startsWith('/files')) {
@@ -69,12 +73,27 @@ export class NavService {
     }
   }
 
+  toggleSidebar(): void {
+    this.isSidebarOpen.update(v => !v);
+    this.isMobileSidebarOpen.set(this.isSidebarOpen());
+  }
+
+  closeSidebar(): void {
+    this.isSidebarOpen.set(false);
+    this.isMobileSidebarOpen.set(false);
+  }
+
+  openSidebar(): void {
+    this.isSidebarOpen.set(true);
+    this.isMobileSidebarOpen.set(true);
+  }
+
   toggleMobileSidebar(): void {
-    this.isMobileSidebarOpen.update(v => !v);
+    this.toggleSidebar();
   }
 
   closeMobileSidebar(): void {
-    this.isMobileSidebarOpen.set(false);
+    this.closeSidebar();
   }
 
   setPageTitle(title: string): void {

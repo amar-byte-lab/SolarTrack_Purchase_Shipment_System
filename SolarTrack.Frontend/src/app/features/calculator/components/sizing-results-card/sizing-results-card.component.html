@@ -267,7 +267,7 @@
                   <li>• 2–3 Hours Fast Charging</li>
                   <li>• 90% Usable DoD (High Conversion Efficiency)</li>
                   @if (calc.result().isSolarWithBattery) {
-                    <li>• <strong>Day & Night Autonomy:</strong> ☀️ Day: ~{{ calc.result().dayBackupHours }}h | 🌙 Night: ~{{ calc.result().nightBackupHours }}h</li>
+                    <li>• <strong>Day & Night Autonomy:</strong> ☀️ Day: Direct Solar PV (9am–4pm, 0 battery drain) | 🌙 Night: ~{{ calc.result().nightBackupHours }}h (~{{ calc.result().batteryReserveAdvisory?.nightDischargeKwh || calc.result().backupEnergyKwh }} kWh)</li>
                   }
                 </ul>
 
@@ -298,7 +298,7 @@
                   <li>• Periodic Distilled Water Top-Up Required</li>
                   <li>• 75% Usable DoD ({{ calc.result().batteryTubular?.usableKwh }} kWh Usable)</li>
                   @if (calc.result().isSolarWithBattery) {
-                    <li>• <strong>Day & Night Autonomy:</strong> ☀️ Day: ~{{ calc.result().dayBackupHours }}h | 🌙 Night: ~{{ calc.result().nightBackupHours }}h</li>
+                    <li>• <strong>Day & Night Autonomy:</strong> ☀️ Day: Direct Solar PV (9am–4pm, 0 battery drain) | 🌙 Night: ~{{ calc.result().nightBackupHours }}h (~{{ calc.result().batteryReserveAdvisory?.nightDischargeKwh || calc.result().backupEnergyKwh }} kWh)</li>
                   }
                 </ul>
 
@@ -329,7 +329,7 @@
                   <li>• Frequent Distilled Water Top-Up Required</li>
                   <li>• 65% Usable DoD ({{ calc.result().batteryFlatPlate?.usableKwh }} kWh Usable)</li>
                   @if (calc.result().isSolarWithBattery) {
-                    <li>• <strong>Day & Night Autonomy:</strong> ☀️ Day: ~{{ calc.result().dayBackupHours }}h | 🌙 Night: ~{{ calc.result().nightBackupHours }}h</li>
+                    <li>• <strong>Day & Night Autonomy:</strong> ☀️ Day: Direct Solar PV (9am–4pm, 0 battery drain) | 🌙 Night: ~{{ calc.result().nightBackupHours }}h (~{{ calc.result().batteryReserveAdvisory?.nightDischargeKwh || calc.result().backupEnergyKwh }} kWh)</li>
                   }
                 </ul>
 
@@ -426,15 +426,25 @@
       <div class="d-flex align-items-start gap-2.5">
         <span class="fs-4 flex-shrink-0">🛡️</span>
         <div class="flex-grow-1">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1.5">
             <span class="fw-bold text-dark fs-7">{{ calc.result().batteryReserveAdvisory?.title }}</span>
-            <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold fs-9 py-0.5 px-2 rounded-pill">
-              ~{{ calc.result().batteryReserveAdvisory?.morningReservePct }}% Morning Reserve
+            <span class="badge bg-success text-white fw-semibold fs-9 py-0.5 px-2 rounded-pill">
+              ~{{ calc.result().batteryReserveAdvisory?.morningReservePct }}% Morning Reserve Protection
             </span>
           </div>
-          <p class="fs-8 text-dark mb-0 leading-relaxed">
+          @if (calc.result().batteryReserveAdvisory?.odiaMessage) {
+            <div class="p-2.5 rounded-2 bg-white border border-success-subtle text-dark fw-semibold fs-8 mb-2 lh-base">
+              {{ calc.result().batteryReserveAdvisory?.odiaMessage }}
+            </div>
+          }
+          <p class="fs-8 text-secondary mb-0 leading-relaxed">
             {{ calc.result().batteryReserveAdvisory?.message }}
           </p>
+          @if (calc.result().batteryReserveAdvisory?.upgradeText) {
+            <div class="fs-9 text-muted mt-1 fst-italic">
+              💡 {{ calc.result().batteryReserveAdvisory?.upgradeText }}
+            </div>
+          }
         </div>
       </div>
     </div>

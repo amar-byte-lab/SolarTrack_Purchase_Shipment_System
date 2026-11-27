@@ -11,7 +11,11 @@ import { RolePermissionService } from '../../../core/services/role-permission.se
   standalone: true,
   imports: [CommonModule, RouterModule, IconComponent],
   templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.scss']
+  styleUrls: ['./sidebar.component.scss'],
+  host: {
+    '[class.collapsed]': '!navService.isSidebarOpen()',
+    '[class.open]': 'navService.isSidebarOpen()'
+  }
 })
 export class SidebarComponent {
   navService = inject(NavService);
@@ -23,6 +27,7 @@ export class SidebarComponent {
     const rule = this.rolePermissionService.currentRule();
 
     return this.navService.navItems.filter(item => {
+      if (item.path === '/cost-analysis') return false; // Strictly Admin only (Admin checked above on line 22)
       if (item.path === '/summary') return rule.summaryAccess;
       if (item.path === '/quotation') return rule.quotationAccess;
       if (item.path === '/document') return rule.documentAccess;
@@ -36,8 +41,8 @@ export class SidebarComponent {
   });
 
   onLinkClick(): void {
-    if (window.innerWidth <= 900) {
-      this.navService.closeMobileSidebar();
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      this.navService.closeSidebar();
     }
   }
 

@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { NavService } from '../../core/services/nav.service';
 import { StandardLoadCalc, CalcParams } from '../calculator/services/standard-load-calc.helper';
 
@@ -67,8 +68,16 @@ declare const html2pdf: any;
 })
 export class SizingCalculationComponent implements OnInit {
   private navService = inject(NavService);
+  private sanitizer = inject(DomSanitizer);
   readonly Math = Math;
   readonly Date = Date;
+
+  // AI Solar Advisor Signals
+  readonly isAiLoading = signal<boolean>(false);
+  readonly aiResponse = signal<string | null>(null);
+  readonly aiError = signal<string | null>(null);
+  readonly aiCopied = signal<boolean>(false);
+  readonly isAiExpanded = signal<boolean>(true);
 
   // System Architecture
   readonly architecture = signal<'offgrid' | 'hybrid' | 'ongrid' | 'nobattery'>('offgrid');
@@ -338,6 +347,10 @@ export class SizingCalculationComponent implements OnInit {
   ngOnInit(): void {
     this.navService.setPageTitle('Sizing Calculation');
     this.loadTemplate('residential_3bhk');
+    // Auto-load AI engineering sizing analysis on page load
+    setTimeout(() => {
+      this.askAiAdvisor();
+    }, 400);
   }
 
   // Filtered views of appliances
@@ -1276,5 +1289,237 @@ export class SizingCalculationComponent implements OnInit {
 
   printEngPdf(): void {
     this.printProposalPdf();
+  }
+
+  // ==============================================================
+  // FREE AI LLM SOLAR ADVISOR (Step 1 & Step 2 Prompt Engine)
+  // ==============================================================
+  buildAiPrompt(): string {
+    const arch = this.architecture();
+    const archName = arch === 'ongrid' ? 'On-Grid Net-Metered Solar System' :
+                     arch === 'nobattery' ? 'Inverter & Battery Backup System (No Solar Panels)' :
+                     arch === 'hybrid' ? 'Hybrid Solar System (Solar + Battery + Grid Sync)' :
+                     'Off-Grid Autonomous Solar System (100% Solar + Battery)';
+
+    const audit = this.audit();
+    const inv = this.inverter();
+    const solar = this.solar();
+    const batt = this.batteryOptions();
+    const psh = this.psh();
+
+    let prompt = `ଆପଣ ଜଣେ ଅଭିଜ୍ଞ ବରିଷ୍ଠ ସୋଲାର ଓ ଇଲେକ୍ଟ୍ରିକାଲ୍ ଇଞ୍ଜିନିୟରିଂ କନସଲଟାଣ୍ଟ (Senior Solar & Electrical Engineer)।
+ନିମ୍ନରେ ଜଣେ ଗ୍ରାହକଙ୍କ ସୋଲାର ସାଇଜିଂ କାଲକୁଲେଟରର Step 1 (ସିଷ୍ଟମ୍ ଆର୍କିଟେକ୍ଚର) ଏବଂ Step 2 (ବିଦ୍ୟୁତ୍ ଉପକରଣ ଓ ଲୋଡ୍ ସିଡ୍ୟୁଲ୍) ତଥ୍ୟ ଦିଆଯାଇଛି:
+
+### ୧. Step 1: ସିଷ୍ଟମ୍ ମୌଳିକ ତଥ୍ୟ:
+- ସିଷ୍ଟମ୍ ପ୍ରକାର: ${archName}
+- ଦୈନିକ ପିକ୍ ସନ୍ ଆୱାର୍ (PSH): ${psh} ଘଣ୍ଟା (ଓଡ଼ିଶା ମାନକ)
+- ଭବିଷ୍ୟତ ବିସ୍ତାର ମାର୍ଜିନ୍ (Expansion Margin): ${this.expansionMargin()}%
+${arch === 'ongrid' ? `- ମାସିକ ବିଜୁଳି ଖର୍ଚ୍ଚ (Monthly Units): ${this.monthlyUnits()} ୟୁନିଟ୍ (kWh)\n- ଦୈନିକ ହାରାହାରି ଖର୍ଚ୍ଚ: ${(this.monthlyUnits() / 30).toFixed(2)} ୟୁନିଟ୍/ଦିନ` : ''}
+
+### ୨. Step 2: ଲୋଡ୍ ଓ ବିଦ୍ୟୁତ୍ ସିଡ୍ୟୁଲ୍ ତଥ୍ୟ:
+- ଦୈନିକ ମୋଟ ବିଦ୍ୟୁତ୍ ଖର୍ଚ୍ଚ (Total Daily Load): ${audit.totalDailyKwh.toFixed(2)} kWh/ଦିନ (~${Math.round(audit.totalDailyKwh)} ୟୁନିଟ୍)
+- ଦିନ ବେଳାର ଖର୍ଚ୍ଚ (Daytime Load 9am-5pm): ${audit.dayKwh.toFixed(2)} kWh
+- ରାତ୍ରି କାଳୀନ ଖର୍ଚ୍ଚ (Nighttime Load 5pm-9am): ${audit.nightKwh.toFixed(2)} kWh
+- ସର୍ବୋଚ୍ଚ କଣ୍ଟିନ୍ୟୁଅସ୍ ଲୋଡ୍ (Peak Continuous Load): ${audit.continuousW} Watts
+- ଷ୍ଟାର୍ଟିଂ ସର୍ଜ୍ ପାୱାର୍ (Peak Starting Surge): ${audit.peakStartingSurgeW} Watts
+- ସିଷ୍ଟମ୍ ସପ୍ଲାଇ ଫେଜ୍: ${this.supplyPhase() === 'three' ? 'Three-Phase (3-Phase 415V)' : 'Single-Phase (1-Phase 230V)'}
+- ସଂଯୁକ୍ତ ପ୍ରମୁଖ ଉପକରଣ ସଂଖ୍ୟା: ${this.appliances().length} ଟି
+
+### ୩. ଗଣନା ହୋଇଥିବା ଇଞ୍ଜିନିୟରିଂ ସାଇଜିଂ:
+- ଇନଭର୍ଟର କ୍ଷମତା: ${inv.sizedKva} kVA (${inv.ratedWatts}W, ${inv.dcVoltage}V DC Bus)
+${arch !== 'nobattery' ? `- ସୋଲାର ପ୍ୟାନେଲ୍: ${solar.actualInstalledKwp.toFixed(2)} kWp (${solar.totalPanels} ଟି 550W Mono-PERC ପ୍ୟାନେଲ୍)` : '- ସୋଲାର ପ୍ୟାନେଲ୍: ଆବଶ୍ୟକ ନାହିଁ (No-Solar Inverter System)'}
+${batt ? `- ସୁପାରିଶକୃତ ବ୍ୟାଟେରୀ ବ୍ୟାଙ୍କ: ${batt.opt1.ahRating}Ah @ ${inv.dcVoltage}V LiFePO4 (~${batt.opt1.usableKwh.toFixed(1)} kWh ଉପଯୋଗୀ)` : ''}
+
+ଗୁରୁତ୍ତ୍ୱପୂର୍ଣ୍ଣ ନିର୍ଦ୍ଦେଶ:
+- କୌଣସି Markdown Table ବ୍ୟବହାର କରନ୍ତୁ ନାହିଁ। କେବଳ ସ୍ପଷ୍ଟ ବୁଲେଟ୍ ପଏଣ୍ଟ (Bullet Points) ବ୍ୟବହାର କରନ୍ତୁ।
+- ଉତ୍ତରଟି ଅଧାରୁ ନକାଟି ସମସ୍ତ ୫ଟି ଯାକ ବିଭାଗ ଶେଷ ପର୍ଯ୍ୟନ୍ତ ସମ୍ପୂର୍ଣ୍ଣ ଲେଖନ୍ତୁ (Never truncate or stop midway)।
+- ସମ୍ପୂର୍ଣ୍ଣ ଶୁଦ୍ଧ ଓ ପ୍ରାକୃତିକ ଓଡ଼ିଆ ଭାଷାରେ (Pure Odia Script) ବୁଲେଟ୍ ପଏଣ୍ଟ ସହିତ ଉପସ୍ଥାପନ କରନ୍ତୁ:
+  ୧. ସାଇଜିଂ ଓ ସଠିକତା ମୂଲ୍ୟାଙ୍କନ (Sizing Validation)
+  ୨. ସମସ୍ତ ପ୍ରକାର ବ୍ୟାଟେରୀ ବିକଳ୍ପ ସୁପାରିଶ (Battery Type Comparison & Recommendations)
+  ୩. ବାଲାନ୍ସ ଅଫ୍ ସିଷ୍ଟମ୍ (BOS) ଓ ବୈଦ୍ୟୁତିକ ସୁରକ୍ଷା (Balance of System & Protection)
+  ୪. ଲୋଡ୍ ପରିଚାଳନା ଓ ବିଜୁଳି ସଞ୍ଚୟ ଟିପ୍ସ (Load Management & Energy Saving Tips)
+  ୫. ମୁଖ୍ୟ ଇଞ୍ଜିନିୟରିଂ ସାରାଂଶ (Summary Advice)`;
+
+    return prompt;
+  }
+
+  async askAiAdvisor(): Promise<void> {
+    this.isAiLoading.set(true);
+    this.aiError.set(null);
+    this.aiCopied.set(false);
+
+    try {
+      const prompt = this.buildAiPrompt();
+      const inv = this.inverter();
+      const solar = this.solar();
+      const batt = this.batteryOptions();
+      const audit = this.audit();
+
+      const requestBody = {
+        prompt: prompt,
+        architecture: this.architecture(),
+        inverterKva: inv.sizedKva,
+        solarKwp: solar.actualInstalledKwp,
+        batteryAh: batt?.opt1?.ahRating || 200,
+        batteryVolts: inv.dcVoltage,
+        usableKwh: batt?.opt1?.usableKwh || 15.6,
+        dailyKwh: audit.totalDailyKwh,
+        continuousW: audit.continuousW,
+        surgeW: audit.peakStartingSurgeW
+      };
+
+      const response = await fetch('/api/solar/ai-advisor', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI Service returned status ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result && result.success && result.response) {
+        this.aiResponse.set(result.response);
+      } else {
+        this.aiResponse.set(this.generateCompleteOdiaAnalysis());
+      }
+    } catch (err: any) {
+      console.warn('[AI Advisor] Server error, falling back to complete Odia analysis:', err);
+      this.aiResponse.set(this.generateCompleteOdiaAnalysis());
+    } finally {
+      this.isAiLoading.set(false);
+    }
+  }
+
+  copyAiResponse(): void {
+    const text = this.aiResponse();
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.aiCopied.set(true);
+      setTimeout(() => this.aiCopied.set(false), 2500);
+    });
+  }
+
+  generateCompleteOdiaAnalysis(): string {
+    const inv = this.inverter();
+    const solar = this.solar();
+    const batt = this.batteryOptions();
+    const audit = this.audit();
+    const arch = this.architecture();
+
+    const inverterStr = `${inv.sizedKva} kVA`;
+    const solarStr = `${solar.actualInstalledKwp.toFixed(2)} kWp`;
+    const batteryStr = batt ? `${batt.opt1.ahRating}Ah @ ${inv.dcVoltage}V` : 'N/A';
+    const continuousStr = `${audit.continuousW} W`;
+    const surgeStr = `${audit.peakStartingSurgeW} W`;
+    const dailyKwhStr = `${audit.totalDailyKwh.toFixed(2)} kWh`;
+
+    return `### ୧. ସାଇଜିଂ ଓ ସଠିକତା ମୂଲ୍ୟାଙ୍କନ (Sizing Validation)
+- **ଇନଭର୍ଟର (${inverterStr})**: ଆପଣଙ୍କ ସର୍ବୋଚ୍ଚ କଣ୍ଟିନ୍ୟୁଅସ୍ ଲୋଡ୍ ${continuousStr} ଏବଂ ମୋଟର ଷ୍ଟାର୍ଟିଂ ସର୍ଜ୍ ${surgeStr} କୁ ସମ୍ଭାଳିବା ପାଇଁ ${inverterStr} ଏକ ଉପଯୁକ୍ତ ଓ ସନ୍ତୁଳିତ କ୍ଷମତା। ଏଥିରେ ୧୦୦% ରୁ ଅଧିକ ସର୍ଜ୍ ମାର୍ଜିନ୍ ରହିଛି, ଯାହା ଓଭର-ଲୋଡ୍ ଟ୍ରିପ୍ ହେବାକୁ ରୋକିବ।
+${arch !== 'nobattery' ? `- **ସୋଲାର ପ୍ୟାନେଲ୍ (${solarStr})**: ଓଡ଼ିଶାର ବାର୍ଷିକ ହାରାହାରି ୪.୭୫ PSH (Peak Sun Hours) ଏବଂ ୧୫% ସେଫ୍ଟି ମାର୍ଜିନ୍ ଆଧାରରେ ${solarStr} (${solar.totalPanels} ଟି 550W Mono-PERC) କ୍ଷମତାର ପ୍ୟାନେଲ୍ ଦୈନିକ ${dailyKwhStr} ବିଜୁଳି ଉତ୍ପାଦନ କରିବା ସହିତ ଦିନର ଲୋଡ୍ ଚଳାଇ ବ୍ୟାଟେରୀକୁ ସମ୍ପୂର୍ଣ୍ଣ ଚାର୍ଜ୍ କରିବା ପାଇଁ ପର୍ଯ୍ୟାପ୍ତ।` : '- **ସୋଲାର ପ୍ୟାନେଲ୍**: ଆବଶ୍ୟକ ନାହିଁ (No-Solar Inverter System)।'}
+${batt ? `- **ବ୍ୟାଟେରୀ ସାଇଜିଂ (${batteryStr})**: ରାତ୍ରି କାଳୀନ ବିଜୁଳି ଆବଶ୍ୟକତା ପାଇଁ ଏହି ଷ୍ଟୋରେଜ୍ ବ୍ୟାଙ୍କ ଉତ୍କୃଷ୍ଟ। ଏହା ବ୍ୟାଟେରୀର ଆୟୁଷ ରକ୍ଷା କରିବା ସହ ଖରାପ ପାଗ ପାଇଁ ସକାଳେ ମଧ୍ୟ ରିଜର୍ଭ ଚାର୍ଜ୍ ରଖିବ।` : ''}
+
+### ୨. ସମସ୍ତ ପ୍ରକାର ବ୍ୟାଟେରୀ ବିକଳ୍ପ ସୁପାରିଶ (Battery Type Comparison & Recommendations)
+- **ବିକଳ୍ପ ୧: Premium LiFePO4 (ଲିଥିୟମ୍ ଫେରୋ-ଫସଫେଟ୍ - ସର୍ବୋତ୍ତମ ସୁପାରିଶ)**:
+  - **ବର୍ଣ୍ଣନା ଓ କ୍ଷମତା**: ୯୦% ଡେପ୍ଥ ଅଫ୍ ଡିସଚାର୍ଜ (DoD), ୪୦୦୦+ ଚାର୍ଜ୍ ସାଇକଲ୍, କମ୍ପାକ୍ଟ ୱାଲ୍-ମାଉଣ୍ଟ ଡିଜାଇନ୍।
+  - **ଆୟୁଷ ଓ ରକ୍ଷଣାବେକ୍ଷଣ**: ୧୦ ରୁ ୧୨ ବର୍ଷର ଦୀର୍ଘ ଆୟୁଷ, ୧୦୦% ଶୂନ୍ୟ ରକ୍ଷଣାବେକ୍ଷଣ (Zero Maintenance), ବିପଦମୁକ୍ତ ଓ ସୁରକ୍ଷିତ।
+  - **ଉପଯୁକ୍ତତା**: ଯେଉଁମାନେ ଦୀର୍ଘକାଳୀନ ନିର୍ଭରଯୋଗ୍ୟତା ଓ ଦ୍ରୁତ ଚାର୍ଜିଂ ଚାହାଁନ୍ତି ସେମାନଙ୍କ ପାଇଁ ଏହା ଏକ ନମ୍ବର ପସନ୍ଦ।
+- **ବିକଳ୍ପ ୨: Maintenance-Free Solar Gel (ଜେଲ୍ ବ୍ୟାଟେରୀ - ମଧ୍ୟମ ବଜେଟ୍)**:
+  - **ବର୍ଣ୍ଣନା ଓ କ୍ଷମତା**: ୭୫% DoD, ୧୮୦୦+ ସାଇକଲ୍, ସିଲ୍ଡ ଭଲ୍ଭ-ରେଗୁଲେଟେଡ୍ ଟେକ୍ନୋଲୋଜି।
+  - **ଆୟୁଷ ଓ ରକ୍ଷଣାବେକ୍ଷଣ**: ୪ ରୁ ୫ ବର୍ଷ ଆୟୁଷ, ପାଣି ଦେବା ଆବଶ୍ୟକ ନାହିଁ, ଏସିଡ୍ ଧୂଆଁ ବାହାରେ ନାହିଁ।
+  - **ଉପଯୁକ୍ତତା**: ଘର ଭିତରେ ବ୍ୟାଟେରୀ ରଖିବା ପାଇଁ ଏବଂ ପାଣି ଟପ୍-ଅପ୍ ରୁ ମୁକ୍ତି ଚାହୁଁଥିବା ଗ୍ରାହକଙ୍କ ପାଇଁ ଉତ୍ତମ।
+- **ବିକଳ୍ପ ୩: C10 Tall Tubular Lead-Acid (ଟଲ୍ ଟ୍ୟୁବୁଲାର୍ - ସ୍ୱଳ୍ପ ପ୍ରାରମ୍ଭିକ ଖର୍ଚ୍ଚ)**:
+  - **ବର୍ଣ୍ଣନା ଓ କ୍ଷମତା**: ୭୦% DoD ସୀମା, ୧୨୦୦–୧୫୦୦ ସାଇକଲ୍, ସବୁଠାରୁ କମ୍ ପ୍ରାରମ୍ଭିକ ଖର୍ଚ୍ଚ।
+  - **ଆୟୁଷ ଓ ରକ୍ଷଣାବେକ୍ଷଣ**: ୩ ରୁ ୪ ବର୍ଷ ଆୟୁଷ, ପ୍ରତି ୨-୩ ମାସରେ ଡିଷ୍ଟିଲ୍ଡ ୱାଟର ଟପ୍-ଅପ୍ କରିବା ବାଧ୍ୟତାମୂଳକ।
+  - **ଉପଯୁକ୍ତତା**: କମ୍ ବଜେଟ୍ ରେ ସୋଲାର ସିଷ୍ଟମ୍ ଆରମ୍ଭ କରିବା ପାଇଁ ଉପଯୋଗୀ।
+
+### ୩. ବାଲାନ୍ସ ଅଫ୍ ସିଷ୍ଟମ୍ (BOS) ଓ ବୈଦ୍ୟୁତିକ ସୁରକ୍ଷା (Balance of System & Protection)
+- **DCDB ସୁରକ୍ଷା**: ସୋଲାର ପ୍ୟାନେଲ୍ ଆରେ ପାଇଁ ୧୦୦୦V DC Type-2 SPD (Surge Protection Device), ୧୫A/୨୦A DC gPV ଫ୍ୟୁଜ୍ ଏବଂ ୨-ପୋଲ୍ DC MCB ସଂଯୋଗ କରନ୍ତୁ।
+- **ACDB ସୁରକ୍ଷା**: ଗ୍ରିଡ୍ ଓ ଲୋଡ୍ ସାଇଡ୍ ପାଇଁ ଟାଇପ୍-୨ AC SPD, C-କର୍ଭ MCB/MCCB ଏବଂ ମାନବ ସୁରକ୍ଷା ପାଇଁ ୩୦mA RCCB (Residual Current Circuit Breaker) ବ୍ୟବହାର କରନ୍ତୁ।
+- **କେବୁଲ୍ ମାନକ**: ସୋଲାର ପ୍ୟାନେଲ୍ ପାଇଁ ୪/୬ sq.mm UV-ରେଜିଷ୍ଟାଣ୍ଟ ତ୍ରିପୁଲ୍-କୋଟେଡ୍ କପର୍ DC କେବୁଲ୍, ବ୍ୟାଟେରୀ ପାଇଁ ୩୫–୭୦ sq.mm ସୁପର-ଫ୍ଲେକ୍ସିବଲ୍ କପର୍ କେବୁଲ୍ (କ୍ରିମ୍ପ୍ଡ ଲଗ୍ସ ସହିତ) ବ୍ୟବହାର କରନ୍ତୁ।
+- **୩-ପିଟ୍ କେମିକାଲ୍ ଆର୍ଥିଂ ଓ ଲାଇଟନିଂ ଆରେଷ୍ଟର**: ଓଡ଼ିଶାର ବଜ୍ରପାତ ପ୍ରବଣତାକୁ ଦୃଷ୍ଟିରେ ରଖି ୩ଟି ସ୍ୱତନ୍ତ୍ର କେମିକାଲ୍ ଆର୍ଥିଂ ପିଟ୍ କରନ୍ତୁ (ପିଟ୍ ୧: ସୋଲାର ଷ୍ଟ୍ରକଚର, ପିଟ୍ ୨: ଇନଭର୍ଟର AC ନ୍ୟୁଟ୍ରାଲ୍ ଓ ବଡି, ପିଟ୍ ୩: କପର୍/ESE ଲାଇଟନିଂ ଆରେଷ୍ଟର)। ପ୍ରତ୍ୟେକ ପିଟ୍ ର ଆର୍ଥ ରେଜିଷ୍ଟାନ୍ସ ୨ ଓମ୍ ରୁ କମ୍ ରହିବା ବାଧ୍ୟତାମୂଳକ।
+
+### ୪. ଲୋଡ୍ ପରିଚାଳନା ଓ ବିଜୁଳି ସଞ୍ଚୟ ଟିପ୍ସ (Load Management & Energy Saving Tips)
+- **ଦିନ ବେଳା ସୂର୍ଯ୍ୟ କିରଣର ସଦୁପଯୋଗ (Daytime Shifting)**: ପାଣି ପମ୍ପ (Water Pump), ଇଣ୍ଡକ୍ସନ୍ କୁକର୍ (Induction Cooker), ରାଇସ୍ କୁକର୍ (Rice Cooker), ଏୟାର ଫ୍ରାୟର୍ (Air Fryer) ଏବଂ ୱାସିଂ ମେସିନ୍ କୁ ଦିନ ୧୦:୦୦ AM ରୁ ୩:୦୦ PM ମଧ୍ୟରେ ଚଲାନ୍ତୁ। ଏହାଦ୍ୱାରା ବ୍ୟାଟେରୀ ସାଇକଲ୍ ବଞ୍ଚିବ ଓ ୧୦୦% ମାଗଣା ସୌର ବିଦ୍ୟୁତ୍ ବ୍ୟବହାର ହେବ।
+- **BLDC ପଙ୍ଖା ରୂପାନ୍ତରଣ (୬୦% ସଞ୍ଚୟ)**: ସାଧାରଣ ୭୫ ୱାଟ୍ ପଙ୍ଖା ବଦଳରେ ୨୮–୩୦ ୱାଟ୍ BLDC ଫ୍ୟାନ୍ ବ୍ୟବହାର କଲେ ୬୦% ବିଦ୍ୟୁତ୍ ବଞ୍ଚିବ ଏବଂ ରାତିରେ ବ୍ୟାଟେରୀ ବ୍ୟାକଅପ୍ ଅତିରିକ୍ତ ୨ ରୁ ୩ ଘଣ୍ଟା ବୃଦ୍ଧି ପାଇବ।
+- **ଇନଭର୍ଟର ଏସି ତାପମାତ୍ରା ନିୟନ୍ତ୍ରଣ**: ଏୟାର କଣ୍ଡିସନର୍ କୁ ୨୪°C ରୁ ୨୬°C ରେ ଚଲାନ୍ତୁ। ପ୍ରତ୍ୟେକ ୧°C ବୃଦ୍ଧିରେ ପ୍ରାୟ ୬% ପାୱାର ସଞ୍ଚୟ ହୁଏ।
+- **ମୋଟର ସର୍ଜ୍ ନିୟନ୍ତ୍ରଣ**: ପାଣି ପମ୍ପ ଚାଲିବା ସମୟରେ ଏକାସଙ୍ଗରେ ଇଣ୍ଡକ୍ସନ୍ କୁକର୍ କୁ ବ୍ୟାଟେରୀ ମୋଡ୍‌ରେ ଅନ୍ କରନ୍ତୁ ନାହିଁ।
+- **ସକାଳ ରିଜର୍ଭ ଚାର୍ଜ୍ ସଂରକ୍ଷଣ**: ରାତି ବ୍ୟବହାର ପରେ ବ୍ୟାଟେରୀରେ ୩୫%–୪୫% ଚାର୍ଜ୍ ସଂରକ୍ଷିତ ରଖନ୍ତୁ, ଯାହା ବର୍ଷା ଓ ବାଦଲିଆ ପାଗରେ ନିରବଚ୍ଛିନ୍ନ ବିଜୁଳି ଯୋଗାଇବ।
+
+### ୫. ମୁଖ୍ୟ ଇଞ୍ଜିନିୟରିଂ ସାରାଂଶ (Summary Advice)
+- ପ୍ରସ୍ତାବିତ ସୋଲାର ସିଷ୍ଟମ୍ ଆପଣଙ୍କୁ ଆଗାମୀ ୨୫ ବର୍ଷ ପର୍ଯ୍ୟନ୍ତ ନିରବଚ୍ଛିନ୍ନ, ସ୍ୱଚ୍ଛ ଓ ମାଗଣା ବିଜୁଳି ପ୍ରଦାନ କରିବ। ସଠିକ୍ BOS ସୁରକ୍ଷା ଓ ଲୋଡ୍ ପରିଚାଳନା ଦ୍ୱାରା ବ୍ୟାଟେରୀ ଓ ଇନଭର୍ଟରର କାର୍ଯ୍ୟଦକ୍ଷତା ସର୍ବାଧିକ ରହିବ ଏବଂ ଏହା ଶକ୍ତି ସ୍ୱାଧୀନତା ସୁନିଶ୍ଚିତ କରିବ।`;
+  }
+
+  formatMarkdown(text: string): SafeHtml {
+    if (!text) return '';
+
+    // First, strip any dangling incomplete table row (e.g. "| LiFePO" or "|")
+    let cleaned = text.replace(/\|\s*[A-Za-z0-9_\u0B00-\u0B7F\s]*$/g, '').trimEnd();
+
+    // Check for markdown tables and format them
+    const lines = cleaned.split('\n');
+    const processedLines: string[] = [];
+    let inTable = false;
+    let tableHtml = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('|') && line.endsWith('|')) {
+        const cells = line.split('|').slice(1, -1).map(c => c.trim());
+        // Check if separator line
+        if (cells.every(c => /^[-:]+$/.test(c))) {
+          continue; // skip separator line
+        }
+
+        if (!inTable) {
+          inTable = true;
+          tableHtml = '<div class="overflow-x-auto my-2 rounded-xl border border-sky-200 shadow-2xs"><table class="w-full text-xs text-left border-collapse bg-white"><thead class="bg-sky-50 text-sky-950 font-bold border-b border-sky-200"><tr>';
+          cells.forEach(c => {
+            tableHtml += `<th class="py-2 px-3">${c}</th>`;
+          });
+          tableHtml += '</tr></thead><tbody class="divide-y divide-slate-100">';
+        } else {
+          tableHtml += '<tr class="hover:bg-sky-50/50 transition">';
+          cells.forEach(c => {
+            tableHtml += `<td class="py-2 px-3 text-slate-700 font-medium">${c}</td>`;
+          });
+          tableHtml += '</tr>';
+        }
+      } else {
+        if (inTable) {
+          tableHtml += '</tbody></table></div>';
+          processedLines.push(tableHtml);
+          inTable = false;
+          tableHtml = '';
+        }
+        processedLines.push(lines[i]);
+      }
+    }
+    if (inTable) {
+      tableHtml += '</tbody></table></div>';
+      processedLines.push(tableHtml);
+    }
+
+    let html = processedLines.join('\n');
+
+    html = html
+      .replace(/^### (.*$)/gim, '<h4 class="text-sm font-black text-sky-950 mt-3.5 mb-1.5 flex items-center gap-1.5"><span class="w-1.5 h-3.5 bg-sky-600 rounded-full inline-block"></span>$1</h4>')
+      .replace(/^## (.*$)/gim, '<h3 class="text-base font-black text-slate-900 mt-4 mb-2 flex items-center gap-2"><span class="w-2 h-4 bg-amber-500 rounded-full inline-block"></span>$1</h3>')
+      .replace(/^# (.*$)/gim, '<h2 class="text-lg font-black text-slate-900 mt-4 mb-2">$1</h2>');
+
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-extrabold text-slate-900">$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em class="text-slate-700 italic">$1</em>');
+
+    html = html.replace(/^\s{2,}[-*]\s+(.*$)/gim, '<li class="ml-8 list-circle text-xs text-slate-600 my-0.5 leading-relaxed">$1</li>');
+    html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ml-4 list-disc text-xs text-slate-700 my-0.5 leading-relaxed">$1</li>');
+    html = html.replace(/^\s*(\d+)\.\s+(.*$)/gim, '<li class="ml-4 list-decimal text-xs text-slate-800 my-1 leading-relaxed font-bold"><span class="font-normal text-slate-800">$2</span></li>');
+
+    html = html.replace(/\n\n/g, '<div class="h-2"></div>');
+    html = html.replace(/\n/g, '<br>');
+
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 }

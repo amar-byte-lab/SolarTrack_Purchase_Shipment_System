@@ -6,18 +6,18 @@ import { ApplianceItem, InverterProduct, BatteryProduct } from '../models/calcul
 })
 export class CalculatorDbService {
   readonly COMMON_APPLIANCES: ApplianceItem[] = [
-    { id: 'led', name: 'LED Light', watts: 10, defaultQty: 5, initialQty: 5, defaultHours: 14, icon: '💡', checked: true, isBackup: true },
-    { id: 'fan', name: 'Fan', watts: 55, defaultQty: 3, initialQty: 3, defaultHours: 14, icon: '🌀', checked: true, isBackup: true },
-    { id: 'tv', name: 'TV', watts: 65, defaultQty: 1, initialQty: 1, defaultHours: 14, icon: '📺', checked: true, isBackup: true },
-    { id: 'fridge', name: 'Refrigerator', watts: 30, defaultQty: 1, initialQty: 1, defaultHours: 24, icon: '❄️', checked: true, isBackup: true },
-    { id: 'comp', name: 'Computer / Laptop', watts: 28, defaultQty: 0, initialQty: 1, defaultHours: 6, icon: '💻', checked: false, isBackup: true },
-    { id: 'wm', name: 'Washing Machine', watts: 240, defaultQty: 0, initialQty: 1, defaultHours: 1, icon: '🧺', checked: false, isBackup: false },
-    { id: 'geyser', name: 'Geyser', watts: 2000, defaultQty: 0, initialQty: 1, defaultHours: 1, icon: '🚿', checked: false, isBackup: false },
-    { id: 'iron', name: 'Iron', watts: 350, defaultQty: 0, initialQty: 1, defaultHours: 0.5, icon: '👔', checked: false, isBackup: false },
-    { id: 'induction', name: 'Induction Cooker', watts: 1160, defaultQty: 0, initialQty: 1, defaultHours: 2, icon: '🍳', checked: false, isBackup: false },
-    { id: 'ac', name: 'Air Conditioner (AC)', watts: 850, defaultQty: 0, initialQty: 1, defaultHours: 8, isHeavy: true, icon: '❄️', checked: false, isBackup: false },
-    { id: 'pump', name: 'Water Pump', watts: 1066, defaultQty: 0, initialQty: 1, defaultHours: 1, isHeavy: true, icon: '🚰', checked: false, isBackup: false },
-    { id: 'other', name: 'Other Load', watts: 100, defaultQty: 0, initialQty: 1, defaultHours: 2, icon: '🔌', checked: false, isBackup: true }
+    { id: 'led', name: 'LED Light', watts: 10, defaultQty: 5, initialQty: 5, defaultHours: 14, dayBackupHours: 3, nightBackupHours: 6, icon: '💡', checked: true, isBackup: true },
+    { id: 'fan', name: 'Fan', watts: 55, defaultQty: 3, initialQty: 3, defaultHours: 14, dayBackupHours: 5, nightBackupHours: 8, icon: '🌀', checked: true, isBackup: true },
+    { id: 'tv', name: 'TV', watts: 65, defaultQty: 1, initialQty: 1, defaultHours: 14, dayBackupHours: 4, nightBackupHours: 5, icon: '📺', checked: true, isBackup: true },
+    { id: 'fridge', name: 'Refrigerator', watts: 30, defaultQty: 1, initialQty: 1, defaultHours: 24, dayBackupHours: 7, nightBackupHours: 17, icon: '❄️', checked: true, isBackup: true },
+    { id: 'comp', name: 'Computer / Laptop', watts: 28, defaultQty: 0, initialQty: 1, defaultHours: 6, dayBackupHours: 6, nightBackupHours: 2, icon: '💻', checked: false, isBackup: true },
+    { id: 'wm', name: 'Washing Machine', watts: 240, defaultQty: 0, initialQty: 1, defaultHours: 1, dayBackupHours: 1, nightBackupHours: 0, icon: '🧺', checked: false, isBackup: false },
+    { id: 'geyser', name: 'Geyser', watts: 2000, defaultQty: 0, initialQty: 1, defaultHours: 1, dayBackupHours: 1, nightBackupHours: 0, icon: '🚿', checked: false, isBackup: false },
+    { id: 'iron', name: 'Iron', watts: 350, defaultQty: 0, initialQty: 1, defaultHours: 0.5, dayBackupHours: 0.5, nightBackupHours: 0, icon: '👔', checked: false, isBackup: false },
+    { id: 'induction', name: 'Induction Cooker', watts: 1160, defaultQty: 0, initialQty: 1, defaultHours: 2, dayBackupHours: 1.5, nightBackupHours: 0.5, icon: '🍳', checked: false, isBackup: false },
+    { id: 'ac', name: 'Air Conditioner (AC)', watts: 850, defaultQty: 0, initialQty: 1, defaultHours: 8, dayBackupHours: 4, nightBackupHours: 6, isHeavy: true, icon: '❄️', checked: false, isBackup: false },
+    { id: 'pump', name: 'Water Pump', watts: 1066, defaultQty: 0, initialQty: 1, defaultHours: 1, dayBackupHours: 1, nightBackupHours: 0, isHeavy: true, icon: '🚰', checked: false, isBackup: false },
+    { id: 'other', name: 'Other Load', watts: 100, defaultQty: 0, initialQty: 1, defaultHours: 2, dayBackupHours: 2, nightBackupHours: 2, icon: '🔌', checked: false, isBackup: true }
   ];
 
   readonly DEFAULT_PARAMS = {
